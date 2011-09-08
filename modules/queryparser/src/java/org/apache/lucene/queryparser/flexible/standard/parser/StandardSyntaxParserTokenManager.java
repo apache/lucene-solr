@@ -31,13 +31,12 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 /** Token Manager. */
 public class StandardSyntaxParserTokenManager implements StandardSyntaxParserConstants

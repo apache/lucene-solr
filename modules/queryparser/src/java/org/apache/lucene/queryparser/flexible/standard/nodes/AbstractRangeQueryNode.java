@@ -23,16 +23,18 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldValuePairQueryNode
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
+import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 
 /**
- * This class should be extended by nodes intending to represent range queries. 
- *
- * @param <T> the type of the range query bounds (lower and upper)
+ * This class should be extended by nodes intending to represent range queries.
+ * 
+ * @param <T>
+ *          the type of the range query bounds (lower and upper)
  */
-public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
-    extends QueryNodeImpl implements FieldableNode {
+public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
+    extends QueryNodeImpl implements RangeQueryNode<FieldValuePairQueryNode<?>> {
   
   private boolean lowerInclusive, upperInclusive;
   
@@ -145,8 +147,9 @@ public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?
       String lowerField = StringUtils.toString(lower.getField());
       String upperField = StringUtils.toString(upper.getField());
       
-      if ((upperField == null && lowerField == null)
-          || (upperField != null && !upperField.equals(lowerField))) {
+      if ((upperField != null || lowerField != null)
+          && ((upperField != null && !upperField.equals(lowerField)) || !lowerField
+              .equals(upperField))) {
         throw new IllegalArgumentException(
             "lower and upper bounds should have the same field name!");
       }

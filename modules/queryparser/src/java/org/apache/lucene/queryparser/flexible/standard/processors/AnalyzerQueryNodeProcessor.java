@@ -34,9 +34,9 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.NoTokenFoundQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
@@ -50,7 +50,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
  * is defined in the {@link QueryConfigHandler}. If it is and the analyzer is
  * not <code>null</code>, it looks for every {@link FieldQueryNode} that is not
  * {@link WildcardQueryNode}, {@link FuzzyQueryNode} or
- * {@link ParametricQueryNode} contained in the query node tree, then it applies
+ * {@link RangeQueryNode} contained in the query node tree, then it applies
  * the analyzer to that {@link FieldQueryNode} object. <br/>
  * <br/>
  * If the analyzer return only one term, the returned term is set to the
@@ -106,7 +106,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
     if (node instanceof TextableQueryNode
         && !(node instanceof WildcardQueryNode)
         && !(node instanceof FuzzyQueryNode)
-        && !(node instanceof ParametricQueryNode)) {
+        && !(node.getParent() instanceof RangeQueryNode)) {
 
       FieldQueryNode fieldNode = ((FieldQueryNode) node);
       String text = fieldNode.getTextAsString();

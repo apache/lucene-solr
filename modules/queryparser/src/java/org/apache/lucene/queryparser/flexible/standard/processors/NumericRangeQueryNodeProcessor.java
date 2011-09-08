@@ -27,28 +27,27 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode.CompareOperator;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 /**
- * This processor is used to convert {@link ParametricRangeQueryNode}s to
+ * This processor is used to convert {@link TermRangeQueryNode}s to
  * {@link NumericRangeQueryNode}s. It looks for
  * {@link ConfigurationKeys#NUMERIC_CONFIG} set in the {@link FieldConfig} of
- * every {@link ParametricRangeQueryNode} found. If
+ * every {@link TermRangeQueryNode} found. If
  * {@link ConfigurationKeys#NUMERIC_CONFIG} is found, it considers that
- * {@link ParametricRangeQueryNode} to be a numeric range query and convert it to
+ * {@link TermRangeQueryNode} to be a numeric range query and convert it to
  * {@link NumericRangeQueryNode}.
  * 
  * @see ConfigurationKeys#NUMERIC_CONFIG
- * @see ParametricRangeQueryNode
+ * @see TermRangeQueryNode
  * @see NumericConfig
  * @see NumericRangeQueryNode
  */
@@ -64,13 +63,13 @@ public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
     
-    if (node instanceof ParametricRangeQueryNode) {
+    if (node instanceof TermRangeQueryNode) {
       QueryConfigHandler config = getQueryConfigHandler();
       
       if (config != null) {
-        ParametricRangeQueryNode parametricRangeNode = (ParametricRangeQueryNode) node;
+        TermRangeQueryNode termRangeNode = (TermRangeQueryNode) node;
         FieldConfig fieldConfig = config.getFieldConfig(StringUtils
-            .toString(parametricRangeNode.getField()));
+            .toString(termRangeNode.getField()));
         
         if (fieldConfig != null) {
           
@@ -79,8 +78,8 @@ public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
           
           if (numericConfig != null) {
             
-            ParametricQueryNode lower = parametricRangeNode.getLowerBound();
-            ParametricQueryNode upper = parametricRangeNode.getUpperBound();
+            FieldQueryNode lower = termRangeNode.getLowerBound();
+            FieldQueryNode upper = termRangeNode.getUpperBound();
             
             String lowerText = lower.getTextAsString();
             String upperText = upper.getTextAsString();
@@ -134,14 +133,12 @@ public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
             }
             
             NumericQueryNode lowerNode = new NumericQueryNode(
-                parametricRangeNode.getField(), lowerNumber, numberFormat);
+                termRangeNode.getField(), lowerNumber, numberFormat);
             NumericQueryNode upperNode = new NumericQueryNode(
-                parametricRangeNode.getField(), upperNumber, numberFormat);
+                termRangeNode.getField(), upperNumber, numberFormat);
             
-            boolean upperInclusive = upper == null
-                | upper.getOperator() == CompareOperator.LE;
-            boolean lowerInclusive = lower == null
-                | lower.getOperator() == CompareOperator.GE;
+            boolean lowerInclusive = termRangeNode.isLowerInclusive();
+            boolean upperInclusive = termRangeNode.isUpperInclusive();
             
             return new NumericRangeQueryNode(lowerNode, upperNode,
                 lowerInclusive, upperInclusive, numericConfig);

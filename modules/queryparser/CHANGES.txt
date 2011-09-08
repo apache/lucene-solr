@@ -7,19 +7,19 @@ http://s.apache.org/luceneversions
    
 Changes in runtime behavior
 
- * LUCENE-1768: StandardQueryTreeBuilder uses RangeQueryNodeBuilder for
-   RangeQueryNodes, since theses two classes were removed;
-   ParametricRangeQueryNodeProcessor now creates TermRangeQueryNode,
-   instead of RangeQueryNode, from ParametricRangeQueryNode
+ * LUCENE-1768: StandardQueryTreeBuilder no longer uses RangeQueryNodeBuilder
+   for RangeQueryNodes, since theses two classes were removed;
+   TermRangeQueryNodeProcessor now creates TermRangeQueryNode,
+   instead of RangeQueryNode; the same applies for numeric nodes;
    (Vinicius Barros via Uwe Schindler)
 
 API Changes
 
- * LUCENE-1768: ParametricRangeQueryNode now implements
-   RangeQueryNode<FieldQueryNode> instead of
-   RangeQueryNode<ParametricQueryNode>  (Vinicius Barros via Uwe Schindler)
+ * LUCENE-1768: Deprecated Parametric(Range)QueryNode, RangeQueryNode(Builder),
+   ParametricRangeQueryNodeProcessor were removed. (Vinicius Barros via Uwe Schindler)
 
 Bug fixes
 
   * LUCENE-2945: Fix hashCode/equals for surround query parser generated queries.
     (Paul Elschot, Simon Rosenthal, gsingers via ehatcher)
+

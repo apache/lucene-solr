@@ -28,9 +28,8 @@ import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
@@ -46,11 +45,11 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNo
  * {@link FieldQueryNode} to be a numeric query and convert it to
  * {@link NumericRangeQueryNode} with upper and lower inclusive and lower and
  * upper equals to the value represented by the {@link FieldQueryNode} converted
- * to {@link Number}. It means that <b>field:1</b> is converted to <b>field:[1 TO
- * 1]</b>. <br/>
+ * to {@link Number}. It means that <b>field:1</b> is converted to <b>field:[1
+ * TO 1]</b>. <br/>
  * <br/>
- * Note that {@link ParametricQueryNode}s are ignored, even being a
- * {@link FieldQueryNode}.
+ * Note that {@link FieldQueryNode}s children of a
+ * {@link RangeQueryNode} are ignored.
  * 
  * @see ConfigurationKeys#NUMERIC_CONFIG
  * @see FieldQueryNode
@@ -70,7 +69,7 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
     
     if (node instanceof FieldQueryNode
-        && !(node.getParent() instanceof ParametricRangeQueryNode)) {
+        && !(node.getParent() instanceof RangeQueryNode)) {
       
       QueryConfigHandler config = getQueryConfigHandler();
       

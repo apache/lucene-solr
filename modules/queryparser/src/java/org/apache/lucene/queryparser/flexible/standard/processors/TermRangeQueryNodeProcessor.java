@@ -28,21 +28,18 @@ import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode.CompareOperator;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 /**
- * This processor converts {@link ParametricRangeQueryNode} objects to
- * {@link TermRangeQueryNode} objects. It reads the lower and upper bounds value
- * from the {@link ParametricRangeQueryNode} object and try to parse their
- * values using a {@link DateFormat}. If the values cannot be parsed to a date
- * value, it will only create the {@link TermRangeQueryNode} using the
- * non-parsed values. <br/>
+ * This processors process {@link TermRangeQueryNode}s. It reads the lower and
+ * upper bounds value from the {@link TermRangeQueryNode} object and try
+ * to parse their values using a {@link DateFormat}. If the values cannot be
+ * parsed to a date value, it will only create the {@link TermRangeQueryNode}
+ * using the non-parsed values. <br/>
  * <br/>
  * If a {@link ConfigurationKeys#LOCALE} is defined in the
  * {@link QueryConfigHandler} it will be used to parse the date, otherwise
@@ -56,21 +53,20 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
  * @see ConfigurationKeys#DATE_RESOLUTION
  * @see ConfigurationKeys#LOCALE
  * @see TermRangeQueryNode
- * @see ParametricRangeQueryNode
  */
-public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
+public class TermRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   
-  public ParametricRangeQueryNodeProcessor() {
+  public TermRangeQueryNodeProcessor() {
   // empty constructor
   }
   
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
     
-    if (node instanceof ParametricRangeQueryNode) {
-      ParametricRangeQueryNode parametricRangeNode = (ParametricRangeQueryNode) node;
-      ParametricQueryNode upper = parametricRangeNode.getUpperBound();
-      ParametricQueryNode lower = parametricRangeNode.getLowerBound();
+    if (node instanceof TermRangeQueryNode) {
+      TermRangeQueryNode termRangeNode = (TermRangeQueryNode) node;
+      FieldQueryNode upper = termRangeNode.getUpperBound();
+      FieldQueryNode lower = termRangeNode.getLowerBound();
       
       DateTools.Resolution dateRes = null;
       boolean inclusive = false;
@@ -80,7 +76,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
         locale = Locale.getDefault();
       }
       
-      CharSequence field = parametricRangeNode.getField();
+      CharSequence field = termRangeNode.getField();
       String fieldStr = null;
       
       if (field != null) {
@@ -94,7 +90,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
         dateRes = fieldConfig.get(ConfigurationKeys.DATE_RESOLUTION);
       }
       
-      if (upper.getOperator() == CompareOperator.LE) {
+      if (termRangeNode.isUpperInclusive()) {
         inclusive = true;
       }
       
@@ -135,10 +131,6 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       } catch (Exception e) {
         // do nothing
       }
-      
-      return new TermRangeQueryNode(lower, upper, part1.length() == 0
-          | lower.getOperator() == CompareOperator.GE, part2.length() == 0
-          | upper.getOperator() == CompareOperator.LE);
       
     }
     

@@ -22,12 +22,12 @@ import java.util.List;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PrefixWildcardQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.PrefixQuery;
@@ -57,9 +57,9 @@ public class WildcardQueryNodeProcessor extends QueryNodeProcessorImpl {
       FieldQueryNode fqn = (FieldQueryNode) node;      
       CharSequence text = fqn.getText(); 
       
-      // do not process wildcards for ParametricQueryNode and 
+      // do not process wildcards for TermRangeQueryNode children and 
       // QuotedFieldQueryNode to reproduce the old parser behavior
-      if (fqn instanceof ParametricQueryNode 
+      if (fqn.getParent() instanceof TermRangeQueryNode 
           || fqn instanceof QuotedFieldQueryNode 
           || text.length() <= 0){
         // Ignore empty terms

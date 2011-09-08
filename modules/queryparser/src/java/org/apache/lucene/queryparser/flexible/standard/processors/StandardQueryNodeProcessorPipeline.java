@@ -56,7 +56,7 @@ public class StandardQueryNodeProcessorPipeline extends
     add(new NumericQueryNodeProcessor());
     add(new NumericRangeQueryNodeProcessor());
     add(new LowercaseExpandedTermsQueryNodeProcessor());
-    add(new ParametricRangeQueryNodeProcessor());
+    add(new TermRangeQueryNodeProcessor());
     add(new AllowLeadingWildcardProcessor());    
     add(new AnalyzerQueryNodeProcessor());
     add(new PhraseSlopQueryNodeProcessor());
