@@ -148,10 +148,10 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-0.8.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/xmlbeans-2.3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/commons-digester-2.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-alchemy-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-calais-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-tagger-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-wst-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uimaj-core-2.3.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>

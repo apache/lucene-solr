@@ -236,24 +236,24 @@
         <version>${tika.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-an-alchemy</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.apache.uima</groupId>
+        <artifactId>AlchemyAPIAnnotator</artifactId>
+        <version>2.3.1</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-an-calais</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.apache.uima</groupId>
+        <artifactId>OpenCalaisAnnotator</artifactId>
+        <version>2.3.1</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-an-tagger</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.apache.uima</groupId>
+        <artifactId>Tagger</artifactId>
+        <version>2.3.1</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-an-wst</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.apache.uima</groupId>
+        <artifactId>WhitespaceTokenizer</artifactId>
+        <version>2.3.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.uima</groupId>
@@ -647,62 +647,6 @@
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/lib/apache-solr-noggit-r1099557.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-solr-uima-an-alchemy</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-an-alchemy</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-solr-uima-an-calais</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-an-calais</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-solr-uima-an-tagger</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-an-tagger</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-solr-uima-an-wst</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-an-wst</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar</file>
                 </configuration>  
               </execution>
               <execution>
