@@ -41,10 +41,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private static final Document DOC_2_B = makeDocument("X " + S_2 + " Y N N N N " + S_2 + " Z");
   private static final Document DOC_3_B = makeDocument("X " + S_1 + " A Y N N N N " + S_1 + " A Y");
   private static final Document DOC_4 = makeDocument("A A X A X B A X B B A A X B A A");
+  private static final Document DOC_5_3 = makeDocument("H H H X X X H H H X X X H H H");
+  private static final Document DOC_5_4 = makeDocument("H H H H");
 
   private static final PhraseQuery QUERY_1 = makePhraseQuery( S_1 );
   private static final PhraseQuery QUERY_2 = makePhraseQuery( S_2 );
   private static final PhraseQuery QUERY_4 = makePhraseQuery( "X A A");
+  private static final PhraseQuery QUERY_5_4 = makePhraseQuery( "H H H H");
 
   /**
    * Test DOC_4 and QUERY_4.
@@ -112,6 +115,21 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
   }
 
+  /** LUCENE-3412 */
+  public void testDoc5_Query5_Any_Slop_Should_be_consistent() throws Exception {
+    int nRepeats = 5;
+    for (int slop=0; slop<3; slop++) {
+      for (int trial=0; trial<nRepeats; trial++) {
+        // should steadily always find this one
+        checkPhraseQuery(DOC_5_4, QUERY_5_4, slop, 1);
+      }
+      for (int trial=0; trial<nRepeats; trial++) {
+        // should steadily never find this one
+        checkPhraseQuery(DOC_5_3, QUERY_5_4, slop, 0);
+      }
+    }
+  }
+  
   private float  checkPhraseQuery(Document doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
     query.setSlop(slop);
 

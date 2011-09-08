@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
@@ -70,7 +70,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
                     break;
                 }
                 PhrasePositions pp2 = null;
-                tpsDiffer = !pp.repeats || (pp2 = termPositionsDiffer(pp))==null;
+                tpsDiffer = !pp.repeats || (pp2 = termPositionsConflict(pp))==null;
                 if (pp2!=null && pp2!=pp) {
                   pp = flip(pp,pp2); // flip pp to pp2
                 }
@@ -118,7 +118,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
      *       position in doc. This case is detected by comparing just the (query) offsets, 
      *       and two such PPs are not considered "repeating". 
      * <br>- Also mark each such pp by pp.repeats = true.
-     * <br>Later can consult with repeats[] in termPositionsDiffer(pp), making that check efficient.
+     * <br>Later can consult with repeats[] in termPositionsConflict(pp), making that check efficient.
      * In particular, this allows to score queries with no repetitions with no overhead due to this computation.
      * <br>- Example 1 - query with no repetitions: "ho my"~2
      * <br>- Example 2 - query with repetitions: "ho my my"~2
@@ -147,11 +147,11 @@ final class SloppyPhraseScorer extends PhraseScorer {
         for (PhrasePositions pp = first; pp != null; pp = pp.next)
             pp.firstPosition();
         
-        // one time initializatin for this scorer
+        // one time initialization for this scorer
         if (!checkedRepeats) {
             checkedRepeats = true;
             // check for repeats
-            HashSet<PhrasePositions> m = null;
+            LinkedHashSet<PhrasePositions> m = null; // see comment (*) below why order is important
             for (PhrasePositions pp = first; pp != null; pp = pp.next) {
                 int tpPos = pp.position + pp.offset;
                 for (PhrasePositions pp2 = pp.next; pp2 != null; pp2 = pp2.next) {
@@ -161,7 +161,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
                     int tpPos2 = pp2.position + pp2.offset;
                     if (tpPos2 == tpPos) { 
                         if (m == null)
-                            m = new HashSet<PhrasePositions>();
+                            m = new LinkedHashSet<PhrasePositions>();
                         pp.repeats = true;
                         pp2.repeats = true;
                         m.add(pp);
@@ -173,14 +173,17 @@ final class SloppyPhraseScorer extends PhraseScorer {
                 repeats = m.toArray(new PhrasePositions[0]);
         }
         
-        // with repeats must advance some repeating pp's so they all start with differing tp's       
+        // with repeats must advance some repeating pp's so they all start with differing tp's
+        // (*) It is important that pps are handled by their original order in the query,
+        // because we advance the pp with larger offset, and so processing them in that order
+        // allows to cover all pairs.
         if (repeats!=null) {
             for (int i = 0; i < repeats.length; i++) {
                 PhrasePositions pp = repeats[i];
                 PhrasePositions pp2;
-                while ((pp2 = termPositionsDiffer(pp)) != null) {
-                  if (!pp2.nextPosition())  // out of pps that do not differ, advance the pp with higher offset 
-                      return -1;           // ran out of a term -- done  
+                while ((pp2 = termPositionsConflict(pp)) != null) {
+                  if (!pp2.nextPosition()) // among pps that do not differ, advance the pp with higher offset
+                      return -1;           // ran out of a term -- done
                 } 
             }
         }
@@ -196,6 +199,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
         if (repeats!=null) {
           tmpPos = new PhrasePositions[pq.size()];
         }
+        
         return end;
     }
 
@@ -205,9 +209,9 @@ final class SloppyPhraseScorer extends PhraseScorer {
      * @return null if differ (i.e. valid) otherwise return the higher offset PhrasePositions
      * out of the first two PPs found to not differ.
      */
-    private PhrasePositions termPositionsDiffer(PhrasePositions pp) {
+    private PhrasePositions termPositionsConflict(PhrasePositions pp) {
         // efficiency note: a more efficient implementation could keep a map between repeating 
-        // pp's, so that if pp1a, pp1b, pp1c are repeats term1, and pp2a, pp2b are repeats 
+        // pp's, so that if pp1a, pp1b, pp1c are repeats of term1, and pp2a, pp2b are repeats 
         // of term2, pp2a would only be checked against pp2b but not against pp1a, pp1b, pp1c. 
         // However this would complicate code, for a rather rare case, so choice is to compromise here.
         int tpPos = pp.position + pp.offset;
