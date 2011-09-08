@@ -47,6 +47,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import static org.apache.solr.analysis.WordDelimiterFilter.*;
+import static org.apache.solr.analysis.WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;
+
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
@@ -160,21 +163,17 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
 
   @Test
   public void testOffsets() throws IOException {
-
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     // test that subwords and catenated subwords have
     // the correct offsets.
-    WordDelimiterFilter wdf = new WordDelimiterFilter(
-            new SingleTokenTokenStream(new Token("foo-bar", 5, 12)),
-    1,1,0,0,1,1,0);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 12)), DEFAULT_WORD_DELIM_TABLE, flags, null);
 
     assertTokenStreamContents(wdf, 
         new String[] { "foo", "bar", "foobar" },
         new int[] { 5, 9, 5 }, 
         new int[] { 8, 12, 12 });
 
-    wdf = new WordDelimiterFilter(
-            new SingleTokenTokenStream(new Token("foo-bar", 5, 6)),
-    1,1,0,0,1,1,0);
+    wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 6)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar" },
@@ -183,12 +182,9 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testOffsetChange() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new SingleTokenTokenStream(new Token("übelkeit)", 7, 16)),
-      1,1,0,0,1,1,0
-    );
+  public void testOffsetChange() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("übelkeit)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -197,12 +193,9 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testOffsetChange2() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new SingleTokenTokenStream(new Token("(übelkeit", 7, 17)),
-      1,1,0,0,1,1,0
-    );
+  public void testOffsetChange2() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 17)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -211,12 +204,9 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testOffsetChange3() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new SingleTokenTokenStream(new Token("(übelkeit", 7, 16)),
-      1,1,0,0,1,1,0
-    );
+  public void testOffsetChange3() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -225,12 +215,9 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testOffsetChange4() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new SingleTokenTokenStream(new Token("(foo,bar)", 7, 16)),
-      1,1,0,0,1,1,0
-    );
+  public void testOffsetChange4() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(foo,bar)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar"},
@@ -338,8 +325,9 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
 
   public void doSplit(final String input, String... output) throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     WordDelimiterFilter wdf = new WordDelimiterFilter(new MockTokenizer(
-                new StringReader(input), MockTokenizer.KEYWORD, false), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 0, 1, 0, 1, 1, null);
+                new StringReader(input), MockTokenizer.KEYWORD, false), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf, output);
   }
@@ -380,8 +368,10 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
   
   public void doSplitPossessive(int stemPossessive, final String input, final String... output) throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS;
+    flags |= (stemPossessive == 1) ? STEM_ENGLISH_POSSESSIVE : 0;
     WordDelimiterFilter wdf = new WordDelimiterFilter(new MockTokenizer(
-        new StringReader(input), MockTokenizer.KEYWORD, false), 1,1,0,0,0,1,0,1,stemPossessive, null);
+        new StringReader(input), MockTokenizer.KEYWORD, false), flags, null);
 
     assertTokenStreamContents(wdf, output);
   }
@@ -420,7 +410,8 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   
   @Test
   public void testPositionIncrements() throws Exception {
-    final CharArraySet protWords = new CharArraySet(DEFAULT_VERSION, new HashSet<String>(Arrays.asList("NUTCH")), false);
+    final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
@@ -428,7 +419,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new MockTokenizer(reader, MockTokenizer.WHITESPACE, false),
-            1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
+            flags, protWords);
       }
     };
 
@@ -456,7 +447,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
         return new WordDelimiterFilter(
             new LargePosIncTokenFilter(
             new MockTokenizer(reader, MockTokenizer.WHITESPACE, false)),
-            1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
+            flags, protWords);
       }
     };
     
@@ -489,8 +480,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
         StopFilter filter = new StopFilter(TEST_VERSION_CURRENT,
             new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), StandardAnalyzer.STOP_WORDS_SET);
         filter.setEnablePositionIncrements(true);
-        return new WordDelimiterFilter(filter, 
-            1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
+        return new WordDelimiterFilter(filter, flags, protWords);
       }
     };
 

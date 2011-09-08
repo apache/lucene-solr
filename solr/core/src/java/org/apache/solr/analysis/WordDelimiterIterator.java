@@ -64,7 +64,7 @@ public final class WordDelimiterIterator {
    * "O'Neil's" => "O", "Neil"
    */
   final boolean stemEnglishPossessive;
-  
+
   private final byte[] charTypeTable;
   
   /** if true, need to skip over a possessive found in the last call to next() */
