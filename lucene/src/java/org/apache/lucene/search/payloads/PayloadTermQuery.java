@@ -78,6 +78,17 @@ public class PayloadTermQuery extends SpanTermQuery {
       return new PayloadTermSpanScorer((TermSpans) query.getSpans(reader),
           this, similarity, reader.norms(query.getField()));
     }
+    
+    @Override
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
+      if (includeSpanScore) {
+        return super.explain(reader, doc);
+      } else {
+        // if we don't include the span score, we need to return our scorer's explanation only
+        PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(reader, true, false);
+        return scorer.explain(doc);
+      }
+    }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
       // TODO: is this the best way to allocate this?
@@ -166,21 +177,29 @@ public class PayloadTermQuery extends SpanTermQuery {
 
       @Override
       protected Explanation explain(final int doc) throws IOException {
-        ComplexExplanation result = new ComplexExplanation();
         Explanation nonPayloadExpl = super.explain(doc);
-        result.addDetail(nonPayloadExpl);
+        
         // QUESTION: Is there a way to avoid this skipTo call? We need to know
         // whether to load the payload or not
         Explanation payloadBoost = new Explanation();
-        result.addDetail(payloadBoost);
 
         float payloadScore = getPayloadScore();
         payloadBoost.setValue(payloadScore);
         // GSI: I suppose we could toString the payload, but I don't think that
         // would be a good idea
         payloadBoost.setDescription("scorePayload(...)");
-        result.setValue(nonPayloadExpl.getValue() * payloadScore);
-        result.setDescription("btq, product of:");
+        
+        ComplexExplanation result = new ComplexExplanation();
+        if (includeSpanScore) {
+          result.addDetail(nonPayloadExpl);
+          result.addDetail(payloadBoost);
+          result.setValue(nonPayloadExpl.getValue() * payloadScore);
+          result.setDescription("btq, product of:");
+        } else {
+          result.addDetail(payloadBoost);
+          result.setValue(payloadScore);
+          result.setDescription("btq(includeSpanScore=false), result of:");
+        }
         result.setMatch(nonPayloadExpl.getValue() == 0 ? Boolean.FALSE
             : Boolean.TRUE); // LUCENE-1303
         return result;
