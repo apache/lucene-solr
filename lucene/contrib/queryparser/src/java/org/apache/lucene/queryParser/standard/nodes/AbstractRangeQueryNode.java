@@ -148,8 +148,9 @@ public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?
       String lowerField = StringUtils.toString(lower.getField());
       String upperField = StringUtils.toString(upper.getField());
       
-      if ((upperField == null && lowerField == null)
-          || (upperField != null && !upperField.equals(lowerField))) {
+      if ((upperField != null || lowerField != null)
+          && ((upperField != null && !upperField.equals(lowerField)) || !lowerField
+              .equals(upperField))) {
         throw new IllegalArgumentException(
             "lower and upper bounds should have the same field name!");
       }
