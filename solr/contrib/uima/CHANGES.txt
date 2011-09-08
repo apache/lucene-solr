@@ -12,10 +12,10 @@ Such fields could be language, concepts, keywords, sentences, named entities, et
  UIMA Dependency
  ---------------
 uimaj-core          v2.3.1 
-OpenCalaisAnnotator v2.3.1-SNAPSHOT rev. 1062868
-HMMTagger           v2.3.1-SNAPSHOT rev. 1062868
-AlchemyAPIAnnotator v2.3.1-SNAPSHOT rev. 1062868
-WhitespaceTokenizer v2.3.1-SNAPSHOT rev. 1076132
+OpenCalaisAnnotator v2.3.1
+HMMTagger           v2.3.1
+AlchemyAPIAnnotator v2.3.1
+WhitespaceTokenizer v2.3.1
 
 $Id$
 
@@ -25,7 +25,10 @@ $Id$
 
 ==================  3.5.0 ==================
 
-(No Changes)
+Other Changes
+----------------------
+
+* SOLR-2746: Upgraded dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar.
 
 ==================  3.4.0 ==================
 

@@ -27,7 +27,7 @@ Versions of Major Components
 Apache Tika 0.8
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
-Apache UIMA 2.3.1-SNAPSHOT
+Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.3
 
 
@@ -321,11 +321,7 @@ Documentation
 
 ==================  3.5.0  ==================
 
-Other Changes
-----------------------
-
-* SOLR-2746: Upgraded UIMA dependencies in contrib/uima/lib/ from *-2.3.1-SNAPSHOT.jar
-  to *-2.3.1.jar.
+(No Changes)
 
 ==================  3.4.0  ==================
 
