@@ -47,7 +47,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
     // 3 snippets requested, but should be 2
     assertEquals( 2, f.length );
-    assertEquals( "<b>a</b> b b b b b b b b b ", f[0] );
+    assertEquals( "<b>a</b> b b b b b b b b b b", f[0] );
     assertEquals( "b b <b>a</b> b <b>a</b> b ", f[1] );
   }
   
@@ -56,8 +56,8 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
     assertEquals( 3, f.length );
-    assertEquals( "<b>a</b> b b b b b b b b b ", f[0] );
-    assertEquals( "b b <b>a</b> b <b>a</b> b b b b b ", f[1] );
+    assertEquals( "<b>a</b> b b b b b b b b b b", f[0] );
+    assertEquals( "b b <b>a</b> b <b>a</b> b b b b b c", f[1] );
     assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b ", f[2] );
   }
   
@@ -88,7 +88,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( " b c  <b>d</b> e ", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "a b c  <b>d</b> e ", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void test1PhraseLongMV() throws Exception {
@@ -100,7 +100,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( " most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can use t",
+    assertEquals( "The most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can use the",
         sfb.createFragment( reader, 0, F, ffl ) );
   }
 
@@ -113,7 +113,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "ssing <b>speed</b>, the ", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "processing <b>speed</b>, the ", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void testUnstoredField() throws Exception {

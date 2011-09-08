@@ -45,14 +45,24 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   };
   public static final String[] COLORED_POST_TAGS = { "</b>" };
   private char multiValuedSeparator = ' ';
+  private final BoundaryScanner boundaryScanner;
   
   protected BaseFragmentsBuilder(){
     this( new String[]{ "<b>" }, new String[]{ "</b>" } );
   }
   
   protected BaseFragmentsBuilder( String[] preTags, String[] postTags ){
+    this(preTags, postTags, new SimpleBoundaryScanner());
+  }
+  
+  protected BaseFragmentsBuilder(BoundaryScanner boundaryScanner){
+    this( new String[]{ "<b>" }, new String[]{ "</b>" }, boundaryScanner );
+  }
+  
+  protected BaseFragmentsBuilder( String[] preTags, String[] postTags, BoundaryScanner boundaryScanner ){
     this.preTags = preTags;
     this.postTags = postTags;
+    this.boundaryScanner = boundaryScanner;
   }
   
   static Object checkTagsArgument( Object tags ){
@@ -125,13 +135,6 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s,
         preTags, postTags, NULL_ENCODER );
   }
-
-  protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo,
-      String[] preTags, String[] postTags, Encoder encoder ){
-    final int s = fragInfo.startOffset;
-    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s,
-        preTags, postTags, encoder );
-  }
   
   private String makeFragment( WeightedFragInfo fragInfo, String src, int s,
       String[] preTags, String[] postTags, Encoder encoder ){
@@ -149,6 +152,40 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     }
     fragment.append( encoder.encodeText( src.substring( srcIndex ) ) );
     return fragment.toString();
+  }
+
+  protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo,
+      String[] preTags, String[] postTags, Encoder encoder ){
+    StringBuilder fragment = new StringBuilder();
+    final int s = fragInfo.getStartOffset();
+    int[] modifiedStartOffset = { s };
+    String src = getFragmentSourceMSO( buffer, index, values, s, fragInfo.getEndOffset(), modifiedStartOffset );
+    int srcIndex = 0;
+    for( SubInfo subInfo : fragInfo.getSubInfos() ){
+      for( Toffs to : subInfo.getTermsOffsets() ){
+        fragment
+          .append( encoder.encodeText( src.substring( srcIndex, to.getStartOffset() - modifiedStartOffset[0] ) ) )
+          .append( getPreTag( preTags, subInfo.getSeqnum() ) )
+          .append( encoder.encodeText( src.substring( to.getStartOffset() - modifiedStartOffset[0], to.getEndOffset() - modifiedStartOffset[0] ) ) )
+          .append( getPostTag( postTags, subInfo.getSeqnum() ) );
+        srcIndex = to.getEndOffset() - modifiedStartOffset[0];
+      }
+    }
+    fragment.append( encoder.encodeText( src.substring( srcIndex ) ) );
+    return fragment.toString();
+  }
+
+  protected String getFragmentSourceMSO( StringBuilder buffer, int[] index, Field[] values,
+      int startOffset, int endOffset, int[] modifiedStartOffset ){
+    while( buffer.length() < endOffset && index[0] < values.length ){
+      buffer.append( values[index[0]].stringValue() );
+      if( values[index[0]].isTokenized() )
+        buffer.append( getMultiValuedSeparator() );
+      index[0]++;
+    }
+    int eo = buffer.length() < endOffset ? buffer.length() : boundaryScanner.findEndOffset( buffer, endOffset );
+    modifiedStartOffset[0] = boundaryScanner.findStartOffset( buffer, startOffset );
+    return buffer.substring( modifiedStartOffset[0], eo );
   }
   
   @Deprecated
