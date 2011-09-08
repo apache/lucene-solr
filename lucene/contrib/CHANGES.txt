@@ -75,7 +75,15 @@ Bug Fixes
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
    not lowercasing the key before checking for the tag (Adriano Crestani)
 
-======================= Lucene 3.x (not yet released) ================
+======================= Lucene 3.5.0 ================
+
+New Features
+
+ * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,
+   SimpleBoundaryScanner and BreakIteratorBoundaryScanner, so that FVH's FragmentsBuilder
+   can find "natural" boundary to make snippets. (Robert Muir, Koji Sekiguchi)
+
+======================= Lucene 3.4.0 ================
 
 New Features
 
@@ -102,10 +110,6 @@ New Features
  * LUCENE-1768: added support for numeric ranges in contrib query parser;
    added support for simple numeric queries, such as <age:4>, in contrib
    query parser (Vinicius Barros via Uwe Schindler)
-
- * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,
-   SimpleBoundaryScanner and BreakIteratorBoundaryScanner, so that FVH's FragmentsBuilder
-   can find "natural" boundary to make snippets. (Robert Muir, Koji Sekiguchi)
 
 Changes in runtime behavior:
 

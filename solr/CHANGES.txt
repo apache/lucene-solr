@@ -31,7 +31,7 @@ Apache UIMA 2.3.1-SNAPSHOT
 Apache ZooKeeper 3.3.3
 
 
-Upgrading from Solr 3.3-dev
+Upgrading from Solr 3.4-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -319,7 +319,11 @@ Documentation
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
 
-======================= 3.x (not yet released) ================
+==================  3.5.0  ==================
+
+(No Changes)
+
+==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
 ----------------------

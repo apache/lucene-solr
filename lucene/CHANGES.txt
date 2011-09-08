@@ -533,7 +533,14 @@ Bug fixes
 * LUCENE-2945: Fix hashCode/equals for surround query parser generated queries.
   (Paul Elschot, Simon Rosenthal, gsingers via ehatcher)
 
-======================= Lucene 3.x (not yet released) ================
+======================= Lucene 3.5.0 =======================
+
+Bug fixes
+
+* LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 
+  for queries with many repeats (Doron Cohen)
+
+======================= Lucene 3.4.0 =======================
 
 Bug fixes
 
@@ -589,9 +596,6 @@ Bug fixes
   meaning an operating system or hardware crash, or power loss, could
   easily corrupt the index.  (Mark Miller, Robert Muir, Mike
   McCandless)
-  
-* LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 
-  for queries with many repeats (Doron Cohen)
   
 New Features
 

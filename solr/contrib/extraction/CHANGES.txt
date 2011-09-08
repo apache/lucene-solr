@@ -28,7 +28,11 @@ $Id$
 
 (No Changes)
 
-================== Release 3.4.0-dev ==============
+================== Release 3.5.0 ==================
+
+(No Changes)
+
+================== Release 3.4.0 ==================
 
 * SOLR-2540: CommitWithin as an Update Request parameter
   You can now specify &commitWithin=N (ms) on the update request (janhoy)
