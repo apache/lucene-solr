@@ -1178,9 +1178,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
-      deleter = new IndexFileDeleter(directory,
-                                     conf.getIndexDeletionPolicy(),
-                                     segmentInfos, infoStream);
+      synchronized(this) {
+        deleter = new IndexFileDeleter(directory,
+                                       conf.getIndexDeletionPolicy(),
+                                       segmentInfos, infoStream,
+                                       this);
+      }
 
       if (deleter.startingCommitDeleted) {
         // Deletion policy deleted the "head" commit point.
@@ -3109,7 +3112,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         // delete new non cfs files directly: they were never
         // registered with IFD
-        deleter.deleteNewFiles(info.files());
+        synchronized(this) {
+          deleter.deleteNewFiles(info.files());
+        }
         info.setUseCompoundFile(true);
       }
 
@@ -3380,26 +3385,35 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       message("prepareCommit: flush");
 
     ensureOpen(false);
-    final boolean anySegmentsFlushed;
-    final SegmentInfos toCommit;
-    synchronized (this) {
-      anySegmentsFlushed = doFlush(true);
-      readerPool.commit(segmentInfos);
-      // Must clone the segmentInfos while we still
-      // hold fullFlushLock and while sync'd so that
-      // no partial changes (eg a delete w/o
-      // corresponding add from an updateDocument) can
-      // sneak into the commit point:
-      toCommit = (SegmentInfos) segmentInfos.clone();
-      pendingCommitChangeCount = changeCount;
-      // This protects the segmentInfos we are now going
-      // to commit. This is important in case, eg, while
-      // we are trying to sync all referenced files, a
-      // merge completes which would otherwise have
-      // removed the files we are now syncing.
-      deleter.incRef(toCommit, false);
-    }
+    boolean anySegmentsFlushed = false;
+    SegmentInfos toCommit = null;
     boolean success = false;
+    try {
+      try {
+        synchronized (this) {
+          anySegmentsFlushed = doFlush(true);
+          readerPool.commit(segmentInfos);
+          toCommit = (SegmentInfos) segmentInfos.clone();
+          pendingCommitChangeCount = changeCount;
+          // This protects the segmentInfos we are now going
+          // to commit. This is important in case, eg, while
+          // we are trying to sync all referenced files, a
+          // merge completes which would otherwise have
+          // removed the files we are now syncing.
+          deleter.incRef(toCommit, false);
+        }
+        success = true;
+      } finally {
+        if (!success && infoStream != null) {
+          message("hit exception during prepareCommit");
+        }
+        doAfterFlush();
+      }
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "prepareCommit");
+    }
+
+    success = false;
     try {
       if (anySegmentsFlushed) {
         maybeMerge();
@@ -3407,7 +3421,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       success = true;
     } finally {
       if (!success) {
-        deleter.decRef(toCommit);
+        synchronized (this) {
+          deleter.decRef(toCommit);
+        }
       }
     }
 
