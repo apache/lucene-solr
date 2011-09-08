@@ -34,6 +34,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
   @BeforeClass
@@ -64,7 +65,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "  'boost': 3.45,\n" +
       "  'doc': {\n" +
       "    'f1': 'v1',\n" +
-      "    'f1': 'v2'\n" +
+      "    'f1': 'v2',\n" +
+      "    'f2': null\n" +
       "  }\n" +
       "},\n" +
       "\n" +
@@ -92,7 +94,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     SolrInputDocument d = add.solrDoc;
     SolrInputField f = d.getField( "boosted" );
-    assertEquals(6.7f, f.getBoost());
+    assertEquals(6.7f, f.getBoost(), 0.1);
     assertEquals(2, f.getValues().size());
 
     // 
@@ -100,9 +102,10 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     d = add.solrDoc;
     f = d.getField( "f1" );
     assertEquals(2, f.getValues().size());
-    assertEquals(3.45f, d.getDocumentBoost());
+    assertEquals(3.45f, d.getDocumentBoost(), 0.001);
     assertEquals(false, add.overwrite);
-    
+
+    assertEquals(0, d.getField("f2").getValueCount());
 
     // parse the commit commands
     assertEquals( 2, p.commitCommands.size() );
@@ -186,6 +189,14 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(add.overwrite, true);
 
     req.close();
+  }
+
+  @Test
+  public void testNullValues() throws Exception {
+    updateJ("[{'id':'10','foo_s':null,'foo2_s':['hi',null,'there']}]".replace('\'', '"'), params("commit","true"));
+    assertJQ(req("q","id:10", "fl","foo_s,foo2_s")
+        ,"/response/docs/[0]=={'foo2_s':['hi','there']}"
+    );
   }
 
 }

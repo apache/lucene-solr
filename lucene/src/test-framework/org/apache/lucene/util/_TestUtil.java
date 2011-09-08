@@ -487,7 +487,7 @@ public class _TestUtil {
       Assert.assertEquals("wrong hit score", expectedSD.score, actualSD.score, 0.0);
       if (expectedSD instanceof FieldDoc) {
         Assert.assertTrue(actualSD instanceof FieldDoc);
-        Assert.assertEquals("wrong sort field values",
+        Assert.assertArrayEquals("wrong sort field values",
                             ((FieldDoc) expectedSD).fields,
                             ((FieldDoc) actualSD).fields);
       } else {

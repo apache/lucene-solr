@@ -24,36 +24,36 @@ import org.apache.lucene.search.Query;
 
 public abstract class ComposedQuery extends SrndQuery { 
   
-  public ComposedQuery(List qs, boolean operatorInfix, String opName) {
+  public ComposedQuery(List<SrndQuery> qs, boolean operatorInfix, String opName) {
     recompose(qs);
     this.operatorInfix = operatorInfix;
     this.opName = opName;
   }
   
-  protected void recompose(List queries) {
+  protected void recompose(List<SrndQuery> queries) {
     if (queries.size() < 2) throw new AssertionError("Too few subqueries"); 
     this.queries = queries;
   }
   
-  private String opName;
+  protected String opName;
   public String getOperatorName() {return opName;}
   
-  private List queries;
+  protected List<SrndQuery> queries;
   
-  public Iterator getSubQueriesIterator() {return queries.listIterator();}
+  public Iterator<SrndQuery> getSubQueriesIterator() {return queries.listIterator();}
 
   public int getNrSubQueries() {return queries.size();}
   
-  public SrndQuery getSubQuery(int qn) {return (SrndQuery) queries.get(qn);}
+  public SrndQuery getSubQuery(int qn) {return queries.get(qn);}
 
   private boolean operatorInfix; 
   public boolean isOperatorInfix() { return operatorInfix; } /* else prefix operator */
   
   public List<Query> makeLuceneSubQueriesField(String fn, BasicQueryFactory qf) {
     List<Query> luceneSubQueries = new ArrayList<Query>();
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<SrndQuery> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
-      luceneSubQueries.add( ((SrndQuery) sqi.next()).makeLuceneQueryField(fn, qf));
+      luceneSubQueries.add( (sqi.next()).makeLuceneQueryField(fn, qf));
     }
     return luceneSubQueries;
   }
@@ -77,7 +77,7 @@ public abstract class ComposedQuery extends SrndQuery {
   
   protected void infixToString(StringBuilder r) {
     /* Brackets are possibly redundant in the result. */
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<SrndQuery> sqi = getSubQueriesIterator();
     r.append(getBracketOpen());
     if (sqi.hasNext()) {
       r.append(sqi.next().toString());
@@ -92,7 +92,7 @@ public abstract class ComposedQuery extends SrndQuery {
   }
 
   protected void prefixToString(StringBuilder r) {
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<SrndQuery> sqi = getSubQueriesIterator();
     r.append(getOperatorName()); /* prefix operator */
     r.append(getBracketOpen());
     if (sqi.hasNext()) {
@@ -109,9 +109,9 @@ public abstract class ComposedQuery extends SrndQuery {
   @Override
   public boolean isFieldsSubQueryAcceptable() {
     /* at least one subquery should be acceptable */
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<SrndQuery> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
-      if (((SrndQuery) sqi.next()).isFieldsSubQueryAcceptable()) {
+      if ((sqi.next()).isFieldsSubQueryAcceptable()) {
         return true;
       }
     }

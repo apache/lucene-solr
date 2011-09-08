@@ -65,7 +65,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       
       @Override
       public void collect(int doc) throws IOException {
-        assertEquals("Score differs from expected", expectedScore, this.scorer.score());
+        assertEquals("Score differs from expected", expectedScore, this.scorer.score(), 0);
         count[0]++;
       }
       

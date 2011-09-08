@@ -35,6 +35,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.IOException;
 
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
+
 
 /**
  * Factory for {@link WordDelimiterFilter}.
@@ -80,38 +82,44 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
   }
 
   private CharArraySet protectedWords = null;
-
-  int generateWordParts=0;
-  int generateNumberParts=0;
-  int catenateWords=0;
-  int catenateNumbers=0;
-  int catenateAll=0;
-  int splitOnCaseChange=0;
-  int splitOnNumerics=0;
-  int preserveOriginal=0;
-  int stemEnglishPossessive=0;
+  private int flags;
   byte[] typeTable = null;
 
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
-    generateWordParts = getInt("generateWordParts", 1);
-    generateNumberParts = getInt("generateNumberParts", 1);
-    catenateWords = getInt("catenateWords", 0);
-    catenateNumbers = getInt("catenateNumbers", 0);
-    catenateAll = getInt("catenateAll", 0);
-    splitOnCaseChange = getInt("splitOnCaseChange", 1);
-    splitOnNumerics = getInt("splitOnNumerics", 1);
-    preserveOriginal = getInt("preserveOriginal", 0);
-    stemEnglishPossessive = getInt("stemEnglishPossessive", 1);
+    if (getInt("generateWordParts", 1) != 0) {
+      flags |= GENERATE_WORD_PARTS;
+    }
+    if (getInt("generateNumberParts", 1) != 0) {
+      flags |= GENERATE_NUMBER_PARTS;
+    }
+    if (getInt("catenateWords", 0) != 0) {
+      flags |= CATENATE_WORDS;
+    }
+    if (getInt("catenateNumbers", 0) != 0) {
+      flags |= CATENATE_NUMBERS;
+    }
+    if (getInt("catenateAll", 0) != 0) {
+      flags |= CATENATE_ALL;
+    }
+    if (getInt("splitOnCaseChange", 1) != 0) {
+      flags |= SPLIT_ON_CASE_CHANGE;
+    }
+    if (getInt("splitOnNumerics", 1) != 0) {
+      flags |= SPLIT_ON_NUMERICS;
+    }
+    if (getInt("preserveOriginal", 0) != 0) {
+      flags |= PRESERVE_ORIGINAL;
+    }
+    if (getInt("stemEnglishPossessive", 1) != 0) {
+      flags |= STEM_ENGLISH_POSSESSIVE;
+    }
   }
 
   public WordDelimiterFilter create(TokenStream input) {
     return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
-                                   generateWordParts, generateNumberParts,
-                                   catenateWords, catenateNumbers, catenateAll,
-                                   splitOnCaseChange, preserveOriginal,
-                                   splitOnNumerics, stemEnglishPossessive, protectedWords);
+                                   flags, protectedWords);
   }
   
   // source => type
@@ -144,17 +152,17 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
   
   private Byte parseType(String s) {
     if (s.equals("LOWER"))
-      return WordDelimiterFilter.LOWER;
+      return LOWER;
     else if (s.equals("UPPER"))
-      return WordDelimiterFilter.UPPER;
+      return UPPER;
     else if (s.equals("ALPHA"))
-      return WordDelimiterFilter.ALPHA;
+      return ALPHA;
     else if (s.equals("DIGIT"))
-      return WordDelimiterFilter.DIGIT;
+      return DIGIT;
     else if (s.equals("ALPHANUM"))
-      return WordDelimiterFilter.ALPHANUM;
+      return ALPHANUM;
     else if (s.equals("SUBWORD_DELIM"))
-      return WordDelimiterFilter.SUBWORD_DELIM;
+      return SUBWORD_DELIM;
     else
       return null;
   }

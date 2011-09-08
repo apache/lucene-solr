@@ -11,7 +11,11 @@ $Id$
 
 (No Changes)
 
-================== Release 3.4.0-dev ==============
+================== Release 3.5.0 ==================
+
+(No Changes)
+
+================== Release 3.4.0 ==================
 
 SOLR-2706: The carrot.lexicalResourcesDir parameter now works 
    with absolute directories (Stanislaw Osinski)

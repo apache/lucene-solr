@@ -24,6 +24,10 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -58,11 +62,11 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = loader.readDoc( parser );
     
     // Read boosts
-    assertEquals( 5.5f, doc.getDocumentBoost() );
-    assertEquals( 1.0f, doc.getField( "name" ).getBoost() );
-    assertEquals( 2.2f, doc.getField( "id" ).getBoost() );
+    assertEquals( 5.5f, doc.getDocumentBoost(), 0.1);
+    assertEquals( 1.0f, doc.getField( "name" ).getBoost(), 0.1);
+    assertEquals( 2.2f, doc.getField( "id" ).getBoost(), 0.1);
     // Boost is the product of each value
-    assertEquals( (3*4*5.0f), doc.getField( "cat" ).getBoost() );
+    assertEquals( (3*4*5.0f), doc.getField( "cat" ).getBoost(), 0.1);
     
     // Read values
     assertEquals( "12345", doc.getField( "id" ).getValue() );
@@ -73,4 +77,29 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals( 3, out.size() );
     assertEquals( "[aaa, bbb, bbb]", out.toString() );
   }
+  
+  @Test
+  public void testCommitWithin() throws Exception
+  {
+    String xml = 
+      "<add>" +
+      "  <doc>" +
+      "    <field name=\"id\">12345</field>" +
+      "    <field name=\"name\">kitten</field>" +
+      "  </doc>" +
+      "</add>";
+
+    SolrQueryRequest req = req("commitWithin","100");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+
+    XMLLoader loader = new XMLLoader(p, inputFactory);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(xml));
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    assertEquals(add.commitWithin, 100);
+
+    req.close();
+  }
+
 }

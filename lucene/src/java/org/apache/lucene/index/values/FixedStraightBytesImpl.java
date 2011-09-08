@@ -20,7 +20,6 @@ package org.apache.lucene.index.values;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
@@ -33,6 +32,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 
@@ -56,7 +56,7 @@ class FixedStraightBytesImpl {
     private final int byteBlockSize;
     private IndexOutput datOut;
 
-    public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context) throws IOException {
+    public Writer(Directory dir, String id, Counter bytesUsed, IOContext context) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       byteBlockSize = BYTE_BLOCK_SIZE;

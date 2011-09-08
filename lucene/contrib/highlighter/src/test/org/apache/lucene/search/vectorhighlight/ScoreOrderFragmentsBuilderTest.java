@@ -36,8 +36,8 @@ public class ScoreOrderFragmentsBuilderTest extends AbstractTestCase {
     assertEquals( 3, f.length );
     // check score order
     assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b ", f[0] );
-    assertEquals( "b b <b>a</b> b <b>a</b> b b b b b ", f[1] );
-    assertEquals( "<b>a</b> b b b b b b b b b ", f[2] );
+    assertEquals( "b b <b>a</b> b <b>a</b> b b b b b c", f[1] );
+    assertEquals( "<b>a</b> b b b b b b b b b b", f[2] );
   }
 
   private FieldFragList ffl(Query query, String indexValue ) throws Exception {

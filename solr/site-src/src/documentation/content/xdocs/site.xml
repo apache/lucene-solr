@@ -61,6 +61,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   <projects label="Related Projects">
     <lucene     label="Lucene Java"      href="ext:lucene" />
     <lucene     label="Nutch"            href="ext:nutch" />
+    <lucene     label="ManifoldCF"      href="ext:manifoldcf" />
   </projects>
   
   <!--
@@ -84,6 +85,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <lucene      href="http://lucene.apache.org/java/" />
     <lucene_who  href="http://lucene.apache.org/java/docs/whoweare.html" />
     <nutch     href="http://lucene.apache.org/nutch/" />
+    <manifoldcf href="http://incubator.apache.org/connectors/"/>
     <wiki      href="http://wiki.apache.org/solr/FrontPage" />
     <faq       href="http://wiki.apache.org/solr/FAQ" />
     <nightly   href="http://people.apache.org/builds/lucene/solr/nightly/" /> 

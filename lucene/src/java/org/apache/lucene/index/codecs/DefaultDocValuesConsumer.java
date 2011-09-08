@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -32,6 +31,7 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 
 /**
  * 
@@ -41,7 +41,7 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
   private final String segmentName;
   private final int codecId;
   private final Directory directory;
-  private final AtomicLong bytesUsed;
+  private final Counter bytesUsed;
   private final Comparator<BytesRef> comparator;
   private boolean useCompoundFile;
   private final IOContext context;

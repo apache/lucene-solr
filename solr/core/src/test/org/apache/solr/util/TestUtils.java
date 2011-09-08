@@ -123,7 +123,7 @@ public class TestUtils extends LuceneTestCase {
   {
     double number = 1.234;
     String sortable = NumberUtils.double2sortableStr( number );
-    assertEquals( number, NumberUtils.SortableStr2double(sortable) );
+    assertEquals( number, NumberUtils.SortableStr2double(sortable), 0.001);
     
     long num = System.currentTimeMillis();
     sortable = NumberUtils.long2sortableStr( num );

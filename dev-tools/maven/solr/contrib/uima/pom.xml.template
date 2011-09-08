@@ -72,20 +72,20 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-uima-an-alchemy</artifactId>
+      <groupId>org.apache.uima</groupId>
+      <artifactId>AlchemyAPIAnnotator</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-uima-an-calais</artifactId>
+      <groupId>org.apache.uima</groupId>
+      <artifactId>OpenCalaisAnnotator</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-uima-an-tagger</artifactId>
+      <groupId>org.apache.uima</groupId>
+      <artifactId>Tagger</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-uima-an-wst</artifactId>
+      <groupId>org.apache.uima</groupId>
+      <artifactId>WhitespaceTokenizer</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.uima</groupId>

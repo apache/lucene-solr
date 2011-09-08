@@ -18,13 +18,13 @@ package org.apache.lucene.index.values;
  */
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 
 /**
  * Abstract API for per-document stored primitive values of type <tt>byte[]</tt>
@@ -48,7 +48,7 @@ public abstract class Writer extends DocValuesConsumer {
    *          internally allocated memory. All tracked bytes must be released
    *          once {@link #finish(int)} has been called.
    */
-  protected Writer(AtomicLong bytesUsed) {
+  protected Writer(Counter bytesUsed) {
     super(bytesUsed);
   }
 
@@ -193,7 +193,7 @@ public abstract class Writer extends DocValuesConsumer {
    * @throws IOException
    */
   public static Writer create(ValueType type, String id, Directory directory,
-      Comparator<BytesRef> comp, AtomicLong bytesUsed, IOContext context) throws IOException {
+      Comparator<BytesRef> comp, Counter bytesUsed, IOContext context) throws IOException {
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }

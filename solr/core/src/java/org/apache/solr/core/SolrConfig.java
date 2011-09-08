@@ -30,6 +30,7 @@ import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.spelling.QueryConverter;
 import org.apache.lucene.search.BooleanQuery;
@@ -202,6 +203,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(CodecProviderFactory.class,"mainIndex/codecProviderFactory",false, false);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
+     loadPluginInfo(UpdateLog.class,"updateHandler/updateLog",false, false);
 
      updateHandlerInfo = loadUpdatehandlerInfo();
 

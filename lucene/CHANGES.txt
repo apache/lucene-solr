@@ -530,7 +530,17 @@ Bug fixes
   rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
   Simon Willnauer, Mike McCandless)
 
-======================= Lucene 3.x (not yet released) ================
+======================= Lucene 3.5.0 =======================
+
+Bug fixes
+
+* LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 
+  for queries with many repeats (Doron Cohen)
+
+* LUCENE-3421: PayloadTermQuery's explain was wrong when includeSpanScore=false.
+  (Edward Drapkin via Robert Muir)
+
+======================= Lucene 3.4.0 =======================
 
 Bug fixes
 
@@ -577,6 +587,15 @@ Bug fixes
   throw NoSuchDirectoryException when all files written so far have been
   written to one directory, but the other still has not yet been created on the
   filesystem.  (Robert Muir)
+
+* LUCENE-3409: IndexWriter.deleteAll was failing to close pooled NRT
+  SegmentReaders, leading to unused files accumulating in the
+  Directory.  (tal steier via Mike McCandless)
+
+* LUCENE-3418: Lucene was failing to fsync index files on commit,
+  meaning an operating system or hardware crash, or power loss, could
+  easily corrupt the index.  (Mark Miller, Robert Muir, Mike
+  McCandless)
   
 New Features
 
@@ -618,6 +637,13 @@ Test Cases
 
 * LUCENE-3327: Fix AIOOBE when TestFSTs is run with
   -Dtests.verbose=true (James Dyer via Mike McCandless)
+
+Build
+
+* LUCENE-3406: Add ant target 'package-local-src-tgz' to Lucene and Solr
+  to package sources from the local working copy.
+  (Seung-Yeoul Yang via Steve Rowe)
+
 
 ======================= Lucene 3.3.0 =======================
 

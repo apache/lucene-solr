@@ -33,13 +33,12 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserConstants {
 
@@ -309,7 +308,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   final public QueryNode Clause(CharSequence field) throws ParseException {
   QueryNode q;
   Token fieldToken=null, boost=null, operator=null, term=null;
-  ParametricQueryNode qLower, qUpper;
+  FieldQueryNode qLower, qUpper;
+  boolean lowerInclusive, upperInclusive;
 
   boolean group = false;
     if (jj_2_2(3)) {
@@ -375,33 +375,46 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         }
         switch (operator.kind) {
             case OP_LESSTHAN:
-                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE,
+                lowerInclusive = true;
+                upperInclusive = false;
+
+                qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
-                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LT,
-                                         EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+                        qUpper = new FieldQueryNode(field,
+                                 EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+
                 break;
             case OP_LESSTHANEQ:
-                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE,
+                lowerInclusive = true;
+                upperInclusive = true;
+
+                qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
-                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE,
+                qUpper = new FieldQueryNode(field,
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
                 break;
             case OP_MORETHAN:
-                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GT,
+                lowerInclusive = false;
+                upperInclusive = true;
+
+                qLower = new FieldQueryNode(field,
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
-                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE,
+                qUpper = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
                 break;
             case OP_MORETHANEQ:
-                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE,
+                lowerInclusive = true;
+                upperInclusive = true;
+
+                qLower = new FieldQueryNode(field,
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
-                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE,
+                qUpper = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
                 break;
             default:
                 {if (true) throw new Error("Unhandled case: operator="+operator.toString());}
         }
-        q = new ParametricRangeQueryNode(qLower, qUpper);
+        q = new TermRangeQueryNode(qLower, qUpper, lowerInclusive, upperInclusive);
         break;
       default:
         jj_la1[10] = jj_gen;
@@ -497,7 +510,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   boolean startInc=false;
   boolean endInc=false;
   QueryNode q =null;
-  ParametricQueryNode qLower, qUpper;
+  FieldQueryNode qLower, qUpper;
   float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:
@@ -638,11 +651,11 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
           }
 
-          qLower = new ParametricQueryNode(field, startInc ? ParametricQueryNode.CompareOperator.GE : ParametricQueryNode.CompareOperator.GT,
+          qLower = new FieldQueryNode(field,
                                                EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
-                  qUpper = new ParametricQueryNode(field, endInc ? ParametricQueryNode.CompareOperator.LE : ParametricQueryNode.CompareOperator.LT,
+                  qUpper = new FieldQueryNode(field,
                                                EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
-          q = new ParametricRangeQueryNode(qLower, qUpper);
+          q = new TermRangeQueryNode(qLower, qUpper, startInc ? true : false, endInc ? true : false);
       break;
     case QUOTED:
       term = jj_consume_token(QUOTED);
@@ -726,8 +739,16 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_10() {
-    if (jj_scan_token(TERM)) return true;
+  private boolean jj_3R_6() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_7()) {
+    jj_scanpos = xsp;
+    if (jj_3R_8()) {
+    jj_scanpos = xsp;
+    if (jj_3R_9()) return true;
+    }
+    }
     return false;
   }
 
@@ -739,6 +760,11 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     jj_scanpos = xsp;
     if (jj_3R_5()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_10() {
+    if (jj_scan_token(TERM)) return true;
     return false;
   }
 
@@ -786,24 +812,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_9() {
-    if (jj_scan_token(QUOTED)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_6() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_7()) {
-    jj_scanpos = xsp;
-    if (jj_3R_8()) {
-    jj_scanpos = xsp;
-    if (jj_3R_9()) return true;
-    }
-    }
-    return false;
-  }
-
   private boolean jj_3R_5() {
     Token xsp;
     xsp = jj_scanpos;
@@ -825,6 +833,11 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     if (jj_scan_token(28)) return true;
     }
     }
+    return false;
+  }
+
+  private boolean jj_3R_9() {
+    if (jj_scan_token(QUOTED)) return true;
     return false;
   }
 

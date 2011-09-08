@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Vector;
 
 import org.apache.solr.core.PluginInfo;
@@ -54,6 +55,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> softCommitCallbacks = new Vector<SolrEventListener>();
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
+  protected UpdateLog ulog;
+
   /**
    * Called when a SolrCore using this UpdateHandler is closed.
    */
@@ -81,6 +84,19 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+
+  private void initLog() {
+    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
+    if (ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
+      ulog = core.createInitInstance(ulogPluginInfo, UpdateLog.class, "update log", "solr.NullUpdateLog");
+    } else {
+      ulog = new NullUpdateLog();
+      ulog.init(null);
+    }
+    ulog.init(this, core);
+  }
+
+
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
       listener.postCommit();
@@ -105,6 +121,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idField = schema.getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
+    initLog();
   }
   
   /**
@@ -133,7 +150,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
   public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
   public abstract void close() throws IOException;
-
+  public abstract UpdateLog getUpdateLog();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the

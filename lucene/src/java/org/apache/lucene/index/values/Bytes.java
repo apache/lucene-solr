@@ -34,6 +34,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 
@@ -107,7 +108,7 @@ public final class Bytes {
    *           if the files for the writer can not be created.
    */
   public static Writer getWriter(Directory dir, String id, Mode mode,
-      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed, IOContext context)
+      Comparator<BytesRef> comp, boolean fixedSize, Counter bytesUsed, IOContext context)
       throws IOException {
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
@@ -349,7 +350,7 @@ public final class Bytes {
     private final IOContext context;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
-        int version, AtomicLong bytesUsed, IOContext context) throws IOException {
+        int version, Counter bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.dir = dir;

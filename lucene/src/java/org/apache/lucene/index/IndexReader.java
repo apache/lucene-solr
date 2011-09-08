@@ -974,6 +974,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // IndexableField
   public Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
+    if (docID < 0 || docID >= maxDoc()) {
+      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
+    }
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();

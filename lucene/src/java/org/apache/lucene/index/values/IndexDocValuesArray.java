@@ -1,7 +1,6 @@
 package org.apache.lucene.index.values;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
@@ -9,6 +8,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -34,13 +34,13 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 abstract class IndexDocValuesArray extends Source {
 
-  private final AtomicLong bytesUsed;
+  private final Counter bytesUsed;
   private final int bytesPerValue;
   private int size = 0;
   private final ValueType type;
   protected int maxDocID = -1;
 
-  IndexDocValuesArray(AtomicLong bytesUsed, int bytesPerValue, ValueType type) {
+  IndexDocValuesArray(Counter bytesUsed, int bytesPerValue, ValueType type) {
     this.bytesUsed = bytesUsed;
     this.bytesPerValue = bytesPerValue;
     this.type = type;
@@ -113,13 +113,13 @@ abstract class IndexDocValuesArray extends Source {
   final static class ByteValues extends IndexDocValuesArray {
     private byte[] values;
 
-    ByteValues(AtomicLong bytesUsed) {
+    ByteValues(Counter bytesUsed) {
       super(bytesUsed, 1, ValueType.FIXED_INTS_8);
       values = new byte[0];
     }
 
     ByteValues(IndexInput input, int numDocs) throws IOException {
-      super(new AtomicLong(), 1, ValueType.FIXED_INTS_8);
+      super(Counter.newCounter(), 1, ValueType.FIXED_INTS_8);
       values = new byte[numDocs];
       adjustSize(numDocs);
       input.readBytes(values, 0, values.length, false);
@@ -190,14 +190,14 @@ abstract class IndexDocValuesArray extends Source {
   final static class ShortValues extends IndexDocValuesArray {
     private short[] values;
 
-    ShortValues(AtomicLong bytesUsed) {
+    ShortValues(Counter bytesUsed) {
       super(bytesUsed, RamUsageEstimator.NUM_BYTES_SHORT,
           ValueType.FIXED_INTS_16);
       values = new short[0];
     }
 
     ShortValues(IndexInput input, int numDocs) throws IOException {
-      super(new AtomicLong(), RamUsageEstimator.NUM_BYTES_SHORT,
+      super(Counter.newCounter(), RamUsageEstimator.NUM_BYTES_SHORT,
           ValueType.FIXED_INTS_16);
       values = new short[numDocs];
       adjustSize(numDocs);
@@ -274,13 +274,13 @@ abstract class IndexDocValuesArray extends Source {
   final static class IntValues extends IndexDocValuesArray {
     private int[] values;
 
-    IntValues(AtomicLong bytesUsed) {
+    IntValues(Counter bytesUsed) {
       super(bytesUsed, RamUsageEstimator.NUM_BYTES_INT, ValueType.FIXED_INTS_32);
       values = new int[0];
     }
 
     IntValues(IndexInput input, int numDocs) throws IOException {
-      super(new AtomicLong(), RamUsageEstimator.NUM_BYTES_INT,
+      super(Counter.newCounter(), RamUsageEstimator.NUM_BYTES_INT,
           ValueType.FIXED_INTS_32);
       values = new int[numDocs];
       adjustSize(numDocs);
@@ -356,14 +356,14 @@ abstract class IndexDocValuesArray extends Source {
   final static class LongValues extends IndexDocValuesArray {
     private long[] values;
 
-    LongValues(AtomicLong bytesUsed) {
+    LongValues(Counter bytesUsed) {
       super(bytesUsed, RamUsageEstimator.NUM_BYTES_LONG,
           ValueType.FIXED_INTS_64);
       values = new long[0];
     }
 
     LongValues(IndexInput input, int numDocs) throws IOException {
-      super(new AtomicLong(), RamUsageEstimator.NUM_BYTES_LONG,
+      super(Counter.newCounter(), RamUsageEstimator.NUM_BYTES_LONG,
           ValueType.FIXED_INTS_64);
       values = new long[numDocs];
       adjustSize(numDocs);

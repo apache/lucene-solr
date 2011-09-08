@@ -252,6 +252,13 @@
   	<bool name="httpCaching">true</bool>
   </requestHandler>
 
+  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+     <lst name="defaults">
+       <str name="omitHeader">true</str>
+     </lst>
+  </requestHandler>
+
+
   <requestHandler name="dismax" class="solr.SearchHandler" >
     <lst name="defaults">
      <str name="defType">dismax</str>

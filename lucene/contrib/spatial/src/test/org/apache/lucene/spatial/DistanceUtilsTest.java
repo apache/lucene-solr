@@ -33,28 +33,28 @@ public class DistanceUtilsTest extends LuceneTestCase {
     double[] oneOne = new double[]{1, 1};
     double[] pt1 = new double[]{1.5, 110.3};
     double[] result = DistanceUtils.vectorBoxCorner(zero, null, Math.sqrt(2), true);
-    assertEquals(1.0, result[0]);
-    assertEquals(1.0, result[1]);
+    assertEquals(1.0, result[0], 0);
+    assertEquals(1.0, result[1], 0);
 
     result = DistanceUtils.vectorBoxCorner(zero, null, Math.sqrt(2), false);
-    assertEquals(-1.0, result[0]);
-    assertEquals(-1.0, result[1]);
+    assertEquals(-1.0, result[0], 0);
+    assertEquals(-1.0, result[1], 0);
 
     result = DistanceUtils.vectorBoxCorner(oneOne, null, Math.sqrt(2), true);
-    assertEquals(2.0, result[0]);
-    assertEquals(2.0, result[1]);
+    assertEquals(2.0, result[0], 0);
+    assertEquals(2.0, result[1], 0);
 
     result = DistanceUtils.vectorBoxCorner(zeroOne, null, Math.sqrt(2), true);
-    assertEquals(1.0, result[0]);
-    assertEquals(2.0, result[1]);
+    assertEquals(1.0, result[0], 0);
+    assertEquals(2.0, result[1], 0);
 
     result = DistanceUtils.vectorBoxCorner(pt1, null, Math.sqrt(2), true);
-    assertEquals(2.5, result[0]);
-    assertEquals(111.3, result[1]);
+    assertEquals(2.5, result[0], 0.1);
+    assertEquals(111.3, result[1], 0.1);
 
     result = DistanceUtils.vectorBoxCorner(pt1, null, Math.sqrt(2), false);
-    assertEquals(0.5, result[0]);
-    assertEquals(109.3, result[1]);
+    assertEquals(0.5, result[0], 0.1);
+    assertEquals(109.3, result[1], 0.1);
 
   }
 
@@ -152,9 +152,9 @@ public class DistanceUtilsTest extends LuceneTestCase {
     double[] oneOne = new double[]{1, 1};
     double distance;
     distance = DistanceUtils.vectorDistance(zero, zeroOne, 2);
-    assertEquals(1.0, distance);
+    assertEquals(1.0, distance, 0);
     distance = DistanceUtils.vectorDistance(zero, oneZero, 2);
-    assertEquals(1.0, distance);
+    assertEquals(1.0, distance, 0);
     distance = DistanceUtils.vectorDistance(zero, oneOne, 2);
     assertEquals(Math.sqrt(2), distance, 0.001);
 
@@ -248,9 +248,9 @@ public class DistanceUtilsTest extends LuceneTestCase {
 
     double[] dbls = DistanceUtils.parsePointDouble(null, "89.0         ,   73.2 ,              -92.3", 3);
     assertEquals(3, dbls.length);
-    assertEquals(89.0, dbls[0]);
-    assertEquals(73.2, dbls[1]);
-    assertEquals(-92.3, dbls[2]);
+    assertEquals(89.0, dbls[0], 0);
+    assertEquals(73.2, dbls[1], 0.1);
+    assertEquals(-92.3, dbls[2], 0.1);
 
     try {
       dbls = DistanceUtils.parsePointDouble(null, "89.0         ,   foo ,              -92.3", 3);
@@ -260,8 +260,8 @@ public class DistanceUtilsTest extends LuceneTestCase {
 
     dbls = DistanceUtils.parseLatitudeLongitude(null, "89.0         ,   73.2    ");
     assertEquals(2, dbls.length);
-    assertEquals(89.0, dbls[0]);
-    assertEquals(73.2, dbls[1]);
+    assertEquals(89.0, dbls[0], 0.1);
+    assertEquals(73.2, dbls[1], 0.1);
 
     //test some bad lat/long pairs
     try {

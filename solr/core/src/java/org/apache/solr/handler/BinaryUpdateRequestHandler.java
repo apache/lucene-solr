@@ -24,7 +24,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
-import static org.apache.solr.handler.XmlUpdateRequestHandler.COMMIT_WITHIN;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -97,7 +96,7 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     AddUpdateCommand addCmd = new AddUpdateCommand(req);
 
     addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
-    addCmd.commitWithin = params.getInt(COMMIT_WITHIN, -1);
+    addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     return addCmd;
   }
 

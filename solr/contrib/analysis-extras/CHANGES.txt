@@ -17,7 +17,11 @@ $Id$
   the Solr 3.x ICUCollationKeyFilterFactory, and also supports
   Locale-sensitive range queries.  (rmuir)
 
-==================  3.4.0-dev ==============
+==================  3.5.0 ==================
+
+(No Changes)
+
+==================  3.4.0 ==================
 
 (No Changes)
 

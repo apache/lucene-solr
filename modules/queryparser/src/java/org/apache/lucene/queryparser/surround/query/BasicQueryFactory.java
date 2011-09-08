@@ -45,8 +45,19 @@ public class BasicQueryFactory {
   public int getNrQueriesMade() {return queriesMade;}
   public int getMaxBasicQueries() {return maxBasicQueries;}
   
-  private synchronized void checkMax() throws TooManyBasicQueries {
-    if (queriesMade >= maxBasicQueries)
+  public String toString() {
+    return getClass().getName()
+	  + "(maxBasicQueries: " + maxBasicQueries
+	  + ", queriesMade: " + queriesMade
+	  + ")";
+  }
+
+  private boolean atMax() {
+    return queriesMade >= maxBasicQueries;
+  }
+
+  protected synchronized void checkMax() throws TooManyBasicQueries {
+    if (atMax())
       throw new TooManyBasicQueries(getMaxBasicQueries());
     queriesMade++;
   }
@@ -59,6 +70,22 @@ public class BasicQueryFactory {
   public SpanTermQuery newSpanTermQuery(Term term) throws TooManyBasicQueries {
     checkMax();
     return new SpanTermQuery(term);
+  }
+
+  @Override
+  public int hashCode() {
+    return getClass().hashCode() ^ (atMax() ? 7 : 31*32);
+  }
+
+  /** Two BasicQueryFactory's are equal when they generate
+   *  the same types of basic queries, or both cannot generate queries anymore.
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if (! (obj instanceof BasicQueryFactory))
+      return false;
+    BasicQueryFactory other = (BasicQueryFactory) obj;
+    return atMax() == other.atMax();
   }
 }
 

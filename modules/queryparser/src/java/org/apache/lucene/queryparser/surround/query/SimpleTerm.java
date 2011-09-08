@@ -17,12 +17,9 @@ package org.apache.lucene.queryparser.surround.query;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 
 public abstract class SimpleTerm
@@ -38,7 +35,11 @@ public abstract class SimpleTerm
   public String getFieldOperator() {return "/";}
   
   public abstract String toStringUnquoted();
-  
+
+  /** @deprecated (March 2011) Not normally used, to be removed from Lucene 4.0.
+   *   This class implementing Comparable is to be removed at the same time.
+   */
+  @Deprecated
   public int compareTo(SimpleTerm ost) {
     /* for ordering terms and prefixes before using an index, not used */
     return this.toStringUnquoted().compareTo( ost.toStringUnquoted());
@@ -70,35 +71,10 @@ public abstract class SimpleTerm
     void visitMatchingTerm(Term t)throws IOException;
   }
 
+  @Override
   public String distanceSubQueryNotAllowed() {return null;}
-
   
   @Override
-  public Query makeLuceneQueryFieldNoBoost(final String fieldName, final BasicQueryFactory qf) {
-    return new Query() {
-      @Override
-      public String toString(String fn) {
-        return getClass().toString() + " " + fieldName + " (" + fn + "?)";
-      }
-      
-      @Override
-      public Query rewrite(IndexReader reader) throws IOException {
-        final List<Query> luceneSubQueries = new ArrayList<Query>();
-        visitMatchingTerms( reader, fieldName,
-            new MatchingTermVisitor() {
-              public void visitMatchingTerm(Term term) throws IOException {
-                luceneSubQueries.add(qf.newTermQuery(term));
-              }
-            });
-        return  (luceneSubQueries.size() == 0) ? SrndQuery.theEmptyLcnQuery
-              : (luceneSubQueries.size() == 1) ? luceneSubQueries.get(0)
-              : SrndBooleanQuery.makeBooleanQuery(
-                  /* luceneSubQueries all have default weight */
-                  luceneSubQueries, BooleanClause.Occur.SHOULD); /* OR the subquery terms */ 
-      }
-    };
-  }
-    
   public void addSpanQueries(final SpanNearClauseFactory sncf) throws IOException {
     visitMatchingTerms(
           sncf.getIndexReader(),
@@ -108,6 +84,11 @@ public abstract class SimpleTerm
               sncf.addTermWeighted(term, getWeight());
             }
           });
+  }
+
+  @Override
+  public Query makeLuceneQueryFieldNoBoost(final String fieldName, final BasicQueryFactory qf) {
+    return new SimpleTermRewriteQuery(this, fieldName, qf);
   }
 }
 

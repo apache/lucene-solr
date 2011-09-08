@@ -154,7 +154,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     float score = result[0].score;
     for (int i = 1; i < numHits; i++) {
       assertEquals("score for " + i + " was not the same", score,
-          result[i].score);
+          result[i].score, SCORE_COMP_THRESH);
     }
 
     result = search.search(csrq("data", "1", "6", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE), null, 1000).scoreDocs;
@@ -162,7 +162,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     assertEquals("wrong number of results", 6, numHits);
     for (int i = 0; i < numHits; i++) {
       assertEquals("score for " + i + " was not the same", score,
-          result[i].score);
+          result[i].score, SCORE_COMP_THRESH);
     }
 
     search.close();
@@ -200,7 +200,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
       }
       @Override
       public void collect(int doc) throws IOException {
-        assertEquals("score for doc " + (doc + base) + " was not correct", 1.0f, scorer.score());
+        assertEquals("score for doc " + (doc + base) + " was not correct", 1.0f, scorer.score(), SCORE_COMP_THRESH);
       }
       @Override
       public void setNextReader(AtomicReaderContext context) {

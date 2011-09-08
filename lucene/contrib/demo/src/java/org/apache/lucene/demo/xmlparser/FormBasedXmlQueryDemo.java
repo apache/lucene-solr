@@ -40,14 +40,14 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.xml.CorePlusExtensionsParser;
+import org.apache.lucene.queryparser.xml.QueryTemplateManager;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.xmlparser.CorePlusExtensionsParser;
-import org.apache.lucene.xmlparser.QueryTemplateManager;
 
 public class FormBasedXmlQueryDemo extends HttpServlet {
 

@@ -49,7 +49,7 @@
               excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt"
+              includes="CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt"
   />
 
 
@@ -257,7 +257,6 @@
           <packageset dir="contrib/misc/src/java"/>
           <packageset dir="contrib/sandbox/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
-          <packageset dir="contrib/xml-query-parser/src/java"/>
           <!-- end alpha sort -->
 
           <!-- If the main javadoc Group listing includes an "Other   -->
@@ -274,7 +273,6 @@
           <group title="contrib: Misc " packages="org.apache.lucene.misc*"/>
           <group title="contrib: Sandbox" packages="org.apache.lucene.sandbox*"/>
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
-          <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
           
         </sources>
       </invoke-javadoc>
@@ -379,6 +377,22 @@
       <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the sources from local working copy with tar-gzip     -->
+  <!-- ================================================================== -->
+  <target name="package-local-src-tgz" depends="init, init-dist"
+    description="--> Packages the Lucene source from the local working copy">
+    <mkdir dir="${common.dir}/build"/>
+    <property name="source.package.file"
+              value="${common.dir}/build/lucene-${version}-src.tgz"/>
+    <delete file="${source.package.file}"/>
+    <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset prefix="lucene-${version}" dir=".">
+        <patternset refid="lucene.local.src.package.patterns"/>
+      </tarfileset>
+    </tar>
   </target>
 
   <!-- ================================================================== -->

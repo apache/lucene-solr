@@ -72,52 +72,73 @@ public final class WordDelimiterFilter extends TokenFilter {
   public static final int ALPHANUM = 0x07;
 
   /**
-   * If true, causes parts of words to be generated:
+   * Causes parts of words to be generated:
    * <p/>
    * "PowerShot" => "Power" "Shot"
    */
-  final boolean generateWordParts;
+  public static final int GENERATE_WORD_PARTS = 1;
 
   /**
-   * If true, causes number subwords to be generated:
+   * Causes number subwords to be generated:
    * <p/>
    * "500-42" => "500" "42"
    */
-  final boolean generateNumberParts;
+  public static final int GENERATE_NUMBER_PARTS = 2;
 
   /**
-   * If true, causes maximum runs of word parts to be catenated:
+   * Causes maximum runs of word parts to be catenated:
    * <p/>
    * "wi-fi" => "wifi"
    */
-  final boolean catenateWords;
+  public static final int CATENATE_WORDS = 4;
 
   /**
-   * If true, causes maximum runs of number parts to be catenated:
+   * Causes maximum runs of word parts to be catenated:
    * <p/>
-   * "500-42" => "50042"
+   * "wi-fi" => "wifi"
    */
-  final boolean catenateNumbers;
+  public static final int CATENATE_NUMBERS = 8;
 
   /**
-   * If true, causes all subword parts to be catenated:
+   * Causes all subword parts to be catenated:
    * <p/>
    * "wi-fi-4000" => "wifi4000"
    */
-  final boolean catenateAll;
+  public static final int CATENATE_ALL = 16;
 
   /**
-   * If true, original words are preserved and added to the subword list (Defaults to false)
+   * Causes original words are preserved and added to the subword list (Defaults to false)
    * <p/>
    * "500-42" => "500" "42" "500-42"
    */
-  final boolean preserveOriginal;
+  public static final int PRESERVE_ORIGINAL = 32;
+
+  /**
+   * If not set, causes case changes to be ignored (subwords will only be generated
+   * given SUBWORD_DELIM tokens)
+   */
+  public static final int SPLIT_ON_CASE_CHANGE = 64;
+
+  /**
+   * If not set, causes numeric changes to be ignored (subwords will only be generated
+   * given SUBWORD_DELIM tokens).
+   */
+  public static final int SPLIT_ON_NUMERICS = 128;
+
+  /**
+   * Causes trailing "'s" to be removed for each subword
+   * <p/>
+   * "O'Neil's" => "O", "Neil"
+   */
+  public static final int STEM_ENGLISH_POSSESSIVE = 256;
   
   /**
    * If not null is the set of tokens to protect from being delimited
    *
    */
   final CharArraySet protWords;
+
+  private final int flags;
     
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
@@ -154,69 +175,33 @@ public final class WordDelimiterFilter extends TokenFilter {
   private boolean hasOutputFollowingOriginal = false;
 
   /**
-   * @param in Token stream to be filtered.
-   * @param charTypeTable
-   * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot" => "Power" "Shot"
-   * @param generateNumberParts If 1, causes number subwords to be generated: "500-42" => "500" "42"
-   * @param catenateWords  1, causes maximum runs of word parts to be catenated: "wi-fi" => "wifi"
-   * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
-   * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
-   * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
-   * @param preserveOriginal If 1, includes original words in subwords: "500-42" => "500" "42" "500-42"
-   * @param splitOnNumerics 1, causes "j2se" to be three tokens; "j" "2" "se"
-   * @param stemEnglishPossessive If 1, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
+   * Creates a new WordDelimiterFilter
+   *
+   * @param in TokenStream to be filtered
+   * @param charTypeTable table containing character types
+   * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in,
-                             byte[] charTypeTable,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll,
-                             int splitOnCaseChange,
-                             int preserveOriginal,
-                             int splitOnNumerics,
-                             int stemEnglishPossessive,
-                             CharArraySet protWords) {
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
-    this.generateWordParts = generateWordParts != 0;
-    this.generateNumberParts = generateNumberParts != 0;
-    this.catenateWords = catenateWords != 0;
-    this.catenateNumbers = catenateNumbers != 0;
-    this.catenateAll = catenateAll != 0;
-    this.preserveOriginal = preserveOriginal != 0;
+    this.flags = configurationFlags;
     this.protWords = protWords;
-    this.iterator = new WordDelimiterIterator(charTypeTable, splitOnCaseChange != 0, splitOnNumerics != 0, stemEnglishPossessive != 0);
+    this.iterator = new WordDelimiterIterator(
+        charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE));
   }
 
   /**
-   * @param in Token stream to be filtered.
-   * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot", "Power-Shot" => "Power" "Shot"
-   * @param generateNumberParts If 1, causes number subwords to be generated: "500-42" => "500" "42"
-   * @param catenateWords  1, causes maximum runs of word parts to be catenated: "wi-fi" => "wifi"
-   * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
-   * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
-   * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
-   * @param preserveOriginal If 1, includes original words in subwords: "500-42" => "500" "42" "500-42"
-   * @param splitOnNumerics 1, causes "j2se" to be three tokens; "j" "2" "se"
-   * @param stemEnglishPossessive If 1, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
+   * Creates a new WordDelimiterFilter using {@link WordDelimiterIterator#DEFAULT_WORD_DELIM_TABLE}
+   * as its charTypeTable
+   *
+   * @param in TokenStream to be filtered
+   * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll,
-                             int splitOnCaseChange,
-                             int preserveOriginal,
-                             int splitOnNumerics,
-                             int stemEnglishPossessive,
-                             CharArraySet protWords) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, stemEnglishPossessive, protWords);
+  public WordDelimiterFilter(TokenStream in, int configurationFlags, CharArraySet protWords) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }
-  
+
   public boolean incrementToken() throws IOException {
     while (true) {
       if (!hasSavedState) {
@@ -242,7 +227,7 @@ public final class WordDelimiterFilter extends TokenFilter {
         }
         
         // word of simply delimiters
-        if (iterator.end == WordDelimiterIterator.DONE && !preserveOriginal) {
+        if (iterator.end == WordDelimiterIterator.DONE && !has(PRESERVE_ORIGINAL)) {
           // if the posInc is 1, simply ignore it in the accumulation
           if (posIncAttribute.getPositionIncrement() == 1) {
             accumPosInc--;
@@ -253,10 +238,10 @@ public final class WordDelimiterFilter extends TokenFilter {
         saveState();
 
         hasOutputToken = false;
-        hasOutputFollowingOriginal = !preserveOriginal;
+        hasOutputFollowingOriginal = !has(PRESERVE_ORIGINAL);
         lastConcatCount = 0;
         
-        if (preserveOriginal) {
+        if (has(PRESERVE_ORIGINAL)) {
           posIncAttribute.setPositionIncrement(accumPosInc);
           accumPosInc = 0;
           return true;
@@ -312,7 +297,7 @@ public final class WordDelimiterFilter extends TokenFilter {
       }
       
       // add all subwords (catenateAll)
-      if (catenateAll) {
+      if (has(CATENATE_ALL)) {
         concatenate(concatAll);
       }
       
@@ -385,7 +370,7 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @return {@code true} if concatenation should occur, {@code false} otherwise
    */
   private boolean shouldConcatenate(int wordType) {
-    return (catenateWords && isAlpha(wordType)) || (catenateNumbers && isDigit(wordType));
+    return (has(CATENATE_WORDS) && isAlpha(wordType)) || (has(CATENATE_NUMBERS) && isDigit(wordType));
   }
 
   /**
@@ -395,7 +380,7 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @return {@code true} if a word/number part should be generated, {@code false} otherwise
    */
   private boolean shouldGenerateParts(int wordType) {
-    return (generateWordParts && isAlpha(wordType)) || (generateNumberParts && isDigit(wordType));
+    return (has(GENERATE_WORD_PARTS) && isAlpha(wordType)) || (has(GENERATE_NUMBER_PARTS) && isDigit(wordType));
   }
 
   /**
@@ -492,6 +477,16 @@ public final class WordDelimiterFilter extends TokenFilter {
    */
   static boolean isUpper(int type) {
     return (type & UPPER) != 0;
+  }
+
+  /**
+   * Determines whether the given flag is set
+   *
+   * @param flag Flag to see if set
+   * @return {@code} true if flag is set
+   */
+  private boolean has(int flag) {
+    return (flags & flag) != 0;
   }
 
   // ================================================= Inner Classes =================================================

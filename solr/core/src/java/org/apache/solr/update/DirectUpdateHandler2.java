@@ -24,7 +24,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -53,6 +56,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class DirectUpdateHandler2 extends UpdateHandler {
   protected SolrCoreState indexWriterProvider;
+  protected final Lock commitLock = new ReentrantLock();
 
   // stats
   AtomicLong addCommands = new AtomicLong();
@@ -110,6 +114,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
     
+    this.ulog = updateHandler.getUpdateLog();
+    this.ulog.init(this, core);
   }
 
   private void deleteAll() throws IOException {
@@ -163,6 +169,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         writer.addDocument(cmd.getLuceneDocument());
       }
 
+      // Add to the transaction log *after* successfully adding to the index, if there was no error.
+      // This ordering ensures that if we log it, it's definitely been added to the the index.
+      // This also ensures that if a commit sneaks in-between, that we know everything in a particular
+      // log version was definitely committed.
+      ulog.add(cmd);
+
       rc = 1;
     } finally {
       if (rc!=1) {
@@ -185,6 +197,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     indexWriterProvider.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
 
+    ulog.delete(cmd);
+ 
     if (commitTracker.getTimeUpperBound() > 0) {
       commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
     } 
@@ -216,7 +230,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       } else {
         indexWriterProvider.getIndexWriter(core).deleteDocuments(q);
       }
-      
+
+      ulog.deleteByQuery(cmd);
+
       madeIt = true;
       
       if (commitTracker.getTimeUpperBound() > 0) {
@@ -278,6 +294,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     boolean error=true;
     try {
+      // only allow one hard commit to proceed at once
+      if (!cmd.softCommit) {
+        commitLock.lock();
+      }
+
       log.info("start "+cmd);
 
       if (cmd.optimize) {
@@ -287,6 +308,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
 
       if (!cmd.softCommit) {
+        synchronized (this) { // sync is currently needed to prevent preCommit from being called between preSoft and postSoft... see postSoft comments.
+          ulog.preCommit(cmd);
+        }
+
         writer.commit();
         numDocsPending.set(0);
         callPostCommitCallbacks();
@@ -300,13 +325,23 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
 
 
-      synchronized (this) {
         if (cmd.softCommit) {
-          core.getSearcher(true,false,waitSearcher, true);
+          // ulog.preSoftCommit();
+          synchronized (this) {
+            ulog.preSoftCommit(cmd);
+            core.getSearcher(true,false,waitSearcher, true);
+            ulog.postSoftCommit(cmd);
+          }
+          // ulog.postSoftCommit();
         } else {
-          core.getSearcher(true,false,waitSearcher);
+          synchronized (this) {
+            ulog.preSoftCommit(cmd);
+            core.getSearcher(true,false,waitSearcher);
+            ulog.postSoftCommit(cmd);
+          }
+          ulog.postCommit(cmd); // postCommit currently means new searcher has also been opened
         }
-      }
+
 
       // reset commit tracking
 
@@ -321,6 +356,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       error=false;
     }
     finally {
+      if (!cmd.softCommit) {
+        commitLock.unlock();
+      }
+
       addCommands.set(0);
       deleteByIdCommands.set(0);
       deleteByQueryCommands.set(0);
@@ -396,6 +435,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
+  @Override
+  public UpdateLog getUpdateLog() {
+    return ulog;
+  }
 
   @Override
   public void close() throws IOException {

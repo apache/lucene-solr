@@ -248,8 +248,8 @@ public class SolrPluginUtils {
     boolean explainStruct
             = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
-    /* userQuery may have been pre-processes .. expose that */
     if (dbgQuery) {
+      /* userQuery may have been pre-processed .. expose that */
       dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
       dbg.add("querystring", userQuery);
 

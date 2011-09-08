@@ -45,6 +45,8 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   public static final String SOFT_COMMIT = "softCommit";
 
   public static final String OVERWRITE = "overwrite";
+  
+  // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
 

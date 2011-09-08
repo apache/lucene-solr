@@ -906,7 +906,7 @@ public class TestGrouping extends LuceneTestCase {
 
       assertEquals(group1.groupValue, group2.groupValue);
       if (doSortValues) {
-        assertEquals(group1.sortValues, group2.sortValues);
+        assertArrayEquals(group1.sortValues, group2.sortValues);
       }
     }
     assertFalse(iter2.hasNext());
@@ -1009,7 +1009,7 @@ public class TestGrouping extends LuceneTestCase {
         //System.out.println("  actual doc=" + docIDtoID[actualFD.doc] + " score=" + actualFD.score);
         assertEquals(expectedFD.doc, docIDtoID[actualFD.doc]);
         if (testScores) {
-          assertEquals(expectedFD.score, actualFD.score);
+          assertEquals(expectedFD.score, actualFD.score, 0.1);
         } else {
           // TODO: too anal for now
           //assertEquals(Float.NaN, actualFD.score);

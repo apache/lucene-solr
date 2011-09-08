@@ -209,6 +209,11 @@
     <propertyref regex=".*\.compiled$$"/>
   </propertyset>
 
+  <patternset id="lucene.local.src.package.patterns"
+              includes="src/,index.html,*build*.xml,docs/,*.txt,contrib/,lib/,backwards/"
+              excludes="**/pom.xml,**/*.iml,src/site/build/"
+  />
+
   <target name="clean"
     description="Removes contents of build and dist directories">
     <delete dir="${build.dir}"/>

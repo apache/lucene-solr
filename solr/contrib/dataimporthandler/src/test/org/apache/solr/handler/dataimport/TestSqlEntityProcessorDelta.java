@@ -105,23 +105,25 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
       filePath += File.separator;
     filePath += "dataimport.properties";
     File f = new File(filePath);
-    // execute the test only if we are able to set file to read only mode
-    if ((f.exists() || f.createNewFile()) && f.setReadOnly()) {
-      try {
-        List parentRow = new ArrayList();
-        parentRow.add(createMap("id", "1"));
-        MockDataSource.setIterator(FULLIMPORT_QUERY, parentRow.iterator());
 
-        List childRow = new ArrayList();
-        childRow.add(createMap("desc", "hello"));
-        MockDataSource.setIterator("select * from y where y.A='1'", childRow
-            .iterator());
+    try {
+      // execute the test only if we are able to set file to read only mode
+      assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
+      assumeTrue("dataimport.proprties can't be set read only", f.setReadOnly());
 
-        runFullImport(dataConfig_delta);
-        assertQ(req("id:1"), "//*[@numFound='0']");
-      } finally {
-        f.delete();
-      }
+      List parentRow = new ArrayList();
+      parentRow.add(createMap("id", "1"));
+      MockDataSource.setIterator(FULLIMPORT_QUERY, parentRow.iterator());
+      
+      List childRow = new ArrayList();
+      childRow.add(createMap("desc", "hello"));
+      MockDataSource.setIterator("select * from y where y.A='1'",
+                                 childRow.iterator());
+      
+      runFullImport(dataConfig_delta);
+      assertQ(req("id:1"), "//*[@numFound='0']");
+    } finally {
+      f.delete();
     }
   }
 

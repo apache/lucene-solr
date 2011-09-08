@@ -136,9 +136,9 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
     
     char[] lowerCaseTermBuffer=makeLowerCaseCopy(token.buffer());
     
-    for (int i=0;i<token.length()-this.minSubwordSize;++i) {
+    for (int i=0;i<=token.length()-this.minSubwordSize;++i) {
         Token longestMatchToken=null;
-        for (int j=this.minSubwordSize-1;j<this.maxSubwordSize;++j) {
+        for (int j=this.minSubwordSize;j<=this.maxSubwordSize;++j) {
             if(i+j>token.length()) {
                 break;
             }

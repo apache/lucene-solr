@@ -432,13 +432,20 @@ which will be used to configure the chosen Forrest skin.
     </credit>
 
     <credit box-location="alt2">
+      <name>Book: Apache Solr 3.1 Cookbook</name>
+      <url>http://www.packtpub.com/solr-3-1-enterprise-search-server-cookbook/book</url>
+      <image>images/solr_31_cookbook.jpg</image>
+      <width>150</width>
+      <height>180</height>
+    </credit>
+
+    <credit box-location="alt2">
       <name>LucidWorks for Solr Certified Distribution Reference Guide</name>
       <url>http://www.lucidimagination.com/Downloads/LucidWorks-for-Solr/Reference-Guide?sc=AP</url>
       <image>images/lucidworks_reference_guide.png</image>
       <width>150</width>
       <height>185</height>
     </credit>
-
 
     <!-- A credit with @role="pdf" will be used to compose a footer
      for each page in the PDF, using either "name" or "url" or both.

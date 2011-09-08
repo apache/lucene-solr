@@ -3,11 +3,11 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
 import java.util.List;
 
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 public class OpenRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   
@@ -18,10 +18,10 @@ public class OpenRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
     
-    if (node instanceof ParametricRangeQueryNode) {
-      ParametricRangeQueryNode rangeNode = (ParametricRangeQueryNode) node;
-      ParametricQueryNode lowerNode = (ParametricQueryNode) rangeNode.getLowerBound();
-      ParametricQueryNode upperNode = (ParametricQueryNode) rangeNode.getUpperBound();
+    if (node instanceof TermRangeQueryNode) {
+      TermRangeQueryNode rangeNode = (TermRangeQueryNode) node;
+      FieldQueryNode lowerNode = (FieldQueryNode) rangeNode.getLowerBound();
+      FieldQueryNode upperNode = (FieldQueryNode) rangeNode.getUpperBound();
       CharSequence lowerText = lowerNode.getText();
       CharSequence upperText = upperNode.getText();
       

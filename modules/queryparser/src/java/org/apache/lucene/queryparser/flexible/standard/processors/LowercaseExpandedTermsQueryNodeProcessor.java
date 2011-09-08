@@ -21,9 +21,10 @@ import java.util.List;
 
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
@@ -36,7 +37,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
  * {@link ConfigurationKeys#LOWERCASE_EXPANDED_TERMS} is defined in the
  * {@link QueryConfigHandler}. If it is and the expanded terms should be
  * lower-cased, it looks for every {@link WildcardQueryNode},
- * {@link FuzzyQueryNode} and {@link ParametricQueryNode} and lower-case its
+ * {@link FuzzyQueryNode} and children of a {@link RangeQueryNode} and lower-case its
  * term. <br/>
  * 
  * @see ConfigurationKeys#LOWERCASE_EXPANDED_TERMS
@@ -63,8 +64,10 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
-    if (node instanceof WildcardQueryNode || node instanceof FuzzyQueryNode
-        || node instanceof ParametricQueryNode || node instanceof RegexpQueryNode) {
+    if (node instanceof WildcardQueryNode
+        || node instanceof FuzzyQueryNode
+        || (node instanceof FieldQueryNode && node.getParent() instanceof RangeQueryNode)
+        || node instanceof RegexpQueryNode) {
 
       TextableQueryNode txtNode = (TextableQueryNode) node;
       CharSequence text = txtNode.getText();

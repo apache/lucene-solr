@@ -18,6 +18,8 @@ package org.apache.solr.common.util;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,6 +60,8 @@ public class JavaBinCodec {
            */
           END = 15,
 
+          SOLRINPUTDOC = 16,
+
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
           STR = (byte) (1 << 5),
@@ -81,13 +85,18 @@ public class JavaBinCodec {
   }
 
   public void marshal(Object nl, OutputStream os) throws IOException {
-    daos = FastOutputStream.wrap(os);
+    init(FastOutputStream.wrap(os));
     try {
       daos.writeByte(VERSION);
       writeVal(nl);
     } finally {
       daos.flushBuffer();
     }
+  }
+
+  /** expert: sets a new output stream */
+  public void init(FastOutputStream os) {
+    daos = os;
   }
 
   byte version;
@@ -211,6 +220,8 @@ public class JavaBinCodec {
         return readIterator(dis);
       case END:
         return END_OBJ;
+      case SOLRINPUTDOC:
+        return readSolrInputDocument(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -248,6 +259,10 @@ public class JavaBinCodec {
           }
         }
       }
+      return true;
+    }
+    if (val instanceof SolrInputDocument) {
+      writeSolrInputDocument((SolrInputDocument)val);
       return true;
     }
     if (val instanceof Map) {
@@ -339,6 +354,40 @@ public class JavaBinCodec {
     writeArray(l);
     writeArray(docs);
   }
+
+  public SolrInputDocument readSolrInputDocument(FastInputStream dis) throws IOException {
+    int sz = readVInt(dis);
+    float docBoost = (Float)readVal(dis);
+    SolrInputDocument sdoc = new SolrInputDocument();
+    sdoc.setDocumentBoost(docBoost);
+    for (int i = 0; i < sz; i++) {
+      float boost = 1.0f;
+      String fieldName;
+      Object boostOrFieldName = readVal(dis);
+      if (boostOrFieldName instanceof Float) {
+        boost = (Float)boostOrFieldName;
+        fieldName = (String)readVal(dis);
+      } else {
+        fieldName = (String)boostOrFieldName;
+      }
+      Object fieldVal = readVal(dis);
+      sdoc.setField(fieldName, fieldVal, boost);
+    }
+    return sdoc;
+  }
+
+  public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
+    writeTag(SOLRINPUTDOC, sdoc.size());
+    writeFloat(sdoc.getDocumentBoost());
+    for (SolrInputField inputField : sdoc.values()) {
+      if (inputField.getBoost() != 1.0f) {
+        writeFloat(inputField.getBoost());
+      }
+      writeExternString(inputField.getName());
+      writeVal(inputField.getValue());
+    }
+  }
+
 
   public Map<Object,Object> readMap(FastInputStream dis)
           throws IOException {
@@ -539,6 +588,11 @@ public class JavaBinCodec {
     return v;
   }
 
+  public void writeFloat(float val) throws IOException {
+    daos.writeByte(FLOAT);
+    daos.writeFloat(val);
+  }
+
   public boolean writePrimitive(Object val) throws IOException {
     if (val == null) {
       daos.writeByte(NULL);
@@ -553,8 +607,7 @@ public class JavaBinCodec {
       writeLong(((Long) val).longValue());
       return true;
     } else if (val instanceof Float) {
-      daos.writeByte(FLOAT);
-      daos.writeFloat(((Float) val).floatValue());
+      writeFloat(((Float) val).floatValue());
       return true;
     } else if (val instanceof Date) {
       daos.writeByte(DATE);
@@ -579,7 +632,7 @@ public class JavaBinCodec {
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
       return true;
-    }else if (val instanceof ByteBuffer) {
+    } else if (val instanceof ByteBuffer) {
       ByteBuffer buf = (ByteBuffer) val;
       writeByteArray(buf.array(),buf.position(),buf.limit() - buf.position());
       return true;

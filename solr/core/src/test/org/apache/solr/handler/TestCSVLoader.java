@@ -114,6 +114,15 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testCommitWithin() throws Exception {
+    makeFile("id\n100\n101\n102");
+    loadLocal("stream.file",filename,"commitWithin","200");
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='0']");
+    Thread.sleep(1000);
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='3']");
+  }
+
+  @Test
   public void testCommitTrue() throws Exception {
     makeFile("id\n100\n101\n102");
     loadLocal("stream.file",filename,"commit","true");

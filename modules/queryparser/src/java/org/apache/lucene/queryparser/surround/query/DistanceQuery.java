@@ -16,7 +16,6 @@ package org.apache.lucene.queryparser.surround.query;
  * limitations under the License.
  */
 
-
 import java.util.List;
 import java.util.Iterator;
 
@@ -39,12 +38,14 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
     this.ordered = ordered;
   }
 
+
   private int opDistance;
   public int getOpDistance() {return opDistance;}
   
   private boolean ordered;
   public boolean subQueriesOrdered() {return ordered;}
   
+  @Override
   public String distanceSubQueryNotAllowed() {
     Iterator<?> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
@@ -61,31 +62,14 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
     }
     return null; /* subqueries acceptable */
   }
-
   
+  @Override
   public void addSpanQueries(SpanNearClauseFactory sncf) throws IOException {
     Query snq = getSpanNearQuery(sncf.getIndexReader(),
                                   sncf.getFieldName(),
                                   getWeight(),
                                   sncf.getBasicQueryFactory());
-    sncf.addSpanNearQuery(snq);
-  }
-
-  @Override
-  public Query makeLuceneQueryFieldNoBoost(final String fieldName, final BasicQueryFactory qf) {
-    return new Query () {
-      
-      @Override
-      public String toString(String fn) {
-        return getClass().toString() + " " + fieldName + " (" + fn + "?)";
-      }
-      
-      @Override
-      public Query rewrite(IndexReader reader) throws IOException {
-        return getSpanNearQuery(reader, fieldName, getBoost(), qf);
-      }
-      
-    };
+    sncf.addSpanQuery(snq);
   }
   
   public Query getSpanNearQuery(
@@ -93,7 +77,7 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
           String fieldName,
           float boost,
           BasicQueryFactory qf) throws IOException {
-    SpanQuery[] spanNearClauses = new SpanQuery[getNrSubQueries()];
+    SpanQuery[] spanClauses = new SpanQuery[getNrSubQueries()];
     Iterator<?> sqi = getSubQueriesIterator();
     int qi = 0;
     while (sqi.hasNext()) {
@@ -108,14 +92,18 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
         return SrndQuery.theEmptyLcnQuery;
       }
       
-      spanNearClauses[qi] = sncf.makeSpanNearClause();
-
+      spanClauses[qi] = sncf.makeSpanClause();
       qi++;
     }
-    
-    SpanNearQuery r = new SpanNearQuery(spanNearClauses, getOpDistance() - 1, subQueriesOrdered());
+
+    SpanNearQuery r = new SpanNearQuery(spanClauses, getOpDistance() - 1, subQueriesOrdered());
     r.setBoost(boost);
     return r;
+  }
+
+  @Override
+  public Query makeLuceneQueryFieldNoBoost(final String fieldName, final BasicQueryFactory qf) {
+    return new DistanceRewriteQuery(this, fieldName, qf);
   }
 }
 
