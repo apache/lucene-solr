@@ -68,7 +68,7 @@
 
             <section id="facet"><title>facet</title>
                 <p>Provides faceted indexing and search capabilities</p>
-                <p>See <a href="../api/contrib-facet/index.html">grouping javadoc</a></p>
+                <p>See <a href="../api/contrib-facet/index.html">facet javadoc</a></p>
             </section>
             
             <section id="grouping"><title>grouping</title>
