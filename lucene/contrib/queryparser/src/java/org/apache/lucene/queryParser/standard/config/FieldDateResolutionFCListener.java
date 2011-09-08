@@ -57,7 +57,10 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
       dateRes = this.config.get(ConfigurationKeys.DATE_RESOLUTION);
     }
 
-    fieldConfig.set(ConfigurationKeys.DATE_RESOLUTION, dateRes);
+    fieldConfig.addAttribute(DateResolutionAttribute.class).setDateResolution(dateRes);
+    
+    // uncomment code below when deprecated query parser attributes are removed
+    // fieldConfig.set(ConfigurationKeys.DATE_RESOLUTION, dateRes);
 
   }
 

@@ -72,9 +72,9 @@ public class DefaultOperatorAttributeImpl extends AttributeImpl
     Operator oldOperator;
     
     if (newOperator == org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.AND) {
-      oldOperator = Operator.OR;
-    } else {
       oldOperator = Operator.AND;
+    } else {
+      oldOperator = Operator.OR;
     }
     
     return oldOperator;
