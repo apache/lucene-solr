@@ -62,11 +62,11 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = loader.readDoc( parser );
     
     // Read boosts
-    assertEquals( 5.5f, doc.getDocumentBoost() );
-    assertEquals( 1.0f, doc.getField( "name" ).getBoost() );
-    assertEquals( 2.2f, doc.getField( "id" ).getBoost() );
+    assertEquals( 5.5f, doc.getDocumentBoost(), 0.1);
+    assertEquals( 1.0f, doc.getField( "name" ).getBoost(), 0.1);
+    assertEquals( 2.2f, doc.getField( "id" ).getBoost(), 0.1);
     // Boost is the product of each value
-    assertEquals( (3*4*5.0f), doc.getField( "cat" ).getBoost() );
+    assertEquals( (3*4*5.0f), doc.getField( "cat" ).getBoost(), 0.1);
     
     // Read values
     assertEquals( "12345", doc.getField( "id" ).getValue() );

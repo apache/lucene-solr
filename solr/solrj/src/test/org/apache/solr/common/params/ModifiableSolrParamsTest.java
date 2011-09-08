@@ -45,7 +45,7 @@ public class ModifiableSolrParamsTest extends LuceneTestCase
     values[0] = null;
     modifiable.add(key, values);
     String[] result = modifiable.getParams(key);
-    assertEquals("params", values, result);
+    assertArrayEquals("params", values, result);
   }
 
 
@@ -57,7 +57,7 @@ public class ModifiableSolrParamsTest extends LuceneTestCase
     String[] universe = new String[] { "Universe" };
     String[] helloWorldUniverse = new String[] { "Hello", "World", "Universe" };
     modifiable.add(key, helloWorld);
-    assertEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
+    assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
     modifiable.add(key, universe);
     String[] result = modifiable.getParams(key);
@@ -73,7 +73,7 @@ public class ModifiableSolrParamsTest extends LuceneTestCase
     String[] universe = new String[] { null };
     String[] helloWorldUniverse = new String[] { "Hello", "World", null };
     modifiable.add(key, helloWorld);
-    assertEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
+    assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
     modifiable.add(key, universe);
     String[] result = modifiable.getParams(key);
@@ -89,7 +89,7 @@ public class ModifiableSolrParamsTest extends LuceneTestCase
     String[] universe = new String[] { "Universe" };
     String[] helloWorldUniverse = new String[] { "Universe" };
     modifiable.add(key, helloWorld);
-    assertEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
+    assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
     modifiable.add(key, universe);
     String[] result = modifiable.getParams(key);
@@ -105,7 +105,7 @@ public class ModifiableSolrParamsTest extends LuceneTestCase
     String[] universe = new String[] { "Universe", null };
     String[] helloWorldUniverse = new String[] { "Hello", "World", "Universe", null };
     modifiable.add(key, helloWorld);
-    assertEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
+    assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
     modifiable.add(key, universe);
     String[] result = modifiable.getParams(key);

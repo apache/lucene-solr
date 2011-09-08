@@ -94,7 +94,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     SolrInputDocument d = add.solrDoc;
     SolrInputField f = d.getField( "boosted" );
-    assertEquals(6.7f, f.getBoost());
+    assertEquals(6.7f, f.getBoost(), 0.1);
     assertEquals(2, f.getValues().size());
 
     // 
@@ -102,7 +102,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     d = add.solrDoc;
     f = d.getField( "f1" );
     assertEquals(2, f.getValues().size());
-    assertEquals(3.45f, d.getDocumentBoost());
+    assertEquals(3.45f, d.getDocumentBoost(), 0.001);
     assertEquals(false, add.overwrite);
 
     assertEquals(0, d.getField("f2").getValueCount());

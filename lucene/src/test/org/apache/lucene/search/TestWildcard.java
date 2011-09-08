@@ -76,25 +76,25 @@ public class TestWildcard
       wq.setBoost(0.1F);
       Query q = searcher.rewrite(wq);
       assertTrue(q instanceof TermQuery);
-      assertEquals(q.getBoost(), wq.getBoost());
+      assertEquals(q.getBoost(), wq.getBoost(), 0);
       
       wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
       wq.setBoost(0.2F);
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
-      assertEquals(q.getBoost(), wq.getBoost());
+      assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       
       wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
       wq.setBoost(0.3F);
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
-      assertEquals(q.getBoost(), wq.getBoost());
+      assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       
       wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
       wq.setBoost(0.4F);
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
-      assertEquals(q.getBoost(), wq.getBoost());
+      assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       searcher.close();
       indexStore.close();
   }

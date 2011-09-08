@@ -154,12 +154,12 @@ public class TestCartesian extends LuceneTestCase {
       System.out.println("testDistances");
       System.out.println("miles:" + miles);
     }
-    assertEquals(2288.82495932794, miles); 
+    assertEquals(2288.82495932794, miles, 0.001);
     LatLng p3 = new FloatLatLng( 41.6032207, -73.087749);
     LatLng p4 = new FloatLatLng( 55.0, 4.0 );
     miles = p3.arcDistance( p4, DistanceUnits.MILES );
     if (VERBOSE) System.out.println("miles:" + miles);
-    assertEquals(3474.331719997617, miles); 
+    assertEquals(3474.331719997617, miles, 0.001);
   }
 
   /*public void testCartesianPolyFilterBuilder() throws Exception {
