@@ -22,6 +22,10 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 /**
  * Implements the Poisson approximation for the binomial model for DFR.
  * @lucene.experimental
+ * <p>
+ * WARNING: for terms that do not meet the expected random distribution
+ * (e.g. stopwords), this model may give poor performance, such as
+ * abnormally high scores for low tf values.
  */
 public class BasicModelP extends BasicModel {
   /** {@code log2(Math.E)}, precomputed. */
@@ -29,8 +33,6 @@ public class BasicModelP extends BasicModel {
   
   @Override
   public final float score(BasicStats stats, float tfn) {
-    // nocommit: we need a better fix here when F >= N: using lambda = F / (N + F) still 
-    // suffers with problems if you use AfterEffectB, but PL2 seems ok (http://dl.acm.org/citation.cfm?id=1672962)
     float lambda = (float)stats.getTotalTermFreq() / stats.getNumberOfDocuments();
     return (float)(tfn * log2(tfn / lambda)
         + (lambda + 1 / (12 * tfn) - tfn) * LOG2_E

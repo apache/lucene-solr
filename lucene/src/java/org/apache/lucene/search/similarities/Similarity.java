@@ -146,7 +146,7 @@ public abstract class Similarity {
    * <p>
    * Term frequencies are integers (the term or phrase's tf)
    */
-  public abstract class ExactDocScorer {
+  public static abstract class ExactDocScorer {
     /**
      * Score a single document
      * @param doc document id
@@ -175,7 +175,7 @@ public abstract class Similarity {
    * <p>
    * Term frequencies are floating point values.
    */
-  public abstract class SloppyDocScorer {
+  public static abstract class SloppyDocScorer {
     /**
      * Score a single document
      * @param doc document id

@@ -189,7 +189,7 @@ public class TestSimilarityBase extends LuceneTestCase {
         new OrdTermState(), 0, stats.getDocFreq(), stats.getTotalTermFreq());
     
     for (SimilarityBase sim : sims) {
-      BasicStats realStats = sim.computeStats(new SpoofIndexSearcher(stats),
+      BasicStats realStats = (BasicStats) sim.computeStats(new SpoofIndexSearcher(stats),
           "spoof", stats.getTotalBoost(), tc);
       float score = sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
@@ -290,7 +290,8 @@ public class TestSimilarityBase extends LuceneTestCase {
     BasicStats stats = createStats();
     stats.setTotalTermFreq(stats.getNumberOfFieldTokens());
     unitTestCore(stats, DOC_LEN, DOC_LEN);
-    // nocommit docLen > avglength
+    stats.setAvgFieldLength(DOC_LEN + 10);
+    unitTestCore(stats, DOC_LEN, DOC_LEN);
   }
 
   /**
@@ -447,32 +448,32 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   
   /** Correctness test for the GL1 DFR model. */
-  @Ignore("nocommit")
   public void testGL1() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
         new BasicModelG(), new AfterEffectL(), new NormalizationH1());
-    correctnessTestCore(sim, 1.22733118352f);
+    correctnessTestCore(sim, 1.6463143825531006f);
   }
   
   /** Correctness test for the BEB1 DFR model. */
-  @Ignore("nocommit")
   public void testBEB1() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
         new BasicModelBE(), new AfterEffectB(), new NormalizationH1());
     float tfn = FREQ * AVG_FIELD_LENGTH / DOC_LEN;  // 8.75
     float b = (TOTAL_TERM_FREQ + 1) / (DOC_FREQ * (tfn + 1));  // 0.728205128205
-    float n1 = NUMBER_OF_DOCUMENTS + 1 + TOTAL_TERM_FREQ - 1;        // 170
-    float m1 = NUMBER_OF_DOCUMENTS + 1 + TOTAL_TERM_FREQ - tfn - 2;  // 160.25
-    float n2 = TOTAL_TERM_FREQ;                                      // 70
-    float m2 = TOTAL_TERM_FREQ - tfn;                                // 61.25
-    float be = (float)(-SimilarityBase.log2(NUMBER_OF_DOCUMENTS + 1 - 1) -
-               SimilarityBase.log2(Math.E) +                   // -8.08655123066
+    float f = TOTAL_TERM_FREQ + tfn;
+    float n = f + NUMBER_OF_DOCUMENTS;
+    float n1 = n + f - 1;        // 256.5
+    float m1 = n + f - tfn - 2;  // 246.75
+    float n2 = f;                                      // 78.75
+    float m2 = f - tfn;                                // 70.0
+    float be = (float)(-SimilarityBase.log2(n - 1) -
+               SimilarityBase.log2(Math.E) +                   // -8.916400790508378
                ((m1 + 0.5f) * SimilarityBase.log2(n1 / m1) +
-                (n1 - m1) * SimilarityBase.log2(n1)) -         // 85.9391317425
+                (n1 - m1) * SimilarityBase.log2(n1)) -         // 91.85089272283668
                ((m2 + 0.5f) * SimilarityBase.log2(n2 / m2) +
-                (n2 - m2) * SimilarityBase.log2(n2)));         // 65.5270599612
-               // 12.3255205506
-    float gold = b * be;                                       // 8.97550727277
+                (n2 - m2) * SimilarityBase.log2(n2)));         // 67.09778276257171
+               // 15.836709
+    float gold = b * be;                                       // 11.532373
     correctnessTestCore(sim, gold);
   }
 
@@ -527,7 +528,7 @@ public class TestSimilarityBase extends LuceneTestCase {
         searcher.getIndexReader().getTopReaderContext(),
         new OrdTermState(), 0, stats.getDocFreq(), stats.getTotalTermFreq());
     
-    BasicStats realStats = sim.computeStats(
+    BasicStats realStats = (BasicStats) sim.computeStats(
         searcher, "spoof", stats.getTotalBoost(), tc);
     float score = sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(

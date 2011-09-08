@@ -20,7 +20,9 @@ package org.apache.lucene.search.similarities;
 import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
- * Geometric as limiting form of the Bose-Einstein model.
+ * Geometric as limiting form of the Bose-Einstein model.  The formula used in Lucene differs
+ * slightly from the one in the original paper: {@code F} is increased by {@code tfn}
+ * and {@code N} is increased by {@code F}.
  * @lucene.experimental
  */
 public class BasicModelG extends BasicModel {

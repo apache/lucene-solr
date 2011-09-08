@@ -38,6 +38,11 @@ import org.apache.lucene.util.TermContext;
  * inasmuch as SimilarityBase already provides a basic explanation of the score
  * and the term frequency. However, implementers of a subclass are encouraged to
  * include as much detail about the scoring method as possible.
+ * <p>
+ * Note: multi-word queries such as phrase queries are scored in a different way
+ * than Lucene's default ranking algorithm: whereas it "fakes" an IDF value for
+ * the phrase as a whole (since it does not know it), this class instead scores
+ * phrases as a summation of the individual term scores.
  * @lucene.experimental
  */
 public abstract class SimilarityBase extends Similarity {
@@ -65,33 +70,31 @@ public abstract class SimilarityBase extends Similarity {
     return discountOverlaps;
   }
   
-  /**
-   * Calls {@link #fillBasicStats(BasicStats, IndexSearcher, String, TermContext...)}.
-   * Subclasses that override this method may invoke {@code fillStats} with any
-   * subclass of {@code BasicStats}.
-   */
   @Override
-  public BasicStats computeStats(IndexSearcher searcher, String fieldName,
+  public final Stats computeStats(IndexSearcher searcher, String fieldName,
       float queryBoost, TermContext... termContexts) throws IOException {
-    BasicStats stats = new BasicStats(queryBoost);
-    fillBasicStats(stats, searcher, fieldName, termContexts);
-    return stats;
+    BasicStats stats[] = new BasicStats[termContexts.length];
+    for (int i = 0; i < termContexts.length; i++) {
+      stats[i] = newStats(queryBoost);
+      fillBasicStats(stats[i], searcher, fieldName, termContexts[i]);
+    }
+    return stats.length == 1 ? stats[0] : new MultiSimilarity.MultiStats(stats);
   }
   
-  /** Fills all member fields defined in {@code BasicStats} in {@code stats}. */
-  protected final void fillBasicStats(BasicStats stats, IndexSearcher searcher,
-      String fieldName, TermContext... termContexts) throws IOException {
+  /** Factory method to return a custom stats object */
+  protected BasicStats newStats(float queryBoost) {
+    return new BasicStats(queryBoost);
+  }
+  
+  /** Fills all member fields defined in {@code BasicStats} in {@code stats}. 
+   *  Subclasses can override this method to fill additional stats. */
+  protected void fillBasicStats(BasicStats stats, IndexSearcher searcher,
+      String fieldName, TermContext termContext) throws IOException {
     IndexReader reader = searcher.getIndexReader();
     int numberOfDocuments = reader.maxDoc();
     
-    // nocommit Take the minimum of term frequencies for phrases. This is not
-    // correct though, we'll need something like a scorePhrase(MultiStats ...)
-    int docFreq = Integer.MAX_VALUE;
-    long totalTermFreq = Integer.MAX_VALUE;
-    for (final TermContext context : termContexts) {
-      docFreq = Math.min(docFreq, context.docFreq());
-      totalTermFreq = Math.min(totalTermFreq, context.totalTermFreq());
-    }
+    int docFreq = termContext.docFreq();
+    long totalTermFreq = termContext.totalTermFreq();
 
     // codec does not supply totalTermFreq: substitute docFreq
     if (totalTermFreq == -1) {
@@ -121,6 +124,7 @@ public abstract class SimilarityBase extends Similarity {
       }
     }
  
+    // TODO: add sumDocFreq for field (numberOfFieldPostings)
     stats.setNumberOfDocuments(numberOfDocuments);
     stats.setNumberOfFieldTokens(numberOfFieldTokens);
     stats.setAvgFieldLength(avgFieldLength);
@@ -185,15 +189,39 @@ public abstract class SimilarityBase extends Similarity {
   @Override
   public ExactDocScorer exactDocScorer(Stats stats, String fieldName,
       AtomicReaderContext context) throws IOException {
-    return new BasicExactDocScorer((BasicStats) stats,
-                                  context.reader.norms(fieldName));
+    byte norms[] = context.reader.norms(fieldName);
+    
+    if (stats instanceof MultiSimilarity.MultiStats) {
+      // a multi term query (e.g. phrase). return the summation, 
+      // scoring almost as if it were boolean query
+      Stats subStats[] = ((MultiSimilarity.MultiStats) stats).subStats;
+      ExactDocScorer subScorers[] = new ExactDocScorer[subStats.length];
+      for (int i = 0; i < subScorers.length; i++) {
+        subScorers[i] = new BasicExactDocScorer((BasicStats)subStats[i], norms);
+      }
+      return new MultiSimilarity.MultiExactDocScorer(subScorers);
+    } else {
+      return new BasicExactDocScorer((BasicStats) stats, norms);
+    }
   }
   
   @Override
   public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName,
       AtomicReaderContext context) throws IOException {
-    return new BasicSloppyDocScorer((BasicStats) stats,
-                                   context.reader.norms(fieldName));
+    byte norms[] = context.reader.norms(fieldName);
+    
+    if (stats instanceof MultiSimilarity.MultiStats) {
+      // a multi term query (e.g. phrase). return the summation, 
+      // scoring almost as if it were boolean query
+      Stats subStats[] = ((MultiSimilarity.MultiStats) stats).subStats;
+      SloppyDocScorer subScorers[] = new SloppyDocScorer[subStats.length];
+      for (int i = 0; i < subScorers.length; i++) {
+        subScorers[i] = new BasicSloppyDocScorer((BasicStats)subStats[i], norms);
+      }
+      return new MultiSimilarity.MultiSloppyDocScorer(subScorers);
+    } else {
+      return new BasicSloppyDocScorer((BasicStats) stats, norms);
+    }
   }
   
   /**
@@ -201,7 +229,7 @@ public abstract class SimilarityBase extends Similarity {
    * and preferably the values of parameters (if any) as well.
    */
   @Override
-  public abstract String toString();  // nocommit: to Similarity?
+  public abstract String toString();
 
   // ------------------------------ Norm handling ------------------------------
   

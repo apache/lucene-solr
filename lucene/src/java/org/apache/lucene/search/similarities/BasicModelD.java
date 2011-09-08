@@ -25,6 +25,10 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
  * original paper: to avoid underflow for small values of {@code N} and
  * {@code F}, {@code N} is increased by {@code 1} and
  * {@code F} is always increased by {@code tfn}.
+ * <p>
+ * WARNING: for terms that do not meet the expected random distribution
+ * (e.g. stopwords), this model may give poor performance, such as
+ * abnormally high scores for low tf values.
  * @lucene.experimental
  */
 public class BasicModelD extends BasicModel {
@@ -33,8 +37,6 @@ public class BasicModelD extends BasicModel {
     // we have to ensure phi is always < 1 for tiny TTF values, otherwise nphi can go negative,
     // resulting in NaN. cleanest way is to unconditionally always add tfn to totalTermFreq
     // to create a 'normalized' F.
-    // nocommit: we need a better fix here when F >= N: using lambda = F / (N + F) still 
-    // suffers with problems if you use AfterEffectB, but DL2 seems ok (http://dl.acm.org/citation.cfm?id=1672962
     double F = stats.getTotalTermFreq() + tfn;
     double phi = (double)tfn / F;
     double nphi = 1 - phi;

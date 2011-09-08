@@ -21,9 +21,8 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Limiting form of the Bose-Einstein model. The formula used in Lucene differs
- * slightly from the one in the original paper: to avoid underflow for small
- * values of {@code N} and {@code F}, {@code N} is increased by {@code 1} and
- * {@code F} is increased by {@code tfn}. 
+ * slightly from the one in the original paper: {@code F} is increased by {@code tfn}
+ * and {@code N} is increased by {@code F} 
  * @lucene.experimental
  */
 public class BasicModelBE extends BasicModel {

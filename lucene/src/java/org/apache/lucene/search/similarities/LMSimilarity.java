@@ -52,17 +52,20 @@ public abstract class LMSimilarity extends SimilarityBase {
     this(new DefaultCollectionModel());
   }
   
+  @Override
+  protected BasicStats newStats(float queryBoost) {
+    return new LMStats(queryBoost);
+  }
+
   /**
    * Computes the collection probability of the current term in addition to the
    * usual statistics.
    */
   @Override
-  public BasicStats computeStats(IndexSearcher searcher, String fieldName,
-      float queryBoost, TermContext... termContexts) throws IOException {
-    LMStats stats = new LMStats(queryBoost);
-    fillBasicStats(stats, searcher, fieldName, termContexts);
-    stats.setCollectionProbability(collectionModel.computeProbability(stats));
-    return stats;
+  protected void fillBasicStats(BasicStats stats, IndexSearcher searcher, String fieldName, TermContext termContext) throws IOException {
+    super.fillBasicStats(stats, searcher, fieldName, termContext);
+    LMStats lmStats = (LMStats) stats;
+    lmStats.setCollectionProbability(collectionModel.computeProbability(stats));
   }
 
   @Override
