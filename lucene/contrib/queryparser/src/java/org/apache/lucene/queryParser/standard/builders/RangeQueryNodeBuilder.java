@@ -28,7 +28,10 @@ import org.apache.lucene.search.TermRangeQuery;
 
 /**
  * Builds a {@link TermRangeQuery} object from a {@link RangeQueryNode} object.
+ * 
+ * @deprecated this builder will be removed in future together with {@link RangeQueryNode}
  */
+@Deprecated
 public class RangeQueryNodeBuilder implements StandardQueryBuilder {
 
   public RangeQueryNodeBuilder() {
