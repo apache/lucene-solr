@@ -886,87 +886,99 @@ public class CheckIndex {
         }
         
         final Terms fieldTerms = fields.terms(field);
-        if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
-          final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
-          assert stats != null;
-          if (status.blockTreeStats == null) {
-            status.blockTreeStats = new HashMap<String,BlockTreeTermsReader.Stats>();
+        if (fieldTerms == null) {
+          // Unusual: the FieldsEnum returned a field but
+          // the Terms for that field is null; this should
+          // only happen if it's a ghost field (field with
+          // no terms, eg there used to be terms but all
+          // docs got deleted and then merged away):
+          // make sure TermsEnum is empty:
+          if (fieldsEnum.terms().next() != null) {
+            throw new RuntimeException("Fields.terms(field=" + field + ") returned null yet the field appears to have terms");
           }
-          status.blockTreeStats.put(field, stats);
-        }
+        } else {
+          if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
+            final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
+            assert stats != null;
+            if (status.blockTreeStats == null) {
+              status.blockTreeStats = new HashMap<String,BlockTreeTermsReader.Stats>();
+            }
+            status.blockTreeStats.put(field, stats);
+          }
 
-        if (sumTotalTermFreq != 0) {
-          final long v = fields.terms(field).getSumTotalTermFreq();
-          if (v != -1 && sumTotalTermFreq != v) {
-            throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+          if (sumTotalTermFreq != 0) {
+            final long v = fields.terms(field).getSumTotalTermFreq();
+            if (v != -1 && sumTotalTermFreq != v) {
+              throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+            }
           }
-        }
         
-        if (sumDocFreq != 0) {
-          final long v = fields.terms(field).getSumDocFreq();
-          if (v != -1 && sumDocFreq != v) {
-            throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
-          }
-        }
-
-        // Test seek to last term:
-        if (lastTerm != null) {
-          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) { 
-            throw new RuntimeException("seek to last term " + lastTerm + " failed");
+          if (sumDocFreq != 0) {
+            final long v = fields.terms(field).getSumDocFreq();
+            if (v != -1 && sumDocFreq != v) {
+              throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
+            }
           }
 
-          is.search(new TermQuery(new Term(field, lastTerm)), 1);
-        }
+          // Test seek to last term:
+          if (lastTerm != null) {
+            if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) { 
+              throw new RuntimeException("seek to last term " + lastTerm + " failed");
+            }
 
-        // Test seeking by ord
-        if (hasOrd && status.termCount-termCountStart > 0) {
-          long termCount;
-          try {
-            termCount = fields.terms(field).getUniqueTermCount();
-          } catch (UnsupportedOperationException uoe) {
-            termCount = -1;
+            is.search(new TermQuery(new Term(field, lastTerm)), 1);
           }
 
-          if (termCount != -1 && termCount != status.termCount - termCountStart) {
-            throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
-          }
+          // Test seeking by ord
+          if (hasOrd && status.termCount-termCountStart > 0) {
+            long termCount;
+            try {
+              termCount = fields.terms(field).getUniqueTermCount();
+            } catch (UnsupportedOperationException uoe) {
+              termCount = -1;
+            }
 
-          int seekCount = (int) Math.min(10000L, termCount);
-          if (seekCount > 0) {
-            BytesRef[] seekTerms = new BytesRef[seekCount];
+            if (termCount != -1 && termCount != status.termCount - termCountStart) {
+              throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
+            }
+
+            int seekCount = (int) Math.min(10000L, termCount);
+            if (seekCount > 0) {
+              BytesRef[] seekTerms = new BytesRef[seekCount];
             
-            // Seek by ord
-            for(int i=seekCount-1;i>=0;i--) {
-              long ord = i*(termCount/seekCount);
-              terms.seekExact(ord);
-              seekTerms[i] = new BytesRef(terms.term());
-            }
-
-            // Seek by term
-            long totDocCount = 0;
-            for(int i=seekCount-1;i>=0;i--) {
-              if (terms.seekCeil(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
-                throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
+              // Seek by ord
+              for(int i=seekCount-1;i>=0;i--) {
+                long ord = i*(termCount/seekCount);
+                terms.seekExact(ord);
+                seekTerms[i] = new BytesRef(terms.term());
               }
+
+              // Seek by term
+              long totDocCount = 0;
+              for(int i=seekCount-1;i>=0;i--) {
+                if (terms.seekCeil(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
+                  throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
+                }
               
-              docs = terms.docs(liveDocs, docs);
-              if (docs == null) {
-                throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
+                docs = terms.docs(liveDocs, docs);
+                if (docs == null) {
+                  throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
+                }
+
+                while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                  totDocCount++;
+                }
               }
 
-              while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
-                totDocCount++;
+              // TermQuery
+              long totDocCount2 = 0;
+              for(int i=0;i<seekCount;i++) {
+                totDocCount2 += is.search(new TermQuery(new Term(field, seekTerms[i])), 1).totalHits;
               }
-            }
 
-            // TermQuery
-            long totDocCount2 = 0;
-            for(int i=0;i<seekCount;i++) {
-              totDocCount2 += is.search(new TermQuery(new Term(field, seekTerms[i])), 1).totalHits;
-            }
-
-            if (totDocCount != totDocCount2) {
-              throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
+              if (totDocCount != totDocCount2) {
+                throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
+              }
             }
           }
         }
