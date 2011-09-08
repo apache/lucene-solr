@@ -590,6 +590,9 @@ Bug fixes
   easily corrupt the index.  (Mark Miller, Robert Muir, Mike
   McCandless)
   
+* LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 
+  for queries with many repeats (Doron Cohen)
+  
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 
