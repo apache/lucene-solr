@@ -108,6 +108,9 @@ final class IndexFileDeleter {
    *  infoStream != null */
   public static boolean VERBOSE_REF_COUNTS = false;
 
+  // Used only for assert
+  private final IndexWriter writer;
+
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
     if (infoStream != null) {
@@ -121,6 +124,11 @@ final class IndexFileDeleter {
 
   private final FilenameFilter indexFilenameFilter;
 
+  // called only from assert
+  private boolean locked() {
+    return writer == null || Thread.holdsLock(writer);
+  }
+
   /**
    * Initialize the deleter: find all previous commits in
    * the Directory, incref the files they reference, call
@@ -129,8 +137,10 @@ final class IndexFileDeleter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos, PrintStream infoStream, CodecProvider codecs) throws CorruptIndexException, IOException {
+  public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
+                          PrintStream infoStream, CodecProvider codecs, IndexWriter writer) throws CorruptIndexException, IOException {
     this.infoStream = infoStream;
+    this.writer = writer;
 
     final String currentSegmentsFile = segmentInfos.getCurrentSegmentFileName();
 
@@ -347,6 +357,8 @@ final class IndexFileDeleter {
    * that segment.
    */
   public void refresh(String segmentName) throws IOException {
+    assert locked();
+
     String[] files = directory.listAll();
     String segmentPrefix1;
     String segmentPrefix2;
@@ -377,12 +389,14 @@ final class IndexFileDeleter {
     // Set to null so that we regenerate the list of pending
     // files; else we can accumulate same file more than
     // once
+    assert locked();
     deletable = null;
     refresh(null);
   }
 
   public void close() throws IOException {
     // DecRef old files from the last checkpoint, if any:
+    assert locked();
     int size = lastFiles.size();
     if (size > 0) {
       for(int i=0;i<size;i++) {
@@ -404,6 +418,7 @@ final class IndexFileDeleter {
    * unused commits again.
    */
   void revisitPolicy() throws IOException {
+    assert locked();
     if (infoStream != null) {
       message("now revisitPolicy");
     }
@@ -415,6 +430,7 @@ final class IndexFileDeleter {
   }
 
   public void deletePendingFiles() throws IOException {
+    assert locked();
     if (deletable != null) {
       List<String> oldDeletable = deletable;
       deletable = null;
@@ -449,6 +465,7 @@ final class IndexFileDeleter {
    * removed, we decref their files as well.
    */
   public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
+    assert locked();
 
     if (infoStream != null) {
       message("now checkpoint \"" + segmentInfos.toString(directory) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
@@ -483,6 +500,7 @@ final class IndexFileDeleter {
   }
 
   void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
+    assert locked();
     // If this is a commit point, also incRef the
     // segments_N file:
     for( final String fileName: segmentInfos.files(directory, isCommit) ) {
@@ -491,12 +509,14 @@ final class IndexFileDeleter {
   }
 
   void incRef(Collection<String> files) throws IOException {
+    assert locked();
     for(final String file : files) {
       incRef(file);
     }
   }
 
   void incRef(String fileName) throws IOException {
+    assert locked();
     RefCount rc = getRefCount(fileName);
     if (infoStream != null && VERBOSE_REF_COUNTS) {
       message("  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
@@ -505,12 +525,14 @@ final class IndexFileDeleter {
   }
 
   void decRef(Collection<String> files) throws IOException {
+    assert locked();
     for(final String file : files) {
       decRef(file);
     }
   }
 
   void decRef(String fileName) throws IOException {
+    assert locked();
     RefCount rc = getRefCount(fileName);
     if (infoStream != null && VERBOSE_REF_COUNTS) {
       message("  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
@@ -524,12 +546,14 @@ final class IndexFileDeleter {
   }
 
   void decRef(SegmentInfos segmentInfos) throws IOException {
+    assert locked();
     for (final String file : segmentInfos.files(directory, false)) {
       decRef(file);
     }
   }
 
   public boolean exists(String fileName) {
+    assert locked();
     if (!refCounts.containsKey(fileName)) {
       return false;
     } else {
@@ -538,6 +562,7 @@ final class IndexFileDeleter {
   }
 
   private RefCount getRefCount(String fileName) {
+    assert locked();
     RefCount rc;
     if (!refCounts.containsKey(fileName)) {
       rc = new RefCount(fileName);
@@ -549,6 +574,7 @@ final class IndexFileDeleter {
   }
 
   void deleteFiles(List<String> files) throws IOException {
+    assert locked();
     for(final String file: files) {
       deleteFile(file);
     }
@@ -557,6 +583,7 @@ final class IndexFileDeleter {
   /** Deletes the specified files, but only if they are new
    *  (have not yet been incref'd). */
   void deleteNewFiles(Collection<String> files) throws IOException {
+    assert locked();
     for (final String fileName: files) {
       if (!refCounts.containsKey(fileName)) {
         if (infoStream != null) {
@@ -569,6 +596,7 @@ final class IndexFileDeleter {
 
   void deleteFile(String fileName)
        throws IOException {
+    assert locked();
     try {
       if (infoStream != null) {
         message("delete \"" + fileName + "\"");

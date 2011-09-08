@@ -1117,6 +1117,7 @@ public class TestIndexWriter extends LuceneTestCase {
             IndexWriterConfig conf = newIndexWriterConfig(
                                                           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2);
             w = new IndexWriter(dir, conf);
+            w.setInfoStream(VERBOSE ? System.out : null);
 
             Document doc = new Document();
             doc.add(newField("field", "some text contents", storedTextType));
