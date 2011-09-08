@@ -103,6 +103,10 @@ New Features
    added support for simple numeric queries, such as <age:4>, in contrib
    query parser (Vinicius Barros via Uwe Schindler)
 
+ * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,
+   SimpleBoundaryScanner and BreakIteratorBoundaryScanner, so that FVH's FragmentsBuilder
+   can find "natural" boundary to make snippets. (Robert Muir, Koji Sekiguchi)
+
 Changes in runtime behavior:
 
  * LUCENE-1768: StandardQueryConfigHandler now uses NumericFieldConfigListener
