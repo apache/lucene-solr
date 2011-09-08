@@ -194,11 +194,17 @@ public class PayloadTermQuery extends SpanTermQuery {
           payloadExpl.setValue(scorer.getPayloadScore());
           // combined
           ComplexExplanation result = new ComplexExplanation();
-          result.addDetail(expl);
-          result.addDetail(payloadExpl);
-          result.setValue(expl.getValue() * payloadExpl.getValue());
-          result.setDescription("btq, product of:");
-          result.setMatch(expl.getValue() == 0 ? Boolean.FALSE : Boolean.TRUE); // LUCENE-1303
+          if (includeSpanScore) {
+            result.addDetail(expl);
+            result.addDetail(payloadExpl);
+            result.setValue(expl.getValue() * payloadExpl.getValue());
+            result.setDescription("btq, product of:");
+          } else {
+            result.addDetail(payloadExpl);
+            result.setValue(payloadExpl.getValue());
+            result.setDescription("btq(includeSpanScore=false), result of:");
+          }
+          result.setMatch(true); // LUCENE-1303
           return result;
         }
       }
