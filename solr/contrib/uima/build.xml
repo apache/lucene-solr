@@ -25,20 +25,4 @@
 
   <import file="../contrib-build.xml"/>
 
-  <dirname file="${ant.file}" property="antfile.dir"/>
-
-  <target name="dist-maven" depends="contrib-build.dist-maven">
-    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-alchemy-pom.xml.template"
-                                 jar.file="${antfile.dir}/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar" />
-
-    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-calais-pom.xml.template"
-                                 jar.file="${antfile.dir}/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar" />
-
-    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-tagger-pom.xml.template"
-                                 jar.file="${antfile.dir}/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar" />
-
-    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-wst-pom.xml.template"
-                                 jar.file="${antfile.dir}/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar" />
-
-  </target>
 </project>
