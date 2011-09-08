@@ -51,7 +51,8 @@ public final class MultiFields extends Fields {
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
-   *  fly.  This method will not return null.
+   *  fly.  This method will return null if the reader 
+   *  has no postings.
    *
    *  <p><b>NOTE</b>: this is a slow way to access postings.
    *  It's better to get the sub-readers (using {@link
