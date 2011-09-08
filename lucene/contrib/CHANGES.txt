@@ -83,6 +83,11 @@ New Features
    SimpleBoundaryScanner and BreakIteratorBoundaryScanner, so that FVH's FragmentsBuilder
    can find "natural" boundary to make snippets. (Robert Muir, Koji Sekiguchi)
 
+Bug Fixes
+
+ * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the
+   end compound word. (Njal Karevoll via Robert Muir)
+
 ======================= Lucene 3.4.0 ================
 
 New Features
