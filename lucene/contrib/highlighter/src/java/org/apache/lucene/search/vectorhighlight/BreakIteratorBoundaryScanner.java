@@ -21,7 +21,8 @@ import java.text.BreakIterator;
 
 /**
  * A {@link BoundaryScanner} implementation that uses {@link BreakIterator} to find
- * boundaries in the text. Boundary {@link Type} can be specified ({@link Type#SENTENCE} is the default).
+ * boundaries in the text.
+ * @see BreakIterator
  */
 public class BreakIteratorBoundaryScanner implements BoundaryScanner {
   
