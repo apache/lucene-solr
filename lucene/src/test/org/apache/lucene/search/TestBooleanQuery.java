@@ -99,7 +99,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     subQuery.setBoost(0);
     q.add(subQuery, BooleanClause.Occur.SHOULD);
     float score2 = s.search(q, 10).getMaxScore();
-    assertEquals(score*.5, score2, 1e-6);
+    assertEquals(score*.5F, score2, 1e-6);
 
     // LUCENE-2617: make sure that a clause not in the index still contributes to the score via coord factor
     BooleanQuery qq = (BooleanQuery)q.clone();
@@ -109,14 +109,14 @@ public class TestBooleanQuery extends LuceneTestCase {
     phrase.setBoost(0);
     qq.add(phrase, BooleanClause.Occur.SHOULD);
     score2 = s.search(qq, 10).getMaxScore();
-    assertEquals(score*(1.0/3), score2, 1e-6);
+    assertEquals(score*(1/3F), score2, 1e-6);
 
     // now test BooleanScorer2
     subQuery = new TermQuery(new Term("field", "b"));
     subQuery.setBoost(0);
     q.add(subQuery, BooleanClause.Occur.MUST);
     score2 = s.search(q, 10).getMaxScore();
-    assertEquals(score*(2.0/3), score2, 1e-6);
+    assertEquals(score*(2/3F), score2, 1e-6);
  
     // PhraseQuery w/ no terms added returns a null scorer
     PhraseQuery pq = new PhraseQuery();
