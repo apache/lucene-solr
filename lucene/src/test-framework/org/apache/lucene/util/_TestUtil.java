@@ -173,6 +173,20 @@ public class _TestUtil {
     return buf.toString();
   }
 
+  /** start and end are BOTH inclusive */
+  public static int nextInt(Random r, int start, int end) {
+    return start + r.nextInt(end-start+1);
+  }
+
+  // NOTE: only works for TMP and LMP!!
+  public static void setUseCompoundFile(MergePolicy mp, boolean v) {
+    if (mp instanceof TieredMergePolicy) {
+      ((TieredMergePolicy) mp).setUseCompoundFile(v);
+    } else if (mp instanceof LogMergePolicy) {
+      ((LogMergePolicy) mp).setUseCompoundFile(v);
+    }
+  }
+
   /** Use only for testing.
    *  @deprecated -- in 3.0 we can use Arrays.toString
    *  instead */
@@ -361,11 +375,6 @@ public class _TestUtil {
 
     }
     return new String(buffer, 0, i);
-  }
-
-  /** start and end are BOTH inclusive */
-  public static int nextInt(Random r, int start, int end) {
-    return start + r.nextInt(end-start+1);
   }
 
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {
