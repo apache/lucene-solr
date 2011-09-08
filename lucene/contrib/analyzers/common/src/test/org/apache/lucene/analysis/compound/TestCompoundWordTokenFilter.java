@@ -161,6 +161,49 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         14, 20 }, new int[] { 26, 3, 14, 14, 20, 26 }, new int[] { 1, 0, 0, 0,
         0, 0 });
   }
+
+  public void testTokenEndingWithWordComponentOfMinimumLength() throws Exception {
+    String[] dict = {"ab", "cd", "ef"};
+
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
+			new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+				new StringReader(
+					"abcdef")
+				),
+			dict,
+			CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+			CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+			CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
+
+    assertTokenStreamContents(tf,
+			new String[] { "abcdef", "ab", "cd", "ef" },
+			new int[] { 0, 0, 2, 4},
+			new int[] { 6, 2, 4, 6},
+			new int[] { 1, 0, 0, 0}
+			);
+  }
+
+  public void testWordComponentWithLessThanMinimumLength() throws Exception {
+    String[] dict = {"abc", "d", "efg"};
+
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
+			new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+				new StringReader(
+					"abcdefg")
+				),
+			dict,
+			CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+			CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+			CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
+
+	// since "d" is shorter than the minimum subword size, it should not be added to the token stream
+    assertTokenStreamContents(tf,
+			new String[] { "abcdefg", "abc", "efg" },
+			new int[] { 0, 0, 4},
+			new int[] { 7, 3, 7},
+			new int[] { 1, 0, 0}
+			);
+  }
   
   public void testReset() throws Exception {
     String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
