@@ -18,3 +18,8 @@ API Changes
  * LUCENE-1768: ParametricRangeQueryNode now implements
    RangeQueryNode<FieldQueryNode> instead of
    RangeQueryNode<ParametricQueryNode>  (Vinicius Barros via Uwe Schindler)
+
+Bug fixes
+
+  * LUCENE-2945: Fix hashCode/equals for surround query parser generated queries.
+    (Paul Elschot, Simon Rosenthal, gsingers via ehatcher)
