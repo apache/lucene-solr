@@ -102,7 +102,7 @@ public class FieldQuery {
       if( !flatQueries.contains( sourceQuery ) )
         flatQueries.add( sourceQuery );
     }
-    else if (sourceQuery instanceof MultiTermQuery) {
+    else if (sourceQuery instanceof MultiTermQuery && reader != null) {
       MultiTermQuery copy = (MultiTermQuery) sourceQuery.clone();
       copy.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(MAX_MTQ_TERMS));
       BooleanQuery mtqTerms = (BooleanQuery) copy.rewrite(reader);

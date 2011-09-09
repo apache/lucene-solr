@@ -77,6 +77,8 @@ public class FastVectorHighlighter {
    * @return the created {@link FieldQuery} object
    */
   public FieldQuery getFieldQuery( Query query ) {
+    // TODO: should we deprecate this? 
+    // because if there is no reader, then we cannot rewrite MTQ.
     try {
       return new FieldQuery( query, null, phraseHighlight, fieldMatch );
     } catch (IOException e) {
