@@ -255,7 +255,7 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   /** Decodes a normalization factor (document length) stored in an index.
-   * @see #encodeNormValue(float)
+   * @see #encodeNormValue(float,float)
    */
   protected float decodeNormValue(byte norm) {
     return NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
