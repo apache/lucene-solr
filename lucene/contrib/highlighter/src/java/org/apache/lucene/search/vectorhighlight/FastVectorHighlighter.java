@@ -76,8 +76,23 @@ public class FastVectorHighlighter {
    * @param query a query
    * @return the created {@link FieldQuery} object
    */
-  public FieldQuery getFieldQuery( Query query ){
-    return new FieldQuery( query, phraseHighlight, fieldMatch );
+  public FieldQuery getFieldQuery( Query query ) {
+    try {
+      return new FieldQuery( query, null, phraseHighlight, fieldMatch );
+    } catch (IOException e) {
+      // should never be thrown when reader is null
+      throw new RuntimeException (e);
+    }
+  }
+  
+  /**
+   * create a {@link FieldQuery} object.
+   * 
+   * @param query a query
+   * @return the created {@link FieldQuery} object
+   */
+  public FieldQuery getFieldQuery( Query query, IndexReader reader ) throws IOException {
+    return new FieldQuery( query, reader, phraseHighlight, fieldMatch );
   }
 
   /**
