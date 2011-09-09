@@ -164,6 +164,15 @@ public class _TestUtil {
     }
   }
 
+  // NOTE: only works for TMP and LMP!!
+  public static void setUseCompoundFile(MergePolicy mp, boolean v) {
+    if (mp instanceof TieredMergePolicy) {
+      ((TieredMergePolicy) mp).setUseCompoundFile(v);
+    } else if (mp instanceof LogMergePolicy) {
+      ((LogMergePolicy) mp).setUseCompoundFile(v);
+    }
+  }
+
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
     return start + r.nextInt(end-start+1);

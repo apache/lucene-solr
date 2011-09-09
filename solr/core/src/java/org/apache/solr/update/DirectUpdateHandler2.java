@@ -491,7 +491,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
     if (commitTracker.getTimeUpperBound() > 0) {
-      lst.add("autocommit maxDocs", commitTracker.getTimeUpperBound());
+      lst.add("autocommit maxDocs", commitTracker.getDocsUpperBound());
     }
     if (commitTracker.getTimeUpperBound() > 0) {
       lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");

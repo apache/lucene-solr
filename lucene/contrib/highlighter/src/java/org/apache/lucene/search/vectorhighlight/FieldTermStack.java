@@ -72,6 +72,10 @@ public class FieldTermStack {
   public FieldTermStack( IndexReader reader, int docId, String fieldName, final FieldQuery fieldQuery ) throws IOException {
     this.fieldName = fieldName;
     
+    Set<String> termSet = fieldQuery.getTermSet( fieldName );
+    // just return to make null snippet if un-matched fieldName specified when fieldMatch == true
+    if( termSet == null ) return;
+
     TermFreqVector tfv = reader.getTermFreqVector( docId, fieldName );
     if( tfv == null ) return; // just return to make null snippets
     TermPositionVector tpv = null;
@@ -82,9 +86,6 @@ public class FieldTermStack {
       return; // just return to make null snippets
     }
     
-    Set<String> termSet = fieldQuery.getTermSet( fieldName );
-    // just return to make null snippet if un-matched fieldName specified when fieldMatch == true
-    if( termSet == null ) return;
     final CharsRef spare = new CharsRef();
     for( BytesRef term : tpv.getTerms() ){
       if( !termSet.contains( term.utf8ToChars(spare).toString() ) ) continue;

@@ -910,9 +910,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
-      deleter = new IndexFileDeleter(directory,
-                                     conf.getIndexDeletionPolicy(),
-                                     segmentInfos, infoStream, codecs);
+      synchronized(this) {
+        deleter = new IndexFileDeleter(directory,
+                                       conf.getIndexDeletionPolicy(),
+                                       segmentInfos, infoStream,
+                                       codecs, this);
+      }
 
       if (deleter.startingCommitDeleted) {
         // Deletion policy deleted the "head" commit point.
@@ -2578,7 +2581,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         // delete new non cfs files directly: they were never
         // registered with IFD
-        deleter.deleteNewFiles(info.files());
+        synchronized(this) {
+          deleter.deleteNewFiles(info.files());
+        }
         info.setUseCompoundFile(true);
       }
 
@@ -2804,7 +2809,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       success = true;
     } finally {
       if (!success) {
-        deleter.decRef(toCommit);
+        synchronized (this) {
+          deleter.decRef(toCommit);
+        }
       }
     }
 

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -43,7 +44,7 @@ final class CommitTracker implements Runnable {
   protected final static Logger log = LoggerFactory.getLogger(CommitTracker.class);
   
   // scheduler delay for maxDoc-triggered autocommits
-  public final int DOC_COMMIT_DELAY_MS = 250;
+  public final int DOC_COMMIT_DELAY_MS = 1;
   
   // settings, not final so we can change them in testing
   private int docsUpperBound;
@@ -56,8 +57,7 @@ final class CommitTracker implements Runnable {
   // state
   private AtomicLong docsSinceCommit = new AtomicLong(0);
   private AtomicInteger autoCommitCount = new AtomicInteger(0);
-  private volatile long lastAddedTime = -1;
-  
+
   private final SolrCore core;
 
   private final boolean softCommit;
@@ -88,20 +88,38 @@ final class CommitTracker implements Runnable {
   }
   
   /** schedule individual commits */
-  public synchronized void scheduleCommitWithin(long commitMaxTime) {
+  public void scheduleCommitWithin(long commitMaxTime) {
     _scheduleCommitWithin(commitMaxTime);
   }
-  
-  private synchronized void _scheduleCommitWithin(long commitMaxTime) {
-    // Check if there is a commit already scheduled for longer then this time
-    if (pending != null
-        && pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime) {
-      pending.cancel(false);
-      pending = null;
-    }
-    
-    // schedule a new commit
-    if (pending == null) {
+
+  private void _scheduleCommitWithin(long commitMaxTime) {
+    if (commitMaxTime <= 0) return;
+    synchronized (this) {
+      if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
+        // There is already a pending commit that will happen first, so
+        // nothing else to do here.
+        // log.info("###returning since getDelay()==" + pending.getDelay(TimeUnit.MILLISECONDS) + " less than " + commitMaxTime);
+
+        return;
+      }
+
+      if (pending != null) {
+        // we need to schedule a commit to happen sooner than the existing one,
+        // so lets try to cancel the existing one first.
+        boolean canceled = pending.cancel(false);
+        if (!canceled) {
+          // It looks like we can't cancel... it must have just started running!
+          // this is possible due to thread scheduling delays and a low commitMaxTime.
+          // Nothing else to do since we obviously can't schedule our commit *before*
+          // the one that just started running (or has just completed).
+          // log.info("###returning since cancel failed");
+          return;
+        }
+      }
+
+      // log.info("###scheduling for " + commitMaxTime);
+
+      // schedule our new commit
       pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
     }
   }
@@ -109,14 +127,15 @@ final class CommitTracker implements Runnable {
   /**
    * Indicate that documents have been added
    */
-  public boolean addedDocument(int commitWithin) {
-    docsSinceCommit.incrementAndGet();
-    lastAddedTime = System.currentTimeMillis();
-    boolean triggered = false;
-    // maxDocs-triggered autoCommit
-    if (docsUpperBound > 0 && (docsSinceCommit.get() > docsUpperBound)) {
-      _scheduleCommitWithin(DOC_COMMIT_DELAY_MS);
-      triggered = true;
+  public void addedDocument(int commitWithin) {
+    // maxDocs-triggered autoCommit.  Use == instead of > so we only trigger once on the way up
+    if (docsUpperBound > 0) {
+      long docs = docsSinceCommit.incrementAndGet();
+      if (docs == docsUpperBound + 1) {
+        // reset the count here instead of run() so we don't miss other documents being added
+        docsSinceCommit.set(0);
+        _scheduleCommitWithin(DOC_COMMIT_DELAY_MS);
+      }
     }
     
     // maxTime-triggered autoCommit
@@ -124,33 +143,31 @@ final class CommitTracker implements Runnable {
 
     if (ctime > 0) {
       _scheduleCommitWithin(ctime);
-      triggered = true;
     }
-
-    return triggered;
   }
   
-  /** Inform tracker that a commit has occurred, cancel any pending commits */
+  /** Inform tracker that a commit has occurred */
   public void didCommit() {
-    if (pending != null) {
-      pending.cancel(false);
-      pending = null; // let it start another one
-    }
-    docsSinceCommit.set(0);
   }
   
   /** Inform tracker that a rollback has occurred, cancel any pending commits */
   public void didRollback() {
-    if (pending != null) {
-      pending.cancel(false);
-      pending = null; // let it start another one
+    synchronized (this) {
+      if (pending != null) {
+        pending.cancel(false);
+        pending = null; // let it start another one
+      }
+      docsSinceCommit.set(0);
     }
-    docsSinceCommit.set(0);
   }
   
   /** This is the worker part for the ScheduledFuture **/
-  public synchronized void run() {
-    long started = System.currentTimeMillis();
+  public void run() {
+    synchronized (this) {
+      // log.info("###start commit. pending=null");
+      pending = null;  // allow a new commit to be scheduled
+    }
+
     SolrQueryRequest req = new LocalSolrQueryRequest(core,
         new ModifiableSolrParams());
     try {
@@ -158,24 +175,18 @@ final class CommitTracker implements Runnable {
       command.waitSearcher = waitSearcher;
       command.softCommit = softCommit;
       // no need for command.maxOptimizeSegments = 1; since it is not optimizing
-      core.getUpdateHandler().commit(command);
+
+      // we increment this *before* calling commit because it was causing a race
+      // in the tests (the new searcher was registered and the test proceeded
+      // to check the commit count before we had incremented it.)
       autoCommitCount.incrementAndGet();
+
+      core.getUpdateHandler().commit(command);
     } catch (Exception e) {
-      log.error("auto commit error...");
-      e.printStackTrace();
+      SolrException.log(log, "auto commit error...", e);
     } finally {
-      pending = null;
+      // log.info("###done committing");
       req.close();
-    }
-    
-    // check if docs have been submitted since the commit started
-    if (lastAddedTime > started) {
-      if (docsUpperBound > 0 && docsSinceCommit.get() > docsUpperBound) {
-        pending = scheduler.schedule(this, 100, TimeUnit.MILLISECONDS);
-      } else if (timeUpperBound > 0) {
-        pending = scheduler.schedule(this, timeUpperBound,
-            TimeUnit.MILLISECONDS);
-      }
     }
   }
   

@@ -364,7 +364,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         // FVH cannot process hl.requireFieldMatch parameter per-field basis
         params.getBool( HighlightParams.FIELD_MATCH, false ) );
     fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, Integer.MAX_VALUE));
-    FieldQuery fieldQuery = fvh.getFieldQuery( query );
+    FieldQuery fieldQuery = fvh.getFieldQuery( query, searcher.getIndexReader() );
 
     // Highlight each document
     DocIterator iterator = docs.iterator();

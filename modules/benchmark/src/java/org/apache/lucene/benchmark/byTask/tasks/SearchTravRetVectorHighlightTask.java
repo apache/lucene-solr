@@ -95,11 +95,12 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
   @Override
   protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
     highlighter = new FastVectorHighlighter( false, false );
-    final FieldQuery fq = highlighter.getFieldQuery( q );
+    final Query myq = q;
     return new BenchmarkHighlighter(){
       @Override
       public int doHighlight(IndexReader reader, int doc, String field,
           Document document, Analyzer analyzer, String text) throws Exception {
+        final FieldQuery fq = highlighter.getFieldQuery( myq, reader);
         String[] fragments = highlighter.getBestFragments(fq, reader, doc, field, fragSize, maxFrags);
         return fragments != null ? fragments.length : 0;
       }

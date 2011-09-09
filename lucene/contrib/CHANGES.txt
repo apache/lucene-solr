@@ -83,6 +83,8 @@ New Features
    SimpleBoundaryScanner and BreakIteratorBoundaryScanner, so that FVH's FragmentsBuilder
    can find "natural" boundary to make snippets. (Robert Muir, Koji Sekiguchi)
 
+ * LUCENE-1889: Add MultiTermQuery support for FVH. (Mike Sokolov via Koji Sekiguchi)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the

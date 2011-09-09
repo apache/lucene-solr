@@ -33,26 +33,28 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.NewSearcherListener.TriggerOn;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RefCounted;
 
 class NewSearcherListener implements SolrEventListener {
 
   enum TriggerOn {Both, Soft, Hard}
-  
+
   private volatile boolean triggered = false;
   private volatile TriggerOn lastType;
   private volatile TriggerOn triggerOnType;
-  
+  private volatile SolrIndexSearcher newSearcher;
+
   public NewSearcherListener() {
     this(TriggerOn.Both);
   }
-  
+
   public NewSearcherListener(TriggerOn type) {
     this.triggerOnType = type;
   }
-  
+
   @Override
   public void init(NamedList args) {}
-  
+
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher,
       SolrIndexSearcher currentSearcher) {
@@ -63,33 +65,41 @@ class NewSearcherListener implements SolrEventListener {
     } else if (triggerOnType == TriggerOn.Both) {
       triggered = true;
     }
+    this.newSearcher = newSearcher;
+    // log.info("TEST: newSearcher event: triggered="+triggered+" newSearcher="+newSearcher);
   }
-  
+
   @Override
   public void postCommit() {
     lastType = TriggerOn.Hard;
   }
-  
+
   @Override
   public void postSoftCommit() {
     lastType = TriggerOn.Soft;
   }
-  
+
   public void reset() {
     triggered = false;
+    // log.info("TEST: trigger reset");
   }
-  
+
   boolean waitForNewSearcher(int timeout) {
     long timeoutTime = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutTime) {
       if (triggered) {
-        return true;
+        // check if the new searcher has been registered yet
+        RefCounted<SolrIndexSearcher> registeredSearcherH = newSearcher.getCore().getSearcher();
+        SolrIndexSearcher registeredSearcher = registeredSearcherH.get();
+        registeredSearcherH.decref();
+        if (registeredSearcher == newSearcher) return true;
+        // log.info("TEST: waiting for searcher " + newSearcher + " to be registered.  current=" + registeredSearcher);
       }
-      
+
       try {
         Thread.sleep(250);
       } catch (InterruptedException e) {}
-      
+
     }
     return false;
   }
@@ -101,6 +111,19 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   public String getSchemaFile() { return "schema.xml"; }
   @Override
   public String getSolrConfigFile() { return "solrconfig.xml"; }
+
+  public static void verbose(Object... args) {
+    if (!VERBOSE) return;
+    StringBuilder sb = new StringBuilder("###TEST:");
+    sb.append(Thread.currentThread().getName());
+    sb.append(':');
+    for (Object o : args) {
+      sb.append(' ');
+      sb.append(o.toString());
+    }
+    log.info(sb.toString());
+    // System.out.println(sb.toString());
+  }
 
   /**
    * Take a string and make it an iterable ContentStream
@@ -345,6 +368,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
     // Check it it is in the index
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
+    assertEquals(0, softTracker.getCommitCount());
 
     // Wait longer than the autocommit time
     assertTrue(trigger.waitForNewSearcher(30000));
@@ -357,16 +381,22 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should find one", req("id:529") ,"//result[@numFound=1]" );
     // But not this one
     assertQ("should find none", req("id:530") ,"//result[@numFound=0]" );
-    
+    verbose("###about to delete 529");
     // Delete the document
-    assertU( delI("529") );
+    assertU(delI("529"));
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     // Wait longer than the autocommit time
+    verbose("###starting to wait for new searcher.  softTracker.getCommitCount()==",softTracker.getCommitCount());
     assertTrue(trigger.waitForNewSearcher(15000));
     trigger.reset();
+    verbose("###done waiting for new searcher.  softTracker.getCommitCount()==",softTracker.getCommitCount());
+
+    // what's the point of this update?
     req.setContentStreams( toContentStreams(
       adoc("id", "550", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
+
+
     assertEquals( 2, softTracker.getCommitCount() );
     assertQ("deleted and time has passed", req("id:529") ,"//result[@numFound=0]" );
     

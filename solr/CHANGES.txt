@@ -321,12 +321,21 @@ Documentation
 
 ==================  3.5.0  ==================
 
+Bug Fixes
+----------------------
+* SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
+  could commit too frequently and could block adds until a new seaercher was
+  registered. (yonik)
+
+
  Other Changes
 ----------------------
 
 * LUCENE-3410: Deprecated the WordDelimiterFilter constructors accepting multiple
   ints masquerading as booleans.  Preferred constructor now accepts a single int
   bitfield (Chris Male)
+
+
 
 ==================  3.4.0  ==================
 
