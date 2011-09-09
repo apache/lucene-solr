@@ -208,6 +208,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return name;
   }
 
+  public SolrCore getCore() {
+    return core;
+  }
+
 
   /** Register sub-objects such as caches
    */

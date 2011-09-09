@@ -29,14 +29,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.store.Directory;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -140,7 +135,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong numErrorsCumulative = new AtomicLong();
 
   // tracks when auto-commit should occur
-  protected final CommitTracker tracker;
+  protected final CommitTracker commitTracker;
 
   // iwCommit protects internal data and open/close of the IndexWriter and
   // is a mutex. Any use of the index writer should be protected by iwAccess, 
@@ -159,7 +154,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     iwAccess = rwl.readLock();
     iwCommit = rwl.writeLock();
 
-    tracker = new CommitTracker();
+    commitTracker = new CommitTracker("commitTracker", core,
+        core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs,
+        core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxTime, true, false);
   }
 
   // must only be called when iwCommit lock held
@@ -221,7 +218,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       synchronized (this) {
         // adding document -- prep writer
         openWriter();
-        tracker.addedDocument( cmd.commitWithin );
+        commitTracker.addedDocument( cmd.commitWithin );
       } // end synchronized block
 
       // this is the only unsynchronized code in the iwAccess block, which
@@ -293,9 +290,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       iwCommit.unlock();
     }
 
-    if( tracker.timeUpperBound > 0 ) {
-      tracker.scheduleCommitWithin( tracker.timeUpperBound );
-    }
+    commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
   }
 
   // why not return number of docs deleted?
@@ -336,9 +331,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
      madeIt=true;
 
-     if( tracker.timeUpperBound > 0 ) {
-       tracker.scheduleCommitWithin( tracker.timeUpperBound );
-     }
+     commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+
     } finally {
       if (!madeIt) {
         numErrors.incrementAndGet();
@@ -369,8 +363,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       iwCommit.unlock();
     }
 
-    if (rc == 1 && tracker.timeUpperBound > 0) {
-      tracker.scheduleCommitWithin(tracker.timeUpperBound);
+    if (rc == 1 && commitTracker.getTimeUpperBound() > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
     }
 
     return rc;
@@ -425,7 +419,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       core.getSearcher(true,false,waitSearcher);
 
       // reset commit tracking
-      tracker.didCommit();
+      commitTracker.didCommit();
 
       log.info("end_commit_flush");
 
@@ -470,7 +464,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       //callPostRollbackCallbacks();
 
       // reset commit tracking
-      tracker.didRollback();
+      commitTracker.didRollback();
 
       log.info("end_rollback");
 
@@ -494,12 +488,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     log.info("closing " + this);
     iwCommit.lock();
     try{
-      // cancel any pending operations
-      if( tracker.pending != null ) {
-        tracker.pending.cancel( true );
-        tracker.pending = null;
-      }
-      tracker.scheduler.shutdown();
+      commitTracker.close();
       closeWriter();
     } finally {
       iwCommit.unlock();
@@ -507,144 +496,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     log.info("closed " + this);
   }
 
-  /** Helper class for tracking autoCommit state.
-   *
-   * Note: This is purely an implementation detail of autoCommit and will
-   * definitely change in the future, so the interface should not be
-   * relied-upon
-   *
-   * Note: all access must be synchronized.
-   */
-  class CommitTracker implements Runnable
-  {
-    // scheduler delay for maxDoc-triggered autocommits
-    public final int DOC_COMMIT_DELAY_MS = 250;
-
-    // settings, not final so we can change them in testing
-    int docsUpperBound;
-    long timeUpperBound;
-
-    private final ScheduledExecutorService scheduler =
-       Executors.newScheduledThreadPool(1);
-    private ScheduledFuture pending;
-
-    // state
-    long docsSinceCommit;
-    int autoCommitCount = 0;
-    long lastAddedTime = -1;
-
-    public CommitTracker() {
-      docsSinceCommit = 0;
-      pending = null;
-
-      docsUpperBound = core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs;   //getInt("updateHandler/autoCommit/maxDocs", -1);
-      timeUpperBound = core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxTime;    //getInt("updateHandler/autoCommit/maxTime", -1);
-
-      SolrCore.log.info("AutoCommit: " + this);
-    }
-
-    /** schedule individual commits */
-    public synchronized void scheduleCommitWithin(long commitMaxTime)
-    {
-      _scheduleCommitWithin( commitMaxTime );
-    }
-
-    private void _scheduleCommitWithin(long commitMaxTime)
-    {
-      // Check if there is a commit already scheduled for longer then this time
-      if( pending != null &&
-          pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime )
-      {
-        pending.cancel(false);
-        pending = null;
-      }
-
-      // schedule a new commit
-      if( pending == null ) {
-        pending = scheduler.schedule( this, commitMaxTime, TimeUnit.MILLISECONDS );
-      }
-    }
-
-    /** Indicate that documents have been added
-     */
-    public void addedDocument( int commitWithin ) {
-      docsSinceCommit++;
-      lastAddedTime = System.currentTimeMillis();
-      // maxDocs-triggered autoCommit
-      if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
-        _scheduleCommitWithin( DOC_COMMIT_DELAY_MS );
-      }
-
-      // maxTime-triggered autoCommit
-      long ctime = (commitWithin>0) ? commitWithin : timeUpperBound;
-      if( ctime > 0 ) {
-        _scheduleCommitWithin( ctime );
-      }
-    }
-
-    /** Inform tracker that a commit has occurred, cancel any pending commits */
-    public void didCommit() {
-      if( pending != null ) {
-        pending.cancel(false);
-        pending = null; // let it start another one
-      }
-      docsSinceCommit = 0;
-    }
-
-    /** Inform tracker that a rollback has occurred, cancel any pending commits */
-    public void didRollback() {
-      if( pending != null ) {
-        pending.cancel(false);
-        pending = null; // let it start another one
-      }
-      docsSinceCommit = 0;
-    }
-
-    /** This is the worker part for the ScheduledFuture **/
-    public synchronized void run() {
-      long started = System.currentTimeMillis();
-      try {
-        CommitUpdateCommand command = new CommitUpdateCommand( false );
-        command.waitFlush = true;
-        command.waitSearcher = true;
-        //no need for command.maxOptimizeSegments = 1;  since it is not optimizing
-        commit( command );
-        autoCommitCount++;
-      }
-      catch (Exception e) {
-        log.error( "auto commit error..." );
-        e.printStackTrace();
-      }
-      finally {
-        pending = null;
-      }
-
-      // check if docs have been submitted since the commit started
-      if( lastAddedTime > started ) {
-        if( docsUpperBound > 0 && docsSinceCommit > docsUpperBound ) {
-          pending = scheduler.schedule( this, 100, TimeUnit.MILLISECONDS );
-        }
-        else if( timeUpperBound > 0 ) {
-          pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
-        }
-      }
-    }
-
-    // to facilitate testing: blocks if called during commit
-    public synchronized int getCommitCount() { return autoCommitCount; }
-
-    @Override
-    public String toString() {
-      if(timeUpperBound > 0 || docsUpperBound > 0) {
-        return
-          (timeUpperBound > 0 ? ("if uncommited for " + timeUpperBound + "ms; ") : "") +
-          (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommited docs ") : "");
-
-      } else {
-        return "disabled";
-      }
-    }
-  }
 
 
   /////////////////////////////////////////////////////////////////////
@@ -682,13 +533,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
-    if (tracker.docsUpperBound > 0) {
-      lst.add("autocommit maxDocs", tracker.docsUpperBound);
+    if (commitTracker.getTimeUpperBound() > 0) {
+      lst.add("autocommit maxDocs", commitTracker.getTimeUpperBound());
     }
-    if (tracker.timeUpperBound > 0) {
-      lst.add("autocommit maxTime", "" + tracker.timeUpperBound + "ms");
+    if (commitTracker.getTimeUpperBound() > 0) {
+      lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");
     }
-    lst.add("autocommits", tracker.autoCommitCount);
+    lst.add("autocommits", commitTracker.getCommitCount());
+
     lst.add("optimizes", optimizeCommands.get());
     lst.add("rollbacks", rollbackCommands.get());
     lst.add("expungeDeletes", expungeDeleteCommands.get());
