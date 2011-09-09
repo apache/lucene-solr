@@ -16,19 +16,23 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.BytesRef;
@@ -48,7 +52,7 @@ public class FieldQueryTest extends AbstractTestCase {
 
     FieldQuery fq = new FieldQuery(booleanQuery, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten(booleanQuery, flatQueries);
+    fq.flatten(booleanQuery, reader, flatQueries);
     assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), tq( "C" ) );
   }
 
@@ -56,7 +60,7 @@ public class FieldQueryTest extends AbstractTestCase {
     Query query = dmq( tq( "A" ), tq( "B" ), pqF( "C", "D" ) );
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten( query, flatQueries );
+    fq.flatten( query, reader, flatQueries );
     assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), pqF( "C", "D" ) );
   }
 
@@ -70,7 +74,7 @@ public class FieldQueryTest extends AbstractTestCase {
 
     FieldQuery fq = new FieldQuery(booleanQuery, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten(booleanQuery, flatQueries);
+    fq.flatten(booleanQuery, reader, flatQueries);
     assertCollectionQueries( flatQueries, tq( "A" ), pqF( "B", "C" ) );
   }
 
@@ -82,7 +86,7 @@ public class FieldQueryTest extends AbstractTestCase {
 
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten( query, flatQueries );
+    fq.flatten( query, reader, flatQueries );
     assertCollectionQueries( flatQueries, tq( "AA" ), pqF( "BC", "CD" ), pqF( "EF", "FG", "GH" ) );
   }
 
@@ -90,7 +94,7 @@ public class FieldQueryTest extends AbstractTestCase {
     Query query = pqF( "A" );
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten( query, flatQueries );
+    fq.flatten( query, reader, flatQueries );
     assertCollectionQueries( flatQueries, tq( "A" ) );
   }
 
@@ -869,4 +873,36 @@ public class FieldQueryTest extends AbstractTestCase {
     phraseCandidate.add( new TermInfo( "c", 4, 5, 6 ) );
     assertNull( fq.searchPhrase( F, phraseCandidate ) );
   }
+  
+  public void testHighlightQuery() throws Exception {
+    makeIndexStrMV();
+    defgMultiTermQueryTest(new WildcardQuery(new Term(F, "d*g")));
+  }
+
+  public void testPrefixQuery() throws Exception {
+    makeIndexStrMV();
+    defgMultiTermQueryTest(new PrefixQuery(new Term(F, "de")));
+  }
+  
+  public void testRegexpQuery() throws Exception {
+    makeIndexStrMV();
+    Term term = new Term(F, "d[a-z].g");
+    defgMultiTermQueryTest(new RegexpQuery (term));
+  }
+
+  public void testRangeQuery() throws Exception {
+    makeIndexStrMV();
+    defgMultiTermQueryTest(new TermRangeQuery (F, new BytesRef("d"), new BytesRef("e"), true, true));
+  }
+
+  private void defgMultiTermQueryTest(Query query) throws IOException {
+    FieldQuery fq = new FieldQuery( query, reader, true, true );
+    QueryPhraseMap qpm = fq.getFieldTermMap(F, "defg");
+    assertNotNull (qpm);
+    assertNull (fq.getFieldTermMap(F, "dog"));
+    List<TermInfo> phraseCandidate = new ArrayList<TermInfo>();
+    phraseCandidate.add( new TermInfo( "defg", 0, 12, 0 ) );
+    assertNotNull (fq.searchPhrase(F, phraseCandidate));
+  }
+  
 }

@@ -16,6 +16,7 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,10 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -51,16 +54,19 @@ public class FieldQuery {
 
   int termOrPhraseNumber; // used for colored tag support
 
-  FieldQuery( Query query, boolean phraseHighlight, boolean fieldMatch ){
+  // The maximum number of different matching terms accumulated from any one MultiTermQuery
+  private static final int MAX_MTQ_TERMS = 1024;
+
+  FieldQuery( Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
     this.fieldMatch = fieldMatch;
     Set<Query> flatQueries = new HashSet<Query>();
-    flatten( query, flatQueries );
-    saveTerms( flatQueries );
+    flatten( query, reader, flatQueries );
+    saveTerms( flatQueries, reader );
     Collection<Query> expandQueries = expand( flatQueries );
 
     for( Query flatQuery : expandQueries ){
       QueryPhraseMap rootMap = getRootMap( flatQuery );
-      rootMap.add( flatQuery );
+      rootMap.add( flatQuery, reader );
       if( !phraseHighlight && flatQuery instanceof PhraseQuery ){
         PhraseQuery pq = (PhraseQuery)flatQuery;
         if( pq.getTerms().length > 1 ){
@@ -71,23 +77,36 @@ public class FieldQuery {
     }
   }
   
-  void flatten( Query sourceQuery, Collection<Query> flatQueries ){
+  /** For backwards compatibility you can initialize FieldQuery without
+   * an IndexReader, which is only required to support MultiTermQuery
+   */
+  FieldQuery( Query query, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
+    this (query, null, phraseHighlight, fieldMatch);
+  }
+
+  void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries ) throws IOException{
     if( sourceQuery instanceof BooleanQuery ){
       BooleanQuery bq = (BooleanQuery)sourceQuery;
       for( BooleanClause clause : bq.getClauses() ){
         if( !clause.isProhibited() )
-          flatten( clause.getQuery(), flatQueries );
+          flatten( clause.getQuery(), reader, flatQueries );
       }
     }
     else if( sourceQuery instanceof DisjunctionMaxQuery ){
       DisjunctionMaxQuery dmq = (DisjunctionMaxQuery)sourceQuery;
       for( Query query : dmq ){
-        flatten( query, flatQueries );
+        flatten( query, reader, flatQueries );
       }
     }
     else if( sourceQuery instanceof TermQuery ){
       if( !flatQueries.contains( sourceQuery ) )
         flatQueries.add( sourceQuery );
+    }
+    else if (sourceQuery instanceof MultiTermQuery) {
+      MultiTermQuery copy = (MultiTermQuery) sourceQuery.clone();
+      copy.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(MAX_MTQ_TERMS));
+      BooleanQuery mtqTerms = (BooleanQuery) copy.rewrite(reader);
+      flatten(mtqTerms, reader, flatQueries);
     }
     else if( sourceQuery instanceof PhraseQuery ){
       if( !flatQueries.contains( sourceQuery ) ){
@@ -207,6 +226,9 @@ public class FieldQuery {
       Term[] terms = pq.getTerms();
       return terms[0].field();
     }
+    else if (query instanceof MultiTermQuery) {
+      return ((MultiTermQuery)query).getField();
+    }
     else
       throw new RuntimeException( "query \"" + query.toString() + "\" must be flatten first." );
   }
@@ -233,7 +255,7 @@ public class FieldQuery {
    *      - fieldMatch==false
    *          termSetMap=Map<null,Set<"john","lennon">>
    */
-  void saveTerms( Collection<Query> flatQueries ){
+    void saveTerms( Collection<Query> flatQueries, IndexReader reader ) throws IOException{
     for( Query query : flatQueries ){
       Set<String> termSet = getTermSet( query );
       if( query instanceof TermQuery )
@@ -241,6 +263,12 @@ public class FieldQuery {
       else if( query instanceof PhraseQuery ){
         for( Term term : ((PhraseQuery)query).getTerms() )
           termSet.add( term.text() );
+      }
+      else if (query instanceof MultiTermQuery && reader != null) {
+        BooleanQuery mtqTerms = (BooleanQuery) query.rewrite(reader);
+        for (BooleanClause clause : mtqTerms.getClauses()) {
+          termSet.add (((TermQuery) clause.getQuery()).getTerm().text());
+        }
       }
       else
         throw new RuntimeException( "query \"" + query.toString() + "\" must be flatten first." );
@@ -319,7 +347,7 @@ public class FieldQuery {
       return map;
     }
 
-    void add( Query query ){
+      void add( Query query, IndexReader reader ) throws IOException {
       if( query instanceof TermQuery ){
         addTerm( ((TermQuery)query).getTerm(), query.getBoost() );
       }
