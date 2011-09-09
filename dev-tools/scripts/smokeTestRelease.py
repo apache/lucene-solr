@@ -224,7 +224,7 @@ def testChangesText(dir, version, project):
     # NOTE: O(N) but N should be smallish:
     if 'CHANGES.txt' in files:
       fullPath = '%s/CHANGES.txt' % root
-      print 'CHECK %s' % fullPath
+      #print 'CHECK %s' % fullPath
       checkChangesContent(open(fullPath).read(), version, fullPath, project, False)
       
 def checkChangesContent(s, version, name, project, isHTML):
