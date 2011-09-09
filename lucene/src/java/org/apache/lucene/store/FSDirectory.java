@@ -123,8 +123,7 @@ public abstract class FSDirectory extends Directory {
   private int chunkSize = DEFAULT_READ_CHUNK_SIZE; // LUCENE-1566
 
   // null means no limite
-  private Double maxMergeWriteMBPerSec;
-  private RateLimiter mergeWriteRateLimiter;
+  private volatile RateLimiter mergeWriteRateLimiter;
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
   private static File getCanonicalPath(File file) throws IOException {
@@ -305,25 +304,40 @@ public abstract class FSDirectory extends Directory {
    *  only apply for certain to new merges.
    *
    * @lucene.experimental */
-  public synchronized void setMaxMergeWriteMBPerSec(Double mbPerSec) {
-    maxMergeWriteMBPerSec = mbPerSec;
+  public void setMaxMergeWriteMBPerSec(Double mbPerSec) {
+    RateLimiter limiter = mergeWriteRateLimiter;
     if (mbPerSec == null) {
-      if (mergeWriteRateLimiter != null) {
-        mergeWriteRateLimiter.setMaxRate(Double.MAX_VALUE);
+      if (limiter != null) {
+        limiter.setMbPerSec(Double.MAX_VALUE);
         mergeWriteRateLimiter = null;
       }
-    } else if (mergeWriteRateLimiter != null) {
-      mergeWriteRateLimiter.setMaxRate(mbPerSec);
+    } else if (limiter != null) {
+      limiter.setMbPerSec(mbPerSec);
     } else {
       mergeWriteRateLimiter = new RateLimiter(mbPerSec);
     }
+  }
+
+  /**
+   * Sets the rate limiter to be used to limit (approx) MB/sec allowed
+   * by all IO performed when merging. Pass null to have no limit.
+   *
+   * <p>Passing an instance of rate limiter compared to setting it using
+   * {@link #setMaxMergeWriteMBPerSec(Double)} allows to use the same limiter
+   * instance across several directories globally limiting IO when merging
+   * across them.
+   *
+   * @lucene.experimental */
+  public void setMaxMergeWriteLimiter(RateLimiter mergeWriteRateLimiter) {
+    this.mergeWriteRateLimiter = mergeWriteRateLimiter;
   }
 
   /** See {@link #setMaxMergeWriteMBPerSec}.
    *
    * @lucene.experimental */
   public Double getMaxMergeWriteMBPerSec() {
-    return maxMergeWriteMBPerSec;
+    RateLimiter limiter = mergeWriteRateLimiter;
+    return limiter == null ? null : limiter.getMbPerSec();
   }
 
   protected void ensureCanWrite(String name) throws IOException {

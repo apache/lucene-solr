@@ -26,6 +26,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *  want to read bytes or write bytes. */
 
 public class RateLimiter {
+  private volatile double mbPerSec;
   private volatile double nsPerByte;
   private volatile long lastNS;
 
@@ -35,11 +36,22 @@ public class RateLimiter {
 
   /** mbPerSec is the MB/sec max IO rate */
   public RateLimiter(double mbPerSec) {
-    setMaxRate(mbPerSec);
+    setMbPerSec(mbPerSec);
   }
 
-  public void setMaxRate(double mbPerSec) {
+  /**
+   * Sets an updated mb per second rate limit.
+   */
+  public void setMbPerSec(double mbPerSec) {
+    this.mbPerSec = mbPerSec;
     nsPerByte = 1000000000. / (1024*1024*mbPerSec);
+  }
+
+  /**
+   * The current mb per second rate limit.
+   */
+  public double getMbPerSec() {
+    return this.mbPerSec;
   }
 
   /** Pauses, if necessary, to keep the instantaneous IO
