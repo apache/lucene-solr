@@ -867,27 +867,6 @@ public abstract class LuceneTestCase extends Assert {
     return usually(random);
   }
 
-  // @deprecated (4.0) These deprecated methods should be removed soon, when all tests using no Epsilon are fixed:
-  @Deprecated
-  static public void assertEquals(double expected, double actual) {
-    assertEquals(null, expected, actual);
-  }
-
-  @Deprecated
-  static public void assertEquals(String message, double expected, double actual) {
-    assertEquals(message, Double.valueOf(expected), Double.valueOf(actual));
-  }
-
-  @Deprecated
-  static public void assertEquals(float expected, float actual) {
-    assertEquals(null, expected, actual);
-  }
-
-  @Deprecated
-  static public void assertEquals(String message, float expected, float actual) {
-    assertEquals(message, Float.valueOf(expected), Float.valueOf(actual));
-  }
-
   public static void assumeTrue(String msg, boolean b) {
     Assume.assumeNoException(b ? null : new _TestIgnoredException(msg));
   }
