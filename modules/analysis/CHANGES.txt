@@ -98,6 +98,9 @@ New Features
  * SOLR-1057: Add PathHierarchyTokenizer that represents file path hierarchies as synonyms of
    /something, /something/something, /something/something/else. (Ryan McKinley, Koji Sekiguchi)
 
+ * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
+   Hunspell algorithm. (Chris Male)
+
 Build
 
  * LUCENE-2413: All analyzers in contrib/analyzers and contrib/icu were moved to the 
