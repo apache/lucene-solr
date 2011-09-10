@@ -13,6 +13,9 @@ New Features
 
  * LUCENE-1889: Add MultiTermQuery support for FVH. (Mike Sokolov via Koji Sekiguchi)
 
+ * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
+   Hunspell algorithm. (Chris Male)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the
