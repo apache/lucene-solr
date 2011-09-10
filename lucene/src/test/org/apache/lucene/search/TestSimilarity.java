@@ -91,7 +91,7 @@ public class TestSimilarity extends LuceneTestCase {
          }
          @Override
         public final void collect(int doc) throws IOException {
-           assertEquals(1.0f, scorer.score());
+           assertEquals(1.0f, scorer.score(), 0);
          }
          @Override
         public void setNextReader(IndexReader reader, int docBase) {}
@@ -115,7 +115,7 @@ public class TestSimilarity extends LuceneTestCase {
          @Override
         public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertEquals((float)doc+base+1, scorer.score());
+           assertEquals((float)doc+base+1, scorer.score(), 0);
          }
          @Override
         public void setNextReader(IndexReader reader, int docBase) {
@@ -141,7 +141,7 @@ public class TestSimilarity extends LuceneTestCase {
          @Override
          public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertEquals(1.0f, scorer.score());
+           assertEquals(1.0f, scorer.score(), 0);
          }
          @Override
          public void setNextReader(IndexReader reader, int docBase) {}
@@ -162,7 +162,7 @@ public class TestSimilarity extends LuceneTestCase {
       @Override
       public final void collect(int doc) throws IOException {
         //System.out.println("Doc=" + doc + " score=" + score);
-        assertEquals(2.0f, scorer.score());
+        assertEquals(2.0f, scorer.score(), 0);
       }
       @Override
       public void setNextReader(IndexReader reader, int docBase) {}

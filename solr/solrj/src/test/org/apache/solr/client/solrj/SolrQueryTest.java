@@ -195,7 +195,7 @@ public class SolrQueryTest extends LuceneTestCase {
     
     // check getters
     assertEquals(false, q.getTerms());
-    assertEquals(null, q.getTermsFields());
+    assertArrayEquals(null, q.getTermsFields());
     assertEquals("", q.getTermsLower());
     assertEquals("", q.getTermsUpper());
     assertEquals(false, q.getTermsUpperInclusive());
@@ -207,7 +207,7 @@ public class SolrQueryTest extends LuceneTestCase {
     assertEquals(false, q.getTermsRaw());
     assertEquals("count", q.getTermsSortString());
     assertEquals(null, q.getTermsRegex());
-    assertEquals(null, q.getTermsRegexFlags());
+    assertArrayEquals(null, q.getTermsRegexFlags());
 
     // check setters
     q.setTerms(true);
