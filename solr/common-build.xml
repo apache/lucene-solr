@@ -24,7 +24,7 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
   <property name="Name" value="Solr" />
-  <property name="version" value="3.4-SNAPSHOT"/>
+  <property name="version" value="3.5-SNAPSHOT"/>
   <property name="fullname" value="apache-${ant.project.name}"/>
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>

@@ -18,7 +18,7 @@
 
 <config>
 
-  <luceneMatchVersion>LUCENE_34</luceneMatchVersion>
+  <luceneMatchVersion>LUCENE_35</luceneMatchVersion>
 
   <jmx />
 
