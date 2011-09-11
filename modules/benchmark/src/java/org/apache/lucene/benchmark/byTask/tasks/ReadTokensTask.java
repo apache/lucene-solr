@@ -69,7 +69,7 @@ public class ReadTokensTask extends PerfTask {
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
     for(final IndexableField field : fields) {
-      if (!field.tokenized() || field instanceof NumericField) continue;
+      if (!field.fieldType().tokenized() || field instanceof NumericField) continue;
       
       final TokenStream stream;
       final TokenStream streamValue = field.tokenStreamValue();

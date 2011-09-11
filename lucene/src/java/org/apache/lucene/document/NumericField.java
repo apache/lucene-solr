@@ -104,7 +104,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * default value, 4, was selected for a reasonable tradeoff
  * of disk space consumption versus performance.  You can
  * use the expert constructor {@link
- * #NumericField(String,int,FieldType)} if you'd
+ * #NumericField(String,int, FieldType)} if you'd
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
  * NumericRangeQuery} or {@link NumericRangeFilter}.
@@ -238,7 +238,7 @@ public final class NumericField extends Field {
   
   /** Returns a {@link NumericTokenStream} for indexing the numeric value. */
   public TokenStream tokenStreamValue() {
-    if (!indexed()) return null;
+    if (!type.indexed()) return null;
     if (numericTS == null) {
       // lazy init the TokenStream as it is heavy to instantiate
       // (attributes,...),

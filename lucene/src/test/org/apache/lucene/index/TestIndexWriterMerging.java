@@ -181,8 +181,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Document document = new Document();
 
-    document = new Document();
-
     FieldType customType = new FieldType();
     customType.setStored(true);
 
@@ -237,8 +235,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     writer.setInfoStream(VERBOSE ? System.out : null);
 
-    Document document = new Document();
-
     FieldType customType = new FieldType();
     customType.setStored(true);
 
@@ -248,7 +244,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     customType1.setStoreTermVectorPositions(true);
     customType1.setStoreTermVectorOffsets(true);
     
-    document = new Document();
+    Document document = new Document();
     Field storedField = newField("stored", "stored", customType);
     document.add(storedField);
     Field termVectorField = newField("termVector", "termVector", customType1);

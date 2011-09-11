@@ -20,7 +20,7 @@ package org.apache.lucene.document;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
@@ -32,11 +32,14 @@ import org.apache.lucene.util.BytesRef;
  * may be atomic keywords, which are not further processed. Such keywords may be
  * used to represent dates, urls, etc. Fields are optionally stored in the
  * index, so that they may be returned with hits on the document.
+ * <p/>
+ * Note, Field instances are instantiated with a {@link IndexableFieldType}.  Making changes
+ * to the state of the FieldType will impact any Field it is used in, therefore
+ * it is strongly recommended that no changes are made after Field instantiation.
  */
-
 public class Field implements IndexableField {
   
-  protected FieldType type;
+  protected IndexableFieldType type;
   protected String name = "body";
   // the data object for all different kind of field values
   protected Object fieldsData;
@@ -47,13 +50,12 @@ public class Field implements IndexableField {
   
   protected float boost = 1.0f;
 
-  public Field(String name, FieldType type) {
+  public Field(String name, IndexableFieldType type) {
     this.name = name;
     this.type = type;
-    type.freeze();
   }
   
-  public Field(String name, FieldType type, Reader reader) {
+  public Field(String name, IndexableFieldType type, Reader reader) {
     if (name == null) {
       throw new NullPointerException("name cannot be null");
     }
@@ -64,10 +66,9 @@ public class Field implements IndexableField {
     this.name = name;
     this.fieldsData = reader;
     this.type = type;
-    type.freeze();
   }
   
-  public Field(String name, FieldType type, TokenStream tokenStream) {
+  public Field(String name, IndexableFieldType type, TokenStream tokenStream) {
     if (name == null) {
       throw new NullPointerException("name cannot be null");
     }
@@ -79,28 +80,25 @@ public class Field implements IndexableField {
     this.fieldsData = null;
     this.tokenStream = tokenStream;
     this.type = type;
-    type.freeze();
   }
   
-  public Field(String name, FieldType type, byte[] value) {
+  public Field(String name, IndexableFieldType type, byte[] value) {
     this(name, type, value, 0, value.length);
   }
 
-  public Field(String name, FieldType type, byte[] value, int offset, int length) {
+  public Field(String name, IndexableFieldType type, byte[] value, int offset, int length) {
     this.fieldsData = new BytesRef(value, offset, length);
     this.type = type;
     this.name = name;
-    type.freeze();
   }
 
-  public Field(String name, FieldType type, BytesRef bytes) {
+  public Field(String name, IndexableFieldType type, BytesRef bytes) {
     this.fieldsData = bytes;
     this.type = type;
     this.name = name;
-    type.freeze();
   }
   
-  public Field(String name, FieldType type, String value) {
+  public Field(String name, IndexableFieldType type, String value) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -119,7 +117,6 @@ public class Field implements IndexableField {
     this.type = type;
     this.name = name;
     this.fieldsData = value;
-    type.freeze();
   }
 
   /**
@@ -181,7 +178,7 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException(
           "cannot set a Reader value on a binary field");
     }
-    if (stored()) {
+    if (type.stored()) {
       throw new IllegalArgumentException(
           "cannot set a Reader value on a stored field");
     }
@@ -206,7 +203,7 @@ public class Field implements IndexableField {
    * values from stringValue() or getBinaryValue()
    */
   public void setTokenStream(TokenStream tokenStream) {
-    if (!indexed() || !tokenized()) {
+    if (!type.indexed() || !type.tokenized()) {
       throw new IllegalArgumentException(
           "cannot set token stream on non indexed and tokenized field");
     }
@@ -259,42 +256,10 @@ public class Field implements IndexableField {
     }
   }
   
-  /** methods from inner FieldType */
+  /** methods from inner IndexableFieldType */
   
   public boolean isBinary() {
     return fieldsData instanceof BytesRef;
-  }
-  
-  public boolean stored() {
-    return type.stored();
-  }
-  
-  public boolean indexed() {
-    return type.indexed();
-  }
-  
-  public boolean tokenized() {
-    return type.tokenized();
-  }
-  
-  public boolean omitNorms() {
-    return type.omitNorms();
-  }
-  
-  public IndexOptions indexOptions() {
-    return type.indexOptions();
-  }
-  
-  public boolean storeTermVectors() {
-    return type.storeTermVectors();
-  }
-  
-  public boolean storeTermVectorOffsets() {
-    return type.storeTermVectorOffsets();
-  }
-  
-  public boolean storeTermVectorPositions() {
-    return type.storeTermVectorPositions();
   }
   
   /** Prints a Field for human consumption. */
@@ -329,7 +294,7 @@ public class Field implements IndexableField {
   }
 
   /** Returns FieldType for this field. */
-  public FieldType getFieldType() {
+  public IndexableFieldType fieldType() {
     return type;
   }
 }

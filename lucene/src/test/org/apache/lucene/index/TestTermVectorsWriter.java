@@ -391,8 +391,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
             new SerialMergeScheduler()).setMergePolicy(new LogDocMergePolicy()));
 
     Document document = new Document();
-
-    document = new Document();
     FieldType customType = new FieldType();
     customType.setStored(true);
 

@@ -20,6 +20,7 @@ import java.io.Reader;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
@@ -84,11 +85,11 @@ public class IndexDocValuesField extends Field implements PerDocFieldValues {
     this(name, new FieldType());
   }
 
-  public IndexDocValuesField(String name, FieldType type) {
+  public IndexDocValuesField(String name, IndexableFieldType type) {
     this(name, type, null);
   }
 
-  public IndexDocValuesField(String name, FieldType type, String value) {
+  public IndexDocValuesField(String name, IndexableFieldType type, String value) {
     super(name, type);
     fieldsData = value;
   }
@@ -356,7 +357,7 @@ public class IndexDocValuesField extends Field implements PerDocFieldValues {
     if (field instanceof IndexDocValuesField) {
       return (IndexDocValuesField) field;
     }
-    final IndexDocValuesField valField = new IndexDocValuesField(field.name(), field.getFieldType(), field.stringValue());
+    final IndexDocValuesField valField = new IndexDocValuesField(field.name(), field.fieldType(), field.stringValue());
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:

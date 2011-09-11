@@ -74,7 +74,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // TODO FI: this should be "genericized" to querying
       // consumer if it wants to see this particular field
       // tokenized.
-      if (field.indexed() && doInvert) {
+      if (field.fieldType().indexed() && doInvert) {
         
         if (i > 0)
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
@@ -83,7 +83,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         // outside of indexer -- field should simply give us
         // a TokenStream, even for multi-valued fields
 
-        if (!field.tokenized()) {		  // un-tokenized field
+        if (!field.fieldType().tokenized()) {		  // un-tokenized field
           final String stringValue = field.stringValue();
           assert stringValue != null;
           final int valueLength = stringValue.length();

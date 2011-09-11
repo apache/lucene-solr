@@ -52,9 +52,9 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(2, doc.getFields().size());
     
     assertTrue(binaryFld.binaryValue() != null);
-    assertTrue(binaryFld.stored());
-    assertFalse(binaryFld.indexed());
-    assertFalse(binaryFld.tokenized());
+    assertTrue(binaryFld.fieldType().stored());
+    assertFalse(binaryFld.fieldType().indexed());
+    assertFalse(binaryFld.fieldType().tokenized());
     
     String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));

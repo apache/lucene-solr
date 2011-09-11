@@ -1257,7 +1257,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           // random TV
           try {
             w.addDocument(doc);
-            assertFalse(field.storeTermVectors());
+            assertFalse(field.fieldType().storeTermVectors());
           } catch (RuntimeException e) {
             assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
           }
@@ -1278,7 +1278,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           // random TV
           try {
             w.addDocument(doc);
-            assertFalse(field.storeTermVectors());
+            assertFalse(field.fieldType().storeTermVectors());
           } catch (RuntimeException e) {
             assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
           }

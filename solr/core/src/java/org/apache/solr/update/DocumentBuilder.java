@@ -336,7 +336,7 @@ public class DocumentBuilder {
   public SolrDocument loadStoredFields( SolrDocument doc, Document luceneDoc  )
   {
     for( IndexableField field : luceneDoc) {
-      if( field.stored() ) {
+      if( field.fieldType().stored() ) {
         SchemaField sf = schema.getField( field.name() );
         if( !schema.isCopyFieldTarget( sf ) ) {
           doc.addField( field.name(), sf.getType().toObject( field ) );

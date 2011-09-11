@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.*;
@@ -63,7 +64,7 @@ import java.util.Date;
  * @see org.apache.lucene.search.NumericRangeQuery
  * @since solr 1.4
  */
-public class TrieField extends FieldType {
+public class TrieField extends org.apache.solr.schema.FieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
@@ -482,7 +483,7 @@ public class TrieField extends FieldType {
       return null;
     }
     
-    org.apache.lucene.document.FieldType ft = new org.apache.lucene.document.FieldType();
+    FieldType ft = new FieldType();
     ft.setStored(stored);
     ft.setTokenized(true);
     ft.setIndexed(indexed);
@@ -545,7 +546,7 @@ public class TrieField extends FieldType {
    * Returns null if no prefix or prefix not needed, or the prefix of the main value of a trie field
    * that indexes multiple precisions per value.
    */
-  public static String getMainValuePrefix(FieldType ft) {
+  public static String getMainValuePrefix(org.apache.solr.schema.FieldType ft) {
     if (ft instanceof TrieDateField)
       ft = ((TrieDateField) ft).wrappedField;
     if (ft instanceof TrieField) {

@@ -410,14 +410,14 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 
 
 
-* LUCENE-2308: Separate FieldType from Field instances
+* LUCENE-2308: Separate IndexableFieldType from Field instances
 
 With this change, the indexing details (indexed, tokenized, norms,
 indexOptions, stored, etc.) are moved into a separate FieldType
 instance (rather than being stored directly on the Field).
 
-This means you can create the FieldType instance once, up front, for a
-given field, and then re-use that instance whenever you instantiate
+This means you can create the IndexableFieldType instance once, up front,
+for a given field, and then re-use that instance whenever you instantiate
 the Field.
 
 Certain field types are pre-defined since they are common cases:
@@ -454,9 +454,7 @@ You can of course also create your own FieldType from scratch:
   t.setOmitNorms(true);
   t.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 
-FieldType has a freeze() method to prevent further changes.  Note that
-once a FieldType is bound to a Field, it's frozen, to help prevent
-confusing bugs.
+FieldType has a freeze() method to prevent further changes.
 
 When migrating from the 3.x API, if you did this before:
 

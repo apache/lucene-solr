@@ -199,7 +199,7 @@ public class InstantiatedIndex
         documentsByNumber[i] = document;
         for (IndexableField field : document.getDocument()) {
           if (fields == null || fields.contains(field.name())) {
-            if (field.storeTermVectors()) {
+            if (field.fieldType().storeTermVectors()) {
               if (document.getVectorSpace() == null) {
                 document.setVectorSpace(new HashMap<String, List<InstantiatedTermDocumentInformation>>());
               }
@@ -291,7 +291,7 @@ public class InstantiatedIndex
         continue; // deleted
       }
       for (IndexableField field : document.getDocument()) {
-        if (field.storeTermVectors() && field.storeTermVectorOffsets()) {
+        if (field.fieldType().storeTermVectors() && field.fieldType().storeTermVectorOffsets()) {
           TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
           if (termPositionVector != null) {
             for (int i = 0; i < termPositionVector.getTerms().length; i++) {

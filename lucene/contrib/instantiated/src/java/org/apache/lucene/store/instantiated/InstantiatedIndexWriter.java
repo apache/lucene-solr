@@ -484,28 +484,28 @@ public class InstantiatedIndexWriter implements Closeable {
 
 
       // once fieldSettings, always fieldSettings.
-      if (field.omitNorms()) {
+      if (field.fieldType().omitNorms()) {
         fieldSetting.omitNorms = true;
       }
-      if (field.indexed() ) {
+      if (field.fieldType().indexed() ) {
         fieldSetting.indexed = true;
       }
-      if (field.tokenized()) {
+      if (field.fieldType().tokenized()) {
         fieldSetting.tokenized = true;
       }
-      if (field.stored()) {
+      if (field.fieldType().stored()) {
         fieldSetting.stored = true;
       }
       if (field.binaryValue() != null) {
         fieldSetting.isBinary = true;
       }
-      if (field.storeTermVectors()) {
+      if (field.fieldType().storeTermVectors()) {
         fieldSetting.storeTermVector = true;
       }
-      if (field.storeTermVectorPositions()) {
+      if (field.fieldType().storeTermVectorPositions()) {
         fieldSetting.storePositionWithTermVector = true;
       }
-      if (field.storeTermVectorOffsets()) {
+      if (field.fieldType().storeTermVectorOffsets()) {
         fieldSetting.storeOffsetWithTermVector = true;
       }
     }
@@ -519,12 +519,12 @@ public class InstantiatedIndexWriter implements Closeable {
 
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
 
-      if (field.indexed()) {
+      if (field.fieldType().indexed()) {
 
         LinkedList<Token> tokens = new LinkedList<Token>();
         tokensByField.put(field, tokens);
 
-        if (field.tokenized()) {
+        if (field.fieldType().tokenized()) {
           final TokenStream tokenStream;
           // todo readerValue(), binaryValue()
           if (field.tokenStreamValue() != null) {
@@ -564,7 +564,7 @@ public class InstantiatedIndexWriter implements Closeable {
         }
       }
 
-      if (!field.stored()) {
+      if (!field.fieldType().stored()) {
         //it.remove();
       }
     }
@@ -610,7 +610,7 @@ public class InstantiatedIndexWriter implements Closeable {
           termDocumentInformationFactory.payloads.add(null);
         }
 
-        if (eField_Tokens.getKey().storeTermVectorOffsets()) {
+        if (eField_Tokens.getKey().fieldType().storeTermVectorOffsets()) {
 
           termDocumentInformationFactory.termOffsets.add(new TermVectorOffsetInfo(fieldSetting.offset + token.startOffset(), fieldSetting.offset + token.endOffset()));
           lastOffset = fieldSetting.offset + token.endOffset();
@@ -619,7 +619,7 @@ public class InstantiatedIndexWriter implements Closeable {
 
       }
 
-      if (eField_Tokens.getKey().storeTermVectorOffsets()) {
+      if (eField_Tokens.getKey().fieldType().storeTermVectorOffsets()) {
         fieldSetting.offset = lastOffset + 1;
       }
 

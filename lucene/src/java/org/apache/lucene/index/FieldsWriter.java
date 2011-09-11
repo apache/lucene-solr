@@ -217,14 +217,14 @@ final class FieldsWriter {
 
     int storedCount = 0;
     for (IndexableField field : doc) {
-      if (field.stored()) {
+      if (field.fieldType().stored()) {
         storedCount++;
       }
     }
     fieldsStream.writeVInt(storedCount);
 
     for (IndexableField field : doc) {
-      if (field.stored()) {
+      if (field.fieldType().stored()) {
         writeField(fieldInfos.fieldNumber(field.name()), field);
       }
     }

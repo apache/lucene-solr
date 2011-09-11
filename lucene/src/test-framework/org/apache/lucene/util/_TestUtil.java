@@ -433,8 +433,7 @@ public class _TestUtil {
   /** Adds field info for a Document. */
   public static void add(Document doc, FieldInfos fieldInfos) {
     for (IndexableField field : doc) {
-      fieldInfos.addOrUpdate(field.name(), field.indexed(), field.storeTermVectors(), field.storeTermVectorPositions(),
-              field.storeTermVectorOffsets(), field.omitNorms(), false, field.indexOptions(), field.docValuesType());
+      fieldInfos.addOrUpdate(field.name(), field.fieldType(), false, field.docValuesType());
     }
   }
   
@@ -515,7 +514,7 @@ public class _TestUtil {
       Field field1 = (Field) f;
       
       Field field2 = new Field(field1.name(),
-                               field1.getFieldType(),
+                               field1.fieldType(),
                                field1.stringValue()
                                );
       doc2.add(field2);

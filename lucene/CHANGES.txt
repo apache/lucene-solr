@@ -166,6 +166,11 @@ Changes in backwards compatibility policy
   arbitrary relationships. To navigate to a scorer's children, call Scorer.getChildren().
   (Robert Muir)
 
+* LUCENE-2308: Field is now instantiated with an instance of IndexableFieldType, of which there
+  is a core implementation FieldType.  Most properties describing a Field have been moved to
+  IndexableFieldType.  See MIGRATE.txt for more details.
+  (Nikola Tankovic, Mike McCandless, Chris Male)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

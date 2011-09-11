@@ -110,7 +110,7 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
-    Document doc = new Document();;
+    Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);

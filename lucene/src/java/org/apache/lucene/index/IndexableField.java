@@ -21,7 +21,6 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
@@ -48,9 +47,6 @@ public interface IndexableField {
   /** Field boost (you must pre-multiply in any doc boost). */
   public float boost();
   
-  /* True if the field's value should be stored */
-  public boolean stored();
-
   /* Non-null if this field has a binary value */
   public BytesRef binaryValue();
 
@@ -74,27 +70,12 @@ public interface IndexableField {
   /* Numeric value; only used if the field is numeric */
   public Number numericValue();
 
-  /* True if this field should be indexed (inverted) */
-  public boolean indexed();
-
-  /* True if this field's value should be analyzed */
-  public boolean tokenized();
-
-  /* True if norms should not be indexed */
-  public boolean omitNorms();
-
-  /* {@link IndexOptions}, describing what should be
-   * recorded into the inverted index */
-  public IndexOptions indexOptions();
-
-  /* True if term vectors should be indexed */
-  public boolean storeTermVectors();
-
-  /* True if term vector offsets should be indexed */
-  public boolean storeTermVectorOffsets();
-
-  /* True if term vector positions should be indexed */
-  public boolean storeTermVectorPositions();
+  /**
+   * Returns the IndexableFieldType describing the properties of this field
+   *
+   * @return IndexableFieldType for this field
+   */
+  public IndexableFieldType fieldType();
   
   /* Non-null if doc values should be indexed */
   public PerDocFieldValues docValues();

@@ -82,7 +82,7 @@ public class TestNRTManager extends LuceneTestCase {
       Field field1 = (Field) f;
       
       Field field2 = new Field(field1.name(),
-                              ((Field) f).getFieldType(),
+                              ((Field) f).fieldType(),
                                field1.stringValue());
       doc2.add(field2);
     }

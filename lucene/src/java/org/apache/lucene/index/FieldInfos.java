@@ -456,6 +456,12 @@ public final class FieldInfos implements Iterable<FieldInfo> {
                                storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
   }
 
+  synchronized public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType, boolean scorePayloads, ValueType docValues) {
+    return addOrUpdateInternal(name, -1, fieldType.indexed(), fieldType.storeTermVectors(),
+        fieldType.storeTermVectorPositions(), fieldType.storeTermVectorOffsets(), fieldType.omitNorms(), scorePayloads,
+        fieldType.indexOptions(), docValues);
+  }
+
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
       boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {

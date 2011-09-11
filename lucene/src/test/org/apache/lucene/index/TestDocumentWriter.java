@@ -77,12 +77,12 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexableField [] fields = doc.getFields("textField2");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
-    assertTrue(fields[0].storeTermVectors());
+    assertTrue(fields[0].fieldType().storeTermVectors());
 
     fields = doc.getFields("textField1");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_1_TEXT));
-    assertFalse(fields[0].storeTermVectors());
+    assertFalse(fields[0].fieldType().storeTermVectors());
 
     fields = doc.getFields("keyField");
     assertTrue(fields != null && fields.length == 1);

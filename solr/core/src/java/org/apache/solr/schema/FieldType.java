@@ -492,7 +492,7 @@ public abstract class FieldType extends FieldProperties {
   public void setQueryAnalyzer(Analyzer analyzer) {
     SolrException e = new SolrException
       (ErrorCode.SERVER_ERROR,
-       "FieldType: " + this.getClass().getSimpleName() + 
+       "FieldType: " + this.getClass().getSimpleName() +
        " (" + typeName + ") does not support specifying an analyzer");
     SolrException.logOnce(log,null,e);
     throw e;

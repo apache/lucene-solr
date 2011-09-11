@@ -28,9 +28,7 @@ public class TestTermVectorAccessor extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
-    Document doc;
-
-    doc = new Document();
+    Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);

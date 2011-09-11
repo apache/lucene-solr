@@ -17,6 +17,7 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.index.IndexableField;
@@ -87,7 +88,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      org.apache.lucene.document.FieldType customType = new org.apache.lucene.document.FieldType();
+      FieldType customType = new FieldType();
       customType.setStored(true);
       f[f.length - 1] = createField(field.getName(), storedVal, customType, boost);
     }

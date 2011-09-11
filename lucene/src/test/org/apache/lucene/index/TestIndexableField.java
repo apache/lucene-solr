@@ -44,6 +44,47 @@ public class TestIndexableField extends LuceneTestCase {
   private class MyField implements IndexableField {
 
     private final int counter;
+    private final IndexableFieldType fieldType = new IndexableFieldType() {
+      @Override
+      public boolean indexed() {
+        return (counter % 10) != 3;
+      }
+
+      @Override
+      public boolean stored() {
+        return (counter & 1) == 0 || (counter % 10) == 3;
+      }
+
+      @Override
+      public boolean tokenized() {
+        return true;
+      }
+
+      @Override
+      public boolean storeTermVectors() {
+        return counter % 2 == 1 && counter % 10 != 9;
+      }
+
+      @Override
+      public boolean storeTermVectorOffsets() {
+        return counter % 2 == 1 && counter % 10 != 9;
+      }
+
+      @Override
+      public boolean storeTermVectorPositions() {
+        return counter % 2 == 1 && counter % 10 != 9;
+      }
+
+      @Override
+      public boolean omitNorms() {
+        return false;
+      }
+
+      @Override
+      public FieldInfo.IndexOptions indexOptions() {
+        return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      }
+    };
 
     public MyField(int counter) {
       this.counter = counter;
@@ -57,11 +98,6 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public float boost() {
       return 1.0f + random.nextFloat();
-    }
-  
-    @Override
-    public boolean stored() {
-      return (counter & 1) == 0 || (counter % 10) == 3;
     }
 
     @Override
@@ -121,42 +157,11 @@ public class TestIndexableField extends LuceneTestCase {
       return counter;
     }
 
-    // If this returns true then we index this field:
     @Override
-    public boolean indexed() {
-      return (counter % 10) != 3;
+    public IndexableFieldType fieldType() {
+      return fieldType;
     }
 
-    @Override
-    public boolean tokenized() {
-      return true;
-    }
-
-    @Override
-    public boolean omitNorms() {
-      return false;
-    }
-
-    @Override
-    public FieldInfo.IndexOptions indexOptions() {
-      return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    }
-
-    @Override
-    public boolean storeTermVectors() {
-      return counter % 2 == 1 && counter%10 != 9;
-    }
-
-    @Override
-    public boolean storeTermVectorOffsets() {
-      return counter % 2 == 1 && counter%10 != 9;
-    }
-
-    @Override
-    public boolean storeTermVectorPositions() {
-      return counter % 2 == 1 && counter%10 != 9;
-    }
-  
     // TODO: randomly enable doc values
     @Override
     public PerDocFieldValues docValues() {

@@ -18,8 +18,9 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexableFieldType;
 
-public class FieldType {
+public class FieldType implements IndexableFieldType {
 
   private boolean indexed;
   private boolean stored;
@@ -31,7 +32,7 @@ public class FieldType {
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
   private boolean frozen;
 
-  public FieldType(FieldType ref) {
+  public FieldType(IndexableFieldType ref) {
     this.indexed = ref.indexed();
     this.stored = ref.stored();
     this.tokenized = ref.tokenized();
@@ -52,8 +53,11 @@ public class FieldType {
     }
   }
 
-  /** Prevents future changes.  Note that when a FieldType
-   *  is first bound to a Field instance, it is frozen. */
+  /**
+   * Prevents future changes. Note, it is recommended that this is called once
+   * the FieldTypes's properties have been set, to prevent unintential state
+   * changes.
+   */
   public void freeze() {
     this.frozen = true;
   }
