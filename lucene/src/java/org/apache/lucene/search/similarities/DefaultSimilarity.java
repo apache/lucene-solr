@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.BytesRef;
@@ -84,5 +84,10 @@ public class DefaultSimilarity extends TFIDFSimilarity {
   /** @see #setDiscountOverlaps */
   public boolean getDiscountOverlaps() {
     return discountOverlaps;
+  }
+
+  @Override
+  public String toString() {
+    return "DefaultSimilarity";
   }
 }

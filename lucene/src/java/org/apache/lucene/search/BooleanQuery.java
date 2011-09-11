@@ -24,7 +24,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
-import org.apache.lucene.search.Similarity.ExactDocScorer;
+import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
 import org.apache.lucene.search.TermQuery.TermWeight;
 
 import java.io.IOException;

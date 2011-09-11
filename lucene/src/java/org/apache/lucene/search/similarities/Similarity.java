@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,12 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader; // javadoc
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms; // javadoc
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat; // javadoc
@@ -140,7 +146,7 @@ public abstract class Similarity {
    * <p>
    * Term frequencies are integers (the term or phrase's tf)
    */
-  public abstract class ExactDocScorer {
+  public static abstract class ExactDocScorer {
     /**
      * Score a single document
      * @param doc document id
@@ -169,7 +175,7 @@ public abstract class Similarity {
    * <p>
    * Term frequencies are floating point values.
    */
-  public abstract class SloppyDocScorer {
+  public static abstract class SloppyDocScorer {
     /**
      * Score a single document
      * @param doc document id

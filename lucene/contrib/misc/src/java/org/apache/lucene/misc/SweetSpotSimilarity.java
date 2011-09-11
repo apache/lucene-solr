@@ -17,7 +17,7 @@
 
 package org.apache.lucene.misc;
 
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
 
 /**

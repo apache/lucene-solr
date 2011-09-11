@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,25 +17,26 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-/** 
- * Expert: Default scoring provider. 
- * <p>
- * Returns {@link DefaultSimilarity} for every field
+/**
+ * The smoothed power-law (SPL) distribution for the information-based framework
+ * that is described in the original paper.
+ * <p>Unlike for DFR, the natural logarithm is used, as
+ * it is faster to compute and the original paper does not express any
+ * preference to a specific base.</p>
+ * @lucene.experimental
  */
-public class DefaultSimilarityProvider implements SimilarityProvider {
-  private static final Similarity impl = new DefaultSimilarity();
+public class DistributionSPL extends Distribution {
+  @Override
+  public final float score(BasicStats stats, float tfn, float lambda) {
+    if (lambda == 1f) {
+      lambda = 0.99f;
+    }
+    return (float)-Math.log(
+        (Math.pow(lambda, (tfn / (tfn + 1))) - lambda) / (1 - lambda));
+  }
   
-  /** Implemented as <code>overlap / maxOverlap</code>. */
-  public float coord(int overlap, int maxOverlap) {
-    return overlap / (float)maxOverlap;
-  }
-
-  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
-  public float queryNorm(float sumOfSquaredWeights) {
-    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
-  }
-
-  public Similarity get(String field) {
-    return impl;
+  @Override
+  public String toString() {
+    return "SPL";
   }
 }

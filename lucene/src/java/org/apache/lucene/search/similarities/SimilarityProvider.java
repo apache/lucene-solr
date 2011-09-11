@@ -1,4 +1,6 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
+
+import org.apache.lucene.search.BooleanQuery;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

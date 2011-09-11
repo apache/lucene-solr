@@ -16,7 +16,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 
 public abstract class SimilarityFactory {

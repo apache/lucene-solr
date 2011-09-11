@@ -495,6 +495,34 @@ New features
 * LUCENE-3423: add Terms.getDocCount(), which returns the number of documents
   that have at least one term for a field.  (Yonik Seeley, Robert Muir)
 
+* LUCENE-2959: Added a variety of different relevance ranking systems to Lucene.
+
+  - Added Okapi BM25, Language Models, Divergence from Randomness, and 
+    Information-Based Models. The models are pluggable, support all of lucene's 
+    features (boosts, slops, explanations, etc) and queries (spans, etc).
+
+  - All models default to the same index-time norm encoding as DefaultSimilarity: 
+    so you can easily try these out/switch back and forth/run experiments and 
+    comparisons without reindexing. Note: most of the models do rely upon index
+    statistics that are new in Lucene 4.0, so for existing 3.x indexes its a good
+    idea to upgrade your index to the new format with IndexUpgrader first.
+
+  - Added a new subclass SimilarityBase which provides a simplified API 
+    for plugging in new ranking algorithms without dealing with all of the
+    nuances and implementation details of Lucene. 
+
+  - Added a new helper class BasicSimilarityProvider that just applies one
+    scoring algorithm to all fields, with queryNorm() and coord() returning 1.
+    In general, it is recommended to disable coord() when using the new models.
+    For example, to use BM25 for all fields: 
+     searcher.setSimilarityProvider(new BasicSimilarityProvider(new BM25Similarity()));
+
+    If you instead want to apply different similarities (e.g. ones with different
+    parameter values or different algorithms entirely) to different fields, implement
+    SimilarityProvider with your per-field logic.
+
+  (David Mark Nemeskey via Robert Muir)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

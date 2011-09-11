@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.Similarity.ExactDocScorer;
+import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
 import org.apache.lucene.util.ArrayUtil;
 import java.io.IOException;
 import java.util.Comparator;

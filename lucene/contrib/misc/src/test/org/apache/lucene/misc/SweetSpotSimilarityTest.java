@@ -18,11 +18,11 @@
 
 package org.apache.lucene.misc;
 
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.DefaultSimilarityProvider;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.TFIDFSimilarity;
-import org.apache.lucene.search.SimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.FieldInvertState;
 

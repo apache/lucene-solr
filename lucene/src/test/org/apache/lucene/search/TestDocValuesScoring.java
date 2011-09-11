@@ -30,6 +30,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -71,13 +74,24 @@ public class TestDocValuesScoring extends LuceneTestCase {
     
     // no boosting
     IndexSearcher searcher1 = newSearcher(ir);
+    final SimilarityProvider base = searcher1.getSimilarityProvider();
     // boosting
     IndexSearcher searcher2 = newSearcher(ir);
-    searcher2.setSimilarityProvider(new DefaultSimilarityProvider() {
-      final Similarity fooSim = new BoostingSimilarity(super.get("foo"), "foo_boost");
+    searcher2.setSimilarityProvider(new SimilarityProvider() {
+      final Similarity fooSim = new BoostingSimilarity(base.get("foo"), "foo_boost");
 
       public Similarity get(String field) {
-        return "foo".equals(field) ? fooSim : super.get(field);
+        return "foo".equals(field) ? fooSim : base.get(field);
+      }
+
+      @Override
+      public float coord(int overlap, int maxOverlap) {
+        return base.coord(overlap, maxOverlap);
+      }
+
+      @Override
+      public float queryNorm(float sumOfSquaredWeights) {
+        return base.queryNorm(sumOfSquaredWeights);
       }
     });
     

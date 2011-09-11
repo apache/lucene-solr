@@ -22,7 +22,7 @@ import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a

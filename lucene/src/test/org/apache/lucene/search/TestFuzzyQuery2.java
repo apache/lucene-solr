@@ -29,6 +29,9 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -104,6 +107,21 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: searcher=" + searcher);
     }
+    // even though this uses a boost-only rewrite, this test relies upon queryNorm being the default implementation,
+    // otherwise scores are different!
+    final SimilarityProvider delegate = searcher.getSimilarityProvider();
+    searcher.setSimilarityProvider(new DefaultSimilarityProvider() {
+      @Override
+      public float coord(int overlap, int maxOverlap) {
+        return delegate.coord(overlap, maxOverlap);
+      }
+
+      @Override
+      public Similarity get(String field) {
+        return delegate.get(field);
+      }
+    });
+    
     writer.close();
     String line;
     while ((line = reader.readLine()) != null) {

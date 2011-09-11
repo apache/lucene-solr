@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -25,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -68,9 +71,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
    */
   public void testDoc1_Query1_All_Slops_Should_match() throws Exception {
     for (int slop=0; slop<30; slop++) {
-      float score1 = checkPhraseQuery(DOC_1, QUERY_1, slop, 1);
-      float score2 = checkPhraseQuery(DOC_1_B, QUERY_1, slop, 1);
-      assertTrue("slop="+slop+" score2="+score2+" should be greater than score1 "+score1, score2>score1);
+      float freq1 = checkPhraseQuery(DOC_1, QUERY_1, slop, 1);
+      float freq2 = checkPhraseQuery(DOC_1_B, QUERY_1, slop, 1);
+      assertTrue("slop="+slop+" freq2="+freq2+" should be greater than score1 "+freq1, freq2>freq1);
     }
   }
 
@@ -82,10 +85,10 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   public void testDoc2_Query1_Slop_6_or_more_Should_match() throws Exception {
     for (int slop=0; slop<30; slop++) {
       int numResultsExpected = slop<6 ? 0 : 1;
-      float score1 = checkPhraseQuery(DOC_2, QUERY_1, slop, numResultsExpected);
+      float freq1 = checkPhraseQuery(DOC_2, QUERY_1, slop, numResultsExpected);
       if (numResultsExpected>0) {
-        float score2 = checkPhraseQuery(DOC_2_B, QUERY_1, slop, 1);
-        assertTrue("slop="+slop+" score2="+score2+" should be greater than score1 "+score1, score2>score1);
+        float freq2 = checkPhraseQuery(DOC_2_B, QUERY_1, slop, 1);
+        assertTrue("slop="+slop+" freq2="+freq2+" should be greater than freq1 "+freq1, freq2>freq1);
       }
     }
   }
@@ -97,9 +100,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
    */
   public void testDoc2_Query2_All_Slops_Should_match() throws Exception {
     for (int slop=0; slop<30; slop++) {
-      float score1 = checkPhraseQuery(DOC_2, QUERY_2, slop, 1);
-      float score2 = checkPhraseQuery(DOC_2_B, QUERY_2, slop, 1);
-      assertTrue("slop="+slop+" score2="+score2+" should be greater than score1 "+score1, score2>score1);
+      float freq1 = checkPhraseQuery(DOC_2, QUERY_2, slop, 1);
+      float freq2 = checkPhraseQuery(DOC_2_B, QUERY_2, slop, 1);
+      assertTrue("slop="+slop+" freq2="+freq2+" should be greater than freq1 "+freq1, freq2>freq1);
     }
   }
 
@@ -109,9 +112,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
    */
   public void testDoc3_Query1_All_Slops_Should_match() throws Exception {
     for (int slop=0; slop<30; slop++) {
-      float score1 = checkPhraseQuery(DOC_3, QUERY_1, slop, 1);
-      float score2 = checkPhraseQuery(DOC_3_B, QUERY_1, slop, 1);
-      assertTrue("slop="+slop+" score2="+score2+" should be greater than score1 "+score1, score2>score1);
+      float freq1 = checkPhraseQuery(DOC_3, QUERY_1, slop, 1);
+      float freq2 = checkPhraseQuery(DOC_3_B, QUERY_1, slop, 1);
+      assertTrue("slop="+slop+" freq2="+freq2+" should be greater than freq1 "+freq1, freq2>freq1);
     }
   }
 
@@ -140,9 +143,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
 
     IndexSearcher searcher = newSearcher(reader);
-    TopDocs td = searcher.search(query,null,10);
-    //System.out.println("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Expecting number of hits: "+expectedNumResults+" maxScore="+td.getMaxScore());
-    assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, td.totalHits);
+    MaxFreqCollector c = new MaxFreqCollector();
+    searcher.search(query, c);
+    assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, c.totalHits);
 
     //QueryUtils.check(query,searcher);
     writer.close();
@@ -150,7 +153,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     reader.close();
     ramDir.close();
 
-    return td.getMaxScore();
+    // returns the max Scorer.freq() found, because even though norms are omitted, many index stats are different
+    // with these different tokens/distributions/lengths.. otherwise this test is very fragile.
+    return c.max; 
   }
 
   private static Document makeDocument(String docText) {
@@ -171,4 +176,29 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     return query;
   }
 
+  static class MaxFreqCollector extends Collector {
+    float max;
+    int totalHits;
+    Scorer scorer;
+    
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      totalHits++;
+      max = Math.max(max, scorer.freq());
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {      
+    }
+
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+      return false;
+    }
+  }
 }

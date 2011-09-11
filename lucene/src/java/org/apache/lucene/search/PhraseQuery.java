@@ -29,7 +29,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
@@ -119,7 +120,11 @@ public class PhraseQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    if (terms.size() == 1) {
+    if (terms.isEmpty()) {
+      BooleanQuery bq = new BooleanQuery();
+      bq.setBoost(getBoost());
+      return bq;
+    } else if (terms.size() == 1) {
       TermQuery tq = new TermQuery(terms.get(0));
       tq.setBoost(getBoost());
       return tq;
@@ -208,8 +213,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      if (terms.size() == 0)			  // optimize zero-term case
-        return null;
+      assert !terms.isEmpty();
       final IndexReader reader = context.reader;
       final Bits liveDocs = reader.getLiveDocs();
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
@@ -285,12 +289,6 @@ public class PhraseQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    if (terms.size() == 1) {			  // optimize one-term case
-      Term term = terms.get(0);
-      Query termQuery = new TermQuery(term);
-      termQuery.setBoost(getBoost());
-      return termQuery.createWeight(searcher);
-    }
     return new PhraseWeight(searcher);
   }
 

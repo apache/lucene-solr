@@ -52,6 +52,8 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.RandomSimilarityProvider;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -209,6 +211,8 @@ public abstract class LuceneTestCase extends Assert {
   private static Codec codec;
   // default codec provider
   private static CodecProvider savedCodecProvider;
+  
+  private static SimilarityProvider similarityProvider;
 
   private static Locale locale;
   private static Locale savedLocale;
@@ -393,6 +397,7 @@ public abstract class LuceneTestCase extends Assert {
     savedTimeZone = TimeZone.getDefault();
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
+    similarityProvider = new RandomSimilarityProvider(random);
     testsFailed = false;
   }
 
@@ -467,6 +472,7 @@ public abstract class LuceneTestCase extends Assert {
   /** print some useful debugging information about the environment */
   private static void printDebuggingInformation(String codecDescription) {
     System.err.println("NOTE: test params are: codec=" + codecDescription +
+        ", sim=" + similarityProvider +
         ", locale=" + locale +
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
     System.err.println("NOTE: all tests run in this JVM:");
@@ -922,6 +928,7 @@ public abstract class LuceneTestCase extends Assert {
   /** create a new index writer config with random defaults using the specified random */
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
+    c.setSimilarityProvider(similarityProvider);
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
@@ -1249,7 +1256,9 @@ public abstract class LuceneTestCase extends Assert {
       if (maybeWrap && rarely()) {
         r = new SlowMultiReaderWrapper(r);
       }
-      return random.nextBoolean() ? new AssertingIndexSearcher(r) : new AssertingIndexSearcher(r.getTopReaderContext());
+      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(r) : new AssertingIndexSearcher(r.getTopReaderContext());
+      ret.setSimilarityProvider(similarityProvider);
+      return ret;
     } else {
       int threads = 0;
       final ExecutorService ex = (random.nextBoolean()) ? null
@@ -1258,7 +1267,7 @@ public abstract class LuceneTestCase extends Assert {
       if (ex != null && VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
       }
-      return random.nextBoolean() ? 
+      IndexSearcher ret = random.nextBoolean() ? 
         new AssertingIndexSearcher(r, ex) {
           @Override
           public void close() throws IOException {
@@ -1272,6 +1281,8 @@ public abstract class LuceneTestCase extends Assert {
             shutdownExecutorService(ex);
           }
         };
+      ret.setSimilarityProvider(similarityProvider);
+      return ret;
     }
   }
   

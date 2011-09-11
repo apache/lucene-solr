@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 
 /**
  * Expert: Calculate query weights and build query scorers.

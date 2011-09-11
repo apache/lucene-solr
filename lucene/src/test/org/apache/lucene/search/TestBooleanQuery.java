@@ -27,6 +27,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -72,6 +75,21 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
+    // this test relies upon coord being the default implementation,
+    // otherwise scores are different!
+    final SimilarityProvider delegate = s.getSimilarityProvider();
+    s.setSimilarityProvider(new DefaultSimilarityProvider() {
+      @Override
+      public float queryNorm(float sumOfSquaredWeights) {
+        return delegate.queryNorm(sumOfSquaredWeights);
+      }
+
+      @Override
+      public Similarity get(String field) {
+        return delegate.get(field);
+      }
+    });
+
     BooleanQuery q = new BooleanQuery();
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
 
@@ -81,7 +99,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     subQuery.setBoost(0);
     q.add(subQuery, BooleanClause.Occur.SHOULD);
     float score2 = s.search(q, 10).getMaxScore();
-    assertEquals(score*.5, score2, 1e-6);
+    assertEquals(score*.5F, score2, 1e-6);
 
     // LUCENE-2617: make sure that a clause not in the index still contributes to the score via coord factor
     BooleanQuery qq = (BooleanQuery)q.clone();
@@ -91,14 +109,14 @@ public class TestBooleanQuery extends LuceneTestCase {
     phrase.setBoost(0);
     qq.add(phrase, BooleanClause.Occur.SHOULD);
     score2 = s.search(qq, 10).getMaxScore();
-    assertEquals(score*(1.0/3), score2, 1e-6);
+    assertEquals(score*(1/3F), score2, 1e-6);
 
     // now test BooleanScorer2
     subQuery = new TermQuery(new Term("field", "b"));
     subQuery.setBoost(0);
     q.add(subQuery, BooleanClause.Occur.MUST);
     score2 = s.search(q, 10).getMaxScore();
-    assertEquals(score*(2.0/3), score2, 1e-6);
+    assertEquals(score*(2/3F), score2, 1e-6);
  
     // PhraseQuery w/ no terms added returns a null scorer
     PhraseQuery pq = new PhraseQuery();

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Random;
@@ -35,7 +36,7 @@ public class CheckHits {
    * different  order of operations from the actual scoring method ...
    * this allows for a small amount of variation
    */
-  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.0002f;
+  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.02f;
     
   /**
    * Tests that all documents up to maxDoc which are *not* in the
@@ -327,6 +328,10 @@ public class CheckHits {
     if (!deep) return;
 
     Explanation detail[] = expl.getDetails();
+    // TODO: can we improve this entire method? its really geared to work only with TF/IDF
+    if (expl.getDescription().endsWith("computed from:")) {
+      return; // something more complicated.
+    }
     if (detail!=null) {
       if (detail.length==1) {
         // simple containment, unless its a freq of: (which lets a query explain how the freq is calculated), 
@@ -338,7 +343,7 @@ public class CheckHits {
         // - end with one of: "product of:", "sum of:", "max of:", or
         // - have "max plus <x> times others" (where <x> is float).
         float x = 0;
-        String descr = expl.getDescription().toLowerCase();
+        String descr = expl.getDescription().toLowerCase(Locale.ENGLISH);
         boolean productOf = descr.endsWith("product of:");
         boolean sumOf = descr.endsWith("sum of:");
         boolean maxOf = descr.endsWith("max of:");

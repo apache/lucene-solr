@@ -31,8 +31,8 @@ import org.apache.lucene.queryparser.flexible.standard.parser.EscapeQuerySyntaxI
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 
 /**
  * This builder does the same as the {@link BooleanQueryNodeBuilder}, but this
