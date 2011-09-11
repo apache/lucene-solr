@@ -492,6 +492,9 @@ New features
 * LUCENE-3376: ReusableAnalyzerBase has been moved from modules/analysis/common
   into lucene/src/java/org/apache/lucene/analysis (Chris Male)
 
+* LUCENE-3423: add Terms.getDocCount(), which returns the number of documents
+  that have at least one term for a field.  (Yonik Seeley, Robert Muir)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

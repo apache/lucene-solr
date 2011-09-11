@@ -846,6 +846,13 @@ public class MemoryIndex {
                 // each term has df=1
                 return info.sortedTerms.length;
               }
+
+              @Override
+              public int getDocCount() throws IOException {
+                return info.sortedTerms.length > 0 ? 1 : 0;
+              }
+              
+              
             };
           }
         }

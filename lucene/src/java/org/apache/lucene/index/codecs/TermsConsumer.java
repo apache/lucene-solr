@@ -26,6 +26,7 @@ import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * @lucene.experimental
@@ -42,7 +43,7 @@ public abstract class TermsConsumer {
   public abstract void finishTerm(BytesRef text, TermStats stats) throws IOException;
 
   /** Called when we are done adding terms to this field */
-  public abstract void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException;
+  public abstract void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException;
 
   /** Return the BytesRef Comparator used to sort terms
    *  before feeding to this API. */
@@ -59,6 +60,7 @@ public abstract class TermsConsumer {
     long sumTotalTermFreq = 0;
     long sumDocFreq = 0;
     long sumDFsinceLastAbortCheck = 0;
+    FixedBitSet visitedDocs = new FixedBitSet(mergeState.mergedDocCount);
 
     if (mergeState.fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       if (docsEnum == null) {
@@ -75,7 +77,7 @@ public abstract class TermsConsumer {
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
-          final TermStats stats = postingsConsumer.merge(mergeState, docsEnum);
+          final TermStats stats = postingsConsumer.merge(mergeState, docsEnum, visitedDocs);
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
             sumTotalTermFreq += stats.totalTermFreq;
@@ -109,7 +111,7 @@ public abstract class TermsConsumer {
             }
           }
           final PostingsConsumer postingsConsumer = startTerm(term);
-          final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum);
+          final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
             sumTotalTermFreq += stats.totalTermFreq;
@@ -124,6 +126,6 @@ public abstract class TermsConsumer {
       }
     }
 
-    finish(sumTotalTermFreq, sumDocFreq);
+    finish(sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
   }
 }

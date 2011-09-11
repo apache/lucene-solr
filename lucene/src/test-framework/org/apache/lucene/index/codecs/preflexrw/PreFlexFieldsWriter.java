@@ -196,7 +196,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void finish(long sumTotalTermCount, long sumDocFreq) throws IOException {
+    public void finish(long sumTotalTermCount, long sumDocFreq, int docCount) throws IOException {
     }
 
     @Override

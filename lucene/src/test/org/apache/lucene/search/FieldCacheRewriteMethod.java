@@ -134,6 +134,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         public long getSumDocFreq() throws IOException {
           return -1;
         }
+
+        @Override
+        public int getDocCount() throws IOException {
+          return -1;
+        }
       });
       
       assert termsEnum != null;

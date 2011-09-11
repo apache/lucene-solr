@@ -45,6 +45,7 @@ import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -705,6 +706,7 @@ public class CheckIndex {
 
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
+        FixedBitSet visitedDocs = new FixedBitSet(reader.maxDoc());
         while(true) {
 
           final BytesRef term = terms.next();
@@ -766,6 +768,7 @@ public class CheckIndex {
             if (doc == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
+            visitedDocs.set(doc);
             final int freq = docs2.freq();
             status.totPos += freq;
             totalTermFreq += freq;
@@ -810,6 +813,7 @@ public class CheckIndex {
             docCount = 0;
             totalTermFreq = 0;
             while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              visitedDocs.set(docsNoDel.docID());
               docCount++;
               totalTermFreq += docsNoDel.freq();
             }
@@ -919,6 +923,13 @@ public class CheckIndex {
               throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
             }
           }
+        
+        if (fieldTerms != null) {
+          final int v = fieldTerms.getDocCount();
+          if (v != -1 && visitedDocs.cardinality() != v) {
+            throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
+          }
+        }
 
           // Test seek to last term:
           if (lastTerm != null) {

@@ -109,6 +109,11 @@ public class FilterIndexReader extends IndexReader {
     public long getSumDocFreq() throws IOException {
       return in.getSumDocFreq();
     }
+
+    @Override
+    public int getDocCount() throws IOException {
+      return in.getDocCount();
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */

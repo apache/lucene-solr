@@ -153,9 +153,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
         assert fieldInfo != null: "field=" + field;
         final long sumTotalTermFreq = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
+        final int docCount = in.readVInt();
         final long indexStartFP = indexDivisor != -1 ? indexIn.readVLong() : 0;
         assert !fields.containsKey(fieldInfo.name);
-        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, indexStartFP, indexIn));
+        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount, indexStartFP, indexIn));
       }
       success = true;
     } finally {
@@ -399,6 +400,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     final FieldInfo fieldInfo;
     final long sumTotalTermFreq;
     final long sumDocFreq;
+    final int docCount;
     final long indexStartFP;
     final long rootBlockFP;
     final BytesRef rootCode;
@@ -406,13 +408,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
     //private boolean DEBUG;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, long indexStartFP, IndexInput indexIn) throws IOException {
+    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount, long indexStartFP, IndexInput indexIn) throws IOException {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq; 
       this.sumDocFreq = sumDocFreq; 
+      this.docCount = docCount;
       this.indexStartFP = indexStartFP;
       this.rootCode = rootCode;
       // if (DEBUG) {
@@ -473,6 +476,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
     @Override
     public long getSumDocFreq() {
       return sumDocFreq;
+    }
+
+    @Override
+    public int getDocCount() throws IOException {
+      return docCount;
     }
 
     @Override

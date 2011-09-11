@@ -120,6 +120,19 @@ public final class MultiTerms extends Terms {
     }
     return sum;
   }
+  
+  @Override
+  public int getDocCount() throws IOException {
+    int sum = 0;
+    for(Terms terms : subs) {
+      final int v = terms.getDocCount();
+      if (v == -1) {
+        return -1;
+      }
+      sum += v;
+    }
+    return sum;
+  }
 
   @Override
   public Comparator<BytesRef> getComparator() {

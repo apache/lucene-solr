@@ -401,6 +401,12 @@ public class InstantiatedIndexReader extends IndexReader {
             return -1;
           }
 
+          // TODO: support this?
+          @Override
+          public int getDocCount() throws IOException {
+            return -1;
+          }
+
           @Override
           public Comparator<BytesRef> getComparator() {
             return BytesRef.getUTF8SortedAsUnicodeComparator();

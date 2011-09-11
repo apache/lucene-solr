@@ -350,6 +350,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     private long numTerms;
     long sumTotalTermFreq;
     long sumDocFreq;
+    int docCount;
     long indexStartFP;
 
     // Used only to partition terms into the block tree; we
@@ -866,7 +867,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
     // Finishes all terms in this field
     @Override
-    public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
+    public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       if (numTerms > 0) {
         blockBuilder.finish();
 
@@ -878,6 +879,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
         this.sumTotalTermFreq = sumTotalTermFreq;
         this.sumDocFreq = sumDocFreq;
+        this.docCount = docCount;
 
         // Write FST to index
         indexStartFP = indexOut.getFilePointer();
@@ -929,6 +931,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             out.writeVLong(field.sumTotalTermFreq);
           }
           out.writeVLong(field.sumDocFreq);
+          out.writeVInt(field.docCount);
           indexOut.writeVLong(field.indexStartFP);
         }
       }

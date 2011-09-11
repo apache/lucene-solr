@@ -29,6 +29,7 @@ import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: break into separate freq and prox writers as
@@ -261,6 +262,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final ByteSliceReader freq = new ByteSliceReader();
     final ByteSliceReader prox = new ByteSliceReader();
 
+    FixedBitSet visitedDocs = new FixedBitSet(state.numDocs);
     long sumTotalTermFreq = 0;
     long sumDocFreq = 0;
 
@@ -347,6 +349,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         // passes, ie first sweep marks all del docs, and
         // 2nd sweep does the real flush, but I suspect
         // that'd add too much time to flush.
+        visitedDocs.set(docID);
         postingsConsumer.startDoc(docID, termDocFreq);
         if (docID < delDocLimit) {
           // Mark it deleted.  TODO: we could also skip
@@ -408,7 +411,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       sumDocFreq += numDocs;
     }
 
-    termsConsumer.finish(sumTotalTermFreq, sumDocFreq);
+    termsConsumer.finish(sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
   }
 
 }

@@ -42,6 +42,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.junit.BeforeClass;
@@ -108,11 +109,15 @@ public class TestCodecs extends LuceneTestCase {
       final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
       long sumTotalTermCount = 0;
       long sumDF = 0;
+      OpenBitSet visitedDocs = new OpenBitSet();
       for (final TermData term : terms) {
+        for (int i = 0; i < term.docs.length; i++) {
+          visitedDocs.set(term.docs[i]);
+        }
         sumDF += term.docs.length;
         sumTotalTermCount += term.write(termsConsumer);
       }
-      termsConsumer.finish(sumTotalTermCount, sumDF);
+      termsConsumer.finish(sumTotalTermCount, sumDF, (int) visitedDocs.cardinality());
     }
   }
 

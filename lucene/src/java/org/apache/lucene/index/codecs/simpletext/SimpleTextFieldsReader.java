@@ -31,6 +31,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -472,9 +473,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final IndexOptions indexOptions;
     private long sumTotalTermFreq;
     private long sumDocFreq;
+    private int docCount;
     private FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst;
     private int termCount;
     private final BytesRef scratch = new BytesRef(10);
+    private final CharsRef scratchUTF16 = new CharsRef(10);
 
     public SimpleTextTerms(String field, long termsStart) throws IOException {
       this.termsStart = termsStart;
@@ -494,6 +497,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       long lastDocsStart = -1;
       int docFreq = 0;
       long totalTermFreq = 0;
+      OpenBitSet visitedDocs = new OpenBitSet();
       while(true) {
         readLine(in, scratch);
         if (scratch.equals(END) || scratch.startsWith(FIELD)) {
@@ -507,6 +511,9 @@ class SimpleTextFieldsReader extends FieldsProducer {
         } else if (scratch.startsWith(DOC)) {
           docFreq++;
           sumDocFreq++;
+          UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
+          int docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
+          visitedDocs.set(docID);
         } else if (scratch.startsWith(POS)) {
           totalTermFreq++;
         } else if (scratch.startsWith(TERM)) {
@@ -528,6 +535,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           termCount++;
         }
       }
+      docCount = (int) visitedDocs.cardinality();
       fst = b.finish();
       /*
       PrintStream ps = new PrintStream("out.dot");
@@ -565,6 +573,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public long getSumDocFreq() throws IOException {
       return sumDocFreq;
+    }
+
+    @Override
+    public int getDocCount() throws IOException {
+      return docCount;
     }
   }
 

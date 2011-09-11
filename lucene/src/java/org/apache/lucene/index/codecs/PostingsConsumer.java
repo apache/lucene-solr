@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * @lucene.experimental
@@ -56,7 +57,7 @@ public abstract class PostingsConsumer {
 
   /** Default merge impl: append documents, mapping around
    *  deletes */
-  public TermStats merge(final MergeState mergeState, final DocsEnum postings) throws IOException {
+  public TermStats merge(final MergeState mergeState, final DocsEnum postings, final FixedBitSet visitedDocs) throws IOException {
 
     int df = 0;
     long totTF = 0;
@@ -67,6 +68,7 @@ public abstract class PostingsConsumer {
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {
           break;
         }
+        visitedDocs.set(doc);
         final int freq = postings.freq();
         this.startDoc(doc, freq);
         this.finishDoc();
@@ -80,6 +82,7 @@ public abstract class PostingsConsumer {
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {
           break;
         }
+        visitedDocs.set(doc);
         final int freq = postingsEnum.freq();
         this.startDoc(doc, freq);
         totTF += freq;

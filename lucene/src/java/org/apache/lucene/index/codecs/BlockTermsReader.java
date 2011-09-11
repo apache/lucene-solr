@@ -139,8 +139,9 @@ public class BlockTermsReader extends FieldsProducer {
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         final long sumTotalTermFreq = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
+        final int docCount = in.readVInt();
         assert !fields.containsKey(fieldInfo.name);
-        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq));
+        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount));
       }
       success = true;
     } finally {
@@ -243,14 +244,16 @@ public class BlockTermsReader extends FieldsProducer {
     final long termsStartPointer;
     final long sumTotalTermFreq;
     final long sumDocFreq;
+    final int docCount;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq) {
+    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.termsStartPointer = termsStartPointer;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
+      this.docCount = docCount;
     }
 
     @Override
@@ -281,6 +284,11 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public long getSumDocFreq() throws IOException {
       return sumDocFreq;
+    }
+
+    @Override
+    public int getDocCount() throws IOException {
+      return docCount;
     }
 
     // Iterates through terms in this field
