@@ -283,11 +283,11 @@ public class HunspellDictionary {
    */
   private void readDictionaryFile(InputStream dictionary, CharsetDecoder decoder) throws IOException {
     BufferedReader reader = new BufferedReader(new InputStreamReader(dictionary, decoder));
-    // nocommit, don't create millions of strings.
+    // TODO: don't create millions of strings.
     String line = reader.readLine(); // first line is number of entries
     int numEntries = Integer.parseInt(line);
     
-    // nocommit, the flags themselves can be double-chars (long) or also numeric
+    // TODO: the flags themselves can be double-chars (long) or also numeric
     // either way the trick is to encode them as char... but they must be parsed differently
     while ((line = reader.readLine()) != null) {
       String entry;
