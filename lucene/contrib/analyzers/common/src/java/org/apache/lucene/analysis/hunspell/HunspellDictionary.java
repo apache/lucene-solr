@@ -283,7 +283,7 @@ public class HunspellDictionary {
    */
   private void readDictionaryFile(InputStream dictionary, CharsetDecoder decoder) throws IOException {
     BufferedReader reader = new BufferedReader(new InputStreamReader(dictionary, decoder));
-    // nocommit, don't create millions of strings.
+    // TODO: don't create millions of strings.
     String line = reader.readLine(); // first line is number of entries
     int numEntries = Integer.parseInt(line);
     
