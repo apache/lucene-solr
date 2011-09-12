@@ -388,11 +388,11 @@ public class TestSimilarityBase extends LuceneTestCase {
   /** Correctness test for the Dirichlet LM model. */
   public void testLMDirichlet() throws IOException {
     float p =
-        (FREQ + 2000.0f * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f)) /
+        (FREQ + 2000.0f * (TOTAL_TERM_FREQ + 1) / (NUMBER_OF_FIELD_TOKENS + 1.0f)) /
         (DOC_LEN + 2000.0f);
     float a = 2000.0f / (DOC_LEN + 2000.0f);
     float gold = (float)(
-        Math.log(p / (a * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f))) +
+        Math.log(p / (a * (TOTAL_TERM_FREQ + 1) / (NUMBER_OF_FIELD_TOKENS + 1.0f))) +
         Math.log(a));
     correctnessTestCore(new LMDirichletSimilarity(), gold);
   }
@@ -400,9 +400,9 @@ public class TestSimilarityBase extends LuceneTestCase {
   /** Correctness test for the Jelinek-Mercer LM model. */
   public void testLMJelinekMercer() throws IOException {
     float p = (1 - 0.1f) * FREQ / DOC_LEN +
-              0.1f * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f);
+              0.1f * (TOTAL_TERM_FREQ + 1) / (NUMBER_OF_FIELD_TOKENS + 1.0f);
     float gold = (float)(Math.log(
-        p / (0.1f * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f))));
+        p / (0.1f * (TOTAL_TERM_FREQ + 1) / (NUMBER_OF_FIELD_TOKENS + 1.0f))));
     correctnessTestCore(new LMJelinekMercerSimilarity(0.1f), gold);
   }
   
@@ -412,7 +412,7 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   public void testLLForIB() throws IOException {
     SimilarityBase sim = new IBSimilarity(new DistributionLL(), new LambdaDF(), new Normalization.NoNormalization());
-    correctnessTestCore(sim, 4.26267987704f);
+    correctnessTestCore(sim, 4.178574562072754f);
   }
   
   /**
@@ -422,7 +422,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   public void testSPLForIB() throws IOException {
     SimilarityBase sim =
       new IBSimilarity(new DistributionSPL(), new LambdaTTF(), new Normalization.NoNormalization());
-    correctnessTestCore(sim, 2.24069910825f);
+    correctnessTestCore(sim, 2.2387237548828125f);
   }
   
   /** Correctness test for the PL2 DFR model. */
@@ -432,11 +432,11 @@ public class TestSimilarityBase extends LuceneTestCase {
     float tfn = (float)(FREQ * SimilarityBase.log2(
         1 + AVG_FIELD_LENGTH / DOC_LEN));  // 8.1894750101
     float l = 1.0f / (tfn + 1.0f);         // 0.108820144666
-    float lambda = (1.0f * TOTAL_TERM_FREQ) / NUMBER_OF_DOCUMENTS;  // 0.7
+    float lambda = (1.0f + TOTAL_TERM_FREQ) / (1f + NUMBER_OF_DOCUMENTS);  // 0.7029703
     float p = (float)(tfn * SimilarityBase.log2(tfn / lambda) +
               (lambda + 1 / (12 * tfn) - tfn) * SimilarityBase.log2(Math.E) +
-              0.5 * SimilarityBase.log2(2 * Math.PI * tfn)); // 21.1113611585
-    float gold = l * p;                    // 2.29734137536
+              0.5 * SimilarityBase.log2(2 * Math.PI * tfn)); // 21.065619
+    float gold = l * p;                    // 2.2923636
     correctnessTestCore(sim, gold);
   }
 
@@ -444,14 +444,14 @@ public class TestSimilarityBase extends LuceneTestCase {
   public void testIneB2() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
         new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
-    correctnessTestCore(sim, 6.23455315685f);
+    correctnessTestCore(sim, 5.747603416442871f);
   }
   
   /** Correctness test for the GL1 DFR model. */
   public void testGL1() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
         new BasicModelG(), new AfterEffectL(), new NormalizationH1());
-    correctnessTestCore(sim, 1.6463143825531006f);
+    correctnessTestCore(sim, 1.6390540599822998f);
   }
   
   /** Correctness test for the BEB1 DFR model. */
@@ -459,34 +459,34 @@ public class TestSimilarityBase extends LuceneTestCase {
     SimilarityBase sim = new DFRSimilarity(
         new BasicModelBE(), new AfterEffectB(), new NormalizationH1());
     float tfn = FREQ * AVG_FIELD_LENGTH / DOC_LEN;  // 8.75
-    float b = (TOTAL_TERM_FREQ + 1) / (DOC_FREQ * (tfn + 1));  // 0.728205128205
-    float f = TOTAL_TERM_FREQ + tfn;
-    float n = f + NUMBER_OF_DOCUMENTS;
-    float n1 = n + f - 1;        // 256.5
-    float m1 = n + f - tfn - 2;  // 246.75
-    float n2 = f;                                      // 78.75
-    float m2 = f - tfn;                                // 70.0
+    float b = (TOTAL_TERM_FREQ + 1 + 1) / ((DOC_FREQ + 1) * (tfn + 1));  // 0.67132866
+    double f = TOTAL_TERM_FREQ + 1 + tfn;
+    double n = f + NUMBER_OF_DOCUMENTS;
+    double n1 = n + f - 1;        // 258.5
+    double m1 = n + f - tfn - 2;  // 248.75
+    double n2 = f;                                      // 79.75
+    double m2 = f - tfn;                                // 71.0
     float be = (float)(-SimilarityBase.log2(n - 1) -
-               SimilarityBase.log2(Math.E) +                   // -8.916400790508378
+               SimilarityBase.log2(Math.E) +                   // -8.924494472554715
                ((m1 + 0.5f) * SimilarityBase.log2(n1 / m1) +
-                (n1 - m1) * SimilarityBase.log2(n1)) -         // 91.85089272283668
+                (n1 - m1) * SimilarityBase.log2(n1)) -         // 91.9620374903885
                ((m2 + 0.5f) * SimilarityBase.log2(n2 / m2) +
-                (n2 - m2) * SimilarityBase.log2(n2)));         // 67.09778276257171
-               // 15.836709
-    float gold = b * be;                                       // 11.532373
+                (n2 - m2) * SimilarityBase.log2(n2)));         // 67.26544321004599
+               // 15.7720995
+    float gold = b * be;                                       // 10.588263
     correctnessTestCore(sim, gold);
   }
 
   /** Correctness test for the D DFR model (basic model only). */
   public void testD() throws IOException {
     SimilarityBase sim = new DFRSimilarity(new BasicModelD(), new AfterEffect.NoAfterEffect(), new Normalization.NoNormalization());
-    double totalTermFreqNorm = TOTAL_TERM_FREQ + FREQ;
-    double p = 1.0 / (NUMBER_OF_DOCUMENTS + 1);                // 0.009900990099
-    double phi = FREQ / totalTermFreqNorm;                       // 0.09090909090909091
-    double D = phi * SimilarityBase.log2(phi / p) +            // 0.17884523239871358
+    double totalTermFreqNorm = TOTAL_TERM_FREQ + FREQ + 1;
+    double p = 1.0 / (NUMBER_OF_DOCUMENTS + 1);                // 0.009900990099009901
+    double phi = FREQ / totalTermFreqNorm;                       // 0.08974358974358974
+    double D = phi * SimilarityBase.log2(phi / p) +            // 0.17498542370019005
               (1 - phi) * SimilarityBase.log2((1 - phi) / (1 - p));
     float gold = (float)(totalTermFreqNorm * D + 0.5 * SimilarityBase.log2(
-                 1 + 2 * Math.PI * FREQ * (1 - phi)));         // 16.449575
+                 1 + 2 * Math.PI * FREQ * (1 - phi)));         // 16.328257
     correctnessTestCore(sim, gold);
   }
   
@@ -505,7 +505,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   public void testIFB() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
         new BasicModelIF(), new AfterEffectB(), new Normalization.NoNormalization());
-    float B = (TOTAL_TERM_FREQ + 1) / (DOC_FREQ * (FREQ + 1)); // 0.8875
+    float B = (TOTAL_TERM_FREQ + 1 + 1) / ((DOC_FREQ + 1) * (FREQ + 1)); // 0.8875
     float IF = (float)(FREQ * SimilarityBase.log2(             // 8.97759389642
                1 + (NUMBER_OF_DOCUMENTS + 1) / (TOTAL_TERM_FREQ + 0.5)));
     float gold = B * IF;                                       // 7.96761458307

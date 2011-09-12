@@ -36,8 +36,12 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -210,6 +214,38 @@ public class TestSimilarity2 extends LuceneTestCase {
       BooleanQuery query = new BooleanQuery(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query, 10).totalHits);
+    }
+    is.close();
+    ir.close();
+    dir.close();
+  }
+  
+  /** make sure all sims work with spanOR(termX, termY) where termY does not exist */
+  public void testCrazySpans() throws Exception {
+    // The problem: "normal" lucene queries create scorers, returning null if terms dont exist
+    // This means they never score a term that does not exist.
+    // however with spans, there is only one scorer for the whole hierarchy:
+    // inner queries are not real queries, their boosts are ignored, etc.
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    doc.add(newField("foo", "bar", ft));
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher is = newSearcher(ir);
+    
+    for (SimilarityProvider simProvider : simProviders) {
+      is.setSimilarityProvider(simProvider);
+      SpanTermQuery s1 = new SpanTermQuery(new Term("foo", "bar"));
+      SpanTermQuery s2 = new SpanTermQuery(new Term("foo", "baz"));
+      Query query = new SpanOrQuery(s1, s2);
+      TopDocs td = is.search(query, 10);
+      assertEquals(1, td.totalHits);
+      float score = td.scoreDocs[0].score;
+      assertTrue(score >= 0.0f);
+      assertFalse("inf score for " + simProvider, Float.isInfinite(score));
     }
     is.close();
     ir.close();

@@ -26,8 +26,8 @@ import org.apache.lucene.search.Explanation;
 public class AfterEffectB extends AfterEffect {
   @Override
   public final float score(BasicStats stats, float tfn) {
-    long F = stats.getTotalTermFreq();
-    int n = stats.getDocFreq();
+    long F = stats.getTotalTermFreq()+1;
+    int n = stats.getDocFreq()+1;
     return (F + 1) / (n * (tfn + 1));
   }
   

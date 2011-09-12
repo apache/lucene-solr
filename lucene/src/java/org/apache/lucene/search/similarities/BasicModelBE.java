@@ -21,14 +21,14 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Limiting form of the Bose-Einstein model. The formula used in Lucene differs
- * slightly from the one in the original paper: {@code F} is increased by {@code tfn}
+ * slightly from the one in the original paper: {@code F} is increased by {@code tfn+1}
  * and {@code N} is increased by {@code F} 
  * @lucene.experimental
  */
 public class BasicModelBE extends BasicModel {
   @Override
   public final float score(BasicStats stats, float tfn) {
-    double F = stats.getTotalTermFreq() + tfn;
+    double F = stats.getTotalTermFreq() + 1 + tfn;
     // approximation only holds true when F << N, so we use N += F
     double N = F + stats.getNumberOfDocuments();
     return (float)(-log2((N - 1) * Math.E)

@@ -20,13 +20,13 @@ package org.apache.lucene.search.similarities;
 import org.apache.lucene.search.Explanation;
 
 /**
- * Computes lambda as {@code totalTermFreq / numberOfDocuments}.
+ * Computes lambda as {@code docFreq+1 / numberOfDocuments+1}.
  * @lucene.experimental
  */
 public class LambdaDF extends Lambda {
   @Override
   public final float lambda(BasicStats stats) {
-    return (float)stats.getDocFreq() / stats.getNumberOfDocuments();
+    return (stats.getDocFreq()+1F) / (stats.getNumberOfDocuments()+1F);
   }
   
   @Override

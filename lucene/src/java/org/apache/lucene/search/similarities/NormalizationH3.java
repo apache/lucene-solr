@@ -34,7 +34,7 @@ public class NormalizationH3 extends Normalization {
 
   @Override
   public float tfn(BasicStats stats, float tf, float len) {
-    return (tf + mu * (stats.getTotalTermFreq() / (float)stats.getNumberOfFieldTokens())) / (len + mu) * mu;
+    return (tf + mu * ((stats.getTotalTermFreq()+1F) / (stats.getNumberOfFieldTokens()+1F))) / (len + mu) * mu;
   }
 
   @Override
