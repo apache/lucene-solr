@@ -179,7 +179,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     assertEquals(hits1.length, hits2.length);
     
     for (int i = 0; i < hits1.length; i++) {
-      assertEquals(hits1[i].score, hits2[i].score, 0.0000001f);
+      assertEquals(hits1[i].score, hits2[i].score, 0.000001f);
     }
   }
 
