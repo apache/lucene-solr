@@ -213,12 +213,13 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
-    Analyzer a = new Analyzer() {
+    Analyzer a = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String field, Reader reader) {
-        return new WordDelimiterFilter(
-            new MockTokenizer(reader, MockTokenizer.WHITESPACE, false),
-            flags, protWords);
+      public TokenStreamComponents createComponents(String field, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(
+            tokenizer,
+            flags, protWords));
       }
     };
 

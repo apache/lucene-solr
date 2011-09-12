@@ -120,6 +120,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
         // enabled payloads for that field
+        analyzer = new PayloadAnalyzer(); // Clear payload state for each field
         writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         d = new Document();
@@ -188,9 +189,9 @@ public class TestPayloads extends LuceneTestCase {
         // occurrences within two consecutive skip intervals
         int offset = 0;
         for (int i = 0; i < 2 * numDocs; i++) {
-            analyzer.setPayloadData(fieldName, payloadData, offset, 1);
+            analyzer = new PayloadAnalyzer(fieldName, payloadData, offset, 1);
             offset += numTerms;
-            writer.addDocument(d);
+            writer.addDocument(d, analyzer);
         }
         
         // make sure we create more than one segment to test merging
@@ -198,9 +199,9 @@ public class TestPayloads extends LuceneTestCase {
         
         // now we make sure to have different payload lengths next at the next skip point        
         for (int i = 0; i < numDocs; i++) {
-            analyzer.setPayloadData(fieldName, payloadData, offset, i);
+            analyzer = new PayloadAnalyzer(fieldName, payloadData, offset, i);
             offset += i * numTerms;
-            writer.addDocument(d);
+            writer.addDocument(d, analyzer);
         }
         
         writer.optimize();
@@ -404,39 +405,37 @@ public class TestPayloads extends LuceneTestCase {
     /**
      * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
      */
-    private static class PayloadAnalyzer extends Analyzer {
+    private static class PayloadAnalyzer extends ReusableAnalyzerBase {
         Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
+
+        public PayloadAnalyzer() {
+          super(new PerFieldReuseStrategy());
+        }
         
-        void setPayloadData(String field, byte[] data, int offset, int length) {
-            fieldToData.put(field, new PayloadData(0, data, offset, length));
+        public PayloadAnalyzer(String field, byte[] data, int offset, int length) {
+            super(new PerFieldReuseStrategy());
+            setPayloadData(field, data, offset, length);
         }
 
-        void setPayloadData(String field, int numFieldInstancesToSkip, byte[] data, int offset, int length) {
-            fieldToData.put(field, new PayloadData(numFieldInstancesToSkip, data, offset, length));
+        void setPayloadData(String field, byte[] data, int offset, int length) {
+            fieldToData.put(field, new PayloadData(data, offset, length));
         }
         
         @Override
-        public TokenStream tokenStream(String fieldName, Reader reader) {
+        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
             PayloadData payload =  fieldToData.get(fieldName);
-            TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            if (payload != null) {
-                if (payload.numFieldInstancesToSkip == 0) {
-                    ts = new PayloadFilter(ts, payload.data, payload.offset, payload.length);
-                } else {
-                    payload.numFieldInstancesToSkip--;
-                }
-            }
-            return ts;
+            Tokenizer ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+            TokenStream tokenStream = (payload != null) ?
+                new PayloadFilter(ts, payload.data, payload.offset, payload.length) : ts;
+            return new TokenStreamComponents(ts, tokenStream);
         }
         
         private static class PayloadData {
             byte[] data;
             int offset;
             int length;
-            int numFieldInstancesToSkip;
-            
-            PayloadData(int skip, byte[] data, int offset, int length) {
-                numFieldInstancesToSkip = skip;
+
+            PayloadData(byte[] data, int offset, int length) {
                 this.data = data;
                 this.offset = offset;
                 this.length = length;
@@ -454,6 +453,7 @@ public class TestPayloads extends LuceneTestCase {
         private int offset;
         private int startOffset;
         PayloadAttribute payloadAtt;
+        CharTermAttribute termAttribute;
         
         public PayloadFilter(TokenStream in, byte[] data, int offset, int length) {
             super(in);
@@ -462,23 +462,27 @@ public class TestPayloads extends LuceneTestCase {
             this.offset = offset;
             this.startOffset = offset;
             payloadAtt = addAttribute(PayloadAttribute.class);
+            termAttribute = addAttribute(CharTermAttribute.class);
         }
         
         @Override
         public boolean incrementToken() throws IOException {
             boolean hasNext = input.incrementToken();
-            if (hasNext) {
-                if (offset + length <= data.length) {
-                    Payload p = new Payload();
-                    payloadAtt.setPayload(p);
-                    p.setData(data, offset, length);
-                    offset += length;                
-                } else {
-                    payloadAtt.setPayload(null);
-                }
+            if (!hasNext) {
+              return false;
             }
-            
-            return hasNext;
+
+            // Some values of the same field are to have payloads and others not
+            if (offset + length <= data.length && !termAttribute.toString().endsWith("NO PAYLOAD")) {
+              Payload p = new Payload();
+              payloadAtt.setPayload(p);
+              p.setData(data, offset, length);
+              offset += length;
+            } else {
+              payloadAtt.setPayload(null);
+            }
+
+            return true;
         }
 
       @Override

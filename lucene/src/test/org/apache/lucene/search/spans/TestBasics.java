@@ -24,11 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
@@ -100,11 +96,12 @@ public class TestBasics extends LuceneTestCase {
     }
   }
   
-  static final Analyzer simplePayloadAnalyzer = new Analyzer() {
+  static final Analyzer simplePayloadAnalyzer = new ReusableAnalyzerBase() {
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new SimplePayloadFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
     }
     
   };
