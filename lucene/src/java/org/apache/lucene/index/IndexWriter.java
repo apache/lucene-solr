@@ -1901,7 +1901,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
 
-  /** Expunges all deletes from the index.  When an index
+  /** Requests an expungeDeletes operation, by invoking
+   *  {@link MergePolicy#findMergesToExpungeDeletes}.
+   *  The MergePolicy determines what merges should be done.
+   *  For example, the default {@link TieredMergePolicy}
+   *  will only expunage deletes from a segment if the
+   *  percentage of deleted docs is over 10%.
+   *
+   *  <p>When an index
    *  has many document deletions (or updates to existing
    *  documents), it's best to either call optimize or
    *  expungeDeletes to remove all unused data in the index
