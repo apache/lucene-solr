@@ -604,10 +604,6 @@ Bug fixes
   corrupt index if a term with docfreq >= 16 was indexed more than once
   at the same position.  (Robert Muir)
 
-* LUCENE-3334: If Java7 is detected, IOUtils.closeSafely() will log
-  suppressed exceptions in the original exception, so stack trace
-  will contain them.  (Uwe Schindler)
-
 * LUCENE-3339: Fixed deadlock case when multiple threads use the new
   block-add (IndexWriter.add/updateDocuments) methods.  (Robert Muir,
   Mike McCandless)
@@ -663,6 +659,10 @@ New Features
 * LUCENE-3097: Added a new grouping collector that can be used to retrieve all most relevant
   documents per group. This can be useful in situations when one wants to compute grouping
   based facets / statistics on the complete query result. (Martijn van Groningen)
+
+* LUCENE-3334: If Java7 is detected, IOUtils.closeSafely() will log
+  suppressed exceptions in the original exception, so stack trace
+  will contain them.  (Uwe Schindler)
 
 Optimizations
 
