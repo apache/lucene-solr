@@ -203,23 +203,23 @@ public class TestSolrProperties extends LuceneTestCase {
 
     mcr = CoreAdminRequest.persist("solr-persist.xml", coreadmin);
 
-    if (VERBOSE) {
-      FileInputStream fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
-      try {
-        System.out.println(IOUtils.toString(fis));
-      } finally {
-        fis.close();
-      }
-    }
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     FileInputStream fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
     try {
       Document document = builder.parse(fis);
-      assertTrue(exists("/solr/cores[@defaultCoreName='core0']", document));
-      assertTrue(exists("/solr/cores[@host='127.0.0.1']", document));
-      assertTrue(exists("/solr/cores[@hostPort='8983']", document));
-      assertTrue(exists("/solr/cores[@zkClientTimeout='8000']", document));
-      assertTrue(exists("/solr/cores[@hostContext='solr']", document));
+      fis.close();
+      fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+      String solrPersistXml = IOUtils.toString(fis);
+      assertTrue("\"/solr/cores[@defaultCoreName='core0']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@defaultCoreName='core0']", document));
+      assertTrue("\"/solr/cores[@host='127.0.0.1']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@host='127.0.0.1']", document));
+      assertTrue("\"/solr/cores[@hostPort='8983']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@hostPort='8983']", document));
+      assertTrue("\"/solr/cores[@zkClientTimeout='8000']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@zkClientTimeout='8000']", document));
+      assertTrue("\"/solr/cores[@hostContext='solr']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@hostContext='solr']", document));
       
     } finally {
       fis.close();
