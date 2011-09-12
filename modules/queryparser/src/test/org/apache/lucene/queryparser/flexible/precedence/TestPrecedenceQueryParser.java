@@ -112,12 +112,13 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     }
   }
 
-  public static final class QPTestAnalyzer extends Analyzer {
+  public static final class QPTestAnalyzer extends ReusableAnalyzerBase {
 
     /** Filters MockTokenizer with StopFilter. */
     @Override
-    public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
+    public final TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(tokenizer, new QPTestFilter(tokenizer));
     }
   }
 

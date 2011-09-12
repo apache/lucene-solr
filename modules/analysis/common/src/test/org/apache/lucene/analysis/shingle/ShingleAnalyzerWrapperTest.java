@@ -148,40 +148,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new int[] { 6, 9, 9, 12, 12, 18, 18 },
         new int[] { 1, 0, 1, 0, 1, 0, 1 });
   }
-  
-  /*
-   * analyzer that does not support reuse
-   * it is LetterTokenizer on odd invocations, WhitespaceTokenizer on even.
-   */
-  private class NonreusableAnalyzer extends Analyzer {
-    int invocationCount = 0;
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      if (++invocationCount % 2 == 0)
-        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-      else
-        return new MockTokenizer(reader, MockTokenizer.SIMPLE, false);
-    }
-  }
-  
-  public void testWrappedAnalyzerDoesNotReuse() throws Exception {
-    Analyzer a = new ShingleAnalyzerWrapper(new NonreusableAnalyzer());
-    assertAnalyzesToReuse(a, "please divide into shingles.",
-        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
-        new int[] { 0, 0, 7, 7, 14, 14, 19 },
-        new int[] { 6, 13, 13, 18, 18, 27, 27 },
-        new int[] { 1, 0, 1, 0, 1, 0, 1 });
-    assertAnalyzesToReuse(a, "please divide into shingles.",
-        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles.", "shingles." },
-        new int[] { 0, 0, 7, 7, 14, 14, 19 },
-        new int[] { 6, 13, 13, 18, 18, 28, 28 },
-        new int[] { 1, 0, 1, 0, 1, 0, 1 });
-    assertAnalyzesToReuse(a, "please divide into shingles.",
-        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
-        new int[] { 0, 0, 7, 7, 14, 14, 19 },
-        new int[] { 6, 13, 13, 18, 18, 27, 27 },
-        new int[] { 1, 0, 1, 0, 1, 0, 1 });
-  }
 
   public void testNonDefaultMinShingleSize() throws Exception {
     ShingleAnalyzerWrapper analyzer 

@@ -22,9 +22,7 @@ import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -292,15 +290,15 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     return token;
   }
   
-  public static final class TokenArrayAnalyzer extends Analyzer {
-    Token[] tokens;
-    public TokenArrayAnalyzer( Token... tokens ){
+  public static final class TokenArrayAnalyzer extends ReusableAnalyzerBase {
+    final Token[] tokens;
+    public TokenArrayAnalyzer(Token... tokens) {
       this.tokens = tokens;
     }
     
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {      
-      TokenStream ts = new TokenStream(Token.TOKEN_ATTRIBUTE_FACTORY) {
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer ts = new Tokenizer(Token.TOKEN_ATTRIBUTE_FACTORY) {
         final AttributeImpl reusableToken = (AttributeImpl) addAttribute(CharTermAttribute.class);
         int p = 0;
         
@@ -318,7 +316,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
           this.p = 0;
         }
       };
-      return ts;
+      return new TokenStreamComponents(ts);
     }
   }
 }

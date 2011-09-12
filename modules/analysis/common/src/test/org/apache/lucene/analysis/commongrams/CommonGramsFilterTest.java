@@ -19,11 +19,8 @@ package org.apache.lucene.analysis.commongrams;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -87,11 +84,12 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    * @return Map<String,String>
    */
   public void testCommonGramsQueryFilter() throws Exception {
-    Analyzer a = new Analyzer() {    
+    Analyzer a = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String field, Reader in) {
-        return new CommonGramsQueryFilter(new CommonGramsFilter(TEST_VERSION_CURRENT,
-            new MockTokenizer(in, MockTokenizer.WHITESPACE, false), commonWords));
+      public TokenStreamComponents createComponents(String field, Reader in) {
+        Tokenizer tokenizer = new MockTokenizer(in, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new CommonGramsQueryFilter(new CommonGramsFilter(TEST_VERSION_CURRENT,
+            tokenizer, commonWords)));
       } 
     };
 
@@ -156,11 +154,12 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testCommonGramsFilter() throws Exception {
-    Analyzer a = new Analyzer() {    
+    Analyzer a = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String field, Reader in) {
-        return new CommonGramsFilter(TEST_VERSION_CURRENT,
-            new MockTokenizer(in, MockTokenizer.WHITESPACE, false), commonWords);
+      public TokenStreamComponents createComponents(String field, Reader in) {
+        Tokenizer tokenizer = new MockTokenizer(in, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new CommonGramsFilter(TEST_VERSION_CURRENT,
+            tokenizer, commonWords));
       } 
     };
 

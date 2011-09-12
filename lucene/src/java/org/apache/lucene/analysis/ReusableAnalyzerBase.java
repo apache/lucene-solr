@@ -17,8 +17,13 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.CloseableThreadLocal;
+
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * An convenience subclass of Analyzer that makes it easy to implement
@@ -37,6 +42,16 @@ import java.io.Reader;
  * </p>
  */
 public abstract class ReusableAnalyzerBase extends Analyzer {
+
+  private final ReuseStrategy reuseStrategy;
+
+  public ReusableAnalyzerBase() {
+    this(new GlobalReuseStrategy());
+  }
+
+  public ReusableAnalyzerBase(ReuseStrategy reuseStrategy) {
+    this.reuseStrategy = reuseStrategy;
+  }
 
   /**
    * Creates a new {@link TokenStreamComponents} instance for this analyzer.
@@ -66,14 +81,15 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
   @Override
   public final TokenStream reusableTokenStream(final String fieldName,
       final Reader reader) throws IOException {
-    TokenStreamComponents streamChain = (TokenStreamComponents)
-    getPreviousTokenStream();
+    TokenStreamComponents components = reuseStrategy.getReusableComponents(fieldName);
     final Reader r = initReader(reader);
-    if (streamChain == null || !streamChain.reset(r)) {
-      streamChain = createComponents(fieldName, r);
-      setPreviousTokenStream(streamChain);
+    if (components == null) {
+      components = createComponents(fieldName, r);
+      reuseStrategy.setReusableComponents(fieldName, components);
+    } else {
+      components.reset(r);
     }
-    return streamChain.getTokenStream();
+    return components.getTokenStream();
   }
 
   /**
@@ -98,7 +114,16 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
   protected Reader initReader(Reader reader) {
     return reader;
   }
-  
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void close() {
+    super.close();
+    reuseStrategy.close();
+  }
+
   /**
    * This class encapsulates the outer components of a token stream. It provides
    * access to the source ({@link Tokenizer}) and the outer end (sink), an
@@ -137,22 +162,16 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
     }
 
     /**
-     * Resets the encapsulated components with the given reader. This method by
-     * default returns <code>true</code> indicating that the components have
-     * been reset successfully. Subclasses of {@link ReusableAnalyzerBase} might use
-     * their own {@link TokenStreamComponents} returning <code>false</code> if
-     * the components cannot be reset.
+     * Resets the encapsulated components with the given reader. If the components
+     * cannot be reset, an Exception should be thrown.
      * 
      * @param reader
      *          a reader to reset the source component
-     * @return <code>true</code> if the components were reset, otherwise
-     *         <code>false</code>
      * @throws IOException
      *           if the component's reset method throws an {@link IOException}
      */
-    protected boolean reset(final Reader reader) throws IOException {
+    protected void reset(final Reader reader) throws IOException {
       source.reset(reader);
-      return true;
     }
 
     /**
@@ -164,6 +183,126 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
       return sink;
     }
 
+  }
+
+  /**
+   * Strategy defining how TokenStreamComponents are reused per call to
+   * {@link ReusableAnalyzerBase#tokenStream(String, java.io.Reader)}.
+   */
+  public static abstract class ReuseStrategy {
+
+    private CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<Object>();
+
+    /**
+     * Gets the reusable TokenStreamComponents for the field with the given name
+     *
+     * @param fieldName Name of the field whose reusable TokenStreamComponents
+     *        are to be retrieved
+     * @return Reusable TokenStreamComponents for the field, or {@code null}
+     *         if there was no previous components for the field
+     */
+    public abstract TokenStreamComponents getReusableComponents(String fieldName);
+
+    /**
+     * Stores the given TokenStreamComponents as the reusable components for the
+     * field with the give name
+     *
+     * @param fieldName Name of the field whose TokenStreamComponents are being set
+     * @param components TokenStreamComponents which are to be reused for the field
+     */
+    public abstract void setReusableComponents(String fieldName, TokenStreamComponents components);
+
+    /**
+     * Returns the currently stored value
+     *
+     * @return Currently stored value or {@code null} if no value is stored
+     */
+    protected final Object getStoredValue() {
+      try {
+        return storedValue.get();
+      } catch (NullPointerException npe) {
+        if (storedValue == null) {
+          throw new AlreadyClosedException("this Analyzer is closed");
+        } else {
+          throw npe;
+        }
+      }
+    }
+
+    /**
+     * Sets the stored value
+     *
+     * @param storedValue Value to store
+     */
+    protected final void setStoredValue(Object storedValue) {
+      try {
+        this.storedValue.set(storedValue);
+      } catch (NullPointerException npe) {
+        if (storedValue == null) {
+          throw new AlreadyClosedException("this Analyzer is closed");
+        } else {
+          throw npe;
+        }
+      }
+    }
+
+    /**
+     * Closes the ReuseStrategy, freeing any resources
+     */
+    public void close() {
+      storedValue.close();
+      storedValue = null;
+    }
+  }
+
+  /**
+   * Implementation of {@link ReuseStrategy} that reuses the same components for
+   * every field.
+   */
+  public final static class GlobalReuseStrategy extends ReuseStrategy {
+
+    /**
+     * {@inheritDoc}
+     */
+    public TokenStreamComponents getReusableComponents(String fieldName) {
+      return (TokenStreamComponents) getStoredValue();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setReusableComponents(String fieldName, TokenStreamComponents components) {
+      setStoredValue(components);
+    }
+  }
+
+  /**
+   * Implementation of {@link ReuseStrategy} that reuses components per-field by
+   * maintaining a Map of TokenStreamComponent per field name.
+   */
+  public static class PerFieldReuseStrategy extends ReuseStrategy {
+
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings("unchecked")
+    public TokenStreamComponents getReusableComponents(String fieldName) {
+      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
+      return componentsPerField != null ? componentsPerField.get(fieldName) : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings("unchecked")
+    public void setReusableComponents(String fieldName, TokenStreamComponents components) {
+      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
+      if (componentsPerField == null) {
+        componentsPerField = new HashMap<String, TokenStreamComponents>();
+        setStoredValue(componentsPerField);
+      }
+      componentsPerField.put(fieldName, components);
+    }
   }
 
 }

@@ -55,14 +55,16 @@ public class PayloadHelper {
 
   public IndexReader reader;
 
-  public final class PayloadAnalyzer extends Analyzer {
+  public final class PayloadAnalyzer extends ReusableAnalyzerBase {
 
+    public PayloadAnalyzer() {
+      super(new PerFieldReuseStrategy());
+    }
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-      result = new PayloadFilter(result, fieldName);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(result, new PayloadFilter(result, fieldName));
     }
   }
 

@@ -64,14 +64,16 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private static final byte[] payloadMultiField2 = new byte[]{4};
   protected static Directory directory;
 
-  private static class PayloadAnalyzer extends Analyzer {
+  private static class PayloadAnalyzer extends ReusableAnalyzerBase {
 
+    private PayloadAnalyzer() {
+      super(new PerFieldReuseStrategy());
+    }
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-      result = new PayloadFilter(result, fieldName);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(result, new PayloadFilter(result, fieldName));
     }
   }
 

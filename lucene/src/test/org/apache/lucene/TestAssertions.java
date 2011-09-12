@@ -19,6 +19,7 @@ package org.apache.lucene;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -34,32 +35,36 @@ public class TestAssertions extends LuceneTestCase {
     }
   }
   
-  static class TestAnalyzer1 extends Analyzer {
+  static class TestAnalyzer1 extends ReusableAnalyzerBase {
+
     @Override
-    public final TokenStream tokenStream(String s, Reader r) { return null; }
-    @Override
-    public final TokenStream reusableTokenStream(String s, Reader r) { return null; }
+    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
+      return null;
+    }
   }
 
-  static final class TestAnalyzer2 extends Analyzer {
+  static final class TestAnalyzer2 extends ReusableAnalyzerBase {
+
     @Override
-    public TokenStream tokenStream(String s, Reader r) { return null; }
-    @Override
-    public TokenStream reusableTokenStream(String s, Reader r) { return null; }
+    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
+      return null;
+    }
   }
 
-  static class TestAnalyzer3 extends Analyzer {
+  static class TestAnalyzer3 extends ReusableAnalyzerBase {
+
     @Override
-    public TokenStream tokenStream(String s, Reader r) { return null; }
-    @Override
-    public TokenStream reusableTokenStream(String s, Reader r) { return null; }
+    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
+      return null;
+    }
   }
 
-  static class TestAnalyzer4 extends Analyzer {
+  static class TestAnalyzer4 extends ReusableAnalyzerBase {
+
     @Override
-    public final TokenStream tokenStream(String s, Reader r) { return null; }
-    @Override
-    public TokenStream reusableTokenStream(String s, Reader r) { return null; }
+    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
+      return null;
+    }
   }
 
   static class TestTokenStream1 extends TokenStream {

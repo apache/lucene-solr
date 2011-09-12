@@ -56,10 +56,10 @@ public class TestPositionIncrement extends LuceneTestCase {
   final static boolean VERBOSE = false;
 
   public void testSetPosition() throws Exception {
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenStream() {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new Tokenizer() {
           private final String[] TOKENS = {"1", "2", "3", "4", "5"};
           private final int[] INCREMENTS = {0, 2, 1, 0, 1};
           private int i = 0;
@@ -85,7 +85,7 @@ public class TestPositionIncrement extends LuceneTestCase {
             super.reset();
             this.i = 0;
           }
-        };
+        });
       }
     };
     Directory store = newDirectory();

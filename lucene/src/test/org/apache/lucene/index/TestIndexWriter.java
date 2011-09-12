@@ -31,11 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.BinaryField;
@@ -1710,10 +1706,10 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  static final class StringSplitAnalyzer extends Analyzer {
+  static final class StringSplitAnalyzer extends ReusableAnalyzerBase {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new StringSplitTokenizer(reader);
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new StringSplitTokenizer(reader));
     }
   }
 

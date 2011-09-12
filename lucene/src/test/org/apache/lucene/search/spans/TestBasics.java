@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -70,14 +71,12 @@ public class TestBasics extends LuceneTestCase {
   private static Directory directory;
 
   static final class SimplePayloadFilter extends TokenFilter {
-    String fieldName;
     int pos;
     final PayloadAttribute payloadAttr;
     final CharTermAttribute termAttr;
 
-    public SimplePayloadFilter(TokenStream input, String fieldName) {
+    public SimplePayloadFilter(TokenStream input) {
       super(input);
-      this.fieldName = fieldName;
       pos = 0;
       payloadAttr = input.addAttribute(PayloadAttribute.class);
       termAttr = input.addAttribute(CharTermAttribute.class);
@@ -105,7 +104,7 @@ public class TestBasics extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new SimplePayloadFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true), fieldName);
+      return new SimplePayloadFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
     }
     
   };

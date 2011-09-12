@@ -20,10 +20,7 @@ package org.apache.lucene.search.highlight;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 
 public class OffsetLimitTokenFilterTest extends BaseTokenStreamTestCase {
   
@@ -52,14 +49,13 @@ public class OffsetLimitTokenFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[] {"short", "toolong",
         "evenmuchlongertext"});
     
-    // TODO: This is not actually testing reuse! (reusableTokenStream is not implemented)
-    checkOneTermReuse(new Analyzer() {
+    checkOneTermReuse(new ReusableAnalyzerBase() {
       
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false);
-        return new OffsetLimitTokenFilter(tokenizer, 10);
+        return new TokenStreamComponents(tokenizer, new OffsetLimitTokenFilter(tokenizer, 10));
       }
     }, "llenges", "llenges");
   }

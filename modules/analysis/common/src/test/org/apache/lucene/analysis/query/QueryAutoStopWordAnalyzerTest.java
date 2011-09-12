@@ -144,32 +144,6 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
   }
   
-  /*
-   * analyzer that does not support reuse
-   * it is LetterTokenizer on odd invocations, WhitespaceTokenizer on even.
-   */
-  private class NonreusableAnalyzer extends Analyzer {
-    int invocationCount = 0;
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      if (++invocationCount % 2 == 0)
-        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-      else
-        return new MockTokenizer(reader, MockTokenizer.SIMPLE, false);
-    }
-  }
-  
-  public void testWrappingNonReusableAnalyzer() throws Exception {
-    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(TEST_VERSION_CURRENT, new NonreusableAnalyzer());
-    a.addStopWords(reader, 10);
-
-    TokenStream tokenStream = a.reusableTokenStream("repetitiveField", new StringReader("boring"));
-    assertTokenStreamContents(tokenStream, new String[0]);
-
-    tokenStream = a.reusableTokenStream("repetitiveField", new StringReader("vaguelyboring"));
-    assertTokenStreamContents(tokenStream, new String[0]);
-  }
-  
   public void testTokenStream() throws Exception {
     QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     a.addStopWords(reader, 10);

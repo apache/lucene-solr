@@ -137,7 +137,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     super.tearDown();
   }
 
-  private class MyTokenStream extends TokenStream {
+  private class MyTokenStream extends Tokenizer {
     private int tokenUpto;
     
     private final CharTermAttribute termAtt;
@@ -175,10 +175,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
   }
 
-  private class MyAnalyzer extends Analyzer {
+  private class MyAnalyzer extends ReusableAnalyzerBase {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new MyTokenStream();
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new MyTokenStream());
     }
   }
 

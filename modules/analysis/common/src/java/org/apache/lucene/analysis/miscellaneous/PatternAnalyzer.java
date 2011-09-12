@@ -27,6 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -66,7 +67,7 @@ import org.apache.lucene.util.Version;
  * @deprecated (4.0) use the pattern-based analysis in the analysis/pattern package instead.
  */
 @Deprecated
-public final class PatternAnalyzer extends Analyzer {
+public final class PatternAnalyzer extends ReusableAnalyzerBase {
   
   /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
   public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");
@@ -187,25 +188,21 @@ public final class PatternAnalyzer extends Analyzer {
    *            the string to tokenize
    * @return a new token stream
    */
-  public TokenStream tokenStream(String fieldName, String text) {
+  public TokenStreamComponents createComponents(String fieldName, String text) {
     // Ideally the Analyzer superclass should have a method with the same signature, 
     // with a default impl that simply delegates to the StringReader flavour. 
     if (text == null) 
       throw new IllegalArgumentException("text must not be null");
     
-    TokenStream stream;
     if (pattern == NON_WORD_PATTERN) { // fast path
-      stream = new FastStringTokenizer(text, true, toLowerCase, stopWords);
+      return new TokenStreamComponents(new FastStringTokenizer(text, true, toLowerCase, stopWords));
+    } else if (pattern == WHITESPACE_PATTERN) { // fast path
+      return new TokenStreamComponents(new FastStringTokenizer(text, false, toLowerCase, stopWords));
     }
-    else if (pattern == WHITESPACE_PATTERN) { // fast path
-      stream = new FastStringTokenizer(text, false, toLowerCase, stopWords);
-    }
-    else {
-      stream = new PatternTokenizer(text, pattern, toLowerCase);
-      if (stopWords != null) stream = new StopFilter(matchVersion, stream, stopWords);
-    }
-    
-    return stream;
+
+    Tokenizer tokenizer = new PatternTokenizer(text, pattern, toLowerCase);
+    TokenStream result = (stopWords != null) ? new StopFilter(matchVersion, tokenizer, stopWords) : tokenizer;
+    return new TokenStreamComponents(tokenizer, result);
   }
   
   /**
@@ -220,10 +217,10 @@ public final class PatternAnalyzer extends Analyzer {
    * @return a new token stream
    */
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
     try {
       String text = toString(reader);
-      return tokenStream(fieldName, text);
+      return createComponents(fieldName, text);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

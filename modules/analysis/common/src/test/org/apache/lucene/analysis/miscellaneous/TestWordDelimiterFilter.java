@@ -17,12 +17,7 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -245,13 +240,13 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 1, 1, 1 });
     
     /* analyzer that will consume tokens with large position increments */
-    Analyzer a2 = new Analyzer() {
+    Analyzer a2 = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String field, Reader reader) {
-        return new WordDelimiterFilter(
-            new LargePosIncTokenFilter(
-            new MockTokenizer(reader, MockTokenizer.WHITESPACE, false)),
-            flags, protWords);
+      public TokenStreamComponents createComponents(String field, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(
+            new LargePosIncTokenFilter(tokenizer),
+            flags, protWords));
       }
     };
     
@@ -278,13 +273,14 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 6, 14, 19 },
         new int[] { 1, 11, 1 });
 
-    Analyzer a3 = new Analyzer() {
+    Analyzer a3 = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String field, Reader reader) {
+      public TokenStreamComponents createComponents(String field, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         StopFilter filter = new StopFilter(TEST_VERSION_CURRENT,
-            new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), StandardAnalyzer.STOP_WORDS_SET);
+            tokenizer, StandardAnalyzer.STOP_WORDS_SET);
         filter.setEnablePositionIncrements(true);
-        return new WordDelimiterFilter(filter, flags, protWords);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(filter, flags, protWords));
       }
     };
 

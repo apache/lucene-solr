@@ -24,11 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -198,10 +194,10 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     return phraseQuery;
   }
 
-  static final class BigramAnalyzer extends Analyzer {
+  static final class BigramAnalyzer extends ReusableAnalyzerBase {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new BasicNGramTokenizer( reader );
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new BasicNGramTokenizer(reader));
     }
   }
   

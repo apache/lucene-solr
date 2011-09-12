@@ -21,10 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -114,11 +111,12 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     assertEquals("Wrong payload for the target " + target + ": " + b.bytes[b.offset], (byte) target, b.bytes[b.offset]);
   }
 
-  private static class PayloadAnalyzer extends Analyzer {
+  private static class PayloadAnalyzer extends ReusableAnalyzerBase {
     private final AtomicInteger payloadCount = new AtomicInteger(-1);
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new PayloadFilter(payloadCount, new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      return new TokenStreamComponents(tokenizer, new PayloadFilter(payloadCount, tokenizer));
     }
 
   }

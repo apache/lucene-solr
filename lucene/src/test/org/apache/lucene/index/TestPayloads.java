@@ -25,11 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
@@ -105,12 +101,12 @@ public class TestPayloads extends LuceneTestCase {
         // so this field is used to check if the DocumentWriter correctly enables the payloads bit
         // even if only some term positions have payloads
         d.add(newField("f2", "This field has payloads in all docs", TextField.TYPE_UNSTORED));
-        d.add(newField("f2", "This field has payloads in all docs", TextField.TYPE_UNSTORED));
+        d.add(newField("f2", "This field has payloads in all docs NO PAYLOAD", TextField.TYPE_UNSTORED));
         // this field is used to verify if the SegmentMerger enables payloads for a field if it has payloads 
         // enabled in only some documents
         d.add(newField("f3", "This field has payloads in some docs", TextField.TYPE_UNSTORED));
         // only add payload data for field f2
-        analyzer.setPayloadData("f2", 1, "somedata".getBytes(), 0, 1);
+        analyzer.setPayloadData("f2", "somedata".getBytes(), 0, 1);
         writer.addDocument(d);
         // flush
         writer.close();

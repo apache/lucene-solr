@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -345,7 +346,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     }
   }
 
-  private static class CannedAnalyzer extends Analyzer {
+  private static class CannedAnalyzer extends ReusableAnalyzerBase {
     private final TokenAndPos[] tokens;
     
     public CannedAnalyzer(TokenAndPos[] tokens) {
@@ -353,8 +354,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new CannedTokenizer(tokens);
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new CannedTokenizer(tokens));
     }
   }
 

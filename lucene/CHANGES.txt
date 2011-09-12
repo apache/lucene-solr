@@ -171,6 +171,9 @@ Changes in backwards compatibility policy
   IndexableFieldType.  See MIGRATE.txt for more details.
   (Nikola Tankovic, Mike McCandless, Chris Male)
 
+* LUCENE-3396: ReusableAnalyzerBase.TokenStreamComponents.reset(Reader) now returns void instead
+  of boolean.  If a Component cannot be reset, it should throw an Exception. 
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -522,6 +525,12 @@ New features
     SimilarityProvider with your per-field logic.
 
   (David Mark Nemeskey via Robert Muir)
+
+* LUCENE-3396: ReusableAnalyzerBase now provides a ReuseStrategy abstraction which
+  controls how TokenStreamComponents are reused per request.  Two implementations are
+  provided - GlobalReuseStrategy which implements the current behavior of sharing
+  components between all fields, and PerFieldReuseStrategy which shares per field.
+  (Chris Male)
 
 Optimizations
 

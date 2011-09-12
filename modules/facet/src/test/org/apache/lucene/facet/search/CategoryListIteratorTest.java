@@ -5,10 +5,7 @@ import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
@@ -140,10 +137,10 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     DataTokenStream dts2 = new DataTokenStream("2",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
     // this test requires that no payloads ever be randomly present!
-    final Analyzer noPayloadsAnalyzer = new Analyzer() {
+    final Analyzer noPayloadsAnalyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.KEYWORD, false));
       }
     };
     // NOTE: test is wired to LogMP... because test relies on certain docids having payloads

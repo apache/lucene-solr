@@ -23,10 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -479,18 +476,16 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(numSpans, cnt);
   }
 
-  final class PayloadAnalyzer extends Analyzer {
+  final class PayloadAnalyzer extends ReusableAnalyzerBase {
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-      result = new PayloadFilter(result, fieldName);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(result, new PayloadFilter(result));
     }
   }
 
   final class PayloadFilter extends TokenFilter {
-    String fieldName;
     Set<String> entities = new HashSet<String>();
     Set<String> nopayload = new HashSet<String>();
     int pos;
@@ -498,9 +493,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
 
-    public PayloadFilter(TokenStream input, String fieldName) {
+    public PayloadFilter(TokenStream input) {
       super(input);
-      this.fieldName = fieldName;
       pos = 0;
       entities.add("xx");
       entities.add("one");
@@ -536,13 +530,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
   }
   
-  public final class TestPayloadAnalyzer extends Analyzer {
+  public final class TestPayloadAnalyzer extends ReusableAnalyzerBase {
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-      result = new PayloadFilter(result, fieldName);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(result, new PayloadFilter(result));
     }
   }
 }

@@ -106,3 +106,5 @@ Build
  * LUCENE-2413: All analyzers in contrib/analyzers and contrib/icu were moved to the 
    analysis module.  The 'smartcn' and 'stempel' components now depend on 'common'.  
    (Robert Muir)
+
+ * LUCENE-3376: Moved ReusableAnalyzerBase into lucene core. (Chris Male)

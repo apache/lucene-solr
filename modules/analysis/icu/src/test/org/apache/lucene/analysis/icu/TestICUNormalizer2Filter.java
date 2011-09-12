@@ -20,9 +20,7 @@ package org.apache.lucene.analysis.icu;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import com.ibm.icu.text.Normalizer2;
@@ -31,11 +29,11 @@ import com.ibm.icu.text.Normalizer2;
  * Tests the ICUNormalizer2Filter
  */
 public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
+  Analyzer a = new ReusableAnalyzerBase() {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new ICUNormalizer2Filter(
-          new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(tokenizer));
     }
   };
 
@@ -61,13 +59,14 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
   }
   
   public void testAlternate() throws IOException {
-    Analyzer a = new Analyzer() {
+    Analyzer a = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new ICUNormalizer2Filter(
-            new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader),
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+        return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(
+            tokenizer,
             /* specify nfc with decompose to get nfd */
-            Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.DECOMPOSE));
+            Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.DECOMPOSE)));
       }
     };
     

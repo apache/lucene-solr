@@ -20,9 +20,7 @@ package org.apache.lucene.collation;
 
 import com.ibm.icu.text.Collator;
 
-import org.apache.lucene.analysis.CollationTestBase;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.util.BytesRef;
 
@@ -46,7 +44,7 @@ public class TestICUCollationKeyFilter extends CollationTestBase {
     (collator.getCollationKey(secondRangeEndOriginal).toByteArray()));
 
   
-  public final class TestAnalyzer extends Analyzer {
+  public final class TestAnalyzer extends ReusableAnalyzerBase {
     private Collator _collator;
 
     TestAnalyzer(Collator collator) {
@@ -54,10 +52,9 @@ public class TestICUCollationKeyFilter extends CollationTestBase {
     }
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new KeywordTokenizer(reader);
-      result = new ICUCollationKeyFilter(result, _collator);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new KeywordTokenizer(reader);
+      return new TokenStreamComponents(result, new ICUCollationKeyFilter(result, _collator));
     }
   }
 

@@ -20,9 +20,7 @@ package org.apache.lucene.search.highlight;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -50,15 +48,15 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TokenSourcesTest extends LuceneTestCase {
   private static final String FIELD = "text";
 
-  private static final class OverlapAnalyzer extends Analyzer {
+  private static final class OverlapAnalyzer extends ReusableAnalyzerBase {
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new TokenStreamOverlap();
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new TokenStreamOverlap());
     }
   }
 
-  private static final class TokenStreamOverlap extends TokenStream {
+  private static final class TokenStreamOverlap extends Tokenizer {
     private Token[] tokens;
 
     private int i = -1;

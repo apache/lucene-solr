@@ -55,12 +55,11 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   private static byte[] payload2 = new byte[]{2};
   private static byte[] payload4 = new byte[]{4};
 
-  private static class PayloadAnalyzer extends Analyzer {
+  private static class PayloadAnalyzer extends ReusableAnalyzerBase {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-      result = new PayloadFilter(result, fieldName);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(result, new PayloadFilter(result, fieldName));
     }
   }
 

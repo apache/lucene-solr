@@ -26,10 +26,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
@@ -902,10 +899,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final Random r = random;
     Directory dir = newDirectory();
     // note this test explicitly disables payloads
-    final Analyzer analyzer = new Analyzer() {
+    final Analyzer analyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
       }
     };
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));

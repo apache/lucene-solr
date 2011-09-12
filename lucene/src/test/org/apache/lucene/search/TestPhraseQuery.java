@@ -55,10 +55,10 @@ public class TestPhraseQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
       }
 
       @Override

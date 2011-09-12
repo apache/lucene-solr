@@ -1802,7 +1802,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 // behaviour to synonyms
 // ===================================================================
 
-final class SynonymAnalyzer extends Analyzer {
+final class SynonymAnalyzer extends ReusableAnalyzerBase {
   private Map<String,String> synonyms;
 
   public SynonymAnalyzer(Map<String,String> synonyms) {
@@ -1816,12 +1816,12 @@ final class SynonymAnalyzer extends Analyzer {
    *      java.io.Reader)
    */
   @Override
-  public TokenStream tokenStream(String arg0, Reader arg1) {
+  public TokenStreamComponents createComponents(String arg0, Reader arg1) {
     Tokenizer stream = new MockTokenizer(arg1, MockTokenizer.SIMPLE, true);
     stream.addAttribute(CharTermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
-    return new SynonymTokenizer(stream, synonyms);
+    return new TokenStreamComponents(stream, new SynonymTokenizer(stream, synonyms));
   }
 }
 

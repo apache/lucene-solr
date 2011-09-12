@@ -42,7 +42,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * </ul>
  * @see MockTokenizer
  */
-public final class MockAnalyzer extends Analyzer { 
+public final class MockAnalyzer extends ReusableAnalyzerBase {
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;
   private final CharacterRunAutomaton filter;
@@ -62,6 +62,7 @@ public final class MockAnalyzer extends Analyzer {
    * @param enablePositionIncrements true if position increments should reflect filtered terms.
    */
   public MockAnalyzer(Random random, CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
+    super(new PerFieldReuseStrategy());
     this.random = random;
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
@@ -88,41 +89,11 @@ public final class MockAnalyzer extends Analyzer {
   }
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
     MockTokenizer tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
     tokenizer.setEnableChecks(enableChecks);
     TokenFilter filt = new MockTokenFilter(tokenizer, filter, enablePositionIncrements);
-    filt = maybePayload(filt, fieldName);
-    return filt;
-  }
-
-  private class SavedStreams {
-    MockTokenizer tokenizer;
-    TokenFilter filter;
-  }
-
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader)
-      throws IOException {
-    @SuppressWarnings("unchecked") Map<String,SavedStreams> map = (Map) getPreviousTokenStream();
-    if (map == null) {
-      map = new HashMap<String,SavedStreams>();
-      setPreviousTokenStream(map);
-    }
-    
-    SavedStreams saved = map.get(fieldName);
-    if (saved == null) {
-      saved = new SavedStreams();
-      saved.tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
-      saved.tokenizer.setEnableChecks(enableChecks);
-      saved.filter = new MockTokenFilter(saved.tokenizer, filter, enablePositionIncrements);
-      saved.filter = maybePayload(saved.filter, fieldName);
-      map.put(fieldName, saved);
-      return saved.filter;
-    } else {
-      saved.tokenizer.reset(reader);
-      return saved.filter;
-    }
+    return new TokenStreamComponents(tokenizer, maybePayload(filt, fieldName));
   }
   
   private synchronized TokenFilter maybePayload(TokenFilter stream, String fieldName) {

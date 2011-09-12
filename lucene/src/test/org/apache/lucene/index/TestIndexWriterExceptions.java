@@ -27,11 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -390,12 +386,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
 
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase(new ReusableAnalyzerBase.PerFieldReuseStrategy()) {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-        return new CrashingFilter(fieldName, tokenizer);
+        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
       }
     };
 
@@ -458,13 +454,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // LUCENE-1072
   public void testExceptionFromTokenStream() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new Analyzer() {
+    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new ReusableAnalyzerBase() {
 
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-        return new TokenFilter(tokenizer) {
+        return new TokenStreamComponents(tokenizer, new TokenFilter(tokenizer) {
           private int count = 0;
 
           @Override
@@ -480,7 +476,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             super.reset();
             this.count = 0;
           }
-        };
+        });
       }
 
     });
@@ -595,12 +591,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testDocumentsWriterExceptions() throws IOException {
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase(new ReusableAnalyzerBase.PerFieldReuseStrategy()) {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-        return new CrashingFilter(fieldName, tokenizer);
+        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
       }
     };
 
@@ -691,12 +687,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testDocumentsWriterExceptionThreads() throws Exception {
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase(new ReusableAnalyzerBase.PerFieldReuseStrategy()) {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-        return new CrashingFilter(fieldName, tokenizer);
+        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
       }
     };
 

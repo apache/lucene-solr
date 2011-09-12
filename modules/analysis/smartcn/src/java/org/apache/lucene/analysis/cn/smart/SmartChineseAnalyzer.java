@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.analysis.TokenStream;
@@ -54,7 +55,7 @@ import org.apache.lucene.util.Version;
  * </p>
  * @lucene.experimental
  */
-public final class SmartChineseAnalyzer extends Analyzer {
+public final class SmartChineseAnalyzer extends ReusableAnalyzerBase {
 
   private final Set<?> stopWords;
   
@@ -141,9 +142,9 @@ public final class SmartChineseAnalyzer extends Analyzer {
   }
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new SentenceTokenizer(reader);
-    result = new WordTokenFilter(result);
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    Tokenizer tokenizer = new SentenceTokenizer(reader);
+    TokenStream result = new WordTokenFilter(tokenizer);
     // result = new LowerCaseFilter(result);
     // LowerCaseFilter is not needed, as SegTokenFilter lowercases Basic Latin text.
     // The porter stemming is too strict, this is not a bug, this is a feature:)
@@ -151,32 +152,6 @@ public final class SmartChineseAnalyzer extends Analyzer {
     if (!stopWords.isEmpty()) {
       result = new StopFilter(matchVersion, result, stopWords, false);
     }
-    return result;
-  }
-  
-  private static final class SavedStreams {
-    Tokenizer tokenStream;
-    TokenStream filteredTokenStream;
-  }
-  
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader)
-      throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      setPreviousTokenStream(streams);
-      streams.tokenStream = new SentenceTokenizer(reader);
-      streams.filteredTokenStream = new WordTokenFilter(streams.tokenStream);
-      streams.filteredTokenStream = new PorterStemFilter(streams.filteredTokenStream);
-      if (!stopWords.isEmpty()) {
-        streams.filteredTokenStream = new StopFilter(matchVersion, streams.filteredTokenStream, stopWords, false);
-      }
-    } else {
-      streams.tokenStream.reset(reader);
-      streams.filteredTokenStream.reset(); // reset WordTokenFilter's state
-    }
-
-    return streams.filteredTokenStream;
+    return new TokenStreamComponents(tokenizer, result);
   }
 }

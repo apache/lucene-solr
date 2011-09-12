@@ -190,7 +190,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     assertFalse("queries with different inclusive are not equal", query.equals(other));
   }
 
-  private static class SingleCharAnalyzer extends Analyzer {
+  private static class SingleCharAnalyzer extends ReusableAnalyzerBase {
 
     private static class SingleCharTokenizer extends Tokenizer {
       char[] buffer = new char[1];
@@ -225,19 +225,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-      Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
-      if (tokenizer == null) {
-        tokenizer = new SingleCharTokenizer(reader);
-        setPreviousTokenStream(tokenizer);
-      } else
-        tokenizer.reset(reader);
-      return tokenizer;
-    }
-
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new SingleCharTokenizer(reader);
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new SingleCharTokenizer(reader));
     }
   }
 

@@ -143,16 +143,12 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
    * Expands "multi" to "multi" and "multi2", both at the same position, and
    * expands "triplemulti" to "triplemulti", "multi3", and "multi2".
    */
-  private class MultiAnalyzer extends Analyzer {
-
-    public MultiAnalyzer() {
-    }
+  private class MultiAnalyzer extends ReusableAnalyzerBase {
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
-      result = new TestFilter(result);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      return new TokenStreamComponents(result, new TestFilter(result));
     }
   }
 
@@ -214,16 +210,12 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
    * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1). Does not work
    * correctly for input other than "the quick brown ...".
    */
-  private class PosIncrementAnalyzer extends Analyzer {
-
-    public PosIncrementAnalyzer() {
-    }
+  private class PosIncrementAnalyzer extends ReusableAnalyzerBase {
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
-      result = new TestPosIncrementFilter(result);
-      return result;
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      return new TokenStreamComponents(result, new TestPosIncrementFilter(result));
     }
   }
 

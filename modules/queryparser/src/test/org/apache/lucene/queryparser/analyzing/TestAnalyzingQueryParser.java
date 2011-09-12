@@ -20,10 +20,7 @@ package org.apache.lucene.queryparser.analyzing;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.util.LuceneTestCase;
@@ -137,14 +134,11 @@ final class TestFoldingFilter extends TokenFilter {
   }
 }
 
-final class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
-  public ASCIIAnalyzer() {
-  }
+final class ASCIIAnalyzer extends ReusableAnalyzerBase {
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-    result = new TestFoldingFilter(result);
-    return result;
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    return new TokenStreamComponents(result, new TestFoldingFilter(result));
   }
 }

@@ -22,7 +22,7 @@ import java.io.Reader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
@@ -77,10 +77,10 @@ public class TestTermdocPerf extends LuceneTestCase {
   void addDocs(final Random random, Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
     final RepeatingTokenStream ts = new RepeatingTokenStream(val, random, percentDocs, maxTF);
 
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return ts;
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(ts);
       }
     };
 

@@ -23,11 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -179,21 +175,20 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Analyzer analyzer;
     if (random.nextBoolean()) {
       // no payloads
-     analyzer = new Analyzer() {
+     analyzer = new ReusableAnalyzerBase() {
         @Override
-        public TokenStream tokenStream(String fieldName, Reader reader) {
-          return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
         }
       };
     } else {
       // fixed length payloads
       final int length = random.nextInt(200);
-      analyzer = new Analyzer() {
+      analyzer = new ReusableAnalyzerBase() {
         @Override
-        public TokenStream tokenStream(String fieldName, Reader reader) {
-          return new MockFixedLengthPayloadFilter(random,
-              new MockTokenizer(reader, MockTokenizer.WHITESPACE, true),
-              length);
+        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+          return new TokenStreamComponents(tokenizer, new MockFixedLengthPayloadFilter(random, tokenizer, length));
         }
       };
     }

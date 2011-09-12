@@ -22,9 +22,7 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
@@ -302,22 +300,23 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   /**
    * Return empty tokens for field "f1".
    */
-  private static class AnalyzerReturningNull extends Analyzer {
+  private static class AnalyzerReturningNull extends ReusableAnalyzerBase {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random);
 
     public AnalyzerReturningNull() {
+      super(new PerFieldReuseStrategy());
     }
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       if ("f1".equals(fieldName)) {
-        return new EmptyTokenStream();
+        return new TokenStreamComponents(new EmptyTokenStream());
       } else {
-        return stdAnalyzer.tokenStream(fieldName, reader);
+        return stdAnalyzer.createComponents(fieldName, reader);
       }
     }
 
-    private static class EmptyTokenStream extends TokenStream {
+    private static class EmptyTokenStream extends Tokenizer {
       @Override
       public boolean incrementToken() throws IOException {
         return false;

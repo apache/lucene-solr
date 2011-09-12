@@ -128,12 +128,13 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  public static final class QPTestAnalyzer extends Analyzer {
+  public static final class QPTestAnalyzer extends ReusableAnalyzerBase {
 
     /** Filters MockTokenizer with StopFilter. */
     @Override
-    public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
+    public final TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(tokenizer, new QPTestFilter(tokenizer));
     }
   }
 
@@ -344,10 +345,10 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  private class SimpleCJKAnalyzer extends Analyzer {
+  private class SimpleCJKAnalyzer extends ReusableAnalyzerBase {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new SimpleCJKTokenizer(reader);
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return new TokenStreamComponents(new SimpleCJKTokenizer(reader));
     }
   }
   
@@ -1241,10 +1242,10 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  private class CannedAnalyzer extends Analyzer {
+  private class CannedAnalyzer extends ReusableAnalyzerBase {
     @Override
-    public TokenStream tokenStream(String ignored, Reader alsoIgnored) {
-      return new CannedTokenStream();
+    public TokenStreamComponents createComponents(String ignored, Reader alsoIgnored) {
+      return new TokenStreamComponents(new CannedTokenStream());
     }
   }
 

@@ -20,11 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -107,10 +103,10 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testPositionIncrementGap() throws IOException {
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -142,10 +138,11 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testTokenReuse() throws IOException {
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
       @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false)) {
+      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new TokenFilter(tokenizer) {
           boolean first = true;
           AttributeSource.State state;
 
@@ -187,7 +184,7 @@ public class TestDocumentWriter extends LuceneTestCase {
           final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
           final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
           final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-        };
+        });
       }
     };
 
