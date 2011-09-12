@@ -366,15 +366,23 @@ public final class DocumentsWriterFlushControl {
   ThreadState obtainAndLock() {
     final ThreadState perThread = perThreadPool.getAndLock(Thread
         .currentThread(), documentsWriter);
-    if (perThread.isActive()
-        && perThread.perThread.deleteQueue != documentsWriter.deleteQueue) {
-      // There is a flush-all in process and this DWPT is
-      // now stale -- enroll it for flush and try for
-      // another DWPT:
-      addFlushableState(perThread);
+    boolean success = false;
+    try {
+      if (perThread.isActive()
+          && perThread.perThread.deleteQueue != documentsWriter.deleteQueue) {
+        // There is a flush-all in process and this DWPT is
+        // now stale -- enroll it for flush and try for
+        // another DWPT:
+        addFlushableState(perThread);
+      }
+      success = true;
+      // simply return the ThreadState even in a flush all case sine we already hold the lock
+      return perThread;
+    } finally {
+      if (!success) { // make sure we unlock if this fails
+        perThread.unlock();
+      }
     }
-    // simply return the ThreadState even in a flush all case sine we already hold the lock
-    return perThread;
   }
   
   void markForFullFlush() {
