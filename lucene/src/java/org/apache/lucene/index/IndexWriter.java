@@ -1905,7 +1905,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  {@link MergePolicy#findMergesToExpungeDeletes}.
    *  The MergePolicy determines what merges should be done.
    *  For example, the default {@link TieredMergePolicy}
-   *  will only expunage deletes from a segment if the
+   *  will only expunge deletes from a segment if the
    *  percentage of deleted docs is over 10%.
    *
    *  <p>When an index
