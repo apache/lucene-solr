@@ -312,6 +312,9 @@ Other Changes
 
 * LUCENE-3286: 'luke' ant target has been disabled due to incompatibilities with XML
   queryparser location (Chris Male)
+  
+* SOLR-1897: The data dir from the core descriptor should override the data dir from 
+  the solrconfig.xml rather than the other way round. (Mark Miller)
 
 Documentation
 ----------------------
