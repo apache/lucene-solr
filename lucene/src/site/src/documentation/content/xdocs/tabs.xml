@@ -33,32 +33,7 @@
     be displayed when their parent tab is selected.    
   -->
 
-  <!--
-  <tab id="" label="Home" dir="" indexfile="index.html"/>
-  -->
-
   <tab id="" label="Main" href="http://lucene.apache.org/java/docs/"/>
   <tab id="wiki" label="Wiki" href="http://wiki.apache.org/lucene-java"/>
-    <!--
-  <tab label="Lucene 2.3.0 Documentation" href="http://lucene.apache.org/java/2_3_0/"/>
-  -->
-  <tab label="Lucene 3.4 Documentation" dir=""/>
-
-  
-  <!--
-  <tab id="samples" label="Samples" dir="samples" indexfile="sample.html">
-    <tab id="samples-index" label="Index" dir="samples" indexfile="index.html"/>
-    <tab id="samples-sample2" label="Sample2" dir="samples" indexfile="static.html"/>
-  </tab>
-  <tab label="Apache XML Projects" href="http://xml.apache.org">
-    <tab label="Forrest" href="http://forrest.apache.org"/>
-    <tab label="Xerces" href="http://xml.apache.org/xerces"/>
-  </tab>
-  <tab id="plugins" label="Plugins" dir="pluginDocs/plugins_0_70" indexfile="index.html"/>
-  -->
-  <!-- Add new tabs here, eg:
-  <tab label="How-Tos" dir="community/howto/"/>
-  <tab label="XML Site" dir="xml-site/"/>
-  -->
-
+  <tab label="Lucene 3.5 Documentation" dir=""/>
 </tabs>
