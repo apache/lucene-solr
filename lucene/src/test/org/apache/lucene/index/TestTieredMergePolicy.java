@@ -107,4 +107,48 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       dir.close();
     }
   }
+
+  public void testExpungeMaxSegSize() throws Exception {
+    final Directory dir = newDirectory();
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    final TieredMergePolicy tmp = new TieredMergePolicy();
+    tmp.setMaxMergedSegmentMB(0.01);
+    tmp.setExpungeDeletesPctAllowed(0.0);
+    conf.setMergePolicy(tmp);
+
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);
+    w.setDoRandomOptimize(false);
+
+    final int numDocs = atLeast(200);
+    for(int i=0;i<numDocs;i++) {
+      Document doc = new Document();
+      doc.add(newField("id", "" + i, Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
+      w.addDocument(doc);
+    }
+
+    w.optimize();
+    IndexReader r = w.getReader();
+    assertEquals(numDocs, r.maxDoc());
+    assertEquals(numDocs, r.numDocs());
+    r.close();
+
+    w.deleteDocuments(new Term("id", ""+(42+17)));
+
+    r = w.getReader();
+    assertEquals(numDocs, r.maxDoc());
+    assertEquals(numDocs-1, r.numDocs());
+    r.close();
+
+    w.expungeDeletes();
+
+    r = w.getReader();
+    assertEquals(numDocs-1, r.maxDoc());
+    assertEquals(numDocs-1, r.numDocs());
+    r.close();
+
+    w.close();
+
+    dir.close();
+  }
 }

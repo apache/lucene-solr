@@ -576,45 +576,20 @@ public class TieredMergePolicy extends MergePolicy {
     MergeSpecification spec = null;
 
     while(start < eligible.size()) {
-      long totAfterMergeBytes = 0;
-      int upto = start;
-      boolean done = false;
-      while(upto < start + maxMergeAtOnceExplicit) {
-        if (upto == eligible.size()) {
-          done = true;
-          break;
-        }
-        final SegmentInfo info = eligible.get(upto);
-        final long segBytes = size(info);
-        if (totAfterMergeBytes + segBytes > maxMergedSegmentBytes) {
-          // TODO: we could be smarter here, eg cherry
-          // picking smaller merges that'd sum up to just
-          // around the max size
-          break;
-        }
-        totAfterMergeBytes += segBytes;
-        upto++;
-      }
-
-      if (upto == start) {
-        // Single segment is too big; grace it
-        start++;
-        continue;
-      }
-      
+      // Don't enforce max merged size here: app is explicitly
+      // calling expungeDeletes, and knows this may take a
+      // long time / produce big segments (like optimize):
+      final int end = Math.min(start + maxMergeAtOnceExplicit, eligible.size());
       if (spec == null) {
         spec = new MergeSpecification();
       }
 
-      final OneMerge merge = new OneMerge(eligible.subList(start, upto));
+      final OneMerge merge = new OneMerge(eligible.subList(start, end));
       if (verbose()) {
         message("add merge=" + writer.get().segString(merge.segments));
       }
       spec.add(merge);
-      start = upto;
-      if (done) {
-        break;
-      }
+      start = end;
     }
 
     return spec;
