@@ -585,6 +585,10 @@ Bug fixes
 * LUCENE-3421: PayloadTermQuery's explain was wrong when includeSpanScore=false.
   (Edward Drapkin via Robert Muir)
 
+* LUCENE-3432: IndexWriter.expungeDeletes with TieredMergePolicy
+  should ignore the maxMergedSegmentMB setting (v.sevel via Mike
+  McCandless)
+
 ======================= Lucene 3.4.0 =======================
 
 Bug fixes

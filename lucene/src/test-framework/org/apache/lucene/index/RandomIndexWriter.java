@@ -326,6 +326,14 @@ public class RandomIndexWriter implements Closeable {
   private boolean doRandomOptimize = true;
   private boolean doRandomOptimizeAssert = true;
 
+  public void expungeDeletes(boolean doWait) throws IOException {
+    w.expungeDeletes(doWait);
+  }
+
+  public void expungeDeletes() throws IOException {
+    w.expungeDeletes();
+  }
+
   public void setDoRandomOptimize(boolean v) {
     doRandomOptimize = v;
   }
