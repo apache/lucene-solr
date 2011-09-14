@@ -66,6 +66,64 @@ customization is required.
     </section>
     <section id="news">
       <title>News</title>
+
+      <section>
+	<title>14 September 2011 - Solr 3.4.0 Released</title>
+	<p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.4.0</a>!
+	</p> 
+	<p>
+	  Solr's version number was synced with Lucene following the Lucene/Solr merge, so Solr 3.4.0 contains Lucene 3.4.0.
+	</p>
+	<p>
+	If you are already using Apache Solr 3.1, 3.2 or 3.3, we strongly recommend you upgrade to 3.4.0 because of the index corruption bug on OS or computer crash or power loss (<a href="https://issues.apache.org/jira/browse/LUCENE-3418">LUCENE-3418</a>), now fixed in 3.4.0.</p>
+
+	<p>
+	  Solr 3.4.0 release highlights include
+	</p>
+	<ul>
+	  <li>Bug fixes and improvements from Apache Lucene 3.4.0, including a
+	  major bug (<a href="https://issues.apache.org/jira/browse/LUCENE-3418">LUCENE-3418</a>) whereby a Lucene index could
+	  easily become corrupted if the OS or computer crashed or lost
+	  power.</li>
+
+	  <li>SolrJ client can now parse grouped and range facets results
+	  (<a href="https://issues.apache.org/jira/browse/SOLR-2523">SOLR-2523</a>).</li>
+
+	  <li>A new <code>XsltUpdateRequestHandler</code> allows posting XML that's
+	  transformed by a provided XSLT into a valid Solr document
+	  (<a href="https://issues.apache.org/jira/browse/SOLR-2630">SOLR-2630</a>).</li>
+
+	  <li>Post-group faceting option (<code>group.truncate</code>) can now compute
+	  facet counts for only the highest ranking documents per-group.
+	  (<a href="https://issues.apache.org/jira/browse/SOLR-2665">SOLR-2665</a>).</li>
+
+	  <li>Add <code>commitWithin</code> update request parameter to all update handlers
+	  that were previously missing it.  This tells Solr to commit the
+	  change within the specified amount of time (<a href="https://issues.apache.org/jira/browse/SOLR-2540">SOLR-2540</a>).</li>
+
+	  <li>You can now specify <code>NIOFSDirectory</code> (<a href="https://issues.apache.org/jira/browse/SOLR-2670">SOLR-2670</a>).</li>
+
+	  <li>New parameter <code>hl.phraseLimit</code> speeds up <code>FastVectorHighlighter</code>
+	  (<a href="https://issues.apache.org/jira/browse/LUCENE-3234">LUCENE-3234</a>).</li>
+
+	  <li>The query cache and filter cache can now be disabled per request.
+	  See <a href="http://wiki.apache.org/solr/CommonQueryParameters#Caching_of_filters">this wiki page</a>
+	  (<a href="https://issues.apache.org/jira/browse/SOLR-2429">SOLR-2429</a>).</li>
+
+	  <li> Improved memory usage, build time, and performance of 
+	  <code>SynonymFilterFactory</code> (<a href="https://issues.apache.org/jira/browse/LUCENE-3233">LUCENE-3233</a>).</li>
+
+	  <li> Added <code>omitPositions</code> to the schema, so you can omit position
+	  information while still indexing term frequencies (<a href="https://issues.apache.org/jira/browse/LUCENE-2048">LUCENE-2048</a>).</li>
+
+	  <li>Various fixes for multi-threaded <code>DataImportHandler</code>.</li>
+	</ul>
+
+	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_4/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
+	</p>
+
+      </section>
+
 <section><title>28 July 2011 - WARNING: Index corruption and crashes in Apache Lucene Core / Apache Solr with Java 7</title>
   <p>Oracle released <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Java 7</a> today.
   Unfortunately it contains hotspot compiler optimizations, which miscompile some loops.
