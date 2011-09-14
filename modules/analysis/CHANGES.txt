@@ -34,6 +34,10 @@ API Changes
 
  * LUCENE-3400: Removed DutchAnalyzer.setStemDictionary (Chris Male)
 
+ * LUCENE-3431: Removed QueryAutoStopWordAnalyzer.addStopWords* deprecated methods
+   since they prevented reuse.  Stopwords are now generated at instantiation through
+   the Analyzer's constructors. (Chris Male)
+
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 
