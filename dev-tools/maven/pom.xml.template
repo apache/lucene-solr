@@ -275,11 +275,6 @@
         <version>2.0</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-        <version>3.3.1</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.solr</groupId>
         <artifactId>solr-carrot2-core</artifactId>
         <version>${project.version}</version>

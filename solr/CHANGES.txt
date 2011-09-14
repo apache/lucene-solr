@@ -55,6 +55,10 @@ Bug Fixes
   module to the o.a.s.util package in the Solr core module. 
   (David Smiley via Steve Rowe)
 
+* SOLR-2756: Maven configuration: Removed unused zookeeper dependency;
+  conditionalized geronimo-stax-api dependency to be in force only under
+  Java 1.5; excluded transitive stax:stax-api dependency from
+  org.codehaus.woodstox:wstx-asl dependency. (David Smiley, Steve Rowe)
 
 ==================  3.4.0  ==================
 
