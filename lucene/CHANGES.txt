@@ -589,6 +589,14 @@ Bug fixes
   should ignore the maxMergedSegmentMB setting (v.sevel via Mike
   McCandless)
 
+New Features
+
+Optimizations
+
+* LUCENE-3426: Add NGramPhraseQuery which extends PhraseQuery and tries to reduce
+  the number of terms of the query when rewrite(), in order to improve performance.
+  (Robert Muir, Koji Sekiguchi)
+
 ======================= Lucene 3.4.0 =======================
 
 Bug fixes
