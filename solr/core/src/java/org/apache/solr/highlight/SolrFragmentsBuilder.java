@@ -17,6 +17,7 @@
 
 package org.apache.solr.highlight;
 
+import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -37,12 +38,12 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder}.
    */
-  public FragmentsBuilder getFragmentsBuilder(SolrParams params) {
+  public FragmentsBuilder getFragmentsBuilder(SolrParams params, BoundaryScanner bs) {
     numRequests++;
     if( defaults != null ) {
       params = new DefaultSolrParams( params, defaults );
     }
-    return getFragmentsBuilder( params, getPreTags( params, null ), getPostTags( params, null ) );
+    return getFragmentsBuilder( params, getPreTags( params, null ), getPostTags( params, null ), bs );
   }
   
   public String[] getPreTags( SolrParams params, String fieldName ){
@@ -69,7 +70,8 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
     return tags;
   }
   
-  protected abstract FragmentsBuilder getFragmentsBuilder( SolrParams params, String[] preTags, String[] postTags );
+  protected abstract FragmentsBuilder getFragmentsBuilder( SolrParams params,
+      String[] preTags, String[] postTags, BoundaryScanner bs );
   
   protected char getMultiValuedSeparatorChar( SolrParams params ){
     String separator = params.get( HighlightParams.MULTI_VALUED_SEPARATOR, " " );

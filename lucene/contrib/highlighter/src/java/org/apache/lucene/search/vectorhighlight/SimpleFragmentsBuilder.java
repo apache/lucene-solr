@@ -44,6 +44,14 @@ public class SimpleFragmentsBuilder extends BaseFragmentsBuilder {
     super( preTags, postTags );
   }
 
+  public SimpleFragmentsBuilder( BoundaryScanner bs ) {
+    super( bs );
+  }
+
+  public SimpleFragmentsBuilder( String[] preTags, String[] postTags, BoundaryScanner bs ) {
+    super( preTags, postTags, bs );
+  }
+
   /**
    * do nothing. return the source list.
    */

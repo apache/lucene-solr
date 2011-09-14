@@ -33,6 +33,12 @@ public interface HighlightParams {
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter";
   public static final String FRAG_LIST_BUILDER = HIGHLIGHT+".fragListBuilder";
   public static final String FRAGMENTS_BUILDER = HIGHLIGHT+".fragmentsBuilder";
+  public static final String BOUNDARY_SCANNER = HIGHLIGHT+".boundaryScanner";
+  public static final String BS_MAX_SCAN = HIGHLIGHT+".bs.maxScan";
+  public static final String BS_CHARS = HIGHLIGHT+".bs.chars";
+  public static final String BS_TYPE = HIGHLIGHT+".bs.type";
+  public static final String BS_LANGUAGE = HIGHLIGHT+".bs.language";
+  public static final String BS_COUNTRY = HIGHLIGHT+".bs.country";
   public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch";
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";
   public static final String ALTERNATE_FIELD_LENGTH = HIGHLIGHT+".maxAlternateFieldLength";

@@ -58,6 +58,10 @@ public abstract class SolrHighlighter
   protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
     new HashMap<String, SolrFragmentsBuilder>() ;
 
+  // Thread safe registry
+  protected final Map<String, SolrBoundaryScanner> boundaryScanners =
+    new HashMap<String, SolrBoundaryScanner>() ;
+
   @Deprecated
   public abstract void initalize( SolrConfig config );
 

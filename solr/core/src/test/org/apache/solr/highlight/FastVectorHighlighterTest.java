@@ -35,7 +35,7 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
   public void testConfig(){
     SolrHighlighter highlighter = h.getCore().getHighlighter();
 
-    // Make sure we loaded the one fragListBuilder
+    // Make sure we loaded one fragListBuilder
     SolrFragListBuilder solrFlbNull = highlighter.fragListBuilders.get( null );
     SolrFragListBuilder solrFlbEmpty = highlighter.fragListBuilders.get( "" );
     SolrFragListBuilder solrFlbSimple = highlighter.fragListBuilders.get( "simple" );
@@ -43,15 +43,25 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
     assertTrue( solrFlbNull instanceof SimpleFragListBuilder );
     assertTrue( solrFlbSimple instanceof SimpleFragListBuilder );
         
-    // Make sure we loaded the one fragmentsBuilder
+    // Make sure we loaded two fragmentsBuilders
     SolrFragmentsBuilder solrFbNull = highlighter.fragmentsBuilders.get( null );
     SolrFragmentsBuilder solrFbEmpty = highlighter.fragmentsBuilders.get( "" );
     SolrFragmentsBuilder solrFbSimple = highlighter.fragmentsBuilders.get( "simple" );
     SolrFragmentsBuilder solrFbSO = highlighter.fragmentsBuilders.get( "scoreOrder" );
     assertSame( solrFbNull, solrFbEmpty );
-    assertTrue( solrFbNull instanceof ScoreOrderFragmentsBuilder );
+    assertTrue( solrFbNull instanceof SimpleFragmentsBuilder );
     assertTrue( solrFbSimple instanceof SimpleFragmentsBuilder );
     assertTrue( solrFbSO instanceof ScoreOrderFragmentsBuilder );
+    
+    // Make sure we loaded two boundaryScanners
+    SolrBoundaryScanner solrBsNull = highlighter.boundaryScanners.get(null);
+    SolrBoundaryScanner solrBsEmpty = highlighter.boundaryScanners.get("");
+    SolrBoundaryScanner solrBsSimple = highlighter.boundaryScanners.get("simple");
+    SolrBoundaryScanner solrBsBI = highlighter.boundaryScanners.get("breakIterator");
+    assertSame(solrBsNull, solrBsEmpty);
+    assertTrue(solrBsNull instanceof SimpleBoundaryScanner);
+    assertTrue(solrBsSimple instanceof SimpleBoundaryScanner);
+    assertTrue(solrBsBI instanceof BreakIteratorBoundaryScanner);
   }
 
   @Test
