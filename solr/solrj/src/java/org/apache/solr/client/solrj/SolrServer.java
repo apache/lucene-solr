@@ -42,83 +42,237 @@ import org.apache.solr.common.util.NamedList;
  */
 public abstract class SolrServer implements Serializable
 {
+  private static final long serialVersionUID = 1L;
   private DocumentObjectBinder binder;
 
-  public UpdateResponse add(Collection<SolrInputDocument> docs ) throws SolrServerException, IOException {
+  /**
+   * Adds a collection of documents
+   * @param docs  the collection of documents
+   * @throws SolrServerException
+   * @throws IOException
+   */
+  public UpdateResponse add(Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
+    return add(docs, -1);
+  }
+
+  /**
+   * Adds a collection of documents, specifying max time before they become committed
+   * @param docs  the collection of documents
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since solr 3.4
+   */
+  public UpdateResponse add(Collection<SolrInputDocument> docs, int commitWithinMs) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(docs);
+    req.setCommitWithin(commitWithinMs);
     return req.process(this);
   }
 
+  /**
+   * Adds a collection of beans
+   * @param beans  the collection of beans
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse addBeans(Collection<?> beans ) throws SolrServerException, IOException {
+    return addBeans(beans, -1);
+  }
+  
+  /**
+   * Adds a collection of beans specifying max time before they become committed
+   * @param beans  the collection of beans
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since solr 3.4
+   */
+  public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs) throws SolrServerException, IOException {
     DocumentObjectBinder binder = this.getBinder();
     ArrayList<SolrInputDocument> docs =  new ArrayList<SolrInputDocument>(beans.size());
     for (Object bean : beans) {
       docs.add(binder.toSolrInputDocument(bean));
     }
-    return add(docs);
+    return add(docs, commitWithinMs);
   }
 
+  /**
+   * Adds a single document
+   * @param doc  the input document
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse add(SolrInputDocument doc ) throws SolrServerException, IOException {
+    return add(doc, -1);
+  }
+
+  /**
+   * Adds a single document specifying max time before it becomes committed
+   * @param doc  the input document
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since solr 3.4
+   */
+  public UpdateResponse add(SolrInputDocument doc, int commitWithinMs) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(doc);
+    req.setCommitWithin(commitWithinMs);
     return req.process(this);
   }
 
+  /**
+   * Adds a single bean
+   * @param obj  the input bean
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse addBean(Object obj) throws IOException, SolrServerException {
-    return add(getBinder().toSolrInputDocument(obj));
+    return addBean(obj, -1);
   }
 
-  /** waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+  /**
+   * Adds a single bean specifying max time before it becomes committed
+   * @param obj  the input bean
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since solr 3.4
+   */
+  public UpdateResponse addBean(Object obj, int commitWithinMs) throws IOException, SolrServerException {
+    return add(getBinder().toSolrInputDocument(obj),commitWithinMs);
+  }
+
+  /** 
+   * Performs an explicit commit, causing pending documents to be committed for indexing
+   * <p>
+   * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * @throws SolrServerException
    * @throws IOException 
    */
   public UpdateResponse commit( ) throws SolrServerException, IOException {
     return commit(true, true);
   }
 
-  /** waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+  /** 
+   * Performs an explicit optimize, causing a merge of all segments to one.
+   * <p>
+   * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>
+   * Note: In most cases it is not required to do explicit optimize
+   * @throws SolrServerException
    * @throws IOException 
    */
   public UpdateResponse optimize( ) throws SolrServerException, IOException {
     return optimize(true, true, 1);
   }
   
+  /** 
+   * Performs an explicit commit, causing pending documents to be committed for indexing
+   * @param waitFlush  block until index changes are flushed to disk
+   * @param waitSearcher  block until a new searcher is opened and registered as the main query searcher, making the changes visible 
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse commit( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException {
     return new UpdateRequest().setAction( UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher ).process( this );
   }
 
+  /** 
+   * Performs an explicit optimize, causing a merge of all segments to one.
+   * <p>
+   * Note: In most cases it is not required to do explicit optimize
+   * @param waitFlush  block until index changes are flushed to disk
+   * @param waitSearcher  block until a new searcher is opened and registered as the main query searcher, making the changes visible 
+   * @throws SolrServerException
+   * @throws IOException 
+   */
   public UpdateResponse optimize( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException {
     return optimize(waitFlush, waitSearcher, 1);
   }
 
+  /** 
+   * Performs an explicit optimize, causing a merge of all segments to one.
+   * <p>
+   * Note: In most cases it is not required to do explicit optimize
+   * @param waitFlush  block until index changes are flushed to disk
+   * @param waitSearcher  block until a new searcher is opened and registered as the main query searcher, making the changes visible 
+   * @param maxSegments  optimizes down to at most this number of segments
+   * @throws SolrServerException
+   * @throws IOException 
+   */
   public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher, int maxSegments ) throws SolrServerException, IOException {
     return new UpdateRequest().setAction( UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher, maxSegments ).process( this );
   }
   
+  /**
+   * Performs a rollback of all non-committed documents pending.
+   * <p>
+   * Note that this is not a true rollback as in databases. Content you have previously
+   * added may have been committed due to autoCommit, buffer full, other client performing
+   * a commit etc.
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse rollback() throws SolrServerException, IOException {
     return new UpdateRequest().rollback().process( this );
   }
   
+  /**
+   * Deletes a single document by unique ID
+   * @param id  the ID of the document to delete
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse deleteById(String id) throws SolrServerException, IOException {
     return new UpdateRequest().deleteById( id ).process( this );
   }
 
+  /**
+   * Deletes a list of documents by unique ID
+   * @param ids  the list of document IDs to delete 
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse deleteById(List<String> ids) throws SolrServerException, IOException {
     return new UpdateRequest().deleteById( ids ).process( this );
   }
 
+  /**
+   * Deletes documents from the index based on a query
+   * @param query  the query expressing what documents to delete
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public UpdateResponse deleteByQuery(String query) throws SolrServerException, IOException {
     return new UpdateRequest().deleteByQuery( query ).process( this );
   }
 
+  /**
+   * Issues a ping request to check if the server is alive
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public SolrPingResponse ping() throws SolrServerException, IOException {
     return new SolrPing().process( this );
   }
 
+  /**
+   * Performs a query to the Solr server
+   * @param params  an object holding all key/value parameters to send along the request
+   * @throws SolrServerException
+   */
   public QueryResponse query(SolrParams params) throws SolrServerException {
     return new QueryRequest( params ).process( this );
   }
   
+  /**
+   * Performs a query to the Solr server
+   * @param params  an object holding all key/value parameters to send along the request
+   * @param method  specifies the HTTP method to use for the request, such as GET or POST
+   * @throws SolrServerException
+   */
   public QueryResponse query(SolrParams params, METHOD method) throws SolrServerException {
     return new QueryRequest( params, method ).process( this );
   }

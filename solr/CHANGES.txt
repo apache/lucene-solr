@@ -175,6 +175,9 @@ New Features
 Optimizations
 ----------------------
 
+* SOLR-2742: SolrJ: Provide commitWithinMs as optional parameter for all add() methods,
+  making the feature more conveniently accessible for developers (janhoy)
+
 * SOLR-1875: Per-segment field faceting for single valued string fields.
   Enable with facet.method=fcs, control the number of threads used with
   the "threads" local param on the facet.field param.  This algorithm will

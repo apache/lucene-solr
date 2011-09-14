@@ -377,6 +377,29 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     }
     
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+    
+
+    // Now test the new convenience parameter on the add() for commitWithin
+    SolrInputDocument doc4 = new SolrInputDocument();
+    doc4.addField( "id", "id4", 1.0f );
+    doc4.addField( "name", "doc4", 1.0f );
+    doc4.addField( "price", 10 );
+    server.add(doc4, 500);
+    
+    Thread.sleep( 1000 ); // wait 1 sec
+
+    // now check that it comes out...
+    rsp = server.query( new SolrQuery( "id:id4") );
+
+    if(rsp.getResults().getNumFound() == 0) {
+      // wait and try again for slower machines
+      Thread.sleep( 2000 ); // wait 2 seconds...
+      
+      rsp = server.query( new SolrQuery( "id:id4") );
+    }
+    
+    Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+
   }
 
 

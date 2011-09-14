@@ -62,6 +62,8 @@ import org.slf4j.LoggerFactory;
  */
 public class CommonsHttpSolrServer extends SolrServer 
 {
+  private static final long serialVersionUID = 1L;
+
   /**
    * User-Agent String as identified by the HTTP request by the {@link
    * org.apache.commons.httpclient.HttpClient HttpClient} to the Solr
@@ -613,26 +615,45 @@ public class CommonsHttpSolrServer extends SolrServer
 
   /**
    * Adds the documents supplied by the given iterator.
-   *
    * @param docIterator  the iterator which returns SolrInputDocument instances
-   *
    * @return the response from the SolrServer
    */
   public UpdateResponse add(Iterator<SolrInputDocument> docIterator)
           throws SolrServerException, IOException {
+    return add(docIterator, -1);
+  }
+  
+  /**
+   * Adds the documents supplied by the given iterator, specifying max time before they become committed
+   * @param docIterator  the iterator which returns SolrInputDocument instances
+   * @param commitWithinMs  the time in milliseconds before a commit automatically is triggered
+   * @return the response from the SolrServer
+   */
+  public UpdateResponse add(Iterator<SolrInputDocument> docIterator, int commitWithinMs)
+          throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
-    req.setDocIterator(docIterator);    
+    req.setDocIterator(docIterator);
+    req.setCommitWithin(commitWithinMs);
     return req.process(this);
   }
 
   /**
-   * Adds the beans supplied by the given iterator.
-   *
+   * Adds the beans supplied by the given iterator
    * @param beanIterator  the iterator which returns Beans
-   *
    * @return the response from the SolrServer
    */
   public UpdateResponse addBeans(final Iterator<?> beanIterator)
+          throws SolrServerException, IOException {
+    return addBeans(beanIterator, -1);
+  }
+  
+  /**
+   * Adds the beans supplied by the given iterator, specifying max time before they become committed
+   * @param commitWithinMs  the time in milliseconds before a commit automatically is triggered
+   * @param beanIterator  the iterator which returns Beans
+   * @return the response from the SolrServer
+   */
+  public UpdateResponse addBeans(final Iterator<?> beanIterator, int commitWithinMs)
           throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.setDocIterator(new Iterator<SolrInputDocument>() {
@@ -651,6 +672,7 @@ public class CommonsHttpSolrServer extends SolrServer
         beanIterator.remove();
       }
     });
+    req.setCommitWithin(commitWithinMs);
     return req.process(this);
   }
 }
