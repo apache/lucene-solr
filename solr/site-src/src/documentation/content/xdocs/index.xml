@@ -119,7 +119,7 @@ customization is required.
 	  <li>Various fixes for multi-threaded <code>DataImportHandler</code>.</li>
 	</ul>
 
-	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_4/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
+	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_4_0/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
 	</p>
 
       </section>
