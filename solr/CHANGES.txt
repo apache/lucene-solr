@@ -23,6 +23,13 @@ on how to get started.
 
 ==================  3.5.0  ==================
 
+Optimizations
+----------------------
+
+* SOLR-2742: SolrJ: Provide commitWithinMs as optional parameter for all add() methods,
+  making the feature more conveniently accessible for developers (janhoy)
+
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
