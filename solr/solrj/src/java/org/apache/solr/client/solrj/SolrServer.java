@@ -61,7 +61,7 @@ public abstract class SolrServer implements Serializable
    * @param commitWithinMs  max time (in ms) before a commit will happen 
    * @throws SolrServerException
    * @throws IOException
-   * @since solr 3.4
+   * @since solr 3.5
    */
   public UpdateResponse add(Collection<SolrInputDocument> docs, int commitWithinMs) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
@@ -86,7 +86,7 @@ public abstract class SolrServer implements Serializable
    * @param commitWithinMs  max time (in ms) before a commit will happen 
    * @throws SolrServerException
    * @throws IOException
-   * @since solr 3.4
+   * @since solr 3.5
    */
   public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs) throws SolrServerException, IOException {
     DocumentObjectBinder binder = this.getBinder();
@@ -113,7 +113,7 @@ public abstract class SolrServer implements Serializable
    * @param commitWithinMs  max time (in ms) before a commit will happen 
    * @throws SolrServerException
    * @throws IOException
-   * @since solr 3.4
+   * @since solr 3.5
    */
   public UpdateResponse add(SolrInputDocument doc, int commitWithinMs) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
@@ -138,7 +138,7 @@ public abstract class SolrServer implements Serializable
    * @param commitWithinMs  max time (in ms) before a commit will happen 
    * @throws SolrServerException
    * @throws IOException
-   * @since solr 3.4
+   * @since solr 3.5
    */
   public UpdateResponse addBean(Object obj, int commitWithinMs) throws IOException, SolrServerException {
     return add(getBinder().toSolrInputDocument(obj),commitWithinMs);
