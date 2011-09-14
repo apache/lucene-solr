@@ -319,6 +319,9 @@ Other Changes
 * SOLR-1897: The data dir from the core descriptor should override the data dir from 
   the solrconfig.xml rather than the other way round. (Mark Miller)
 
+* SOLR-2756: Maven configuration: Excluded transitive stax:stax-api dependency
+  from org.codehaus.woodstox:wstx-asl dependency. (David Smiley via Steve Rowe)
+
 Documentation
 ----------------------
 

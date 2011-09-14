@@ -115,6 +115,12 @@
     <dependency>
       <groupId>org.codehaus.woodstox</groupId>
       <artifactId>wstx-asl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>stax</groupId>
+          <artifactId>stax-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
