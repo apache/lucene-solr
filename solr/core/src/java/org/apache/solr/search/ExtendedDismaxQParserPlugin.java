@@ -38,7 +38,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.search.QueryUtils;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.analysis.*;
 
@@ -814,7 +813,8 @@ class ExtendedDismaxQParser extends QParser {
                               // used when constructing boosting part of query via sloppy phrases
     boolean exceptions;  //  allow exceptions to be thrown (for example on a missing field)
 
-    ExtendedAnalyzer analyzer;
+    private Map<String, Analyzer> nonStopFilterAnalyzerPerField;
+    private boolean removeStopFilter;
 
     /**
      * Where we store a map from field name we expect to see in our query
@@ -824,14 +824,14 @@ class ExtendedDismaxQParser extends QParser {
     protected Map<String,Alias> aliases = new HashMap<String,Alias>(3);
 
     public ExtendedSolrQueryParser(QParser parser, String defaultField) {
-      super(parser, defaultField, new ExtendedAnalyzer(parser));
-      analyzer = (ExtendedAnalyzer)getAnalyzer();      
+      super(parser, defaultField, null);
       // don't trust that our parent class won't ever change it's default
       setDefaultOperator(QueryParser.Operator.OR);
     }
 
     public void setRemoveStopFilter(boolean remove) {
-      analyzer.removeStopFilter = remove;
+//      analyzer.removeStopFilter = remove;
+      removeStopFilter = remove;
     }
 
     @Override
@@ -917,6 +917,23 @@ class ExtendedDismaxQParser extends QParser {
       this.field = field;
       this.val = val;
       return getAliasedQuery();
+    }
+
+    @Override
+    protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted) throws ParseException {
+      Analyzer actualAnalyzer;
+      if (removeStopFilter) {
+        if (nonStopFilterAnalyzerPerField == null) {
+          nonStopFilterAnalyzerPerField = new HashMap<String, Analyzer>();
+        }
+        actualAnalyzer = nonStopFilterAnalyzerPerField.get(field);
+        if (actualAnalyzer == null) {
+          actualAnalyzer = noStopwordFilterAnalyzer(field);
+        }
+      } else {
+        actualAnalyzer = parser.getReq().getSchema().getFieldType(field).getQueryAnalyzer();
+      }
+      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted);
     }
 
     @Override
@@ -1058,123 +1075,60 @@ class ExtendedDismaxQParser extends QParser {
         return null;
       }
     }
-  }
 
+    private Analyzer noStopwordFilterAnalyzer(String fieldName) {
+      FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
+      Analyzer qa = ft.getQueryAnalyzer();
+      if (!(qa instanceof TokenizerChain)) {
+        return qa;
+      }
+
+      TokenizerChain tcq = (TokenizerChain) qa;
+      Analyzer ia = ft.getAnalyzer();
+      if (ia == qa || !(ia instanceof TokenizerChain)) {
+        return qa;
+      }
+      TokenizerChain tci = (TokenizerChain) ia;
+
+      // make sure that there isn't a stop filter in the indexer
+      for (TokenFilterFactory tf : tci.getTokenFilterFactories()) {
+        if (tf instanceof StopFilterFactory) {
+          return qa;
+        }
+      }
+
+      // now if there is a stop filter in the query analyzer, remove it
+      int stopIdx = -1;
+      TokenFilterFactory[] facs = tcq.getTokenFilterFactories();
+
+      for (int i = 0; i < facs.length; i++) {
+        TokenFilterFactory tf = facs[i];
+        if (tf instanceof StopFilterFactory) {
+          stopIdx = i;
+          break;
+        }
+      }
+
+      if (stopIdx == -1) {
+        // no stop filter exists
+        return qa;
+      }
+
+      TokenFilterFactory[] newtf = new TokenFilterFactory[facs.length - 1];
+      for (int i = 0, j = 0; i < facs.length; i++) {
+        if (i == stopIdx) continue;
+        newtf[j++] = facs[i];
+      }
+
+      TokenizerChain newa = new TokenizerChain(tcq.getTokenizerFactory(), newtf);
+      newa.setPositionIncrementGap(tcq.getPositionIncrementGap(fieldName));
+      return newa;
+    }
+  }
 
   static boolean isEmpty(Query q) {
     if (q==null) return true;
     if (q instanceof BooleanQuery && ((BooleanQuery)q).clauses().size()==0) return true;
     return false;
-  }
-}
-
-
-final class ExtendedAnalyzer extends Analyzer {
-  final Map<String, Analyzer> map = new HashMap<String, Analyzer>();
-  final QParser parser;
-  final Analyzer queryAnalyzer;
-  public boolean removeStopFilter = false;
-
-  public static TokenizerChain getQueryTokenizerChain(QParser parser, String fieldName) {
-    FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
-    Analyzer qa = ft.getQueryAnalyzer();
-    return qa instanceof TokenizerChain ? (TokenizerChain)qa : null;
-  }
-
-  public static StopFilterFactory getQueryStopFilter(QParser parser, String fieldName) {
-    TokenizerChain tcq = getQueryTokenizerChain(parser, fieldName);
-    if (tcq == null) return null;
-    TokenFilterFactory[] facs = tcq.getTokenFilterFactories();
-
-    for (int i=0; i<facs.length; i++) {
-      TokenFilterFactory tf = facs[i];
-      if (tf instanceof StopFilterFactory) {
-        return (StopFilterFactory)tf;
-      }
-    }
-    return null;
-  }
-
-  public ExtendedAnalyzer(QParser parser) {
-    this.parser = parser;
-    this.queryAnalyzer = parser.getReq().getSchema().getQueryAnalyzer();
-  }
-
-  @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    if (!removeStopFilter) {
-      return queryAnalyzer.tokenStream(fieldName, reader);
-    }
-    
-    Analyzer a = map.get(fieldName);
-    if (a != null) {
-      return a.tokenStream(fieldName, reader);
-    }
-
-    FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
-    Analyzer qa = ft.getQueryAnalyzer();
-    if (!(qa instanceof TokenizerChain)) {
-      map.put(fieldName, qa);
-      return qa.tokenStream(fieldName, reader);
-    }
-    TokenizerChain tcq = (TokenizerChain)qa;
-    Analyzer ia = ft.getAnalyzer();
-    if (ia == qa || !(ia instanceof TokenizerChain)) {
-      map.put(fieldName, qa);
-      return qa.tokenStream(fieldName, reader);
-    }
-    TokenizerChain tci = (TokenizerChain)ia;
-
-    // make sure that there isn't a stop filter in the indexer
-    for (TokenFilterFactory tf : tci.getTokenFilterFactories()) {
-      if (tf instanceof StopFilterFactory) {
-        map.put(fieldName, qa);
-        return qa.tokenStream(fieldName, reader);
-      }
-    }
-
-    // now if there is a stop filter in the query analyzer, remove it
-    int stopIdx = -1;
-    TokenFilterFactory[] facs = tcq.getTokenFilterFactories();
-
-    for (int i=0; i<facs.length; i++) {
-      TokenFilterFactory tf = facs[i];
-      if (tf instanceof StopFilterFactory) {
-        stopIdx = i;
-        break;
-      }
-    }
-
-    if (stopIdx == -1) {
-      // no stop filter exists
-      map.put(fieldName, qa);
-      return qa.tokenStream(fieldName, reader);
-    }
-
-    TokenFilterFactory[] newtf = new TokenFilterFactory[facs.length-1];
-    for (int i=0,j=0; i<facs.length; i++) {
-      if (i==stopIdx) continue;
-      newtf[j++] = facs[i];
-    }
-
-    TokenizerChain newa = new TokenizerChain(tcq.getTokenizerFactory(), newtf);
-    newa.setPositionIncrementGap(tcq.getPositionIncrementGap(fieldName));
-
-    map.put(fieldName, newa);
-    return newa.tokenStream(fieldName, reader);        
-  }
-
-  @Override
-  public int getPositionIncrementGap(String fieldName) {
-    return queryAnalyzer.getPositionIncrementGap(fieldName);
-  }
-
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    if (!removeStopFilter) {
-      return queryAnalyzer.reusableTokenStream(fieldName, reader);
-    }
-    // TODO: done to fix stop word removal bug - could be done while still using resusable?
-    return tokenStream(fieldName, reader);
   }
 }
