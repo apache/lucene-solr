@@ -327,6 +327,12 @@ Documentation
 
 ==================  3.5.0  ==================
 
+New Features
+----------------------
+* SOLR-2749: Add boundary scanners for FastVectorHighlighter. <boundaryScanner/>
+  can be specified with a name in solrconfig.xml, and use hl.boundaryScanner=name
+  parameter to specify the named <boundaryScanner/>. (koji)
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime

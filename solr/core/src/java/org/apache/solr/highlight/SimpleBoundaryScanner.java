@@ -18,27 +18,30 @@
 package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
-import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
+import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 
-public class ScoreOrderFragmentsBuilder extends SolrFragmentsBuilder {
+public class SimpleBoundaryScanner extends SolrBoundaryScanner {
 
   @Override
-  protected FragmentsBuilder getFragmentsBuilder( SolrParams params,
-      String[] preTags, String[] postTags, BoundaryScanner bs ) {
-    org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder sofb =
-      new org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder( preTags, postTags, bs );
-    sofb.setMultiValuedSeparator( getMultiValuedSeparatorChar( params ) );
-    return sofb;
+  protected BoundaryScanner get(String fieldName, SolrParams params) {
+    int maxScan = params.getFieldInt(fieldName, HighlightParams.BS_MAX_SCAN, 10);
+    String str = params.getFieldParam(fieldName, HighlightParams.BS_CHARS, ".,!? \t\n");
+    Character[] chars = new Character[str.length()];
+    for(int i = 0; i < str.length(); i++){
+      chars[i] = str.charAt(i);
+    }
+    return new org.apache.lucene.search.vectorhighlight.SimpleBoundaryScanner(maxScan, chars);
   }
+
 
   ///////////////////////////////////////////////////////////////////////
   //////////////////////// SolrInfoMBeans methods ///////////////////////
   ///////////////////////////////////////////////////////////////////////
-
+  
   @Override
   public String getDescription() {
-    return "ScoreOrderFragmentsBuilder";
+    return "SimpleBoundaryScanner";
   }
 
   @Override
@@ -55,4 +58,5 @@ public class ScoreOrderFragmentsBuilder extends SolrFragmentsBuilder {
   public String getVersion() {
     return "$Revision$";
   }
+
 }

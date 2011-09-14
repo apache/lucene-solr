@@ -45,6 +45,14 @@ public class ScoreOrderFragmentsBuilder extends BaseFragmentsBuilder {
     super( preTags, postTags );
   }
 
+  public ScoreOrderFragmentsBuilder( BoundaryScanner bs ){
+    super( bs );
+  }
+
+  public ScoreOrderFragmentsBuilder( String[] preTags, String[] postTags, BoundaryScanner bs ){
+    super( preTags, postTags, bs );
+  }
+
   /**
    * Sort by score the list of WeightedFragInfo
    */

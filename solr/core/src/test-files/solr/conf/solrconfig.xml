@@ -451,8 +451,22 @@
 
    <!-- Configure the standard fragmentsBuilder -->
    <fragmentsBuilder name="simple" class="org.apache.solr.highlight.SimpleFragmentsBuilder" default="true"/>
+   <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder"/>
 
-   <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true"/>
+   <boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
+     <lst name="defaults">
+       <str name="hl.bs.maxScan">10</str>
+       <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
+     </lst>
+   </boundaryScanner>
+
+   <boundaryScanner name="breakIterator" class="solr.highlight.BreakIteratorBoundaryScanner">
+     <lst name="defaults">
+       <str name="hl.bs.type">WORD</str>
+       <str name="hl.bs.language">en</str>
+       <str name="hl.bs.country">US</str>
+     </lst>
+   </boundaryScanner>
   </highlighting>
   </searchComponent>
 
