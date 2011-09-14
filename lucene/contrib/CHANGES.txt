@@ -16,6 +16,12 @@ New Features
  * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
    Hunspell algorithm. (Chris Male)
 
+API Changes
+
+ * LUCENE-3431: Deprecated QueryAutoStopWordAnalyzer.addStopWords* since they
+   prevent reuse.  Stopwords are now to be computed when the Analyzer is instantiated.
+   If new stopwords are needed, a new Analyzer instance should be created. (Chris Male)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the

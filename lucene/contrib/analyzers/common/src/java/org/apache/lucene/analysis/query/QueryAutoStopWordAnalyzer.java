@@ -44,8 +44,9 @@ import java.util.*;
  * </p>
  */
 public final class QueryAutoStopWordAnalyzer extends Analyzer {
-  Analyzer delegate;
-  HashMap<String,HashSet<String>> stopWordsPerField = new HashMap<String,HashSet<String>>();
+
+  private final Analyzer delegate;
+  private final Map<String, Set<String>> stopWordsPerField = new HashMap<String, Set<String>>();
   //The default maximum percentage (40%) of index documents which
   //can contain a term, after which the term is considered to be a stop word.
   public static final float defaultMaxDocFreqPercent = 0.4f;
@@ -55,10 +56,132 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    * Initializes this analyzer with the Analyzer object that actually produces the tokens
    *
    * @param delegate The choice of {@link Analyzer} that is used to produce the token stream which needs filtering
+   * @deprecated Stopwords should be calculated at instantiation using one of the other constructors
    */
+  @Deprecated
   public QueryAutoStopWordAnalyzer(Version matchVersion, Analyzer delegate) {
     this.delegate = delegate;
     this.matchVersion = matchVersion;
+  }
+
+   /**
+   * Creates a new QueryAutoStopWordAnalyzer with stopwords calculated for all
+   * indexed fields from terms with a document frequency percentage greater than
+   * {@link #defaultMaxDocFreqPercent}
+   *
+   * @param matchVersion Version to be used in {@link StopFilter}
+   * @param delegate Analyzer whose TokenStream will be filtered
+   * @param indexReader IndexReader to identify the stopwords from
+   * @throws IOException Can be thrown while reading from the IndexReader
+   */
+  public QueryAutoStopWordAnalyzer(
+      Version matchVersion,
+      Analyzer delegate,
+      IndexReader indexReader) throws IOException {
+    this(matchVersion, delegate, indexReader, defaultMaxDocFreqPercent);
+  }
+
+  /**
+   * Creates a new QueryAutoStopWordAnalyzer with stopwords calculated for all
+   * indexed fields from terms with a document frequency greater than the given
+   * maxDocFreq
+   *
+   * @param matchVersion Version to be used in {@link StopFilter}
+   * @param delegate Analyzer whose TokenStream will be filtered
+   * @param indexReader IndexReader to identify the stopwords from
+   * @param maxDocFreq Document frequency terms should be above in order to be stopwords
+   * @throws IOException Can be thrown while reading from the IndexReader
+   */
+  public QueryAutoStopWordAnalyzer(
+      Version matchVersion,
+      Analyzer delegate,
+      IndexReader indexReader,
+      int maxDocFreq) throws IOException {
+    this(matchVersion, delegate, indexReader, indexReader.getFieldNames(IndexReader.FieldOption.INDEXED), maxDocFreq);
+  }
+
+  /**
+   * Creates a new QueryAutoStopWordAnalyzer with stopwords calculated for all
+   * indexed fields from terms with a document frequency percentage greater than
+   * the given maxPercentDocs
+   *
+   * @param matchVersion Version to be used in {@link StopFilter}
+   * @param delegate Analyzer whose TokenStream will be filtered
+   * @param indexReader IndexReader to identify the stopwords from
+   * @param maxPercentDocs The maximum percentage (between 0.0 and 1.0) of index documents which
+   *                      contain a term, after which the word is considered to be a stop word
+   * @throws IOException Can be thrown while reading from the IndexReader
+   */
+  public QueryAutoStopWordAnalyzer(
+      Version matchVersion,
+      Analyzer delegate,
+      IndexReader indexReader,
+      float maxPercentDocs) throws IOException {
+    this(matchVersion, delegate, indexReader, indexReader.getFieldNames(IndexReader.FieldOption.INDEXED), maxPercentDocs);
+  }
+
+  /**
+   * Creates a new QueryAutoStopWordAnalyzer with stopwords calculated for the
+   * given selection of fields from terms with a document frequency percentage
+   * greater than the given maxPercentDocs
+   *
+   * @param matchVersion Version to be used in {@link StopFilter}
+   * @param delegate Analyzer whose TokenStream will be filtered
+   * @param indexReader IndexReader to identify the stopwords from
+   * @param fields Selection of fields to calculate stopwords for
+   * @param maxPercentDocs The maximum percentage (between 0.0 and 1.0) of index documents which
+   *                      contain a term, after which the word is considered to be a stop word
+   * @throws IOException Can be thrown while reading from the IndexReader
+   */
+  public QueryAutoStopWordAnalyzer(
+      Version matchVersion,
+      Analyzer delegate,
+      IndexReader indexReader,
+      Collection<String> fields,
+      float maxPercentDocs) throws IOException {
+    this(matchVersion, delegate, indexReader, fields, (int) (indexReader.numDocs() * maxPercentDocs));
+  }
+
+  /**
+   * Creates a new QueryAutoStopWordAnalyzer with stopwords calculated for the
+   * given selection of fields from terms with a document frequency greater than
+   * the given maxDocFreq
+   *
+   * @param matchVersion Version to be used in {@link StopFilter}
+   * @param delegate Analyzer whose TokenStream will be filtered
+   * @param indexReader IndexReader to identify the stopwords from
+   * @param fields Selection of fields to calculate stopwords for
+   * @param maxDocFreq Document frequency terms should be above in order to be stopwords
+   * @throws IOException Can be thrown while reading from the IndexReader
+   */
+  public QueryAutoStopWordAnalyzer(
+      Version matchVersion,
+      Analyzer delegate,
+      IndexReader indexReader,
+      Collection<String> fields,
+      int maxDocFreq) throws IOException {
+    this.matchVersion = matchVersion;
+    this.delegate = delegate;
+
+    for (String field : fields) {
+      Set<String> stopWords = new HashSet<String>();
+      String internedFieldName = StringHelper.intern(field);
+      TermEnum te = indexReader.terms(new Term(field));
+      Term term = te.term();
+      while (term != null) {
+        if (term.field() != internedFieldName) {
+          break;
+        }
+        if (te.docFreq() > maxDocFreq) {
+          stopWords.add(term.text());
+        }
+        if (!te.next()) {
+          break;
+        }
+        term = te.term();
+      }
+      stopWordsPerField.put(field, stopWords);
+    }
   }
 
   /**
@@ -68,7 +191,10 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    *               exceed the required document frequency
    * @return The number of stop words identified.
    * @throws IOException
+   * @deprecated Stopwords should be calculated at instantiation using
+   *             {@link #QueryAutoStopWordAnalyzer(Version, Analyzer, IndexReader)}
    */
+  @Deprecated
   public int addStopWords(IndexReader reader) throws IOException {
     return addStopWords(reader, defaultMaxDocFreqPercent);
   }
@@ -82,7 +208,10 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    *                   the term is considered to be a stop word
    * @return The number of stop words identified.
    * @throws IOException
+   * @deprecated Stopwords should be calculated at instantiation using
+   *             {@link #QueryAutoStopWordAnalyzer(Version, Analyzer, IndexReader, int)}
    */
+  @Deprecated
   public int addStopWords(IndexReader reader, int maxDocFreq) throws IOException {
     int numStopWords = 0;
     Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
@@ -102,7 +231,10 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    *                      contain a term, after which the word is considered to be a stop word.
    * @return The number of stop words identified.
    * @throws IOException
+   * @deprecated Stowords should be calculated at instantiation using
+   *             {@link #QueryAutoStopWordAnalyzer(Version, Analyzer, IndexReader, float)}
    */
+  @Deprecated
   public int addStopWords(IndexReader reader, float maxPercentDocs) throws IOException {
     int numStopWords = 0;
     Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
@@ -123,7 +255,10 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    *                       contain a term, after which the word is considered to be a stop word.
    * @return The number of stop words identified.
    * @throws IOException
+   * @deprecated Stowords should be calculated at instantiation using
+   *             {@link #QueryAutoStopWordAnalyzer(Version, Analyzer, IndexReader, Collection, float)}
    */
+  @Deprecated
   public int addStopWords(IndexReader reader, String fieldName, float maxPercentDocs) throws IOException {
     return addStopWords(reader, fieldName, (int) (reader.numDocs() * maxPercentDocs));
   }
@@ -138,7 +273,10 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    *                   can contain a term, after which the term is considered to be a stop word.
    * @return The number of stop words identified.
    * @throws IOException
+   * @deprecated Stowords should be calculated at instantiation using
+   *             {@link #QueryAutoStopWordAnalyzer(Version, Analyzer, IndexReader, Collection, int)}
    */
+  @Deprecated
   public int addStopWords(IndexReader reader, String fieldName, int maxDocFreq) throws IOException {
     HashSet<String> stopWords = new HashSet<String>();
     String internedFieldName = StringHelper.intern(fieldName);
@@ -177,7 +315,7 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
     } catch (IOException e) {
       result = delegate.tokenStream(fieldName, reader);
     }
-    HashSet<String> stopWords = stopWordsPerField.get(fieldName);
+    Set<String> stopWords = stopWordsPerField.get(fieldName);
     if (stopWords != null) {
       result = new StopFilter(matchVersion, result, stopWords);
     }
@@ -194,12 +332,12 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
      */
     TokenStream withStopFilter;
   }
-  
+
+  @SuppressWarnings("unchecked")
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
     /* map of SavedStreams for each field */
-    @SuppressWarnings("unchecked")
     Map<String,SavedStreams> streamMap = (Map<String,SavedStreams>) getPreviousTokenStream();
     if (streamMap == null) {
       streamMap = new HashMap<String, SavedStreams>();
@@ -214,11 +352,12 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
       streams.wrapped = delegate.reusableTokenStream(fieldName, reader);
 
       /* if there are any stopwords for the field, save the stopfilter */
-      HashSet<String> stopWords = stopWordsPerField.get(fieldName);
-      if (stopWords != null)
+      Set<String> stopWords = stopWordsPerField.get(fieldName);
+      if (stopWords != null) {
         streams.withStopFilter = new StopFilter(matchVersion, streams.wrapped, stopWords);
-      else
+      } else {
         streams.withStopFilter = streams.wrapped;
+      }
 
     } else {
       /*
@@ -234,11 +373,12 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
          * field, create a new StopFilter around the new stream
          */
         streams.wrapped = result;
-        HashSet<String> stopWords = stopWordsPerField.get(fieldName);
-        if (stopWords != null)
+        Set<String> stopWords = stopWordsPerField.get(fieldName);
+        if (stopWords != null) {
           streams.withStopFilter = new StopFilter(matchVersion, streams.wrapped, stopWords);
-        else
+        } else {
           streams.withStopFilter = streams.wrapped;
+        }
       }
     }
 
@@ -253,14 +393,8 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    * @return the stop words identified for a field
    */
   public String[] getStopWords(String fieldName) {
-    String[] result;
-    HashSet<String> stopWords = stopWordsPerField.get(fieldName);
-    if (stopWords != null) {
-      result = stopWords.toArray(new String[stopWords.size()]);
-    } else {
-      result = new String[0];
-    }
-    return result;
+    Set<String> stopWords = stopWordsPerField.get(fieldName);
+    return stopWords != null ? stopWords.toArray(new String[stopWords.size()]) : new String[0];
   }
 
   /**
@@ -269,12 +403,10 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    * @return the stop words (as terms)
    */
   public Term[] getStopWords() {
-    ArrayList<Term> allStopWords = new ArrayList<Term>();
-    for (Iterator<String> iter = stopWordsPerField.keySet().iterator(); iter.hasNext();) {
-      String fieldName = iter.next();
-      HashSet<String> stopWords = stopWordsPerField.get(fieldName);
-      for (Iterator<String> iterator = stopWords.iterator(); iterator.hasNext();) {
-        String text = iterator.next();
+    List<Term> allStopWords = new ArrayList<Term>();
+    for (String fieldName : stopWordsPerField.keySet()) {
+      Set<String> stopWords = stopWordsPerField.get(fieldName);
+      for (String text : stopWords) {
         allStopWords.add(new Term(fieldName, text));
       }
     }
