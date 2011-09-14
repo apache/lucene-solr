@@ -1,4 +1,4 @@
-package org.apache.solr.common.util;
+package org.apache.solr.util;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with

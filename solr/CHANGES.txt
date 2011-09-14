@@ -346,7 +346,10 @@ Bug Fixes
 * LUCENE-3410: Deprecated the WordDelimiterFilter constructors accepting multiple
   ints masquerading as booleans.  Preferred constructor now accepts a single int
   bitfield (Chris Male)
-
+  
+* SOLR-2758: Moved ConcurrentLRUCache from o.a.s.common.util package in the solrj
+  module to the o.a.s.util package in the Solr core module. 
+  (David Smiley via Steve Rowe)
 
 
 ==================  3.4.0  ==================

@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ConcurrentLRUCache;
+import org.apache.solr.util.ConcurrentLRUCache;
 
 import java.io.IOException;
 import java.io.Serializable;

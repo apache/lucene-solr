@@ -17,7 +17,7 @@ package org.apache.solr.search;
  */
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ConcurrentLRUCache;
+import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -39,7 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Also see <a href="http://wiki.apache.org/solr/SolrCaching">SolrCaching</a>
  *
  *
- * @see org.apache.solr.common.util.ConcurrentLRUCache
+ * @see org.apache.solr.util.ConcurrentLRUCache
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
