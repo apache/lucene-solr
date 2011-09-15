@@ -339,7 +339,7 @@ public class FSTLookup extends Lookup {
         // so we will collect it too.
         output.setLength(matchLength);
         if (collect(res, num, weight, output, arc) && greedy) {
-          // We have enough suggestion to return immediately. Keep on looking for an
+          // We have enough suggestions to return immediately. Keep on looking for an
           // exact match, if requested.
           if (exactMatchFirst) {
             Float exactMatchWeight = getExactMatchStartingFromRootArc(i, key);
