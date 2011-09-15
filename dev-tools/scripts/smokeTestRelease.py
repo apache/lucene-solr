@@ -338,6 +338,12 @@ def verifyUnpacked(project, artifact, unpackPath, version):
         raise RuntimeError('%s: file "%s" is missing from artifact %s' % (project, fileName, artifact))
       l.remove(fileName)
 
+    if project == 'solr':
+      # Make sure the api jdocs are there (this was missing in 3.4.0):
+      for path in ('docs', 'docs/api', 'docs/api/solrj', 'docs/api/test-framework'):
+        if not os.path.exists('%s/index.html' % path):
+          raise RuntimeError('cannot find api javadocs for "%s"' % path)
+
   if project == 'lucene':
     extras = ('lib', 'docs', 'contrib')
     if isSrc:
