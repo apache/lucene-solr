@@ -33,6 +33,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -222,7 +223,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
 
         UpdateRequestProcessorChain processorChain =
-                core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
+                core.getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(params, log));
         SolrQueryRequest wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
