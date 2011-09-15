@@ -64,9 +64,11 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
+import org.junit.rules.MethodRule;
 import org.junit.rules.TestWatchman;
 import org.junit.runner.RunWith;
 import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -591,6 +593,29 @@ public abstract class LuceneTestCase extends Assert {
       super.starting(method);
     }
   };
+  
+  /** 
+   * The thread executing the current test case.
+   * @see #isTestThread()
+   */
+  volatile Thread testCaseThread;
+
+  /** @see #testCaseThread */
+  @Rule
+  public final MethodRule setTestThread = new MethodRule() {
+    public Statement apply(final Statement s, FrameworkMethod fm, Object target) {
+      return new Statement() {
+        public void evaluate() throws Throwable {
+          try {
+            LuceneTestCase.this.testCaseThread = Thread.currentThread();
+            s.evaluate();
+          } finally {
+            LuceneTestCase.this.testCaseThread = null;
+          }
+        }
+      };
+    }
+  };
 
   @Before
   public void setUp() throws Exception {
@@ -633,6 +658,15 @@ public abstract class LuceneTestCase extends Assert {
 
   protected String getTestLabel() {
     return getClass().getName() + "." + getName();
+  }
+
+  /**
+   * Returns true if and only if the calling thread is the primary thread 
+   * executing the test case. 
+   */
+  protected boolean isTestThread() {
+    assertNotNull("Test case thread not set?", testCaseThread);
+    return Thread.currentThread() == testCaseThread;
   }
 
   @After
@@ -1373,7 +1407,7 @@ public abstract class LuceneTestCase extends Assert {
 
   static final Random seedRand = new Random();
   protected static final SmartRandom random = new SmartRandom(0);
-  
+
   private String name = "<unknown>";
 
   /**

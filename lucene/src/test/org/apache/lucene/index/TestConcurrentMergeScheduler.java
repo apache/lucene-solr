@@ -30,7 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
-  private static class FailOnlyOnFlush extends MockDirectoryWrapper.Failure {
+  private class FailOnlyOnFlush extends MockDirectoryWrapper.Failure {
     boolean doFail;
     boolean hitExc;
 
@@ -46,8 +46,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-      if (doFail && (Thread.currentThread().getName().equals("main") 
-          || Thread.currentThread().getName().equals("Main Thread"))) {
+      if (doFail && isTestThread()) {
         boolean isDoFlush = false;
         boolean isClose = false;
         StackTraceElement[] trace = new Exception().getStackTrace();
