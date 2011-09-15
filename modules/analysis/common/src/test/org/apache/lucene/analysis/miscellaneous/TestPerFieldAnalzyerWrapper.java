@@ -1,6 +1,8 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
@@ -27,9 +29,12 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
+
+    Map<String, Analyzer> analyzerPerField = new HashMap<String, Analyzer>();
+    analyzerPerField.put("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
+
     PerFieldAnalyzerWrapper analyzer =
-              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
-    analyzer.addAnalyzer("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
+              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
 
     TokenStream tokenStream = analyzer.tokenStream("field",
                                             new StringReader(text));

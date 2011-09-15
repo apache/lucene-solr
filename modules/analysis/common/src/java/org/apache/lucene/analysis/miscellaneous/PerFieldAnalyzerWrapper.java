@@ -23,21 +23,25 @@ import org.apache.lucene.index.IndexableField;
 
 import java.io.Reader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 
 /**
  * This analyzer is used to facilitate scenarios where different
- * fields require different analysis techniques.  Use {@link #addAnalyzer}
- * to add a non-default analyzer on a field name basis.
+ * fields require different analysis techniques.  Use the Map
+ * argument in {@link #PerFieldAnalyzerWrapper(Analyzer, java.util.Map)}
+ * to add non-default analyzers for fields.
  * 
  * <p>Example usage:
  * 
  * <pre>
+ *   Map analyzerPerField = new HashMap();
+ *   analyzerPerField.put("firstname", new KeywordAnalyzer());
+ *   analyzerPerField.put("lastname", new KeywordAnalyzer());
+ *
  *   PerFieldAnalyzerWrapper aWrapper =
- *      new PerFieldAnalyzerWrapper(new StandardAnalyzer());
- *   aWrapper.addAnalyzer("firstname", new KeywordAnalyzer());
- *   aWrapper.addAnalyzer("lastname", new KeywordAnalyzer());
+ *      new PerFieldAnalyzerWrapper(new StandardAnalyzer(), analyzerPerField);
  * </pre>
  * 
  * <p>In this example, StandardAnalyzer will be used for all fields except "firstname"
@@ -47,9 +51,8 @@ import java.util.HashMap;
  * and query parsing.
  */
 public final class PerFieldAnalyzerWrapper extends Analyzer {
-  private Analyzer defaultAnalyzer;
-  private Map<String,Analyzer> analyzerMap = new HashMap<String,Analyzer>();
-
+  private final Analyzer defaultAnalyzer;
+  private final Map<String, Analyzer> fieldAnalyzers;
 
   /**
    * Constructs with default analyzer.
@@ -70,28 +73,15 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
    * @param fieldAnalyzers a Map (String field name to the Analyzer) to be 
    * used for those fields 
    */
-  public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer, 
+  public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer,
       Map<String,Analyzer> fieldAnalyzers) {
     this.defaultAnalyzer = defaultAnalyzer;
-    if (fieldAnalyzers != null) {
-      analyzerMap.putAll(fieldAnalyzers);
-    }
-  }
-  
-
-  /**
-   * Defines an analyzer to use for the specified field.
-   *
-   * @param fieldName field name requiring a non-default analyzer
-   * @param analyzer non-default analyzer to use for field
-   */
-  public void addAnalyzer(String fieldName, Analyzer analyzer) {
-    analyzerMap.put(fieldName, analyzer);
+    this.fieldAnalyzers = (fieldAnalyzers != null) ? fieldAnalyzers : Collections.<String, Analyzer>emptyMap();
   }
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    Analyzer analyzer = analyzerMap.get(fieldName);
+    Analyzer analyzer = fieldAnalyzers.get(fieldName);
     if (analyzer == null) {
       analyzer = defaultAnalyzer;
     }
@@ -101,7 +91,7 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
   
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    Analyzer analyzer = analyzerMap.get(fieldName);
+    Analyzer analyzer = fieldAnalyzers.get(fieldName);
     if (analyzer == null)
       analyzer = defaultAnalyzer;
 
@@ -111,7 +101,7 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
   /** Return the positionIncrementGap from the analyzer assigned to fieldName */
   @Override
   public int getPositionIncrementGap(String fieldName) {
-    Analyzer analyzer = analyzerMap.get(fieldName);
+    Analyzer analyzer = fieldAnalyzers.get(fieldName);
     if (analyzer == null)
       analyzer = defaultAnalyzer;
     return analyzer.getPositionIncrementGap(fieldName);
@@ -120,7 +110,7 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
   /** Return the offsetGap from the analyzer assigned to field */
   @Override
   public int getOffsetGap(IndexableField field) {
-    Analyzer analyzer = analyzerMap.get(field.name());
+    Analyzer analyzer = fieldAnalyzers.get(field.name());
     if (analyzer == null) {
       analyzer = defaultAnalyzer;
     }
@@ -129,6 +119,6 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
   
   @Override
   public String toString() {
-    return "PerFieldAnalyzerWrapper(" + analyzerMap + ", default=" + defaultAnalyzer + ")";
+    return "PerFieldAnalyzerWrapper(" + fieldAnalyzers + ", default=" + defaultAnalyzer + ")";
   }
 }

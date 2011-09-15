@@ -38,6 +38,10 @@ API Changes
    since they prevented reuse.  Stopwords are now generated at instantiation through
    the Analyzer's constructors. (Chris Male)
 
+ * LUCENE-3434: Removed ShingleAnalyzerWrapper.set* and PerFieldAnalyzerWrapper.addAnalyzer
+   since they prevent reuse.  Both Analyzers should be configured at instantiation.
+   (Chris Male)
+
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 
