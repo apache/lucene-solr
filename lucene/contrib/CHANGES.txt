@@ -90,6 +90,8 @@ Bug Fixes
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the
    end compound word. (Njal Karevoll via Robert Muir)
 
+ * LUCENE-3019: Fix unexpected color tags for FastVectorHighlighter. (Koji Sekiguchi)
+
 ======================= Lucene 3.4.0 ================
 
 New Features
