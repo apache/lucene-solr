@@ -24,4 +24,10 @@
   </description>
 
   <import file="../contrib-build.xml"/>
+
+  <dirname file="${ant.file}" property="antfile.dir"/>
+  <target name="dist-maven" depends="contrib-build.dist-maven">
+    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-carrot2-core-pom.xml.template"
+                                 jar.file="${antfile.dir}/lib/carrot2-core-3.5.0.jar" />
+  </target>
 </project>

@@ -59,6 +59,10 @@ Bug Fixes
   conditionalized geronimo-stax-api dependency to be in force only under
   Java 1.5; excluded transitive stax:stax-api dependency from
   org.codehaus.woodstox:wstx-asl dependency. (David Smiley, Steve Rowe)
+  
+* SOLR-2770: 'ant generate-maven-artifacts' should generate the maven
+  artifact for the Solr-specific jdk15-compiled carrot2-core dependency.
+  (Steve Rowe)
 
 ==================  3.4.0  ==================
 
