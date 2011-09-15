@@ -43,6 +43,12 @@ public class FSTLookupTest extends LuceneTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
+
+    lookup = new FSTLookup();
+    lookup.build(new TermFreqArrayIterator(evalKeys()));
+  }
+
+  private TermFreq[] evalKeys() {
     final TermFreq[] keys = new TermFreq[] {
         tf("one", 0.5f),
         tf("oneness", 1),
@@ -61,9 +67,7 @@ public class FSTLookupTest extends LuceneTestCase {
         tf("fourty", 1),
         tf("xo", 1),
       };
-
-      lookup = new FSTLookup();
-      lookup.build(new TermFreqArrayIterator(keys));
+    return keys;
   }
 
   public void testExactMatchHighPriority() throws Exception {
@@ -73,6 +77,31 @@ public class FSTLookupTest extends LuceneTestCase {
   public void testExactMatchLowPriority() throws Exception {
     assertMatchEquals(lookup.lookup("one", true, 2), 
         "one/0.0",
+        "oneness/1.0");
+  }
+
+  public void testRequestedCount() throws Exception {
+    // 'one' is promoted after collecting two higher ranking results.
+    assertMatchEquals(lookup.lookup("one", true, 2), 
+        "one/0.0", 
+        "oneness/1.0");
+
+    // 'one' is at the top after collecting all alphabetical results. 
+    assertMatchEquals(lookup.lookup("one", false, 2), 
+        "one/0.0", 
+        "oneness/1.0");
+
+    lookup = new FSTLookup(10, false);
+    lookup.build(new TermFreqArrayIterator(evalKeys()));
+    
+    // 'one' is not promoted after collecting two higher ranking results.
+    assertMatchEquals(lookup.lookup("one", true, 2),  
+        "oneness/1.0",
+        "onerous/1.0");
+
+    // 'one' is at the top after collecting all alphabetical results. 
+    assertMatchEquals(lookup.lookup("one", false, 2), 
+        "one/0.0", 
         "oneness/1.0");
   }
 
