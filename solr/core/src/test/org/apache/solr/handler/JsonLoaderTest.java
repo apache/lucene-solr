@@ -17,11 +17,6 @@
 
 package org.apache.solr.handler;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.noggit.JSONParser;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -31,8 +26,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.RollbackUpdateCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -199,43 +192,4 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     );
   }
 
-}
-
-
-class BufferingRequestProcessor extends UpdateRequestProcessor
-{
-  List<AddUpdateCommand> addCommands = new ArrayList<AddUpdateCommand>();
-  List<DeleteUpdateCommand> deleteCommands = new ArrayList<DeleteUpdateCommand>();
-  List<CommitUpdateCommand> commitCommands = new ArrayList<CommitUpdateCommand>();
-  List<RollbackUpdateCommand> rollbackCommands = new ArrayList<RollbackUpdateCommand>();
-  
-  public BufferingRequestProcessor(UpdateRequestProcessor next) {
-    super(next);
-  }
-  
-  @Override
-  public void processAdd(AddUpdateCommand cmd) throws IOException {
-    addCommands.add( cmd );
-  }
-
-  @Override
-  public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    deleteCommands.add( cmd );
-  }
-
-  @Override
-  public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    commitCommands.add( cmd );
-  }
-  
-  @Override
-  public void processRollback(RollbackUpdateCommand cmd) throws IOException
-  {
-    rollbackCommands.add( cmd );
-  }
-
-  @Override
-  public void finish() throws IOException {
-    // nothing?    
-  }
 }
