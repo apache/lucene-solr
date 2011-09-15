@@ -18,12 +18,12 @@ package org.apache.solr.handler;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,17 +38,8 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
-    String updateChainName = null;
-    if(params.get(UpdateParams.UPDATE_CHAIN_DEPRECATED) != null) {
-    	log.warn("Use of deprecated update request parameter "+UpdateParams.UPDATE_CHAIN_DEPRECATED+
-    			 " detected. Please use the new parameter "+UpdateParams.UPDATE_CHAIN+" instead, as support"+
-    			 " for "+UpdateParams.UPDATE_CHAIN_DEPRECATED+" will be removed in a later version.");
-    	updateChainName = params.get(UpdateParams.UPDATE_CHAIN_DEPRECATED);
-    } else {
-    	updateChainName = params.get(UpdateParams.UPDATE_CHAIN);
-    }
     UpdateRequestProcessorChain processorChain =
-            req.getCore().getUpdateProcessingChain(updateChainName);
+            req.getCore().getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(params, log));
 
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
 

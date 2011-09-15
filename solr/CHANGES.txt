@@ -346,6 +346,9 @@ Bug Fixes
  Other Changes
 ----------------------
 
+* SOLR-2750: Make both "update.chain" and the deprecated "update.param" work
+  consistently everywhere; see also SOLR-2105. (Mark Miller, janhoy)
+
 * LUCENE-3410: Deprecated the WordDelimiterFilter constructors accepting multiple
   ints masquerading as booleans.  Preferred constructor now accepts a single int
   bitfield (Chris Male)

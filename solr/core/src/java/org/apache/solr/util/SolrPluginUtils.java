@@ -29,6 +29,7 @@ import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -42,6 +43,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 import org.apache.solr.update.DocumentBuilder;
+import org.slf4j.Logger;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -856,6 +859,28 @@ public class SolrPluginUtils {
       }
     }
   }
+
+
+  /**
+   * This method helps resolve if the deprecated "update.processor" request parameter is used  
+   * and logs a warning if it is. In a future version, this method will be removed and
+   * Solr will assume "update.chain" and not look for "update.processor"
+   * @param params an instance of SolrParams from the request
+   * @param log an instance of a slf4j logger to log a warning in case of deprecated param usage
+   * @return null if neither is specified, else the value of the param specified
+   * @deprecated
+   */
+  public static String resolveUpdateChainParam(SolrParams params, Logger log) {
+    if(params.get(UpdateParams.UPDATE_CHAIN_DEPRECATED) != null && log != null) {
+      log.warn("Use of deprecated update request parameter "+UpdateParams.UPDATE_CHAIN_DEPRECATED+
+           " detected. Please use the new parameter "+UpdateParams.UPDATE_CHAIN+" instead, as support"+
+           " for "+UpdateParams.UPDATE_CHAIN_DEPRECATED+" will be removed in a later version.");
+    }
+    return (params.get(UpdateParams.UPDATE_CHAIN) != null) 
+      ? params.get(UpdateParams.UPDATE_CHAIN) 
+      : params.get(UpdateParams.UPDATE_CHAIN_DEPRECATED);
+  }
+  
 }
 
 
