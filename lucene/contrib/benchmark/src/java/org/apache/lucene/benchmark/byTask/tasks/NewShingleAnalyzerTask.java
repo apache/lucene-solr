@@ -22,6 +22,7 @@ import java.util.StringTokenizer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.util.Version;
 
@@ -66,9 +67,14 @@ public class NewShingleAnalyzerTask extends PerfTask {
       // otherwise use default ctor
       wrappedAnalyzer = clazz.newInstance();
     }
-    ShingleAnalyzerWrapper analyzer 
-      = new ShingleAnalyzerWrapper(wrappedAnalyzer, maxShingleSize);
-    analyzer.setOutputUnigrams(outputUnigrams);
+    
+    ShingleAnalyzerWrapper analyzer = new ShingleAnalyzerWrapper(
+        wrappedAnalyzer,
+        ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE,
+        maxShingleSize,
+        ShingleFilter.TOKEN_SEPARATOR,
+        outputUnigrams,
+        false);
     getRunData().setAnalyzer(analyzer);
   }
   

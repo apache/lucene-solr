@@ -26,16 +26,19 @@ import java.util.HashMap;
 
 /**
  * This analyzer is used to facilitate scenarios where different
- * fields require different analysis techniques.  Use {@link #addAnalyzer}
- * to add a non-default analyzer on a field name basis.
+ * fields require different analysis techniques.  Use the Map
+ * argument in {@link #PerFieldAnalyzerWrapper(Analyzer, java.util.Map)}
+ * to add non-default analyzers for fields.
  * 
  * <p>Example usage:
  * 
  * <pre>
+ *   Map analyzerPerField = new HashMap();
+ *   analyzerPerField.put("firstname", new KeywordAnalyzer());
+ *   analyzerPerField.put("lastname", new KeywordAnalyzer());
+ *
  *   PerFieldAnalyzerWrapper aWrapper =
- *      new PerFieldAnalyzerWrapper(new StandardAnalyzer());
- *   aWrapper.addAnalyzer("firstname", new KeywordAnalyzer());
- *   aWrapper.addAnalyzer("lastname", new KeywordAnalyzer());
+ *      new PerFieldAnalyzerWrapper(new StandardAnalyzer(), analyzerPerField);
  * </pre>
  * 
  * <p>In this example, StandardAnalyzer will be used for all fields except "firstname"
@@ -45,8 +48,8 @@ import java.util.HashMap;
  * and query parsing.
  */
 public final class PerFieldAnalyzerWrapper extends Analyzer {
-  private Analyzer defaultAnalyzer;
-  private Map<String,Analyzer> analyzerMap = new HashMap<String,Analyzer>();
+  private final Analyzer defaultAnalyzer;
+  private final Map<String,Analyzer> analyzerMap = new HashMap<String,Analyzer>();
 
 
   /**
@@ -82,7 +85,10 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
    *
    * @param fieldName field name requiring a non-default analyzer
    * @param analyzer non-default analyzer to use for field
+   * @deprecated Changing the Analyzer for a field after instantiation prevents
+   *             reusability.  Analyzers for fields should be set during construction.
    */
+  @Deprecated
   public void addAnalyzer(String fieldName, Analyzer analyzer) {
     analyzerMap.put(fieldName, analyzer);
   }

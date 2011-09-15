@@ -41,36 +41,72 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   private boolean outputUnigramsIfNoShingles = false;
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
-    super();
-    this.defaultAnalyzer = defaultAnalyzer;
+    this(defaultAnalyzer, ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
   }
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int maxShingleSize) {
-    this(defaultAnalyzer);
-    setMaxShingleSize(maxShingleSize);
+    this(defaultAnalyzer, ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE, maxShingleSize);
   }
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int minShingleSize, int maxShingleSize) {
-    this(defaultAnalyzer);
-    setMaxShingleSize(maxShingleSize);
-    setMinShingleSize(minShingleSize);
+    this(defaultAnalyzer, minShingleSize, maxShingleSize, ShingleFilter.TOKEN_SEPARATOR, true, false);
+  }
+
+  /**
+   * Creates a new ShingleAnalyzerWrapper
+   *
+   * @param defaultAnalyzer Analyzer whose TokenStream is to be filtered
+   * @param minShingleSize Min shingle (token ngram) size
+   * @param maxShingleSize Max shingle size
+   * @param tokenSeparator Used to separate input stream tokens in output shingles
+   * @param outputUnigrams Whether or not the filter shall pass the original
+   *        tokens to the output stream
+   * @param outputUnigramsIfNoShingles Overrides the behavior of outputUnigrams==false for those
+   *        times when no shingles are available (because there are fewer than
+   *        minShingleSize tokens in the input stream)?
+   *        Note that if outputUnigrams==true, then unigrams are always output,
+   *        regardless of whether any shingles are available.
+   */
+  public ShingleAnalyzerWrapper(
+      Analyzer defaultAnalyzer,
+      int minShingleSize,
+      int maxShingleSize,
+      String tokenSeparator,
+      boolean outputUnigrams,
+      boolean outputUnigramsIfNoShingles) {
+    this.defaultAnalyzer = defaultAnalyzer;
+
+    if (maxShingleSize < 2) {
+      throw new IllegalArgumentException("Max shingle size must be >= 2");
+    }
+    this.maxShingleSize = maxShingleSize;
+
+    if (minShingleSize < 2) {
+      throw new IllegalArgumentException("Min shingle size must be >= 2");
+    }
+    if (minShingleSize > maxShingleSize) {
+      throw new IllegalArgumentException
+        ("Min shingle size must be <= max shingle size");
+    }
+    this.minShingleSize = minShingleSize;
+
+    this.tokenSeparator = (tokenSeparator == null ? "" : tokenSeparator);
+    this.outputUnigrams = outputUnigrams;
+    this.outputUnigramsIfNoShingles = outputUnigramsIfNoShingles;
   }
 
   /**
    * Wraps {@link StandardAnalyzer}. 
    */
   public ShingleAnalyzerWrapper(Version matchVersion) {
-    super();
-    this.defaultAnalyzer = new StandardAnalyzer(matchVersion);
+    this(matchVersion, ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE, ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
   }
 
   /**
    * Wraps {@link StandardAnalyzer}. 
    */
   public ShingleAnalyzerWrapper(Version matchVersion, int minShingleSize, int maxShingleSize) {
-    this(matchVersion);
-    setMaxShingleSize(maxShingleSize);
-    setMinShingleSize(minShingleSize);
+    this(new StandardAnalyzer(matchVersion), minShingleSize, maxShingleSize);
   }
 
   /**
@@ -86,7 +122,10 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
    * Set the maximum size of output shingles (default: 2)
    *
    * @param maxShingleSize max shingle size
+   * @deprecated Setting maxShingleSize after Analyzer instantiation prevents reuse.
+   *             Confgure maxShingleSize during construction.
    */
+  @Deprecated
   public void setMaxShingleSize(int maxShingleSize) {
     if (maxShingleSize < 2) {
       throw new IllegalArgumentException("Max shingle size must be >= 2");
@@ -110,7 +149,10 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
    * calling this method.
    *
    * @param minShingleSize min size of output shingles
+   * @deprecated Setting minShingleSize after Analyzer instantiation prevents reuse.
+   *             Confgure minShingleSize during construction.
    */
+  @Deprecated
   public void setMinShingleSize(int minShingleSize) {
     if (minShingleSize < 2) {
       throw new IllegalArgumentException("Min shingle size must be >= 2");
@@ -129,7 +171,10 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   /**
    * Sets the string to use when joining adjacent tokens to form a shingle
    * @param tokenSeparator used to separate input stream tokens in output shingles
+   * @deprecated Setting tokenSeparator after Analyzer instantiation prevents reuse.
+   *             Confgure tokenSeparator during construction.
    */
+  @Deprecated
   public void setTokenSeparator(String tokenSeparator) {
     this.tokenSeparator = (tokenSeparator == null ? "" : tokenSeparator);
   }
@@ -144,7 +189,10 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
    * 
    * @param outputUnigrams Whether or not the filter shall pass the original
    *        tokens to the output stream
+   * @deprecated Setting outputUnigrams after Analyzer instantiation prevents reuse.
+   *             Confgure outputUnigrams during construction.
    */
+  @Deprecated
   public void setOutputUnigrams(boolean outputUnigrams) {
     this.outputUnigrams = outputUnigrams;
   }
@@ -162,7 +210,10 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
    *
    * @param outputUnigramsIfNoShingles Whether or not to output a single
    *  unigram when no shingles are available.
+   * @deprecated Setting outputUnigramsIfNoShingles after Analyzer instantiation prevents reuse.
+   *             Confgure outputUnigramsIfNoShingles during construction.
    */
+  @Deprecated
   public void setOutputUnigramsIfNoShingles(boolean outputUnigramsIfNoShingles) {
     this.outputUnigramsIfNoShingles = outputUnigramsIfNoShingles;
   }

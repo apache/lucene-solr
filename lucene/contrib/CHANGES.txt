@@ -22,6 +22,11 @@ API Changes
    prevent reuse.  Stopwords are now to be computed when the Analyzer is instantiated.
    If new stopwords are needed, a new Analyzer instance should be created. (Chris Male)
 
+ * LUCENE-3434: Deprecated ShingleAnalyzerWrapper.set* since they prevent reuse.  The
+   Analyzer should be configured at instantiation.  Deprecated PerFieldAnalyzerWrapper.addAnalyzer
+   since it also prevents reuse.  Analyzers per field should be configured at instantiation.
+   (Chris Male)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the
