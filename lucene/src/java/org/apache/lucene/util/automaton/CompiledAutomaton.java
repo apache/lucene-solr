@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.PrefixTermsEnum;
-import org.apache.lucene.search.SingleTermsEnum;
+import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**

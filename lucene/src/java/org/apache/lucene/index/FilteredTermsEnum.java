@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,14 +21,8 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
-
-// TODO: move this class to oal.index
 
 /**
  * Abstract class for enumerating a subset of all terms. 

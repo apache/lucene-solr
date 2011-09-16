@@ -18,17 +18,18 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.Comparator;
+import java.util.LinkedList;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.document.NumericField; // for javadocs
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * <p>A {@link Query} that matches numeric values within a
@@ -169,7 +170,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
     // For bigger precisionSteps this query likely
     // hits too many terms, so set to CONSTANT_SCORE_FILTER right off
-    // (especially as the FilteredTermEnum is costly if wasted only for AUTO tests because it
+    // (especially as the FilteredTermsEnum is costly if wasted only for AUTO tests because it
     // creates new enums from IndexReader for each sub-range)
     switch (valSize) {
       case 64:

@@ -18,7 +18,7 @@ package org.apache.lucene.sandbox.queries.regex;
  */
 
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.FilteredTermsEnum;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.search.RegexpQuery; // javadoc
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;

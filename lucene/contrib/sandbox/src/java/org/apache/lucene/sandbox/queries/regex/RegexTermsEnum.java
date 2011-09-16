@@ -17,7 +17,7 @@ package org.apache.lucene.sandbox.queries.regex;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.FilteredTermsEnum;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;

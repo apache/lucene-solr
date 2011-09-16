@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.text.Collator;
 
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.FilteredTermsEnum;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**

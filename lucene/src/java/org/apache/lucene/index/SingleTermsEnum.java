@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,15 +19,16 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.MultiTermQuery;  // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Subclass of FilteredTermsEnum for enumerating a single term.
  * <p>
- * This can be used by {@link MultiTermQuery}s that need only visit one term,
- * but want to preserve MultiTermQuery semantics such as
- * {@link MultiTermQuery#rewriteMethod}.
+ * For example, this can be used by {@link MultiTermQuery}s
+ * that need only visit one term, but want to preserve
+ * MultiTermQuery semantics such as {@link
+ * MultiTermQuery#rewriteMethod}.
  */
 public final class SingleTermsEnum extends FilteredTermsEnum {
   private final BytesRef singleRef;
