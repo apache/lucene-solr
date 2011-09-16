@@ -63,6 +63,29 @@ public class TestSpellChecker extends LuceneTestCase {
       doc.add(newField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
       writer.addDocument(doc);
     }
+    {
+      Document doc = new Document();
+      doc.add(newField("field1", "eight", Field.Index.ANALYZED)); // "eight" in
+                                                                   // the index
+                                                                   // twice
+      writer.addDocument(doc);
+    }
+    {
+      Document doc = new Document();
+      doc
+          .add(newField("field1", "twenty-one twenty-one",
+              Field.Index.ANALYZED)); // "twenty-one" in the index thrice
+      writer.addDocument(doc);
+    }
+    {
+      Document doc = new Document();
+      doc.add(newField("field1", "twenty", Field.Index.ANALYZED)); // "twenty"
+                                                                    // in the
+                                                                    // index
+                                                                    // twice
+      writer.addDocument(doc);
+    }
+    
     writer.close();
     searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
@@ -126,7 +149,8 @@ public class TestSpellChecker extends LuceneTestCase {
     SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
 
-    String[] similar = compareSP.suggestSimilar("fvie", 2, r, "field3", false);
+    String[] similar = compareSP.suggestSimilar("fvie", 2, r, "field3",
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(2, similar.length);
     //five and fvei have the same score, but different frequencies.
     assertEquals("fvei", similar[0]);
@@ -143,14 +167,69 @@ public class TestSpellChecker extends LuceneTestCase {
     SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
 
-    String[] similar = compareSP.suggestSimilar("fvie", 2, r, "bogusFieldBogusField", false);
+    String[] similar = compareSP.suggestSimilar("fvie", 2, r,
+        "bogusFieldBogusField", SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(0, similar.length);
     r.close();
     if (!compareSP.isClosed())
       compareSP.close();
     compIdx.close();
   }
-
+  
+  public void testSuggestModes() throws Exception {
+    IndexReader r = IndexReader.open(userindex, true);
+    spellChecker.clearIndex();
+    addwords(r, spellChecker, "field1");
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("eighty", 2, r, "field1",
+          SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+      assertEquals(1, similar.length);
+      assertEquals("eighty", similar[0]);
+    }
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("eight", 2, r, "field1",
+          SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+      assertEquals(1, similar.length);
+      assertEquals("eight", similar[0]);
+    }
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("eighty", 5, r, "field1",
+          SuggestMode.SUGGEST_MORE_POPULAR);
+      assertEquals(5, similar.length);
+      assertEquals("eight", similar[0]);
+    }
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("twenty", 5, r, "field1",
+          SuggestMode.SUGGEST_MORE_POPULAR);
+      assertEquals(1, similar.length);
+      assertEquals("twenty-one", similar[0]);
+    }
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("eight", 5, r, "field1",
+          SuggestMode.SUGGEST_MORE_POPULAR);
+      assertEquals(0, similar.length);
+    }
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("eighty", 5, r, "field1",
+          SuggestMode.SUGGEST_ALWAYS);
+      assertEquals(5, similar.length);
+      assertEquals("eight", similar[0]);
+    }
+    
+    {
+      String[] similar = spellChecker.suggestSimilar("eight", 5, r, "field1",
+          SuggestMode.SUGGEST_ALWAYS);
+      assertEquals(5, similar.length);
+      assertEquals("eighty", similar[0]);
+    }
+    r.close();
+  }
   private void checkCommonSuggestions(IndexReader r) throws IOException {
     String[] similar = spellChecker.suggestSimilar("fvie", 2);
     assertTrue(similar.length > 0);
@@ -174,10 +253,12 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(similar[0], "five");
     
     //  test restraint to a field
-    similar = spellChecker.suggestSimilar("tousand", 10, r, "field1", false);
+    similar = spellChecker.suggestSimilar("tousand", 10, r, "field1",
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(0, similar.length); // there isn't the term thousand in the field field1
 
-    similar = spellChecker.suggestSimilar("tousand", 10, r, "field2", false);
+    similar = spellChecker.suggestSimilar("tousand", 10, r, "field2",
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(1, similar.length); // there is the term thousand in the field field2
   }
 
@@ -214,10 +295,12 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(similar[0], "five");
 
     // test restraint to a field
-    similar = spellChecker.suggestSimilar("tousand", 10, r, "field1", false);
+    similar = spellChecker.suggestSimilar("tousand", 10, r, "field1",
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(0, similar.length); // there isn't the term thousand in the field field1
 
-    similar = spellChecker.suggestSimilar("tousand", 10, r, "field2", false);
+    similar = spellChecker.suggestSimilar("tousand", 10, r, "field2",
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(1, similar.length); // there is the term thousand in the field field2
     
     similar = spellChecker.suggestSimilar("onety", 2);
@@ -225,7 +308,8 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(similar[0], "ninety");
     assertEquals(similar[1], "one");
     try {
-      similar = spellChecker.suggestSimilar("tousand", 10, r, null, false);
+      similar = spellChecker.suggestSimilar("tousand", 10, r, null,
+          SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     } catch (NullPointerException e) {
       assertTrue("threw an NPE, and it shouldn't have", false);
     }

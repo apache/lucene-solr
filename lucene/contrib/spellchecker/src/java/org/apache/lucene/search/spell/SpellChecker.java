@@ -246,7 +246,7 @@ public class SpellChecker implements java.io.Closeable {
    * @see #suggestSimilar(String, int, org.apache.lucene.index.IndexReader, String, boolean, float) 
    */
   public String[] suggestSimilar(String word, int numSug) throws IOException {
-    return this.suggestSimilar(word, numSug, null, null, false);
+    return this.suggestSimilar(word, numSug, null, null, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
   }
 
   /**
@@ -270,7 +270,7 @@ public class SpellChecker implements java.io.Closeable {
    * @see #suggestSimilar(String, int, org.apache.lucene.index.IndexReader, String, boolean, float)
    */
   public String[] suggestSimilar(String word, int numSug, float accuracy) throws IOException {
-    return this.suggestSimilar(word, numSug, null, null, false, accuracy);
+    return this.suggestSimilar(word, numSug, null, null, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, accuracy);
   }
 
   /**
@@ -299,8 +299,16 @@ public class SpellChecker implements java.io.Closeable {
    * first criteria: the edit distance, second criteria (only if restricted mode): the popularity
    * of the suggest words in the field of the user index
    *
-   * @see #suggestSimilar(String, int, org.apache.lucene.index.IndexReader, String, boolean, float)
+   * @see #suggestSimilar(String, int, IndexReader, String, SuggestMode, float)
+   * 
+   * @deprecated
+   *  use suggestSimilar(String, int, IndexReader, String, SuggestMode)
+   *  <ul>
+	 *  	<li>SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX instead of morePopular=false</li>
+	 *  	<li>SuggestMode.SuGGEST_MORE_POPULAR instead of morePopular=true</li>
+   *  </ul>
    */
+  @Deprecated
   public String[] suggestSimilar(String word, int numSug, IndexReader ir,
       String field, boolean morePopular) throws IOException {
     return suggestSimilar(word, numSug, ir, field, morePopular, accuracy);
@@ -331,19 +339,78 @@ public class SpellChecker implements java.io.Closeable {
    * @return String[] the sorted list of the suggest words with these 2 criteria:
    * first criteria: the edit distance, second criteria (only if restricted mode): the popularity
    * of the suggest words in the field of the user index
+   * 
+   * @see #suggestSimilar(String, int, IndexReader, String, SuggestMode, float)
+   * 
+   * @deprecated
+   *  use suggestSimilar(String, int, IndexReader, String, SuggestMode, float)
+   *  <ul>
+	 *  	<li>SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX instead of morePopular=false</li>
+	 *  	<li>SuggestMode.SuGGEST_MORE_POPULAR instead of morePopular=true</li>
+   *  </ul>
    */
+  @Deprecated
   public String[] suggestSimilar(String word, int numSug, IndexReader ir,
       String field, boolean morePopular, float accuracy) throws IOException {
+  	return suggestSimilar(word, numSug, ir, field, morePopular ? SuggestMode.SUGGEST_MORE_POPULAR : 
+  		SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, accuracy);
+  }
+  
+  /**
+   * Calls {@link #suggestSimilar(String, int, IndexReader, String, SuggestMode, float) 
+   *       suggestSimilar(word, numSug, ir, suggestMode, field, this.accuracy)}
+   * 
+   */
+  public String[] suggestSimilar(String word, int numSug, IndexReader ir,
+      String field, SuggestMode suggestMode) throws IOException {
+  	return suggestSimilar(word, numSug, ir, field, suggestMode, this.accuracy);
+  }
+  
+  /**
+   * Suggest similar words (optionally restricted to a field of an index).
+   *
+   * <p>As the Lucene similarity that is used to fetch the most relevant n-grammed terms
+   * is not the same as the edit distance strategy used to calculate the best
+   * matching spell-checked word from the hits that Lucene found, one usually has
+   * to retrieve a couple of numSug's in order to get the true best match.
+   *
+   * <p>I.e. if numSug == 1, don't count on that suggestion being the best one.
+   * Thus, you should set this value to <b>at least</b> 5 for a good suggestion.
+   *
+   * @param word the word you want a spell check done on
+   * @param numSug the number of suggested words
+   * @param ir the indexReader of the user index (can be null see field param)
+   * @param field the field of the user index: if field is not null, the suggested
+   * words are restricted to the words present in this field.
+   * @param suggestMode 
+   * (NOTE: if indexReader==null and/or field==null, then this is overridden with SuggestMode.SUGGEST_ALWAYS)
+   * @param accuracy The minimum score a suggestion must have in order to qualify for inclusion in the results
+   * @throws IOException if the underlying index throws an {@link IOException}
+   * @throws AlreadyClosedException if the Spellchecker is already closed
+   * @return String[] the sorted list of the suggest words with these 2 criteria:
+   * first criteria: the edit distance, second criteria (only if restricted mode): the popularity
+   * of the suggest words in the field of the user index
+   * 
+   */
+  public String[] suggestSimilar(String word, int numSug, IndexReader ir,
+      String field, SuggestMode suggestMode, float accuracy) throws IOException {
     // obtainSearcher calls ensureOpen
     final IndexSearcher indexSearcher = obtainSearcher();
-    try{
+    try {
+      if (ir == null || field == null) {
+        suggestMode = SuggestMode.SUGGEST_ALWAYS;
+      }
+      if (suggestMode == SuggestMode.SUGGEST_ALWAYS) {
+        ir = null;
+        field = null;
+      }
 
       final int lengthWord = word.length();
 
       final int freq = (ir != null && field != null) ? ir.docFreq(new Term(field, word)) : 0;
-      final int goalFreq = (morePopular && ir != null && field != null) ? freq : 0;
+      final int goalFreq = suggestMode==SuggestMode.SUGGEST_MORE_POPULAR ? freq : 0;
       // if the word exists in the real index and we don't care for word frequency, return the word itself
-      if (!morePopular && freq > 0) {
+      if (suggestMode==SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX && freq > 0) {
         return new String[] { word };
       }
 
@@ -402,7 +469,7 @@ public class SpellChecker implements java.io.Closeable {
         if (ir != null && field != null) { // use the user index
           sugWord.freq = ir.docFreq(new Term(field, sugWord.string)); // freq in the index
           // don't suggest a word that is not present in the field
-          if ((morePopular && goalFreq > sugWord.freq) || sugWord.freq < 1) {
+          if ((suggestMode==SuggestMode.SUGGEST_MORE_POPULAR && goalFreq > sugWord.freq) || sugWord.freq < 1) {
             continue;
           }
         }
