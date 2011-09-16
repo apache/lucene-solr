@@ -342,6 +342,8 @@ Bug Fixes
   could commit too frequently and could block adds until a new seaercher was
   registered. (yonik)
 
+* SOLR-2726: Fixed NullPointerException when using spellcheck.q with Suggester.
+  (Bernd Fehling, valentin via rmuir)
 
  Other Changes
 ----------------------

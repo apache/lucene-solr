@@ -21,6 +21,7 @@ import java.io.File;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -94,5 +95,14 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
       "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
+  }
+  
+  // SOLR-2726
+  public void testAnalyzer() throws Exception {
+    Suggester suggester = new Suggester();
+    NamedList params = new NamedList();
+    params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
+    suggester.init(params, h.getCore());
+    assertTrue(suggester.getQueryAnalyzer() != null);
   }
 }

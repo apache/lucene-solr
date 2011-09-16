@@ -51,8 +51,6 @@ public class Suggester extends SolrSpellChecker {
    * current IndexReader.
    */
   public static final String LOCATION = "sourceLocation";
-  /** Field to use as the source of terms if using IndexReader. */
-  public static final String FIELD = "field";
   /** Fully-qualified class of the {@link Lookup} implementation. */
   public static final String LOOKUP_IMPL = "lookupImpl";
   /**
@@ -68,7 +66,6 @@ public class Suggester extends SolrSpellChecker {
   
   protected String sourceLocation;
   protected File storeDir;
-  protected String field;
   protected float threshold;
   protected Dictionary dictionary;
   protected IndexReader reader;
@@ -83,7 +80,6 @@ public class Suggester extends SolrSpellChecker {
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float)config.get(THRESHOLD_TOKEN_FREQUENCY);
     sourceLocation = (String) config.get(LOCATION);
-    field = (String)config.get(FIELD);
     lookupImpl = (String)config.get(LOOKUP_IMPL);
 
     // support the old classnames without -Factory for config file backwards compatibility.

@@ -17,8 +17,10 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
@@ -35,14 +37,30 @@ import java.io.IOException;
 public abstract class SolrSpellChecker {
   public static final String DICTIONARY_NAME = "name";
   public static final String DEFAULT_DICTIONARY_NAME = "default";
+  public static final String FIELD = "field";
+  public static final String FIELD_TYPE = "fieldType";
   /** Dictionary name */
   protected String name;
   protected Analyzer analyzer;
+  protected String field;
+  protected String fieldTypeName;
 
   public String init(NamedList config, SolrCore core) {
     name = (String) config.get(DICTIONARY_NAME);
     if (name == null) {
       name = DEFAULT_DICTIONARY_NAME;
+    }
+    field = (String)config.get(FIELD);
+    if (field != null && core.getSchema().getFieldTypeNoEx(field) != null)  {
+      analyzer = core.getSchema().getFieldType(field).getQueryAnalyzer();
+    }
+    fieldTypeName = (String) config.get(FIELD_TYPE);
+    if (core.getSchema().getFieldTypes().containsKey(fieldTypeName))  {
+      FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
+      analyzer = fieldType.getQueryAnalyzer();
+    }
+    if (analyzer == null)   {
+      analyzer = new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion);
     }
     return name;
   }

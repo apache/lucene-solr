@@ -68,14 +68,11 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public static final String INDEX_DIR = "spellcheckIndexDir";
   public static final String ACCURACY = "accuracy";
   public static final String STRING_DISTANCE = "distanceMeasure";
-  public static final String FIELD_TYPE = "fieldType";
   public static final String COMPARATOR_CLASS = "comparatorClass";
 
   public static final String SCORE_COMP = "score";
   public static final String FREQ_COMP = "freq";
 
-  protected String field;
-  protected String fieldTypeName;
   protected org.apache.lucene.search.spell.SpellChecker spellChecker;
 
   protected String sourceLocation;
@@ -117,7 +114,6 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     } else {
       comp = SuggestWordQueue.DEFAULT_COMPARATOR;
     }
-    field = (String) config.get(FIELD);
     String strDistanceName = (String)config.get(STRING_DISTANCE);
     if (strDistanceName != null) {
       sd = (StringDistance) core.getResourceLoader().newInstance(strDistanceName);
@@ -139,18 +135,6 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
         throw new RuntimeException(
                 "Unparseable accuracy given for dictionary: " + name, e);
       }
-    }
-    if (field != null && core.getSchema().getFieldTypeNoEx(field) != null)  {
-      analyzer = core.getSchema().getFieldType(field).getQueryAnalyzer();
-    }
-    fieldTypeName = (String) config.get(FIELD_TYPE);
-    if (core.getSchema().getFieldTypes().containsKey(fieldTypeName))  {
-      FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
-      analyzer = fieldType.getQueryAnalyzer();
-    }
-    if (analyzer == null)   {
-      log.info("Using WhitespaceAnalzyer for dictionary: " + name);
-      analyzer = new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion);
     }
     return name;
   }
