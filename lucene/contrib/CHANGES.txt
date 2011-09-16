@@ -92,6 +92,11 @@ Bug Fixes
 
  * LUCENE-3019: Fix unexpected color tags for FastVectorHighlighter. (Koji Sekiguchi)
 
+API Changes
+ 
+ * LUCENE-3436: Add SuggestMode to the spellchecker, so you can specify the strategy
+   for suggesting related terms.  (James Dyer via Robert Muir)
+
 ======================= Lucene 3.4.0 ================
 
 New Features

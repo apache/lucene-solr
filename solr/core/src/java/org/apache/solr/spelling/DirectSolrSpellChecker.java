@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
@@ -195,11 +196,11 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
     
     SpellingResult result = new SpellingResult();
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
-    
+    SuggestMode mode = options.onlyMorePopular ? SuggestMode.SUGGEST_MORE_POPULAR : SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
     for (Token token : options.tokens) {
     	Term term = new Term(field, token.toString());
       SuggestWord[] suggestions = checker.suggestSimilar(term, 
-          options.count, options.reader, options.onlyMorePopular, accuracy);
+          options.count, options.reader, mode, accuracy);
       result.addFrequency(token, options.reader.docFreq(term));
       for (SuggestWord suggestion : suggestions) {
         result.add(token, suggestion.string, suggestion.freq);      	
