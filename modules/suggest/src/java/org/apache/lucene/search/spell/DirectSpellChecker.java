@@ -318,7 +318,7 @@ public class DirectSpellChecker {
    * @param term Term you want to spell check on
    * @param numSug the maximum number of suggested words
    * @param ir IndexReader to find terms from
-   * @param morePopular return only suggested words that are as frequent or more frequent than the searched word
+   * @param suggestMode specifies when to return suggested words
    * @param accuracy return only suggested words that match with this similarity
    * @return sorted list of the suggested words according to the comparator
    * @throws IOException

@@ -219,7 +219,7 @@ public class SpellChecker implements java.io.Closeable {
   }
 
   /**
-   * The accuracy (minimum score) to be used, unless overridden in {@link #suggestSimilar(String, int, org.apache.lucene.index.IndexReader, String, boolean, float)}, to
+   * The accuracy (minimum score) to be used, unless overridden in {@link #suggestSimilar(String, int, IndexReader, String, SuggestMode, float)}, to
    * decide whether a suggestion is included or not.
    * @return The current accuracy setting
    */
@@ -244,7 +244,7 @@ public class SpellChecker implements java.io.Closeable {
    * @throws AlreadyClosedException if the Spellchecker is already closed
    * @return String[]
    *
-   * @see #suggestSimilar(String, int, org.apache.lucene.index.IndexReader, String, boolean, float) 
+   * @see #suggestSimilar(String, int, IndexReader, String, SuggestMode, float) 
    */
   public String[] suggestSimilar(String word, int numSug) throws IOException {
     return this.suggestSimilar(word, numSug, null, null, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
@@ -268,7 +268,7 @@ public class SpellChecker implements java.io.Closeable {
    * @throws AlreadyClosedException if the Spellchecker is already closed
    * @return String[]
    *
-   * @see #suggestSimilar(String, int, org.apache.lucene.index.IndexReader, String, boolean, float)
+   * @see #suggestSimilar(String, int, IndexReader, String, SuggestMode, float)
    */
   public String[] suggestSimilar(String word, int numSug, float accuracy) throws IOException {
     return this.suggestSimilar(word, numSug, null, null, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, accuracy);
