@@ -268,7 +268,7 @@ public class DateField extends FieldType {
   }
 
   /**
-   * @see {#formatExternal}
+   * @see #formatExternal
    */
   public String toExternal(Date d) {
     return formatExternal(d);
