@@ -246,15 +246,22 @@ public class DateField extends FieldType {
   /**
    * Return the standard human readable form of the date
    */
+  public static String formatExternal(Date d) {
+    return fmtThreadLocal.get().format(d) + 'Z';
+  }
+
+  /**
+   * @see #formatExternal
+   */
   public String toExternal(Date d) {
-    return fmtThreadLocal.get().format(d) + 'Z';  
+    return formatExternal(d);
   }
 
   /**
    * Thread safe method that can be used by subclasses to parse a Date
    * that is already in the internal representation
    */
-   protected Date parseDate(String s) throws ParseException {
+   public static Date parseDate(String s) throws ParseException {
      return fmtThreadLocal.get().parse(s);
    }
 
@@ -364,8 +371,12 @@ public class DateField extends FieldType {
       super.format(d, toAppendTo, pos);
       /* worry aboutthe milliseconds ourselves */
       long millis = d.getTime() % 1000l;
-      if (0l == millis) {
+      if (0L == millis) {
         return toAppendTo;
+      }
+      if (millis < 0L) {
+        // original date was prior to epoch
+        millis += 1000L;
       }
       int posBegin = toAppendTo.length();
       toAppendTo.append(millisFormat.format(millis / 1000d));

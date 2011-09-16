@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.search.DocList;
 import java.io.IOException;
 import java.io.Writer;
@@ -227,7 +228,9 @@ public abstract class TextResponseWriter {
     }
   }
 
-  public abstract void writeDate(String name, Date val) throws IOException;
+  public void writeDate(String name, Date val) throws IOException {
+    writeDate(name, DateField.formatExternal(val));
+  }
 
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   public abstract void writeDate(String name, String val) throws IOException;

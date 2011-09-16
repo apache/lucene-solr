@@ -30,6 +30,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
+import org.apache.solr.schema.DateField;
 
 import java.io.Writer;
 import java.io.IOException;
@@ -162,7 +163,7 @@ final public class XMLWriter {
   // temporary working objects...
   // be careful not to use these recursively...
   private final ArrayList tlst = new ArrayList();
-  private final Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.US);
+
   private final StringBuilder sb = new StringBuilder();
 
   public XMLWriter(Writer writer, IndexSchema schema, SolrQueryRequest req, String version) {
@@ -745,58 +746,7 @@ final public class XMLWriter {
   }
 
   public void writeDate(String name, Date val) throws IOException {
-    // using a stringBuilder for numbers can be nice since
-    // a temporary string isn't used (it's added directly to the
-    // builder's buffer.
-
-    cal.setTime(val);
-
-    sb.setLength(0);
-    int i = cal.get(Calendar.YEAR);
-    sb.append(i);
-    sb.append('-');
-    i = cal.get(Calendar.MONTH) + 1;  // 0 based, so add 1
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append('-');
-    i=cal.get(Calendar.DAY_OF_MONTH);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append('T');
-    i=cal.get(Calendar.HOUR_OF_DAY); // 24 hour time format
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append(':');
-    i=cal.get(Calendar.MINUTE);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append(':');
-    i=cal.get(Calendar.SECOND);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    i=cal.get(Calendar.MILLISECOND);
-    if (i != 0) {
-      sb.append('.');
-      if (i<100) sb.append('0');
-      if (i<10) sb.append('0');
-      sb.append(i);
-
-      // handle canonical format specifying fractional
-      // seconds shall not end in '0'.  Given the slowness of
-      // integer div/mod, simply checking the last character
-      // is probably the fastest way to check.
-      int lastIdx = sb.length()-1;
-      if (sb.charAt(lastIdx)=='0') {
-        lastIdx--;
-        if (sb.charAt(lastIdx)=='0') {
-          lastIdx--;
-        }
-        sb.setLength(lastIdx+1);
-      }
-
-    }
-    sb.append('Z');
-    writeDate(name, sb.toString());
+    writeDate(name, DateField.formatExternal(val));
   }
 
   public void writeDate(String name, String val) throws IOException {
