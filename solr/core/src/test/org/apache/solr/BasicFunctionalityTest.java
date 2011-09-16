@@ -594,6 +594,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   /** @see org.apache.solr.util.DateMathParserTest */
   @Test
   public void testDateMath() {
+    clearIndex();
 
     // testing everything from query level is hard because
     // time marches on ... and there is no easy way to reach into the
@@ -639,6 +640,19 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("check count for near stuff",
             req("q", "bday:[NOW-1MONTH TO NOW+2HOURS]"), "*[count(//doc)=4]");
     
+  }
+
+  public void testDateRoundtrip() {
+    assertU(adoc("id", "99",  "bday", "99-01-01T12:34:56.789Z"));
+    assertU(commit());
+    assertQ("year should be canonicallized to 4 digits",
+            req("q", "id:99"),
+            "//date[@name='bday'][.='0099-01-01T12:34:56.789Z']");
+    assertU(adoc("id", "99",  "bday", "1999-01-01T12:34:56.900Z"));
+    assertU(commit());
+    assertQ("millis should be canonicallized to no trailing zeros",
+            req("q", "id:99"),
+            "//date[@name='bday'][.='1999-01-01T12:34:56.9Z']");
   }
   
   @Test

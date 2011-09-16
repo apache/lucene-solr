@@ -345,6 +345,8 @@ Bug Fixes
 * SOLR-2726: Fixed NullPointerException when using spellcheck.q with Suggester.
   (Bernd Fehling, valentin via rmuir)
 
+* SOLR-2772: Fixed Date parsing/formatting of years 0001-1000 (hossman)
+
  Other Changes
 ----------------------
 

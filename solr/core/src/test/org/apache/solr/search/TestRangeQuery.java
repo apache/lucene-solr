@@ -85,7 +85,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     String[] longs = {""+(l-1), ""+(l), ""+(l+1),  ""+(l-2), ""+(l+2)};
     String[] doubles = {""+(d-1e-16), ""+(d), ""+(d+1e-16),   ""+(d-2e-16), ""+(d+2e-16)};
     String[] strings = {"aaa","bbb","ccc",  "aa","cccc" };
-    String[] dates = {"1999-12-31T23:59:59.999Z","2000-01-01T00:00:00.000Z","2000-01-01T00:00:00.001Z",  "1999-12-31T23:59:59.998Z","2000-01-01T00:00:00.002Z" };
+    String[] dates = {"0299-12-31T23:59:59.999Z","2000-01-01T00:00:00.000Z","2000-01-01T00:00:00.001Z",  "0299-12-31T23:59:59.998Z","2000-01-01T00:00:00.002Z" };
 
     // fields that normal range queries should work on
     Map<String,String[]> norm_fields = new HashMap<String,String[]>();
