@@ -67,6 +67,9 @@ Bug Fixes
   artifact for the Solr-specific jdk15-compiled carrot2-core dependency.
   (Steve Rowe)
 
+* SOLR-2766: Package individual javadoc sites for solrj and test-framework.
+  (Steve Rowe, Mike McCandless)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
