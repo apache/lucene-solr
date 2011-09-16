@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
@@ -168,13 +169,14 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
     
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
+    SuggestMode mode = options.onlyMorePopular ? SuggestMode.SUGGEST_MORE_POPULAR : SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
     for (Token token : options.tokens) {
       String tokenText = new String(token.buffer(), 0, token.length());
       String[] suggestions = spellChecker.suggestSimilar(tokenText,
               count,
             field != null ? reader : null, //workaround LUCENE-1295
             field,
-            options.onlyMorePopular, theAccuracy);
+            mode, theAccuracy);
       if (suggestions.length == 1 && suggestions[0].equals(tokenText)) {
       	//These are spelled the same, continue on
         continue;
