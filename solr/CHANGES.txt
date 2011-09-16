@@ -357,6 +357,8 @@ Bug Fixes
   module to the o.a.s.util package in the Solr core module. 
   (David Smiley via Steve Rowe)
 
+* SOLR-2766: Package individual javadoc sites for solrj and test-framework.
+  (Steve Rowe, Mike McCandless)
 
 ==================  3.4.0  ==================
 

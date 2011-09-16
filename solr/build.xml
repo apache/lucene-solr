@@ -135,7 +135,8 @@
           depends="test-solr-core, test-solrj"/>
   <target name="compile-test" description="Compile unit tests."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib, test-jsp"/>
-  <target name="javadocs" description="Calls javadocs-all" depends="javadocs-all"/>
+  <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
+          depends="javadocs-all,javadocs-solrj,javadocs-test-framework"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
   <!-- Solr core targets -->
@@ -151,17 +152,22 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
-  
+  <target name="javadocs-solrj">
+    <ant dir="solrj" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <!-- Solr contrib targets -->
   <target name="test-contrib" description="Run contrib unit tests.">
     <contrib-crawl target="test" failonerror="true"/>
   </target>
   
   <!-- test-framework targets -->
-  <target name="javadocs-test-framework">  <!-- Called from Jenkins build script --> 
+  <target name="javadocs-test-framework">
     <ant dir="test-framework" target="javadocs" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
-  	</ant>
+    </ant>
   </target>
   
   <!-- Webapp targets -->

@@ -38,5 +38,12 @@
       <classpath refid="test.base.classpath"/>
     </compile>
   </target>
+
+  <target name="javadocs" depends="common-solr.javadocs">
+    <mkdir dir="${dest}/docs/api/test-framework"/>
+    <copy todir="${dest}/docs/api/test-framework">
+      <fileset dir="${javadoc.dir}"/>
+    </copy>
+  </target>
 </project>
 
