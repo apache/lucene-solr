@@ -256,7 +256,7 @@ public class DateField extends FieldType {
    * Thread safe method that can be used by subclasses to format a Date
    * using the Internal representation.
    */
-  public static String formatDate(Date d) {
+  protected String formatDate(Date d) {
     return fmtThreadLocal.get().format(d);
   }
 

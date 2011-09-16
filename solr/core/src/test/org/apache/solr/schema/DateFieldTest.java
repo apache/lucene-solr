@@ -198,7 +198,7 @@ public class DateFieldTest extends LuceneTestCase {
 
   protected void assertRoundTrip(String canonicalDate) throws Exception {
     Date d = DateField.parseDate(canonicalDate);
-    String result = DateField.formatDate(d) + "Z";
+    String result = DateField.formatExternal(d);
     assertEquals("d:" + d.getTime(), canonicalDate, result);
 
   }
