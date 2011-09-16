@@ -35,8 +35,7 @@ public enum SuggestMode {
 
   /**
    * Always attempt to offer suggestions (however, other parameters may limit
-   * suggestions. For example, see
-   * {@link DirectSpellChecker.setMaxQueryFrequency} ).
+   * suggestions.)
    */
   SUGGEST_ALWAYS
 }
