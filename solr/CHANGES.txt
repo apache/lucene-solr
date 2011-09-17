@@ -42,6 +42,10 @@ New Features
 
 Bug Fixes
 ----------------------
+
+* SOLR-2762: (backport form 4.x line): FSTLookup could return duplicate 
+  results or one results less than requested. (David Smiley, Dawid Weiss)
+
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
   could commit too frequently and could block adds until a new seaercher was
   registered. (yonik)

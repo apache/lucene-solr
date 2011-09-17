@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 Bug fixes
 
+* SOLR-2762: (backport form 4.x line): FSTLookup could return duplicate 
+  results or one results less than requested. (David Smiley, Dawid Weiss)
+
 * LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 
   for queries with many repeats (Doron Cohen)
 
