@@ -284,7 +284,7 @@ public class FSTLookup extends Lookup {
         // traversals and sorting.
         return lookupSortedAlphabetically(key, num);
       } else {
-        return lookupSortedByWeight(key, num, true);
+        return lookupSortedByWeight(key, num, false);
       }
     } catch (IOException e) {
       // Should never happen, but anyway.
@@ -298,7 +298,7 @@ public class FSTLookup extends Lookup {
    */
   private List<LookupResult> lookupSortedAlphabetically(String key, int num) throws IOException {
     // Greedily get num results from each weight branch.
-    List<LookupResult> res = lookupSortedByWeight(key, num, false);
+    List<LookupResult> res = lookupSortedByWeight(key, num, true);
     
     // Sort and trim.
     Collections.sort(res, new Comparator<LookupResult>() {
@@ -316,11 +316,14 @@ public class FSTLookup extends Lookup {
   /**
    * Lookup suggestions sorted by weight (descending order).
    * 
-   * @param greedy If <code>true</code>, the routine terminates immediately when <code>num</code>
+   * @param collectAll If <code>true</code>, the routine terminates immediately when <code>num</code>
    * suggestions have been collected. If <code>false</code>, it will collect suggestions from
    * all weight arcs (needed for {@link #lookupSortedAlphabetically}.
    */
-  private ArrayList<LookupResult> lookupSortedByWeight(String key, int num, boolean greedy) throws IOException {
+  private ArrayList<LookupResult> lookupSortedByWeight(String key, int num, boolean collectAll) throws IOException {
+    // Don't overallocate the results buffers. This also serves the purpose of allowing
+    // the user of this class to request all matches using Integer.MAX_VALUE as the number
+    // of results.
     final ArrayList<LookupResult> res = new ArrayList<LookupResult>(Math.min(10, num));
     final StringBuilder output = new StringBuilder(key);
     final int matchLength = key.length() - 1;
@@ -338,15 +341,18 @@ public class FSTLookup extends Lookup {
         // of the key prefix. The arc we're at is the last key's byte,
         // so we will collect it too.
         output.setLength(matchLength);
-        if (collect(res, num, weight, output, arc) && greedy) {
+        if (collect(res, num, weight, output, arc) && !collectAll) {
           // We have enough suggestions to return immediately. Keep on looking for an
           // exact match, if requested.
           if (exactMatchFirst) {
-            Float exactMatchWeight = getExactMatchStartingFromRootArc(i, key);
-            if (exactMatchWeight != null) {
-              res.add(0, new LookupResult(key, exactMatchWeight));
-              while (res.size() > num) {
-                res.remove(res.size() - 1);
+            if (!checkExistingAndReorder(res, key)) {
+              Float exactMatchWeight = getExactMatchStartingFromRootArc(i, key);
+              if (exactMatchWeight != null) {
+                // Insert as the first result and truncate at num.
+                while (res.size() >= num) {
+                  res.remove(res.size() - 1);
+                }
+                res.add(0, new LookupResult(key, exactMatchWeight));
               }
             }
           }
@@ -355,6 +361,25 @@ public class FSTLookup extends Lookup {
       }
     }
     return res;
+  }
+
+  /**
+   * Checks if the list of {@link LookupResult}s already has a <code>key</code>. If so,
+   * reorders that {@link LookupResult} to the first position.
+   * 
+   * @return Returns <code>true<code> if and only if <code>list</code> contained <code>key</code>.
+   */
+  private boolean checkExistingAndReorder(ArrayList<LookupResult> list, String key) {
+    // We assume list does not have duplicates (because of how the FST is created).
+    for (int i = list.size(); --i >= 0;) {
+      if (key.equals(list.get(i).key)) {
+        // Key found. Unless already at i==0, remove it and push up front so that the ordering
+        // remains identical with the exception of the exact match.
+        list.add(0,  list.remove(i));
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

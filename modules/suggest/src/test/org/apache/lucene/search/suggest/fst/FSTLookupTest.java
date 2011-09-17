@@ -62,9 +62,11 @@ public class FSTLookupTest extends LuceneTestCase {
         tf("threat", 1),
         tf("three", 1),
         tf("foundation", 1),
-        tf("fourier", 1),
-        tf("four", 1),
-        tf("fourty", 1),
+        tf("fourblah", 1),
+        tf("fourteen", 1),
+        tf("four", 0.5f),
+        tf("fourier", 0.5f),
+        tf("fourty", 0.5f),
         tf("xo", 1),
       };
     return keys;
@@ -90,6 +92,18 @@ public class FSTLookupTest extends LuceneTestCase {
     assertMatchEquals(lookup.lookup("one", false, 2), 
         "one/0.0", 
         "oneness/1.0");
+
+    // 'four' is collected in a bucket and then again as an exact match. 
+    assertMatchEquals(lookup.lookup("four", true, 2), 
+        "four/0.0", 
+        "fourblah/1.0");
+
+    // Check reordering of exact matches. 
+    assertMatchEquals(lookup.lookup("four", true, 4), 
+        "four/0.0",
+        "fourblah/1.0",
+        "fourteen/1.0",
+        "fourier/0.0");
 
     lookup = new FSTLookup(10, false);
     lookup.build(new TermFreqArrayIterator(evalKeys()));

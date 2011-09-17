@@ -209,6 +209,9 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-2762: FSTLookup could return duplicate results or one results less
+  than requested. (David Smiley, Dawid Weiss)
+
 * SOLR-2741: Bugs in facet range display in trunk (janhoy)
 
 * SOLR-1908: Fixed SignatureUpdateProcessor to fail to initialize on
