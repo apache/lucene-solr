@@ -17,10 +17,10 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ import java.util.List;
 public class QueryUtils {
 
   /** return true if this query has no positive components */
-  static boolean isNegative(Query q) {
+  public static boolean isNegative(Query q) {
     if (!(q instanceof BooleanQuery)) return false;
     BooleanQuery bq = (BooleanQuery)q;
     List<BooleanClause> clauses = bq.clauses();
@@ -51,7 +51,7 @@ public class QueryUtils {
    * @param q
    * @return
    */
-  static Query getAbs(Query q) {
+  public static Query getAbs(Query q) {
     if (q instanceof WrappedQuery) {
       Query subQ = ((WrappedQuery)q).getWrappedQuery();
       Query absSubQ = getAbs(subQ);
@@ -95,7 +95,7 @@ public class QueryUtils {
   /** Makes negative queries suitable for querying by
    * lucene.
    */
-  static Query makeQueryable(Query q) {
+  public static Query makeQueryable(Query q) {
     if (q instanceof WrappedQuery) {
       return makeQueryable(((WrappedQuery)q).getWrappedQuery());
     }
@@ -105,7 +105,7 @@ public class QueryUtils {
   /** Fixes a negative query by adding a MatchAllDocs query clause.
    * The query passed in *must* be a negative query.
    */
-  static Query fixNegativeQuery(Query q) {
+  public static Query fixNegativeQuery(Query q) {
     BooleanQuery newBq = (BooleanQuery)q.clone();
     newBq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     return newBq;    

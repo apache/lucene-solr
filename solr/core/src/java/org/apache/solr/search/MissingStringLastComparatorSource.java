@@ -17,9 +17,11 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.Direct16;
@@ -56,7 +58,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
 
 // Copied from Lucene's TermOrdValComparator and modified since the Lucene version couldn't
 // be extended.
-class TermOrdValComparator_SML extends FieldComparator<BytesRef> {
+class TermOrdValComparator_SML extends FieldComparator<Comparable> {
   private static final int NULL_ORD = Integer.MAX_VALUE;
 
   private final int[] ords;
@@ -100,6 +102,21 @@ class TermOrdValComparator_SML extends FieldComparator<BytesRef> {
   @Override
   public BytesRef value(int slot) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int compareValues(Comparable first, Comparable second) {
+    if (first == null) {
+      if (second == null) {
+        return 0;
+      } else {
+        return 1;
+      }
+    } else if (second == null) {
+      return -1;
+    } else {
+      return first.compareTo(second);
+    }
   }
 
   @Override

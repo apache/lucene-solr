@@ -16,19 +16,20 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.MissingStringLastComparatorSource;
 
 import java.text.Collator;
-import java.util.Comparator;
-import java.util.Locale;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
-public class ShardDoc {
+public class ShardDoc extends FieldDoc {
   public String shard;
   public String shardAddress;  // TODO
   
@@ -37,7 +38,7 @@ public class ShardDoc {
     // to short-circuit comparisons if the shard is equal, and can
     // also be used to break ties within the same shard.
 
-  Object id;
+  public Object id;
     // this is currently the uniqueKeyField but
     // may be replaced with internal docid in a future release.
 
@@ -53,8 +54,35 @@ public class ShardDoc {
   // but we shouldn't expose uniqueKey (have a map by it) until the stored-field
   // retrieval stage.
 
-  int positionInResponse;
+  public int positionInResponse;
   // the ordinal position in the merged response arraylist  
+
+  public ShardDoc(float score, Object[] fields, Object uniqueId, String shard) {
+      super(-1, score, fields);
+      this.id = uniqueId;
+      this.shard = shard;
+  }
+
+  public ShardDoc() {
+    super(-1, Float.NaN);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    ShardDoc shardDoc = (ShardDoc) o;
+
+    if (id != null ? !id.equals(shardDoc.id) : shardDoc.id != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return id != null ? id.hashCode() : 0;
+  }
 
   @Override
   public String toString(){
@@ -70,7 +98,7 @@ public class ShardDoc {
 
 
 // used by distributed search to merge results.
-class ShardFieldSortedHitQueue extends PriorityQueue {
+class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   /** Stores a comparator corresponding to each field being sorted by */
   protected Comparator[] comparators;
@@ -111,10 +139,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
   }
 
   @Override
-  protected boolean lessThan(Object objA, Object objB) {
-    ShardDoc docA = (ShardDoc)objA;
-    ShardDoc docB = (ShardDoc)objB;
-
+  protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
     // If these docs are from the same shard, then the relative order
     // is how they appeared in the response from that shard.    
     if (docA.shard == docB.shard) {

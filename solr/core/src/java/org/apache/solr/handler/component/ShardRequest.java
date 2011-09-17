@@ -16,10 +16,10 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.solr.common.params.ModifiableSolrParams;
 
 
 // todo... when finalized make accessors
@@ -37,6 +37,7 @@ public class ShardRequest {
   public final static int PURPOSE_GET_DEBUG       =0x100;
   public final static int PURPOSE_GET_STATS       =0x200;
   public final static int PURPOSE_GET_TERMS       =0x400;
+  public final static int PURPOSE_GET_TOP_GROUPS  =0x800;
 
   public int purpose;  // the purpose of this request
 

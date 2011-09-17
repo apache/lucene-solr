@@ -38,6 +38,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
+import org.apache.solr.search.grouping.collector.FilterCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -821,7 +822,7 @@ public class Grouping {
      * {@inheritDoc}
      */
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.collector;
+      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
       TopDocs topDocs = topDocsCollector.topDocs();
       GroupDocs<String> groupDocs = new GroupDocs<String>(topDocs.getMaxScore(), topDocs.totalHits, topDocs.scoreDocs, query.toString(), null);
       if (main) {
@@ -836,7 +837,7 @@ public class Grouping {
      * {@inheritDoc}
      */
     public int getMatches() {
-      return collector.matches;
+      return collector.getMatches();
     }
   }
 
@@ -973,42 +974,6 @@ public class Grouping {
       return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
     }
 
-  }
-
-  /**
-   * A collector that filters incoming doc ids that are not in the filter
-   */
-  static class FilterCollector extends Collector {
-
-    final DocSet filter;
-    final Collector collector;
-    int docBase;
-    int matches;
-
-    public FilterCollector(DocSet filter, Collector collector) throws IOException {
-      this.filter = filter;
-      this.collector = collector;
-    }
-
-    public void setScorer(Scorer scorer) throws IOException {
-      collector.setScorer(scorer);
-    }
-
-    public void collect(int doc) throws IOException {
-      matches++;
-      if (filter.exists(doc + docBase)) {
-        collector.collect(doc);
-      }
-    }
-
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.docBase = context.docBase;
-      collector.setNextReader(context);
-    }
-
-    public boolean acceptsDocsOutOfOrder() {
-      return collector.acceptsDocsOutOfOrder();
-    }
   }
 
   static class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<MutableValue> {

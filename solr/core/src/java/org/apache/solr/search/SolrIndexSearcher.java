@@ -17,53 +17,13 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.FieldSelectorVisitor;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiDocsEnum;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TimeLimitingCollector;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
@@ -86,6 +46,11 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -625,10 +590,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
 
 
-  static class ProcessedFilter {
-    DocSet answer;  // the answer, if non-null
-    Filter filter;
-    DelegatingCollector postFilter;
+  public static class ProcessedFilter {
+    public DocSet answer;  // the answer, if non-null
+    public Filter filter;
+    public DelegatingCollector postFilter;
   }
 
 
@@ -1048,7 +1013,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   static final int NO_CHECK_QCACHE       = 0x80000000;
-  static final int GET_DOCSET            = 0x40000000;
+  public static final int GET_DOCSET            = 0x40000000;
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   static final int NO_SET_QCACHE         = 0x10000000;
 

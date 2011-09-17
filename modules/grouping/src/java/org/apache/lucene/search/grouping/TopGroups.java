@@ -17,12 +17,12 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+
+import java.io.IOException;
 
 /** Represents result returned by a grouping search.
  *
@@ -70,8 +70,13 @@ public class TopGroups<GROUP_VALUE_TYPE> {
    *  same groupSort and docSort, and the top groups passed
    *  to all second-pass collectors must be the same.
    *
-   * <b>NOTE</b>: this cannot merge totalGroupCount; ie the
-   * returned TopGroups will have null totalGroupCount.
+   * <b>NOTE</b>: We can't always compute an exact totalGroupCount.
+   * Documents belonging to a group may occur on more than
+   * one shard and thus the merged totalGroupCount can be
+   * higher than the actual totalGroupCount. In this case the
+   * totalGroupCount represents a upper bound. If the documents
+   * of one group do only reside in one shard then the
+   * totalGroupCount is exact.
    *
    * <b>NOTE</b>: the topDocs in each GroupDocs is actually
    * an instance of TopDocsAndShards
@@ -87,6 +92,8 @@ public class TopGroups<GROUP_VALUE_TYPE> {
 
     int totalHitCount = 0;
     int totalGroupedHitCount = 0;
+    // Optionally merge the totalGroupCount.
+    Integer totalGroupCount = null;
 
     final int numGroups = shardGroups[0].groups.length;
     for(TopGroups<T> shard : shardGroups) {
@@ -95,6 +102,13 @@ public class TopGroups<GROUP_VALUE_TYPE> {
       }
       totalHitCount += shard.totalHitCount;
       totalGroupedHitCount += shard.totalGroupedHitCount;
+      if (shard.totalGroupCount != null) {
+        if (totalGroupCount == null) {
+          totalGroupCount = 0;
+        }
+
+        totalGroupCount += shard.totalGroupCount;
+      }
     }
 
     @SuppressWarnings("unchecked")
@@ -156,10 +170,19 @@ public class TopGroups<GROUP_VALUE_TYPE> {
                                                    shardGroups[0].groups[groupIDX].groupSortValues);
     }
 
-    return new TopGroups<T>(groupSort.getSort(),
-                            docSort == null ? null : docSort.getSort(),
-                            totalHitCount,
-                            totalGroupedHitCount,
-                            mergedGroupDocs);
+    if (totalGroupCount != null) {
+      TopGroups<T> result = new TopGroups<T>(groupSort.getSort(),
+                              docSort == null ? null : docSort.getSort(),
+                              totalHitCount,
+                              totalGroupedHitCount,
+                              mergedGroupDocs);
+      return new TopGroups<T>(result, totalGroupCount);
+    } else {
+      return new TopGroups<T>(groupSort.getSort(),
+                              docSort == null ? null : docSort.getSort(),
+                              totalHitCount,
+                              totalGroupedHitCount,
+                              mergedGroupDocs);
+    }
   }
 }

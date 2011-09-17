@@ -17,33 +17,21 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
-import org.apache.lucene.search.cache.ByteValuesCreator;
-import org.apache.lucene.search.cache.CachedArray;
-import org.apache.lucene.search.cache.CachedArrayCreator;
-import org.apache.lucene.search.cache.DoubleValuesCreator;
-import org.apache.lucene.search.cache.FloatValuesCreator;
-import org.apache.lucene.search.cache.IntValuesCreator;
-import org.apache.lucene.search.cache.LongValuesCreator;
-import org.apache.lucene.search.cache.ShortValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.ByteValues;
-import org.apache.lucene.search.cache.CachedArray.DoubleValues;
-import org.apache.lucene.search.cache.CachedArray.FloatValues;
-import org.apache.lucene.search.cache.CachedArray.IntValues;
-import org.apache.lucene.search.cache.CachedArray.LongValues;
-import org.apache.lucene.search.cache.CachedArray.ShortValues;
+import org.apache.lucene.search.cache.*;
+import org.apache.lucene.search.cache.CachedArray.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
+
+import java.io.IOException;
 
 /**
  * Expert: a FieldComparator compares hits so as to determine their
@@ -187,7 +175,17 @@ public abstract class FieldComparator<T> {
    *  if your values may sometimes be null */
   @SuppressWarnings("unchecked")
   public int compareValues(T first, T second) {
-    return ((Comparable<T>) first).compareTo(second);
+    if (first == null) {
+      if (second == null) {
+        return 0;
+      } else {
+        return -1;
+      }
+    } else if (second == null) {
+      return 1;
+    } else {
+      return ((Comparable<T>) first).compareTo(second);
+    }
   }
 
   public static abstract class NumericComparator<T extends CachedArray, U extends Number> extends FieldComparator<U> {
