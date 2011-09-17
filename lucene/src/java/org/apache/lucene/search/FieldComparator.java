@@ -178,7 +178,17 @@ public abstract class FieldComparator<T> {
    *  if your values may sometimes be null */
   @SuppressWarnings("unchecked")
   public int compareValues(T first, T second) {
-    return ((Comparable<T>) first).compareTo(second);
+    if (first == null) {
+      if (second == null) {
+        return 0;
+      } else {
+        return -1;
+      }
+    } else if (second == null) {
+      return 1;
+    } else {
+      return ((Comparable<T>) first).compareTo(second);
+    }
   }
 
   /** Parses field's values as byte (using {@link

@@ -18,6 +18,10 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
@@ -28,7 +32,11 @@ import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.grouping.GroupingSpecification;
+import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,6 +65,7 @@ public class ResponseBuilder
   private Query query = null;
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
+  private GroupingSpecification groupingSpec;
 
   private DocListAndSet results = null;
   private NamedList<Object> debugInfo = null;
@@ -87,6 +96,7 @@ public class ResponseBuilder
 
   public static int STAGE_START           = 0;
   public static int STAGE_PARSE_QUERY     = 1000;
+  public static int STAGE_TOP_GROUPS = 1500;
   public static int STAGE_EXECUTE_QUERY   = 2000;
   public static int STAGE_GET_FIELDS      = 3000;
   public static int STAGE_DONE            = Integer.MAX_VALUE;
@@ -122,7 +132,7 @@ public class ResponseBuilder
 
   public GlobalCollectionStat globalCollectionStat;
 
-  Map<Object, ShardDoc> resultIds;
+  public Map<Object, ShardDoc> resultIds;
   // Maps uniqueKeyValue to ShardDoc, which may be used to
   // determine order of the doc or uniqueKey in the final
   // returned sequence.
@@ -134,6 +144,13 @@ public class ResponseBuilder
   SolrDocumentList _responseDocs;
   StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
+
+  // Context fields for grouping
+  public final Map<String, Collection<SearchGroup<String>>> mergedSearchGroups = new HashMap<String, Collection<SearchGroup<String>>>();
+  public final Map<String, Map<SearchGroup<String>, String>> searchGroupToShard = new HashMap<String, Map<SearchGroup<String>, String>>();
+  public final Map<String, TopGroups<String>> mergedTopGroups = new HashMap<String, TopGroups<String>>();
+  public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<String, QueryCommandResult>();
+  public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<Object, SolrDocument>();
 
   /**
    * Utility function to add debugging info.  This will make sure a valid
@@ -244,6 +261,18 @@ public class ResponseBuilder
 
   public void setSortSpec(SortSpec sort) {
     this.sortSpec = sort;
+  }
+
+  public GroupingSpecification getGroupingSpec() {
+    return groupingSpec;
+  }
+
+  public void setGroupingSpec(GroupingSpecification groupingSpec) {
+    this.groupingSpec = groupingSpec;
+  }
+
+  public boolean grouping() {
+    return groupingSpec != null;
   }
 
   public RTimer getTimer() {

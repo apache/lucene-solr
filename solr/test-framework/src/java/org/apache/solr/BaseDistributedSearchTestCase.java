@@ -260,6 +260,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     for (SolrServer client : clients) client.commit();
   }
 
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+    // query a random server
+    int which = r.nextInt(clients.size());
+    SolrServer client = clients.get(which);
+    QueryResponse rsp = client.query(params);
+    return rsp;
+  }
+
   protected void query(Object... q) throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("reqid",Integer.toString(random.nextInt())); // just to help correlate top-level requests w/ sub requests
@@ -274,9 +282,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     // query a random server
     params.set("shards", shards);
-    int which = r.nextInt(clients.size());
-    SolrServer client = clients.get(which);
-    QueryResponse rsp = client.query(params);
+    QueryResponse rsp = queryServer(params);
 
     compareResponses(rsp, controlRsp);
 

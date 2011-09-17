@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
@@ -35,6 +34,7 @@ import org.apache.solr.schema.StrFieldSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.grouping.collector.FilterCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -774,7 +774,7 @@ public class Grouping {
      * {@inheritDoc}
      */
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.collector;
+      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
       TopDocs topDocs = topDocsCollector.topDocs();
       GroupDocs<String> groupDocs = new GroupDocs<String>(topDocs.getMaxScore(), topDocs.totalHits, topDocs.scoreDocs, query.toString(), null);
       if (main) {
@@ -789,43 +789,7 @@ public class Grouping {
      * {@inheritDoc}
      */
     public int getMatches() {
-      return collector.matches;
-    }
-  }
-
-  /**
-   * A collector that filters incoming doc ids that are not in the filter
-   */
-  static class FilterCollector extends Collector {
-
-    final DocSet filter;
-    final Collector collector;
-    int docBase;
-    int matches;
-
-    public FilterCollector(DocSet filter, Collector collector) throws IOException {
-      this.filter = filter;
-      this.collector = collector;
-    }
-
-    public void setScorer(Scorer scorer) throws IOException {
-      collector.setScorer(scorer);
-    }
-
-    public void collect(int doc) throws IOException {
-      matches++;
-      if (filter.exists(doc + docBase)) {
-        collector.collect(doc);
-      }
-    }
-
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      this.docBase = docBase;
-      collector.setNextReader(reader, docBase);
-    }
-
-    public boolean acceptsDocsOutOfOrder() {
-      return collector.acceptsDocsOutOfOrder();
+      return collector.getMatches();
     }
   }
 

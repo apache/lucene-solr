@@ -640,10 +640,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
 
 
-  static class ProcessedFilter {
-    DocSet answer;  // the answer, if non-null
-    Filter filter;
-    DelegatingCollector postFilter;
+  public static class ProcessedFilter {
+    public DocSet answer;  // the answer, if non-null
+    public Filter filter;
+    public DelegatingCollector postFilter;
   }
 
 

@@ -104,6 +104,21 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
     }
 
     @Override
+    public int compareValues(String first, String second) {
+      if (first == null) {
+        if (second == null) {
+          return 0;
+        } else {
+          return 1;
+        }
+      } else if (second == null) {
+        return -1;
+      } else {
+        return first.compareTo(second);
+      }
+    }
+
+    @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
       int order = this.order[doc];

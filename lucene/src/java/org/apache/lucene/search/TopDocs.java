@@ -232,11 +232,8 @@ public class TopDocs implements java.io.Serializable {
       assert queue.size() > 0;
       ShardRef ref = queue.pop();
       final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
-      if (sort == null) {
-        hits[hitUpto] = new ScoreDoc(hit.doc, hit.score, ref.shardIndex);
-      } else {
-        hits[hitUpto] = new FieldDoc(hit.doc, hit.score, ((FieldDoc) hit).fields, ref.shardIndex);
-      }
+      hit.shardIndex = ref.shardIndex;
+      hits[hitUpto] = hit;
 
       //System.out.println("  hitUpto=" + hitUpto);
       //System.out.println("    doc=" + hits[hitUpto].doc + " score=" + hits[hitUpto].score);

@@ -17,12 +17,12 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Represents a group that is found during the first pass search.
@@ -44,6 +44,29 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
   @Override
   public String toString() {
     return("SearchGroup(groupValue=" + groupValue + " sortValues=" + Arrays.toString(sortValues) + ")");
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    SearchGroup that = (SearchGroup) o;
+
+    if (groupValue == null) {
+      if (that.groupValue != null) {
+        return false;
+      }
+    } else if (!groupValue.equals(that.groupValue)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return groupValue != null ? groupValue.hashCode() : 0;
   }
 
   private static class ShardIter<T> {
