@@ -34,7 +34,6 @@ import java.util.Map;
  */
 public class SimpleEndResultTransformer implements EndResultTransformer {
 
-  @Override
   public void transform(Map<String, ?> result, SolrQueryResponse response, GroupingSpecification groupingSpecification, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<Object>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
