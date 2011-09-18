@@ -47,6 +47,8 @@ public abstract class Analyzer implements Closeable {
   private boolean assertFinal() {
     try {
       final Class<?> clazz = getClass();
+      if (!clazz.desiredAssertionStatus())
+        return true;
       assert clazz.isAnonymousClass() ||
         (clazz.getModifiers() & (Modifier.FINAL | Modifier.PRIVATE)) != 0 ||
         (

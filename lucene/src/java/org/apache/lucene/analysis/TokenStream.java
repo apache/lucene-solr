@@ -111,6 +111,8 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
   private boolean assertFinal() {
     try {
       final Class<?> clazz = getClass();
+      if (!clazz.desiredAssertionStatus())
+        return true;
       assert clazz.isAnonymousClass() ||
         (clazz.getModifiers() & (Modifier.FINAL | Modifier.PRIVATE)) != 0 ||
         Modifier.isFinal(clazz.getMethod("incrementToken").getModifiers()) :

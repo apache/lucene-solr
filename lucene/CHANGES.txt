@@ -597,6 +597,12 @@ Optimizations
   the number of terms of the query when rewrite(), in order to improve performance.
   (Robert Muir, Koji Sekiguchi)
 
+Test Cases
+
+* LUCENE-3420: Disable the finalness checks in TokenStream and Analyzer
+  for implementing subclasses in different packages, where assertions are not
+  enabled. (Uwe Schindler)
+
 ======================= Lucene 3.4.0 =======================
 
 Bug fixes
