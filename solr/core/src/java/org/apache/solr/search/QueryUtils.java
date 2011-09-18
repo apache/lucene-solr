@@ -48,8 +48,8 @@ public class QueryUtils {
    * <p>
    * The caller can tell the sign of the original by a reference comparison between
    * the original and returned query.
-   * @param q
-   * @return
+   * @param q Query to create the absolute version of
+   * @return Absolute version of the Query
    */
   public static Query getAbs(Query q) {
     if (q instanceof WrappedQuery) {

@@ -78,7 +78,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
      * Sets the docSet based on the created {@link DocSet}
      *
      * @param searcher The searcher executing the
-     * @return
+     * @return this
      * @throws IOException
      */
     public Builder setDocSet(SolrIndexSearcher searcher) throws IOException {
