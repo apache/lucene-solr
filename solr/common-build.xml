@@ -98,7 +98,6 @@
 
   <path id="solr.test.base.classpath">
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
-    <pathelement path="${common-solr.dir}/build/solr-core/classes/test"/>
   	<pathelement path="${tests.userdir}"/>
   	<path refid="test.base.classpath"/>
   </path>

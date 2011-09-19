@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 public class BufferingRequestProcessor extends UpdateRequestProcessor
 {

@@ -370,6 +370,10 @@ Bug Fixes
 * SOLR-2766: Package individual javadoc sites for solrj and test-framework.
   (Steve Rowe, Mike McCandless)
 
+* SOLR-2771: Solr modules' tests should not depend on solr-core test classes;
+  move BufferingRequestProcessor from solr-core tests to test-framework so that
+  the Solr Cell module can use it. (janhoy, Steve Rowe)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
