@@ -56,6 +56,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", i1);
     query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH");
+    query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men",
            tdate_a, "2010-04-20T11:00:00Z",
@@ -105,7 +106,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     for (int shard = 0; shard < clients.size(); shard++) {
       int groupValue = values[shard];
       for (int i = 500; i < 600; i++) {
-        index_specific(shard, i1, groupValue, s1, "a", id, i * (shard + 1));
+        index_specific(shard, i1, groupValue, s1, "a", id, i * (shard + 1), t1, shard);
       }
     }
 
@@ -135,6 +136,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     // In order to validate this we need to make sure that during indexing that all documents of one group only occur on the same shard
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.ngroups", "true");
+    query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.truncate", "true");
+    query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
     // We cannot validate distributed grouping with scoring as first sort. since there is no global idf. We can check if no errors occur
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", "score desc, _docid_ asc, id asc");

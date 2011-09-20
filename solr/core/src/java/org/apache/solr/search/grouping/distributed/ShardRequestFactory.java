@@ -22,6 +22,8 @@ import org.apache.solr.handler.component.ShardRequest;
 
 /**
  * Responsible for creating shard requests to the shards in the cluster to perform distributed grouping.
+ *
+ * @lucene.experimental
  */
 public interface ShardRequestFactory {
 

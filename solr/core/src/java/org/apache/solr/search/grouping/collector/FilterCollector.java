@@ -25,7 +25,9 @@ import org.apache.solr.search.DocSet;
 import java.io.IOException;
 
 /**
- * A collector that filters incoming doc ids that are not in the filter
+ * A collector that filters incoming doc ids that are not in the filter.
+ *
+ * @lucene.experimental
  */
 public class FilterCollector extends Collector {
 

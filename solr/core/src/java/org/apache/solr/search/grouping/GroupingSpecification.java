@@ -22,6 +22,8 @@ import org.apache.solr.search.Grouping;
 
 /**
  * Encapsulates the grouping options like fields group sort and more specified by clients.
+ *
+ * @lucene.experimental
  */
 public class GroupingSpecification {
 
@@ -38,6 +40,7 @@ public class GroupingSpecification {
   private boolean main;
   private Grouping.Format responseFormat;
   private boolean needScore;
+  private boolean truncateGroups;
 
   public String[] getFields() {
     return fields;
@@ -155,4 +158,11 @@ public class GroupingSpecification {
     this.needScore = needScore;
   }
 
+  public boolean isTruncateGroups() {
+    return truncateGroups;
+  }
+
+  public void setTruncateGroups(boolean truncateGroups) {
+    this.truncateGroups = truncateGroups;
+  }
 }
