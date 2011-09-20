@@ -352,8 +352,8 @@ class MultipartRequestParser implements SolrRequestParser
             item.getFieldName(), 
             item.getString(), params.getMap() );
         }
-        // Only add it if it actually has something...
-        else if( item.getSize() > 0 ) { 
+        // Add the stream
+        else { 
           streams.add( new FileItemContentStream( item ) );
         }
     }

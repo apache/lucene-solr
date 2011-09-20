@@ -353,6 +353,9 @@ Bug Fixes
 
 * SOLR-2772: Fixed Date parsing/formatting of years 0001-1000 (hossman)
 
+* SOLR-2763: Extracting update request handler throws exception and returns 400 
+  when zero-length file posted using multipart form post (janhoy)
+
  Other Changes
 ----------------------
 
