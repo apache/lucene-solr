@@ -67,6 +67,67 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       return false;
     }
   }
+  
+  // Assumes docs are scored in order.
+  private static class InOrderPagingScoreDocCollector extends TopScoreDocCollector {
+    private final ScoreDoc after;
+    // this is always after.doc - docBase, to save an add when score == after.score
+    private int afterDoc;
+    private int collectedHits;
+
+    private InOrderPagingScoreDocCollector(ScoreDoc after, int numHits) {
+      super(numHits);
+      this.after = after;
+    }
+    
+    @Override
+    public void collect(int doc) throws IOException {
+      float score = scorer.score();
+
+      // This collector cannot handle these scores:
+      assert score != Float.NEGATIVE_INFINITY;
+      assert !Float.isNaN(score);
+
+      totalHits++;
+      
+      if (score > after.score || (score == after.score && doc <= afterDoc)) {
+        // hit was collected on a previous page
+        return;
+      }
+      
+      if (score <= pqTop.score) {
+        // Since docs are returned in-order (i.e., increasing doc Id), a document
+        // with equal score to pqTop.score cannot compete since HitQueue favors
+        // documents with lower doc Ids. Therefore reject those docs too.
+        return;
+      }
+      collectedHits++;
+      pqTop.doc = doc + docBase;
+      pqTop.score = score;
+      pqTop = pq.updateTop();
+    }
+
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+      return false;
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) {
+      super.setNextReader(context);
+      afterDoc = after.doc - docBase;
+    }
+
+    @Override
+    protected int topDocsSize() {
+      return collectedHits < pq.size() ? collectedHits : pq.size();
+    }
+    
+    @Override
+    protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
+      return results == null ? new TopDocs(totalHits, new ScoreDoc[0], Float.NaN) : new TopDocs(totalHits, results);
+    }
+  }
 
   // Assumes docs are scored out of order.
   private static class OutOfOrderTopScoreDocCollector extends TopScoreDocCollector {
@@ -101,6 +162,67 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       return true;
     }
   }
+  
+  // Assumes docs are scored out of order.
+  private static class OutOfOrderPagingScoreDocCollector extends TopScoreDocCollector {
+    private final ScoreDoc after;
+    // this is always after.doc - docBase, to save an add when score == after.score
+    private int afterDoc;
+    private int collectedHits;
+
+    private OutOfOrderPagingScoreDocCollector(ScoreDoc after, int numHits) {
+      super(numHits);
+      this.after = after;
+    }
+    
+    @Override
+    public void collect(int doc) throws IOException {
+      float score = scorer.score();
+
+      // This collector cannot handle NaN
+      assert !Float.isNaN(score);
+
+      totalHits++;
+      if (score > after.score || (score == after.score && doc <= afterDoc)) {
+        // hit was collected on a previous page
+        return;
+      }
+      if (score < pqTop.score) {
+        // Doesn't compete w/ bottom entry in queue
+        return;
+      }
+      doc += docBase;
+      if (score == pqTop.score && doc > pqTop.doc) {
+        // Break tie in score by doc ID:
+        return;
+      }
+      collectedHits++;
+      pqTop.doc = doc;
+      pqTop.score = score;
+      pqTop = pq.updateTop();
+    }
+    
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+    
+    @Override
+    public void setNextReader(AtomicReaderContext context) {
+      super.setNextReader(context);
+      afterDoc = after.doc - docBase;
+    }
+    
+    @Override
+    protected int topDocsSize() {
+      return collectedHits < pq.size() ? collectedHits : pq.size();
+    }
+    
+    @Override
+    protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
+      return results == null ? new TopDocs(totalHits, new ScoreDoc[0], Float.NaN) : new TopDocs(totalHits, results);
+    }
+  }
 
   /**
    * Creates a new {@link TopScoreDocCollector} given the number of hits to
@@ -113,15 +235,33 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * objects.
    */
   public static TopScoreDocCollector create(int numHits, boolean docsScoredInOrder) {
+    return create(numHits, null, docsScoredInOrder);
+  }
+  
+  /**
+   * Creates a new {@link TopScoreDocCollector} given the number of hits to
+   * collect, the bottom of the previous page, and whether documents are scored in order by the input
+   * {@link Scorer} to {@link #setScorer(Scorer)}.
+   *
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length
+   * <code>numHits</code>, and fill the array with sentinel
+   * objects.
+   */
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after, boolean docsScoredInOrder) {
     
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
-
+    
     if (docsScoredInOrder) {
-      return new InOrderTopScoreDocCollector(numHits);
+      return after == null 
+        ? new InOrderTopScoreDocCollector(numHits) 
+        : new InOrderPagingScoreDocCollector(after, numHits);
     } else {
-      return new OutOfOrderTopScoreDocCollector(numHits);
+      return after == null
+        ? new OutOfOrderTopScoreDocCollector(numHits)
+        : new OutOfOrderPagingScoreDocCollector(after, numHits);
     }
     
   }

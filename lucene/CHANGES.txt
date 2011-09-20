@@ -531,6 +531,10 @@ New features
   provided - GlobalReuseStrategy which implements the current behavior of sharing
   components between all fields, and PerFieldReuseStrategy which shares per field.
   (Chris Male)
+  
+* LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a specified
+  ScoreDoc (e.g. last document on the previous page) to support deep paging use cases.
+  (Aaron McCurry, Grant Ingersoll, Robert Muir) 
 
 Optimizations
 

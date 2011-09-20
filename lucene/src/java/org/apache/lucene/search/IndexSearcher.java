@@ -276,6 +276,34 @@ public class IndexSearcher implements Closeable {
   }
 
   /** Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null,
+   * where all results are after a previous result (<code>after</code>).
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, int n) throws IOException {
+    return searchAfter(after, query, null, n);
+  }
+  
+  /** Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null,
+   * where all results are after a previous result (<code>after</code>).
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n) throws IOException {
+    return search(createNormalizedWeight(query), filter, after, n);
+  }
+  
+  /** Finds the top <code>n</code>
    * hits for <code>query</code>.
    *
    * @throws BooleanQuery.TooManyClauses
@@ -293,7 +321,7 @@ public class IndexSearcher implements Closeable {
    */
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
-    return search(createNormalizedWeight(query), filter, n);
+    return search(createNormalizedWeight(query), filter, null, n);
   }
 
   /** Lower-level search API.
@@ -371,9 +399,9 @@ public class IndexSearcher implements Closeable {
    * {@link IndexSearcher#search(Query,Filter,int)} instead.
    * @throws BooleanQuery.TooManyClauses
    */
-  protected TopDocs search(Weight weight, Filter filter, int nDocs) throws IOException {
+  protected TopDocs search(Weight weight, Filter filter, ScoreDoc after, int nDocs) throws IOException {
     if (executor == null) {
-      return search(leafContexts, weight, filter, nDocs);
+      return search(leafContexts, weight, filter, after, nDocs);
     } else {
       final HitQueue hq = new HitQueue(nDocs, false);
       final Lock lock = new ReentrantLock();
@@ -381,7 +409,7 @@ public class IndexSearcher implements Closeable {
     
       for (int i = 0; i < leafSlices.length; i++) { // search each sub
         runner.submit(
-                      new SearcherCallableNoSort(lock, this, leafSlices[i], weight, filter, nDocs, hq));
+                      new SearcherCallableNoSort(lock, this, leafSlices[i], weight, filter, after, nDocs, hq));
       }
 
       int totalHits = 0;
@@ -408,14 +436,14 @@ public class IndexSearcher implements Closeable {
    * {@link IndexSearcher#search(Query,Filter,int)} instead.
    * @throws BooleanQuery.TooManyClauses
    */
-  protected TopDocs search(AtomicReaderContext[] leaves, Weight weight, Filter filter, int nDocs) throws IOException {
+  protected TopDocs search(AtomicReaderContext[] leaves, Weight weight, Filter filter, ScoreDoc after, int nDocs) throws IOException {
     // single thread
     int limit = reader.maxDoc();
     if (limit == 0) {
       limit = 1;
     }
     nDocs = Math.min(nDocs, limit);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, !weight.scoresDocsOutOfOrder());
+    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, after, !weight.scoresDocsOutOfOrder());
     search(leaves, weight, filter, collector);
     return collector.topDocs();
   }
@@ -704,23 +732,25 @@ public class IndexSearcher implements Closeable {
     private final IndexSearcher searcher;
     private final Weight weight;
     private final Filter filter;
+    private final ScoreDoc after;
     private final int nDocs;
     private final HitQueue hq;
     private final LeafSlice slice;
 
     public SearcherCallableNoSort(Lock lock, IndexSearcher searcher, LeafSlice slice,  Weight weight,
-        Filter filter, int nDocs, HitQueue hq) {
+        Filter filter, ScoreDoc after, int nDocs, HitQueue hq) {
       this.lock = lock;
       this.searcher = searcher;
       this.weight = weight;
       this.filter = filter;
+      this.after = after;
       this.nDocs = nDocs;
       this.hq = hq;
       this.slice = slice;
     }
 
     public TopDocs call() throws IOException {
-      final TopDocs docs = searcher.search (slice.leaves, weight, filter, nDocs);
+      final TopDocs docs = searcher.search (slice.leaves, weight, filter, after, nDocs);
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         final ScoreDoc scoreDoc = scoreDocs[j];

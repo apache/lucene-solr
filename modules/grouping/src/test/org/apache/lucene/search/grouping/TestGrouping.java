@@ -1034,7 +1034,7 @@ public class TestGrouping extends LuceneTestCase {
     }
 
     public TopDocs search(Weight weight, int topN) throws IOException {
-      return search(ctx, weight, null, topN);
+      return search(ctx, weight, null, null, topN);
     }
 
     @Override

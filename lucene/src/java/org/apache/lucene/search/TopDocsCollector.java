@@ -77,12 +77,20 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
     return totalHits;
   }
   
+  /** The number of valid PQ entries */
+  protected int topDocsSize() {
+    // In case pq was populated with sentinel values, there might be less
+    // results than pq.size(). Therefore return all results until either
+    // pq.size() or totalHits.
+    return totalHits < pq.size() ? totalHits : pq.size();
+  }
+  
   /** Returns the top docs that were collected by this collector. */
   public TopDocs topDocs() {
     // In case pq was populated with sentinel values, there might be less
     // results than pq.size(). Therefore return all results until either
     // pq.size() or totalHits.
-    return topDocs(0, totalHits < pq.size() ? totalHits : pq.size());
+    return topDocs(0, topDocsSize());
   }
 
   /**
@@ -101,7 +109,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
     // In case pq was populated with sentinel values, there might be less
     // results than pq.size(). Therefore return all results until either
     // pq.size() or totalHits.
-    return topDocs(start, totalHits < pq.size() ? totalHits : pq.size());
+    return topDocs(start, topDocsSize());
   }
 
   /**
@@ -123,10 +131,12 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
     // In case pq was populated with sentinel values, there might be less
     // results than pq.size(). Therefore return all results until either
     // pq.size() or totalHits.
-    int size = totalHits < pq.size() ? totalHits : pq.size();
+    int size = topDocsSize();
 
     // Don't bother to throw an exception, just return an empty TopDocs in case
     // the parameters are invalid or out of range.
+    // TODO: shouldn't we throw IAE if apps give bad params here so they dont
+    // have sneaky silent bugs?
     if (start < 0 || start >= size || howMany <= 0) {
       return newTopDocs(null, start);
     }
