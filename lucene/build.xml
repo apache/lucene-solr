@@ -252,6 +252,7 @@
           <packageset dir="contrib/analyzers/stempel/src/java"/>
           <packageset dir="contrib/benchmark/src/java"/>
           <packageset dir="contrib/demo/src/java"/>
+          <packageset dir="contrib/facet/src/java"/>
           <packageset dir="contrib/grouping/src/java"/>
           <packageset dir="contrib/icu/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
@@ -277,6 +278,7 @@
           <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
           <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
           <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
+          <group title="contrib: Facet" packages="org.apache.lucene.facet*"/>
           <group title="contrib: Grouping" packages="org.apache.lucene.search.grouping*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
