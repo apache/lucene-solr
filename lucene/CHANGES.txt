@@ -589,6 +589,11 @@ Bug fixes
   should ignore the maxMergedSegmentMB setting (v.sevel via Mike
   McCandless)
 
+* LUCENE-3442: TermQuery.TermWeight.scorer() returns null for non-atomic
+  IndexReaders (optimization bug, introcuced by LUCENE-2829), preventing
+  QueryWrapperFilter and similar classes to get a top-level DocIdSet.
+  (Dan C., Uwe Schindler)
+
 New Features
 
 Optimizations
