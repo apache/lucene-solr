@@ -94,7 +94,8 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      if (hash != null && !hash.contains(reader.hashCode())) {
+      // only use the early exit condition if we have an atomic reader, because Lucene 3.x still supports non-atomic readers here:
+      if (hash != null && reader.getSequentialSubReaders() == null && !hash.contains(reader.hashCode())) {
         return null;
       }
       
