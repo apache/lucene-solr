@@ -26,6 +26,8 @@ import java.util.Map;
 
 /**
  * Responsible for transforming the grouped result into the final format for displaying purposes.
+ *
+ * @lucene.experimental
  */
 public interface EndResultTransformer {
 

@@ -22,6 +22,8 @@ import org.apache.solr.handler.component.ShardRequest;
 
 /**
  * Responsible for processing shard responses.
+ *
+ * @lucene.experimental
  */
 public interface ShardResponseProcessor {
 

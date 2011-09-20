@@ -25,18 +25,44 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * Defines a grouping command.
+ * This is an abstraction on how the {@link Collector} instances are created
+ * and how the results are retrieved from the {@link Collector} instances.
  *
+ * @lucene.experimental
  */
 public interface Command<T> {
 
+  /**
+   * Returns a list of {@link Collector} instances to be
+   * included in the search based on the .
+   *
+   * @return a list of {@link Collector} instances
+   * @throws IOException If I/O related errors occur
+   */
   List<Collector> create() throws IOException;
 
+  /**
+   * Returns the results that the collectors created
+   * by {@link #create()} contain after a search has been executed.
+   *
+   * @return The results of the collectors
+   */
   T result();
 
+  /**
+   * @return The key of this command to uniquely identify itself
+   */
   String getKey();
 
+  /**
+   * @return The group sort (overall sort)
+   */
   Sort getGroupSort();
 
+  /**
+   * @return The sort inside a group
+   */
   Sort getSortWithinGroup();
 
 }

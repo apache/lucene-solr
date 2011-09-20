@@ -79,7 +79,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
      *
      * @param searcher The searcher executing the
      * @return this
-     * @throws IOException
+     * @throws IOException If I/O related errors occur.
      */
     public Builder setDocSet(SolrIndexSearcher searcher) throws IOException {
       return setDocSet(searcher.getDocSet(query));

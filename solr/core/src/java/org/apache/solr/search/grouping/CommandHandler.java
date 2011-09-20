@@ -21,6 +21,10 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.TermAllGroupHeadsCollector;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.*;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.ShardResultTransformer;
@@ -30,7 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Responsible for executing a search with a number of {@link Command} instances.
+ * A typical search can have more then one {@link Command} instances.
  *
+ * @lucene.experimental
  */
 public class CommandHandler {
 
@@ -40,6 +47,7 @@ public class CommandHandler {
     private List<Command> commands = new ArrayList<Command>();
     private SolrIndexSearcher searcher;
     private boolean needDocSet = false;
+    private boolean truncateGroups = false;
 
     public Builder setQueryCommand(SolrIndexSearcher.QueryCommand queryCommand) {
       this.queryCommand = queryCommand;
@@ -69,12 +77,17 @@ public class CommandHandler {
       return this;
     }
 
+    public Builder setTruncateGroups(boolean truncateGroups) {
+      this.truncateGroups = truncateGroups;
+      return this;
+    }
+
     public CommandHandler build() {
       if (queryCommand == null || searcher == null) {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new CommandHandler(queryCommand, commands, searcher, needDocSet);
+      return new CommandHandler(queryCommand, commands, searcher, needDocSet, truncateGroups);
     }
 
   }
@@ -83,17 +96,19 @@ public class CommandHandler {
   private final List<Command> commands;
   private final SolrIndexSearcher searcher;
   private final boolean needDocset;
+  private final boolean truncateGroups;
 
   private DocSet docSet;
 
   private CommandHandler(SolrIndexSearcher.QueryCommand queryCommand,
                          List<Command> commands,
                          SolrIndexSearcher searcher,
-                         boolean needDocset) {
+                         boolean needDocset, boolean truncateGroups) {
     this.queryCommand = queryCommand;
     this.commands = commands;
     this.searcher = searcher;
     this.needDocset = needDocset;
+    this.truncateGroups = truncateGroups;
   }
 
   @SuppressWarnings("unchecked")
@@ -109,31 +124,48 @@ public class CommandHandler {
     );
     Filter luceneFilter = pf.filter;
     Query query = QueryUtils.makeQueryable(queryCommand.getQuery());
-    Collector wrappedCollectors;
-    if (collectors.isEmpty()) {
-      wrappedCollectors = null;
+
+    if (truncateGroups && nrOfCommands > 0) {
+      docSet = computeGroupedDocSet(query, luceneFilter, collectors);
+    } else if (needDocset) {
+      docSet = computeDocSet(query, luceneFilter, collectors);
     } else {
-      wrappedCollectors = MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands]));
+      searcher.search(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
+    }
+  }
+
+  private DocSet computeGroupedDocSet(Query query, Filter luceneFilter, List<Collector> collectors) throws IOException {
+    Command firstCommand = commands.get(0);
+    AbstractAllGroupHeadsCollector termAllGroupHeadsCollector =
+        TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getSortWithinGroup());
+    if (collectors.isEmpty()) {
+      searcher.search(query, luceneFilter, termAllGroupHeadsCollector);
+    } else {
+      collectors.add(termAllGroupHeadsCollector);
+      searcher.search(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
     }
 
-    if (wrappedCollectors == null && needDocset) {
-      int maxDoc = searcher.maxDoc();
-      DocSetCollector docSetCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
-      searcher.search(query, luceneFilter, docSetCollector);
-      docSet = docSetCollector.getDocSet();
-    } else if (needDocset) {
-      int maxDoc = searcher.maxDoc();
-      DocSetCollector docSetCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, wrappedCollectors);
-      searcher.search(query, luceneFilter, docSetCollector);
-      docSet = docSetCollector.getDocSet();
+    int maxDoc = searcher.maxDoc();
+    long[] bits = termAllGroupHeadsCollector.retrieveGroupHeads(maxDoc).getBits();
+    return new BitDocSet(new OpenBitSet(bits, bits.length));
+  }
+
+  private DocSet computeDocSet(Query query, Filter luceneFilter, List<Collector> collectors) throws IOException {
+    int maxDoc = searcher.maxDoc();
+    DocSetCollector docSetCollector;
+    if (collectors.isEmpty()) {
+      docSetCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
     } else {
-      searcher.search(query, luceneFilter, wrappedCollectors);
+      Collector wrappedCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
+      docSetCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, wrappedCollectors);
     }
+    searcher.search(query, luceneFilter, docSetCollector);
+    return docSetCollector.getDocSet();
   }
 
   @SuppressWarnings("unchecked")
   public NamedList processResult(SolrIndexSearcher.QueryResult queryResult, ShardResultTransformer transformer) throws IOException {
-    if (needDocset) {
+    if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
     return transformer.transform(commands);

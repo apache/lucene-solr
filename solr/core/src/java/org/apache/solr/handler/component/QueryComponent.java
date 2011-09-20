@@ -179,6 +179,7 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setIncludeGroupCount(params.getBool(GroupParams.GROUP_TOTAL_COUNT, false));
     groupingSpec.setMain(params.getBool(GroupParams.GROUP_MAIN, false));
     groupingSpec.setNeedScore((cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0);
+    groupingSpec.setTruncateGroups(params.getBool(GroupParams.GROUP_TRUNCATE, false));
   }
 
   /**
@@ -269,6 +270,7 @@ public class QueryComponent extends SearchComponent
         } else if (params.getBool("group.distibuted.second", false)) {
           CommandHandler.Builder secondPhaseBuilder = new CommandHandler.Builder()
               .setQueryCommand(cmd)
+              .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
               .setSearcher(searcher);
 
           for (String field : groupingSpec.getFields()) {
@@ -320,7 +322,6 @@ public class QueryComponent extends SearchComponent
 
         int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
         boolean cacheSecondPassSearch = maxDocsPercentageToCache >= 1 && maxDocsPercentageToCache <= 100;
-        boolean truncateGroups = params.getBool(GroupParams.GROUP_TRUNCATE, false);
         Grouping.TotalCount defaultTotalCount = groupingSpec.isIncludeGroupCount() ?
             Grouping.TotalCount.grouped : Grouping.TotalCount.ungrouped;
         int limitDefault = cmd.getLen(); // this is normally from "rows"
@@ -333,7 +334,7 @@ public class QueryComponent extends SearchComponent
             .setDefaultTotalCount(defaultTotalCount)
             .setDocsPerGroupDefault(groupingSpec.getGroupLimit())
             .setGroupOffsetDefault(groupingSpec.getGroupOffset())
-            .setGetGroupedDocSet(truncateGroups);
+            .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
 
         if (groupingSpec.getFields() != null) {
           for (String field : groupingSpec.getFields()) {
