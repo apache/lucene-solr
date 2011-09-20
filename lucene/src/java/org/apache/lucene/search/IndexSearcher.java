@@ -276,8 +276,8 @@ public class IndexSearcher implements Closeable {
   }
 
   /** Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null,
-   * where all results are after a previous result (<code>after</code>).
+   * hits for <code>query</code> where all results are after a previous 
+   * result (<code>after</code>).
    * <p>
    * By passing the bottom result from a previous page as <code>after</code>,
    * this method can be used for efficient 'deep-paging' across potentially
