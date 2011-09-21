@@ -588,7 +588,8 @@ Changes in backwards compatibility policy
   be populated directly into the FieldCache arrays during sorting,
   leading to concurrency issues. To fix this behaviour, the method
   signatures had to be changed:
-  - FieldCache.getUnValuedDocs() returns the interface Bits instead DocIdSet
+  - FieldCache.getUnValuedDocs() was renamed to FieldCache.getDocsWithField()
+    returning a Bits interface (backported from Lucene 4.0).
   - FieldComparator.setMissingValue() was removed and added to
     constructor
   As this is expert API, most code will not be affected.
