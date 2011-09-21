@@ -103,7 +103,7 @@ public class TermRangeQuery extends MultiTermQuery {
    *  <code>upperTerm</code>.
    */
   public TermRangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper,
-                    Collator collator) {
+                        Collator collator) {
     this.field = field;
     this.lowerTerm = lowerTerm;
     this.upperTerm = upperTerm;

@@ -292,8 +292,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   private Lock writeLock;
 
-  private boolean closed;
-  private boolean closing;
+  private volatile boolean closed;
+  private volatile boolean closing;
 
   // Holds all SegmentInfo instances currently involved in
   // merges
@@ -755,6 +755,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * delCount is returned.
    */
   public int numDeletedDocs(SegmentInfo info) throws IOException {
+    ensureOpen(false);
     SegmentReader reader = readerPool.getIfExists(info);
     try {
       if (reader != null) {
@@ -1268,6 +1269,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * IndexWriterConfig} for details.
    */
   public IndexWriterConfig getConfig() {
+    ensureOpen(false);
     return config;
   }
   
@@ -1930,6 +1932,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  not counting deletions.
    *  @see #numDocs */
   public synchronized int maxDoc() {
+    ensureOpen();
     int count;
     if (docWriter != null)
       count = docWriter.getNumDocs();
@@ -1947,6 +1950,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  counted you should call {@link #commit()} first.
    *  @see #numDocs */
   public synchronized int numDocs() throws IOException {
+    ensureOpen();
     int count;
     if (docWriter != null)
       count = docWriter.getNumDocs();
@@ -2728,6 +2732,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   private final void maybeMerge(int maxNumSegmentsOptimize, boolean optimize) throws CorruptIndexException, IOException {
+    ensureOpen(false);
     updatePendingMerges(maxNumSegmentsOptimize, optimize);
     mergeScheduler.merge(this);
   }
@@ -2911,6 +2916,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *    {@link MergePolicy.MergeAbortedException}s.
    */
   public synchronized void deleteAll() throws IOException {
+    ensureOpen();
     try {
 
       // Abort any running merges
@@ -2997,6 +3003,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *    will have completed once this method completes.</p>
    */
   public synchronized void waitForMerges() {
+    ensureOpen(false);
     if (infoStream != null) {
       message("waitForMerges");
     }
@@ -3378,6 +3385,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public final void prepareCommit(Map<String, String> commitUserData)
       throws CorruptIndexException, IOException {
+    ensureOpen(false);
 
     if (hitOOM) {
       throw new IllegalStateException(
@@ -4790,8 +4798,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  be deleted the next time commit() is called.
    */
   public synchronized void deleteUnusedFiles() throws IOException {
+    ensureOpen(false);
     deleter.deletePendingFiles();
     deleter.revisitPolicy();
+  }
+
+  // Called by DirectoryReader.doClose
+  synchronized void deletePendingFiles() throws IOException {
+    deleter.deletePendingFiles();
   }
 
   /**
@@ -4813,6 +4827,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * {@link #optimize}, you can call {@link #waitForMerges()} before.
    */
   public void setPayloadProcessorProvider(PayloadProcessorProvider pcp) {
+    ensureOpen();
     payloadProcessorProvider = pcp;
   }
   
@@ -4821,6 +4836,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * merges to process payloads.
    */
   public PayloadProcessorProvider getPayloadProcessorProvider() {
+    ensureOpen();
     return payloadProcessorProvider;
   }
 

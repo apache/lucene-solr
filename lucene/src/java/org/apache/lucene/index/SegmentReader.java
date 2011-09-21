@@ -183,6 +183,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @return New BitVector
    */
   protected BitVector cloneDeletedDocs(BitVector bv) {
+    ensureOpen();
     return (BitVector)bv.clone();
   }
 
@@ -213,6 +214,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
+    ensureOpen();
     boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
     boolean normsUpToDate = true;

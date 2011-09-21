@@ -109,6 +109,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @lucene.experimental */
   public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    ensureOpen();
     readerFinishedListeners.add(listener);
   }
 
@@ -116,6 +117,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @lucene.experimental */
   public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    ensureOpen();
     readerFinishedListeners.remove(listener);
   }
 
@@ -164,7 +166,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     TERMVECTOR_WITH_POSITION_OFFSET,
   }
 
-  private boolean closed;
+  private volatile boolean closed;
   protected boolean hasChanges;
   
   private final AtomicInteger refCount = new AtomicInteger();
@@ -228,7 +230,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public void decRef() throws IOException {
     ensureOpen();
-    if (refCount.getAndDecrement() == 1) {
+    final int rc = refCount.getAndDecrement();
+    if (rc == 1) {
       boolean success = false;
       try {
         commit();
@@ -241,6 +244,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
         }
       }
       readerFinished();
+    } else if (rc <= 0) {
+      throw new IllegalStateException("too many decRef calls: refCount was " + rc + " before decrement");
     }
   }
   
@@ -1186,6 +1191,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
     if (hasChanges) {
+      // Don't call ensureOpen since we commit() on close
       doCommit(commitUserData);
     }
     hasChanges = false;
@@ -1345,11 +1351,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  corruption for other readers (like DirectoryReader obtained
    *  through {@link #open}. Use the parent reader directly. */
   public IndexReader[] getSequentialSubReaders() {
+    ensureOpen();
     return null;
   }
 
   /** Expert */
   public Object getCoreCacheKey() {
+    // Don't can ensureOpen since FC calls this (to evict)
+    // on close
     return this;
   }
 

@@ -141,6 +141,7 @@ public class ParallelReader extends IndexReader {
   
   @Override
   public synchronized Object clone() {
+    // doReopen calls ensureOpen
     try {
       return doReopen(true);
     } catch (Exception ex) {
@@ -169,6 +170,7 @@ public class ParallelReader extends IndexReader {
    */
   @Override
   public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    // doReopen calls ensureOpen
     return doReopen(false);
   }
     
@@ -251,7 +253,7 @@ public class ParallelReader extends IndexReader {
 
   @Override
   public boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
+    ensureOpen();
     return hasDeletions;
   }
 
@@ -434,6 +436,7 @@ public class ParallelReader extends IndexReader {
    */
   @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
+    ensureOpen();
     for (final IndexReader reader : readers) {
       if (!reader.isCurrent()) {
         return false;
@@ -449,6 +452,7 @@ public class ParallelReader extends IndexReader {
    */
   @Override
   public boolean isOptimized() {
+    ensureOpen();
     for (final IndexReader reader : readers) {
       if (!reader.isOptimized()) {
         return false;
@@ -574,7 +578,6 @@ public class ParallelReader extends IndexReader {
       if (termEnum!=null)
         termEnum.close();
     }
-
   }
 
   // wrap a TermDocs in order to support seek(Term)
