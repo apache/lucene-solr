@@ -59,7 +59,7 @@ class FieldCacheImpl implements FieldCache {
     caches.put(Double.TYPE, new DoubleCache(this));
     caches.put(String.class, new StringCache(this));
     caches.put(StringIndex.class, new StringIndexCache(this));
-    caches.put(UnValuedDocsCache.class, new UnValuedDocsCache(this));
+    caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
   }
 
   public synchronized void purgeAllCaches() {
@@ -413,13 +413,13 @@ class FieldCacheImpl implements FieldCache {
     }
   }
   
-  public Bits getUnValuedDocs(IndexReader reader, String field)
+  public Bits getDocsWithField(IndexReader reader, String field)
       throws IOException {
-    return (Bits) caches.get(UnValuedDocsCache.class).get(reader, new Entry(field, null));
+    return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null));
   }
 
-  static final class UnValuedDocsCache extends Cache {
-    UnValuedDocsCache(FieldCache wrapper) {
+  static final class DocsWithFieldCache extends Cache {
+    DocsWithFieldCache(FieldCache wrapper) {
       super(wrapper);
     }
     
@@ -428,13 +428,15 @@ class FieldCacheImpl implements FieldCache {
     throws IOException {
       final Entry entry = entryKey;
       final String field = entry.field;      
-      final FixedBitSet res = new FixedBitSet(reader.maxDoc());
+      FixedBitSet res = null;
       final TermDocs termDocs = reader.termDocs();
       final TermEnum termEnum = reader.terms(new Term(field));
       try {
         do {
           final Term term = termEnum.term();
           if (term == null || term.field() != field) break;
+          if (res == null) // late init
+            res = new FixedBitSet(reader.maxDoc());
           termDocs.seek(termEnum);
           while (termDocs.next()) {
             res.set(termDocs.doc());
@@ -444,14 +446,15 @@ class FieldCacheImpl implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
+      if (res == null)
+        return new Bits.MatchNoBits(reader.maxDoc());
       final int numSet = res.cardinality();
       if (numSet >= reader.numDocs()) {
         // The cardinality of the BitSet is numDocs if all documents have a value.
         // As deleted docs are not in TermDocs, this is always true
         assert numSet == reader.numDocs();
-        return new Bits.MatchNoBits(reader.maxDoc());
+        return new Bits.MatchAllBits(reader.maxDoc());
       }
-      res.flip(0, reader.maxDoc());
       return res;
     }
   }

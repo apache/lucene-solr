@@ -187,7 +187,7 @@ public abstract class FieldComparator<T> {
     protected final T missingValue;
     protected final String field;
 
-    protected Bits unvaluedDocs = null;
+    protected Bits docsWithField = null;
     
     public NumericComparator(String field, T missingValue) {
       this.field = field;
@@ -197,12 +197,12 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       if (missingValue != null) {
-        unvaluedDocs = FieldCache.DEFAULT.getUnValuedDocs(reader, field);
+        docsWithField = FieldCache.DEFAULT.getDocsWithField(reader, field);
         // optimization to remove unneeded checks on the bit interface:
-        if (unvaluedDocs instanceof Bits.MatchNoBits)
-          unvaluedDocs = null;
+        if (docsWithField instanceof Bits.MatchAllBits)
+          docsWithField = null;
       } else {
-        unvaluedDocs = null;
+        docsWithField = null;
       }
     }
     
@@ -234,7 +234,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       byte v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       return bottom - v2;
     }
@@ -242,7 +242,7 @@ public abstract class FieldComparator<T> {
     @Override
     public void copy(int slot, int doc) {
       byte v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       values[slot] = v2;
     }
@@ -344,7 +344,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       double v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       if (bottom > v2) {
         return 1;
@@ -358,7 +358,7 @@ public abstract class FieldComparator<T> {
     @Override
     public void copy(int slot, int doc) {
       double v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       values[slot] = v2;
     }
@@ -418,7 +418,7 @@ public abstract class FieldComparator<T> {
       // TODO: are there sneaky non-branch ways to compute
       // sign of float?
       float v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       if (bottom > v2) {
         return 1;
@@ -432,7 +432,7 @@ public abstract class FieldComparator<T> {
     @Override
     public void copy(int slot, int doc) {
       float v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       values[slot] = v2;
     }
@@ -496,7 +496,7 @@ public abstract class FieldComparator<T> {
       // Cannot return bottom - values[slot2] because that
       // may overflow
       int v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       if (bottom > v2) {
         return 1;
@@ -510,7 +510,7 @@ public abstract class FieldComparator<T> {
     @Override
     public void copy(int slot, int doc) {
       int v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       values[slot] = v2;
     }
@@ -570,7 +570,7 @@ public abstract class FieldComparator<T> {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
       long v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       if (bottom > v2) {
         return 1;
@@ -584,7 +584,7 @@ public abstract class FieldComparator<T> {
     @Override
     public void copy(int slot, int doc) {
       long v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       values[slot] = v2;
     }
@@ -700,7 +700,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       short v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       return bottom - v2;
     }
@@ -708,7 +708,7 @@ public abstract class FieldComparator<T> {
     @Override
     public void copy(int slot, int doc) {
       short v2 = currentReaderValues[doc];
-      if (unvaluedDocs != null && v2 == 0 && unvaluedDocs.get(doc))
+      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc))
         v2 = missingValue;
       values[slot] = v2;
     }

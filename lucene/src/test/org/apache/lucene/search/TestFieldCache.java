@@ -138,20 +138,20 @@ public class TestFieldCache extends LuceneTestCase {
 
     }
     
-    Bits unvalued = cache.getUnValuedDocs(reader, "theLong");
-    assertSame("Second request to cache return same array", unvalued, cache.getUnValuedDocs(reader, "theLong"));
-    assertTrue("unvalued(theLong) must be class Bits.MatchNoBits", unvalued instanceof Bits.MatchNoBits);
-    assertTrue("unvalued(theLong) Size: " + unvalued.length() + " is not: " + NUM_DOCS, unvalued.length() == NUM_DOCS);
-    for (int i = 0; i < unvalued.length(); i++) {
-      assertFalse(unvalued.get(i));
+    Bits docsWithField = cache.getDocsWithField(reader, "theLong");
+    assertSame("Second request to cache return same array", docsWithField, cache.getDocsWithField(reader, "theLong"));
+    assertTrue("docsWithField(theLong) must be class Bits.MatchAllBits", docsWithField instanceof Bits.MatchAllBits);
+    assertTrue("docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS, docsWithField.length() == NUM_DOCS);
+    for (int i = 0; i < docsWithField.length(); i++) {
+      assertTrue(docsWithField.get(i));
     }
     
-    unvalued = cache.getUnValuedDocs(reader, "sparse");
-    assertSame("Second request to cache return same array", unvalued, cache.getUnValuedDocs(reader, "sparse"));
-    assertFalse("unvalued(sparse) must not be class Bits.MatchNoBits", unvalued instanceof Bits.MatchNoBits);
-    assertTrue("unvalued(sparse) Size: " + unvalued.length() + " is not: " + NUM_DOCS, unvalued.length() == NUM_DOCS);
-    for (int i = 0; i < unvalued.length(); i++) {
-      assertEquals(i%2 != 0, unvalued.get(i));
+    docsWithField = cache.getDocsWithField(reader, "sparse");
+    assertSame("Second request to cache return same array", docsWithField, cache.getDocsWithField(reader, "sparse"));
+    assertFalse("docsWithField(sparse) must not be class Bits.MatchAllBits", docsWithField instanceof Bits.MatchAllBits);
+    assertTrue("docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS, docsWithField.length() == NUM_DOCS);
+    for (int i = 0; i < docsWithField.length(); i++) {
+      assertEquals(i%2 == 0, docsWithField.get(i));
     }
   }
 }
