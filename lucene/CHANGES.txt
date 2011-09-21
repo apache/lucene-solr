@@ -581,6 +581,19 @@ Bug fixes
 
 ======================= Lucene 3.5.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-3390: The first approach in Lucene 3.4.0 for missing values
+  support for sorting had a design problem that made the missing value
+  be populated directly into the FieldCache arrays during sorting,
+  leading to concurrency issues. To fix this behaviour, the method
+  signatures had to be changed:
+  - FieldCache.getUnValuedDocs() returns the interface Bits instead DocIdSet
+  - FieldComparator.setMissingValue() was removed and added to
+    constructor
+  As this is expert API, most code will not be affected.
+  (Uwe Schindler, Doron Cohen, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 
@@ -597,6 +610,11 @@ Bug fixes
   IndexReaders (optimization bug, introcuced by LUCENE-2829), preventing
   QueryWrapperFilter and similar classes to get a top-level DocIdSet.
   (Dan C., Uwe Schindler)
+
+* LUCENE-3390: Corrected handling of missing values when two parallel searches
+  using different missing values for sorting: the missing value was populated
+  directly into the FieldCache arrays during sorting, leading to concurrency
+  issues.  (Uwe Schindler, Doron Cohen, Mike McCandless)
 
 New Features
 
