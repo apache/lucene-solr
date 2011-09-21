@@ -336,4 +336,12 @@ public class BM25Similarity extends Similarity {
   public String toString() {
     return "BM25(k1=" + k1 + ",b=" + b + ")";
   }
+  
+  public float getK1() {
+    return k1;
+  }
+  
+  public float getB() {
+    return b;
+  }
 }

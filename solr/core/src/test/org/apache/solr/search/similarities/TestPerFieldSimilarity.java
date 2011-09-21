@@ -1,4 +1,4 @@
-package org.apache.solr.schema;
+package org.apache.solr.search.similarities;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,18 +18,16 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Tests per-field similarity support in the schema
  */
-public class TestPerFieldSimilarity extends SolrTestCaseJ4 {
+public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -38,69 +36,54 @@ public class TestPerFieldSimilarity extends SolrTestCaseJ4 {
   
   /** test a field where the sim is specified directly */
   public void testDirect() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("sim1text");
-    assertEquals(SweetSpotSimilarity.class, sim.getClass());
-    searcher.decref();
+    assertEquals(SweetSpotSimilarity.class, getSimilarity("sim1text").getClass());
   }
   
   /** ... and for a dynamic field */
   public void testDirectDynamic() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("text_sim1");
-    assertEquals(SweetSpotSimilarity.class, sim.getClass());
-    searcher.decref();
+    assertEquals(SweetSpotSimilarity.class, getSimilarity("text_sim1").getClass());
   }
   
   /** test a field where a configurable sim factory is defined */
   public void testFactory() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("sim2text");
+    Similarity sim = getSimilarity("sim2text");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("is there an echo?", ((MockConfigurableSimilarity)sim).getPassthrough());
-    searcher.decref();
   }
   
   /** ... and for a dynamic field */
   public void testFactoryDynamic() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("text_sim2");
+    Similarity sim = getSimilarity("text_sim2");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("is there an echo?", ((MockConfigurableSimilarity)sim).getPassthrough());
-    searcher.decref();
   }
   
   /** test a field where no similarity is specified */
   public void testDefaults() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("sim3text");
+    Similarity sim = getSimilarity("sim3text");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("I am your default sim", ((MockConfigurableSimilarity)sim).getPassthrough());
-    searcher.decref();
   }
   
   /** ... and for a dynamic field */
   public void testDefaultsDynamic() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("text_sim3");
+    Similarity sim = getSimilarity("text_sim3");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("I am your default sim", ((MockConfigurableSimilarity)sim).getPassthrough());
-    searcher.decref();
   }
   
   /** test a field that does not exist */
   public void testNonexistent() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get("sdfdsfdsfdswr5fsdfdsfdsfs");
+    Similarity sim = getSimilarity("sdfdsfdsfdswr5fsdfdsfdsfs");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("I am your default sim", ((MockConfigurableSimilarity)sim).getPassthrough());
-    searcher.decref();
+  }
+  
+  @Test
+  public void testSimilarityProviderFactory() {
+    SolrCore core = h.getCore();
+    SimilarityProvider similarityProvider = core.getSchema().getSimilarityProvider();
+    assertTrue("wrong class", similarityProvider instanceof MockConfigurableSimilarityProvider);
+    assertEquals("is there an echo?", ((MockConfigurableSimilarityProvider)similarityProvider).getPassthrough());
   }
 }

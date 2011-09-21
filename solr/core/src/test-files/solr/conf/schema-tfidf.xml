@@ -1,5 +1,4 @@
 <?xml version="1.0" ?>
-
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -17,7 +16,25 @@
  limitations under the License.
 -->
 
-<config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
-</config>
+<!-- Test schema file for DefaultSimilarityFactory -->
+
+<schema name="test" version="1.0">
+  <types>
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+
+    <!-- TF/IDF -->
+    <fieldType name="text" class="solr.TextField">
+      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+      <similarity class="solr.DefaultSimilarityFactory"/>
+    </fieldType>
+   
+  </types>
+
+  <fields>
+    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+    <field name="text" type="text" indexed="true" stored="false"/>
+  </fields>
+
+  <defaultSearchField>text</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
+</schema>

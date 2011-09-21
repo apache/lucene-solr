@@ -470,7 +470,7 @@ public final class IndexSchema {
       };
       log.debug("using default similarityProvider");
     } else {
-      final Object obj = loader.newInstance(((Element) node).getAttribute("class"));
+      final Object obj = loader.newInstance(((Element) node).getAttribute("class"), "search.similarities.");
       // just like always, assume it's a SimilarityProviderFactory and get a ClassCastException - reasonable error handling
       // configure a factory, get a similarity back
       NamedList<?> args = DOMUtil.childNodesToNamedList(node);
@@ -714,7 +714,7 @@ public final class IndexSchema {
       return null;
     } else {
       SimilarityFactory similarityFactory;
-      final Object obj = loader.newInstance(((Element) node).getAttribute("class"));
+      final Object obj = loader.newInstance(((Element) node).getAttribute("class"), "search.similarities.");
       if (obj instanceof SimilarityFactory) {
         // configure a factory, get a similarity back
         SolrParams params = SolrParams.toSolrParams(DOMUtil.childNodesToNamedList(node));

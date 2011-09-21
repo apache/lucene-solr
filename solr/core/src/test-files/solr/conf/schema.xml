@@ -406,7 +406,7 @@
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
-    <similarity class="org.apache.solr.schema.CustomSimilarityFactory">
+    <similarity class="solr.CustomSimilarityFactory">
       <str name="echo">is there an echo?</str>
     </similarity>
   </fieldType>
@@ -672,13 +672,13 @@
       A custom similarity provider may be specified here, but the default is fine
       for most applications.
  -->
- <similarityProvider class="org.apache.solr.schema.CustomSimilarityProviderFactory">
+ <similarityProvider class="solr.CustomSimilarityProviderFactory">
    <str name="echo">is there an echo?</str>
  </similarityProvider>
 
  <!-- default similarity, unless otherwise specified by the fieldType
   -->
- <similarity class="org.apache.solr.schema.CustomSimilarityFactory">
+ <similarity class="solr.CustomSimilarityFactory">
    <str name="echo">I am your default sim</str>
  </similarity>
 </schema>

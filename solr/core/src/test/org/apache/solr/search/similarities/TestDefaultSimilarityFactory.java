@@ -1,4 +1,4 @@
-package org.apache.lucene.search.similarities;
+package org.apache.solr.search.similarities;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,32 +17,20 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.junit.BeforeClass;
+
 /**
- * Pareto-Zipf Normalization
- * @lucene.experimental
+ * Tests {@link DefaultSimilarityFactory}
  */
-public class NormalizationZ extends Normalization {
-  final float z;
-
-  public NormalizationZ() {
-    this(0.30F);
-  }
-
-  public NormalizationZ(float z) {
-    this.z = z;
+public class TestDefaultSimilarityFactory extends BaseSimilarityTestCase {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-basic.xml","schema-tfidf.xml");
   }
   
-  @Override
-  public float tfn(BasicStats stats, float tf, float len) {
-    return (float)(tf * Math.pow(stats.avgFieldLength / len, z));
-  }
-
-  @Override
-  public String toString() {
-    return "Z(" + z + ")";
-  }
-  
-  public float getZ() {
-    return z;
+  /** default parameters */
+  public void test() throws Exception {
+    assertEquals(DefaultSimilarity.class, getSimilarity("text").getClass());
   }
 }

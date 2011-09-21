@@ -83,4 +83,16 @@ public class DFRSimilarity extends SimilarityBase {
     return "DFR " + basicModel.toString() + afterEffect.toString()
                   + normalization.toString();
   }
+  
+  public BasicModel getBasicModel() {
+    return basicModel;
+  }
+  
+  public AfterEffect getAfterEffect() {
+    return afterEffect;
+  }
+  
+  public Normalization getNormalization() {
+    return normalization;
+  }
 }

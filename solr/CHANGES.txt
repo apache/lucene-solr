@@ -171,6 +171,13 @@ New Features
   
 * SOLR-2703: Added support for Lucene's "surround" query parser. (Simon Rosenthal, ehatcher)
 
+* SOLR-2754: Added factories for several ranking algorithms: 
+    BM25SimilarityFactory: Okapi BM25
+    DFRSimilarityFactory: Divergence from Randomness models
+    IBSimilarityFactory: Information-based models
+    LMDirichletSimilarity: LM with Dirichlet smoothing
+    LMJelinekMercerSimilarity: LM with Jelinek-Mercer smoothing
+ (David Mark Nemeskey, Robert Muir)
 
 Optimizations
 ----------------------

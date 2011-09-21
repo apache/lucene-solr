@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.search.similarities;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SimilarityProviderFactory;
 import org.apache.solr.search.SolrSimilarityProvider;
 
 public class CustomSimilarityProviderFactory extends SimilarityProviderFactory {

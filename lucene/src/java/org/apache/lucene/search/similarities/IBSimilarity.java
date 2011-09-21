@@ -91,4 +91,16 @@ public class IBSimilarity extends SimilarityBase {
     return "IB " + distribution.toString() + "-" + lambda.toString()
                  + normalization.toString();
   }
+  
+  public Distribution getDistribution() {
+    return distribution;
+  }
+  
+  public Lambda getLambda() {
+    return lambda;
+  }
+  
+  public Normalization getNormalization() {
+    return normalization;
+  }
 }

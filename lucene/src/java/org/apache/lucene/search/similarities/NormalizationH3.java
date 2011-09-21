@@ -41,4 +41,8 @@ public class NormalizationH3 extends Normalization {
   public String toString() {
     return "3(" + mu + ")";
   }
+  
+  public float getMu() {
+    return mu;
+  }
 }

@@ -14,18 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.search.similarities;
 
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.schema.SimilarityFactory;
 
-public class MockConfigurableSimilarity extends DefaultSimilarity {
-  private String passthrough;
-
-  public MockConfigurableSimilarity(String passthrough) {
-    this.passthrough = passthrough;
-  }
-
-  public String getPassthrough() {
-    return passthrough;
+public class CustomSimilarityFactory extends SimilarityFactory {
+  @Override
+  public Similarity getSimilarity() {
+    return new MockConfigurableSimilarity(params.get("echo"));
   }
 }

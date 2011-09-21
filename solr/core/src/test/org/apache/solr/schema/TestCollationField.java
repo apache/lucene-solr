@@ -73,7 +73,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
     confDir.mkdir();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("solr/conf/solrconfig-collate.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(getFile("solr/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
     FileUtils.copyFile(getFile("solr/conf/schema-collate.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
