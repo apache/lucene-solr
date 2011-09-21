@@ -75,7 +75,7 @@ Test system: AMD Opteron, 64 bit linux, Sun Java 1.5_06 -server -Xbatch -Xmx64M
 </table>
  */
 
-public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
+public class OpenBitSet extends DocIdSet implements Cloneable, Serializable, Bits {
   protected long[] bits;
   protected int wlen;   // number of words (elements) used in the array
 
@@ -135,6 +135,10 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   */
   public long size() {
       return capacity();
+  }
+
+  public int length() {
+    return bits.length << 6;
   }
 
   /** Returns true if there are no set bits */

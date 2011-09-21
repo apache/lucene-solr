@@ -22,6 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -52,6 +53,9 @@ public class TestFieldCache extends LuceneTestCase {
       doc.add(newField("theShort", String.valueOf(theShort--), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(newField("theInt", String.valueOf(theInt--), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(newField("theFloat", String.valueOf(theFloat--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      if (i%2 == 0) {
+        doc.add(newField("sparse", String.valueOf(i), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      }
       writer.addDocument(doc);
     }
     writer.close();
@@ -132,6 +136,22 @@ public class TestFieldCache extends LuceneTestCase {
     for (int i = 0; i < floats.length; i++) {
       assertTrue(floats[i] + " does not equal: " + (Float.MAX_VALUE - i), floats[i] == (Float.MAX_VALUE - i));
 
+    }
+    
+    Bits unvalued = cache.getUnValuedDocs(reader, "theLong");
+    assertSame("Second request to cache return same array", unvalued, cache.getUnValuedDocs(reader, "theLong"));
+    assertTrue("unvalued(theLong) must be class Bits.MatchNoBits", unvalued instanceof Bits.MatchNoBits);
+    assertTrue("unvalued(theLong) Size: " + unvalued.length() + " is not: " + NUM_DOCS, unvalued.length() == NUM_DOCS);
+    for (int i = 0; i < unvalued.length(); i++) {
+      assertFalse(unvalued.get(i));
+    }
+    
+    unvalued = cache.getUnValuedDocs(reader, "sparse");
+    assertSame("Second request to cache return same array", unvalued, cache.getUnValuedDocs(reader, "sparse"));
+    assertFalse("unvalued(sparse) must not be class Bits.MatchNoBits", unvalued instanceof Bits.MatchNoBits);
+    assertTrue("unvalued(sparse) Size: " + unvalued.length() + " is not: " + NUM_DOCS, unvalued.length() == NUM_DOCS);
+    for (int i = 0; i < unvalued.length(); i++) {
+      assertEquals(i%2 != 0, unvalued.get(i));
     }
   }
 }

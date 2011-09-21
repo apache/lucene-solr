@@ -34,7 +34,7 @@ import org.apache.lucene.store.IndexOutput;
  *
  *  @lucene.internal
  */
-public final class BitVector implements Cloneable {
+public final class BitVector implements Cloneable, Bits {
 
   private byte[] bits;
   private int size;
@@ -117,6 +117,12 @@ public final class BitVector implements Cloneable {
   /** Returns the number of bits in this vector.  This is also one greater than
     the number of the largest valid bit number. */
   public final int size() {
+    return size;
+  }
+
+  /** Returns the number of bits in this vector.  This is also one greater than
+    the number of the largest valid bit number. */
+  public final int length() {
     return size;
   }
 

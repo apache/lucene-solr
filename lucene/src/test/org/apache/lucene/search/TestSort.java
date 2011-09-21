@@ -1248,4 +1248,46 @@ public class TestSort extends LuceneTestCase implements Serializable {
     reader.close();
     indexStore.close();
   }
+  
+  /** LUCENE-3390: expose bug in first round of that issue */
+  public void testSimultaneousSorts() throws IOException {
+    Sort sortMin = new Sort(new SortField ("int", SortField.INT, false).setMissingValue(new Integer(Integer.MIN_VALUE)));
+    Sort sortMax = new Sort(new SortField ("int", SortField.INT, false).setMissingValue(new Integer(Integer.MAX_VALUE)));
+    Sort sortMinRev = new Sort(new SortField ("int", SortField.INT, true).setMissingValue(new Integer(Integer.MIN_VALUE)));
+    Sort sortMaxRev = new Sort(new SortField ("int", SortField.INT, true).setMissingValue(new Integer(Integer.MAX_VALUE)));
+    
+    int ndocs = full.maxDoc();
+    TopFieldCollector collectorMin = TopFieldCollector.create(sortMin, ndocs, false, false, false, true);
+    TopFieldCollector collectorMax = TopFieldCollector.create(sortMax, ndocs, false, false, false, true);
+    TopFieldCollector collectorMinRev = TopFieldCollector.create(sortMinRev, ndocs, false, false, false, true);
+    TopFieldCollector collectorMaxRev = TopFieldCollector.create(sortMaxRev, ndocs, false, false, false, true);
+    full.search(new MatchAllDocsQuery(), MultiCollector.wrap(collectorMin, collectorMax, collectorMinRev, collectorMaxRev));
+    
+    assertIntResultsOrder(collectorMin, ndocs, false, Integer.MIN_VALUE);
+    assertIntResultsOrder(collectorMax, ndocs, false, Integer.MAX_VALUE);
+    assertIntResultsOrder(collectorMinRev, ndocs, true, Integer.MIN_VALUE);
+    assertIntResultsOrder(collectorMaxRev, ndocs, true, Integer.MAX_VALUE);
+  }
+
+  private void assertIntResultsOrder(TopFieldCollector collector, int ndocs, boolean reverse, int missingVal) {
+    ScoreDoc[] fdocs = collector.topDocs().scoreDocs;
+    assertEquals("wrong number of docs collected", ndocs, fdocs.length);
+    int b = dataIntVal(fdocs[0].doc, missingVal);
+    for (int i=1; i<fdocs.length; i++) {
+      int a = b;
+      b = dataIntVal(fdocs[i].doc, missingVal);
+      if (reverse) {
+        // reverse of natural int order: descending
+        assertTrue(a >= b);
+      } else {
+        // natural int order: ascending
+        assertTrue( b >= a);
+      }
+    }
+  }
+
+  private int dataIntVal(int doc, int missingVal) {
+    return data[doc][2]==null ? missingVal : Integer.parseInt(data[doc][2]);
+  }
+
 }

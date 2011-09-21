@@ -30,9 +30,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.util.BitVector;
-import org.apache.lucene.util.DocIdBitSet;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.FieldCacheSanityChecker;
 
@@ -413,6 +412,11 @@ class FieldCacheImpl implements FieldCache {
       return retArray;
     }
   }
+  
+  public Bits getUnValuedDocs(IndexReader reader, String field)
+      throws IOException {
+    return (Bits) caches.get(UnValuedDocsCache.class).get(reader, new Entry(field, null));
+  }
 
   static final class UnValuedDocsCache extends Cache {
     UnValuedDocsCache(FieldCache wrapper) {
@@ -422,34 +426,35 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(IndexReader reader, Entry entryKey)
     throws IOException {
-      Entry entry = entryKey;
-      String field = entry.field;
-      
-      if (reader.maxDoc() == reader.docFreq(new Term(field))) {
-        return DocIdSet.EMPTY_DOCIDSET;
-      }
-      
-      OpenBitSet res = new OpenBitSet(reader.maxDoc());
-      TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field));
+      final Entry entry = entryKey;
+      final String field = entry.field;      
+      final FixedBitSet res = new FixedBitSet(reader.maxDoc());
+      final TermDocs termDocs = reader.termDocs();
+      final TermEnum termEnum = reader.terms(new Term(field));
       try {
         do {
-          Term term = termEnum.term();
-          if (term==null || term.field() != field) break;
-          termDocs.seek (termEnum);
+          final Term term = termEnum.term();
+          if (term == null || term.field() != field) break;
+          termDocs.seek(termEnum);
           while (termDocs.next()) {
-            res.fastSet(termDocs.doc());
+            res.set(termDocs.doc());
           }
         } while (termEnum.next());
       } finally {
         termDocs.close();
         termEnum.close();
       }
+      final int numSet = res.cardinality();
+      if (numSet >= reader.numDocs()) {
+        // The cardinality of the BitSet is numDocs if all documents have a value.
+        // As deleted docs are not in TermDocs, this is always true
+        assert numSet == reader.numDocs();
+        return new Bits.MatchNoBits(reader.maxDoc());
+      }
       res.flip(0, reader.maxDoc());
       return res;
     }
   }
-  
 
   // inherit javadocs
   public float[] getFloats (IndexReader reader, String field)
@@ -735,11 +740,6 @@ class FieldCacheImpl implements FieldCache {
 
   public PrintStream getInfoStream() {
     return infoStream;
-  }
-  
-  public DocIdSet getUnValuedDocs(IndexReader reader, String field)
-      throws IOException {
-    return (DocIdSet) caches.get(UnValuedDocsCache.class).get(reader, new Entry(field, null));  
   }
 }
 

@@ -403,22 +403,22 @@ implements Serializable {
       return new FieldComparator.DocComparator(numHits);
 
     case SortField.INT:
-      return new FieldComparator.IntComparator(numHits, field, parser).setMissingValue((Integer) missingValue);
+      return new FieldComparator.IntComparator(numHits, field, parser, (Integer) missingValue);
 
     case SortField.FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, parser).setMissingValue((Float) missingValue);
+      return new FieldComparator.FloatComparator(numHits, field, parser, (Float) missingValue);
 
     case SortField.LONG:
-      return new FieldComparator.LongComparator(numHits, field, parser).setMissingValue((Long) missingValue);
+      return new FieldComparator.LongComparator(numHits, field, parser, (Long) missingValue);
 
     case SortField.DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, parser).setMissingValue((Double) missingValue);
+      return new FieldComparator.DoubleComparator(numHits, field, parser, (Double) missingValue);
 
     case SortField.BYTE:
-      return new FieldComparator.ByteComparator(numHits, field, parser).setMissingValue((Byte) missingValue);
+      return new FieldComparator.ByteComparator(numHits, field, parser, (Byte) missingValue);
 
     case SortField.SHORT:
-      return new FieldComparator.ShortComparator(numHits, field, parser).setMissingValue((Short) missingValue);
+      return new FieldComparator.ShortComparator(numHits, field, parser, (Short) missingValue);
 
     case SortField.CUSTOM:
       assert comparatorSource != null;

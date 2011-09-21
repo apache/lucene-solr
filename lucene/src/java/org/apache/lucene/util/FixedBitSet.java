@@ -36,7 +36,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * @lucene.internal
  **/
 
-public final class FixedBitSet extends DocIdSet {
+public final class FixedBitSet extends DocIdSet implements Bits {
   private final long[] bits;
   private int numBits;
 

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.document.NumericField; // for javadocs
@@ -315,7 +316,7 @@ public interface FieldCache {
    * <code>reader.maxDoc()</code>, with turned on bits for each docid that 
    * does not have a value for this field.
    */
-  public DocIdSet getUnValuedDocs (IndexReader reader, String field) 
+  public Bits getUnValuedDocs (IndexReader reader, String field) 
   throws IOException;
   
   /** Checks the internal cache for an appropriate entry, and if none is
