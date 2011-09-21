@@ -49,8 +49,7 @@ public class TestReaderClosed extends LuceneTestCase {
 
     // we generate aweful prefixes: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    final String codec = CodecProvider.getDefault().getFieldCodec("field");
-    int num = codec.equals("PreFlex") ? 200 * RANDOM_MULTIPLIER : atLeast(1000);
+    int num = atLeast(10);
     for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);
