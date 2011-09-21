@@ -616,6 +616,10 @@ Bug fixes
   directly into the FieldCache arrays during sorting, leading to concurrency
   issues.  (Uwe Schindler, Doron Cohen, Mike McCandless)
 
+* LUCENE-3439: Closing an NRT reader after the writer was closed was
+  incorrectly invoking the DeletionPolicy and (then possibly deleting
+  files) on the closed IndexWriter (Robert Muir, Mike McCandless)
+
 New Features
 
 Optimizations

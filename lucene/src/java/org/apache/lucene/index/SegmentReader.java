@@ -135,6 +135,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   @Override
   public Bits getLiveDocs() {
+    ensureOpen();
     return liveDocs;
   }
 
@@ -184,6 +185,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @return New BitVector
    */
   protected BitVector cloneDeletedDocs(BitVector bv) {
+    ensureOpen();
     return (BitVector)bv.clone();
   }
 
@@ -214,6 +216,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
+    ensureOpen();
     boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
     boolean normsUpToDate = true;
@@ -463,13 +466,13 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   @Override
   public Fields fields() throws IOException {
+    ensureOpen();
     return core.fields;
   }
 
   @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
-
     Terms terms = core.fields.terms(field);
     if (terms != null) {
       return terms.docFreq(term);
@@ -758,6 +761,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   
   @Override
   public ReaderContext getTopReaderContext() {
+    ensureOpen();
     return readerContext;
   }
 
@@ -835,6 +839,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   
   @Override
   public PerDocValues perDocValues() throws IOException {
+    ensureOpen();
     return core.perDocProducer;
   }
 }

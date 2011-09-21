@@ -306,11 +306,13 @@ public class FilterIndexReader extends IndexReader {
 
   @Override
   public Directory directory() {
+    ensureOpen();
     return in.directory();
   }
   
   @Override
   public Bits getLiveDocs() {
+    ensureOpen();
     return in.getLiveDocs();
   }
   
@@ -333,7 +335,6 @@ public class FilterIndexReader extends IndexReader {
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
     in.getTermFreqVector(docNumber, field, mapper);
-
   }
 
   @Override
@@ -362,7 +363,7 @@ public class FilterIndexReader extends IndexReader {
 
   @Override
   public boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
+    ensureOpen();
     return in.hasDeletions();
   }
 
@@ -402,13 +403,14 @@ public class FilterIndexReader extends IndexReader {
   protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
   
   @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException { in.commit(commitUserData); }
+  protected void doCommit(Map<String,String> commitUserData) throws IOException {
+    in.commit(commitUserData);
+  }
   
   @Override
   protected void doClose() throws IOException {
     in.close();
   }
-
 
   @Override
   public Collection<String> getFieldNames(IndexReader.FieldOption fieldNames) {
@@ -441,11 +443,13 @@ public class FilterIndexReader extends IndexReader {
   
   @Override
   public ReaderContext getTopReaderContext() {
+    ensureOpen();
     return in.getTopReaderContext();
   }
 
   @Override
   public Fields fields() throws IOException {
+    ensureOpen();
     return in.fields();
   }
 
@@ -480,6 +484,7 @@ public class FilterIndexReader extends IndexReader {
 
   @Override
   public PerDocValues perDocValues() throws IOException {
+    ensureOpen();
     return in.perDocValues();
   }
 }

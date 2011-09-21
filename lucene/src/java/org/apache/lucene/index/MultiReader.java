@@ -233,6 +233,7 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   @Override
   public boolean isOptimized() {
+    ensureOpen();
     return false;
   }
   
@@ -265,7 +266,7 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   @Override
   public boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
+    ensureOpen();
     return hasDeletions;
   }
 
@@ -358,6 +359,7 @@ public class MultiReader extends IndexReader implements Cloneable {
    */
   @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
+    ensureOpen();
     for (int i = 0; i < subReaders.length; i++) {
       if (!subReaders[i].isCurrent()) {
         return false;
@@ -383,6 +385,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   
   @Override
   public ReaderContext getTopReaderContext() {
+    ensureOpen();
     return topLevelContext;
   }
 

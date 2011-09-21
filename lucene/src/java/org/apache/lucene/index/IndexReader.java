@@ -115,6 +115,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @lucene.experimental */
   public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    ensureOpen();
     readerFinishedListeners.add(listener);
   }
 
@@ -122,6 +123,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @lucene.experimental */
   public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    ensureOpen();
     readerFinishedListeners.remove(listener);
   }
 
@@ -172,7 +174,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     DOC_VALUES
   }
 
-  private boolean closed;
+  private volatile boolean closed;
   protected boolean hasChanges;
   
   private final AtomicInteger refCount = new AtomicInteger();
@@ -236,7 +238,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public void decRef() throws IOException {
     ensureOpen();
-    if (refCount.getAndDecrement() == 1) {
+    final int rc = refCount.getAndDecrement();
+    if (rc == 1) {
       boolean success = false;
       try {
         commit();
@@ -249,6 +252,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
         }
       }
       readerFinished();
+    } else if (rc <= 0) {
+      throw new IllegalStateException("too many decRef calls: refCount was " + rc + " before decrement");
     }
   }
   
@@ -1330,6 +1335,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
+    // Don't can ensureOpen since we commit() on close
     doCommit(commitUserData);
     hasChanges = false;
   }
@@ -1499,6 +1505,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  corruption for other readers (like DirectoryReader obtained
    *  through {@link #open}. Use the parent reader directly. */
   public IndexReader[] getSequentialSubReaders() {
+    ensureOpen();
     return null;
   }
   
@@ -1531,6 +1538,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** Expert */
   public Object getCoreCacheKey() {
+    // Don't can ensureOpen since FC calls this (to evict)
+    // on close
     return this;
   }
 
@@ -1569,6 +1578,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
   
   public final IndexDocValues docValues(String field) throws IOException {
+    ensureOpen();
     final PerDocValues perDoc = perDocValues();
     if (perDoc == null) {
       return null;
@@ -1580,11 +1590,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** @lucene.internal */
   void storeFields(Fields fields) {
+    ensureOpen();
     this.fields = fields;
   }
 
   /** @lucene.internal */
   Fields retrieveFields() {
+    ensureOpen();
     return fields;
   }
   
@@ -1592,11 +1604,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
   
   /** @lucene.internal */
   void storePerDoc(PerDocValues perDocValues) {
+    ensureOpen();
     this.perDocValues = perDocValues;
   }
 
   /** @lucene.internal */
   PerDocValues retrievePerDoc() {
+    ensureOpen();
     return perDocValues;
   }  
   

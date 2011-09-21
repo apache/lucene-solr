@@ -67,16 +67,19 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
 
   @Override
   public Fields fields() throws IOException {
+    ensureOpen();
     return MultiFields.getFields(in);
   }
 
   @Override
   public PerDocValues perDocValues() throws IOException {
+    ensureOpen();
     return MultiPerDocValues.getPerDocs(in);
   }
 
   @Override
   public Bits getLiveDocs() {
+    ensureOpen();
     return MultiFields.getLiveDocs(in);
   }
   
@@ -103,6 +106,7 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   
   @Override
   public ReaderContext getTopReaderContext() {
+    ensureOpen();
     return readerContext;
   }
   

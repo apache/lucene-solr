@@ -364,6 +364,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   @Override
   public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    // doReopen calls ensureOpen
     DirectoryReader newReader = doReopen((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
 
     if (this != newReader) {
@@ -566,7 +567,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   @Override
   public boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
+    ensureOpen();
     return hasDeletions;
   }
 
@@ -843,7 +844,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     if (writer != null) {
       // Since we just closed, writer may now be able to
       // delete unused files:
-      writer.deleteUnusedFiles();
+      writer.deletePendingFiles();
     }
 
     // throw the first exception
@@ -868,6 +869,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
   
   @Override
   public ReaderContext getTopReaderContext() {
+    ensureOpen();
     return topLevelReaderContext;
   }
   
@@ -887,6 +889,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   @Override
   public int getTermInfosIndexDivisor() {
+    ensureOpen();
     return termInfosIndexDivisor;
   }
 
@@ -897,6 +900,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
    */
   @Override
   public IndexCommit getIndexCommit() throws IOException {
+    ensureOpen();
     return new ReaderCommit(segmentInfos, directory);
   }
 

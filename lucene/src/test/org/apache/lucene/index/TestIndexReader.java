@@ -73,17 +73,15 @@ public class TestIndexReader extends LuceneTestCase
       IndexReader r = IndexReader.open(d, false);
       r.deleteDocument(5);
       r.flush(commitUserData);
+      IndexCommit c = r.getIndexCommit();
       r.close();
       
       SegmentInfos sis = new SegmentInfos();
       sis.read(d);
       IndexReader r2 = IndexReader.open(d, false);
-      IndexCommit c = r.getIndexCommit();
       assertEquals(c.getUserData(), commitUserData);
 
       assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
-
-      assertTrue(c.equals(r.getIndexCommit()));
 
       // Change the index
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
