@@ -1190,10 +1190,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
-    if (hasChanges) {
-      // Don't call ensureOpen since we commit() on close
-      doCommit(commitUserData);
-    }
+    // Don't call ensureOpen since we commit() on close
+    doCommit(commitUserData);
     hasChanges = false;
   }
 
