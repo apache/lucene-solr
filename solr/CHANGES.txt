@@ -363,6 +363,9 @@ Bug Fixes
 * SOLR-2763: Extracting update request handler throws exception and returns 400 
   when zero-length file posted using multipart form post (janhoy)
 
+* SOLR-2780: Fixed issue where multi select facets didn't respect group.truncate parameter.
+  (Martijn van Groningen, Ramzi Alqrainy)
+
  Other Changes
 ----------------------
 

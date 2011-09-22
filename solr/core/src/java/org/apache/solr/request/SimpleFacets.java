@@ -18,11 +18,14 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.TermAllGroupHeadsCollector;
+import org.apache.lucene.util.*;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
@@ -162,7 +165,26 @@ public class SimpleFacets {
       }
 
       // get the new base docset for this facet
-      base = searcher.getDocSet(qlist);
+      DocSet base = searcher.getDocSet(qlist);
+      if (rb.grouping() && rb.getGroupingSpec().isTruncateGroups()) {
+        Grouping grouping = new Grouping(searcher, null, rb.getQueryCommand(), false, 0, false);
+        if (rb.getGroupingSpec().getFields().length > 0) {
+          grouping.addFieldCommand(rb.getGroupingSpec().getFields()[0], req);
+        } else if (rb.getGroupingSpec().getFunctions().length > 0) {
+          grouping.addFunctionCommand(rb.getGroupingSpec().getFunctions()[0], req);
+        } else {
+          this.base = base;
+          return;
+        }
+        AbstractAllGroupHeadsCollector allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
+        searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), allGroupHeadsCollector);
+        int maxDoc = searcher.maxDoc();
+        FixedBitSet fixedBitSet = allGroupHeadsCollector.retrieveGroupHeads(maxDoc);
+        long[] bits = fixedBitSet.getBits();
+        this.base = new BitDocSet(new OpenBitSet(bits, bits.length));
+      } else {
+        this.base = base;
+      }
     }
 
   }
