@@ -79,8 +79,8 @@ public class OpenBitSetIterator extends DocIdSetIterator {
   // for efficiency, or have a common root interface?  (or
   // maybe both?  could ask for a SetBitsIterator, etc...
 
-  private final long[] arr;
-  private final int words;
+  final long[] arr;
+  final int words;
   private int i=-1;
   private long word;
   private int wordShift;

@@ -22,8 +22,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * A container Filter that allows Boolean composition of Filters.
@@ -34,7 +33,6 @@ import org.apache.lucene.util.OpenBitSetDISI;
  * The resulting Filter is NOT'd with the NOT Filters
  * The resulting Filter is AND'd with the MUST Filters
  */
-
 public class BooleanFilter extends Filter
 {
   ArrayList<Filter> shouldFilters = null;
@@ -42,9 +40,9 @@ public class BooleanFilter extends Filter
   ArrayList<Filter> mustFilters = null;
   
   private DocIdSetIterator getDISI(ArrayList<Filter> filters, int index, IndexReader reader)
-  throws IOException
-  {
-    return filters.get(index).getDocIdSet(reader).iterator();
+      throws IOException {
+    final DocIdSet set = filters.get(index).getDocIdSet(reader);
+    return (set == null) ? null : set.iterator();
   }
 
   /**
@@ -52,81 +50,54 @@ public class BooleanFilter extends Filter
    * of the filters that have been added.
    */
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException
-  {
-    OpenBitSetDISI res = null;
-  
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    FixedBitSet res = null;
     if (shouldFilters != null) {
       for (int i = 0; i < shouldFilters.size(); i++) {
+        final DocIdSetIterator disi = getDISI(shouldFilters, i, reader);
+        if (disi == null) continue;
         if (res == null) {
-          res = new OpenBitSetDISI(getDISI(shouldFilters, i, reader), reader.maxDoc());
-        } else { 
-          DocIdSet dis = shouldFilters.get(i).getDocIdSet(reader);
-          if(dis instanceof OpenBitSet) {
-            // optimized case for OpenBitSets
-            res.or((OpenBitSet) dis);
-          } else {
-            res.inPlaceOr(getDISI(shouldFilters, i, reader));
-          }
+          res = new FixedBitSet(reader.maxDoc());
         }
+        res.or(disi);
       }
     }
     
-    if (notFilters!=null) {
+    if (notFilters != null) {
       for (int i = 0; i < notFilters.size(); i++) {
         if (res == null) {
-          res = new OpenBitSetDISI(getDISI(notFilters, i, reader), reader.maxDoc());
-          res.flip(0, reader.maxDoc()); // NOTE: may set bits on deleted docs
-        } else {
-          DocIdSet dis = notFilters.get(i).getDocIdSet(reader);
-          if(dis instanceof OpenBitSet) {
-            // optimized case for OpenBitSets
-            res.andNot((OpenBitSet) dis);
-          } else {
-            res.inPlaceNot(getDISI(notFilters, i, reader));
-          }
+          res = new FixedBitSet(reader.maxDoc());
+          res.set(0, reader.maxDoc()); // NOTE: may set bits on deleted docs
+        }
+        final DocIdSetIterator disi = getDISI(notFilters, i, reader);
+        if (disi != null) {
+          res.andNot(disi);
         }
       }
     }
     
-    if (mustFilters!=null) {
+    if (mustFilters != null) {
       for (int i = 0; i < mustFilters.size(); i++) {
+        final DocIdSetIterator disi = getDISI(mustFilters, i, reader);
+        if (disi == null) {
+          return DocIdSet.EMPTY_DOCIDSET; // no documents can match
+        }
         if (res == null) {
-          res = new OpenBitSetDISI(getDISI(mustFilters, i, reader), reader.maxDoc());
+          res = new FixedBitSet(reader.maxDoc());
+          res.or(disi);
         } else {
-          DocIdSet dis = mustFilters.get(i).getDocIdSet(reader);
-          if(dis instanceof OpenBitSet) {
-            // optimized case for OpenBitSets
-            res.and((OpenBitSet) dis);
-          } else {
-            res.inPlaceAnd(getDISI(mustFilters, i, reader));
-          }
+          res.and(disi);
         }
       }
     }
-    
-    if (res !=null)
-      return finalResult(res, reader.maxDoc());
 
-    return DocIdSet.EMPTY_DOCIDSET;
-  }
-
-  /** Provide a SortedVIntList when it is definitely smaller
-   * than an OpenBitSet.
-   * @deprecated Either use CachingWrapperFilter, or
-   * switch to a different DocIdSet implementation yourself.
-   * This method will be removed in Lucene 4.0 
-   */
-  @Deprecated
-  protected final DocIdSet finalResult(OpenBitSetDISI result, int maxDocs) {
-    return result;
+    return res != null ? res : DocIdSet.EMPTY_DOCIDSET;
   }
 
   /**
   * Adds a new FilterClause to the Boolean Filter container
   * @param filterClause A FilterClause object containing a Filter and an Occur parameter
   */
-  
   public void add(FilterClause filterClause)
   {
     if (filterClause.getOccur().equals(Occur.MUST)) {
