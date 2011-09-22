@@ -92,6 +92,9 @@ Bug Fixes
 
  * LUCENE-3019: Fix unexpected color tags for FastVectorHighlighter. (Koji Sekiguchi)
 
+ * LUCENE-3446: Fix NPE in BooleanFilter when DocIdSet/DocIdSetIterator is null.
+   Converted code to FixedBitSet and simplified.  (Uwe Schindler, Shuji Umino)
+
 API Changes
  
  * LUCENE-3436: Add SuggestMode to the spellchecker, so you can specify the strategy
