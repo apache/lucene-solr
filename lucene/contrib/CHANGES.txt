@@ -77,6 +77,11 @@ Bug Fixes
 
 ======================= Lucene 3.5.0 ================
 
+Changes in backwards compatibility policy
+
+ * LUCENE-3446: Removed BooleanFilter.finalResult() due to change to
+   FixedBitSet.  (Uwe Schindler)
+
 New Features
 
  * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,
