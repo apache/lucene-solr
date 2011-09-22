@@ -201,4 +201,148 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       return false;
     }
   }
+  
+  /** checks that no scores or freqs are infinite */
+  private void assertSaneScoring(PhraseQuery pq, IndexSearcher searcher) throws Exception {
+    searcher.search(pq, new Collector() {
+      Scorer scorer;
+      
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+      }
+      
+      @Override
+      public void collect(int doc) throws IOException {
+        assertFalse(Float.isInfinite(scorer.freq()));
+        assertFalse(Float.isInfinite(scorer.score()));
+      }
+      
+      @Override
+      public void setNextReader(AtomicReaderContext context) throws IOException {
+        // do nothing
+      }
+      
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return false;
+      }
+    });
+    QueryUtils.check(random, pq, searcher);
+  }
+
+  // LUCENE-3215
+  public void testSlopWithHoles() throws Exception {  
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
+    Field f = new Field("lyrics", customType, "");
+    Document doc = new Document();
+    doc.add(f);
+    f.setValue("drug drug");
+    iw.addDocument(doc);
+    f.setValue("drug druggy drug");
+    iw.addDocument(doc);
+    f.setValue("drug druggy druggy drug");
+    iw.addDocument(doc);
+    f.setValue("drug druggy drug druggy drug");
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher is = newSearcher(ir);
+    
+    PhraseQuery pq = new PhraseQuery();
+    // "drug the drug"~1
+    pq.add(new Term("lyrics", "drug"), 1);
+    pq.add(new Term("lyrics", "drug"), 4);
+    pq.setSlop(0);
+    assertEquals(0, is.search(pq, 4).totalHits);
+    pq.setSlop(1);
+    assertEquals(3, is.search(pq, 4).totalHits);
+    pq.setSlop(2);
+    assertEquals(4, is.search(pq, 4).totalHits);
+    is.close();
+    ir.close();
+    dir.close();
+  }
+
+  // LUCENE-3215
+  public void testInfiniteFreq1() throws Exception {
+    String document = "drug druggy drug drug drug";
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_UNSTORED)));
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher is = newSearcher(ir);
+    PhraseQuery pq = new PhraseQuery();
+    // "drug the drug"~1
+    pq.add(new Term("lyrics", "drug"), 1);
+    pq.add(new Term("lyrics", "drug"), 3);
+    pq.setSlop(1);
+    assertSaneScoring(pq, is);
+    is.close();
+    ir.close();
+    dir.close();
+  }
+  
+  // LUCENE-3215
+  public void testInfiniteFreq2() throws Exception {
+    String document = 
+      "So much fun to be had in my head " +
+      "No more sunshine " +
+      "So much fun just lying in my bed " +
+      "No more sunshine " +
+      "I can't face the sunlight and the dirt outside " +
+      "Wanna stay in 666 where this darkness don't lie " +
+      "Drug drug druggy " +
+      "Got a feeling sweet like honey " +
+      "Drug drug druggy " +
+      "Need sensation like my baby " +
+      "Show me your scars you're so aware " +
+      "I'm not barbaric I just care " +
+      "Drug drug drug " +
+      "I need a reflection to prove I exist " +
+      "No more sunshine " +
+      "I am a victim of designer blitz " +
+      "No more sunshine " +
+      "Dance like a robot when you're chained at the knee " +
+      "The C.I.A say you're all they'll ever need " +
+      "Drug drug druggy " +
+      "Got a feeling sweet like honey " +
+      "Drug drug druggy " +
+      "Need sensation like my baby " +
+      "Snort your lines you're so aware " +
+      "I'm not barbaric I just care " +
+      "Drug drug druggy " +
+      "Got a feeling sweet like honey " +
+      "Drug drug druggy " +
+      "Need sensation like my baby";
+        
+     Directory dir = newDirectory();
+
+     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+     Document doc = new Document();
+     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_UNSTORED)));
+     iw.addDocument(doc);
+     IndexReader ir = iw.getReader();
+     iw.close();
+        
+     IndexSearcher is = newSearcher(ir);
+     
+     PhraseQuery pq = new PhraseQuery();
+     // "drug the drug"~5
+     pq.add(new Term("lyrics", "drug"), 1);
+     pq.add(new Term("lyrics", "drug"), 3);
+     pq.setSlop(5);
+     assertSaneScoring(pq, is);
+     is.close();
+     ir.close();
+     dir.close();
+  }
 }

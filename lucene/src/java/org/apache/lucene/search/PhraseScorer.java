@@ -32,17 +32,14 @@ import org.apache.lucene.search.similarities.Similarity;
  * means a match. 
  */
 abstract class PhraseScorer extends Scorer {
-  private boolean firstTime = true;
-  private boolean more = true;
-  protected PhraseQueue pq;
-  protected PhrasePositions first, last;
+  PhrasePositions min, max;
 
   private float freq; //phrase frequency in current doc as computed by phraseFreq().
 
-  protected final Similarity.SloppyDocScorer docScorer;
+  final Similarity.SloppyDocScorer docScorer;
 
   PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.SloppyDocScorer docScorer) throws IOException {
+      Similarity.SloppyDocScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
 
@@ -51,75 +48,66 @@ abstract class PhraseScorer extends Scorer {
     // reflects the phrase offset: pp.pos = tp.pos - offset.
     // this allows to easily identify a matching (exact) phrase 
     // when all PhrasePositions have exactly the same position.
-    for (int i = 0; i < postings.length; i++) {
-      PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i);
-      if (last != null) {			  // add next to end of list
-        last.next = pp;
-      } else {
-        first = pp;
+    if (postings.length > 0) {
+      min = new PhrasePositions(postings[0].postings, postings[0].position, 0);
+      max = min;
+      max.doc = -1;
+      for (int i = 1; i < postings.length; i++) {
+        PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i);
+        max.next = pp;
+        max = pp;
+        max.doc = -1;
       }
-      last = pp;
+      max.next = min; // make it cyclic for easier manipulation
     }
-
-    pq = new PhraseQueue(postings.length);             // construct empty pq
-    first.doc = -1;
   }
 
   @Override
-  public int docID() { return first.doc; }
+  public int docID() {
+    return max.doc; 
+  }
 
   @Override
   public int nextDoc() throws IOException {
-    if (firstTime) {
-      init();
-      firstTime = false;
-    } else if (more) {
-      more = last.next();                         // trigger further scanning
-    }
-    if (!doNext()) {
-      first.doc = NO_MORE_DOCS;
-    }
-    return first.doc;
+    return advance(max.doc);
   }
   
-  // next without initial increment
-  private boolean doNext() throws IOException {
-    while (more) {
-      while (more && first.doc < last.doc) {      // find doc w/ all the terms
-        more = first.skipTo(last.doc);            // skip first upto last
-        firstToLast();                            // and move it to the end
-      }
-
-      if (more) {
-        // found a doc with all of the terms
-        freq = phraseFreq();                      // check for phrase
-        if (freq == 0.0f)                         // no match
-          more = last.next();                     // trigger further scanning
-        else
-          return true;                            // found a match
-      }
-    }
-    return false;                                 // no more matches
-  }
-
   @Override
   public float score() throws IOException {
-    return docScorer.score(first.doc, freq);
+    return docScorer.score(max.doc, freq);
   }
 
+  private boolean advanceMin(int target) throws IOException {
+    if (!min.skipTo(target)) { 
+      max.doc = NO_MORE_DOCS; // for further calls to docID() 
+      return false;
+    }
+    min = min.next; // cyclic
+    max = max.next; // cyclic
+    return true;
+  }
+  
   @Override
   public int advance(int target) throws IOException {
-    firstTime = false;
-    for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
-      more = pp.skipTo(target);
-    }
-    if (more) {
-      sort();                                     // re-sort
-    }
-    if (!doNext()) {
-      first.doc = NO_MORE_DOCS;
-    }
-    return first.doc;
+    freq = 0.0f;
+    if (!advanceMin(target)) {
+      return NO_MORE_DOCS;
+    }        
+    boolean restart=false;
+    while (freq == 0.0f) {
+      while (min.doc < max.doc || restart) {
+        restart = false;
+        if (!advanceMin(max.doc)) {
+          return NO_MORE_DOCS;
+        }        
+      }
+      // found a doc with all of the terms
+      freq = phraseFreq(); // check for phrase
+      restart = true;
+    } 
+
+    // found a match
+    return max.doc;
   }
   
   /**
@@ -137,44 +125,7 @@ abstract class PhraseScorer extends Scorer {
    * <br>Note, that containing all phrase terms does not guarantee a match - they have to be found in matching locations.  
    * @return frequency of the phrase in current doc, 0 if not found. 
    */
-  protected abstract float phraseFreq() throws IOException;
-
-  private void init() throws IOException {
-    for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
-      more = pp.next();
-    }
-    if (more) {
-      sort();
-    }
-  }
-  
-  private void sort() {
-    pq.clear();
-    for (PhrasePositions pp = first; pp != null; pp = pp.next) {
-      pq.add(pp);
-    }
-    pqToList();
-  }
-
-  protected final void pqToList() {
-    last = first = null;
-    while (pq.top() != null) {
-      PhrasePositions pp = pq.pop();
-      if (last != null) {			  // add next to end of list
-        last.next = pp;
-      } else
-        first = pp;
-      last = pp;
-      pp.next = null;
-    }
-  }
-
-  protected final void firstToLast() {
-    last.next = first;			  // move first to end of list
-    last = first;
-    first = first.next;
-    last.next = null;
-  }
+  abstract float phraseFreq() throws IOException;
 
   @Override
   public String toString() { return "scorer(" + weight + ")"; }

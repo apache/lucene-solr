@@ -606,7 +606,7 @@ Bug fixes
 * LUCENE-3432: IndexWriter.expungeDeletes with TieredMergePolicy
   should ignore the maxMergedSegmentMB setting (v.sevel via Mike
   McCandless)
-
+  
 * LUCENE-3442: TermQuery.TermWeight.scorer() returns null for non-atomic
   IndexReaders (optimization bug, introcuced by LUCENE-2829), preventing
   QueryWrapperFilter and similar classes to get a top-level DocIdSet.
@@ -620,6 +620,9 @@ Bug fixes
 * LUCENE-3439: Closing an NRT reader after the writer was closed was
   incorrectly invoking the DeletionPolicy and (then possibly deleting
   files) on the closed IndexWriter (Robert Muir, Mike McCandless)
+
+* LUCENE-3215: SloppyPhraseScorer sometimes computed Infinite freq
+  (Robert Muir, Doron Cohen)  
 
 New Features
 

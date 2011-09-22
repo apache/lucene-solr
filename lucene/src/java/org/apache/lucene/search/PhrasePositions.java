@@ -31,7 +31,7 @@ final class PhrasePositions {
   final int ord;                                  // unique across all PhrasePositions instances
   final DocsAndPositionsEnum postings;  	  // stream of docs & positions
   PhrasePositions next;	                          // used to make lists
-  boolean repeats;       // there's other pp for same term (e.g. query="1st word 2nd word"~1) 
+  PhrasePositions nextRepeating;	                // link to next repeating pp: standing for same term in different query offsets
 
   PhrasePositions(DocsAndPositionsEnum postings, int o, int ord) {
     this.postings = postings;
@@ -41,7 +41,7 @@ final class PhrasePositions {
 
   final boolean next() throws IOException {	  // increments to next doc
     doc = postings.nextDoc();
-    if (doc == postings.NO_MORE_DOCS) {
+    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;
     }
     return true;
@@ -49,7 +49,7 @@ final class PhrasePositions {
 
   final boolean skipTo(int target) throws IOException {
     doc = postings.advance(target);
-    if (doc == postings.NO_MORE_DOCS) {
+    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;
     }
     return true;
@@ -72,5 +72,15 @@ final class PhrasePositions {
       return true;
     } else
       return false;
+  }
+  
+  /** for debug purposes */
+  @Override
+  public String toString() {
+    String s = "d:"+doc+" o:"+offset+" p:"+position+" c:"+count;
+    if (nextRepeating!=null) {
+      s += " rpt[ "+nextRepeating+" ]";
+    }
+    return s;
   }
 }
