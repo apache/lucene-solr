@@ -298,6 +298,24 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "/grouped=={'value4_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
     );
+
+    // Multi select facets AND group.truncate=true
+    req = req("q", "*:*", "rows", "1", "group", "true", "group.field", "value4_s1", "fl", "id", "facet", "true",
+        "facet.field", "{!ex=v}value3_s1", "group.truncate", "true", "fq", "{!tag=v}value3_s1:b");
+    assertJQ(
+        req,
+        "/grouped=={'value4_s1':{'matches':2,'groups':[{'groupValue':'2','doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+    );
+
+    // Multi select facets AND group.truncate=false
+    req = req("q", "*:*", "rows", "1", "group", "true", "group.field", "value4_s1", "fl", "id", "facet", "true",
+        "facet.field", "{!ex=v}value3_s1", "group.truncate", "false", "fq", "{!tag=v}value3_s1:b");
+    assertJQ(
+        req,
+        "/grouped=={'value4_s1':{'matches':2,'groups':[{'groupValue':'2','doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{}}"
+    );
   }
 
   static String f = "foo_s1";

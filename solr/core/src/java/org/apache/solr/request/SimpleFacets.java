@@ -23,6 +23,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
@@ -148,7 +151,24 @@ public class SimpleFacets {
       }
 
       // get the new base docset for this facet
-      base = searcher.getDocSet(qlist);
+      DocSet base = searcher.getDocSet(qlist);
+      if (rb.grouping() && rb.getGroupingSpec().isTruncateGroups()) {
+        Grouping grouping = new Grouping(searcher, null, rb.getQueryCommand(), false, 0, false);
+        if (rb.getGroupingSpec().getFields().length > 0) {
+          grouping.addFieldCommand(rb.getGroupingSpec().getFields()[0], req);
+        } else {
+          this.base = base;
+          return;
+        }
+        AbstractAllGroupHeadsCollector allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
+        searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), allGroupHeadsCollector);
+        int maxDoc = searcher.maxDoc();
+        FixedBitSet fixedBitSet = allGroupHeadsCollector.retrieveGroupHeads(maxDoc);
+        long[] bits = fixedBitSet.getBits();
+        this.base = new BitDocSet(new OpenBitSet(bits, bits.length));
+      } else {
+        this.base = base;
+      }
     }
 
   }
@@ -936,7 +956,7 @@ public class SimpleFacets {
    */
   protected int rangeCount(SchemaField sf, String low, String high,
                            boolean iLow, boolean iHigh) throws IOException {
-    Query rangeQ = sf.getType().getRangeQuery(null, sf,low,high,iLow,iHigh);
+    Query rangeQ = sf.getType().getRangeQuery(null, sf, low, high, iLow, iHigh);
     return searcher.numDocs(rangeQ ,base);
   }
 
