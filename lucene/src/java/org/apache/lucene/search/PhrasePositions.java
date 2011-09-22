@@ -31,7 +31,7 @@ final class PhrasePositions {
   final int ord;                                  // unique across all PhrasePositions instances
   TermPositions tp;				  // stream of positions
   PhrasePositions next;				  // used to make lists
-  boolean repeats;       // there's other pp for same term (e.g. query="1st word 2nd word"~1) 
+  PhrasePositions nextRepeating;	                // link to next repeating pp: standing for same term in different query offsets
 
   PhrasePositions(TermPositions t, int o, int ord) {
     tp = t;
@@ -79,5 +79,15 @@ final class PhrasePositions {
       return true;
     } else
       return false;
+  }
+  
+  /** for debug purposes */
+  @Override
+  public String toString() {
+    String s = "d:"+doc+" o:"+offset+" p:"+position+" c:"+count;
+    if (nextRepeating!=null) {
+      s += " rpt[ "+nextRepeating+" ]";
+    }
+    return s;
   }
 }

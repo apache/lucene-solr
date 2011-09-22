@@ -48,6 +48,9 @@ Bug fixes
   incorrectly invoking the DeletionPolicy and (then possibly deleting
   files) on the closed IndexWriter (Robert Muir, Mike McCandless)
 
+* LUCENE-3215: SloppyPhraseScorer sometimes computed Infinite freq
+  (Robert Muir, Doron Cohen)  
+
 New Features
 
 Optimizations
