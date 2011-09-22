@@ -161,10 +161,8 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   public int prevSetBit(int index) {
     assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
     int i = index >> 6;
-    final int subIndex;
-    long word;
-    subIndex = index & 0x3f;  // index within the word
-    word = (bits[i] << (63-subIndex));  // skip all the bits to the left of index
+    final int subIndex = index & 0x3f;  // index within the word
+    long word = (bits[i] << (63-subIndex));  // skip all the bits to the left of index
 
     if (word != 0) {
       return (i << 6) + subIndex - Long.numberOfLeadingZeros(word); // See LUCENE-3197
@@ -183,18 +181,90 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   /** Does in-place OR of the bits provided by the
    *  iterator. */
   public void or(DocIdSetIterator iter) throws IOException {
-    int doc;
-    while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      set(doc);
+    if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
+      final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
+      or(obs.arr, obs.words);
+    } else {
+      int doc;
+      while ((doc = iter.nextDoc()) < numBits) {
+        set(doc);
+      }
     }
   }
 
+  /** this = this OR other */
   public void or(FixedBitSet other) {
-    long[] thisArr = this.bits;
-    long[] otherArr = other.bits;
-    int pos = Math.min(thisArr.length, otherArr.length);
+    or(other.bits, other.bits.length);
+  }
+  
+  private void or(final long[] otherArr, final int otherLen) {
+    final long[] thisArr = this.bits;
+    int pos = Math.min(thisArr.length, otherLen);
     while (--pos >= 0) {
       thisArr[pos] |= otherArr[pos];
+    }
+  }
+
+  /** Does in-place AND of the bits provided by the
+   *  iterator. */
+  public void and(DocIdSetIterator iter) throws IOException {
+    if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
+      final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
+      and(obs.arr, obs.words);
+    } else {
+      if (numBits == 0) return;
+      int disiDoc, bitSetDoc = nextSetBit(0);
+      while (bitSetDoc != -1 && (disiDoc = iter.advance(bitSetDoc)) < numBits) {
+        clear(bitSetDoc, disiDoc);
+        disiDoc++;
+        bitSetDoc = (disiDoc < numBits) ? nextSetBit(disiDoc) : -1;
+      }
+      if (bitSetDoc != -1) {
+        clear(bitSetDoc, numBits);
+      }
+    }
+  }
+
+  /** this = this AND other */
+  public void and(FixedBitSet other) {
+    and(other.bits, other.bits.length);
+  }
+  
+  private void and(final long[] otherArr, final int otherLen) {
+    final long[] thisArr = this.bits;
+    int pos = Math.min(thisArr.length, otherLen);
+    while(--pos >= 0) {
+      thisArr[pos] &= otherArr[pos];
+    }
+    if (thisArr.length > otherLen) {
+      Arrays.fill(thisArr, otherLen, thisArr.length, 0L);
+    }
+  }
+
+  /** Does in-place AND NOT of the bits provided by the
+   *  iterator. */
+  public void andNot(DocIdSetIterator iter) throws IOException {
+    if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
+      final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
+      andNot(obs.arr, obs.words);
+    } else {
+      int doc;
+      while ((doc = iter.nextDoc()) < numBits) {
+        clear(doc);
+      }
+    }
+  }
+
+  /** this = this AND NOT other */
+  public void andNot(FixedBitSet other) {
+    andNot(other.bits, other.bits.length);
+  }
+  
+  private void andNot(final long[] otherArr, final int otherLen) {
+    final long[] thisArr = this.bits;
+    int pos = Math.min(thisArr.length, otherLen);
+    while(--pos >= 0) {
+      thisArr[pos] &= ~otherArr[pos];
     }
   }
 

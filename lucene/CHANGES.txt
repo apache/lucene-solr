@@ -626,6 +626,9 @@ Bug fixes
 
 New Features
 
+* LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
+  (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-3426: Add NGramPhraseQuery which extends PhraseQuery and tries to reduce
