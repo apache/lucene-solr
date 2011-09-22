@@ -164,16 +164,24 @@ public class TestFixedBitSet extends LuceneTestCase {
       if (b0 != null && b0.length() <= b.length()) {
         assertEquals(a.cardinality(), b.cardinality());
 
-        BitSet a_or = (BitSet) a.clone();
-        a_or.or(a0);
+        BitSet a_and = (BitSet)a.clone(); a_and.and(a0);
+        BitSet a_or = (BitSet)a.clone(); a_or.or(a0);
+        BitSet a_andn = (BitSet)a.clone(); a_andn.andNot(a0);
 
-        FixedBitSet b_or = (FixedBitSet) b.clone();
-        b_or.or(b0);
+        FixedBitSet b_and = (FixedBitSet)b.clone(); assertEquals(b,b_and); b_and.and(b0);
+        FixedBitSet b_or = (FixedBitSet)b.clone(); b_or.or(b0);
+        FixedBitSet b_andn = (FixedBitSet)b.clone(); b_andn.andNot(b0);
 
         assertEquals(a0.cardinality(), b0.cardinality());
         assertEquals(a_or.cardinality(), b_or.cardinality());
 
-        doIterate(a_or, b_or, mode);
+        doIterate(a_and,b_and, mode);
+        doIterate(a_or,b_or, mode);
+        doIterate(a_andn,b_andn, mode);
+
+        assertEquals(a_and.cardinality(), b_and.cardinality());
+        assertEquals(a_or.cardinality(), b_or.cardinality());
+        assertEquals(a_andn.cardinality(), b_andn.cardinality());
       }
 
       a0=a;
