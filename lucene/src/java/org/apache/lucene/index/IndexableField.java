@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.values.PerDocFieldValues;
@@ -56,9 +58,6 @@ public interface IndexableField {
   /* Non-null if this field has a Reader value */
   public Reader readerValue();
 
-  /* Non-null if this field has a pre-tokenized ({@link TokenStream}) value */
-  public TokenStream tokenStreamValue();
-
   // Numeric field:
   /* True if this field is numeric */
   public boolean numeric();
@@ -82,4 +81,15 @@ public interface IndexableField {
 
   /* DocValues type; only used if docValues is non-null */
   public ValueType docValuesType();
+
+  /**
+   * Creates the TokenStream used for indexing this field.  If appropriate,
+   * implementations should use the given Analyzer to create the TokenStreams.
+   *
+   * @param analyzer Analyzer that should be used to create the TokenStreams from
+   * @return TokenStream value for indexing the document.  Should always return
+   *         a non-null value if the field is to be indexed
+   * @throws IOException Can be thrown while creating the TokenStream
+   */
+  public TokenStream tokenStream(Analyzer analyzer) throws IOException;
 }

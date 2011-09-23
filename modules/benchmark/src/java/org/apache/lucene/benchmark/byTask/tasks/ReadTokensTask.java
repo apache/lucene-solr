@@ -71,31 +71,7 @@ public class ReadTokensTask extends PerfTask {
     for(final IndexableField field : fields) {
       if (!field.fieldType().tokenized() || field instanceof NumericField) continue;
       
-      final TokenStream stream;
-      final TokenStream streamValue = field.tokenStreamValue();
-
-      if (streamValue != null) 
-        stream = streamValue;
-      else {
-        // the field does not have a TokenStream,
-        // so we have to obtain one from the analyzer
-        final Reader reader;			  // find or make Reader
-        final Reader readerValue = field.readerValue();
-
-        if (readerValue != null)
-          reader = readerValue;
-        else {
-          String stringValue = field.stringValue();
-          if (stringValue == null)
-            throw new IllegalArgumentException("field must have either TokenStream, String or Reader value");
-          stringReader.init(stringValue);
-          reader = stringReader;
-        }
-        
-        // Tokenize field
-        stream = analyzer.reusableTokenStream(field.name(), reader);
-      }
-
+      final TokenStream stream = field.tokenStream(analyzer);
       // reset the TokenStream to the first token
       stream.reset();
 

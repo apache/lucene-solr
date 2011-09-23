@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -237,7 +238,7 @@ public final class NumericField extends Field {
   }
   
   /** Returns a {@link NumericTokenStream} for indexing the numeric value. */
-  public TokenStream tokenStreamValue() {
+  public TokenStream tokenStream(Analyzer analyzer) {
     if (!type.indexed()) return null;
     if (numericTS == null) {
       // lazy init the TokenStream as it is heavy to instantiate

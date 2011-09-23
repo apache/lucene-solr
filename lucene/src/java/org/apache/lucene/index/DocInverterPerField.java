@@ -75,121 +75,70 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // consumer if it wants to see this particular field
       // tokenized.
       if (field.fieldType().indexed() && doInvert) {
-        
+
         if (i > 0)
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
-        // TODO (LUCENE-2309): this analysis logic should be
-        // outside of indexer -- field should simply give us
-        // a TokenStream, even for multi-valued fields
+        final TokenStream stream = field.tokenStream(docState.analyzer);
+        // reset the TokenStream to the first token
+        stream.reset();
 
-        if (!field.fieldType().tokenized()) {		  // un-tokenized field
-          final String stringValue = field.stringValue();
-          assert stringValue != null;
-          final int valueLength = stringValue.length();
-          parent.singleToken.reinit(stringValue, 0, valueLength);
-          fieldState.attributeSource = parent.singleToken;
+        try {
+          boolean hasMoreTokens = stream.incrementToken();
+
+          fieldState.attributeSource = stream;
+
+          OffsetAttribute offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
+          PositionIncrementAttribute posIncrAttribute = fieldState.attributeSource.addAttribute(PositionIncrementAttribute.class);
+
           consumer.start(field);
 
-          boolean success = false;
-          try {
-            consumer.add();
-            success = true;
-          } finally {
-            if (!success) {
-              docState.docWriter.setAborting();
+          for (;;) {
+
+            // If we hit an exception in stream.next below
+            // (which is fairly common, eg if analyzer
+            // chokes on a given document), then it's
+            // non-aborting and (above) this one document
+            // will be marked as deleted, but still
+            // consume a docID
+
+            if (!hasMoreTokens) break;
+
+            final int posIncr = posIncrAttribute.getPositionIncrement();
+            fieldState.position += posIncr;
+            if (fieldState.position > 0) {
+              fieldState.position--;
             }
-          }
-          fieldState.offset += valueLength;
-          fieldState.length++;
-          fieldState.position++;
-        } else {                                  // tokenized field
-          final TokenStream stream;
-          final TokenStream streamValue = field.tokenStreamValue();
 
-          if (streamValue != null) {
-            stream = streamValue;
-          } else {
-            // the field does not have a TokenStream,
-            // so we have to obtain one from the analyzer
-            final Reader reader;			  // find or make Reader
-            final Reader readerValue = field.readerValue();
+            if (posIncr == 0)
+              fieldState.numOverlap++;
 
-            if (readerValue != null) {
-              reader = readerValue;
-            } else {
-              String stringValue = field.stringValue();
-              if (stringValue == null) {
-                throw new IllegalArgumentException("field must have either TokenStream, String or Reader value");
+            boolean success = false;
+            try {
+              // If we hit an exception in here, we abort
+              // all buffered documents since the last
+              // flush, on the likelihood that the
+              // internal state of the consumer is now
+              // corrupt and should not be flushed to a
+              // new segment:
+              consumer.add();
+              success = true;
+            } finally {
+              if (!success) {
+                docState.docWriter.setAborting();
               }
-              parent.stringReader.init(stringValue);
-              reader = parent.stringReader;
             }
-          
-            // Tokenize field and add to postingTable
-            stream = docState.analyzer.reusableTokenStream(fieldInfo.name, reader);
+            fieldState.length++;
+            fieldState.position++;
+
+            hasMoreTokens = stream.incrementToken();
           }
+          // trigger streams to perform end-of-stream operations
+          stream.end();
 
-          // reset the TokenStream to the first token
-          stream.reset();
-          
-          try {
-            boolean hasMoreTokens = stream.incrementToken();
-
-            fieldState.attributeSource = stream;
-
-            OffsetAttribute offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
-            PositionIncrementAttribute posIncrAttribute = fieldState.attributeSource.addAttribute(PositionIncrementAttribute.class);
-            
-            consumer.start(field);
-            
-            for(;;) {
-
-              // If we hit an exception in stream.next below
-              // (which is fairly common, eg if analyzer
-              // chokes on a given document), then it's
-              // non-aborting and (above) this one document
-              // will be marked as deleted, but still
-              // consume a docID
-              
-              if (!hasMoreTokens) break;
-              
-              final int posIncr = posIncrAttribute.getPositionIncrement();
-              fieldState.position += posIncr;
-              if (fieldState.position > 0) {
-                fieldState.position--;
-              }
-
-              if (posIncr == 0)
-                fieldState.numOverlap++;
-
-              boolean success = false;
-              try {
-                // If we hit an exception in here, we abort
-                // all buffered documents since the last
-                // flush, on the likelihood that the
-                // internal state of the consumer is now
-                // corrupt and should not be flushed to a
-                // new segment:
-                consumer.add();
-                success = true;
-              } finally {
-                if (!success) {
-                  docState.docWriter.setAborting();
-                }
-              }
-              fieldState.length++;
-              fieldState.position++;
-
-              hasMoreTokens = stream.incrementToken();
-            }
-            // trigger streams to perform end-of-stream operations
-            stream.end();
-            
-            fieldState.offset += offsetAttribute.endOffset();
-          } finally {
-            stream.close();
-          }
+          fieldState.offset += offsetAttribute.endOffset();
+        } finally {
+          stream.close();
         }
 
         fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);

@@ -307,13 +307,6 @@ public class IndexDocValuesField extends Field implements PerDocFieldValues {
     return null;
   }
 
-  /**
-   * Returns always <code>null</code>
-   */
-  public TokenStream tokenStreamValue() {
-    return null;
-  }
-
   @Override
   public ValueType docValuesType() {
     return type;

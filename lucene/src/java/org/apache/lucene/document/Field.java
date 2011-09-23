@@ -17,9 +17,14 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.values.PerDocFieldValues;
@@ -62,6 +67,9 @@ public class Field implements IndexableField {
     if (reader == null) {
       throw new NullPointerException("reader cannot be null");
     }
+    if (type.indexed() && !type.tokenized()) {
+      throw new IllegalArgumentException("Non-tokenized fields must use String values");
+    }
     
     this.name = name;
     this.fieldsData = reader;
@@ -75,6 +83,9 @@ public class Field implements IndexableField {
     if (tokenStream == null) {
       throw new NullPointerException("tokenStream cannot be null");
     }
+    if (type.indexed() && !type.tokenized()) {
+      throw new IllegalArgumentException("Non-tokenized fields must use String values");
+    }
     
     this.name = name;
     this.fieldsData = null;
@@ -87,12 +98,14 @@ public class Field implements IndexableField {
   }
 
   public Field(String name, IndexableFieldType type, byte[] value, int offset, int length) {
-    this.fieldsData = new BytesRef(value, offset, length);
-    this.type = type;
-    this.name = name;
+    this(name, type, new BytesRef(value, offset, length));
   }
 
   public Field(String name, IndexableFieldType type, BytesRef bytes) {
+    if (type.indexed() && !type.tokenized()) {
+      throw new IllegalArgumentException("Non-tokenized fields must use String values");
+    }
+
     this.fieldsData = bytes;
     this.type = type;
     this.name = name;
@@ -296,5 +309,52 @@ public class Field implements IndexableField {
   /** Returns FieldType for this field. */
   public IndexableFieldType fieldType() {
     return type;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+    if (!fieldType().indexed()) {
+      return null;
+    }
+
+    if (!fieldType().tokenized()) {
+      if (stringValue() == null) {
+        throw new IllegalArgumentException("Non-Tokenized Fields must have a String value");
+      }
+
+      return new TokenStream() {
+        CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+        OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
+        boolean used;
+
+        @Override
+        public boolean incrementToken() throws IOException {
+          if (used) {
+            return false;
+          }
+          termAttribute.setEmpty().append(stringValue());
+          offsetAttribute.setOffset(0, stringValue().length());
+          used = true;
+          return true;
+        }
+
+        @Override
+        public void reset() throws IOException {
+          used = false;
+        }
+      };
+    }
+
+    if (tokenStream != null) {
+      return tokenStream;
+    } else if (readerValue() != null) {
+      return analyzer.reusableTokenStream(name(), readerValue());
+    } else if (stringValue() != null) {
+      return analyzer.reusableTokenStream(name(), new StringReader(stringValue()));
+    }
+
+    throw new IllegalArgumentException("Field must have either TokenStream, String or Reader value");
   }
 }

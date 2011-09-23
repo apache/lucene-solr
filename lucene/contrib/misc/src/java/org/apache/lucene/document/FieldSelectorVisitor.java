@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldReaderException;
@@ -243,14 +242,6 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
      * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
     @Override
     public Reader readerValue() {
-      return null;
-    }
-
-    /** The value of the field as a TokenStream, or null.  If null, the Reader value,
-     * String value, or binary value is used. Exactly one of stringValue(), 
-     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
-    @Override
-    public TokenStream tokenStreamValue() {
       return null;
     }
 

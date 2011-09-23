@@ -17,10 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Iterator;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField.DataType;
@@ -132,15 +134,6 @@ public class TestIndexableField extends LuceneTestCase {
       }
     }
 
-    @Override
-    public TokenStream tokenStreamValue() {
-      if (numeric()) {
-        return new NumericField(name()).setIntValue(counter).tokenStreamValue();
-      } else {
-        return null;
-      }
-    }
-
     // Numeric field:
     @Override
     public boolean numeric() {
@@ -171,6 +164,15 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public ValueType docValuesType() {
       return null;
+    }
+
+    @Override
+    public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+      if (numeric()) {
+        return new NumericField(name()).setIntValue(counter).tokenStream(analyzer);
+      }
+      return readerValue() != null ? analyzer.reusableTokenStream(name(), readerValue()) :
+          analyzer.reusableTokenStream(name(), new StringReader(stringValue()));
     }
   }
 

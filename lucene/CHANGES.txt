@@ -172,7 +172,7 @@ Changes in backwards compatibility policy
   (Nikola Tankovic, Mike McCandless, Chris Male)
 
 * LUCENE-3396: ReusableAnalyzerBase.TokenStreamComponents.reset(Reader) now returns void instead
-  of boolean.  If a Component cannot be reset, it should throw an Exception. 
+  of boolean.  If a Component cannot be reset, it should throw an Exception.  (Chris Male)
 
 Changes in Runtime Behavior
 
@@ -535,6 +535,9 @@ New features
 * LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a specified
   ScoreDoc (e.g. last document on the previous page) to support deep paging use cases.
   (Aaron McCurry, Grant Ingersoll, Robert Muir) 
+
+* LUCENE-2309: Added IndexableField.tokenStream(Analyzer) which is now responsible for
+  creating the TokenStreams for Fields when they are to be indexed.  (Chris Male)
 
 Optimizations
 

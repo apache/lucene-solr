@@ -87,10 +87,9 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertEquals(fields.length, 3);//should be 3, we have a stored field
     //first two fields contain the values, third is just stored and contains the original
     for (int i = 0; i < 3; i++) {
-      boolean hasValue = fields[1].tokenStreamValue() != null
-              || fields[1].binaryValue() != null
-              || fields[1].stringValue() != null;
-      assertTrue("Doesn't have a value: " + fields[1], hasValue);
+      boolean hasValue = fields[i].binaryValue() != null
+          || fields[i].stringValue() != null;
+      assertTrue("Doesn't have a value: " + fields[i], hasValue);
     }
     /*assertTrue("first field " + fields[0].tokenStreamValue() +  " is not 35.0", pt.getSubType().toExternal(fields[0]).equals(String.valueOf(xy[0])));
     assertTrue("second field is not -79.34", pt.getSubType().toExternal(fields[1]).equals(String.valueOf(xy[1])));
