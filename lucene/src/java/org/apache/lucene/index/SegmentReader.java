@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
@@ -76,7 +77,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private class FieldsReaderLocal extends CloseableThreadLocal<FieldsReader> {
     @Override
     protected FieldsReader initialValue() {
-      return (FieldsReader) core.getFieldsReaderOrig().clone();
+      return core.getFieldsReaderOrig().clone();
     }
   }
 

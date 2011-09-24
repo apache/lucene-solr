@@ -29,6 +29,8 @@ import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.FieldsReader;
+import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -257,7 +259,7 @@ final class SegmentMerger {
     int docCount = 0;
 
     setMatchingSegmentReaders();
-    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, context);
+    final FieldsWriter fieldsWriter = codecInfo.provider.fieldsWriter(directory, segment, context);
     try {
       int idx = 0;
       for (MergeState.IndexReaderAndLiveDocs reader : readers) {
