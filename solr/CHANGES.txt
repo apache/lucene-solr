@@ -349,6 +349,9 @@ New Features
 * SOLR-2066,SOLR-2776: Added support for distributed grouping.
   (Martijn van Groningen, Jasper van Veghel, Matt Beaumont)
 
+* SOLR-2769: Added factory for the new Hunspell stemmer capable of doing stemming 
+  for 99 languages (janhoy, cmale)
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
