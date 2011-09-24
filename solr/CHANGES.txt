@@ -23,13 +23,6 @@ on how to get started.
 
 ==================  3.5.0  ==================
 
-Optimizations
-----------------------
-
-* SOLR-2742: SolrJ: Provide commitWithinMs as optional parameter for all add() methods,
-  making the feature more conveniently accessible for developers (janhoy)
-
-
 New Features
 ----------------------
 * SOLR-2749: Add boundary scanners for FastVectorHighlighter. <boundaryScanner/>
@@ -39,6 +32,14 @@ New Features
 * SOLR-2066,SOLR-2776: Added support for distributed grouping.
   (Martijn van Groningen, Jasper van Veghel, Matt Beaumont)
 
+* SOLR-2769: Added factory for the new Hunspell stemmer capable of doing stemming 
+  for 99 languages (janhoy, cmale)
+
+Optimizations
+----------------------
+
+* SOLR-2742: SolrJ: Provide commitWithinMs as optional parameter for all add() methods,
+  making the feature more conveniently accessible for developers (janhoy)
 
 Bug Fixes
 ----------------------
