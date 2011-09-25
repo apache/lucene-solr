@@ -230,7 +230,7 @@
     <fieldType name="text_ws" class="solr.TextField"
       positionIncrementGap="100">
       <analyzer>
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
       </analyzer>
     </fieldType>
 
@@ -244,7 +244,7 @@
     <fieldType name="text" class="solr.TextField"
       positionIncrementGap="100">
       <analyzer type="index">
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <!--
           in this example, we will only use synonyms at query time
           <filter class="solr.SynonymFilterFactory"
@@ -265,7 +265,7 @@
         
       </analyzer>
       <analyzer type="query">
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"
           ignoreCase="true" expand="true" />
         <filter class="solr.StopFilterFactory" ignoreCase="true"
@@ -287,7 +287,7 @@
     <fieldType name="textTight" class="solr.TextField"
       positionIncrementGap="100">
       <analyzer>
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"
           ignoreCase="true" expand="false" />
         <filter class="solr.StopFilterFactory" ignoreCase="true"
@@ -314,7 +314,7 @@
     <fieldType name="textgen" class="solr.TextField"
       positionIncrementGap="100">
       <analyzer type="index">
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <filter class="solr.StopFilterFactory" ignoreCase="true"
           words="stopwords.txt" enablePositionIncrements="true" />
         <filter class="solr.WordDelimiterFilterFactory"
@@ -323,7 +323,7 @@
         <filter class="solr.LowerCaseFilterFactory" />
       </analyzer>
       <analyzer type="query">
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"
           ignoreCase="true" expand="true" />
         <filter class="solr.StopFilterFactory" ignoreCase="true"
@@ -344,7 +344,7 @@
     <fieldType name="text_rev" class="solr.TextField"
       positionIncrementGap="100">
       <analyzer type="index">
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <filter class="solr.StopFilterFactory" ignoreCase="true"
           words="stopwords.txt" enablePositionIncrements="true" />
         <filter class="solr.WordDelimiterFilterFactory"
@@ -356,7 +356,7 @@
           maxFractionAsterisk="0.33" />
       </analyzer>
       <analyzer type="query">
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"
           ignoreCase="true" expand="true" />
         <filter class="solr.StopFilterFactory" ignoreCase="true"
@@ -374,7 +374,7 @@
       positionIncrementGap="100" > <analyzer> <charFilter
       class="solr.MappingCharFilterFactory"
       mapping="mapping-ISOLatin1Accent.txt"/> <tokenizer
-      class="solr.WhitespaceTokenizerFactory"/> </analyzer> </fieldType>
+      class="solr.MockTokenizerFactory"/> </analyzer> </fieldType>
     -->
 
     <!--
@@ -424,7 +424,7 @@
     <fieldtype name="payloads" stored="false" indexed="true"
       class="solr.TextField">
       <analyzer>
-        <tokenizer class="solr.WhitespaceTokenizerFactory" />
+        <tokenizer class="solr.MockTokenizerFactory" />
         <!--
           The DelimitedPayloadTokenFilter can put payloads on tokens...
           for example, a token of "foo|1.4" would be indexed as "foo"

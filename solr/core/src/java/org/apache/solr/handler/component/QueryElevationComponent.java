@@ -316,6 +316,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     while( tokens.incrementToken() ) {
       norm.append( termAtt.buffer(), 0, termAtt.length() );
     }
+    tokens.end();
+    tokens.close();
     return norm.toString();
   }
 

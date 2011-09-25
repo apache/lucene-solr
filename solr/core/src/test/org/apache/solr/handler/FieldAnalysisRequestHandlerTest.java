@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.params.AnalysisParams;
@@ -261,10 +262,10 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     indexPart = whitetok.get("index");
     assertNotNull("expecting an index token analysis for field 'whitetok'", indexPart);
-    assertEquals("expecting only WhitespaceTokenizer to be applied", 1, indexPart.size());
-    tokenList = indexPart.get(WhitespaceTokenizer.class.getName());
-    assertNotNull("expecting only WhitespaceTokenizer to be applied", tokenList);
-    assertEquals("expecting WhitespaceTokenizer to produce 10 tokens", 10, tokenList.size());
+    assertEquals("expecting only MockTokenizer to be applied", 1, indexPart.size());
+    tokenList = indexPart.get(MockTokenizer.class.getName());
+    assertNotNull("expecting only MockTokenizer to be applied", tokenList);
+    assertEquals("expecting MockTokenizer to produce 10 tokens", 10, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("the", null, "word", 0, 3, 1, new int[]{1}, null, false));
     assertToken(tokenList.get(1), new TokenInfo("quick", null, "word", 4, 9, 2, new int[]{2}, null, false));
     assertToken(tokenList.get(2), new TokenInfo("red", null, "word", 10, 13, 3, new int[]{3}, null, false));
@@ -278,10 +279,10 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     queryPart = whitetok.get("query");
     assertNotNull("expecting a query token analysis for field 'whitetok'", queryPart);
-    assertEquals("expecting only WhitespaceTokenizer to be applied", 1, queryPart.size());
-    tokenList = queryPart.get(WhitespaceTokenizer.class.getName());
-    assertNotNull("expecting only WhitespaceTokenizer to be applied", tokenList);
-    assertEquals("expecting WhitespaceTokenizer to produce 2 tokens", 2, tokenList.size());
+    assertEquals("expecting only MockTokenizer to be applied", 1, queryPart.size());
+    tokenList = queryPart.get(MockTokenizer.class.getName());
+    assertNotNull("expecting only MockTokenizer to be applied", tokenList);
+    assertEquals("expecting MockTokenizer to produce 2 tokens", 2, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "word", 0, 3, 1, new int[]{1}, null, false));
     assertToken(tokenList.get(1), new TokenInfo("brown", null, "word", 4, 9, 2, new int[]{2}, null, false));
 
@@ -328,8 +329,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals("  whátëvêr  ", indexPart.get("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter"));
     assertEquals("  whatever  ", indexPart.get("org.apache.lucene.analysis.charfilter.MappingCharFilter"));
 
-    List<NamedList> tokenList = (List<NamedList>)indexPart.get("org.apache.lucene.analysis.core.WhitespaceTokenizer");
-    assertNotNull("Expecting WhitespaceTokenizer analysis breakdown", tokenList);
+    List<NamedList> tokenList = (List<NamedList>)indexPart.get(MockTokenizer.class.getName());
+    assertNotNull("Expecting MockTokenizer analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 1);
     assertToken(tokenList.get(0), new TokenInfo("whatever", null, "word", 12, 20, 1, new int[]{1}, null, false));
   }
@@ -353,8 +354,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     NamedList<List<NamedList>> indexPart = textType.get("index");
     assertNotNull("expecting an index token analysis for field type 'skutype1'", indexPart);
 
-    List<NamedList> tokenList = indexPart.get("org.apache.lucene.analysis.core.WhitespaceTokenizer");
-    assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
+    List<NamedList> tokenList = indexPart.get(MockTokenizer.class.getName());
+    assertNotNull("Expcting MockTokenizer analysis breakdown", tokenList);
     assertEquals(4, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("hi,", null, "word", 0, 3, 1, new int[]{1}, null, false));
     assertToken(tokenList.get(1), new TokenInfo("3456-12", null, "word", 4, 11, 2, new int[]{2}, null, false));

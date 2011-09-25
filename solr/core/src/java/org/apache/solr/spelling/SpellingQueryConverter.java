@@ -123,6 +123,8 @@ public class SpellingQueryConverter extends QueryConverter  {
             token.setPositionIncrement(posIncAtt.getPositionIncrement());
             result.add(token);
           }
+          stream.end();
+          stream.close();
         } catch (IOException e) {
         }
       }

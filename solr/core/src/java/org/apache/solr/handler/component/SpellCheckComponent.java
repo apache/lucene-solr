@@ -494,6 +494,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       token.setPositionIncrement(posIncAtt.getPositionIncrement());
       result.add(token);
     }
+    ts.end();
+    ts.close();
     return result;
   }
 
