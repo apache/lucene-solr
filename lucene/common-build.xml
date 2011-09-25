@@ -824,9 +824,8 @@
   	<attribute name="title" default="${Name} ${version} API"/>
     <attribute name="overview" default="${src.dir}/overview.html"/>
     <sequential>
-      <copy todir="@{destdir}/../prettify" overwrite="false">
-        <fileset dir="${prettify.dir}"/>
-      </copy>
+      <copy todir="@{destdir}" file="${prettify.dir}/prettify.js" overwrite="false" />
+      <copy todir="@{destdir}" file="${prettify.dir}/prettify.css" overwrite="false" />
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
@@ -844,7 +843,7 @@
           link="${javadoc.link}"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
-          stylesheetfile="@{destdir}/../prettify/stylesheet+prettify.css"
+          stylesheetfile="${prettify.dir}/stylesheet+prettify.css"
           maxmemory="${javadoc.maxmemory}"
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="lucene.experimental" 
@@ -853,7 +852,7 @@
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
       	<link offline="true" packagelistLoc="${javadoc.dir}"/>
         <header><![CDATA[
-           <script src="{@docRoot}/../prettify/prettify.js" type="text/javascript"></script>
+           <script src="{@docRoot}/prettify.js" type="text/javascript"></script>
            <script language="JavaScript">window.onload=function(){windowTitle();prettyPrint();}</script>
         ]]></header>
       	
