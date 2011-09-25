@@ -35,7 +35,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *    dictionary=&quot;en_GB.dic,my_custom.dic&quot;
  *    affix=&quot;en_GB.aff&quot;/&gt;</pre>
  * Dictionaries for many languages are available through the OpenOffice project
- * @see http://wiki.services.openoffice.org/wiki/Dictionaries
+ * See http://wiki.services.openoffice.org/wiki/Dictionaries
  */
 public class HunspellStemFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   
