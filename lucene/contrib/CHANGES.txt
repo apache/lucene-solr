@@ -18,6 +18,11 @@ New Features
 
  * LUCENE-1889: Add MultiTermQuery support for FVH. (Mike Sokolov via Koji Sekiguchi)
 
+ * LUCENE-3458: Change BooleanFilter to have only a single clauses ArrayList
+   (so toString() works in order). It now behaves more like BooleanQuery,
+   implements Iterable<FilterClause>, and allows adding Filters without
+   creating FilterClause.  (Uwe Schindler)
+
  * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
    Hunspell algorithm. (Chris Male)
 
