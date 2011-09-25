@@ -322,6 +322,9 @@ public class BlockJoinQuery extends Query {
         return parentDoc = NO_MORE_DOCS;
       }
 
+      // Every parent must have at least one child:
+      assert parentTarget != 0;
+
       final int prevParentDoc = parentBits.prevSetBit(parentTarget-1);
 
       //System.out.println("  rolled back to prevParentDoc=" + prevParentDoc + " vs parentDoc=" + parentDoc);
