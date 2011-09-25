@@ -390,6 +390,8 @@ Bug Fixes
   move BufferingRequestProcessor from solr-core tests to test-framework so that
   the Solr Cell module can use it. (janhoy, Steve Rowe)
 
+* LUCENE-3457: Upgrade commons-compress to 1.2 (Doron Cohen)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3

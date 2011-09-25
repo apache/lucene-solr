@@ -54,7 +54,7 @@ public class StreamUtils {
 		}
 		private InputStream inputStream(InputStream in) throws IOException {
 			try {
-				return csfType==null ? in : closableCompressorInputStream(this, in);
+				return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
 			} catch (CompressorException e) {
     		IOException ioe = new IOException(e.getMessage());
     		ioe.initCause(e);
@@ -80,7 +80,6 @@ public class StreamUtils {
     extensionToType.put(".gzip", Type.GZIP);
   }
   
-  
   /**
    * Returns an {@link InputStream} over the requested file. This method
    * attempts to identify the appropriate {@link InputStream} instance to return
@@ -105,32 +104,6 @@ public class StreamUtils {
     return type==null ? Type.PLAIN : type;
 	}
   
-  /**
-   * Wrap the compressor input stream so that calling close will also close
-   * the underlying stream - workaround for CommonsCompress bug (COMPRESS-127). 
-   */
-  private static InputStream closableCompressorInputStream(Type type, final InputStream is) throws CompressorException {
-    final InputStream delegee = new CompressorStreamFactory().createCompressorInputStream(type.csfType, is);
-    if (!Type.GZIP.equals(type)) {
-      return delegee; //compressor bug affects only gzip
-    }
-    return new InputStream() {
-			@Override	public int read() throws IOException { return delegee.read();	}
-			@Override	public int read(byte[] b) throws IOException { return delegee.read(b);	}
-			@Override	public int available() throws IOException {	return delegee.available();	}
-			@Override	public synchronized void mark(int readlimit) { delegee.mark(readlimit);	}
-			@Override	public boolean markSupported() { return delegee.markSupported(); }
-			@Override	public int read(byte[] b, int off, int len) throws IOException { return delegee.read(b, off, len); }
-			@Override	public synchronized void reset() throws IOException {	delegee.reset(); }
-			@Override	public long skip(long n) throws IOException {	return delegee.skip(n);	}
-			@Override	
-			public void close() throws IOException { 
-				delegee.close();
-				is.close();
-			}
-    };
-	}
-
   /**
    * Returns an {@link OutputStream} over the requested file, identifying
    * the appropriate {@link OutputStream} instance similar to {@link #inputStream(File)}.

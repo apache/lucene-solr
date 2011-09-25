@@ -5,6 +5,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+09/25/2011
+  LUCENE-3457: Upgrade commons-compress to 1.2 (and undo LUCENE-2980's workaround).
+  (Doron Cohen)
+  
 05/25/2011
   LUCENE-3137: ExtractReuters supports out-dir param suffixed by a slash. (Doron Cohen)
 
