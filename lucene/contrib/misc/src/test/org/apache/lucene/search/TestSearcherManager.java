@@ -47,7 +47,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     writer.commit();
     mgr = new SearcherManager(dir,
                               new SearcherWarmer() {
-                                @Override
+                                // Not with Java 5: @Override
                                 public void warm(IndexSearcher s) throws IOException {
                                   TestSearcherManager.this.warmCalled = true;
                                   s.search(new TermQuery(new Term("body", "united")), 10);

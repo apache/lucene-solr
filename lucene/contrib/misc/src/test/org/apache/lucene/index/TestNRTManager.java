@@ -181,7 +181,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
     nrt = new NRTManager(writer, es,
                          new SearcherWarmer() {
-                           @Override
+                           // Not with Java 5: @Override
                            public void warm(IndexSearcher s) throws IOException {
                              TestNRTManager.this.warmCalled = true;
                              s.search(new TermQuery(new Term("body", "united")), 10);
