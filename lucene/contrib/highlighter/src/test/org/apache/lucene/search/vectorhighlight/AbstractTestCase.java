@@ -194,7 +194,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     return phraseQuery;
   }
 
-  static final class BigramAnalyzer extends ReusableAnalyzerBase {
+  static final class BigramAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       return new TokenStreamComponents(new BasicNGramTokenizer(reader));

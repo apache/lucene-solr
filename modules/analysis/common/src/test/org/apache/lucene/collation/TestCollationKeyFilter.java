@@ -52,7 +52,7 @@ public class TestCollationKeyFilter extends CollationTestBase {
     (collator.getCollationKey(secondRangeEndOriginal).toByteArray()));
 
   
-  public final class TestAnalyzer extends ReusableAnalyzerBase {
+  public final class TestAnalyzer extends Analyzer {
     private Collator _collator;
 
     TestAnalyzer(Collator collator) {

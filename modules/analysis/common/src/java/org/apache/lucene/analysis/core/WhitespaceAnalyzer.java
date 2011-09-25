@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.core;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharTokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 /**
@@ -35,7 +35,7 @@ import org.apache.lucene.util.Version;
  * </ul>
  * <p>
  **/
-public final class WhitespaceAnalyzer extends ReusableAnalyzerBase {
+public final class WhitespaceAnalyzer extends Analyzer {
   
   private final Version matchVersion;
   

@@ -48,7 +48,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TokenSourcesTest extends LuceneTestCase {
   private static final String FIELD = "text";
 
-  private static final class OverlapAnalyzer extends ReusableAnalyzerBase {
+  private static final class OverlapAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {

@@ -338,7 +338,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   /**
    * Return empty tokens for field "f1".
    */
-  private static final class AnalyzerReturningNull extends ReusableAnalyzerBase {
+  private static final class AnalyzerReturningNull extends Analyzer {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random);
 
     public AnalyzerReturningNull() {

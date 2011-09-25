@@ -24,14 +24,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * Tests {@link IndonesianStemmer}
  */
 public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   /* full stemming, no stopwords */
-  Analyzer a = new ReusableAnalyzerBase() {
+  Analyzer a = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new KeywordTokenizer(reader);
@@ -112,7 +111,7 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   }
   
   /* inflectional-only stemming */
-  Analyzer b = new ReusableAnalyzerBase() {
+  Analyzer b = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new KeywordTokenizer(reader);

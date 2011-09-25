@@ -56,7 +56,7 @@ public class TestPositionIncrement extends LuceneTestCase {
   final static boolean VERBOSE = false;
 
   public void testSetPosition() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         return new TokenStreamComponents(new Tokenizer() {

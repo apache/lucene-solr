@@ -18,7 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -41,8 +41,6 @@ import org.xml.sax.InputSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.Reader;
-import java.io.IOException;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -292,50 +290,38 @@ public final class IndexSchema {
     queryAnalyzer = new SolrQueryAnalyzer();
   }
 
-  private class SolrIndexAnalyzer extends Analyzer {
-    protected final HashMap<String,Analyzer> analyzers;
+  private class SolrIndexAnalyzer extends AnalyzerWrapper {
+    protected final HashMap<String, Analyzer> analyzers;
 
     SolrIndexAnalyzer() {
       analyzers = analyzerCache();
     }
 
-    protected HashMap<String,Analyzer> analyzerCache() {
-      HashMap<String,Analyzer> cache = new HashMap<String,Analyzer>();
-       for (SchemaField f : getFields().values()) {
+    protected HashMap<String, Analyzer> analyzerCache() {
+      HashMap<String, Analyzer> cache = new HashMap<String, Analyzer>();
+      for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getAnalyzer();
         cache.put(f.getName(), analyzer);
       }
       return cache;
     }
 
-    protected Analyzer getAnalyzer(String fieldName)
-    {
+    @Override
+    protected Analyzer getWrappedAnalyzer(String fieldName) {
       Analyzer analyzer = analyzers.get(fieldName);
-      return analyzer!=null ? analyzer : getDynamicFieldType(fieldName).getAnalyzer();
+      return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getAnalyzer();
     }
 
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader)
-    {
-      return getAnalyzer(fieldName).tokenStream(fieldName,reader);
-    }
-
-    @Override
-    public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-      return getAnalyzer(fieldName).reusableTokenStream(fieldName,reader);
-    }
-
-    @Override
-    public int getPositionIncrementGap(String fieldName) {
-      return getAnalyzer(fieldName).getPositionIncrementGap(fieldName);
+    protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+      return components;
     }
   }
 
-
   private class SolrQueryAnalyzer extends SolrIndexAnalyzer {
     @Override
-    protected HashMap<String,Analyzer> analyzerCache() {
-      HashMap<String,Analyzer> cache = new HashMap<String,Analyzer>();
+    protected HashMap<String, Analyzer> analyzerCache() {
+      HashMap<String, Analyzer> cache = new HashMap<String, Analyzer>();
        for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getQueryAnalyzer();
         cache.put(f.getName(), analyzer);
@@ -344,10 +330,9 @@ public final class IndexSchema {
     }
 
     @Override
-    protected Analyzer getAnalyzer(String fieldName)
-    {
+    protected Analyzer getWrappedAnalyzer(String fieldName) {
       Analyzer analyzer = analyzers.get(fieldName);
-      return analyzer!=null ? analyzer : getDynamicFieldType(fieldName).getQueryAnalyzer();
+      return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getQueryAnalyzer();
     }
   }
 

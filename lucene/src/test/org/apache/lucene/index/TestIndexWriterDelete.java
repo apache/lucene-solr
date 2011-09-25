@@ -899,7 +899,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final Random r = random;
     Directory dir = newDirectory();
     // note this test explicitly disables payloads
-    final Analyzer analyzer = new ReusableAnalyzerBase() {
+    final Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));

@@ -30,7 +30,7 @@ import java.io.Reader;
  *
  *
  **/
-public final class MockPayloadAnalyzer extends ReusableAnalyzerBase {
+public final class MockPayloadAnalyzer extends Analyzer {
 
   @Override
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {

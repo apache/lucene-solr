@@ -16,20 +16,19 @@ package org.apache.lucene.analysis.query;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.*;
 
 /**
@@ -42,7 +41,7 @@ import java.util.*;
  * this term to take 2 seconds.
  * </p>
  */
-public final class QueryAutoStopWordAnalyzer extends Analyzer {
+public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
 
   private final Analyzer delegate;
   private final Map<String, Set<String>> stopWordsPerField = new HashMap<String, Set<String>>();
@@ -101,7 +100,7 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    */
   public QueryAutoStopWordAnalyzer(
       Version matchVersion,
-      Analyzer delegate, 
+      Analyzer delegate,
       IndexReader indexReader,
       float maxPercentDocs) throws IOException {
     this(matchVersion, delegate, indexReader, indexReader.getFieldNames(IndexReader.FieldOption.INDEXED), maxPercentDocs);
@@ -168,79 +167,18 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
   }
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result;
-    try {
-      result = delegate.reusableTokenStream(fieldName, reader);
-    } catch (IOException e) {
-      result = delegate.tokenStream(fieldName, reader);
-    }
-    Set<String> stopWords = stopWordsPerField.get(fieldName);
-    if (stopWords != null) {
-      result = new StopFilter(matchVersion, result, stopWords);
-    }
-    return result;
-  }
-  
-  private class SavedStreams {
-    /* the underlying stream */
-    TokenStream wrapped;
-
-    /*
-     * when there are no stopwords for the field, refers to wrapped.
-     * if there stopwords, it is a StopFilter around wrapped.
-     */
-    TokenStream withStopFilter;
+  protected Analyzer getWrappedAnalyzer(String fieldName) {
+    return delegate;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    /* map of SavedStreams for each field */
-    Map<String,SavedStreams> streamMap = (Map<String,SavedStreams>) getPreviousTokenStream();
-    if (streamMap == null) {
-      streamMap = new HashMap<String, SavedStreams>();
-      setPreviousTokenStream(streamMap);
+  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+    Set<String> stopWords = stopWordsPerField.get(fieldName);
+    if (stopWords == null) {
+      return components;
     }
-
-    SavedStreams streams = streamMap.get(fieldName);
-    if (streams == null) {
-      /* an entry for this field does not exist, create one */
-      streams = new SavedStreams();
-      streamMap.put(fieldName, streams);
-      streams.wrapped = delegate.reusableTokenStream(fieldName, reader);
-
-      /* if there are any stopwords for the field, save the stopfilter */
-      Set<String> stopWords = stopWordsPerField.get(fieldName);
-      if (stopWords != null) {
-        streams.withStopFilter = new StopFilter(matchVersion, streams.wrapped, stopWords);
-      } else {
-        streams.withStopFilter = streams.wrapped;
-      }
-    } else {
-      /*
-      * an entry for this field exists, verify the wrapped stream has not
-      * changed. if it has not, reuse it, otherwise wrap the new stream.
-      */
-      TokenStream result = delegate.reusableTokenStream(fieldName, reader);
-      if (result == streams.wrapped) {
-        /* the wrapped analyzer reused the stream */
-      } else {
-        /*
-        * the wrapped analyzer did not. if there are any stopwords for the
-        * field, create a new StopFilter around the new stream
-        */
-        streams.wrapped = result;
-        Set<String> stopWords = stopWordsPerField.get(fieldName);
-        if (stopWords != null) {
-          streams.withStopFilter = new StopFilter(matchVersion, streams.wrapped, stopWords);
-        } else {
-          streams.withStopFilter = streams.wrapped;
-        }
-      }
-    }
-
-    return streams.withStopFilter;
+    StopFilter stopFilter = new StopFilter(matchVersion, components.getTokenStream(), stopWords);
+    return new TokenStreamComponents(components.getTokenizer(), stopFilter);
   }
 
   /**

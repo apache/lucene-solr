@@ -55,7 +55,7 @@ public class PayloadHelper {
 
   public IndexReader reader;
 
-  public final class PayloadAnalyzer extends ReusableAnalyzerBase {
+  public final class PayloadAnalyzer extends Analyzer {
 
     public PayloadAnalyzer() {
       super(new PerFieldReuseStrategy());

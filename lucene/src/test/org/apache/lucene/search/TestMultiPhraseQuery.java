@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -346,7 +345,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     }
   }
 
-  private static class CannedAnalyzer extends ReusableAnalyzerBase {
+  private static class CannedAnalyzer extends Analyzer {
     private final TokenAndPos[] tokens;
     
     public CannedAnalyzer(TokenAndPos[] tokens) {

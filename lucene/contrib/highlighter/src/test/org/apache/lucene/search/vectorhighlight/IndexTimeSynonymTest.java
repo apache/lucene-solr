@@ -290,7 +290,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     return token;
   }
   
-  public static final class TokenArrayAnalyzer extends ReusableAnalyzerBase {
+  public static final class TokenArrayAnalyzer extends Analyzer {
     final Token[] tokens;
     public TokenArrayAnalyzer(Token... tokens) {
       this.tokens = tokens;

@@ -405,7 +405,7 @@ public class TestPayloads extends LuceneTestCase {
     /**
      * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
      */
-    private static class PayloadAnalyzer extends ReusableAnalyzerBase {
+    private static class PayloadAnalyzer extends Analyzer {
         Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
 
         public PayloadAnalyzer() {

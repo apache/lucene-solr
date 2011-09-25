@@ -386,7 +386,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
 
-    Analyzer analyzer = new ReusableAnalyzerBase(new ReusableAnalyzerBase.PerFieldReuseStrategy()) {
+    Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -454,7 +454,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // LUCENE-1072
   public void testExceptionFromTokenStream() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new ReusableAnalyzerBase() {
+    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new Analyzer() {
 
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -591,7 +591,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testDocumentsWriterExceptions() throws IOException {
-    Analyzer analyzer = new ReusableAnalyzerBase(new ReusableAnalyzerBase.PerFieldReuseStrategy()) {
+    Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -687,7 +687,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testDocumentsWriterExceptionThreads() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase(new ReusableAnalyzerBase.PerFieldReuseStrategy()) {
+    Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);

@@ -204,7 +204,7 @@
          }
        }
 
-       TokenStream tstream = tfac.create(tchain.charStream(new StringReader(val)));
+       TokenStream tstream = tfac.create(tchain.initReader(new StringReader(val)));
        List<AttributeSource> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());

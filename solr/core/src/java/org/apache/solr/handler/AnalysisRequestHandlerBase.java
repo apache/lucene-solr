@@ -113,7 +113,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenStream tokenStream = tfac.create(tokenizerChain.charStream(new StringReader(value)));
+    TokenStream tokenStream = tfac.create(tokenizerChain.initReader(new StringReader(value)));
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
@@ -197,7 +197,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   /**
    * Converts the list of Tokens to a list of NamedLists representing the tokens.
    *
-   * @param tokens  Tokens to convert
+   * @param tokenList  Tokens to convert
    * @param context The analysis context
    *
    * @return List of NamedLists containing the relevant information taken from the tokens

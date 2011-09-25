@@ -23,7 +23,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
@@ -69,7 +68,7 @@ public class TestSnowballVocab extends LuceneTestCase {
       throws IOException {
     if (VERBOSE) System.out.println("checking snowball language: " + snowballLanguage);
     
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName,
           Reader reader) {

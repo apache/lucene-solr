@@ -389,7 +389,7 @@ public abstract class FieldType extends FieldProperties {
     }
 
     @Override
-    public TokenStreamInfo getStream(String fieldName, Reader reader) {
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer ts = new Tokenizer(reader) {
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -406,7 +406,7 @@ public abstract class FieldType extends FieldProperties {
         }
       };
 
-      return new TokenStreamInfo(ts, ts);
+      return new TokenStreamComponents(ts);
     }
   }
 

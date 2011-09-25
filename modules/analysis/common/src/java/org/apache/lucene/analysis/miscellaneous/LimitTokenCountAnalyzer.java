@@ -18,17 +18,13 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.IndexableField;
-
-import java.io.Reader;
-import java.io.IOException;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 
 /**
  * This Analyzer limits the number of tokens while indexing. It is
  * a replacement for the maximum field length setting inside {@link org.apache.lucene.index.IndexWriter}.
  */
-public final class LimitTokenCountAnalyzer extends Analyzer {
+public final class LimitTokenCountAnalyzer extends AnalyzerWrapper {
   private final Analyzer delegate;
   private final int maxTokenCount;
 
@@ -39,29 +35,16 @@ public final class LimitTokenCountAnalyzer extends Analyzer {
     this.delegate = delegate;
     this.maxTokenCount = maxTokenCount;
   }
-  
+
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new LimitTokenCountFilter(
-      delegate.tokenStream(fieldName, reader), maxTokenCount
-    );
-  }
-  
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    return new LimitTokenCountFilter(
-      delegate.reusableTokenStream(fieldName, reader), maxTokenCount
-    );
-  }
-  
-  @Override
-  public int getPositionIncrementGap(String fieldName) {
-    return delegate.getPositionIncrementGap(fieldName);
+  protected Analyzer getWrappedAnalyzer(String fieldName) {
+    return delegate;
   }
 
   @Override
-  public int getOffsetGap(IndexableField field) {
-    return delegate.getOffsetGap(field);
+  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+    return new TokenStreamComponents(components.getTokenizer(),
+        new LimitTokenCountFilter(components.getTokenStream(), maxTokenCount));
   }
   
   @Override

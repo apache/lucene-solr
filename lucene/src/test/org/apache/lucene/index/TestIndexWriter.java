@@ -1706,7 +1706,7 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  static final class StringSplitAnalyzer extends ReusableAnalyzerBase {
+  static final class StringSplitAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       return new TokenStreamComponents(new StringSplitTokenizer(reader));

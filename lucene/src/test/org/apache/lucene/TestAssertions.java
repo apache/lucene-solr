@@ -19,7 +19,6 @@ package org.apache.lucene;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,7 +34,7 @@ public class TestAssertions extends LuceneTestCase {
     }
   }
   
-  static class TestAnalyzer1 extends ReusableAnalyzerBase {
+  static class TestAnalyzer1 extends Analyzer {
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
@@ -43,7 +42,7 @@ public class TestAssertions extends LuceneTestCase {
     }
   }
 
-  static final class TestAnalyzer2 extends ReusableAnalyzerBase {
+  static final class TestAnalyzer2 extends Analyzer {
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
@@ -51,7 +50,7 @@ public class TestAssertions extends LuceneTestCase {
     }
   }
 
-  static class TestAnalyzer3 extends ReusableAnalyzerBase {
+  static class TestAnalyzer3 extends Analyzer {
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
@@ -59,7 +58,7 @@ public class TestAssertions extends LuceneTestCase {
     }
   }
 
-  static class TestAnalyzer4 extends ReusableAnalyzerBase {
+  static class TestAnalyzer4 extends Analyzer {
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {

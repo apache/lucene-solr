@@ -17,11 +17,8 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.Version;
 
@@ -31,7 +28,7 @@ import org.apache.lucene.util.Version;
  * A shingle is another name for a token based n-gram.
  * </p>
  */
-public final class ShingleAnalyzerWrapper extends Analyzer {
+public final class ShingleAnalyzerWrapper extends AnalyzerWrapper {
 
   private final Analyzer defaultAnalyzer;
   private final int maxShingleSize;
@@ -140,48 +137,18 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   }
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream wrapped;
-    try {
-      wrapped = defaultAnalyzer.reusableTokenStream(fieldName, reader);
-    } catch (IOException e) {
-      wrapped = defaultAnalyzer.tokenStream(fieldName, reader);
-    }
-    ShingleFilter filter = new ShingleFilter(wrapped, minShingleSize, maxShingleSize);
+  protected Analyzer getWrappedAnalyzer(String fieldName) {
+    return defaultAnalyzer;
+  }
+
+  @Override
+  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+    ShingleFilter filter = new ShingleFilter(components.getTokenStream(), minShingleSize, maxShingleSize);
     filter.setMinShingleSize(minShingleSize);
     filter.setMaxShingleSize(maxShingleSize);
     filter.setTokenSeparator(tokenSeparator);
     filter.setOutputUnigrams(outputUnigrams);
     filter.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
-    return filter;
-  }
-  
-  private class SavedStreams {
-    TokenStream wrapped;
-    ShingleFilter shingle;
-  }
-  
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.wrapped = defaultAnalyzer.reusableTokenStream(fieldName, reader);
-      streams.shingle = new ShingleFilter(streams.wrapped);
-      setPreviousTokenStream(streams);
-    } else {
-      TokenStream result = defaultAnalyzer.reusableTokenStream(fieldName, reader);
-      if (result != streams.wrapped) {
-        /* the wrapped analyzer did not, create a new shingle around the new one */
-        streams.wrapped = result;
-        streams.shingle = new ShingleFilter(streams.wrapped);
-      }
-    }
-    streams.shingle.setMaxShingleSize(maxShingleSize);
-    streams.shingle.setMinShingleSize(minShingleSize);
-    streams.shingle.setTokenSeparator(tokenSeparator);
-    streams.shingle.setOutputUnigrams(outputUnigrams);
-    streams.shingle.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
-    return streams.shingle;
+    return new TokenStreamComponents(components.getTokenizer(), filter);
   }
 }

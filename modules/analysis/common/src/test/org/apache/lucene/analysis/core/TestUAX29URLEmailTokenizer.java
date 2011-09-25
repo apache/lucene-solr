@@ -8,7 +8,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 import java.io.BufferedReader;
@@ -50,7 +49,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
-  private Analyzer a = new ReusableAnalyzerBase() {
+  private Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents
       (String fieldName, Reader reader) {
@@ -99,7 +98,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     }
   }
 
-  private Analyzer urlAnalyzer = new ReusableAnalyzerBase() {
+  private Analyzer urlAnalyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(TEST_VERSION_CURRENT, reader);
@@ -109,7 +108,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     }
   };
 
-  private Analyzer emailAnalyzer = new ReusableAnalyzerBase() {
+  private Analyzer emailAnalyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(TEST_VERSION_CURRENT, reader);
@@ -431,7 +430,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   /** @deprecated remove this and sophisticated backwards layer in 5.0 */
   @Deprecated
   public void testCombiningMarksBackwards() throws Exception {
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents
         (String fieldName, Reader reader) {

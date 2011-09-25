@@ -64,7 +64,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private static final byte[] payloadMultiField2 = new byte[]{4};
   protected static Directory directory;
 
-  private static class PayloadAnalyzer extends ReusableAnalyzerBase {
+  private static class PayloadAnalyzer extends Analyzer {
 
     private PayloadAnalyzer() {
       super(new PerFieldReuseStrategy());

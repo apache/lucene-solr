@@ -17,27 +17,26 @@
 
 package org.apache.solr.schema;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.similarities.MockConfigurableSimilarityProvider;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class IndexSchemaTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
-  }    
+  }
 
   /**
    * This test assumes the schema includes:
@@ -45,22 +44,22 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
    * <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
    */
   @Test
-  public void testDynamicCopy() 
+  public void testDynamicCopy()
   {
     SolrCore core = h.getCore();
     assertU(adoc("id", "10", "title", "test", "aaa_dynamic", "aaa"));
     assertU(commit());
-    
+
     Map<String,String> args = new HashMap<String, String>();
     args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
-    
+
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
-    
+
     args = new HashMap<String, String>();
     args.put( CommonParams.Q, "aaa_dynamic:aaa" );
     args.put( "indent", "true" );
@@ -80,46 +79,15 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
             );
     clearIndex();
   }
-  
+
   @Test
-  public void testRuntimeFieldCreation()
-  {
-    // any field manipulation needs to happen when you know the core will not 
-    // be accepting any requests.  Typically this is done within the inform() 
-    // method.  Since this is a single threaded test, we can change the fields
-    // willi-nilly
-
+  public void testSimilarityProviderFactory() {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
-    final String fieldName = "runtimefield";
-    SchemaField sf = new SchemaField( fieldName, schema.getFieldTypes().get( "string" ) );
-    schema.getFields().put( fieldName, sf );
-    
-    // also register a new copy field (from our new field)
-    schema.registerCopyField( fieldName, "dynamic_runtime" );
-    schema.refreshAnalyzers();
-    
-    assertU(adoc("id", "10", "title", "test", fieldName, "aaa"));
-    assertU(commit());
-
-    SolrQuery query = new SolrQuery( fieldName+":aaa" );
-    query.set( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, query );
-    
-    assertQ("Make sure they got in", req
-            ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
-            );
-    
-    // Check to see if our copy field made it out safely
-    query.setQuery( "dynamic_runtime:aaa" );
-    assertQ("Make sure they got in", req
-            ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
-            );
-    clearIndex();
+    SimilarityProvider similarityProvider = core.getSchema().getSimilarityProvider();
+    assertTrue("wrong class", similarityProvider instanceof MockConfigurableSimilarityProvider);
+    assertEquals("is there an echo?", ((MockConfigurableSimilarityProvider)similarityProvider).getPassthrough());
   }
-  
+
   @Test
   public void testIsDynamicField() throws Exception {
     SolrCore core = h.getCore();
@@ -134,6 +102,5 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
     assertFalse(schema.getField("id").multiValued());
-
   }
 }

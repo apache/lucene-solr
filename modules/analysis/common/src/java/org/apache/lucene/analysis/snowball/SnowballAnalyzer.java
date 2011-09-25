@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 import java.io.Reader;
@@ -47,7 +46,7 @@ import java.util.Set;
  * This analyzer will be removed in Lucene 5.0
  */
 @Deprecated
-public final class SnowballAnalyzer extends ReusableAnalyzerBase {
+public final class SnowballAnalyzer extends Analyzer {
   private String name;
   private Set<?> stopSet;
   private final Version matchVersion;

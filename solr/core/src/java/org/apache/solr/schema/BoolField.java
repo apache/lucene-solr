@@ -30,7 +30,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -70,7 +69,7 @@ public class BoolField extends FieldType {
 
   protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
     @Override
-    public TokenStreamInfo getStream(String fieldName, Reader reader) {
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new Tokenizer(reader) {
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
         boolean done = false;
@@ -95,7 +94,7 @@ public class BoolField extends FieldType {
         }
       };
 
-      return new TokenStreamInfo(tokenizer, tokenizer);
+      return new TokenStreamComponents(tokenizer);
     }
   };
 

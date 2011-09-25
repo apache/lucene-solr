@@ -20,15 +20,14 @@ package org.apache.lucene.analysis.util;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.Version;
 
 /**
  * Base class for Analyzers that need to make use of stopword sets. 
  * 
  */
-public abstract class StopwordAnalyzerBase extends ReusableAnalyzerBase {
+public abstract class StopwordAnalyzerBase extends Analyzer {
 
   /**
    * An immutable stopword set
@@ -92,7 +91,7 @@ public abstract class StopwordAnalyzerBase extends ReusableAnalyzerBase {
    *           if loading the stopwords throws an {@link IOException}
    */
   protected static CharArraySet loadStopwordSet(final boolean ignoreCase,
-      final Class<? extends ReusableAnalyzerBase> aClass, final String resource,
+      final Class<? extends Analyzer> aClass, final String resource,
       final String comment) throws IOException {
     final Set<String> wordSet = WordlistLoader.getWordSet(aClass, resource,
         comment);

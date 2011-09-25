@@ -25,13 +25,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * Tests for {@link KStemmer}
  */
 public class TestKStemmer extends BaseTokenStreamTestCase {
-  Analyzer a = new ReusableAnalyzerBase() {
+  Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);

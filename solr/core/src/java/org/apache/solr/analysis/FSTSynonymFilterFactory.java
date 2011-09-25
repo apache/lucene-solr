@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -70,7 +69,7 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
 
     final TokenizerFactory factory = tf == null ? null : loadTokenizerFactory(loader, tf, args);
     
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer(Version.LUCENE_31, reader) : factory.create(reader);

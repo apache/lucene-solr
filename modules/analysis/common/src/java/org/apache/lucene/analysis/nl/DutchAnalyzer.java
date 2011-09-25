@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
@@ -66,7 +65,7 @@ import java.util.Map;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public final class DutchAnalyzer extends ReusableAnalyzerBase {
+public final class DutchAnalyzer extends Analyzer {
   
   /** File containing default Dutch stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "dutch_stop.txt";

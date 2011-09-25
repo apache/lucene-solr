@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
   Analyzer analyzer;
@@ -46,7 +45,7 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
     parser.add(new StringReader(synonymsFile));
     final SynonymMap map = parser.build();
     
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);

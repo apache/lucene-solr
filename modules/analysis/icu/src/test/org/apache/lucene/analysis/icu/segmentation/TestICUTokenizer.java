@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -61,7 +60,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     assertTokenStreamContents(tokenizer, expected);
   }
   
-  private Analyzer a = new ReusableAnalyzerBase() {
+  private Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {

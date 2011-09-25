@@ -112,7 +112,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     }
   }
 
-  public static final class QPTestAnalyzer extends ReusableAnalyzerBase {
+  public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters MockTokenizer with StopFilter. */
     @Override

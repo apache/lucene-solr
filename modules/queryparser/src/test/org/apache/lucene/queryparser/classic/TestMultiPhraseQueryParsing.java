@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.classic;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -42,7 +41,7 @@ public class TestMultiPhraseQueryParsing extends LuceneTestCase {
       }
     }
 
-  private static class CannedAnalyzer extends ReusableAnalyzerBase {
+  private static class CannedAnalyzer extends Analyzer {
     private final TokenAndPos[] tokens;
 
     public CannedAnalyzer(TokenAndPos[] tokens) {

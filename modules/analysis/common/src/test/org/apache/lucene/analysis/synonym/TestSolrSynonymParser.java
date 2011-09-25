@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.junit.Test;
 
 /**
@@ -48,7 +47,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     parser.add(new StringReader(testFile));
     final SynonymMap map = parser.build();
     
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
@@ -121,7 +120,7 @@ public class TestSolrSynonymParser extends BaseTokenStreamTestCase {
     SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
     parser.add(new StringReader(testFile));
     final SynonymMap map = parser.build();
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);

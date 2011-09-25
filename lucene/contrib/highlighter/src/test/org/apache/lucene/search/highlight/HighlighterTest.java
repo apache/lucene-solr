@@ -1802,7 +1802,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 // behaviour to synonyms
 // ===================================================================
 
-final class SynonymAnalyzer extends ReusableAnalyzerBase {
+final class SynonymAnalyzer extends Analyzer {
   private Map<String,String> synonyms;
 
   public SynonymAnalyzer(Map<String,String> synonyms) {

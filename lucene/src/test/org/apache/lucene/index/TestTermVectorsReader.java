@@ -175,7 +175,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
   }
 
-  private class MyAnalyzer extends ReusableAnalyzerBase {
+  private class MyAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       return new TokenStreamComponents(new MyTokenStream());

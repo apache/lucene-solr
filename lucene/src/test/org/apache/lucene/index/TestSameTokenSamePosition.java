@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -63,7 +63,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
   }
 }
 
-final class BugReproAnalyzer extends ReusableAnalyzerBase {
+final class BugReproAnalyzer extends Analyzer {
   @Override
   public TokenStreamComponents createComponents(String arg0, Reader arg1) {
     return new TokenStreamComponents(new BugReproAnalyzerTokenizer());

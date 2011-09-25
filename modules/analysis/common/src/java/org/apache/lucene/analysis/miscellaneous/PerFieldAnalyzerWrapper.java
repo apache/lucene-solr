@@ -18,14 +18,10 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.analysis.AnalyzerWrapper;
 
-import java.io.Reader;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.HashMap;
 
 /**
  * This analyzer is used to facilitate scenarios where different
@@ -50,7 +46,7 @@ import java.util.HashMap;
  * <p>A PerFieldAnalyzerWrapper can be used like any other analyzer, for both indexing
  * and query parsing.
  */
-public final class PerFieldAnalyzerWrapper extends Analyzer {
+public final class PerFieldAnalyzerWrapper extends AnalyzerWrapper {
   private final Analyzer defaultAnalyzer;
   private final Map<String, Analyzer> fieldAnalyzers;
 
@@ -74,47 +70,20 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
    * used for those fields 
    */
   public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer,
-      Map<String,Analyzer> fieldAnalyzers) {
+      Map<String, Analyzer> fieldAnalyzers) {
     this.defaultAnalyzer = defaultAnalyzer;
     this.fieldAnalyzers = (fieldAnalyzers != null) ? fieldAnalyzers : Collections.<String, Analyzer>emptyMap();
   }
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
+  protected Analyzer getWrappedAnalyzer(String fieldName) {
     Analyzer analyzer = fieldAnalyzers.get(fieldName);
-    if (analyzer == null) {
-      analyzer = defaultAnalyzer;
-    }
-
-    return analyzer.tokenStream(fieldName, reader);
-  }
-  
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    Analyzer analyzer = fieldAnalyzers.get(fieldName);
-    if (analyzer == null)
-      analyzer = defaultAnalyzer;
-
-    return analyzer.reusableTokenStream(fieldName, reader);
-  }
-  
-  /** Return the positionIncrementGap from the analyzer assigned to fieldName */
-  @Override
-  public int getPositionIncrementGap(String fieldName) {
-    Analyzer analyzer = fieldAnalyzers.get(fieldName);
-    if (analyzer == null)
-      analyzer = defaultAnalyzer;
-    return analyzer.getPositionIncrementGap(fieldName);
+    return (analyzer != null) ? analyzer : defaultAnalyzer;
   }
 
-  /** Return the offsetGap from the analyzer assigned to field */
   @Override
-  public int getOffsetGap(IndexableField field) {
-    Analyzer analyzer = fieldAnalyzers.get(field.name());
-    if (analyzer == null) {
-      analyzer = defaultAnalyzer;
-    }
-    return analyzer.getOffsetGap(field);
+  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+    return components;
   }
   
   @Override

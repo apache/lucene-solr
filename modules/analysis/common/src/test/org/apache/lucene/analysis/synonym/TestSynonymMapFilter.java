@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util._TestUtil;
 
@@ -387,7 +386,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       final SynonymMap map = b.build();
       final boolean ignoreCase = random.nextBoolean();
       
-      final Analyzer analyzer = new ReusableAnalyzerBase() {
+      final Analyzer analyzer = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
           Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
@@ -409,7 +408,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     parser.add(new StringReader(testFile));
     final SynonymMap map = parser.build();
       
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
@@ -467,7 +466,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("z x c v", "zxcv", keepOrig);
     add("x c", "xc", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -507,7 +506,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("a b", "ab", keepOrig);
     add("a b", "ab", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -527,7 +526,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("a b", "ab", keepOrig);
     add("a b", "ab", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -545,7 +544,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final boolean keepOrig = false;
     add("zoo", "zoo", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -564,7 +563,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("zoo", "zoo", keepOrig);
     add("zoo", "zoo zoo", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -588,7 +587,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("z x c v", "zxcv", keepOrig);
     add("x c", "xc", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -633,7 +632,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final boolean keepOrig = true;
     add("zoo zoo", "zoo", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -652,7 +651,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("zoo zoo", "zoo", keepOrig);
     add("zoo", "zoo zoo", keepOrig);
     final SynonymMap map = b.build();
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);

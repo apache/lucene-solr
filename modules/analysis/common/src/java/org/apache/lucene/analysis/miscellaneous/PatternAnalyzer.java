@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -67,7 +66,7 @@ import org.apache.lucene.util.Version;
  * @deprecated (4.0) use the pattern-based analysis in the analysis/pattern package instead.
  */
 @Deprecated
-public final class PatternAnalyzer extends ReusableAnalyzerBase {
+public final class PatternAnalyzer extends Analyzer {
   
   /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
   public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");

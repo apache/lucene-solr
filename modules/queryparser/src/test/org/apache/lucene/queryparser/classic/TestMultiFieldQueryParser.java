@@ -300,7 +300,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   /**
    * Return empty tokens for field "f1".
    */
-  private static class AnalyzerReturningNull extends ReusableAnalyzerBase {
+  private static class AnalyzerReturningNull extends Analyzer {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random);
 
     public AnalyzerReturningNull() {

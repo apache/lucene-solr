@@ -517,3 +517,8 @@ If you did this before (bytes is a byte[]):
 you can now do this:
 
   new BinaryField("field", bytes)
+
+* LUCENE-3396: Analyzer.tokenStream() and .reusableTokenStream() have been made final.
+  It is now necessary to use Analyzer.TokenStreamComponents to define an analysis process.
+  Analyzer also has its own way of managing the reuse of TokenStreamComponents (either
+  globally, or per-field).  To define another Strategy, implement Analyzer.ReuseStrategy.

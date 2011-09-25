@@ -111,7 +111,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     assertEquals("Wrong payload for the target " + target + ": " + b.bytes[b.offset], (byte) target, b.bytes[b.offset]);
   }
 
-  private static class PayloadAnalyzer extends ReusableAnalyzerBase {
+  private static class PayloadAnalyzer extends Analyzer {
     private final AtomicInteger payloadCount = new AtomicInteger(-1);
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {

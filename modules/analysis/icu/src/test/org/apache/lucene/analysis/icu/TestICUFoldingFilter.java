@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
  * Tests ICUFoldingFilter
  */
 public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
-  Analyzer a = new ReusableAnalyzerBase() {
+  Analyzer a = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
