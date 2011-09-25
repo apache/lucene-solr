@@ -1631,7 +1631,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * default merge policy, but individual merge policies may implement
    * optimize in different ways.
    *
-   * <p> Optimize is a fairly costly operation, so you
+   * <p> Optimize is a very costly operation, so you
    * should only do it if your search performance really
    * requires it.  Many search applications do fine never
    * calling optimize. </p>
