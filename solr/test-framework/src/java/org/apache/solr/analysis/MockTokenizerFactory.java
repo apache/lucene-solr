@@ -30,7 +30,6 @@ public class MockTokenizerFactory extends BaseTokenizerFactory {
   int pattern;
   boolean enableChecks;
   
-  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     String patternArg = args.get("pattern");
@@ -52,7 +51,6 @@ public class MockTokenizerFactory extends BaseTokenizerFactory {
   }
 
 
-  @Override
   public Tokenizer create(Reader input) {
     MockTokenizer t = new MockTokenizer(input, pattern, false);
     t.setEnableChecks(enableChecks);
