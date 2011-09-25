@@ -227,7 +227,7 @@
         <!-- KeywordTokenizer does no actual tokenizing, so the entire
              input string is preserved as a single token
           -->
-        <tokenizer class="solr.KeywordTokenizerFactory"/>
+        <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
         <!-- The LowerCase TokenFilter does what you expect, which can be
              when you want your sorting to be case insensitive
           -->

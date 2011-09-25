@@ -126,7 +126,7 @@
       <analyzer><tokenizer class="solr.LowerCaseTokenizerFactory"/></analyzer>
     </fieldtype>
     <fieldtype name="keywordtok" class="solr.TextField">
-      <analyzer><tokenizer class="solr.KeywordTokenizerFactory"/></analyzer>
+      <analyzer><tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/></analyzer>
     </fieldtype>
     <fieldtype name="standardtok" class="solr.TextField">
       <analyzer><tokenizer class="solr.StandardTokenizerFactory"/></analyzer>
@@ -169,13 +169,13 @@
     </fieldtype>
     <fieldtype name="patternreplacefilt" class="solr.TextField">
       <analyzer type="index">
-        <tokenizer class="solr.KeywordTokenizerFactory"/>
+        <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
         <filter class="solr.PatternReplaceFilterFactory"
                 pattern="([^a-zA-Z])" replacement="_" replace="all"
         />
       </analyzer>
       <analyzer type="query">
-        <tokenizer class="solr.KeywordTokenizerFactory"/>
+        <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="porterfilt" class="solr.TextField">
