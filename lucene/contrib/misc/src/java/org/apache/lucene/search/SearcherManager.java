@@ -194,7 +194,7 @@ public class SearcherManager implements Closeable {
    *  searches still in process in other threads won't be
    *  affected, and they should still call {@link #release}
    *  after they are done. */
-  @Override
+  // Not in Java 5: @Override
   public void close() throws IOException {
     swapSearcher(null);
   }
