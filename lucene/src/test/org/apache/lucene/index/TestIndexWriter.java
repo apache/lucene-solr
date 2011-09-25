@@ -1938,4 +1938,29 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     d.close();
   }
+
+  public void testNRTReaderVersion() throws Exception {
+    Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    doc.add(newField("id", "0", Field.Store.YES, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    long version = r.getVersion();
+    r.close();
+
+    w.addDocument(doc);
+    r = w.getReader();
+    long version2 = r.getVersion();
+    r.close();
+    assert(version2 > version);
+
+    w.deleteDocuments(new Term("id", "0"));
+    r = w.getReader();
+    w.close();
+    long version3 = r.getVersion();
+    r.close();
+    assert(version3 > version2);
+    d.close();
+  }
 }

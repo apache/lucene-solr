@@ -26,6 +26,11 @@ New Features
  * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
    Hunspell algorithm. (Chris Male)
 
+ * LUCENE-3445: Added SearcherManager, to manage sharing and reopening
+   IndexSearchers across multiple search threads.  IndexReader's
+   refCount is used to safely close the reader only once all threads are done
+   using it.  (Michael McCandless)
+
 API Changes
 
  * LUCENE-3431: Deprecated QueryAutoStopWordAnalyzer.addStopWords* since they
