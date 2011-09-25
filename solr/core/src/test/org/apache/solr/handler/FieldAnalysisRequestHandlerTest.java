@@ -291,18 +291,18 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     indexPart = keywordtok.get("index");
     assertNotNull("expecting an index token analysis for field 'keywordtok'", indexPart);
-    assertEquals("expecting only KeywordTokenizer to be applied", 1, indexPart.size());
-    tokenList = indexPart.get(KeywordTokenizer.class.getName());
-    assertNotNull("expecting only KeywordTokenizer to be applied", tokenList);
-    assertEquals("expecting KeywordTokenizer to produce 1 token", 1, tokenList.size());
+    assertEquals("expecting only MockTokenizer to be applied", 1, indexPart.size());
+    tokenList = indexPart.get(MockTokenizer.class.getName());
+    assertNotNull("expecting only MockTokenizer to be applied", tokenList);
+    assertEquals("expecting MockTokenizer to produce 1 token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("the quick red fox jumped over the lazy brown dogs", null, "word", 0, 49, 1, new int[]{1}, null, false));
 
     queryPart = keywordtok.get("query");
     assertNotNull("expecting a query token analysis for field 'keywordtok'", queryPart);
-    assertEquals("expecting only KeywordTokenizer to be applied", 1, queryPart.size());
-    tokenList = queryPart.get(KeywordTokenizer.class.getName());
-    assertNotNull("expecting only KeywordTokenizer to be applied", tokenList);
-    assertEquals("expecting KeywordTokenizer to produce 1 token", 1, tokenList.size());
+    assertEquals("expecting only MockTokenizer to be applied", 1, queryPart.size());
+    tokenList = queryPart.get(MockTokenizer.class.getName());
+    assertNotNull("expecting only MockTokenizer to be applied", tokenList);
+    assertEquals("expecting MockTokenizer to produce 1 token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox brown", null, "word", 0, 9, 1, new int[]{1}, null, false));
 
   }
