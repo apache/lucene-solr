@@ -95,6 +95,11 @@ New Features
    implements Iterable<FilterClause>, and allows adding Filters without
    creating FilterClause.  (Uwe Schindler)
 
+ * LUCENE-3445: Added SearcherManager, to manage sharing and reopening
+   IndexSearchers across multiple search threads.  IndexReader's
+   refCount is used to safely close the reader only once all threads are done
+   using it.  (Michael McCandless)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the

@@ -19,16 +19,16 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;       // javadocs
-import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherWarmer;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 // TODO
@@ -46,7 +46,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * caller is waiting for a specific generation searcher. </p>
  *
  * @lucene.experimental
-*/
+ */
 
 public class NRTManager implements Closeable {
   private final IndexWriter writer;
@@ -54,36 +54,36 @@ public class NRTManager implements Closeable {
   private final AtomicLong indexingGen;
   private final AtomicLong searchingGen;
   private final AtomicLong noDeletesSearchingGen;
+  private final SearcherWarmer warmer;
   private final List<WaitingListener> waitingListeners = new CopyOnWriteArrayList<WaitingListener>();
 
   private volatile IndexSearcher currentSearcher;
   private volatile IndexSearcher noDeletesCurrentSearcher;
 
   /**
-   * Create new NRTManager.  Note that this installs a
-   * merged segment warmer on the provided IndexWriter's
-   * config.
+   * Create new NRTManager.
    * 
    *  @param writer IndexWriter to open near-real-time
    *         readers
-  */
-  public NRTManager(IndexWriter writer) throws IOException {
-    this(writer, null);
-  }
-
-  /**
-   * Create new NRTManager.  Note that this installs a
-   * merged segment warmer on the provided IndexWriter's
-   * config.
-   * 
-   *  @param writer IndexWriter to open near-real-time
-   *         readers
-   *  @param es ExecutorService to pass to the IndexSearcher
-  */
-  public NRTManager(IndexWriter writer, ExecutorService es) throws IOException {
+   *  @param es optional ExecutorService so different segments can
+   *         be searched concurrently (see {@link
+   *         IndexSearcher#IndexSearcher(IndexReader,ExecutorService)}.  Pass null
+   *         to search segments sequentially.
+   *  @param warmer optional {@link SearcherWarmer}.  Pass
+   *         null if you don't require the searcher to warmed
+   *         before going live.  If this is non-null then a
+   *         merged segment warmer is installed on the
+   *         provided IndexWriter's config.
+   *
+   *  <p><b>NOTE</b>: the provided {@link SearcherWarmer} is
+   *  not invoked for the initial searcher; you should
+   *  warm it yourself if necessary.
+   */
+  public NRTManager(IndexWriter writer, ExecutorService es, SearcherWarmer warmer) throws IOException {
 
     this.writer = writer;
     this.es = es;
+    this.warmer = warmer;
     indexingGen = new AtomicLong(1);
     searchingGen = new AtomicLong(-1);
     noDeletesSearchingGen = new AtomicLong(-1);
@@ -91,13 +91,15 @@ public class NRTManager implements Closeable {
     // Create initial reader:
     swapSearcher(new IndexSearcher(IndexReader.open(writer, true), es), 0, true);
 
-    writer.getConfig().setMergedSegmentWarmer(
+    if (this.warmer != null) {
+      writer.getConfig().setMergedSegmentWarmer(
          new IndexWriter.IndexReaderWarmer() {
            @Override
            public void warm(IndexReader reader) throws IOException {
-             NRTManager.this.warm(reader);
+             NRTManager.this.warmer.warm(new IndexSearcher(reader, NRTManager.this.es));
            }
          });
+    }
   }
 
   /** NRTManager invokes this interface to notify it when a
@@ -120,25 +122,25 @@ public class NRTManager implements Closeable {
     waitingListeners.remove(l);
   }
 
-  public long updateDocument(Term t, Document d, Analyzer a) throws IOException {
+  public long updateDocument(Term t, Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
     writer.updateDocument(t, d, a);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
 
-  public long updateDocument(Term t, Document d) throws IOException {
+  public long updateDocument(Term t, Iterable<? extends IndexableField> d) throws IOException {
     writer.updateDocument(t, d);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
 
-  public long updateDocuments(Term t, Iterable<Document> docs, Analyzer a) throws IOException {
+  public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
     writer.updateDocuments(t, docs, a);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
 
-  public long updateDocuments(Term t, Iterable<Document> docs) throws IOException {
+  public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     writer.updateDocuments(t, docs);
     // Return gen as of when indexing finished:
     return indexingGen.get();
@@ -156,25 +158,25 @@ public class NRTManager implements Closeable {
     return indexingGen.get();
   }
 
-  public long addDocument(Document d, Analyzer a) throws IOException {
+  public long addDocument(Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
     writer.addDocument(d, a);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
 
-  public long addDocuments(Iterable<Document> docs, Analyzer a) throws IOException {
+  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
     writer.addDocuments(docs, a);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
 
-  public long addDocument(Document d) throws IOException {
+  public long addDocument(Iterable<? extends IndexableField> d) throws IOException {
     writer.addDocument(d);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
 
-  public long addDocuments(Iterable<Document> docs) throws IOException {
+  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     writer.addDocuments(docs);
     // Return gen as of when indexing finished:
     return indexingGen.get();
@@ -262,7 +264,10 @@ public class NRTManager implements Closeable {
   }
 
   /** Release the searcher obtained from {@link
-   *  #get()} or {@link #get(long)}. */
+   *  #get()} or {@link #get(long)}.
+   *
+   *  <p><b>NOTE</b>: it's safe to call this after {@link
+   *  #close}. */
   public void release(IndexSearcher s) throws IOException {
     s.getIndexReader().decRef();
   }
@@ -304,21 +309,17 @@ public class NRTManager implements Closeable {
     final IndexSearcher startSearcher = noDeletesSearchingGen.get() > searchingGen.get() ? noDeletesCurrentSearcher : currentSearcher;
     final IndexReader nextReader = startSearcher.getIndexReader().reopen(writer, applyDeletes);
 
-    warm(nextReader);
+    final IndexSearcher nextSearcher = new IndexSearcher(nextReader, es);
+    if (warmer != null) {
+      warmer.warm(nextSearcher);
+    }
 
     // Transfer reference to swapSearcher:
-    swapSearcher(new IndexSearcher(nextReader, es),
+    swapSearcher(nextSearcher,
                  newSearcherGen,
                  applyDeletes);
 
     return true;
-  }
-
-  /** Override this to warm the newly opened reader before
-   *  it's swapped in.  Note that this is called both for
-   *  newly merged segments and for new top-level readers
-   *  opened by #reopen. */
-  protected void warm(IndexReader reader) throws IOException {
   }
 
   // Steals a reference from newSearcher:
@@ -350,7 +351,12 @@ public class NRTManager implements Closeable {
     //System.out.println(Thread.currentThread().getName() + ": done");
   }
 
-  /** NOTE: caller must separately close the writer. */
+  /** Close this NRTManager to future searching.  Any
+   *  searches still in process in other threads won't be
+   *  affected, and they should still call {@link #release}
+   *  after they are done.
+   *
+   * <p><b>NOTE</b>: caller must separately close the writer. */
   @Override
   public void close() throws IOException {
     swapSearcher(null, indexingGen.getAndIncrement(), true);
