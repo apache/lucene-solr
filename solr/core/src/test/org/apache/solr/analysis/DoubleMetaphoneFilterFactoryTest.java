@@ -20,8 +20,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
@@ -29,7 +29,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
     factory.init(new HashMap<String, String>());
-    TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
+    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
@@ -43,7 +43,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
     parameters.put("maxCodeLength", "8");
     factory.init(parameters);
 
-    TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
+    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
@@ -56,12 +56,13 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
   public void testReset() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
     factory.init(new HashMap<String, String>());
-    TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
+    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
     CharTermAttribute termAtt = filteredStream.addAttribute(CharTermAttribute.class);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
     
+    filteredStream.reset();
     assertTrue(filteredStream.incrementToken());
     assertEquals(13, termAtt.length());
     assertEquals("international", termAtt.toString());
