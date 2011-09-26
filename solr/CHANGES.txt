@@ -97,6 +97,10 @@ Bug Fixes
 
 * LUCENE-3457: Upgrade commons-compress to 1.2 (Doron Cohen)
 
+* SOLR-2757: min() and max() functions now support an arbitrary number of 
+  ValueSources  (Bill Bell via hossman)
+
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
