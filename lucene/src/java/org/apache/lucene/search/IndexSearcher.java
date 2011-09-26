@@ -276,6 +276,34 @@ public class IndexSearcher extends Searcher {
   }
 
   /** Finds the top <code>n</code>
+   * hits for <code>query</code> where all results are after a previous 
+   * result (<code>after</code>).
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, int n) throws IOException {
+    return searchAfter(after, query, null, n);
+  }
+  
+  /** Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null,
+   * where all results are after a previous result (<code>after</code>).
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n) throws IOException {
+    return search(createNormalizedWeight(query), filter, after, n);
+  }
+  
+  /** Finds the top <code>n</code>
    * hits for <code>query</code>.
    *
    * @throws BooleanQuery.TooManyClauses
@@ -379,6 +407,17 @@ public class IndexSearcher extends Searcher {
    */
   @Override
   public TopDocs search(Weight weight, Filter filter, int nDocs) throws IOException {
+    return search(weight, filter, null, nDocs);
+  }
+  
+  /**
+   * Expert: Low-level search implementation.  Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null,
+   * returning results after <code>after</code>.
+   * 
+   * @throws BooleanQuery.TooManyClauses
+   */
+  protected TopDocs search(Weight weight, Filter filter, ScoreDoc after, int nDocs) throws IOException {
 
     if (executor == null) {
       // single thread
@@ -387,7 +426,7 @@ public class IndexSearcher extends Searcher {
         limit = 1;
       }
       nDocs = Math.min(nDocs, limit);
-      TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, !weight.scoresDocsOutOfOrder());
+      TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, after, !weight.scoresDocsOutOfOrder());
       search(weight, filter, collector);
       return collector.topDocs();
     } else {
@@ -397,7 +436,7 @@ public class IndexSearcher extends Searcher {
     
       for (int i = 0; i < subReaders.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq, docStarts[i]));
+                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, after, nDocs, hq, docStarts[i]));
       }
 
       int totalHits = 0;
@@ -670,23 +709,32 @@ public class IndexSearcher extends Searcher {
     private final IndexSearcher searchable;
     private final Weight weight;
     private final Filter filter;
+    private final ScoreDoc after;
     private final int nDocs;
     private final HitQueue hq;
     private final int docBase;
 
     public MultiSearcherCallableNoSort(Lock lock, IndexSearcher searchable, Weight weight,
-        Filter filter, int nDocs, HitQueue hq, int docBase) {
+        Filter filter, ScoreDoc after, int nDocs, HitQueue hq, int docBase) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
       this.filter = filter;
+      this.after = after;
       this.nDocs = nDocs;
       this.hq = hq;
       this.docBase = docBase;
     }
 
     public TopDocs call() throws IOException {
-      final TopDocs docs = searchable.search (weight, filter, nDocs);
+      final TopDocs docs;
+      // we could call the 4-arg method, but we want to invoke the old method
+      // for backwards purposes unless someone is using the new searchAfter.
+      if (after == null) {
+        docs = searchable.search (weight, filter, nDocs);
+      } else {
+        docs = searchable.search (weight, filter, after, nDocs);
+      }
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         final ScoreDoc scoreDoc = scoreDocs[j];

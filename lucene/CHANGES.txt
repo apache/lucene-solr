@@ -56,6 +56,10 @@ New Features
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
   (Uwe Schindler)
 
+* LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a 
+  specified ScoreDoc (e.g. last document on the previous page) to support deep 
+  paging use cases.  (Aaron McCurry, Grant Ingersoll, Robert Muir)
+
 Optimizations
 
 * LUCENE-3426: Add NGramPhraseQuery which extends PhraseQuery and tries to reduce
