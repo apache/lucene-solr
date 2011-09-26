@@ -113,8 +113,12 @@ public class ZkTestServer {
       if (zkDb != null) {
         zkDb.close();
       }
-      waitForServerDown(getZkHost() + ":" + getPort(), 5000);
-      cnxnFactory.shutdown();
+      if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
+        waitForServerDown(getZkHost() + ":" + getPort(), 5000);
+      }
+      if (cnxnFactory != null) {
+        cnxnFactory.shutdown();
+      }
     }
 
     public int getLocalPort() {
