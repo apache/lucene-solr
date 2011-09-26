@@ -50,18 +50,26 @@ public class TestLongPostings extends LuceneTestCase {
       final TokenStream ts = a.reusableTokenStream("foo", new StringReader(s));
       final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef termBytes = termAtt.getBytesRef();
-      int count = 0;
       ts.reset();
+
+      int count = 0;
+      boolean changed = false;
+
       while(ts.incrementToken()) {
         termAtt.fillBytesRef();
         if (count == 0 && !termBytes.utf8ToString().equals(s)) {
-          break;
+          // The value was changed during analysis.  Keep iterating so the
+          // tokenStream is exhausted.
+          changed = true;
         }
         count++;
       }
+
       ts.end();
       ts.close();
-      if (count == 1) {
+
+      // Did we iterate just once and the value was unchanged?
+      if (!changed && count == 1) {
         return s;
       }
     }
