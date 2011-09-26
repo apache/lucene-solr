@@ -1193,52 +1193,85 @@ public final class SolrCore implements SolrInfoMBean {
       // warm the new searcher based on the current searcher.
       // should this go before the other event handlers or after?
       if (currSearcher != null) {
-        future = searcherExecutor.submit(
-                new Callable() {
-                  public Object call() throws Exception {
-                    try {
-                      newSearcher.warm(currSearcher);
-                    } catch (Throwable e) {
-                      SolrException.logOnce(log,null,e);
+        try {
+          future = searcherExecutor.submit(
+                  new Callable() {
+                    public Object call() throws Exception {
+                      try {
+                        newSearcher.warm(currSearcher);
+                      } catch (Throwable e) {
+                        SolrException.logOnce(log,null,e);
+                      }
+                      return null;
                     }
-                    return null;
                   }
-                }
-        );
+          );
+        } catch(Exception e) {
+          // if submit fails, newSearchHolder does not get decref'd
+          if (newSearchHolder != null) {
+            newSearchHolder.decref();
+            if (returnSearcher) {
+              newSearchHolder.decref();
+            }
+          }
+          throw e;
+        }
       }
       
       if (currSearcher==null && firstSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-                new Callable() {
-                  public Object call() throws Exception {
-                    try {
-                      for (SolrEventListener listener : firstSearcherListeners) {
-                        listener.newSearcher(newSearcher,null);
+        try {
+          future = searcherExecutor.submit(
+                  new Callable() {
+                    public Object call() throws Exception {
+                      try {
+                        for (SolrEventListener listener : firstSearcherListeners) {
+                          listener.newSearcher(newSearcher,null);
+                        }
+                      } catch (Throwable e) {
+                        SolrException.logOnce(log,null,e);
                       }
-                    } catch (Throwable e) {
-                      SolrException.logOnce(log,null,e);
+                      return null;
                     }
-                    return null;
                   }
-                }
-        );
+          );
+        } catch(Exception e) {
+          // if submit fails, newSearchHolder does not get decref'd
+          if (newSearchHolder != null) {
+            newSearchHolder.decref();
+            if (returnSearcher) {
+              newSearchHolder.decref();
+            }
+          }
+          throw e;
+        }
       }
 
       if (currSearcher!=null && newSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-                new Callable() {
-                  public Object call() throws Exception {
-                    try {
-                      for (SolrEventListener listener : newSearcherListeners) {
-                        listener.newSearcher(newSearcher, currSearcher);
+        try {
+          future = searcherExecutor.submit(
+                  new Callable() {
+                    public Object call() throws Exception {
+                      try {
+                        for (SolrEventListener listener : newSearcherListeners) {
+                          listener.newSearcher(newSearcher, currSearcher);
+                        }
+                      } catch (Throwable e) {
+                        SolrException.logOnce(log,null,e);
                       }
-                    } catch (Throwable e) {
-                      SolrException.logOnce(log,null,e);
+                      return null;
                     }
-                    return null;
                   }
-                }
-        );
+          );
+      } catch(Exception e) {
+        // if submit fails, newSearchHolder does not get decref'd
+        if (newSearchHolder != null) {
+          newSearchHolder.decref();
+          if (returnSearcher) {
+            newSearchHolder.decref();
+          }
+        }
+        throw e;
+      }
       }
 
       // WARNING: this code assumes a single threaded executor (that all tasks
@@ -1268,7 +1301,12 @@ public final class SolrCore implements SolrInfoMBean {
           );
         } catch(Exception e) {
           // if submit fails, newSearchHolder does not get decref'd
-          if (returnSearcher && newSearchHolder != null) newSearchHolder.decref();
+          if (newSearchHolder != null) {
+            newSearchHolder.decref();
+            if (returnSearcher) {
+              newSearchHolder.decref();
+            }
+          }
           throw e;
         }
       }
