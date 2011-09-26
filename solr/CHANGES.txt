@@ -538,6 +538,9 @@ Bug Fixes
   failed due to sort by function changes introduced in SOLR-1297
   (Mitsu Hadeishi, hossman)
 
+* SOLR-2791: Replication: abortfetch command is broken if replication was started
+  by fetchindex command instead of a regular poll (Yury Kats via shalin)
+
  Other Changes
 ----------------------
 
