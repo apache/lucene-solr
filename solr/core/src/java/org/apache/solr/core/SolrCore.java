@@ -1245,26 +1245,32 @@ public final class SolrCore implements SolrInfoMBean {
       // queued will finish first).
       final RefCounted<SolrIndexSearcher> currSearcherHolderF = currSearcherHolder;
       if (!alreadyRegistered) {
-        future = searcherExecutor.submit(
-                new Callable() {
-                  public Object call() throws Exception {
-                    try {
-                      // signal that we no longer need to decrement
-                      // the count *before* registering the searcher since
-                      // registerSearcher will decrement even if it errors.
-                      decrementOnDeckCount[0]=false;
-                      registerSearcher(newSearchHolder);
-                    } catch (Throwable e) {
-                      SolrException.logOnce(log,null,e);
-                    } finally {
-                      // we are all done with the old searcher we used
-                      // for warming...
-                      if (currSearcherHolderF!=null) currSearcherHolderF.decref();
+        try {
+          future = searcherExecutor.submit(
+                  new Callable() {
+                    public Object call() throws Exception {
+                      try {
+                        // signal that we no longer need to decrement
+                        // the count *before* registering the searcher since
+                        // registerSearcher will decrement even if it errors.
+                        decrementOnDeckCount[0]=false;
+                        registerSearcher(newSearchHolder);
+                      } catch (Throwable e) {
+                        SolrException.logOnce(log,null,e);
+                      } finally {
+                        // we are all done with the old searcher we used
+                        // for warming...
+                        if (currSearcherHolderF!=null) currSearcherHolderF.decref();
+                      }
+                      return null;
                     }
-                    return null;
                   }
-                }
-        );
+          );
+        } catch(Exception e) {
+          // if submit fails, newSearchHolder does not get decref'd
+          if (newSearchHolder != null) newSearchHolder.decref();
+          throw e;
+        }
       }
 
       if (waitSearcher != null) {

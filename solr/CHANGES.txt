@@ -368,6 +368,9 @@ Bug Fixes
 
 * SOLR-2780: Fixed issue where multi select facets didn't respect group.truncate parameter.
   (Martijn van Groningen, Ramzi Alqrainy)
+  
+* SOLR-2793: In rare cases (most likely during shutdown), a SolrIndexSearcher can be left
+  open if the executor rejects a task. (Mark Miller)
 
  Other Changes
 ----------------------
