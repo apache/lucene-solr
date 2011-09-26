@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.common.ResourceLoader;
 
@@ -51,9 +51,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(""));
     TokenStream tsUpper = factory.create(
-        new KeywordTokenizer(new StringReader(turkishUpperCase)));
+        new MockTokenizer(new StringReader(turkishUpperCase), MockTokenizer.KEYWORD, false));
     TokenStream tsLower = factory.create(
-        new KeywordTokenizer(new StringReader(turkishLowerCase)));
+        new MockTokenizer(new StringReader(turkishLowerCase), MockTokenizer.KEYWORD, false));
     assertCollatesToSame(tsUpper, tsLower);
   }
   
@@ -71,9 +71,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(""));
     TokenStream tsUpper = factory.create(
-        new KeywordTokenizer(new StringReader(turkishUpperCase)));
+        new MockTokenizer(new StringReader(turkishUpperCase), MockTokenizer.KEYWORD, false));
     TokenStream tsLower = factory.create(
-        new KeywordTokenizer(new StringReader(turkishLowerCase)));
+        new MockTokenizer(new StringReader(turkishLowerCase), MockTokenizer.KEYWORD, false));
     assertCollatesToSame(tsUpper, tsLower);
   }
   
@@ -92,9 +92,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(""));
     TokenStream tsFull = factory.create(
-        new KeywordTokenizer(new StringReader(fullWidth)));
+        new MockTokenizer(new StringReader(fullWidth), MockTokenizer.KEYWORD, false));
     TokenStream tsHalf = factory.create(
-        new KeywordTokenizer(new StringReader(halfWidth)));
+        new MockTokenizer(new StringReader(halfWidth), MockTokenizer.KEYWORD, false));
     assertCollatesToSame(tsFull, tsHalf);
   }
   
@@ -112,9 +112,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(""));
     TokenStream tsUpper = factory.create(
-        new KeywordTokenizer(new StringReader(upperCase)));
+        new MockTokenizer(new StringReader(upperCase), MockTokenizer.KEYWORD, false));
     TokenStream tsLower = factory.create(
-        new KeywordTokenizer(new StringReader(lowerCase)));
+        new MockTokenizer(new StringReader(lowerCase), MockTokenizer.KEYWORD, false));
     assertCollatesToSame(tsUpper, tsLower);
   }
 
@@ -148,9 +148,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(tailoredRules));
     TokenStream tsUmlaut = factory.create(
-        new KeywordTokenizer(new StringReader(germanUmlaut)));
+        new MockTokenizer(new StringReader(germanUmlaut), MockTokenizer.KEYWORD, false));
     TokenStream tsOE = factory.create(
-        new KeywordTokenizer(new StringReader(germanOE)));
+        new MockTokenizer(new StringReader(germanOE), MockTokenizer.KEYWORD, false));
 
     assertCollatesToSame(tsUmlaut, tsOE);
   }
@@ -177,6 +177,8 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
   
   private void assertCollatesToSame(TokenStream stream1, TokenStream stream2)
       throws IOException {
+    stream1.reset();
+    stream2.reset();
     CharTermAttribute term1 = stream1
         .addAttribute(CharTermAttribute.class);
     CharTermAttribute term2 = stream2
@@ -186,5 +188,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     assertEquals(term1.toString(), term2.toString());
     assertFalse(stream1.incrementToken());
     assertFalse(stream2.incrementToken());
+    stream1.end();
+    stream2.end();
+    stream1.close();
+    stream2.close();
   }
 }

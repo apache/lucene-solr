@@ -22,8 +22,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
@@ -41,7 +41,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenTestCase {
     factory.inform(new SolrResourceLoader("solr"));
     
     Reader reader = new StringReader("abc");
-    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "ab" });
   }
 }

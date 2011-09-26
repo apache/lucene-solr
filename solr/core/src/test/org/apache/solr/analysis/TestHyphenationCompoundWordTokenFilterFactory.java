@@ -22,9 +22,9 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
@@ -37,7 +37,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenTest
    */
   public void testHyphenationWithDictionary() throws Exception {
     Reader reader = new StringReader("min veninde som er lidt af en læsehest");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
@@ -60,7 +60,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenTest
    */
   public void testHyphenationOnly() throws Exception {
     Reader reader = new StringReader("basketballkurv");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);

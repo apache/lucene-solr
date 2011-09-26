@@ -20,9 +20,9 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.th.ThaiWordFilter;
 
 /**
@@ -35,7 +35,7 @@ public class TestThaiWordFilterFactory extends BaseTokenTestCase {
   public void testWordBreak() throws Exception {
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ThaiWordFilterFactory factory = new ThaiWordFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     TokenStream stream = factory.create(tokenizer);

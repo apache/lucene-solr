@@ -22,9 +22,9 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Simple tests to ensure the Indonesian stem filter factory is working.
@@ -35,7 +35,7 @@ public class TestIndonesianStemFilterFactory extends BaseTokenTestCase {
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("dibukukannya");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     IndonesianStemFilterFactory factory = new IndonesianStemFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     factory.init(args);
@@ -48,7 +48,7 @@ public class TestIndonesianStemFilterFactory extends BaseTokenTestCase {
    */
   public void testStemmingInflectional() throws Exception {
     Reader reader = new StringReader("dibukukannya");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     IndonesianStemFilterFactory factory = new IndonesianStemFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("stemDerivational", "false");

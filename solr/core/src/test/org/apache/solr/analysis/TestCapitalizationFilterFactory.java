@@ -21,10 +21,9 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 
 /**
@@ -41,56 +40,56 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init( args );
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("kiTTEN"))),
+        new MockTokenizer(new StringReader("kiTTEN"), MockTokenizer.WHITESPACE, false)),
         new String[] { "Kitten" });
     
     factory.forceFirstLetter = true;
 
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("and"))),
+        new MockTokenizer(new StringReader("and"), MockTokenizer.WHITESPACE, false)),
         new String[] { "And" });
 
     //first is forced, but it's not a keep word, either
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("AnD"))),
+        new MockTokenizer(new StringReader("AnD"), MockTokenizer.WHITESPACE, false)),
         new String[] { "And" });
 
     factory.forceFirstLetter = false;
 
     //first is not forced, but it's not a keep word, either
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("AnD"))),
+        new MockTokenizer(new StringReader("AnD"), MockTokenizer.WHITESPACE, false)),
         new String[] { "And" });
 
     factory.forceFirstLetter = true;
     
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("big"))),
+        new MockTokenizer(new StringReader("big"), MockTokenizer.WHITESPACE, false)),
         new String[] { "Big" });
     
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("BIG"))),
+        new MockTokenizer(new StringReader("BIG"), MockTokenizer.WHITESPACE, false)),
         new String[] { "BIG" });
 
     assertTokenStreamContents(factory.create(
-        new KeywordTokenizer(new StringReader("Hello thEre my Name is Ryan"))),
+        new MockTokenizer(new StringReader("Hello thEre my Name is Ryan"), MockTokenizer.KEYWORD, false)),
         new String[] { "Hello there my name is ryan" });
         
     // now each token
     factory.onlyFirstWord = false;
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Hello thEre my Name is Ryan"))),
+        new MockTokenizer(new StringReader("Hello thEre my Name is Ryan"), MockTokenizer.WHITESPACE, false)),
         new String[] { "Hello", "There", "My", "Name", "Is", "Ryan" });
     
     // now only the long words
     factory.minWordLength = 3;
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Hello thEre my Name is Ryan"))),
+        new MockTokenizer(new StringReader("Hello thEre my Name is Ryan"), MockTokenizer.WHITESPACE, false)),
         new String[] { "Hello", "There", "my", "Name", "is", "Ryan" });
     
     // without prefix
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("McKinley"))),
+        new MockTokenizer(new StringReader("McKinley"), MockTokenizer.WHITESPACE, false)),
         new String[] { "Mckinley" });
     
     // Now try some prefixes
@@ -98,19 +97,19 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put( "okPrefix", "McK" );  // all words
     factory.init( args );
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("McKinley"))),
+        new MockTokenizer(new StringReader("McKinley"), MockTokenizer.WHITESPACE, false)),
         new String[] { "McKinley" });
     
     // now try some stuff with numbers
     factory.forceFirstLetter = false;
     factory.onlyFirstWord = false;
     assertTokenStreamContents(factory.create(
-        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("1st 2nd third"))),
+        new MockTokenizer(new StringReader("1st 2nd third"), MockTokenizer.WHITESPACE, false)),
         new String[] { "1st", "2nd", "Third" });
     
     factory.forceFirstLetter = true;
     assertTokenStreamContents(factory.create(
-        new KeywordTokenizer(new StringReader("the The the"))),
+        new MockTokenizer(new StringReader("the The the"), MockTokenizer.KEYWORD, false)),
         new String[] { "The The the" });
   }
 
@@ -124,17 +123,17 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     factory.init( args );
     factory.forceFirstLetter = true;
     assertTokenStreamContents(factory.create(
-        new KeywordTokenizer(new StringReader("kiTTEN"))),
+        new MockTokenizer(new StringReader("kiTTEN"), MockTokenizer.KEYWORD, false)),
         new String[] { "KiTTEN" });
 
     factory.forceFirstLetter = false;
     assertTokenStreamContents(factory.create(
-        new KeywordTokenizer(new StringReader("kiTTEN"))),
+        new MockTokenizer(new StringReader("kiTTEN"), MockTokenizer.KEYWORD, false)),
         new String[] { "kiTTEN" });
 
     factory.keep = null;
     assertTokenStreamContents(factory.create(
-        new KeywordTokenizer(new StringReader("kiTTEN"))),
+        new MockTokenizer(new StringReader("kiTTEN"), MockTokenizer.KEYWORD, false)),
         new String[] { "Kitten" });
   }
   
@@ -149,8 +148,8 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.MIN_WORD_LENGTH, "5");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(
-        "helo testing"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(
+        "helo testing"), MockTokenizer.WHITESPACE, false);
     TokenStream ts = factory.create(tokenizer);
     assertTokenStreamContents(ts, new String[] {"helo", "Testing"});
   }
@@ -164,8 +163,8 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.MAX_WORD_COUNT, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(
-        "one two three four"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(
+        "one two three four"), MockTokenizer.WHITESPACE, false);
     TokenStream ts = factory.create(tokenizer);
     assertTokenStreamContents(ts, new String[] {"One", "Two", "Three", "Four"});
   }
@@ -178,8 +177,8 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.MAX_WORD_COUNT, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init(args);
-    Tokenizer tokenizer = new KeywordTokenizer(new StringReader(
-        "one two three four"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(
+        "one two three four"), MockTokenizer.KEYWORD, false);
     TokenStream ts = factory.create(tokenizer);
     assertTokenStreamContents(ts, new String[] {"one two three four"});
   }
@@ -194,8 +193,8 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.MAX_TOKEN_LENGTH, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(
-        "this is a test"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(
+        "this is a test"), MockTokenizer.WHITESPACE, false);
     TokenStream ts = factory.create(tokenizer);
     assertTokenStreamContents(ts, new String[] {"this", "is", "A", "test"});
   }
@@ -209,7 +208,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.FORCE_FIRST_LETTER, "true");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("kitten"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader("kitten"), MockTokenizer.WHITESPACE, false);
     TokenStream ts = factory.create(tokenizer);
     assertTokenStreamContents(ts, new String[] {"Kitten"});
   }

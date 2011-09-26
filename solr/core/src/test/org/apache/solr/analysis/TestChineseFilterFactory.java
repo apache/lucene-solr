@@ -20,9 +20,9 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Simple tests to ensure the Chinese filter factory is working.
@@ -33,7 +33,7 @@ public class TestChineseFilterFactory extends BaseTokenTestCase {
    */
   public void testFiltering() throws Exception {
     Reader reader = new StringReader("this 1234 Is such a silly filter");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ChineseFilterFactory factory = new ChineseFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "Is", "silly", "filter" });

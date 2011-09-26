@@ -21,8 +21,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
 import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
@@ -40,8 +40,9 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     factory.inform(loader);
 
-    TokenStream input = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("the|0.1 quick|0.1 red|0.1"));
+    TokenStream input = new MockTokenizer(new StringReader("the|0.1 quick|0.1 red|0.1"), MockTokenizer.WHITESPACE, false);
     DelimitedPayloadTokenFilter tf = factory.create(input);
+    tf.reset();
     while (tf.incrementToken()){
       PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
       assertTrue("payAttr is null and it shouldn't be", payAttr != null);
@@ -62,8 +63,9 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     factory.inform(loader);
 
-    TokenStream input = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("the*0.1 quick*0.1 red*0.1"));
+    TokenStream input = new MockTokenizer(new StringReader("the*0.1 quick*0.1 red*0.1"), MockTokenizer.WHITESPACE, false);
     DelimitedPayloadTokenFilter tf = factory.create(input);
+    tf.reset();
     while (tf.incrementToken()){
       PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
       assertTrue("payAttr is null and it shouldn't be", payAttr != null);

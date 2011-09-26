@@ -23,8 +23,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.solr.common.ResourceLoader;
@@ -37,7 +37,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
   public void testKeywords() throws IOException {
     // our stemdict stems dogs to 'cat'
     Reader reader = new StringReader("testing dogs");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
     Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);
@@ -51,7 +51,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
   
   public void testKeywordsCaseInsensitive() throws IOException {
     Reader reader = new StringReader("testing DoGs");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
     Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);

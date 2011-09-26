@@ -183,8 +183,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      if (snapPuller != null){
-        snapPuller.abortPull();
+      SnapPuller temp = tempSnapPuller;
+      if (temp != null){
+        temp.abortPull();
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS,ERR_STATUS);

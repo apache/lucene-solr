@@ -22,9 +22,9 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
@@ -37,7 +37,7 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
    */
   public void testElision() throws Exception {
     Reader reader = new StringReader("l'avion");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);
@@ -54,7 +54,7 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
    */
   public void testDefaultArticles() throws Exception {
     Reader reader = new StringReader("l'avion");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);

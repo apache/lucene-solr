@@ -88,7 +88,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     PhraseQuery q = new PhraseQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", new StringReader("this sentence"));
+    TokenStream ts = analyzer.reusableTokenStream("content", new StringReader("this sentence"));
     int j = -1;
     
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
@@ -117,7 +117,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     BooleanQuery q = new BooleanQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", new StringReader("test sentence"));
+    TokenStream ts = analyzer.reusableTokenStream("content", new StringReader("test sentence"));
     
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     

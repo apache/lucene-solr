@@ -133,7 +133,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(
         TEST_VERSION_CURRENT,
         new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), reader, 10);
-    TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
+    TokenStream ts = a.reusableTokenStream("repetitiveField", new StringReader("this boring"));
     assertTokenStreamContents(ts, new String[] { "this" });
   }
 }

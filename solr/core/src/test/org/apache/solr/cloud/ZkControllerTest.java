@@ -186,7 +186,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkController = new ZkController(server.getZkAddress(),
-          TIMEOUT, 1000, "localhost", "8983", "/solr");
+          TIMEOUT, 10000, "localhost", "8983", "/solr");
 
       zkController.uploadToZK(getFile("solr/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");

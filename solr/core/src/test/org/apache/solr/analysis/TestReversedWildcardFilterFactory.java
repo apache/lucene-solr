@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automaton;
@@ -66,7 +66,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     String text = "simple text";
     args.put("withOriginal", "true");
     factory.init(args);
-    TokenStream input = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(text)));
+    TokenStream input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(input, 
         new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
         new int[] { 1, 0, 1, 0 });
@@ -74,7 +74,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     // now without original tokens
     args.put("withOriginal", "false");
     factory.init(args);
-    input = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(text)));
+    input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(input,
         new String[] { "\u0001elpmis", "\u0001txet" },
         new int[] { 1, 1 });
@@ -86,7 +86,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     String text = "one two three si\uD834\uDD1Ex";
 
     // field one
-    TokenStream input = a.tokenStream("one", new StringReader(text));
+    TokenStream input = a.reusableTokenStream("one", new StringReader(text));
     assertTokenStreamContents(input,
         new String[] { "\u0001eno", "one", "\u0001owt", "two", 
           "\u0001eerht", "three", "\u0001x\uD834\uDD1Eis", "si\uD834\uDD1Ex" },
@@ -95,7 +95,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
         new int[] { 1, 0, 1, 0, 1, 0, 1, 0 }
     );
     // field two
-    input = a.tokenStream("two", new StringReader(text));
+    input = a.reusableTokenStream("two", new StringReader(text));
     assertTokenStreamContents(input,
         new String[] { "\u0001eno", "\u0001owt", 
           "\u0001eerht", "\u0001x\uD834\uDD1Eis" },
@@ -104,7 +104,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
         new int[] { 1, 1, 1, 1 }
     );
     // field three
-    input = a.tokenStream("three", new StringReader(text));
+    input = a.reusableTokenStream("three", new StringReader(text));
     assertTokenStreamContents(input,
         new String[] { "one", "two", "three", "si\uD834\uDD1Ex" },
         new int[] { 0, 4, 8, 14 },

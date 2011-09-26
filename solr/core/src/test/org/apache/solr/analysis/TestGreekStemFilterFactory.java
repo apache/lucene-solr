@@ -3,9 +3,9 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 
 /**
@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 public class TestGreekStemFilterFactory extends BaseTokenTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("άνθρωπος");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     TokenStream normalized = new GreekLowerCaseFilter(DEFAULT_VERSION, tokenizer);
     GreekStemFilterFactory factory = new GreekStemFilterFactory();
     TokenStream stream = factory.create(normalized);
