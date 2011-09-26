@@ -1268,7 +1268,7 @@ public final class SolrCore implements SolrInfoMBean {
           );
         } catch(Exception e) {
           // if submit fails, newSearchHolder does not get decref'd
-          if (newSearchHolder != null) newSearchHolder.decref();
+          if (returnSearcher && newSearchHolder != null) newSearchHolder.decref();
           throw e;
         }
       }
