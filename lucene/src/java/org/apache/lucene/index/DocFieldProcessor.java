@@ -83,9 +83,9 @@ final class DocFieldProcessor extends DocConsumer {
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
     state.fieldInfos.write(state.directory, fileName);
-    for (DocValuesConsumer consumers : docValues.values()) {
-      consumers.finish(state.numDocs);
-    };
+    for (DocValuesConsumerAndDocID consumers : docValues.values()) {
+      consumers.docValuesConsumer.finish(state.numDocs);
+    }
     // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
     IOUtils.close(perDocConsumers.values());
   }
@@ -297,14 +297,28 @@ final class DocFieldProcessor extends DocConsumer {
     }
   }
 
-  final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
+  private static class DocValuesConsumerAndDocID {
+    public int docID;
+    final DocValuesConsumer docValuesConsumer;
+
+    public DocValuesConsumerAndDocID(DocValuesConsumer docValuesConsumer) {
+      this.docValuesConsumer = docValuesConsumer;
+    }
+  }
+
+  final private Map<String, DocValuesConsumerAndDocID> docValues = new HashMap<String, DocValuesConsumerAndDocID>();
   final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
 
   DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo) 
       throws IOException {
-    DocValuesConsumer docValuesConsumer = docValues.get(fieldInfo.name);
-    if (docValuesConsumer != null) {
-      return docValuesConsumer;
+    DocValuesConsumerAndDocID docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
+    if (docValuesConsumerAndDocID != null) {
+      if (docState.docID == docValuesConsumerAndDocID.docID) {
+        throw new IllegalArgumentException("IndexDocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
+      }
+      assert docValuesConsumerAndDocID.docID < docState.docID;
+      docValuesConsumerAndDocID.docID = docState.docID;
+      return docValuesConsumerAndDocID.docValuesConsumer;
     }
     PerDocConsumer perDocConsumer = perDocConsumers.get(fieldInfo.getCodecId());
     if (perDocConsumer == null) {
@@ -316,6 +330,7 @@ final class DocFieldProcessor extends DocConsumer {
       perDocConsumers.put(Integer.valueOf(fieldInfo.getCodecId()), perDocConsumer);
     }
     boolean success = false;
+    DocValuesConsumer docValuesConsumer = null;
     try {
       docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
       fieldInfo.commitDocValues();
@@ -325,7 +340,10 @@ final class DocFieldProcessor extends DocConsumer {
         fieldInfo.revertUncommitted();
       }
     }
-    docValues.put(fieldInfo.name, docValuesConsumer);
+
+    docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
+    docValuesConsumerAndDocID.docID = docState.docID;
+    docValues.put(fieldInfo.name, docValuesConsumerAndDocID);
     return docValuesConsumer;
   }
 }

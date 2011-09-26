@@ -25,9 +25,9 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiPerDocValues;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -45,10 +46,10 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Before;
 
@@ -561,5 +562,65 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       w.optimize(true);
     }
     return deleted;
+  }
+
+  public void testMultiValuedIndexDocValuesField() throws Exception {
+    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, d);
+    Document doc = new Document();
+    IndexDocValuesField f = new IndexDocValuesField("field");
+    f.setInt(17);
+    // Index doc values are single-valued so we should not
+    // be able to add same field more than once:
+    doc.add(f);
+    doc.add(f);
+    try {
+      w.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    doc = new Document();
+    doc.add(f);
+    w.addDocument(doc);
+    w.optimize();
+    IndexReader r = w.getReader();
+    w.close();
+    assertEquals(17, r.getSequentialSubReaders()[0].perDocValues().docValues("field").load().getInt(0));
+    r.close();
+    d.close();
+  }
+
+  public void testDifferentTypedDocValuesField() throws Exception {
+    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, d);
+    Document doc = new Document();
+    IndexDocValuesField f = new IndexDocValuesField("field");
+    f.setInt(17);
+    // Index doc values are single-valued so we should not
+    // be able to add same field more than once:
+    doc.add(f);
+    IndexDocValuesField f2 = new IndexDocValuesField("field");
+    f2.setFloat(22.0);
+    doc.add(f2);
+    try {
+      w.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    doc = new Document();
+    doc.add(f);
+    w.addDocument(doc);
+    w.optimize();
+    IndexReader r = w.getReader();
+    w.close();
+    assertEquals(17, r.getSequentialSubReaders()[0].perDocValues().docValues("field").load().getInt(0));
+    r.close();
+    d.close();
   }
 }
