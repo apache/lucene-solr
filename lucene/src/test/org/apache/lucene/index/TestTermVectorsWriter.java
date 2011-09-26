@@ -136,7 +136,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd   "));
+    TokenStream stream = analyzer.reusableTokenStream("field", new StringReader("abcd   "));
     stream.reset(); // TODO: wierd to reset before wrapping with CachingTokenFilter... correct?
     stream = new CachingTokenFilter(stream);
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);

@@ -98,8 +98,9 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   // LUCENE-1441
   public void testOffsets() throws Exception {
-    TokenStream stream = new KeywordAnalyzer().tokenStream("field", new StringReader("abcd"));
+    TokenStream stream = new KeywordAnalyzer().reusableTokenStream("field", new StringReader("abcd"));
     OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    stream.reset();
     assertTrue(stream.incrementToken());
     assertEquals(0, offsetAtt.startOffset());
     assertEquals(4, offsetAtt.endOffset());

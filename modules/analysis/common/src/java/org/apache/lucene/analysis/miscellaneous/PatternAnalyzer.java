@@ -322,7 +322,8 @@ public final class PatternAnalyzer extends Analyzer {
    * as one might think - kudos to the Sun regex developers.
    */
   private static final class PatternTokenizer extends Tokenizer {
-    
+
+    private final Pattern pattern;
     private String str;
     private final boolean toLowerCase;
     private Matcher matcher;
@@ -332,6 +333,7 @@ public final class PatternAnalyzer extends Analyzer {
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public PatternTokenizer(String str, Pattern pattern, boolean toLowerCase) {
+      this.pattern = pattern;
       this.str = str;
       this.matcher = pattern.matcher(str);
       this.toLowerCase = toLowerCase;
@@ -375,6 +377,7 @@ public final class PatternAnalyzer extends Analyzer {
     public void reset(Reader input) throws IOException {
       super.reset(input);
       this.str = PatternAnalyzer.toString(input);
+      this.matcher = pattern.matcher(this.str);
     }
 
     @Override
