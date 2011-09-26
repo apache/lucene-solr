@@ -22,9 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.codec.language.Metaphone;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 
 /**
@@ -89,8 +89,7 @@ public class TestPhoneticFilterFactory extends BaseTokenTestCase {
   
   static void assertAlgorithm(String algName, String inject, String input,
       String[] expected) throws Exception {
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
-        new StringReader(input));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     Map<String,String> args = new HashMap<String,String>();
     args.put("encoder", algName);
     args.put("inject", inject);

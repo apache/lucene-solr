@@ -16,9 +16,9 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -52,8 +52,8 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
 
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
-        new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
+    Tokenizer tokenizer = new MockTokenizer(
+        new StringReader(StrUtils.join(Arrays.asList(test), ' ')), MockTokenizer.WHITESPACE, false);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, gold);
   }
@@ -90,7 +90,7 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
     factory.init(args);
     factory.inform(loader);
     Reader reader = new StringReader("ridding of some stemming");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "ridding", "of", "some", "stem" });
   }

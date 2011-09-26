@@ -17,8 +17,8 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import java.io.StringReader;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ public class TestPatternReplaceFilterFactory extends BaseTokenTestCase {
     args.put("replacement", "-");
     factory.init(args);
     TokenStream ts = factory.create
-            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
+            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false));
                    
     assertTokenStreamContents(ts, 
         new String[] { "-foo-foo-foo-", "-", "c-" });

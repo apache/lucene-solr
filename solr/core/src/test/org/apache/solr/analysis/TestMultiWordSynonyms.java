@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 
 import java.io.ByteArrayInputStream;
@@ -46,7 +45,7 @@ public class TestMultiWordSynonyms extends BaseTokenTestCase {
     SlowSynonymMap synMap = new SlowSynonymMap(true);
     SlowSynonymFilterFactory.parseRules(rules, synMap, "=>", ",", true, null);
 
-    SlowSynonymFilter ts = new SlowSynonymFilter(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("a e")), synMap);
+    SlowSynonymFilter ts = new SlowSynonymFilter(new MockTokenizer(new StringReader("a e"), MockTokenizer.WHITESPACE, false), synMap);
     // This fails because ["e","e"] is the value of the token stream
     assertTokenStreamContents(ts, new String[] { "a", "e" });
   }

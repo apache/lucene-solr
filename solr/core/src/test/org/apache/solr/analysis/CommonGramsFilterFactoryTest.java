@@ -17,9 +17,9 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
@@ -77,7 +77,7 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
     Set<?> words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue(words.contains("the"));
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("testing the factory"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader("testing the factory"), MockTokenizer.WHITESPACE, false);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, 
         new String[] { "testing", "testing_the", "the", "the_factory", "factory" });

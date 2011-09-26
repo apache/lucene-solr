@@ -20,8 +20,8 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Simple tests to ensure the Italian light stem factory is working.
@@ -30,7 +30,7 @@ public class TestItalianLightStemFilterFactory extends BaseTokenTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("ragazzo ragazzi");
     ItalianLightStemFilterFactory factory = new ItalianLightStemFilterFactory();
-    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "ragazz", "ragazz" });
   }
 }

@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automaton;
@@ -66,7 +66,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     String text = "simple text";
     args.put("withOriginal", "true");
     factory.init(args);
-    TokenStream input = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(text)));
+    TokenStream input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(input, 
         new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
         new int[] { 1, 0, 1, 0 });
@@ -74,7 +74,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     // now without original tokens
     args.put("withOriginal", "false");
     factory.init(args);
-    input = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(text)));
+    input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(input,
         new String[] { "\u0001elpmis", "\u0001txet" },
         new int[] { 1, 1 });
