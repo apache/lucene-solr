@@ -31,7 +31,7 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.3
 
 
-Upgrading from Solr 3.4-dev
+Upgrading from Solr 3.5-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -397,6 +397,9 @@ Bug Fixes
   the Solr Cell module can use it. (janhoy, Steve Rowe)
 
 * LUCENE-3457: Upgrade commons-compress to 1.2 (Doron Cohen)
+
+* SOLR-2757: min() and max() functions now support an arbitrary number of 
+  ValueSources  (Bill Bell via hossman)
 
 ==================  3.4.0  ==================
 
