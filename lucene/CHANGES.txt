@@ -51,6 +51,10 @@ Bug fixes
 * LUCENE-3215: SloppyPhraseScorer sometimes computed Infinite freq
   (Robert Muir, Doron Cohen)  
 
+* LUCENE-3465: IndexSearcher with ExecutorService was always passing 0
+  for docBase to Collector.setNextReader.  (Robert Muir, Mike
+  McCandless)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).

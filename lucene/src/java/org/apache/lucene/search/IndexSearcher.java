@@ -79,6 +79,8 @@ public class IndexSearcher extends Searcher {
   private final ExecutorService executor;
   protected final IndexSearcher[] subSearchers;
 
+  private final int docBase;
+
   /** Creates a searcher searching the index in the named
    *  directory, with readOnly=true
    * @param path directory where IndexReader will be opened
@@ -129,14 +131,22 @@ public class IndexSearcher extends Searcher {
    * 
    * @lucene.experimental */
   public IndexSearcher(IndexReader reader, IndexReader[] subReaders, int[] docStarts) {
-    this.reader = reader;
-    this.subReaders = subReaders;
-    this.docStarts = docStarts;
-    closeReader = false;
-    executor = null;
-    subSearchers = null;
+    this(reader, subReaders, docStarts, null);
   }
   
+  // Used only when we are an atomic sub-searcher in a parent
+  // IndexSearcher that has an ExecutorService, to record
+  // our docBase in the parent IndexSearcher:
+  private IndexSearcher(IndexReader r, int docBase) {
+    reader = r;
+    this.executor = null;
+    closeReader = false;
+    this.docBase = docBase;
+    subReaders = new IndexReader[] {r};
+    docStarts = new int[] {0};
+    subSearchers = null;
+  }
+
   /** Expert: directly specify the reader, subReaders and
    *  their docID starts, and an ExecutorService.  In this
    *  case, each segment will be separately searched using the
@@ -159,11 +169,12 @@ public class IndexSearcher extends Searcher {
     } else {
       subSearchers = new IndexSearcher[subReaders.length];
       for(int i=0;i<subReaders.length;i++) {
-        subSearchers[i] = new IndexSearcher(subReaders[i]);
+        subSearchers[i] = new IndexSearcher(subReaders[i], docStarts[i]);
       }
     }
     closeReader = false;
     this.executor = executor;
+    docBase = 0;
   }
 
   private IndexSearcher(IndexReader r, boolean closeReader, ExecutorService executor) {
@@ -185,9 +196,10 @@ public class IndexSearcher extends Searcher {
     } else {
       subSearchers = new IndexSearcher[subReaders.length];
       for (int i = 0; i < subReaders.length; i++) {
-        subSearchers[i] = new IndexSearcher(subReaders[i]);
+        subSearchers[i] = new IndexSearcher(subReaders[i], docStarts[i]);
       }
     }
+    docBase = 0;
   }
 
   protected void gatherSubReaders(List<IndexReader> allSubReaders, IndexReader r) {
@@ -418,7 +430,6 @@ public class IndexSearcher extends Searcher {
    * @throws BooleanQuery.TooManyClauses
    */
   protected TopDocs search(Weight weight, Filter filter, ScoreDoc after, int nDocs) throws IOException {
-
     if (executor == null) {
       // single thread
       int limit = reader.maxDoc();
@@ -436,7 +447,7 @@ public class IndexSearcher extends Searcher {
     
       for (int i = 0; i < subReaders.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, after, nDocs, hq, docStarts[i]));
+                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, after, nDocs, hq));
       }
 
       int totalHits = 0;
@@ -512,7 +523,7 @@ public class IndexSearcher extends Searcher {
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
       for (int i = 0; i < subReaders.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, topCollector, sort, docStarts[i]));
+                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, topCollector, sort));
       }
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -559,7 +570,7 @@ public class IndexSearcher extends Searcher {
     // always use single thread:
     if (filter == null) {
       for (int i = 0; i < subReaders.length; i++) { // search each subreader
-        collector.setNextReader(subReaders[i], docStarts[i]);
+        collector.setNextReader(subReaders[i], docBase + docStarts[i]);
         Scorer scorer = weight.scorer(subReaders[i], !collector.acceptsDocsOutOfOrder(), true);
         if (scorer != null) {
           scorer.score(collector);
@@ -567,7 +578,7 @@ public class IndexSearcher extends Searcher {
       }
     } else {
       for (int i = 0; i < subReaders.length; i++) { // search each subreader
-        collector.setNextReader(subReaders[i], docStarts[i]);
+        collector.setNextReader(subReaders[i], docBase + docStarts[i]);
         searchWithFilter(subReaders[i], weight, filter, collector);
       }
     }
@@ -712,10 +723,9 @@ public class IndexSearcher extends Searcher {
     private final ScoreDoc after;
     private final int nDocs;
     private final HitQueue hq;
-    private final int docBase;
 
     public MultiSearcherCallableNoSort(Lock lock, IndexSearcher searchable, Weight weight,
-        Filter filter, ScoreDoc after, int nDocs, HitQueue hq, int docBase) {
+        Filter filter, ScoreDoc after, int nDocs, HitQueue hq) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
@@ -723,7 +733,6 @@ public class IndexSearcher extends Searcher {
       this.after = after;
       this.nDocs = nDocs;
       this.hq = hq;
-      this.docBase = docBase;
     }
 
     public TopDocs call() throws IOException {
@@ -736,17 +745,17 @@ public class IndexSearcher extends Searcher {
         docs = searchable.search (weight, filter, after, nDocs);
       }
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
-      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
-        final ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += docBase; // convert doc 
-        //it would be so nice if we had a thread-safe insert 
-        lock.lock();
-        try {
-          if (scoreDoc == hq.insertWithOverflow(scoreDoc))
+      //it would be so nice if we had a thread-safe insert 
+      lock.lock();
+      try {
+        for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
+          final ScoreDoc scoreDoc = scoreDocs[j];
+          if (scoreDoc == hq.insertWithOverflow(scoreDoc)) {
             break;
-        } finally {
-          lock.unlock();
+          }
         }
+      } finally {
+        lock.unlock();
       }
       return docs;
     }
@@ -764,18 +773,16 @@ public class IndexSearcher extends Searcher {
     private final Filter filter;
     private final int nDocs;
     private final TopFieldCollector hq;
-    private final int docBase;
     private final Sort sort;
 
     public MultiSearcherCallableWithSort(Lock lock, IndexSearcher searchable, Weight weight,
-                                         Filter filter, int nDocs, TopFieldCollector hq, Sort sort, int docBase) {
+                                         Filter filter, int nDocs, TopFieldCollector hq, Sort sort) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
       this.filter = filter;
       this.nDocs = nDocs;
       this.hq = hq;
-      this.docBase = docBase;
       this.sort = sort;
     }
 
@@ -825,7 +832,7 @@ public class IndexSearcher extends Searcher {
           // iterate over the score docs and change their fields value
           for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
             FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
-            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + docBase);
+            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue());
           }
           break;
         }
@@ -833,12 +840,13 @@ public class IndexSearcher extends Searcher {
 
       lock.lock();
       try {
-        hq.setNextReader(searchable.getIndexReader(), docBase);
+        hq.setNextReader(searchable.getIndexReader(), searchable.docBase);
         hq.setScorer(fakeScorer);
         for(ScoreDoc scoreDoc : docs.scoreDocs) {
-          fakeScorer.doc = scoreDoc.doc;
+          final int docID = scoreDoc.doc - searchable.docBase;
+          fakeScorer.doc = docID;
           fakeScorer.score = scoreDoc.score;
-          hq.collect(scoreDoc.doc);
+          hq.collect(docID);
         }
       } finally {
         lock.unlock();
