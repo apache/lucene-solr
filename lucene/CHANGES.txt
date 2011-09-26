@@ -153,46 +153,49 @@ Changes in backwards compatibility policy
   interned.  (Mike McCandless)
 
 * LUCENE-2883: The contents of o.a.l.search.function has been consolidated into
-  the queries module and can be found at o.a.l.queries.function.  See MIGRATE.txt
-  for more information (Chris Male)
+  the queries module and can be found at o.a.l.queries.function.  See 
+  MIGRATE.txt for more information (Chris Male)
 
-* LUCENE-2392, LUCENE-3299: Decoupled vector space scoring from Query/Weight/Scorer. If you
-  extended Similarity directly before, you should extend TFIDFSimilarity instead.
-  Similarity is now a lower-level API to implement other scoring algorithms.
-  See MIGRATE.txt for more details.
+* LUCENE-2392, LUCENE-3299: Decoupled vector space scoring from 
+  Query/Weight/Scorer. If you extended Similarity directly before, you should 
+  extend TFIDFSimilarity instead.  Similarity is now a lower-level API to 
+  implement other scoring algorithms.  See MIGRATE.txt for more details.
   (David Nemeskey, Simon Willnauer, Mike Mccandless, Robert Muir)
 
-* LUCENE-3330: The expert visitor API in Scorer has been simplified and extended to support
-  arbitrary relationships. To navigate to a scorer's children, call Scorer.getChildren().
-  (Robert Muir)
+* LUCENE-3330: The expert visitor API in Scorer has been simplified and
+  extended to support arbitrary relationships. To navigate to a scorer's 
+  children, call Scorer.getChildren().  (Robert Muir)
 
-* LUCENE-2308: Field is now instantiated with an instance of IndexableFieldType, of which there
-  is a core implementation FieldType.  Most properties describing a Field have been moved to
-  IndexableFieldType.  See MIGRATE.txt for more details.
-  (Nikola Tankovic, Mike McCandless, Chris Male)
+* LUCENE-2308: Field is now instantiated with an instance of IndexableFieldType,
+  of which there is a core implementation FieldType.  Most properties 
+  describing a Field have been moved to IndexableFieldType.  See MIGRATE.txt 
+  for more details.  (Nikola Tankovic, Mike McCandless, Chris Male)
 
-* LUCENE-3396: ReusableAnalyzerBase.TokenStreamComponents.reset(Reader) now returns void instead
-  of boolean.  If a Component cannot be reset, it should throw an Exception.  (Chris Male)
+* LUCENE-3396: ReusableAnalyzerBase.TokenStreamComponents.reset(Reader) now 
+  returns void instead of boolean.  If a Component cannot be reset, it should 
+  throw an Exception.  (Chris Male)
 
-* LUCENE-3396: ReusableAnalyzerBase has been renamed to Analyzer.  All Analyzer implementations
-  must now use Analyzer.TokenStreamComponents, rather than overriding .tokenStream() and
-  .reusableTokenStream() (which are now final). (Chris Male)
+* LUCENE-3396: ReusableAnalyzerBase has been renamed to Analyzer.  All Analyzer
+  implementations must now use Analyzer.TokenStreamComponents, rather than
+  overriding .tokenStream() and .reusableTokenStream() (which are now final). 
+  (Chris Male)
 
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
   omitNorms(true) for field "a" for 1000 documents, but then add a document with
-  omitNorms(false) for field "a", all documents for field "a" will have no norms.
-  Previously, Lucene would fill the first 1000 documents with "fake norms" from
-  Similarity.getDefault(). (Robert Muir, Mike Mccandless)
+  omitNorms(false) for field "a", all documents for field "a" will have no 
+  norms.  Previously, Lucene would fill the first 1000 documents with 
+  "fake norms" from Similarity.getDefault(). (Robert Muir, Mike Mccandless)
 
 * LUCENE-2846: When some documents contain field "a", and others do not, the
-  documents that don't have the field get a norm byte value of 0. Previously, Lucene
-  would populate "fake norms" with Similarity.getDefault() for these documents.
-  (Robert Muir, Mike Mccandless)
+  documents that don't have the field get a norm byte value of 0. Previously, 
+  Lucene would populate "fake norms" with Similarity.getDefault() for these 
+  documents.  (Robert Muir, Mike Mccandless)
   
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
-  than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
+  than later when e.g. a merge starts. 
+  (Shai Erera, Mike McCandless, Uwe Schindler)
 
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
@@ -229,7 +232,7 @@ Changes in Runtime Behavior
     up to 2048 MB memory such that the ramBufferSize is now bounded by the max
     number of DWPT avaliable in the used DocumentsWriterPerThreadPool.
     IndexWriters net memory consumption can grow far beyond the 2048 MB limit if
-    the applicatoin can use all available DWPTs. To prevent a DWPT from
+    the application can use all available DWPTs. To prevent a DWPT from
     exhausting its address space IndexWriter will forcefully flush a DWPT if its
     hard memory limit is exceeded. The RAMPerThreadHardLimitMB can be controlled
     via IndexWriterConfig and defaults to 1945 MB. 
@@ -308,9 +311,9 @@ API Changes
   for building top-level norms. If you really need a top-level norms, use 
   MultiNorms or SlowMultiReaderWrapper. (Robert Muir, Mike Mccandless)
 
-* LUCENE-2892: Add QueryParser.newFieldQuery (called by getFieldQuery by default)
-  which takes Analyzer as a parameter, for easier customization by subclasses.
-  (Robert Muir)
+* LUCENE-2892: Add QueryParser.newFieldQuery (called by getFieldQuery by 
+  default) which takes Analyzer as a parameter, for easier customization by 
+  subclasses.  (Robert Muir)
 
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
@@ -471,8 +474,8 @@ New features
   - IndexDocValues provides implementations for primitive datatypes like int,
     long, float, double and arrays of byte. Byte based implementations further
     provide storage variants like straight or dereferenced stored bytes, fixed
-    and variable length bytes as well as index time sorted based on user-provided
-    comparators.
+    and variable length bytes as well as index time sorted based on 
+    user-provided comparators.
   
   (Mike McCandless, Simon Willnauer)  
 
@@ -508,11 +511,12 @@ New features
     Information-Based Models. The models are pluggable, support all of lucene's 
     features (boosts, slops, explanations, etc) and queries (spans, etc).
 
-  - All models default to the same index-time norm encoding as DefaultSimilarity: 
-    so you can easily try these out/switch back and forth/run experiments and 
-    comparisons without reindexing. Note: most of the models do rely upon index
-    statistics that are new in Lucene 4.0, so for existing 3.x indexes its a good
-    idea to upgrade your index to the new format with IndexUpgrader first.
+  - All models default to the same index-time norm encoding as 
+    DefaultSimilarity, so you can easily try these out/switch back and 
+    forth/run experiments and comparisons without reindexing. Note: most of 
+    the models do rely upon index statistics that are new in Lucene 4.0, so 
+    for existing 3.x indexes its a good idea to upgrade your index to the 
+    new format with IndexUpgrader first.
 
   - Added a new subclass SimilarityBase which provides a simplified API 
     for plugging in new ranking algorithms without dealing with all of the
@@ -522,22 +526,24 @@ New features
     scoring algorithm to all fields, with queryNorm() and coord() returning 1.
     In general, it is recommended to disable coord() when using the new models.
     For example, to use BM25 for all fields: 
-     searcher.setSimilarityProvider(new BasicSimilarityProvider(new BM25Similarity()));
+     searcher.setSimilarityProvider(
+        new BasicSimilarityProvider(new BM25Similarity()));
 
-    If you instead want to apply different similarities (e.g. ones with different
-    parameter values or different algorithms entirely) to different fields, implement
-    SimilarityProvider with your per-field logic.
+    If you instead want to apply different similarities (e.g. ones with 
+    different parameter values or different algorithms entirely) to different
+    fields, implement SimilarityProvider with your per-field logic.
 
   (David Mark Nemeskey via Robert Muir)
 
-* LUCENE-3396: ReusableAnalyzerBase now provides a ReuseStrategy abstraction which
-  controls how TokenStreamComponents are reused per request.  Two implementations are
-  provided - GlobalReuseStrategy which implements the current behavior of sharing
-  components between all fields, and PerFieldReuseStrategy which shares per field.
-  (Chris Male)
+* LUCENE-3396: ReusableAnalyzerBase now provides a ReuseStrategy abstraction 
+  which controls how TokenStreamComponents are reused per request.  Two 
+  implementations are provided - GlobalReuseStrategy which implements the
+  current behavior of sharing components between all fields, and 
+  PerFieldReuseStrategy which shares per field.  (Chris Male)
   
-* LUCENE-2309: Added IndexableField.tokenStream(Analyzer) which is now responsible for
-  creating the TokenStreams for Fields when they are to be indexed.  (Chris Male)
+* LUCENE-2309: Added IndexableField.tokenStream(Analyzer) which is now 
+  responsible for creating the TokenStreams for Fields when they are to 
+  be indexed.  (Chris Male)
 
 Optimizations
 
