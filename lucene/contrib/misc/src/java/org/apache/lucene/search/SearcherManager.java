@@ -160,13 +160,12 @@ public class SearcherManager implements Closeable {
   /** Obtain the current IndexSearcher.  You must match
    *  every call to get with one call to {@link #release};
    *  it's best to do so in a finally clause. */
-  public IndexSearcher get() {
-    IndexSearcher toReturn = currentSearcher;
-    if (toReturn == null) {
+  public synchronized IndexSearcher get() {
+    if (currentSearcher == null) {
       throw new AlreadyClosedException("this SearcherManager is closed");
     }
-    toReturn.getIndexReader().incRef();
-    return toReturn;
+    currentSearcher.getIndexReader().incRef();
+    return currentSearcher;
   }    
 
   /** Release the searcher previously obtained with {@link
@@ -180,7 +179,7 @@ public class SearcherManager implements Closeable {
   }
 
   // Replaces old searcher with new one
-  private void swapSearcher(IndexSearcher newSearcher)
+  private synchronized void swapSearcher(IndexSearcher newSearcher)
     throws IOException {
     IndexSearcher oldSearcher = currentSearcher;
     if (oldSearcher == null) {
