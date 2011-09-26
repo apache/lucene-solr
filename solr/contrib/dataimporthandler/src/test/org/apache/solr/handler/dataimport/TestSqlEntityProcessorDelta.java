@@ -110,6 +110,10 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
       // execute the test only if we are able to set file to read only mode
       assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
       assumeTrue("dataimport.proprties can't be set read only", f.setReadOnly());
+      assumeFalse("dataimport.proprties is still writable even though " + 
+                  "marked readonly - test running as superuser?", f.canWrite());
+
+      ignoreException("Properties is not writable");
 
       List parentRow = new ArrayList();
       parentRow.add(createMap("id", "1"));
