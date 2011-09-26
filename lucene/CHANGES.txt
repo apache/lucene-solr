@@ -536,10 +536,6 @@ New features
   components between all fields, and PerFieldReuseStrategy which shares per field.
   (Chris Male)
   
-* LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a specified
-  ScoreDoc (e.g. last document on the previous page) to support deep paging use cases.
-  (Aaron McCurry, Grant Ingersoll, Robert Muir) 
-
 * LUCENE-2309: Added IndexableField.tokenStream(Analyzer) which is now responsible for
   creating the TokenStreams for Fields when they are to be indexed.  (Chris Male)
 
@@ -635,6 +631,10 @@ New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
   (Uwe Schindler)
+
+* LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a 
+  specified ScoreDoc (e.g. last document on the previous page) to support deep
+  paging use cases.  (Aaron McCurry, Grant Ingersoll, Robert Muir) 
 
 Optimizations
 
