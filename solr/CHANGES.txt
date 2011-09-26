@@ -62,6 +62,9 @@ Bug Fixes
 * SOLR-2780: Fixed issue where multi select facets didn't respect group.truncate parameter.
   (Martijn van Groningen, Ramzi Alqrainy)
 
+* SOLR-2791: Replication: abortfetch command is broken if replication was started
+  by fetchindex command instead of a regular poll (Yury Kats via shalin)
+
  Other Changes
 ----------------------
 
