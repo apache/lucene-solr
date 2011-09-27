@@ -37,23 +37,25 @@ import java.io.IOException;
  *
  * @since solr 1.3
  **/
-class SimpleQueryConverter extends SpellingQueryConverter{
+class SimpleQueryConverter extends SpellingQueryConverter {
+
   @Override
   public Collection<Token> convert(String origQuery) {
-    Collection<Token> result = new HashSet<Token>();
-    WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
-    TokenStream ts = analyzer.tokenStream("", new StringReader(origQuery));
-    // TODO: support custom attributes
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    
     try {
+      Collection<Token> result = new HashSet<Token>();
+      WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
+      TokenStream ts = analyzer.reusableTokenStream("", new StringReader(origQuery));
+      // TODO: support custom attributes
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
+      FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
+      PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+
       ts.reset();
-      while (ts.incrementToken()){
+
+      while (ts.incrementToken()) {
         Token tok = new Token();
         tok.copyBuffer(termAtt.buffer(), 0, termAtt.length());
         tok.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
@@ -63,9 +65,12 @@ class SimpleQueryConverter extends SpellingQueryConverter{
         tok.setType(typeAtt.type());
         result.add(tok);
       }
+      ts.end();
+      ts.close();
+      
+      return result;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    return result;
   }
 }

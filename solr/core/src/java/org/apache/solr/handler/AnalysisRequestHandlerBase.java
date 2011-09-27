@@ -140,20 +140,25 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @param analyzer The analyzer to use.
    */
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
-    final Set<BytesRef> tokens = new HashSet<BytesRef>();
-    final TokenStream tokenStream = analyzer.tokenStream("", new StringReader(query));
-    final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
-    final BytesRef bytes = bytesAtt.getBytesRef();
     try {
+      final Set<BytesRef> tokens = new HashSet<BytesRef>();
+      final TokenStream tokenStream = analyzer.reusableTokenStream("", new StringReader(query));
+      final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+      final BytesRef bytes = bytesAtt.getBytesRef();
+
       tokenStream.reset();
+
       while (tokenStream.incrementToken()) {
         bytesAtt.fillBytesRef();
         tokens.add(new BytesRef(bytes));
       }
+
+      tokenStream.end();
+      tokenStream.close();
+      return tokens;
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
     }
-    return tokens;
   }
 
   /**

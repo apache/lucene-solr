@@ -112,27 +112,24 @@ public class TextField extends FieldType {
       source = analyzer.reusableTokenStream(field, new StringReader(queryText));
       source.reset();
     } catch (IOException e) {
-      source = analyzer.tokenStream(field, new StringReader(queryText));
+      throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);
     }
     CachingTokenFilter buffer = new CachingTokenFilter(source);
     CharTermAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
-    boolean success = false;
     try {
       buffer.reset();
-      success = true;
     } catch (IOException e) {
-      // success==false if we hit an exception
+      throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);
     }
-    if (success) {
-      if (buffer.hasAttribute(CharTermAttribute.class)) {
-        termAtt = buffer.getAttribute(CharTermAttribute.class);
-      }
-      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-      }
+
+    if (buffer.hasAttribute(CharTermAttribute.class)) {
+      termAtt = buffer.getAttribute(CharTermAttribute.class);
+    }
+    if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
     }
 
     int positionCount = 0;

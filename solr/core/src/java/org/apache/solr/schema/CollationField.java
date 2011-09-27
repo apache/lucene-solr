@@ -217,7 +217,7 @@ public class CollationField extends FieldType {
       source = analyzer.reusableTokenStream(field, new StringReader(part));
       source.reset();
     } catch (IOException e) {
-      source = analyzer.tokenStream(field, new StringReader(part));
+      throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);
     }
       
     TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
@@ -234,8 +234,11 @@ public class CollationField extends FieldType {
     }
       
     try {
+      source.end();
       source.close();
-    } catch (IOException ignored) {}
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to end & close TokenStream after analyzing range part: " + part, e);
+    }
       
     return new BytesRef(bytes);
   }
