@@ -309,17 +309,28 @@ public class NRTManager implements Closeable {
     final IndexSearcher startSearcher = noDeletesSearchingGen.get() > searchingGen.get() ? noDeletesCurrentSearcher : currentSearcher;
     final IndexReader nextReader = startSearcher.getIndexReader().reopen(writer, applyDeletes);
 
-    final IndexSearcher nextSearcher = new IndexSearcher(nextReader, es);
-    if (warmer != null) {
-      warmer.warm(nextSearcher);
+    if (nextReader != startSearcher.getIndexReader()) {
+      final IndexSearcher nextSearcher = new IndexSearcher(nextReader, es);
+      if (warmer != null) {
+        boolean success = false;
+        try {
+          warmer.warm(nextSearcher);
+          success = true;
+        } finally {
+          if (!success) {
+            nextReader.decRef();
+          }
+        }
+      }
+
+      // Transfer reference to swapSearcher:
+      swapSearcher(nextSearcher,
+                   newSearcherGen,
+                   applyDeletes);
+      return true;
+    } else {
+      return false;
     }
-
-    // Transfer reference to swapSearcher:
-    swapSearcher(nextSearcher,
-                 newSearcherGen,
-                 applyDeletes);
-
-    return true;
   }
 
   // Steals a reference from newSearcher:

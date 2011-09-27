@@ -142,7 +142,15 @@ public class SearcherManager implements Closeable {
         if (newReader != currentSearcher.getIndexReader()) {
           IndexSearcher newSearcher = new IndexSearcher(newReader, es);
           if (warmer != null) {
-            warmer.warm(newSearcher);
+            boolean success = false;
+            try {
+              warmer.warm(newSearcher);
+              success = true;
+            } finally {
+              if (!success) {
+                newReader.decRef();
+              }
+            }
           }
           swapSearcher(newSearcher);
           return true;
