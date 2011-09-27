@@ -178,6 +178,18 @@ public class TestDocument extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+
+  public void testGetValues() {
+    Document doc = makeDocumentWithFields();
+    assertEquals(new String[] {"test1", "test2"},
+                 doc.getValues("keyword"));
+    assertEquals(new String[] {"test1", "test2"},
+                 doc.getValues("text"));
+    assertEquals(new String[] {"test1", "test2"},
+                 doc.getValues("unindexed"));
+    assertEquals(new String[0],
+                 doc.getValues("nope"));
+  }
   
   private Document makeDocumentWithFields() {
     Document doc = new Document();
