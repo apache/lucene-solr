@@ -752,11 +752,11 @@ public class IndexSearcher implements Closeable {
     public TopDocs call() throws IOException {
       final TopDocs docs = searcher.search (slice.leaves, weight, filter, after, nDocs);
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
+      //it would be so nice if we had a thread-safe insert 
       lock.lock();
       try {
         for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
           final ScoreDoc scoreDoc = scoreDocs[j];
-          //it would be so nice if we had a thread-safe insert 
           if (scoreDoc == hq.insertWithOverflow(scoreDoc)) {
             break;
           }
