@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -27,6 +28,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -87,7 +89,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       }
 
       zkController = new ZkController(server.getZkAddress(),
-          TIMEOUT, 1000, "localhost", "8983", "solr");
+          TIMEOUT, 1000, "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
+            
+            @Override
+            public List<CoreDescriptor> getCurrentDescriptors() {
+              // do nothing
+              return null;
+            }
+          });
  
       zkController.getZkStateReader().updateCloudState(true);
       CloudState cloudInfo = zkController.getCloudState();
@@ -159,7 +168,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       }
       zkClient.close();
       ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, TIMEOUT,
-          "localhost", "8983", "/solr");
+          "localhost", "8983", "/solr", new CurrentCoreDescriptorProvider() {
+            
+            @Override
+            public List<CoreDescriptor> getCurrentDescriptors() {
+              // do nothing
+              return null;
+            }
+          });
       try {
         String configName = zkController.readConfigName(COLLECTION_NAME);
         assertEquals(configName, actualConfigName);
@@ -186,7 +202,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkController = new ZkController(server.getZkAddress(),
-          TIMEOUT, 10000, "localhost", "8983", "/solr");
+          TIMEOUT, 10000, "localhost", "8983", "/solr", new CurrentCoreDescriptorProvider() {
+            
+            @Override
+            public List<CoreDescriptor> getCurrentDescriptors() {
+              // do nothing
+              return null;
+            }
+          });
 
       zkController.uploadToZK(getFile("solr/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");

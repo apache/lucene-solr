@@ -19,8 +19,10 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -34,6 +36,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -61,7 +64,7 @@ public final class ZkController {
   private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
-
+  
   // package private for tests
 
   static final String CONFIGS_ZKNODE = "/configs";
@@ -73,6 +76,8 @@ public final class ZkController {
   
   private ZkStateReader zkStateReader;
 
+  private SliceLeaderElector leaderElector;
+  
   private String zkServerAddress;
 
   private String localHostPort;
@@ -82,8 +87,11 @@ public final class ZkController {
 
   private String hostName;
 
+
+
   /**
-   * @param zkServerAddress ZooKeeper server host address
+   * @param coreContainer
+   * @param zkServerAddress
    * @param zkClientTimeout
    * @param zkClientConnectTimeout
    * @param localHost
@@ -94,8 +102,9 @@ public final class ZkController {
    * @throws IOException
    */
   public ZkController(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext) throws InterruptedException,
+      String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
+ 
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
@@ -107,10 +116,22 @@ public final class ZkController {
 
           public void command() {
             try {
+              // we need to create all of our lost watches
               zkStateReader.makeCollectionsNodeWatches();
               zkStateReader.makeShardsWatches(true);
               createEphemeralLiveNode();
               zkStateReader.updateCloudState(false);
+              
+              // re register all descriptors
+              List<CoreDescriptor> descriptors = registerOnReconnect
+                  .getCurrentDescriptors();
+              if (descriptors != null) {
+                for (CoreDescriptor descriptor : descriptors) {
+                  register(descriptor.getName(),
+                      descriptor.getCloudDescriptor());
+                }
+              }
+
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -129,20 +150,27 @@ public final class ZkController {
 
           }
         });
+    
+    leaderElector = new SliceLeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
     init();
   }
 
   /**
+   * Adds the /collection/shards/shards_id node as well as the /collections/leader_elect/shards_id node.
+   * 
    * @param shardId
    * @param collection
    * @throws IOException
    * @throws InterruptedException 
    * @throws KeeperException 
    */
-  private void addZkShardsNode(String shardId, String collection) throws IOException, InterruptedException, KeeperException {
-
-    String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + shardId;
+  private void addZkShardsNode(String shardId, String collection)
+      throws IOException, InterruptedException, KeeperException {
+    
+    String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+        + ZkStateReader.SHARDS_ZKNODE + "/" + shardId;
+    
     
     try {
       
@@ -154,10 +182,6 @@ public final class ZkController {
         // makes shards zkNode if it doesn't exist
         zkClient.makePath(shardsZkPath, CreateMode.PERSISTENT, null);
         
-        // TODO: consider how these notifications are being done
-        // ping that there is a new shardId
-        zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
-
       }
     } catch (KeeperException e) {
       // its okay if another beats us creating the node
@@ -165,7 +189,12 @@ public final class ZkController {
         throw e;
       }
     }
-
+    
+    leaderElector.setupForSlice(shardId, collection);
+    
+    // TODO: consider how these notifications are being done
+    // ping that there is a new shardId
+    zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[]) null);
   }
 
   /**
@@ -439,25 +468,20 @@ public final class ZkController {
    * 
    * @param coreName
    * @param cloudDesc
-   * @param forcePropsUpdate update solr.xml core props even if the shard is already registered
    * @throws IOException
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void register(String coreName, CloudDescriptor cloudDesc, boolean forcePropsUpdate) throws IOException,
+  public void register(String coreName, final CloudDescriptor cloudDesc) throws IOException,
       KeeperException, InterruptedException {
     String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
-    String collection = cloudDesc.getCollectionName();
+    final String collection = cloudDesc.getCollectionName();
     
     String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
 
     boolean shardZkNodeAlreadyExists = zkClient.exists(shardsZkPath);
-    
-    if(shardZkNodeAlreadyExists && !forcePropsUpdate) {
-      return;
-    }
     
     if (log.isInfoEnabled()) {
       log.info("Register shard - core:" + coreName + " address:"
@@ -473,7 +497,7 @@ public final class ZkController {
     
     String shardZkNodeName = getNodeName() + "_" + coreName;
 
-    if(shardZkNodeAlreadyExists && forcePropsUpdate) {
+    if(shardZkNodeAlreadyExists) {
       zkClient.setData(shardsZkPath + "/" + shardZkNodeName, bytes);
       // tell everyone to update cloud info
       zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
@@ -482,6 +506,7 @@ public final class ZkController {
       try {
         zkClient.create(shardsZkPath + "/" + shardZkNodeName, bytes,
             CreateMode.PERSISTENT);
+        
         // tell everyone to update cloud info
         zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
       } catch (KeeperException e) {
@@ -490,11 +515,21 @@ public final class ZkController {
           throw e;
         }
         // for some reason the shard already exists, though it didn't when we
-        // started registration - just return
-        return;
+        // started registration - just continue
+        
       }
     }
+    
+    // leader election
+    doLeaderElectionProcess(cloudDesc, collection, shardZkNodeName);
+    
+  }
 
+  private void doLeaderElectionProcess(final CloudDescriptor cloudDesc,
+      final String collection, String shardZkNodeName) throws KeeperException,
+      InterruptedException, UnsupportedEncodingException {
+   
+    leaderElector.joinElection(cloudDesc.getShardId(), collection, shardZkNodeName);
   }
 
   /**

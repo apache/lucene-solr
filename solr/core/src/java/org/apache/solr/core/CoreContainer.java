@@ -32,6 +32,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -163,7 +164,17 @@ public class CoreContainer
         } else {
           log.info("Zookeeper client=" + zookeeperHost);          
         }
-        zkController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext);
+        zkController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, new CurrentCoreDescriptorProvider() {
+          
+          @Override
+          public List<CoreDescriptor> getCurrentDescriptors() {
+            List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(getCoreNames().size());
+            for (SolrCore core : getCores()) {
+              descriptors.add(core.getCoreDescriptor());
+            }
+            return descriptors;
+          }
+        });
         
         String confDir = System.getProperty("bootstrap_confdir");
         if(confDir != null) {
@@ -512,7 +523,7 @@ public class CoreContainer
 
     if (zkController != null) {
       try {
-        zkController.register(core.getName(), core.getCoreDescriptor().getCloudDescriptor(), true);
+        zkController.register(core.getName(), core.getCoreDescriptor().getCloudDescriptor());
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -995,7 +1006,7 @@ public class CoreContainer
   private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
           "<solr persistent=\"false\">\n" +
           "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"" + DEFAULT_DEFAULT_CORE_NAME + "\">\n" +
-          "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" instanceDir=\".\" />\n" +
+          "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" shard=\"${shard:}\" instanceDir=\".\" />\n" +
           "  </cores>\n" +
           "</solr>";
 }

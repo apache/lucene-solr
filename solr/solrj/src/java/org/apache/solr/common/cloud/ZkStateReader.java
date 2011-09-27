@@ -50,6 +50,8 @@ public class ZkStateReader {
   
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
+  public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
+
   private static class ZKTF implements ThreadFactory {
     private static ThreadGroup tg = new ThreadGroup("ZkStateReader");
     @Override
