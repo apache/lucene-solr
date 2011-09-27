@@ -199,19 +199,13 @@ public class ZkStateReader {
                 log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
                 return;
               }
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+              log.warn("", e);
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+              log.warn("", e);
             } catch (IOException e) {
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+              log.warn("", e);
             }
           }
         };
@@ -346,19 +340,13 @@ public class ZkStateReader {
               log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
               return;
             }
-            log.error("", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+            log.warn("", e);
           } catch (InterruptedException e) {
             // Restore the interrupted status
             Thread.currentThread().interrupt();
-            log.error("", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+            log.warn("", e);
           } catch (IOException e) {
-            log.error("", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+            log.warn("", e);
           }
 
       }});

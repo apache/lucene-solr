@@ -82,7 +82,7 @@ public class SliceLeaderElector {
    */
   private void checkIfIamLeader(final String shardId, final String collection,
       final int seq, final String leaderId) throws KeeperException,
-      InterruptedException, UnsupportedEncodingException {
+      InterruptedException {
     // get all other numbers...
     String holdElectionPath = getElectionPath(shardId, collection)
         + ELECTION_NODE;
@@ -101,7 +101,7 @@ public class SliceLeaderElector {
           break;
         }
       }
-
+      
       try {
         zkClient.getData(holdElectionPath + "/" + seqs.get(i - 2),
             new Watcher() {
@@ -111,23 +111,16 @@ public class SliceLeaderElector {
                 // am I the next leader?
                 try {
                   checkIfIamLeader(shardId, collection, seq, leaderId);
-                } catch (UnsupportedEncodingException e) {
-                  log.error("", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "", e);
                 } catch (KeeperException e) {
-                  log.error("", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "", e);
+                  log.warn("", e);
+                  
                 } catch (InterruptedException e) {
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
                   log.warn("", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "", e);
                 }
-                
               }
+              
             }, null);
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
@@ -139,7 +132,7 @@ public class SliceLeaderElector {
 
   private void runIamLeaderProcess(final String shardId,
       final String collection, final String leaderId) throws KeeperException,
-      InterruptedException, UnsupportedEncodingException {
+      InterruptedException {
     String currentLeaderZkPath = getElectionPath(shardId, collection)
         + LEADER_NODE;
     zkClient.makePath(currentLeaderZkPath + "/" + leaderId,  CreateMode.EPHEMERAL);
