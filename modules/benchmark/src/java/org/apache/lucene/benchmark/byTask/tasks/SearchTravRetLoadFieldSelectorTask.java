@@ -23,7 +23,7 @@ import java.util.StringTokenizer;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.IndexReader;
 
 /**
