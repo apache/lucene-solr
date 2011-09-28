@@ -33,11 +33,11 @@ import org.apache.lucene.store.Directory;
  *  This class ensures each IndexSearcher instance is not
  *  closed until it is no longer needed.
  *
- *  <p>Use {@link #get} to obtain the current searcher, and
+ *  <p>Use {@link #acquire} to obtain the current searcher, and
  *  {@link #release} to release it, like this:
  *
  *  <pre>
- *    IndexSearcher s = manager.get();
+ *    IndexSearcher s = manager.acquire();
  *    try {
  *      // Do searching, doc retrieval, etc. with s
  *    } finally {
@@ -166,7 +166,7 @@ public class SearcherManager implements Closeable {
   }
 
   /** Obtain the current IndexSearcher.  You must match
-   *  every call to get with one call to {@link #release};
+   *  every call to acquire with one call to {@link #release};
    *  it's best to do so in a finally clause. */
   public IndexSearcher acquire() {
     IndexSearcher searcher;
@@ -179,7 +179,7 @@ public class SearcherManager implements Closeable {
   }    
 
   /** Release the searcher previously obtained with {@link
-   *  #get}.
+   *  #acquire}.
    *
    *  <p><b>NOTE</b>: it's safe to call this after {@link
    *  #close}. */
