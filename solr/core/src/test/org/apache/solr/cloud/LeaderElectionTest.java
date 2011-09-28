@@ -31,7 +31,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,7 +44,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
+    createTempDir();
   }
   
   @Override
