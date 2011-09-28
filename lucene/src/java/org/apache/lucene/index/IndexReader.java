@@ -200,10 +200,44 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * references.
    *
    * @see #decRef
+   * @see #tryIncRef
    */
   public void incRef() {
     ensureOpen();
     refCount.incrementAndGet();
+  }
+  
+  /**
+   * Expert: increments the refCount of this IndexReader
+   * instance only if the IndexReader has not been closed yet
+   * and returns <code>true</code> iff the refCount was
+   * successfully incremented, otherwise <code>false</code>.
+   * If this method returns <code>false</code> the reader is either
+   * already closed or is currently been closed. Either way this
+   * reader instance shouldn't be used by an application unless
+   * <code>true</code> is returned.
+   * <p>
+   * RefCounts are used to determine when a
+   * reader can be closed safely, i.e. as soon as there are
+   * no more references.  Be sure to always call a
+   * corresponding {@link #decRef}, in a finally clause;
+   * otherwise the reader may never be closed.  Note that
+   * {@link #close} simply calls decRef(), which means that
+   * the IndexReader will not really be closed until {@link
+   * #decRef} has been called for all outstanding
+   * references.
+   *
+   * @see #decRef
+   * @see #incRef
+   */
+  public boolean tryIncRef() {
+    int count;
+    while ((count = refCount.get()) > 0) {
+      if(refCount.compareAndSet(count, count+1)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** {@inheritDoc} */

@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import org.junit.Assume;
@@ -1402,5 +1403,71 @@ public class TestIndexReader extends LuceneTestCase
     }
     r.close();
     dir.close();
+  }
+  
+  public void testTryIncRef() throws CorruptIndexException, LockObtainFailedException, IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    writer.addDocument(new Document());
+    writer.commit();
+    IndexReader r = IndexReader.open(dir);
+    assertTrue(r.tryIncRef());
+    r.decRef();
+    r.close();
+    assertFalse(r.tryIncRef());
+    writer.close();
+    dir.close();
+  }
+  
+  public void testStressTryIncRef() throws CorruptIndexException, LockObtainFailedException, IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    writer.addDocument(new Document());
+    writer.commit();
+    IndexReader r = IndexReader.open(dir);
+    int numThreads = atLeast(2);
+    
+    IncThread[] threads = new IncThread[numThreads];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new IncThread(r, random);
+      threads[i].start();
+    }
+    Thread.sleep(100);
+
+    assertTrue(r.tryIncRef());
+    r.decRef();
+    r.close();
+
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
+      assertNull(threads[i].failed);
+    }
+    assertFalse(r.tryIncRef());
+    writer.close();
+    dir.close();
+  }
+  
+  static class IncThread extends Thread {
+    final IndexReader toInc;
+    final Random random;
+    Throwable failed;
+    
+    IncThread(IndexReader toInc, Random random) {
+      this.toInc = toInc;
+      this.random = random;
+    }
+    
+    @Override
+    public void run() {
+      try {
+        while (toInc.tryIncRef()) {
+          assertFalse(toInc.hasDeletions());
+          toInc.decRef();
+        }
+        assertFalse(toInc.tryIncRef());
+      } catch (Throwable e) {
+        failed = e;
+      }
+    }
   }
 }

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -67,7 +67,7 @@ public class SearcherManager implements Closeable {
   // Current searcher
   private volatile IndexSearcher currentSearcher;
   private final SearcherWarmer warmer;
-  private final AtomicBoolean reopening = new AtomicBoolean();
+  private final Semaphore reopening = new Semaphore(1);
   private final ExecutorService es;
 
   /** Opens an initial searcher from the Directory.
@@ -136,7 +136,7 @@ public class SearcherManager implements Closeable {
 
     // Ensure only 1 thread does reopen at once; other
     // threads just return immediately:
-    if (!reopening.getAndSet(true)) {
+    if (reopening.tryAcquire()) {
       try {
         IndexReader newReader = currentSearcher.getIndexReader().reopen();
         if (newReader != currentSearcher.getIndexReader()) {
@@ -158,7 +158,7 @@ public class SearcherManager implements Closeable {
           return false;
         }
       } finally {
-        reopening.set(false);
+        reopening.release();
       }
     } else {
       return false;
@@ -168,12 +168,14 @@ public class SearcherManager implements Closeable {
   /** Obtain the current IndexSearcher.  You must match
    *  every call to get with one call to {@link #release};
    *  it's best to do so in a finally clause. */
-  public synchronized IndexSearcher get() {
-    if (currentSearcher == null) {
-      throw new AlreadyClosedException("this SearcherManager is closed");
-    }
-    currentSearcher.getIndexReader().incRef();
-    return currentSearcher;
+  public IndexSearcher acquire() {
+    IndexSearcher searcher;
+    do {
+      if ((searcher = currentSearcher) == null) {
+        throw new AlreadyClosedException("this SearcherManager is closed");
+      }
+    } while (!searcher.getIndexReader().tryIncRef());
+    return searcher;
   }    
 
   /** Release the searcher previously obtained with {@link
@@ -186,7 +188,7 @@ public class SearcherManager implements Closeable {
     searcher.getIndexReader().decRef();
   }
 
-  // Replaces old searcher with new one
+  // Replaces old searcher with new one - needs to be synced to make close() work
   private synchronized void swapSearcher(IndexSearcher newSearcher)
     throws IOException {
     IndexSearcher oldSearcher = currentSearcher;
