@@ -29,11 +29,15 @@ import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
@@ -1424,6 +1428,189 @@ public class TestFSTs extends LuceneTestCase {
     assertNotNull(seekResult);
     assertEquals(b, seekResult.input);
     assertEquals(42, (long) seekResult.output);
+  }
+
+  public void testPrimaryKeys() throws Exception {
+    Directory dir = newDirectory();
+
+    for(int cycle=0;cycle<2;cycle++) {
+      if (VERBOSE) {
+        System.out.println("TEST: cycle=" + cycle);
+      }
+      RandomIndexWriter w = new RandomIndexWriter(random, dir,
+                                                  newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+      Document doc = new Document();
+      Field idField = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+      doc.add(idField);
+      
+      final int NUM_IDS = (int) (1000*RANDOM_MULTIPLIER*(1.0+random.nextDouble()));
+      //final int NUM_IDS = (int) (377 * (1.0+random.nextDouble()));
+      if (VERBOSE) {
+        System.out.println("TEST: NUM_IDS=" + NUM_IDS);
+      }
+      final Set<String> allIDs = new HashSet<String>();
+      for(int id=0;id<NUM_IDS;id++) {
+        String idString;
+        if (cycle == 0) {
+          // PKs are assigned sequentially
+          idString = String.format("%07d", id);
+        } else {
+          while(true) {
+            final String s = Long.toString(random.nextLong());
+            if (!allIDs.contains(s)) {
+              idString = s;
+              break;
+            }
+          }
+        }
+        allIDs.add(idString);
+        idField.setValue(idString);
+        w.addDocument(doc);
+      }
+
+      //w.optimize();
+
+      // turn writer into reader:
+      final IndexReader r = w.getReader();
+      final IndexSearcher s = new IndexSearcher(r);
+      w.close();
+
+      final List<String> allIDsList = new ArrayList<String>(allIDs);
+      final List<String> sortedAllIDsList = new ArrayList<String>(allIDsList);
+      Collections.sort(sortedAllIDsList);
+
+      // Sprinkle in some non-existent PKs:
+      Set<String> outOfBounds = new HashSet<String>();
+      for(int idx=0;idx<NUM_IDS/10;idx++) {
+        String idString;
+        if (cycle == 0) {
+          idString = String.format("%07d", (NUM_IDS + idx));
+        } else {
+          while(true) {
+            idString = Long.toString(random.nextLong());
+            if (!allIDs.contains(idString)) {
+              break;
+            }
+          }
+        }
+        outOfBounds.add(idString);
+        allIDsList.add(idString);
+      }
+
+      // Verify w/ TermQuery
+      for(int iter=0;iter<2*NUM_IDS;iter++) {
+        final String id = allIDsList.get(random.nextInt(allIDsList.size()));
+        final boolean exists = !outOfBounds.contains(id);
+        if (VERBOSE) {
+          System.out.println("TEST: TermQuery " + (exists ? "" : "non-exist ") + " id=" + id);
+        }
+        assertEquals((exists ? "" : "non-exist ") + "id=" + id, exists ? 1 : 0, s.search(new TermQuery(new Term("id", id)), 1).totalHits);
+      }
+
+      // Verify w/ MultiTermsEnum
+      for(int iter=0;iter<2*NUM_IDS;iter++) {
+        final String id;
+        final String nextID;
+        final boolean exists;
+
+        if (random.nextBoolean()) {
+          id = allIDsList.get(random.nextInt(allIDsList.size()));
+          exists = !outOfBounds.contains(id);
+          nextID = null;
+          if (VERBOSE) {
+            System.out.println("TEST: exactOnly " + (exists ? "" : "non-exist ") + "id=" + id);
+          }
+        } else {
+          // Pick ID between two IDs:
+          exists = false;
+          final int idv = random.nextInt(NUM_IDS-1);
+          if (cycle == 0) {
+            id = String.format("%07da", idv);
+            nextID = String.format("%07d", idv+1);
+          } else {
+            id = sortedAllIDsList.get(idv) + "a";
+            nextID = sortedAllIDsList.get(idv+1);
+          }
+          if (VERBOSE) {
+            System.out.println("TEST: not exactOnly id=" + id + " nextID=" + nextID);
+          }
+        }
+
+        final boolean useCache = random.nextBoolean();
+        if (VERBOSE) {
+          System.out.println("  useCache=" + useCache);
+        }
+
+        final Term idTerm = new Term("id", id);
+        final TermEnum termEnum = r.terms(idTerm);
+        final Term actual = termEnum.term();
+
+        if (nextID != null) {
+          assertNotNull(actual);
+          assertTrue(!actual.equals(idTerm));
+          assertEquals("expected=" + nextID + " actual=" + actual.text(), nextID, actual.text());
+        } else if (!exists) {
+          assertTrue(actual == null || !actual.equals(idTerm));
+        } else {
+          assertEquals(actual, idTerm);
+        }
+      }
+
+      r.close();
+    }
+    dir.close();
+  }
+
+  public void testRandomTermLookup() throws Exception {
+    Directory dir = newDirectory();
+
+    RandomIndexWriter w = new RandomIndexWriter(random, dir,
+                                                newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+    w.w.setInfoStream(VERBOSE ? System.out : null);
+
+    Document doc = new Document();
+    Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    doc.add(f);
+      
+    final int NUM_TERMS = (int) (1000*RANDOM_MULTIPLIER * (1+random.nextDouble()));
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_TERMS=" + NUM_TERMS);
+    }
+
+    final Set<String> allTerms = new HashSet<String>();
+    while(allTerms.size() < NUM_TERMS) {
+      allTerms.add(simpleRandomString(random));
+    }
+
+    for(String term : allTerms) {
+      f.setValue(term);
+      w.addDocument(doc);
+    }
+
+    // turn writer into reader:
+    if (VERBOSE) {
+      System.out.println("TEST: get reader");
+    }
+    IndexReader r = w.getReader();
+    if (VERBOSE) {
+      System.out.println("TEST: got reader=" + r);
+    }
+    IndexSearcher s = new IndexSearcher(r);
+    w.close();
+
+    final List<String> allTermsList = new ArrayList<String>(allTerms);
+    Collections.shuffle(allTermsList, random);
+
+    // verify exact lookup
+    for(String term : allTermsList) {
+      if (VERBOSE) {
+        System.out.println("TEST: term=" + term);
+      }
+      assertEquals("term=" + term, 1, s.search(new TermQuery(new Term("field", term)), 1).totalHits);
+    }
+
+    r.close();
+    dir.close();
   }
 
   /**
