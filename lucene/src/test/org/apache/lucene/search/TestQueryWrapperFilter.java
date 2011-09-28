@@ -16,10 +16,13 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -84,6 +87,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
   // this test is for 3.x only, in 4.x we no longer support non-atomic readers passed to getDocIdSet():
   public void test_LUCENE3442() throws Exception {
+
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
@@ -114,4 +118,44 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     dir.close();
   }
 
+  public void testRandom() throws Exception {
+    final Directory d = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, d);
+    w.w.getConfig().setMaxBufferedDocs(17);
+    final int numDocs = atLeast(100);
+    final Set<String> aDocs = new HashSet<String>();
+    for(int i=0;i<numDocs;i++) {
+      final Document doc = new Document();
+      final String v;
+      if (random.nextInt(5) == 4) {
+        v = "a";
+        aDocs.add(""+i);
+      } else {
+        v = "b";
+      }
+      final Field f = newField("field", v, Field.Store.NO, Field.Index.NOT_ANALYZED);
+      doc.add(f);
+      doc.add(newField("id", ""+i, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      w.addDocument(doc);
+    }
+
+    final int numDelDocs = atLeast(10);
+    for(int i=0;i<numDelDocs;i++) {
+      final String delID = ""+random.nextInt(numDocs);
+      w.deleteDocuments(new Term("id", delID));
+      aDocs.remove(delID);
+    }
+
+    final IndexReader r = w.getReader();
+    w.close();
+    final TopDocs hits = new IndexSearcher(r).search(new MatchAllDocsQuery(),
+                                                     new QueryWrapperFilter(new TermQuery(new Term("field", "a"))),
+                                                     numDocs);
+    assertEquals(aDocs.size(), hits.totalHits);
+    for(ScoreDoc sd: hits.scoreDocs) {
+      assertTrue(aDocs.contains(r.document(sd.doc).get("id")));
+    }
+    r.close();
+    d.close();
+  }
 }
