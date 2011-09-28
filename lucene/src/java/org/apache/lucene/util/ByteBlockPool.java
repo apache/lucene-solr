@@ -243,6 +243,18 @@ public final class ByteBlockPool {
     assert term.length >= 0;
     return term;
   }
+  /**
+   * Dereferences the byte block according to {@link BytesRef} offset. The offset 
+   * is interpreted as the absolute offset into the {@link ByteBlockPool}.
+   */
+  public final BytesRef deref(BytesRef bytes) {
+    final int offset = bytes.offset;
+    byte[] buffer = buffers[offset >> BYTE_BLOCK_SHIFT];
+    int pos = offset & BYTE_BLOCK_MASK;
+    bytes.bytes = buffer;
+    bytes.offset = pos;
+    return bytes;
+  }
   
   /**
    * Copies the given {@link BytesRef} at the current positions (
