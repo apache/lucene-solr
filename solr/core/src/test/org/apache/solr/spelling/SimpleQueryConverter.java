@@ -44,7 +44,7 @@ class SimpleQueryConverter extends SpellingQueryConverter {
     try {
       Collection<Token> result = new HashSet<Token>();
       WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
-      TokenStream ts = analyzer.reusableTokenStream("", new StringReader(origQuery));
+      TokenStream ts = analyzer.tokenStream("", new StringReader(origQuery));
       // TODO: support custom attributes
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

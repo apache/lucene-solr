@@ -207,13 +207,13 @@ public abstract class CollationTestBase extends LuceneTestCase {
       doc.add(new Field("tracer", customType, sortData[i][0]));
       doc.add(new TextField("contents", sortData[i][1]));
       if (sortData[i][2] != null) 
-        doc.add(new TextField("US", usAnalyzer.reusableTokenStream("US", new StringReader(sortData[i][2]))));
+        doc.add(new TextField("US", usAnalyzer.tokenStream("US", new StringReader(sortData[i][2]))));
       if (sortData[i][3] != null) 
-        doc.add(new TextField("France", franceAnalyzer.reusableTokenStream("France", new StringReader(sortData[i][3]))));
+        doc.add(new TextField("France", franceAnalyzer.tokenStream("France", new StringReader(sortData[i][3]))));
       if (sortData[i][4] != null)
-        doc.add(new TextField("Sweden", swedenAnalyzer.reusableTokenStream("Sweden", new StringReader(sortData[i][4]))));
+        doc.add(new TextField("Sweden", swedenAnalyzer.tokenStream("Sweden", new StringReader(sortData[i][4]))));
       if (sortData[i][5] != null) 
-        doc.add(new TextField("Denmark", denmarkAnalyzer.reusableTokenStream("Denmark", new StringReader(sortData[i][5]))));
+        doc.add(new TextField("Denmark", denmarkAnalyzer.tokenStream("Denmark", new StringReader(sortData[i][5]))));
       writer.addDocument(doc);
     }
     writer.optimize();
@@ -265,7 +265,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     for (int i = 0; i < numTestPoints; i++) {
       String term = _TestUtil.randomSimpleString(random);
-      TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
+      TokenStream ts = analyzer.tokenStream("fake", new StringReader(term));
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
@@ -284,7 +284,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
             for (Map.Entry<String,BytesRef> mapping : map.entrySet()) {
               String term = mapping.getKey();
               BytesRef expected = mapping.getValue();
-              TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
+              TokenStream ts = analyzer.tokenStream("fake", new StringReader(term));
               TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
               BytesRef bytes = termAtt.getBytesRef();
               ts.reset();

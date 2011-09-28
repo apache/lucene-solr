@@ -214,7 +214,7 @@ public class CollationField extends FieldType {
     TokenStream source;
       
     try {
-      source = analyzer.reusableTokenStream(field, new StringReader(part));
+      source = analyzer.tokenStream(field, new StringReader(part));
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);

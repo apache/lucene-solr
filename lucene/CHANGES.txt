@@ -180,6 +180,10 @@ Changes in backwards compatibility policy
   overriding .tokenStream() and .reusableTokenStream() (which are now final). 
   (Chris Male)
 
+* LUCENE-3346: Analyzer.reusableTokenStream() has been renamed to tokenStream()
+  with the old tokenStream() method removed.  Consequently it is now mandatory
+  for all Analyzers to support reusability. (Chris Male)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

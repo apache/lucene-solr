@@ -350,9 +350,9 @@ public class Field implements IndexableField {
     if (tokenStream != null) {
       return tokenStream;
     } else if (readerValue() != null) {
-      return analyzer.reusableTokenStream(name(), readerValue());
+      return analyzer.tokenStream(name(), readerValue());
     } else if (stringValue() != null) {
-      return analyzer.reusableTokenStream(name(), new StringReader(stringValue()));
+      return analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
 
     throw new IllegalArgumentException("Field must have either TokenStream, String or Reader value");

@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
@@ -48,7 +47,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   public void testDefaults() throws IOException {
     assertTrue(stop != null);
     StringReader reader = new StringReader("This is a test of the english stop analyzer");
-    TokenStream stream = stop.reusableTokenStream("test", reader);
+    TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
     CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     stream.reset();
@@ -65,7 +64,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     stopWordsSet.add("analyzer");
     StopAnalyzer newStop = new StopAnalyzer(Version.LUCENE_40, stopWordsSet);
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
-    TokenStream stream = newStop.reusableTokenStream("test", reader);
+    TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
     CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     
@@ -83,7 +82,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     StopAnalyzer newStop = new StopAnalyzer(TEST_VERSION_CURRENT, stopWordsSet);
     StringReader reader = new StringReader("This is a good test of the english stop analyzer with positions");
     int expectedIncr[] =                  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
-    TokenStream stream = newStop.reusableTokenStream("test", reader);
+    TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
     int i = 0;
     CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);

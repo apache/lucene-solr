@@ -101,7 +101,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     String testString = "t";
     
     Analyzer analyzer = new MockAnalyzer(random);
-    TokenStream stream = analyzer.reusableTokenStream("dummy", new StringReader(testString));
+    TokenStream stream = analyzer.tokenStream("dummy", new StringReader(testString));
     stream.reset();
     while (stream.incrementToken()) {
       // consume

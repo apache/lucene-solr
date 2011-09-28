@@ -78,7 +78,7 @@ public class Highlighter
 	public final String getBestFragment(Analyzer analyzer, String fieldName,String text)
 		throws IOException, InvalidTokenOffsetsException
 	{
-		TokenStream tokenStream = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragment(tokenStream, text);
 	}
 
@@ -130,7 +130,7 @@ public class Highlighter
 		int maxNumFragments)
 		throws IOException, InvalidTokenOffsetsException
 	{
-		TokenStream tokenStream = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragments(tokenStream, text, maxNumFragments);
 	}
 

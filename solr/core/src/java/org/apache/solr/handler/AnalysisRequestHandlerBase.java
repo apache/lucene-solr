@@ -88,7 +88,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
       TokenStream tokenStream = null;
       try {
-        tokenStream = analyzer.reusableTokenStream(context.getFieldName(), new StringReader(value));
+        tokenStream = analyzer.tokenStream(context.getFieldName(), new StringReader(value));
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -142,7 +142,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
     try {
       final Set<BytesRef> tokens = new HashSet<BytesRef>();
-      final TokenStream tokenStream = analyzer.reusableTokenStream("", new StringReader(query));
+      final TokenStream tokenStream = analyzer.tokenStream("", new StringReader(query));
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef bytes = bytesAtt.getBytesRef();
 

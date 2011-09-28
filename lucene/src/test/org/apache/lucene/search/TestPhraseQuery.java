@@ -636,7 +636,7 @@ public class TestPhraseQuery extends LuceneTestCase {
               break;
             }
           }
-          TokenStream ts = analyzer.reusableTokenStream("ignore", new StringReader(term));
+          TokenStream ts = analyzer.tokenStream("ignore", new StringReader(term));
           CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
           ts.reset();
           while(ts.incrementToken()) {

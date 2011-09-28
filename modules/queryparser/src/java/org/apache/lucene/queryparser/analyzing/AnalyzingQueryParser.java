@@ -109,7 +109,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
     
     int countTokens = 0;
     try {
-      source = getAnalyzer().reusableTokenStream(field, new StringReader(termStr));
+      source = getAnalyzer().tokenStream(field, new StringReader(termStr));
       source.reset();
     } catch (IOException e1) {
       throw new RuntimeException(e1);
@@ -197,7 +197,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
     TokenStream source;
     List<String> tlist = new ArrayList<String>();
     try {
-      source = getAnalyzer().reusableTokenStream(field, new StringReader(termStr));
+      source = getAnalyzer().tokenStream(field, new StringReader(termStr));
       source.reset();
     } catch (IOException e1) {
       throw new RuntimeException(e1);
@@ -253,7 +253,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
     boolean multipleTokens = false;
     
     try {
-      source = getAnalyzer().reusableTokenStream(field, new StringReader(termStr));
+      source = getAnalyzer().tokenStream(field, new StringReader(termStr));
       CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
       source.reset();
       if (source.incrementToken()) {
@@ -294,7 +294,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
     if (part1 != null) {
       // part1
       try {
-        source = getAnalyzer().reusableTokenStream(field, new StringReader(part1));
+        source = getAnalyzer().tokenStream(field, new StringReader(part1));
         termAtt = source.addAttribute(CharTermAttribute.class);
         source.reset();
         multipleTokens = false;
@@ -322,7 +322,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
     if (part2 != null) {
       try {
         // part2
-        source = getAnalyzer().reusableTokenStream(field, new StringReader(part2));
+        source = getAnalyzer().tokenStream(field, new StringReader(part2));
         termAtt = source.addAttribute(CharTermAttribute.class);
         source.reset();
         if (source.incrementToken()) {

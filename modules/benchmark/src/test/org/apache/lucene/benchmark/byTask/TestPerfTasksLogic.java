@@ -958,8 +958,8 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   
   private void assertEqualCollation(Analyzer a1, Analyzer a2, String text)
       throws Exception {
-    TokenStream ts1 = a1.reusableTokenStream("bogus", new StringReader(text));
-    TokenStream ts2 = a2.reusableTokenStream("bogus", new StringReader(text));
+    TokenStream ts1 = a1.tokenStream("bogus", new StringReader(text));
+    TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
     ts1.reset();
     ts2.reset();
     TermToBytesRefAttribute termAtt1 = ts1.addAttribute(TermToBytesRefAttribute.class);
@@ -1007,8 +1007,8 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     
     // Default analyzer, maxShingleSize, and outputUnigrams
     Benchmark benchmark = execBenchmark(getShingleConfig(""));
-    benchmark.getRunData().getAnalyzer().reusableTokenStream
-      ("bogus", new StringReader(text)).close();
+    benchmark.getRunData().getAnalyzer().tokenStream
+        ("bogus", new StringReader(text)).close();
     assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
                        new String[] {"one", "one two", "two", "two three",
                                      "three", "three four", "four", "four five",

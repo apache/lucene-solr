@@ -109,7 +109,7 @@ public class TextField extends FieldType {
 
     TokenStream source;
     try {
-      source = analyzer.reusableTokenStream(field, new StringReader(queryText));
+      source = analyzer.tokenStream(field, new StringReader(queryText));
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);

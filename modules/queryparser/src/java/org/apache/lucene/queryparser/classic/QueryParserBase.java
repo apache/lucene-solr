@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.Collator;
 import java.text.DateFormat;
 import java.util.*;
 
@@ -474,7 +473,7 @@ public abstract class QueryParserBase {
 
     TokenStream source;
     try {
-      source = analyzer.reusableTokenStream(field, new StringReader(queryText));
+      source = analyzer.tokenStream(field, new StringReader(queryText));
       source.reset();
     } catch (IOException e) {
       throw new ParseException("Unable to initialize TokenStream to analyze query text", e);
@@ -783,7 +782,7 @@ public abstract class QueryParserBase {
     TokenStream source;
       
     try {
-      source = analyzer.reusableTokenStream(field, new StringReader(part));
+      source = analyzer.tokenStream(field, new StringReader(part));
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);

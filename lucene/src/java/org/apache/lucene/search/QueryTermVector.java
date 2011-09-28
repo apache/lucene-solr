@@ -57,7 +57,7 @@ public class QueryTermVector implements TermFreqVector {
     {
       TokenStream stream;
       try {
-        stream = analyzer.reusableTokenStream("", new StringReader(queryString));
+        stream = analyzer.tokenStream("", new StringReader(queryString));
       } catch (IOException e1) {
         stream = null;
       }
