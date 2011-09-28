@@ -87,6 +87,8 @@ public final class ZkController {
 
   private String hostName;
 
+  private AssignShard assignShard;
+
 
 
   /**
@@ -153,6 +155,7 @@ public final class ZkController {
     
     leaderElector = new SliceLeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
+    assignShard = new AssignShard(zkClient);
     init();
   }
 
@@ -463,23 +466,30 @@ public final class ZkController {
     return configName;
   }
 
+
   /**
    * Register shard with ZooKeeper.
    * 
    * @param coreName
    * @param cloudDesc
+   * @return
    * @throws IOException
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void register(String coreName, final CloudDescriptor cloudDesc) throws IOException,
+  public String register(String coreName, final CloudDescriptor cloudDesc) throws IOException,
       KeeperException, InterruptedException {
     String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
     final String collection = cloudDesc.getCollectionName();
     
-    String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
+    String shardId = cloudDesc.getShardId();
+    if (shardId == null) {
+      shardId = assignShard.assignShard(collection, 3); // nocommit: hard coded
+                                                        // number of slices
+    }
+    String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + shardId;
 
     boolean shardZkNodeAlreadyExists = zkClient.exists(shardsZkPath);
     
@@ -502,8 +512,9 @@ public final class ZkController {
       // tell everyone to update cloud info
       zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
     } else {
-      addZkShardsNode(cloudDesc.getShardId(), collection);
+      addZkShardsNode(shardId, collection);
       try {
+        log.info("create node:" + shardZkNodeName);
         zkClient.create(shardsZkPath + "/" + shardZkNodeName, bytes,
             CreateMode.PERSISTENT);
         
@@ -521,15 +532,15 @@ public final class ZkController {
     }
     
     // leader election
-    doLeaderElectionProcess(cloudDesc, collection, shardZkNodeName);
-    
+    doLeaderElectionProcess(shardId, collection, shardZkNodeName);
+    return shardId;
   }
 
-  private void doLeaderElectionProcess(final CloudDescriptor cloudDesc,
+  private void doLeaderElectionProcess(String shardId,
       final String collection, String shardZkNodeName) throws KeeperException,
       InterruptedException, UnsupportedEncodingException {
    
-    leaderElector.joinElection(cloudDesc.getShardId(), collection, shardZkNodeName);
+    leaderElector.joinElection(shardId, collection, shardZkNodeName);
   }
 
   /**
@@ -672,6 +683,33 @@ public final class ZkController {
           }
           
           zkClient.makePath(collectionPath, collectionProps.store(), CreateMode.PERSISTENT, null, true);
+          try {
+            // shards_lock node
+            if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/shards_lock")) {
+              // makes shards_lock zkNode if it doesn't exist
+              zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/shards_lock");
+            }
+          } catch (KeeperException e) {
+            // its okay if another beats us creating the node
+            if (e.code() != KeeperException.Code.NODEEXISTS) {
+              throw e;
+            }
+          }
+          try {
+            // shards node
+            if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+                + ZkStateReader.SHARDS_ZKNODE)) {
+              // makes shards zkNode if it doesn't exist
+              zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+                  + ZkStateReader.SHARDS_ZKNODE);
+            }
+          } catch (KeeperException e) {
+            // its okay if another beats us creating the node
+            if (e.code() != KeeperException.Code.NODEEXISTS) {
+              throw e;
+            }
+          }
+          
          
           // ping that there is a new collection
           zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);

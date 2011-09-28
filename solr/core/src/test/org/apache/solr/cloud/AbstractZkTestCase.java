@@ -123,13 +123,13 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.close();
   }
 
-  static void makeSolrZkNode(String zkHost) throws Exception {
+  public static void makeSolrZkNode(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
     zkClient.makePath("/solr");
     zkClient.close();
   }
   
-  static void tryCleanSolrZkNode(String zkHost) throws Exception {
+  public static void tryCleanSolrZkNode(String zkHost) throws Exception {
     tryCleanPath(zkHost, "/solr");
   }
   

@@ -226,6 +226,67 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
 
   }
+  
+  @Test
+  public void testAutoShard() throws Exception {
+    String zkDir = dataDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    
+    ZkController zkController = null;
+    try {
+      server.run();
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      zkController = new ZkController(server.getZkAddress(),
+          TIMEOUT, 10000, "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
+            
+            @Override
+            public List<CoreDescriptor> getCurrentDescriptors() {
+              // do nothing
+              return null;
+            }
+          });
+
+      System.setProperty("bootstrap_confdir", getFile("solr/conf").getAbsolutePath());
+      
+      // ensure our shards node for the collection exists - other tests can mess with this
+      
+      CloudDescriptor cloudDesc = new CloudDescriptor();
+      cloudDesc.setCollectionName("collection1");
+      zkController.createCollectionZkNode(cloudDesc);
+     
+      String shard1 = zkController.register("core1", cloudDesc);
+      String shard2 = zkController.register("core2", cloudDesc);
+      String shard3 = zkController.register("core3", cloudDesc);
+      String shard4 = zkController.register("core4", cloudDesc);
+      String shard5 = zkController.register("core5", cloudDesc);
+      String shard6 = zkController.register("core6", cloudDesc);
+
+      assertEquals("shard1", shard1);
+      assertEquals("shard2", shard2);
+      assertEquals("shard3", shard3);
+      assertEquals("shard1", shard4);
+      assertEquals("shard2", shard5);
+      assertEquals("shard3", shard6);
+
+    } finally {
+      if (DEBUG) {
+        if (zkController != null) {
+          zkController.printLayoutToStdOut();
+        }
+      }
+      
+      if (zkController != null) {
+        zkController.close();
+      }
+      server.shutdown();
+    }
+
+  }
 
   private void addShardToZk(SolrZkClient zkClient, String shardsPath,
       String zkNodeName, String url) throws IOException,
