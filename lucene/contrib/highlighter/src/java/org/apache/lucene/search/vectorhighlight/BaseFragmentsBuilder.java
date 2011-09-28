@@ -133,7 +133,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
             ft.setStoreTermVectors(fieldInfo.storeTermVector);
             ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
             ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-            fields.add(new Field(fieldInfo.name, ft, new String(b, "UTF-8")));
+            fields.add(new Field(fieldInfo.name, new String(b, "UTF-8"), ft));
           } else {
             in.seek(in.getFilePointer() + numUTF8Bytes);
           }

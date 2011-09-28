@@ -273,7 +273,7 @@ public abstract class FieldType extends FieldProperties {
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
   protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
-    Field f = new Field(name, type, val);
+    Field f = new Field(name, val, type);
     f.setBoost(boost);
     return f;
   }

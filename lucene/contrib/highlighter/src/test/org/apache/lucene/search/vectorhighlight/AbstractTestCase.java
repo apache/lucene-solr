@@ -359,7 +359,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
     for( String value: values ) {
-      doc.add( new Field( F, customType, value ) );
+      doc.add( new Field( F, value, customType) );
     }
     writer.addDocument( doc );
     writer.close();
@@ -377,7 +377,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
     for( String value: values ) {
-      doc.add( new Field( F, customType, value ));
+      doc.add( new Field( F, value, customType));
       //doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     }
     writer.addDocument( doc );

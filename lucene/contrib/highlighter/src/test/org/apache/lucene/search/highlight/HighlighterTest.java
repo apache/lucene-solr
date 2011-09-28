@@ -1625,7 +1625,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    doc.add( new Field( f, TextField.TYPE_STORED, v));
+    doc.add( new Field( f, v, TextField.TYPE_STORED));
     return doc;
   }
   
@@ -1776,7 +1776,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
 
-    Field f = new Field(FIELD_NAME, TextField.TYPE_STORED, text);
+    Field f = new Field(FIELD_NAME, text, TextField.TYPE_STORED);
     d.add(f);
     writer.addDocument(d);
 

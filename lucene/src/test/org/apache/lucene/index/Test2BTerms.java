@@ -180,7 +180,7 @@ public class Test2BTerms extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setIndexOptions(IndexOptions.DOCS_ONLY);
       customType.setOmitNorms(true);
-      Field field = new Field("field", customType, ts);
+      Field field = new Field("field", ts, customType);
       doc.add(field);
       //w.setInfoStream(System.out);
       final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);

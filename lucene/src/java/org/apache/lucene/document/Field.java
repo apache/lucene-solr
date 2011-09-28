@@ -60,7 +60,7 @@ public class Field implements IndexableField {
     this.type = type;
   }
   
-  public Field(String name, IndexableFieldType type, Reader reader) {
+  public Field(String name, Reader reader, IndexableFieldType type) {
     if (name == null) {
       throw new NullPointerException("name cannot be null");
     }
@@ -76,7 +76,7 @@ public class Field implements IndexableField {
     this.type = type;
   }
   
-  public Field(String name, IndexableFieldType type, TokenStream tokenStream) {
+  public Field(String name, TokenStream tokenStream, IndexableFieldType type) {
     if (name == null) {
       throw new NullPointerException("name cannot be null");
     }
@@ -93,15 +93,15 @@ public class Field implements IndexableField {
     this.type = type;
   }
   
-  public Field(String name, IndexableFieldType type, byte[] value) {
-    this(name, type, value, 0, value.length);
+  public Field(String name, byte[] value, IndexableFieldType type) {
+    this(name, value, 0, value.length, type);
   }
 
-  public Field(String name, IndexableFieldType type, byte[] value, int offset, int length) {
-    this(name, type, new BytesRef(value, offset, length));
+  public Field(String name, byte[] value, int offset, int length, IndexableFieldType type) {
+    this(name, new BytesRef(value, offset, length), type);
   }
 
-  public Field(String name, IndexableFieldType type, BytesRef bytes) {
+  public Field(String name, BytesRef bytes, IndexableFieldType type) {
     if (type.indexed() && !type.tokenized()) {
       throw new IllegalArgumentException("Non-tokenized fields must use String values");
     }
@@ -111,7 +111,7 @@ public class Field implements IndexableField {
     this.name = name;
   }
   
-  public Field(String name, IndexableFieldType type, String value) {
+  public Field(String name, String value, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }

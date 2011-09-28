@@ -1264,7 +1264,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             
         }
         Document document = new Document();
-        document.add(new Field("field", TextField.TYPE_STORED, "a field"));
+        document.add(new Field("field", "a field", TextField.TYPE_STORED));
         w.addDocument(document);
 
         for (int i = 0; i < numDocs; i++) {
@@ -1284,7 +1284,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           }
         }
         document = new Document();
-        document.add(new Field("field", TextField.TYPE_STORED, "a field"));
+        document.add(new Field("field", "a field", TextField.TYPE_STORED));
         w.addDocument(document);
         w.close();
         IndexReader reader = IndexReader.open(dir);

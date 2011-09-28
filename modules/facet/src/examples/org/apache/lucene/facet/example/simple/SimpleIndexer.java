@@ -70,7 +70,7 @@ public class SimpleIndexer {
 
       // create a plain Lucene document and add some regular Lucene fields to it 
       Document doc = new Document();
-      doc.add(new Field(SimpleUtils.TITLE, TextField.TYPE_STORED, SimpleUtils.docTitles[docNum]));
+      doc.add(new Field(SimpleUtils.TITLE, SimpleUtils.docTitles[docNum], TextField.TYPE_STORED));
       doc.add(new TextField(SimpleUtils.TEXT, SimpleUtils.docTexts[docNum]));
 
       // invoke the category document builder for adding categories to the document and,

@@ -45,51 +45,51 @@ public class TermAllGroupsCollectorTest extends LuceneTestCase {
                                                     new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     // 0
     Document doc = new Document();
-    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
-    doc.add(new Field("content", TextField.TYPE_STORED, "random text"));
-    doc.add(new Field("id", customType, "1"));
+    doc.add(new Field(groupField, "author1", TextField.TYPE_STORED));
+    doc.add(new Field("content", "random text", TextField.TYPE_STORED));
+    doc.add(new Field("id", "1", customType));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
-    doc.add(new Field("content", TextField.TYPE_STORED, "some more random text blob"));
-    doc.add(new Field("id", customType, "2"));
+    doc.add(new Field(groupField, "author1", TextField.TYPE_STORED));
+    doc.add(new Field("content", "some more random text blob", TextField.TYPE_STORED));
+    doc.add(new Field("id", "2", customType));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
-    doc.add(new Field("content", TextField.TYPE_STORED, "some more random textual data"));
-    doc.add(new Field("id", customType, "3"));
+    doc.add(new Field(groupField, "author1", TextField.TYPE_STORED));
+    doc.add(new Field("content", "some more random textual data", TextField.TYPE_STORED));
+    doc.add(new Field("id", "3", customType));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
-    doc.add(new Field(groupField, TextField.TYPE_STORED, "author2"));
-    doc.add(new Field("content", TextField.TYPE_STORED, "some random text"));
-    doc.add(new Field("id", customType, "4"));
+    doc.add(new Field(groupField, "author2", TextField.TYPE_STORED));
+    doc.add(new Field("content", "some random text", TextField.TYPE_STORED));
+    doc.add(new Field("id", "4", customType));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    doc.add(new Field(groupField, TextField.TYPE_STORED, "author3"));
-    doc.add(new Field("content", TextField.TYPE_STORED, "some more random text"));
-    doc.add(new Field("id", customType, "5"));
+    doc.add(new Field(groupField, "author3", TextField.TYPE_STORED));
+    doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(new Field("id", "5", customType));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field(groupField, TextField.TYPE_STORED, "author3"));
-    doc.add(new Field("content", TextField.TYPE_STORED, "random blob"));
-    doc.add(new Field("id", customType, "6"));
+    doc.add(new Field(groupField, "author3", TextField.TYPE_STORED));
+    doc.add(new Field("content", "random blob", TextField.TYPE_STORED));
+    doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", TextField.TYPE_STORED, "random word stuck in alot of other text"));
-    doc.add(new Field("id", customType, "6"));
+    doc.add(new Field("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());

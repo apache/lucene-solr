@@ -82,8 +82,8 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
       ft.setOmitNorms(fieldInfo.omitNorms);
       ft.setIndexOptions(fieldInfo.indexOptions);
       doc.add(new Field(fieldInfo.name,
-                        ft,
-                        new String(b, "UTF-8")));
+          new String(b, "UTF-8"), ft
+      ));
     } else {
       in.seek(in.getFilePointer() + numUTF8Bytes);
     }

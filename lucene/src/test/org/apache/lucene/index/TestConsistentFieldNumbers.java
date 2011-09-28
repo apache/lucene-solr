@@ -39,8 +39,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
       Document d1 = new Document();
-      d1.add(new Field("f1", StringField.TYPE_STORED, "first field"));
-      d1.add(new Field("f2", StringField.TYPE_STORED, "second field"));
+      d1.add(new Field("f1", "first field", StringField.TYPE_STORED));
+      d1.add(new Field("f2", "second field", StringField.TYPE_STORED));
       writer.addDocument(d1);
 
       if (i == 1) {
@@ -54,7 +54,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       FieldType customType2 = new FieldType(TextField.TYPE_STORED);
       customType2.setStoreTermVectors(true);
       d2.add(new TextField("f2", "second field"));
-      d2.add(new Field("f1", customType2, "first field"));
+      d2.add(new Field("f1", "first field", customType2));
       d2.add(new TextField("f3", "third field"));
       d2.add(new TextField("f4", "fourth field"));
       writer.addDocument(d2);
@@ -102,8 +102,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
     Document d1 = new Document();
-    d1.add(new Field("f1", TextField.TYPE_STORED, "first field"));
-    d1.add(new Field("f2", TextField.TYPE_STORED, "second field"));
+    d1.add(new Field("f1", "first field", TextField.TYPE_STORED));
+    d1.add(new Field("f2", "second field", TextField.TYPE_STORED));
     writer.addDocument(d1);
 
     writer.close();
@@ -112,10 +112,10 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     Document d2 = new Document();
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setStoreTermVectors(true);
-    d2.add(new Field("f2", TextField.TYPE_STORED, "second field"));
-    d2.add(new Field("f1", customType2, "first field"));
-    d2.add(new Field("f3", TextField.TYPE_STORED, "third field"));
-    d2.add(new Field("f4", TextField.TYPE_STORED, "fourth field"));
+    d2.add(new Field("f2", "second field", TextField.TYPE_STORED));
+    d2.add(new Field("f1", "first field", customType2));
+    d2.add(new Field("f3", "third field", TextField.TYPE_STORED));
+    d2.add(new Field("f4", "fourth field", TextField.TYPE_STORED));
     writer.addDocument(d2);
 
     writer.close();
@@ -168,8 +168,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
             TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
             NoMergePolicy.NO_COMPOUND_FILES));
         Document d = new Document();
-        d.add(new Field("f1", TextField.TYPE_STORED, "d1 first field"));
-        d.add(new Field("f2", TextField.TYPE_STORED, "d1 second field"));
+        d.add(new Field("f1", "d1 first field", TextField.TYPE_STORED));
+        d.add(new Field("f2", "d1 second field", TextField.TYPE_STORED));
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = new SegmentInfos();
@@ -188,7 +188,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
             random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
                 : NoMergePolicy.COMPOUND_FILES));
         Document d = new Document();
-        d.add(new Field("f1", TextField.TYPE_STORED, "d2 first field"));
+        d.add(new Field("f1", "d2 first field", TextField.TYPE_STORED));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.close();
@@ -212,8 +212,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
             random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
                 : NoMergePolicy.COMPOUND_FILES));
         Document d = new Document();
-        d.add(new Field("f1", TextField.TYPE_STORED, "d3 first field"));
-        d.add(new Field("f2", TextField.TYPE_STORED, "d3 second field"));
+        d.add(new Field("f1", "d3 first field", TextField.TYPE_STORED));
+        d.add(new Field("f2", "d3 second field", TextField.TYPE_STORED));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
@@ -385,22 +385,22 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType15.setStoreTermVectorPositions(true);
     
     switch (mode) {
-      case 0: return new Field(fieldName, customType, "some text");
+      case 0: return new Field(fieldName, "some text", customType);
       case 1: return new TextField(fieldName, "some text");
-      case 2: return new Field(fieldName, customType2, "some text");
-      case 3: return new Field(fieldName, customType3, "some text");
-      case 4: return new Field(fieldName, customType4, "some text");
-      case 5: return new Field(fieldName, customType5, "some text");
-      case 6: return new Field(fieldName, customType6, "some text");
-      case 7: return new Field(fieldName, customType7, "some text");
-      case 8: return new Field(fieldName, customType8, "some text");
-      case 9: return new Field(fieldName, customType9, "some text");
-      case 10: return new Field(fieldName, customType10, "some text");
-      case 11: return new Field(fieldName, customType11, "some text");
-      case 12: return new Field(fieldName, customType12, "some text");
-      case 13: return new Field(fieldName, customType13, "some text");
-      case 14: return new Field(fieldName, customType14, "some text");
-      case 15: return new Field(fieldName, customType15, "some text");
+      case 2: return new Field(fieldName, "some text", customType2);
+      case 3: return new Field(fieldName, "some text", customType3);
+      case 4: return new Field(fieldName, "some text", customType4);
+      case 5: return new Field(fieldName, "some text", customType5);
+      case 6: return new Field(fieldName, "some text", customType6);
+      case 7: return new Field(fieldName, "some text", customType7);
+      case 8: return new Field(fieldName, "some text", customType8);
+      case 9: return new Field(fieldName, "some text", customType9);
+      case 10: return new Field(fieldName, "some text", customType10);
+      case 11: return new Field(fieldName, "some text", customType11);
+      case 12: return new Field(fieldName, "some text", customType12);
+      case 13: return new Field(fieldName, "some text", customType13);
+      case 14: return new Field(fieldName, "some text", customType14);
+      case 15: return new Field(fieldName, "some text", customType15);
       default: return null;
     }
   }

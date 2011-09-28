@@ -40,8 +40,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
@@ -969,13 +967,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     customType2.setOmitNorms(true);
     FieldType customType3 = new FieldType();
     customType3.setStored(true);
-    doc.add(new Field("field1", TextField.TYPE_STORED, sb.toString()));
-    doc.add(new Field("fielda", customType2, sb.toString()));
-    doc.add(new Field("fieldb", customType3, sb.toString()));
+    doc.add(new Field("field1", sb.toString(), TextField.TYPE_STORED));
+    doc.add(new Field("fielda", sb.toString(), customType2));
+    doc.add(new Field("fieldb", sb.toString(), customType3));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i+1), TextField.TYPE_STORED, sb.toString()));
+      doc.add(new Field("field" + (i+1), sb.toString(), TextField.TYPE_STORED));
     }
     return doc;
   }

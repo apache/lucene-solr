@@ -173,7 +173,7 @@ public class MultiCLIndexer {
       // create a plain Lucene document and add some regular Lucene fields
       // to it
       Document doc = new Document();
-      doc.add(new Field(SimpleUtils.TITLE, TextField.TYPE_STORED, docTitles[docNum]));
+      doc.add(new Field(SimpleUtils.TITLE, docTitles[docNum], TextField.TYPE_STORED));
       doc.add(new TextField(SimpleUtils.TEXT, docTexts[docNum]));
 
       // finally add the document to the index

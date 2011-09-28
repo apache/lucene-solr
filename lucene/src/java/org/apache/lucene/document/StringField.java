@@ -54,7 +54,7 @@ public final class StringField extends Field {
   
   /** Creates a new un-stored StringField */
   public StringField(String name, String value) {
-    super(name, TYPE_UNSTORED, value);
+    super(name, value, TYPE_UNSTORED);
   }
   
   @Override

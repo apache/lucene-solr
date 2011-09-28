@@ -188,12 +188,12 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     Document d = new Document();
     FieldType ft = new FieldType();
     ft.setStored(true);
-    d.add(new Field(SNAPSHOTS_ID, ft, ""));
+    d.add(new Field(SNAPSHOTS_ID, "", ft));
     for (Entry<String, String> e : super.getSnapshots().entrySet()) {
-      d.add(new Field(e.getKey(), ft, e.getValue()));
+      d.add(new Field(e.getKey(), e.getValue(), ft));
     }
     if (id != null) {
-      d.add(new Field(id, ft, segment));
+      d.add(new Field(id, segment, ft));
     }
     writer.addDocument(d);
     writer.commit();

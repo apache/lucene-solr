@@ -64,7 +64,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, customType, new TokenStreamConcurrent()));
+      document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -112,7 +112,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, customType, new TokenStreamConcurrent()));
+      document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -187,7 +187,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, customType, new TokenStreamSparse()));
+      document.add(new Field(FIELD, new TokenStreamSparse(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -233,7 +233,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, customType, TEXT));
+      document.add(new Field(FIELD, TEXT, customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -277,7 +277,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
-      document.add(new Field(FIELD, customType, new TokenStreamSparse()));
+      document.add(new Field(FIELD, new TokenStreamSparse(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

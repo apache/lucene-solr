@@ -94,8 +94,8 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
-    Field f1 = new Field("field", ft, tee);
-    Field f2 = new Field("field", ft, sink);
+    Field f1 = new Field("field", tee, ft);
+    Field f2 = new Field("field", sink, ft);
     doc.add(f1);
     doc.add(f2);
     w.addDocument(doc);

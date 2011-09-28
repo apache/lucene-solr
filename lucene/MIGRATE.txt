@@ -437,7 +437,7 @@ If your usage fits one of those common cases you can simply
 instantiate the above class.  To use the TYPE_STORED variant, do this
 instead:
 
-  Field f = new Field("field", StringField.TYPE_STORED, "value");
+  Field f = new Field("field", "value", StringField.TYPE_STORED);
 
 Alternatively, if an existing type is close to what you want but you
 need to make a few changes, you can copy that type and make changes:
@@ -472,7 +472,7 @@ If instead the value was stored:
 
 you can now do this:
 
-  new Field("field", StringField.TYPE_STORED, "value")
+  new Field("field", "value", StringField.TYPE_STORED)
 
 If you didn't omit norms:
 
@@ -482,7 +482,7 @@ you can now do this:
 
   FieldType ft = new FieldType(StringField.TYPE_STORED);
   ft.setOmitNorms(false);
-  new Field("field", ft, "value")
+  new Field("field", "value", ft)
 
 If you did this before (value can be String or Reader):
 
@@ -498,7 +498,7 @@ If instead the value was stored:
 
 you can now do this:
 
-  new Field("field", TextField.TYPE_STORED, value)
+  new Field("field", value, TextField.TYPE_STORED)
 
 If in addition you omit norms:
 
@@ -508,7 +508,7 @@ you can now do this:
 
   FieldType ft = new FieldType(TextField.TYPE_STORED);
   ft.setOmitNorms(true);
-  new Field("field", ft, value)
+  new Field("field", value, ft)
 
 If you did this before (bytes is a byte[]):
 

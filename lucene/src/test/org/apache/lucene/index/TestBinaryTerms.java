@@ -51,7 +51,7 @@ public class TestBinaryTerms extends LuceneTestCase {
       Document doc = new Document();
       FieldType customType = new FieldType();
       customType.setStored(true);
-      doc.add(new Field("id", customType, "" + i));
+      doc.add(new Field("id", "" + i, customType));
       doc.add(new TextField("bytes", tokenStream));
       iw.addDocument(doc);
     }

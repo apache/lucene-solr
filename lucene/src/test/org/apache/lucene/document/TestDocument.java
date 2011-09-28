@@ -42,7 +42,7 @@ public class TestDocument extends LuceneTestCase {
     
     FieldType ft = new FieldType();
     ft.setStored(true);
-    IndexableField stringFld = new Field("string", ft, binaryVal);
+    IndexableField stringFld = new Field("string", binaryVal, ft);
     IndexableField binaryFld = new BinaryField("binary", binaryVal.getBytes());
     IndexableField binaryFld2 = new BinaryField("binary", binaryVal2.getBytes());
     
@@ -121,20 +121,20 @@ public class TestDocument extends LuceneTestCase {
   public void testConstructorExceptions() {
     FieldType ft = new FieldType();
     ft.setStored(true);
-    new Field("name", ft, "value"); // okay
+    new Field("name", "value", ft); // okay
     new StringField("name", "value"); // okay
     try {
-      new Field("name", new FieldType(), "value");
+      new Field("name", "value", new FieldType());
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception
     }
-    new Field("name", ft, "value"); // okay
+    new Field("name", "value", ft); // okay
     try {
       FieldType ft2 = new FieldType();
       ft2.setStored(true);
       ft2.setStoreTermVectors(true);
-      new Field("name", ft2, "value");
+      new Field("name", "value", ft2);
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -195,12 +195,12 @@ public class TestDocument extends LuceneTestCase {
     Document doc = new Document();
     FieldType stored = new FieldType();
     stored.setStored(true);
-    doc.add(new Field("keyword", StringField.TYPE_STORED, "test1"));
-    doc.add(new Field("keyword", StringField.TYPE_STORED, "test2"));
-    doc.add(new Field("text", TextField.TYPE_STORED, "test1"));
-    doc.add(new Field("text", TextField.TYPE_STORED, "test2"));
-    doc.add(new Field("unindexed", stored, "test1"));
-    doc.add(new Field("unindexed", stored, "test2"));
+    doc.add(new Field("keyword", "test1", StringField.TYPE_STORED));
+    doc.add(new Field("keyword", "test2", StringField.TYPE_STORED));
+    doc.add(new Field("text", "test1", TextField.TYPE_STORED));
+    doc.add(new Field("text", "test2", TextField.TYPE_STORED));
+    doc.add(new Field("unindexed", "test1", stored));
+    doc.add(new Field("unindexed", "test2", stored));
     doc
         .add(new TextField("unstored", "test1"));
     doc
@@ -239,10 +239,10 @@ public class TestDocument extends LuceneTestCase {
   
   public void testFieldSetValue() throws Exception {
     
-    Field field = new Field("id", StringField.TYPE_STORED, "id1");
+    Field field = new Field("id", "id1", StringField.TYPE_STORED);
     Document doc = new Document();
     doc.add(field);
-    doc.add(new Field("keyword", StringField.TYPE_STORED, "test"));
+    doc.add(new Field("keyword", "test", StringField.TYPE_STORED));
     
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
@@ -278,7 +278,7 @@ public class TestDocument extends LuceneTestCase {
   
   public void testFieldSetValueChangeBinary() {
     Field field1 = new BinaryField("field1", new byte[0]);
-    Field field2 = new Field("field2", TextField.TYPE_STORED, "");
+    Field field2 = new Field("field2", "", TextField.TYPE_STORED);
     try {
       field1.setValue("abc");
       fail("did not hit expected exception");

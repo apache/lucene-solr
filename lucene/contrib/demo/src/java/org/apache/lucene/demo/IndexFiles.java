@@ -174,7 +174,7 @@ public class IndexFiles {
           // field that is indexed (i.e. searchable), but don't tokenize 
           // the field into separate words and don't index term frequency
           // or positional information:
-          Field pathField = new Field("path", StringField.TYPE_STORED, file.getPath());
+          Field pathField = new Field("path", file.getPath(), StringField.TYPE_STORED);
           doc.add(pathField);
 
           // Add the last modified date of the file a field named "modified".

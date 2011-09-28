@@ -211,39 +211,39 @@ public class TestIndicesEquals extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
     //document.add(new Field("a", i + " Do you really want to go and live in that house all winter?", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    document.add(new Field("a", customType, i + " Do you really want to go and live in that house all winter?"));
+    document.add(new Field("a", i + " Do you really want to go and live in that house all winter?", customType));
     if (i > 0) {
       //document.add(new Field("b0", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-      document.add(new Field("b0", customType, i + " All work and no play makes Jack a dull boy"));
+      document.add(new Field("b0", i + " All work and no play makes Jack a dull boy", customType));
 
       //document.add(new Field("b1", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO));
       FieldType customType2 = new FieldType(TextField.TYPE_STORED);
       customType2.setTokenized(false);
       customType2.setOmitNorms(true);
-      document.add(new Field("b1", customType2, i + " All work and no play makes Jack a dull boy"));
+      document.add(new Field("b1", i + " All work and no play makes Jack a dull boy", customType2));
       
       //document.add(new Field("b2", i + " All work and no play makes Jack a dull boy", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.NO));
       FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
       customType3.setTokenized(false);
-      document.add(new Field("b1", customType3, i + " All work and no play makes Jack a dull boy"));
+      document.add(new Field("b1", i + " All work and no play makes Jack a dull boy", customType3));
       
       //document.add(new Field("b3", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
       FieldType customType4 = new FieldType(TextField.TYPE_STORED);
       customType4.setIndexed(false);
       customType4.setTokenized(false);
-      document.add(new Field("b1", customType4, i + " All work and no play makes Jack a dull boy"));
+      document.add(new Field("b1", i + " All work and no play makes Jack a dull boy", customType4));
       if (i > 1) {
         //document.add(new Field("c", i + " Redrum redrum", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-        document.add(new Field("c", customType, i + " Redrum redrum"));
+        document.add(new Field("c", i + " Redrum redrum", customType));
         if (i > 2) {
           //document.add(new Field("d", i + " Hello Danny, come and play with us... forever and ever. and ever.", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-          document.add(new Field("d", customType, i + " Hello Danny, come and play with us... forever and ever. and ever."));
+          document.add(new Field("d", i + " Hello Danny, come and play with us... forever and ever. and ever.", customType));
           if (i > 3) {
             //Field f = new Field("e", i + " Heres Johnny!", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
             //f.setOmitNorms(true);
             FieldType customType5 = new FieldType(TextField.TYPE_UNSTORED);
             customType5.setOmitNorms(true);
-            Field f = new Field("e", customType5, i + " Heres Johnny!");
+            Field f = new Field("e", i + " Heres Johnny!", customType5);
             document.add(f);
             if (i > 4) {
               final List<Token> tokens = new ArrayList<Token>(2);

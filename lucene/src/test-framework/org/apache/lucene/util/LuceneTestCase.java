@@ -1159,7 +1159,7 @@ public abstract class LuceneTestCase extends Assert {
   public static Field newField(Random random, String name, String value, FieldType type) {
     if (usually(random) || !type.indexed()) {
       // most of the time, don't modify the params
-      return new Field(name, type, value);
+      return new Field(name, value, type);
     }
 
     FieldType newType = new FieldType(type);
@@ -1186,7 +1186,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     */
     
-    return new Field(name, newType, value);
+    return new Field(name, value, newType);
   }
   
   /** return a random Locale from the available locales on the system */

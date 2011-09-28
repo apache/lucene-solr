@@ -48,8 +48,8 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       Document doc = new Document();
       String variedFieldValue = variedFieldValues[i % variedFieldValues.length];
       String repetitiveFieldValue = repetitiveFieldValues[i % repetitiveFieldValues.length];
-      doc.add(new Field("variedField", TextField.TYPE_STORED, variedFieldValue));
-      doc.add(new Field("repetitiveField", TextField.TYPE_STORED, repetitiveFieldValue));
+      doc.add(new Field("variedField", variedFieldValue, TextField.TYPE_STORED));
+      doc.add(new Field("repetitiveField", repetitiveFieldValue, TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     writer.close();

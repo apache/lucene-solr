@@ -162,7 +162,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setOmitNorms(true);
-    Field f = new Field("f", customType, docText);
+    Field f = new Field("f", docText, customType);
     doc.add(f);
     return doc;
   }
@@ -237,7 +237,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setOmitNorms(true);
-    Field f = new Field("lyrics", customType, "");
+    Field f = new Field("lyrics", "", customType);
     Document doc = new Document();
     doc.add(f);
     f.setValue("drug drug");

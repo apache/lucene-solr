@@ -304,7 +304,7 @@ public class TestIndexWriter extends LuceneTestCase {
       int lastFlushCount = -1;
       for(int j=1;j<52;j++) {
         Document doc = new Document();
-        doc.add(new Field("field", storedTextType, "aaa" + j));
+        doc.add(new Field("field", "aaa" + j, storedTextType));
         writer.addDocument(doc);
         _TestUtil.syncConcurrentMerges(writer);
         int flushCount = writer.getFlushCount();
@@ -358,7 +358,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       for(int j=1;j<52;j++) {
         Document doc = new Document();
-        doc.add(new Field("field", storedTextType, "aaa" + j));
+        doc.add(new Field("field", "aaa" + j, storedTextType));
         writer.addDocument(doc);
       }
       
@@ -1236,7 +1236,7 @@ public class TestIndexWriter extends LuceneTestCase {
     customType.setTokenized(true);
     customType.setIndexed(true);
     
-    Field f = new Field("binary", customType, b, 10, 17);
+    Field f = new Field("binary", b, 10, 17, customType);
     f.setTokenStream(new MockTokenizer(new StringReader("doc1field1"), MockTokenizer.WHITESPACE, false));
 
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
@@ -1685,10 +1685,10 @@ public class TestIndexWriter extends LuceneTestCase {
     
     for (int i=0; i<2; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", customType3, Integer.toString(i)+BIG));
-      doc.add(new Field("str", customType2, Integer.toString(i)+BIG));
-      doc.add(new Field("str2", storedTextType, Integer.toString(i)+BIG));
-      doc.add(new Field("str3", customType, Integer.toString(i)+BIG));
+      doc.add(new Field("id", Integer.toString(i)+BIG, customType3));
+      doc.add(new Field("str", Integer.toString(i)+BIG, customType2));
+      doc.add(new Field("str2", Integer.toString(i)+BIG, storedTextType));
+      doc.add(new Field("str3", Integer.toString(i)+BIG, customType));
       indexWriter.addDocument(doc);
     }
 
@@ -1805,7 +1805,7 @@ public class TestIndexWriter extends LuceneTestCase {
     doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setTokenized(false);
-    Field contentField = new Field("content", customType, "");
+    Field contentField = new Field("content", "", customType);
     doc.add(contentField);
 
     w = new RandomIndexWriter(random, dir);

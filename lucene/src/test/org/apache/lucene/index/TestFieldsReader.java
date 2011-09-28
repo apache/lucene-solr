@@ -304,8 +304,8 @@ public class TestFieldsReader extends LuceneTestCase {
     Document doc = new Document();
     FieldType onlyStored = new FieldType();
     onlyStored.setStored(true);
-    doc.add(new Field("field", onlyStored, "value"));
-    doc.add(new Field("field2", StringField.TYPE_STORED, "value"));
+    doc.add(new Field("field", "value", onlyStored));
+    doc.add(new Field("field2", "value", StringField.TYPE_STORED));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();

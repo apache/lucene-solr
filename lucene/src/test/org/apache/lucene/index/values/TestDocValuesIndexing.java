@@ -536,7 +536,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         }
       }
       doc.removeFields("id");
-      doc.add(new Field("id", StringField.TYPE_STORED, idBase + i));
+      doc.add(new Field("id", idBase + i, StringField.TYPE_STORED));
       w.addDocument(doc);
 
       if (i % 7 == 0) {
