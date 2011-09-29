@@ -1,0 +1,11 @@
+Grouping Module Change Log
+
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
+======================= Trunk (not yet released) =======================
+
+Optimizations
+
+LUCENE-3468: Replaced last() and remove() with pollLast() in
+             FirstPassGroupingCollector (Martijn van Groningen)

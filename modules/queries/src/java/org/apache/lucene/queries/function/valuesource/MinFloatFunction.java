@@ -1,7 +1,3 @@
-package org.apache.lucene.document;
-
-import org.apache.lucene.util.BytesRef;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,28 +15,36 @@ import org.apache.lucene.util.BytesRef;
  * limitations under the License.
  */
 
-/** A field with byte[] value that is only stored. */
+package org.apache.lucene.queries.function.valuesource;
 
-public final class BinaryField extends Field {
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 
-  public static final FieldType TYPE_STORED = new FieldType();
-  static {
-    TYPE_STORED.setStored(true);
-    TYPE_STORED.freeze();
+/**
+ * <code>MinFloatFunction</code> returns the min of it's components.
+ */
+public class MinFloatFunction extends MultiFloatFunction {
+  public MinFloatFunction(ValueSource[] sources) {
+    super(sources);
   }
 
-  /** Creates a new BinaryField */
-  public BinaryField(String name, byte[] value) {
-    super(name, value, BinaryField.TYPE_STORED);
-  }
-  
-  /** Creates a new BinaryField */
-  public BinaryField(String name, byte[] value, int offset, int length) {
-    super(name, value, offset, length, BinaryField.TYPE_STORED);
+  @Override  
+  protected String name() {
+    return "min";
   }
 
-  /** Creates a new BinaryField */
-  public BinaryField(String name, BytesRef bytes) {
-    super(name, bytes, BinaryField.TYPE_STORED);
+  @Override
+  protected float func(int doc, DocValues[] valsArr) {
+    boolean first = true;
+    float val = 0.0f;
+    for (DocValues vals : valsArr) {
+      if (first) {
+        first = false;
+        val = vals.floatVal(doc);
+      } else {
+        val = Math.min(vals.floatVal(doc),val);
+      }
+    }
+    return val;
   }
 }

@@ -209,6 +209,32 @@ public final class Document implements Iterable<IndexableField> {
     return fields;
   }
   
+   private final static String[] NO_STRINGS = new String[0];
+
+  /**
+   * Returns an array of values of the field specified as the method parameter.
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
+   * For {@link NumericField}s it returns the string value of the number. If you want
+   * the actual {@code NumericField} instances back, use {@link #getFields}.
+   * @param name the name of the field
+   * @return a <code>String[]</code> of field values
+   */
+  public final String[] getValues(String name) {
+    List<String> result = new ArrayList<String>();
+    for (IndexableField field : fields) {
+      if (field.name().equals(name) && field.stringValue() != null) {
+        result.add(field.stringValue());
+      }
+    }
+    
+    if (result.size() == 0) {
+      return NO_STRINGS;
+    }
+    
+    return result.toArray(new String[result.size()]);
+  }
+
   /** Returns the string value of the field with the given name if any exist in
    * this document, or null.  If multiple fields exist with this name, this
    * method returns the first value added. If only binary fields with this name

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -139,7 +140,9 @@ public class BasicZkTest extends AbstractZkTestCase {
  
     // we set the solrconfig to nothing, so this reload should fail
     try {
+      SolrTestCaseJ4.ignoreException("SAXParseException");
       h.getCoreContainer().reload(h.getCore().getName());
+      SolrTestCaseJ4.resetExceptionIgnores();
       fail("The reloaded SolrCore did not pick up configs from zookeeper");
     } catch(SAXParseException e) {
       

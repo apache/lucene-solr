@@ -707,12 +707,10 @@ public final class MoreLikeThis {
       if (vector == null) {
         Document d = ir.document(docNum);
         IndexableField fields[] = d.getFields(fieldName);
-        if (fields != null) {
-          for (int j = 0; j < fields.length; j++) {
-            final String stringValue = fields[j].stringValue();
-            if (stringValue != null) {
-              addTermFrequencies(new StringReader(stringValue), termFreqMap, fieldName);
-            }
+        for (int j = 0; j < fields.length; j++) {
+          final String stringValue = fields[j].stringValue();
+          if (stringValue != null) {
+            addTermFrequencies(new StringReader(stringValue), termFreqMap, fieldName);
           }
         }
       } else {
@@ -765,7 +763,7 @@ public final class MoreLikeThis {
       throw new UnsupportedOperationException("To use MoreLikeThis without " +
           "term vectors, you must provide an Analyzer");
     }
-    TokenStream ts = analyzer.reusableTokenStream(fieldName, r);
+    TokenStream ts = analyzer.tokenStream(fieldName, r);
     int tokenCount = 0;
     // for every token
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);

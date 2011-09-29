@@ -210,7 +210,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
         // assert that those docs are not returned by all-scored-doc-IDs.
         FieldType ft = new FieldType();
         ft.setStored(true);
-        doc.add(new Field("del", ft, Integer.toString(docNum)));
+        doc.add(new Field("del", Integer.toString(docNum), ft));
       }
 
       if (haveAlpha(docNum)) {

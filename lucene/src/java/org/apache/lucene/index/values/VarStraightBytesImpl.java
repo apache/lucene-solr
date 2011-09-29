@@ -19,9 +19,9 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
+import org.apache.lucene.index.values.Bytes.DerefBytesSourceBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -32,7 +32,6 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -95,7 +94,7 @@ class VarStraightBytesImpl {
     @Override
     protected void merge(MergeState state) throws IOException {
       merge = true;
-      datOut = getDataOut();
+      datOut = getOrCreateDataOut();
       boolean success = false;
       try {
         if (state.liveDocs == null && state.reader instanceof Reader) {
@@ -166,7 +165,7 @@ class VarStraightBytesImpl {
     public void finish(int docCount) throws IOException {
       boolean success = false;
       assert (!merge && datOut == null) || (merge && datOut != null); 
-      final IndexOutput datOut = getDataOut();
+      final IndexOutput datOut = getOrCreateDataOut();
       try {
         if (!merge) {
           // header is already written in getDataOut()
@@ -183,7 +182,7 @@ class VarStraightBytesImpl {
       }
 
       success = false;
-      final IndexOutput idxOut = getIndexOut();
+      final IndexOutput idxOut = getOrCreateIndexOut();
       try {
         if (lastDocID == -1) {
           idxOut.writeVLong(0);
@@ -234,12 +233,10 @@ class VarStraightBytesImpl {
       return new Source(cloneData(), cloneIndex());
     }
 
-    private class Source extends BytesBaseSource {
-      private final PackedInts.Reader addresses;
+    private class Source extends DerefBytesSourceBase {
 
       public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
-        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong());
-        addresses = PackedInts.getReader(idxIn);
+        super(datIn, idxIn, idxIn.readVLong(), ValueType.BYTES_VAR_STRAIGHT);
       }
 
       @Override
@@ -262,21 +259,6 @@ class VarStraightBytesImpl {
             return pos = target;
           }
         };
-      }
-
-      @Override
-      public int getValueCount() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public ValueType type() {
-        return ValueType.BYTES_VAR_STRAIGHT;
-      }
-
-      @Override
-      protected int maxDoc() {
-        return addresses.size();
       }
     }
 

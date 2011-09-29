@@ -132,7 +132,7 @@ public class TestSort extends LuceneTestCase {
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();
-        doc.add (new Field ("tracer", ft1, data[i][0]));
+        doc.add (new Field ("tracer", data[i][0], ft1));
         doc.add (new TextField ("contents", data[i][1]));
         if (data[i][2] != null) {
           Field f = new StringField ("int", data[i][2]);
@@ -196,12 +196,12 @@ public class TestSort extends LuceneTestCase {
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();
         String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
-        doc.add (new Field ("tracer", customType, num));
+        doc.add (new Field ("tracer", num, customType));
         //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
         doc.add (new StringField ("string", num));
         String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
         doc.add (new StringField ("string2", num2));
-        doc.add (new Field ("tracer2", customType, num2));
+        doc.add (new Field ("tracer2", num2, customType));
         for(IndexableField f : doc.getFields()) {
           ((Field) f).setBoost(2.0f);
         }

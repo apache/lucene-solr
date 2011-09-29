@@ -134,10 +134,10 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
         //parse row and create a document
         StringTokenizer st = new StringTokenizer(line, "\t");
         Document doc = new Document();
-        doc.add(new Field("location", textNoNorms, st.nextToken()));
-        doc.add(new Field("salary", textNoNorms, st.nextToken()));
-        doc.add(new Field("type", textNoNorms, st.nextToken()));
-        doc.add(new Field("description", textNoNorms, st.nextToken()));
+        doc.add(new Field("location", st.nextToken(), textNoNorms));
+        doc.add(new Field("salary", st.nextToken(), textNoNorms));
+        doc.add(new Field("type", st.nextToken(), textNoNorms));
+        doc.add(new Field("description", st.nextToken(), textNoNorms));
         writer.addDocument(doc);
       }
       line = br.readLine();

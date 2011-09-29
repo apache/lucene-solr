@@ -47,7 +47,7 @@ public class TestLongPostings extends LuceneTestCase {
       if (other != null && s.equals(other)) {
         continue;
       }
-      final TokenStream ts = a.reusableTokenStream("foo", new StringReader(s));
+      final TokenStream ts = a.tokenStream("foo", new StringReader(s));
       final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef termBytes = termAtt.getBytesRef();
       ts.reset();

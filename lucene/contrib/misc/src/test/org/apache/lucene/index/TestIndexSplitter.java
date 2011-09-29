@@ -113,10 +113,10 @@ public class TestIndexSplitter extends LuceneTestCase {
     Directory fsDir = newFSDirectory(indexPath);
     IndexWriter indexWriter = new IndexWriter(fsDir, iwConfig);
     Document doc = new Document();
-    doc.add(new Field("content", StringField.TYPE_STORED, "doc 1"));
+    doc.add(new Field("content", "doc 1", StringField.TYPE_STORED));
     indexWriter.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("content", StringField.TYPE_STORED, "doc 2"));
+    doc.add(new Field("content", "doc 2", StringField.TYPE_STORED));
     indexWriter.addDocument(doc);
     indexWriter.close();
     fsDir.close();

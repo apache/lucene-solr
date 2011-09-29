@@ -117,7 +117,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       else {
         customType.setStoreTermVectors(true);
       }
-      doc.add(new Field(testFields[i], customType, ""));
+      doc.add(new Field(testFields[i], "", customType));
     }
 
     //Create 5 documents for testing, they all have the same

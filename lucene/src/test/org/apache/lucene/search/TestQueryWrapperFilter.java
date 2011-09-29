@@ -16,14 +16,19 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryWrapperFilter extends LuceneTestCase {
@@ -76,6 +81,73 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     assertEquals(0, hits.totalHits);
     hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
     assertEquals(0, hits.totalHits);
+    searcher.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testRandom() throws Exception {
+    final Directory d = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, d);
+    w.w.getConfig().setMaxBufferedDocs(17);
+    final int numDocs = atLeast(100);
+    final Set<String> aDocs = new HashSet<String>();
+    for(int i=0;i<numDocs;i++) {
+      final Document doc = new Document();
+      final String v;
+      if (random.nextInt(5) == 4) {
+        v = "a";
+        aDocs.add(""+i);
+      } else {
+        v = "b";
+      }
+      final Field f = newField("field", v, StringField.TYPE_UNSTORED);
+      doc.add(f);
+      doc.add(newField("id", ""+i, StringField.TYPE_STORED));
+      w.addDocument(doc);
+    }
+
+    final int numDelDocs = atLeast(10);
+    for(int i=0;i<numDelDocs;i++) {
+      final String delID = ""+random.nextInt(numDocs);
+      w.deleteDocuments(new Term("id", delID));
+      aDocs.remove(delID);
+    }
+
+    final IndexReader r = w.getReader();
+    w.close();
+    final TopDocs hits = new IndexSearcher(r).search(new MatchAllDocsQuery(),
+                                                     new QueryWrapperFilter(new TermQuery(new Term("field", "a"))),
+                                                     numDocs);
+    assertEquals(aDocs.size(), hits.totalHits);
+    for(ScoreDoc sd: hits.scoreDocs) {
+      assertTrue(aDocs.contains(r.document(sd.doc).get("id")));
+    }
+    r.close();
+    d.close();
+  }
+  
+  public void testThousandDocuments() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    for (int i = 0; i < 1000; i++) {
+      Document doc = new Document();
+      doc.add(newField("field", English.intToEnglish(i), StringField.TYPE_UNSTORED));
+      writer.addDocument(doc);
+    }
+    
+    IndexReader reader = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(reader);
+    
+    for (int i = 0; i < 1000; i++) {
+      TermQuery termQuery = new TermQuery(new Term("field", English.intToEnglish(i)));
+      QueryWrapperFilter qwf = new QueryWrapperFilter(termQuery);
+      TopDocs td = searcher.search(new MatchAllDocsQuery(), qwf, 10);
+      assertEquals(1, td.totalHits);
+    }
+    
     searcher.close();
     reader.close();
     dir.close();

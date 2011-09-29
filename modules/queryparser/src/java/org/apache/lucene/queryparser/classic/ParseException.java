@@ -59,6 +59,18 @@ public class ParseException extends Exception {
   }
 
   /**
+   * Creates a new ParseException which is wrapping another Throwable with an
+   * additional message
+   *
+   * @param message Message for the Exception
+   * @param throwable Wrapped Throwable
+   */
+  public ParseException(String message, Throwable throwable) {
+    super(message, throwable);
+    specialConstructor = false;
+  }
+
+  /**
    * This variable determines which constructor was used to create
    * this object and thereby affects the semantics of the
    * "getMessage" method (see below).

@@ -38,7 +38,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     IndexableField binaryFldStored = new BinaryField("binaryStored", binaryValStored.getBytes());
-    IndexableField stringFldStored = new Field("stringStored", ft, binaryValStored);
+    IndexableField stringFldStored = new Field("stringStored", binaryValStored, ft);
 
     Document doc = new Document();
     

@@ -56,15 +56,15 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     Document doc;
     doc = new Document();
-    doc.add(new Field("content", TextField.TYPE_STORED, "please divide this sentence into shingles"));
+    doc.add(new Field("content", "please divide this sentence into shingles", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", TextField.TYPE_STORED, "just another test sentence"));
+    doc.add(new Field("content", "just another test sentence", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", TextField.TYPE_STORED, "a sentence which contains no test"));
+    doc.add(new Field("content", "a sentence which contains no test", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     writer.close();
@@ -88,7 +88,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     PhraseQuery q = new PhraseQuery();
 
-    TokenStream ts = analyzer.reusableTokenStream("content", new StringReader("this sentence"));
+    TokenStream ts = analyzer.tokenStream("content", new StringReader("this sentence"));
     int j = -1;
     
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
@@ -117,7 +117,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     BooleanQuery q = new BooleanQuery();
 
-    TokenStream ts = analyzer.reusableTokenStream("content", new StringReader("test sentence"));
+    TokenStream ts = analyzer.tokenStream("content", new StringReader("test sentence"));
     
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     

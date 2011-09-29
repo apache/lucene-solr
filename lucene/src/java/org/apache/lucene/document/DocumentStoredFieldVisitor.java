@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.document;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,12 +21,9 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.HashSet;
 
-import org.apache.lucene.document.BinaryField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.IndexInput;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
@@ -85,8 +82,8 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
       ft.setOmitNorms(fieldInfo.omitNorms);
       ft.setIndexOptions(fieldInfo.indexOptions);
       doc.add(new Field(fieldInfo.name,
-                        ft,
-                        new String(b, "UTF-8")));
+          new String(b, "UTF-8"), ft
+      ));
     } else {
       in.seek(in.getFilePointer() + numUTF8Bytes);
     }

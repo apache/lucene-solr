@@ -74,7 +74,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
       stopWordsSet = new HashSet<String>();
       for (String field : fields) {
         try {
-          TokenStream ts = analyzer.reusableTokenStream(field, new StringReader(stopWords));
+          TokenStream ts = analyzer.tokenStream(field, new StringReader(stopWords));
           CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
           ts.reset();
           while (ts.incrementToken()) {

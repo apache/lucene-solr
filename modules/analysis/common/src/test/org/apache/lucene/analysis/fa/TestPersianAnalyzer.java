@@ -203,7 +203,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
   }
   
   /**
-   * Basic test ensuring that reusableTokenStream works correctly.
+   * Basic test ensuring that tokenStream works correctly.
    */
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);

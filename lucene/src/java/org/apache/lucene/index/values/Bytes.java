@@ -27,16 +27,25 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.ByteBlockPool.Allocator;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
+import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Provides concrete Writer/Reader implementations for <tt>byte[]</tt> value per
@@ -185,16 +194,18 @@ public final class Bytes {
   }
 
   // TODO open up this API?
-  static abstract class BytesBaseSource extends Source {
+  static abstract class BytesSourceBase extends Source {
     private final PagedBytes pagedBytes;
+    private final ValueType type;
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
     protected final static int PAGED_BYTES_BITS = 15;
     protected final PagedBytes.Reader data;
     protected final long totalLengthInBytes;
+    
 
-    protected BytesBaseSource(IndexInput datIn, IndexInput idxIn,
-        PagedBytes pagedBytes, long bytesToRead) throws IOException {
+    protected BytesSourceBase(IndexInput datIn, IndexInput idxIn,
+        PagedBytes pagedBytes, long bytesToRead, ValueType type) throws IOException {
       assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "
           + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
       this.datIn = datIn;
@@ -203,6 +214,7 @@ public final class Bytes {
       this.pagedBytes.copy(datIn, bytesToRead);
       data = pagedBytes.freeze(true);
       this.idxIn = idxIn;
+      this.type = type;
     }
 
     public void close() throws IOException {
@@ -219,6 +231,17 @@ public final class Bytes {
           }
         }
       }
+    }
+    
+    @Override
+    public ValueType type() {
+      return type;
+    }
+    
+
+    @Override
+    public int getValueCount() {
+      throw new UnsupportedOperationException();
     }
 
     /**
@@ -245,18 +268,46 @@ public final class Bytes {
     }
 
   }
+  
+  static abstract class DerefBytesSourceBase extends BytesSourceBase {
+    protected final PackedInts.Reader addresses;
+    public DerefBytesSourceBase(IndexInput datIn, IndexInput idxIn,  long bytesToRead, ValueType type) throws IOException {
+      super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), bytesToRead, type);
+      addresses = PackedInts.getReader(idxIn);
+    }
+    
+    @Override
+    public int getValueCount() {
+      return addresses.size();
+    }
+    
+    @Override
+    protected int maxDoc() {
+      return addresses.size();
+    }
 
-  static abstract class BytesBaseSortedSource extends SortedSource {
+  }
+
+  static abstract class BytesSortedSourceBase extends SortedSource {
+    private final PagedBytes pagedBytes;
+    private final Comparator<BytesRef> comp;
+    protected final PackedInts.Reader docToOrdIndex;
+    private final ValueType type;
+    
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
     protected final BytesRef defaultValue = new BytesRef();
     protected final static int PAGED_BYTES_BITS = 15;
-    private final PagedBytes pagedBytes;
     protected final PagedBytes.Reader data;
-    private final Comparator<BytesRef> comp;
+    
 
-    protected BytesBaseSortedSource(IndexInput datIn, IndexInput idxIn,
-        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead)
+    protected BytesSortedSourceBase(IndexInput datIn, IndexInput idxIn,
+        Comparator<BytesRef> comp, long bytesToRead, ValueType type) throws IOException {
+      this(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), bytesToRead, type);
+    }
+    
+    protected BytesSortedSourceBase(IndexInput datIn, IndexInput idxIn,
+        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead,ValueType type)
         throws IOException {
       assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "
           + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
@@ -267,7 +318,14 @@ public final class Bytes {
       this.idxIn = idxIn;
       this.comp = comp == null ? BytesRef.getUTF8SortedAsUnicodeComparator()
           : comp;
+      docToOrdIndex = PackedInts.getReader(idxIn);
+      this.type = type;
 
+    }
+    
+    @Override
+    public int ord(int docID) {
+      return (int) docToOrdIndex.get(docID) -1;
     }
 
     @Override
@@ -277,22 +335,15 @@ public final class Bytes {
     }
 
     protected void closeIndexInput() throws IOException {
-      try {
-        if (datIn != null) {
-          datIn.close();
-        }
-      } finally {
-        if (idxIn != null) {// if straight
-          idxIn.close();
-        }
-      }
+      IOUtils.close(datIn, idxIn);
     }
-
+    
     /**
      * Returns the largest doc id + 1 in this doc values source
      */
-    protected abstract int maxDoc();
-
+    public int maxDoc() {
+      return docToOrdIndex.size();
+    }
     /**
      * Copies the value for the given ord to the given {@link BytesRef} and
      * returns it.
@@ -336,6 +387,11 @@ public final class Bytes {
         }
       };
     }
+    
+    @Override
+    public ValueType type() {
+      return type;
+    }
   }
 
   // TODO: open up this API?!
@@ -359,7 +415,7 @@ public final class Bytes {
       this.context = context;
     }
     
-    protected IndexOutput getDataOut() throws IOException {
+    protected IndexOutput getOrCreateDataOut() throws IOException {
       if (datOut == null) {
         boolean success = false;
         try {
@@ -375,8 +431,16 @@ public final class Bytes {
       }
       return datOut;
     }
+    
+    protected IndexOutput getIndexOut() {
+      return idxOut;
+    }
+    
+    protected IndexOutput getDataOut() {
+      return datOut;
+    }
 
-    protected IndexOutput getIndexOut() throws IOException {
+    protected IndexOutput getOrCreateIndexOut() throws IOException {
       boolean success = false;
       try {
         if (idxOut == null) {
@@ -502,6 +566,224 @@ public final class Bytes {
         }
       }
     }
+  }
+  
+  static abstract class DerefBytesWriterBase extends BytesWriterBase {
+    protected int size = -1;
+    protected int[] docToEntry;
+    protected final BytesRefHash hash;
+    
+    protected DerefBytesWriterBase(Directory dir, String id, String codecName,
+        int codecVersion, Counter bytesUsed, IOContext context)
+        throws IOException {
+      this(dir, id, codecName, codecVersion, new DirectTrackingAllocator(
+          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context);
+    }
+
+    protected DerefBytesWriterBase(Directory dir, String id, String codecName, int codecVersion, Allocator allocator,
+        Counter bytesUsed, IOContext context) throws IOException {
+      super(dir, id, codecName, codecVersion, bytesUsed, context);
+      hash = new BytesRefHash(new ByteBlockPool(allocator),
+          BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
+              BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
+      docToEntry = new int[1];
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
+    }
+    
+    protected static int writePrefixLength(DataOutput datOut, BytesRef bytes)
+        throws IOException {
+      if (bytes.length < 128) {
+        datOut.writeByte((byte) bytes.length);
+        return 1;
+      } else {
+        datOut.writeByte((byte) (0x80 | (bytes.length >> 8)));
+        datOut.writeByte((byte) (bytes.length & 0xff));
+        return 2;
+      }
+    }
+
+    @Override
+    public void add(int docID, BytesRef bytes) throws IOException {
+      if (bytes.length == 0) { // default value - skip it
+        return;
+      }
+      checkSize(bytes);
+      int ord = hash.add(bytes);
+      if (ord < 0) {
+        ord = (-ord) - 1;
+      }
+      if (docID >= docToEntry.length) {
+        final int size = docToEntry.length;
+        docToEntry = ArrayUtil.grow(docToEntry, 1 + docID);
+        bytesUsed.addAndGet((docToEntry.length - size)
+            * RamUsageEstimator.NUM_BYTES_INT);
+      }
+      docToEntry[docID] = 1 + ord;
+    }
+    
+    protected void checkSize(BytesRef bytes) {
+      if (size == -1) {
+        size = bytes.length;
+      } else if (bytes.length != size) {
+        throw new IllegalArgumentException("expected bytes size=" + size
+            + " but got " + bytes.length);
+      }
+    }
+    
+    // Important that we get docCount, in case there were
+    // some last docs that we didn't see
+    @Override
+    public void finish(int docCount) throws IOException {
+      boolean success = false;
+      try {
+        finishInternal(docCount);
+        success = true;
+      } finally {
+        releaseResources();
+        if (success) {
+          IOUtils.close(getIndexOut(), getDataOut());
+        } else {
+          IOUtils.closeWhileHandlingException(getIndexOut(), getDataOut());
+        }
+        
+      }
+    }
+    
+    protected abstract void finishInternal(int docCount) throws IOException;
+    
+    protected void releaseResources() {
+      hash.close();
+      bytesUsed
+      .addAndGet((-docToEntry.length) * RamUsageEstimator.NUM_BYTES_INT);
+      docToEntry = null;
+    }
+    
+    protected void writeIndex(IndexOutput idxOut, int docCount,
+        long maxValue, int[] toEntry) throws IOException {
+      writeIndex(idxOut, docCount, maxValue, (int[])null, toEntry);
+    }
+    
+    protected void writeIndex(IndexOutput idxOut, int docCount,
+        long maxValue, int[] addresses, int[] toEntry) throws IOException {
+      final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+          PackedInts.bitsRequired(maxValue));
+      final int limit = docCount > docToEntry.length ? docToEntry.length
+          : docCount;
+      assert toEntry.length >= limit -1;
+      if (addresses != null) {
+        for (int i = 0; i < limit; i++) {
+          assert addresses[toEntry[i]] >= 0;
+          w.add(addresses[toEntry[i]]);
+        }
+      } else {
+        for (int i = 0; i < limit; i++) {
+          assert toEntry[i] >= 0;
+          w.add(toEntry[i]);
+        }
+      }
+      for (int i = limit; i < docCount; i++) {
+        w.add(0);
+      }
+      w.finish();
+    }
+    
+    protected void writeIndex(IndexOutput idxOut, int docCount,
+        long maxValue, long[] addresses, int[] toEntry) throws IOException {
+      final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+          PackedInts.bitsRequired(maxValue));
+      final int limit = docCount > docToEntry.length ? docToEntry.length
+          : docCount;
+      assert toEntry.length >= limit -1;
+      if (addresses != null) {
+        for (int i = 0; i < limit; i++) {
+          assert addresses[toEntry[i]] >= 0;
+          w.add(addresses[toEntry[i]]);
+        }
+      } else {
+        for (int i = 0; i < limit; i++) {
+          assert toEntry[i] >= 0;
+          w.add(toEntry[i]);
+        }
+      }
+      for (int i = limit; i < docCount; i++) {
+        w.add(0);
+      }
+      w.finish();
+    }
+    
+  }
+  
+  abstract static class DerefBytesEnumBase extends ValuesEnum {
+    private final PackedInts.ReaderIterator idx;
+    private final int valueCount;
+    private int pos = -1;
+    protected final IndexInput datIn;
+    protected final long fp;
+    protected final int size;
+
+    protected DerefBytesEnumBase(AttributeSource source, IndexInput datIn,
+        IndexInput idxIn, int size, ValueType enumType) throws IOException {
+      super(source, enumType);
+      this.datIn = datIn;
+      this.size = size;
+      idx = PackedInts.getReaderIterator(idxIn);
+      fp = datIn.getFilePointer();
+      if (size > 0) {
+        bytesRef.grow(this.size);
+        bytesRef.length = this.size;
+      }
+      bytesRef.offset = 0;
+      valueCount = idx.size();
+    }
+
+    protected void copyFrom(ValuesEnum valuesEnum) {
+      bytesRef = valuesEnum.bytesRef;
+      if (bytesRef.bytes.length < size) {
+        bytesRef.grow(size);
+      }
+      bytesRef.length = size;
+      bytesRef.offset = 0;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target < valueCount) {
+        long address;
+        while ((address = idx.advance(target)) == 0) {
+          if (++target >= valueCount) {
+            return pos = NO_MORE_DOCS;
+          }
+        }
+        pos = idx.ord();
+        fill(address, bytesRef);
+        return pos;
+      }
+      return pos = NO_MORE_DOCS;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      if (pos >= valueCount) {
+        return pos = NO_MORE_DOCS;
+      }
+      return advance(pos + 1);
+    }
+
+    public void close() throws IOException {
+      try {
+        datIn.close();
+      } finally {
+        idx.close();
+      }
+    }
+
+    protected abstract void fill(long address, BytesRef ref) throws IOException;
+
+    @Override
+    public int docID() {
+      return pos;
+    }
+
   }
 
 }

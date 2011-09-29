@@ -87,15 +87,15 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    TokenStream tokenStream = analyzer.reusableTokenStream("field", new StringReader("abcd   "));
+    TokenStream tokenStream = analyzer.tokenStream("field", new StringReader("abcd   "));
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(tokenStream);
     TokenStream sink = tee.newSinkTokenStream();
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
-    Field f1 = new Field("field", ft, tee);
-    Field f2 = new Field("field", ft, sink);
+    Field f1 = new Field("field", tee, ft);
+    Field f2 = new Field("field", sink, ft);
     doc.add(f1);
     doc.add(f2);
     w.addDocument(doc);

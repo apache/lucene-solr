@@ -36,8 +36,8 @@ public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer =
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
 
-    TokenStream tokenStream = analyzer.reusableTokenStream("field",
-                                            new StringReader(text));
+    TokenStream tokenStream = analyzer.tokenStream("field",
+        new StringReader(text));
     CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
     tokenStream.reset();
 
@@ -46,8 +46,8 @@ public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
                  "Qwerty",
                  termAtt.toString());
 
-    tokenStream = analyzer.reusableTokenStream("special",
-                                            new StringReader(text));
+    tokenStream = analyzer.tokenStream("special",
+        new StringReader(text));
     termAtt = tokenStream.getAttribute(CharTermAttribute.class);
     tokenStream.reset();
 

@@ -227,22 +227,22 @@ public class TestOmitNorms extends LuceneTestCase {
   public void testOmitNormsCombos() throws IOException {
     // indexed with norms
     FieldType customType = new FieldType(TextField.TYPE_STORED);
-    Field norms = new Field("foo", customType, "a");
+    Field norms = new Field("foo", "a", customType);
     // indexed without norms
     FieldType customType1 = new FieldType(TextField.TYPE_STORED);
     customType1.setOmitNorms(true);
-    Field noNorms = new Field("foo", customType1, "a");
+    Field noNorms = new Field("foo", "a", customType1);
     // not indexed, but stored
     FieldType customType2 = new FieldType();
     customType2.setStored(true);
-    Field noIndex = new Field("foo", customType2, "a");
+    Field noIndex = new Field("foo", "a", customType2);
     // not indexed but stored, omitNorms is set
     FieldType customType3 = new FieldType();
     customType3.setStored(true);
     customType3.setOmitNorms(true);
-    Field noNormsNoIndex = new Field("foo", customType3, "a");
+    Field noNormsNoIndex = new Field("foo", "a", customType3);
     // not indexed nor stored (doesnt exist at all, we index a different field instead)
-    Field emptyNorms = new Field("bar", customType, "a");
+    Field emptyNorms = new Field("bar", "a", customType);
     
     assertNotNull(getNorms("foo", norms, norms));
     assertNull(getNorms("foo", norms, noNorms));

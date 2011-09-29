@@ -19,7 +19,8 @@ package org.apache.lucene.util.packed;
 
 import java.io.Closeable;
 
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.Constants;
@@ -134,11 +135,11 @@ public class PackedInts {
    * @lucene.internal
    */
   public static abstract class Writer {
-    protected final IndexOutput out;
+    protected final DataOutput out;
     protected final int bitsPerValue;
     protected final int valueCount;
 
-    protected Writer(IndexOutput out, int valueCount, int bitsPerValue)
+    protected Writer(DataOutput out, int valueCount, int bitsPerValue)
       throws IOException {
       assert bitsPerValue <= 64;
 
@@ -155,14 +156,14 @@ public class PackedInts {
   }
 
   /**
-   * Retrieve PackedInt data from the IndexInput and return a packed int
+   * Retrieve PackedInt data from the DataInput and return a packed int
    * structure based on it.
    * @param in positioned at the beginning of a stored packed int structure.
    * @return a read only random access capable array of positive integers.
    * @throws IOException if the structure could not be retrieved.
    * @lucene.internal
    */
-  public static Reader getReader(IndexInput in) throws IOException {
+  public static Reader getReader(DataInput in) throws IOException {
     CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
@@ -244,7 +245,7 @@ public class PackedInts {
    * @throws IOException if bits could not be written to out.
    * @lucene.internal
    */
-  public static Writer getWriter(IndexOutput out, int valueCount, int bitsPerValue)
+  public static Writer getWriter(DataOutput out, int valueCount, int bitsPerValue)
     throws IOException {
     return new PackedWriter(out, valueCount, bitsPerValue);
   }

@@ -13,6 +13,10 @@ Changes in runtime behavior
    instead of RangeQueryNode; the same applies for numeric nodes;
    (Vinicius Barros via Uwe Schindler)
 
+ * LUCENE-3455: QueryParserBase.newFieldQuery() will throw a ParseException if
+   any of the calls to the Analyzer throw an IOException.  QueryParseBase.analyzeRangePart()
+   will throw a RuntimException if an IOException is thrown by the Analyzer.
+
 API Changes
 
  * LUCENE-1768: Deprecated Parametric(Range)QueryNode, RangeQueryNode(Builder),

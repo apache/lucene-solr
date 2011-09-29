@@ -104,7 +104,7 @@ public class SpellingQueryConverter extends QueryConverter  {
       String word = matcher.group(0);
       if (word.equals("AND") == false && word.equals("OR") == false) {
         try {
-          stream = analyzer.reusableTokenStream("", new StringReader(word));
+          stream = analyzer.tokenStream("", new StringReader(word));
           // TODO: support custom attributes
           CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
           FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);

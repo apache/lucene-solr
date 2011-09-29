@@ -109,7 +109,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -158,7 +158,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -206,7 +206,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -255,7 +255,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

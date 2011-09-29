@@ -41,7 +41,6 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -261,7 +260,7 @@ public class MemoryIndex {
     
     TokenStream stream;
     try {
-      stream = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+      stream = analyzer.tokenStream(fieldName, new StringReader(text));
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

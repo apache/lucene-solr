@@ -290,7 +290,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     );
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("title", TextField.TYPE_STORED, ALT_DOCS[i]));
+      doc.add(new Field("title", ALT_DOCS[i], TextField.TYPE_STORED));
       iw.addDocument(doc);
     }
     iw.optimize();

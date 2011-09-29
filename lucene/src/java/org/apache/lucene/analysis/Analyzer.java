@@ -30,14 +30,9 @@ import java.util.Map;
  * An Analyzer builds TokenStreams, which analyze text.  It thus represents a
  * policy for extracting index terms from text.
  * <p>
- * To prevent consistency problems, this class does not allow subclasses to
- * extend {@link #reusableTokenStream(String, Reader)} or
- * {@link #tokenStream(String, Reader)} directly. Instead, subclasses must
- * implement {@link #createComponents(String, Reader)}.
- * </p>
- * <p>The {@code Analyzer}-API in Lucene is based on the decorator pattern.
- * Therefore all non-abstract subclasses must be final! This is checked
- * when Java assertions are enabled.
+ * In order to define what analysis is done, subclasses must define their
+ * {@link TokenStreamComponents} in {@link #createComponents(String, Reader)}.
+ * The components are then reused in each call to {@link #tokenStream(String, Reader)}.
  */
 public abstract class Analyzer {
 
@@ -80,8 +75,8 @@ public abstract class Analyzer {
    * @param fieldName the name of the field the created TokenStream is used for
    * @param reader the reader the streams source reads from
    */
-  public final TokenStream reusableTokenStream(final String fieldName,
-      final Reader reader) throws IOException {
+  public final TokenStream tokenStream(final String fieldName,
+                                       final Reader reader) throws IOException {
     TokenStreamComponents components = reuseStrategy.getReusableComponents(fieldName);
     final Reader r = initReader(reader);
     if (components == null) {
@@ -91,25 +86,6 @@ public abstract class Analyzer {
       components.reset(r);
     }
     return components.getTokenStream();
-  }
-
-  /**
-   * Creates a TokenStream which tokenizes all the text in the provided
-   * Reader.
-   * <p>
-   * This method uses {@link #createComponents(String, Reader)} to obtain an
-   * instance of {@link TokenStreamComponents} and returns the sink of the
-   * components. Each calls to this method will create a new instance of
-   * {@link TokenStreamComponents}. Created {@link TokenStream} instances are 
-   * never reused.
-   * </p>
-   * 
-   * @param fieldName the name of the field the created TokenStream is used for
-   * @param reader the reader the streams source reads from
-   */
-  public final TokenStream tokenStream(final String fieldName,
-      final Reader reader) {
-    return createComponents(fieldName, initReader(reader)).getTokenStream();
   }
   
   /**
@@ -166,7 +142,7 @@ public abstract class Analyzer {
    * instance of {@link TokenFilter} which also serves as the
    * {@link TokenStream} returned by
    * {@link Analyzer#tokenStream(String, Reader)} and
-   * {@link Analyzer#reusableTokenStream(String, Reader)}.
+   * {@link Analyzer#tokenStream(String, Reader)}.
    */
   public static class TokenStreamComponents {
     protected final Tokenizer source;

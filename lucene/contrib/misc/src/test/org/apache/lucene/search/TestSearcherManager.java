@@ -36,7 +36,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   protected IndexSearcher getFinalSearcher() throws Exception  {
     writer.commit();
     mgr.maybeReopen();
-    return mgr.get();
+    return mgr.acquire();
   }
 
   private SearcherManager mgr;
@@ -94,7 +94,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       mgr.maybeReopen();
     }
 
-    return mgr.get();
+    return mgr.acquire();
   }
 
   @Override

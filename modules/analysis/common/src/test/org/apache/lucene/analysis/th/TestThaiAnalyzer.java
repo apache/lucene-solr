@@ -156,10 +156,10 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
     ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_30);
     // just consume
-    TokenStream ts = analyzer.reusableTokenStream("dummy", new StringReader("ภาษาไทย"));
+    TokenStream ts = analyzer.tokenStream("dummy", new StringReader("ภาษาไทย"));
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
     // this consumer adds flagsAtt, which this analyzer does not use. 
-    ts = analyzer.reusableTokenStream("dummy", new StringReader("ภาษาไทย"));
+    ts = analyzer.tokenStream("dummy", new StringReader("ภาษาไทย"));
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
   }

@@ -590,7 +590,7 @@ public class SpellChecker implements java.io.Closeable {
     Document doc = new Document();
     // the word field is never queried on... its indexed so it can be quickly
     // checked for rebuild (and stored for retrieval). Doesn't need norms or TF/pos
-    Field f = new Field(F_WORD, StringField.TYPE_STORED, text);
+    Field f = new Field(F_WORD, text, StringField.TYPE_STORED);
     doc.add(f); // orig term
     addGram(text, doc, ng1, ng2);
     return doc;
@@ -605,7 +605,7 @@ public class SpellChecker implements java.io.Closeable {
         String gram = text.substring(i, i + ng);
         FieldType ft = new FieldType(StringField.TYPE_UNSTORED);
         ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-        Field ngramField = new Field(key, ft, gram);
+        Field ngramField = new Field(key, gram, ft);
         // spellchecker does not use positional queries, but we want freqs
         // for scoring these multivalued n-gram fields.
         doc.add(ngramField);

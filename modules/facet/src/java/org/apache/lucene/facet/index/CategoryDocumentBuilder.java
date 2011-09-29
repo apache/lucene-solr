@@ -187,7 +187,7 @@ public class CategoryDocumentBuilder implements DocumentBuilder {
       // super.build())
       FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
       ft.setOmitNorms(true);
-      fieldList.add(new Field(e.getKey(), ft, stream));
+      fieldList.add(new Field(e.getKey(), stream, ft));
     }
 
     return this;
