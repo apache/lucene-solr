@@ -91,6 +91,8 @@ New Features
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
   (Massimo Schiavon, Mark Miller)
+  SOLR-2799: Update CloudState incrementally rather than always reading the data at each zk 
+  node. (Jamie Johnson via Mark Miller)
 
 * SOLR-1729: Evaluation of NOW for date math is done only once per request for
   consistency, and is also propagated to shards in distributed search.

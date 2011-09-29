@@ -117,8 +117,6 @@ public class ZkStateReader {
   // load and publish a new CollectionInfo
   private synchronized void updateCloudState(boolean immediate, final boolean onlyLiveNodes) throws KeeperException, InterruptedException,
       IOException {
-
-    // TODO: - possibly: incremental update rather than reread everything
     
     // build immutable CloudInfo
     
