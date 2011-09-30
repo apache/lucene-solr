@@ -127,4 +127,4 @@ WHITESPACE = \r\n | [ \r\n\t\f]
 {ACRONYM_DEP}                                                  { return ACRONYM_DEP; }
 
 /** Ignore the rest */
-. | {WHITESPACE}                                               { /* ignore */ }
+. | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }

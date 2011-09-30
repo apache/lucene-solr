@@ -161,6 +161,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     		break;
     	case GZIP:
     		in = csFactory.createCompressorInputStream(CompressorStreamFactory.GZIP, in);
+                break;
     	case PLAIN:
     		break; // nothing to do
     	default:

@@ -192,108 +192,108 @@ DOUBLE_EQUALS = "="{2}
   //First {ALPHANUM} is always the link, set positioninc to 1 for double bracket, but then inside the internal link state
   //set it to 0 for the next token, such that the link and the first token are in the same position, but then subsequent
   //tokens within the link are incremented
-  {DOUBLE_BRACKET} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);}
-  {DOUBLE_BRACKET_CAT} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CATEGORY; yybegin(CATEGORY_STATE);}
-  {EXTERNAL_LINK} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);}
-  {TWO_SINGLE_QUOTES} {numWikiTokensSeen = 0; positionInc = 1; if (numBalanced == 0){numBalanced++;yybegin(TWO_SINGLE_QUOTES_STATE);} else{numBalanced = 0;}}
-  {DOUBLE_EQUALS} {numWikiTokensSeen = 0; positionInc = 1; yybegin(DOUBLE_EQUALS_STATE);}
-  {DOUBLE_BRACE} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
-  {CITATION} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
+  {DOUBLE_BRACKET} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);/* Break so we don't hit fall-through warning: */ break;}
+  {DOUBLE_BRACKET_CAT} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CATEGORY; yybegin(CATEGORY_STATE);/* Break so we don't hit fall-through warning: */ break;}
+  {EXTERNAL_LINK} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);/* Break so we don't hit fall-through warning: */ break;}
+  {TWO_SINGLE_QUOTES} {numWikiTokensSeen = 0; positionInc = 1; if (numBalanced == 0){numBalanced++;yybegin(TWO_SINGLE_QUOTES_STATE);} else{numBalanced = 0;}/* Break so we don't hit fall-through warning: */ break;}
+  {DOUBLE_EQUALS} {numWikiTokensSeen = 0; positionInc = 1; yybegin(DOUBLE_EQUALS_STATE);/* Break so we don't hit fall-through warning: */ break;}
+  {DOUBLE_BRACE} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);/* Break so we don't hit fall-through warning: */ break;}
+  {CITATION} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);/* Break so we don't hit fall-through warning: */ break;}
 //ignore
-  . | {WHITESPACE} |{INFOBOX}                                               {numWikiTokensSeen = 0;  positionInc = 1; }
+  . | {WHITESPACE} |{INFOBOX}                                               {numWikiTokensSeen = 0;  positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 
 <INTERNAL_LINK_STATE>{
 //First {ALPHANUM} is always the link, set position to 0 for these
 //This is slightly different from EXTERNAL_LINK_STATE because that one has an explicit grammar for capturing the URL
   {ALPHANUM} {yybegin(INTERNAL_LINK_STATE); numWikiTokensSeen++; return currentTokType;}
-  {DOUBLE_BRACKET_CLOSE} {numLinkToks = 0; yybegin(YYINITIAL);}
+  {DOUBLE_BRACKET_CLOSE} {numLinkToks = 0; yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
   //ignore
-  . | {WHITESPACE}                                               { positionInc = 1; }
+  . | {WHITESPACE}                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 
 <EXTERNAL_LINK_STATE>{
 //increment the link token, but then don't increment the tokens after that which are still in the link
   ("http://"|"https://"){HOST}("/"?({ALPHANUM}|{P}|\?|"&"|"="|"#")*)* {positionInc = 1; numWikiTokensSeen++; yybegin(EXTERNAL_LINK_STATE); return currentTokType;}
   {ALPHANUM} {if (numLinkToks == 0){positionInc = 0;} else{positionInc = 1;} numWikiTokensSeen++; currentTokType = EXTERNAL_LINK; yybegin(EXTERNAL_LINK_STATE); numLinkToks++; return currentTokType;}
-  "]" {numLinkToks = 0; positionInc = 0; yybegin(YYINITIAL);}
-  {WHITESPACE}                                               { positionInc = 1; }
+  "]" {numLinkToks = 0; positionInc = 0; yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
+  {WHITESPACE}                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 
 <CATEGORY_STATE>{
   {ALPHANUM} {yybegin(CATEGORY_STATE); numWikiTokensSeen++; return currentTokType;}
-  {DOUBLE_BRACKET_CLOSE} {yybegin(YYINITIAL);}
+  {DOUBLE_BRACKET_CLOSE} {yybegin(YYINITIAL);/* Break so we don't hit fall-through warning: */ break;}
   //ignore
-  . | {WHITESPACE}                                               { positionInc = 1; }
+  . | {WHITESPACE}                                               { positionInc = 1; /* Break so we don't hit fall-through warning: */ break;}
 }
 //italics
 <TWO_SINGLE_QUOTES_STATE>{
-  "'" {currentTokType = BOLD;  yybegin(THREE_SINGLE_QUOTES_STATE);}
-   "'''" {currentTokType = BOLD_ITALICS;  yybegin(FIVE_SINGLE_QUOTES_STATE);}
+  "'" {currentTokType = BOLD;  yybegin(THREE_SINGLE_QUOTES_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   "'''" {currentTokType = BOLD_ITALICS;  yybegin(FIVE_SINGLE_QUOTES_STATE); /* Break so we don't hit fall-through warning: */ break;}
    {ALPHANUM} {currentTokType = ITALICS; numWikiTokensSeen++;  yybegin(STRING); return currentTokType;/*italics*/}
    //we can have links inside, let those override
-   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0; yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0; yybegin(INTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
    //ignore
-  . | {WHITESPACE}                                               { /* ignore */ }
+  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 //bold
 <THREE_SINGLE_QUOTES_STATE>{
   {ALPHANUM} {yybegin(STRING); numWikiTokensSeen++; return currentTokType;}
   //we can have links inside, let those override
-   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0; yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0; yybegin(INTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
    //ignore
-  . | {WHITESPACE}                                               { /* ignore */ }
+  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 
 }
 //bold italics
 <FIVE_SINGLE_QUOTES_STATE>{
   {ALPHANUM} {yybegin(STRING); numWikiTokensSeen++; return currentTokType;}
   //we can have links inside, let those override
-   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0;  yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0;  yybegin(INTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
    //ignore
-  . | {WHITESPACE}                                               { /* ignore */ }
+  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 
 <DOUBLE_EQUALS_STATE>{
- "=" {currentTokType = SUB_HEADING; numWikiTokensSeen = 0; yybegin(STRING);}
+ "=" {currentTokType = SUB_HEADING; numWikiTokensSeen = 0; yybegin(STRING); /* Break so we don't hit fall-through warning: */ break;}
  {ALPHANUM} {currentTokType = HEADING; yybegin(DOUBLE_EQUALS_STATE); numWikiTokensSeen++; return currentTokType;}
- {DOUBLE_EQUALS} {yybegin(YYINITIAL);}
+ {DOUBLE_EQUALS} {yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
   //ignore
-  . | {WHITESPACE}                                               { /* ignore */ }
+  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 
 <DOUBLE_BRACE_STATE>{
   {ALPHANUM} {yybegin(DOUBLE_BRACE_STATE); numWikiTokensSeen = 0; return currentTokType;}
-  {DOUBLE_BRACE_CLOSE} {yybegin(YYINITIAL);}
-  {CITATION_CLOSE} {yybegin(YYINITIAL);}
+  {DOUBLE_BRACE_CLOSE} {yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
+  {CITATION_CLOSE} {yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;}
    //ignore
-  . | {WHITESPACE}                                               { /* ignore */ }
+  . | {WHITESPACE}                                               { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 }
 
 <STRING> {
-  "'''''" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL);/*end bold italics*/}
-  "'''" {numBalanced = 0;currentTokType = ALPHANUM;yybegin(YYINITIAL);/*end bold*/}
-  "''" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL);/*end italics*/}
-  "===" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL);/*end sub header*/}
+  "'''''" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;/*end bold italics*/}
+  "'''" {numBalanced = 0;currentTokType = ALPHANUM;yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;/*end bold*/}
+  "''" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;/*end italics*/}
+  "===" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL); /* Break so we don't hit fall-through warning: */ break;/*end sub header*/}
   {ALPHANUM} {yybegin(STRING); numWikiTokensSeen++; return currentTokType;/* STRING ALPHANUM*/}
   //we can have links inside, let those override
-   {DOUBLE_BRACKET} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = CATEGORY;yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {DOUBLE_BRACKET_CAT} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = CATEGORY;yybegin(CATEGORY_STATE); /* Break so we don't hit fall-through warning: */ break;}
+   {EXTERNAL_LINK} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE); /* Break so we don't hit fall-through warning: */ break;}
 
 
   {PIPE} {yybegin(STRING); return currentTokType;/*pipe*/}
 
-  .|{WHITESPACE}                                              { /* ignore STRING */ }
+  .|{WHITESPACE}                                              { /* Break so we don't hit fall-through warning: */ break;/* ignore STRING */ }
 }
 
 
@@ -315,7 +315,7 @@ DOUBLE_EQUALS = "="{2}
 //end wikipedia
 
 /** Ignore the rest */
-. | {WHITESPACE}|{TAGS}                                                { /* ignore */ }
+. | {WHITESPACE}|{TAGS}                                                { /* Break so we don't hit fall-through warning: */ break;/* ignore */ }
 
 
 //INTERNAL_LINK = "["{2}({ALPHANUM}+{WHITESPACE}*)+"]"{2}
