@@ -84,7 +84,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
 
   public void testNoStopwords() throws Exception {
     // Note: an empty list of fields passed in
-    protectedAnalyzer = new QueryAutoStopWordAnalyzer(TEST_VERSION_CURRENT, appAnalyzer, reader, Collections.EMPTY_LIST, 1);
+    protectedAnalyzer = new QueryAutoStopWordAnalyzer(TEST_VERSION_CURRENT, appAnalyzer, reader, Collections.<String>emptyList(), 1);
     String query = "variedField:quick repetitiveField:boring";
     int numHits1 = search(protectedAnalyzer, query);
     int numHits2 = search(appAnalyzer, query);
