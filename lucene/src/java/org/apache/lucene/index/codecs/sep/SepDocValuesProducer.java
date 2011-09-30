@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.sep;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,50 +16,39 @@ package org.apache.lucene.index.codecs;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.DocValuesReaderBase;
 import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.store.CompoundFileDirectory;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Default PerDocValues implementation that uses compound file.
+ * Implementation of PerDocValues that uses separate files.
  * @lucene.experimental
  */
-public class DefaultDocValuesProducer extends DocValuesReaderBase {
-  protected final TreeMap<String, IndexDocValues> docValues;
-  private final Directory cfs;
+public class SepDocValuesProducer extends DocValuesReaderBase {
+  private final TreeMap<String, IndexDocValues> docValues;
 
   /**
-   * Creates a new {@link DefaultDocValuesProducer} instance and loads all
+   * Creates a new {@link SepDocValuesProducer} instance and loads all
    * {@link IndexDocValues} instances for this segment and codec.
    */
-  public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
-    cfs = new CompoundFileDirectory(state.dir, 
-        IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
-        state.context, false);
-    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.codecId, state.context);
+  public SepDocValuesProducer(SegmentReadState state) throws IOException {
+    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, state.dir, state.codecId, state.context);
   }
   
   @Override
   protected Map<String,IndexDocValues> docValues() {
     return docValues;
   }
-
+  
   @Override
   protected void closeInternal(Collection<? extends Closeable> closeables) throws IOException {
-    final ArrayList<Closeable> list = new ArrayList<Closeable>(closeables);
-    list.add(cfs);
-    IOUtils.close(list);
+    IOUtils.close(closeables);
   }
 }

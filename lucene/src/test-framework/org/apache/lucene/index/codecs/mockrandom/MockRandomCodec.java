@@ -58,6 +58,8 @@ import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriter;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
+import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
+import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.index.codecs.sep.SepPostingsReader;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
@@ -75,17 +77,13 @@ import org.apache.lucene.util._TestUtil;
  */
 
 public class MockRandomCodec extends Codec {
-
+  private final boolean useSepDocValues;
   private final Random seedRandom;
   private final String SEED_EXT = "sd";
   
   public MockRandomCodec(Random random) {
-    this(random, "MockRandom", true);
-    
-  }
-  
-  protected MockRandomCodec(Random random, String name, boolean docValuesUseCompoundFile) {
-    super(name, docValuesUseCompoundFile);
+    super("MockRandom");
+    this.useSepDocValues = random.nextBoolean();
     this.seedRandom = new Random(random.nextLong());
   }
 
@@ -428,7 +426,11 @@ public class MockRandomCodec extends Codec {
     BlockTreeTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
+    if (useSepDocValues) {
+      SepDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+    } else {
+      DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+    }
     // hackish!
     Iterator<String> it = files.iterator();
     while(it.hasNext()) {
@@ -447,7 +449,11 @@ public class MockRandomCodec extends Codec {
     BlockTreeTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
+    if (useSepDocValues) {
+      SepDocValuesConsumer.getExtensions(extensions);
+    } else {
+      DefaultDocValuesConsumer.getExtensions(extensions);      
+    }
     extensions.add(SEED_EXT);
     //System.out.println("MockRandom.getExtensions return " + extensions);
   }
@@ -455,11 +461,19 @@ public class MockRandomCodec extends Codec {
   // can we make this more evil?
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
+    if (useSepDocValues) {
+      return new SepDocValuesConsumer(state);
+    } else {
+      return new DefaultDocValuesConsumer(state);
+    }
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
+    if (useSepDocValues) {
+      return new SepDocValuesProducer(state);
+    } else {
+      return new DefaultDocValuesProducer(state);
+    }
   }
 }
