@@ -128,16 +128,16 @@ public class LineFileDocs implements Closeable {
       ft.setStoreTermVectorOffsets(true);
       ft.setStoreTermVectorPositions(true);
       
-      titleTokenized = new Field("titleTokenized", ft, "");
+      titleTokenized = new Field("titleTokenized", "", ft);
       doc.add(titleTokenized);
 
-      body = new Field("body", ft, "");
+      body = new Field("body", "", ft);
       doc.add(body);
 
-      id = new Field("docid", StringField.TYPE_STORED, "");
+      id = new Field("docid", "", StringField.TYPE_STORED);
       doc.add(id);
 
-      date = new Field("date", StringField.TYPE_STORED, "");
+      date = new Field("date", "", StringField.TYPE_STORED);
       doc.add(date);
     }
   }

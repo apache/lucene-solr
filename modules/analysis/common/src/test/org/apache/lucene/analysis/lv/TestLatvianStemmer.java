@@ -24,13 +24,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * Basic tests for {@link LatvianStemmer}
  */
 public class TestLatvianStemmer extends BaseTokenStreamTestCase {
-  private Analyzer a = new ReusableAnalyzerBase() {
+  private Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);

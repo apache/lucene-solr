@@ -18,8 +18,8 @@ package org.apache.lucene.collation;
  */
 
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.IndexableBinaryStringTools; // javadoc @link
 import org.apache.lucene.util.Version;
 
@@ -82,7 +82,7 @@ import java.io.Reader;
  *   versions will encode the bytes with {@link IndexableBinaryStringTools}.
  * </ul>
  */
-public final class CollationKeyAnalyzer extends ReusableAnalyzerBase {
+public final class CollationKeyAnalyzer extends Analyzer {
   private final Collator collator;
   private final CollationAttributeFactory factory;
   private final Version matchVersion;

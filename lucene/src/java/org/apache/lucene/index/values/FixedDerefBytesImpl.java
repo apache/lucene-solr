@@ -19,26 +19,17 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
-import org.apache.lucene.index.values.Bytes.BytesWriterBase;
+import org.apache.lucene.index.values.Bytes.DerefBytesSourceBase;
+import org.apache.lucene.index.values.Bytes.DerefBytesEnumBase;
+import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.ByteBlockPool.Allocator;
-import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
-import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
-import org.apache.lucene.util.packed.PackedInts;
 
 // Stores fixed-length byte[] by deref, ie when two docs
 // have the same value, they store only 1 byte[]
@@ -51,135 +42,55 @@ class FixedDerefBytesImpl {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
-  static class Writer extends BytesWriterBase {
-    private int size = -1;
-    private int[] docToID;
-    private final BytesRefHash hash;
+  public static class Writer extends DerefBytesWriterBase {
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
-          bytesUsed, context);
-    }
-
-    public Writer(Directory dir, String id, Allocator allocator,
-        Counter bytesUsed, IOContext context) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
-      hash = new BytesRefHash(new ByteBlockPool(allocator),
-          BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
-              BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
-      docToID = new int[1];
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
 
     @Override
-    public void add(int docID, BytesRef bytes) throws IOException {
-      if (bytes.length == 0) // default value - skip it
-        return;
-      if (size == -1) {
-        size = bytes.length;
-      } else if (bytes.length != size) {
-        throw new IllegalArgumentException("expected bytes size=" + size
-            + " but got " + bytes.length);
-      }
-      int ord = hash.add(bytes);
-      if (ord < 0) {
-        ord = (-ord) - 1;
-      }
-      if (docID >= docToID.length) {
-        final int size = docToID.length;
-        docToID = ArrayUtil.grow(docToID, 1 + docID);
-        bytesUsed.addAndGet((docToID.length - size)
-            * RamUsageEstimator.NUM_BYTES_INT);
-      }
-      docToID[docID] = 1 + ord;
-    }
-
-    // Important that we get docCount, in case there were
-    // some last docs that we didn't see
-    @Override
-    public void finish(int docCount) throws IOException {
-      boolean success = false;
+    protected void finishInternal(int docCount) throws IOException {
       final int numValues = hash.size();
-      final IndexOutput datOut = getDataOut();
-      try {
-        datOut.writeInt(size);
-        if (size != -1) {
-          final BytesRef bytesRef = new BytesRef(size);
-          for (int i = 0; i < numValues; i++) {
-            hash.get(i, bytesRef);
-            datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
-          }
+      final IndexOutput datOut = getOrCreateDataOut();
+      datOut.writeInt(size);
+      if (size != -1) {
+        final BytesRef bytesRef = new BytesRef(size);
+        for (int i = 0; i < numValues; i++) {
+          hash.get(i, bytesRef);
+          datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
         }
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(datOut);
-        } else {
-          IOUtils.closeWhileHandlingException(datOut);
-        }
-        hash.close();
       }
-      success = false;
-      final IndexOutput idxOut = getIndexOut();
-      try {
-        final int count = 1 + numValues;
-        idxOut.writeInt(count - 1);
-        // write index
-        final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
-            PackedInts.bitsRequired(count - 1));
-        final int limit = docCount > docToID.length ? docToID.length : docCount;
-        for (int i = 0; i < limit; i++) {
-          w.add(docToID[i]);
-        }
-        // fill up remaining doc with zeros
-        for (int i = limit; i < docCount; i++) {
-          w.add(0);
-        }
-        w.finish();
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(idxOut);
-        } else {
-          IOUtils.closeWhileHandlingException(idxOut);
-        }
-        bytesUsed
-            .addAndGet((-docToID.length) * RamUsageEstimator.NUM_BYTES_INT);
-        docToID = null;
-      }
+      final IndexOutput idxOut = getOrCreateIndexOut();
+      idxOut.writeInt(numValues);
+      writeIndex(idxOut, docCount, numValues, docToEntry);
     }
   }
 
   public static class Reader extends BytesReaderBase {
     private final int size;
-
+    private final int numValuesStored;
     Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_START, true, context);
       size = datIn.readInt();
+      numValuesStored = idxIn.readInt();
     }
 
     @Override
     public Source load() throws IOException {
-      final IndexInput index = cloneIndex();
-      return new Source(cloneData(), index, size, index.readInt());
+      return new Source(cloneData(), cloneIndex(), size, numValuesStored);
     }
 
-    private static class Source extends BytesBaseSource {
-      private final PackedInts.Reader index;
+    private static final class Source extends DerefBytesSourceBase {
       private final int size;
-      private final int numValues;
 
-      protected Source(IndexInput datIn, IndexInput idxIn, int size,
-          int numValues) throws IOException {
-        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * numValues);
+      protected Source(IndexInput datIn, IndexInput idxIn, int size, long numValues) throws IOException {
+        super(datIn, idxIn, size * numValues, ValueType.BYTES_FIXED_DEREF);
         this.size = size;
-        this.numValues = numValues;
-        index = PackedInts.getReader(idxIn);
       }
 
       @Override
       public BytesRef getBytes(int docID, BytesRef bytesRef) {
-        final int id = (int) index.get(docID);
+        final int id = (int) addresses.get(docID);
         if (id == 0) {
           bytesRef.length = 0;
           return bytesRef;
@@ -187,95 +98,18 @@ class FixedDerefBytesImpl {
         return data.fillSlice(bytesRef, ((id - 1) * size), size);
       }
 
-      @Override
-      public int getValueCount() {
-        return numValues;
-      }
-
-      @Override
-      public ValueType type() {
-        return ValueType.BYTES_FIXED_DEREF;
-      }
-
-      @Override
-      protected int maxDoc() {
-        return index.size();
-      }
     }
 
     @Override
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      return new DerefBytesEnum(source, cloneData(), cloneIndex(), size);
+        return new DerefBytesEnum(source, cloneData(), cloneIndex(), size);
     }
 
-    static class DerefBytesEnum extends ValuesEnum {
-      protected final IndexInput datIn;
-      private final PackedInts.ReaderIterator idx;
-      protected final long fp;
-      private final int size;
-      private final int valueCount;
-      private int pos = -1;
+    final static class DerefBytesEnum extends DerefBytesEnumBase {
 
       public DerefBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn, int size) throws IOException {
-        this(source, datIn, idxIn, size, ValueType.BYTES_FIXED_DEREF);
-      }
-
-      protected DerefBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn, int size, ValueType enumType) throws IOException {
-        super(source, enumType);
-        this.datIn = datIn;
-        this.size = size;
-        idxIn.readInt();// read valueCount
-        idx = PackedInts.getReaderIterator(idxIn);
-        fp = datIn.getFilePointer();
-        if (size > 0) {
-          bytesRef.grow(this.size);
-          bytesRef.length = this.size;
-        }
-        bytesRef.offset = 0;
-        valueCount = idx.size();
-      }
-
-      protected void copyFrom(ValuesEnum valuesEnum) {
-        bytesRef = valuesEnum.bytesRef;
-        if (bytesRef.bytes.length < size) {
-          bytesRef.grow(size);
-        }
-        bytesRef.length = size;
-        bytesRef.offset = 0;
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        if (target < valueCount) {
-          long address;
-          while ((address = idx.advance(target)) == 0) {
-            if (++target >= valueCount) {
-              return pos = NO_MORE_DOCS;
-            }
-          }
-          pos = idx.ord();
-          fill(address, bytesRef);
-          return pos;
-        }
-        return pos = NO_MORE_DOCS;
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        if (pos >= valueCount) {
-          return pos = NO_MORE_DOCS;
-        }
-        return advance(pos + 1);
-      }
-
-      public void close() throws IOException {
-        try {
-          datIn.close();
-        } finally {
-          idx.close();
-        }
+        super(source, datIn, idxIn, size, ValueType.BYTES_FIXED_DEREF);
       }
 
       protected void fill(long address, BytesRef ref) throws IOException {
@@ -284,12 +118,6 @@ class FixedDerefBytesImpl {
         ref.length = size;
         ref.offset = 0;
       }
-
-      @Override
-      public int docID() {
-        return pos;
-      }
-
     }
 
     @Override

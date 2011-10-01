@@ -175,7 +175,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Analyzer analyzer;
     if (random.nextBoolean()) {
       // no payloads
-     analyzer = new ReusableAnalyzerBase() {
+     analyzer = new Analyzer() {
         @Override
         public TokenStreamComponents createComponents(String fieldName, Reader reader) {
           return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
@@ -184,7 +184,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     } else {
       // fixed length payloads
       final int length = random.nextInt(200);
-      analyzer = new ReusableAnalyzerBase() {
+      analyzer = new Analyzer() {
         @Override
         public TokenStreamComponents createComponents(String fieldName, Reader reader) {
           Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);

@@ -38,6 +38,7 @@ import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -146,9 +147,10 @@ public class BlockJoinQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext readerContext, ScorerContext context) throws IOException {
+    public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer childScorer = childWeight.scorer(readerContext, ScorerContext.def().scoreDocsInOrder(true).topScorer(false));
+      final Scorer childScorer = childWeight.scorer(readerContext, true, false, acceptDocs);
 
       if (childScorer == null) {
         // No matches
@@ -321,6 +323,9 @@ public class BlockJoinQuery extends Query {
       if (parentTarget == NO_MORE_DOCS) {
         return parentDoc = NO_MORE_DOCS;
       }
+
+      // Every parent must have at least one child:
+      assert parentTarget != 0;
 
       final int prevParentDoc = parentBits.prevSetBit(parentTarget-1);
 

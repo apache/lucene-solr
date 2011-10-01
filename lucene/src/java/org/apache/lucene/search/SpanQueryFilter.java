@@ -61,7 +61,7 @@ public class SpanQueryFilter extends SpanFilter {
   public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
 
     final FixedBitSet bits = new FixedBitSet(context.reader.maxDoc());
-    Spans spans = query.getSpans(context);
+    Spans spans = query.getSpans(context, context.reader.getLiveDocs());
     List<SpanFilterResult.PositionInfo> tmp = new ArrayList<SpanFilterResult.PositionInfo>(20);
     int currentDoc = -1;
     SpanFilterResult.PositionInfo currentInfo = null;

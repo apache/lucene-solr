@@ -46,7 +46,7 @@ class DocHelper {
   public static Field textField1;
   static {
     customType = new FieldType(TextField.TYPE_STORED);
-    textField1 = new Field(TEXT_FIELD_1_KEY, customType, FIELD_1_TEXT);
+    textField1 = new Field(TEXT_FIELD_1_KEY, FIELD_1_TEXT, customType);
   }
 
   public static final FieldType customType2;
@@ -60,7 +60,7 @@ class DocHelper {
     customType2.setStoreTermVectors(true);
     customType2.setStoreTermVectorPositions(true);
     customType2.setStoreTermVectorOffsets(true);
-    textField2 = new Field(TEXT_FIELD_2_KEY, customType2, FIELD_2_TEXT);
+    textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, customType2);
   }
   
   public static final FieldType customType3;
@@ -71,14 +71,14 @@ class DocHelper {
   static {
     customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setOmitNorms(true);
-    textField3 = new Field(TEXT_FIELD_3_KEY, customType3, FIELD_3_TEXT);
+    textField3 = new Field(TEXT_FIELD_3_KEY, FIELD_3_TEXT, customType3);
   }
 
   public static final String KEYWORD_TEXT = "Keyword";
   public static final String KEYWORD_FIELD_KEY = "keyField";
   public static Field keyField;
   static {
-    keyField = new Field(KEYWORD_FIELD_KEY, StringField.TYPE_STORED,  KEYWORD_TEXT);
+    keyField = new Field(KEYWORD_FIELD_KEY, KEYWORD_TEXT, StringField.TYPE_STORED);
   }
 
   public static final FieldType customType5;
@@ -89,7 +89,7 @@ class DocHelper {
     customType5 = new FieldType(TextField.TYPE_STORED);
     customType5.setOmitNorms(true);
     customType5.setTokenized(false);
-    noNormsField = new Field(NO_NORMS_KEY, customType5, NO_NORMS_TEXT);
+    noNormsField = new Field(NO_NORMS_KEY, NO_NORMS_TEXT, customType5);
   }
 
   public static final FieldType customType6;
@@ -99,7 +99,7 @@ class DocHelper {
   static {
     customType6 = new FieldType(TextField.TYPE_STORED);
     customType6.setIndexOptions(IndexOptions.DOCS_ONLY);
-    noTFField = new Field(NO_TF_KEY, customType6, NO_TF_TEXT);
+    noTFField = new Field(NO_TF_KEY, NO_TF_TEXT, customType6);
   }
 
   public static final FieldType customType7;
@@ -109,13 +109,13 @@ class DocHelper {
   static {
     customType7 = new FieldType();
     customType7.setStored(true);
-    unIndField = new Field(UNINDEXED_FIELD_KEY, customType7, UNINDEXED_FIELD_TEXT);
+    unIndField = new Field(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT, customType7);
   }
 
 
   public static final String UNSTORED_1_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_1_KEY = "unStoredField1";
-  public static Field unStoredField1 = new Field(UNSTORED_FIELD_1_KEY, TextField.TYPE_UNSTORED, UNSTORED_1_FIELD_TEXT);
+  public static Field unStoredField1 = new Field(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT, TextField.TYPE_UNSTORED);
 
   public static final FieldType customType8;
   public static final String UNSTORED_2_FIELD_TEXT = "unstored field text";
@@ -124,7 +124,7 @@ class DocHelper {
   static {
     customType8 = new FieldType(TextField.TYPE_UNSTORED);
     customType8.setStoreTermVectors(true);
-    unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, customType8, UNSTORED_2_FIELD_TEXT);
+    unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT, customType8);
   }
 
   public static final String LAZY_FIELD_BINARY_KEY = "lazyFieldBinary";
@@ -133,7 +133,7 @@ class DocHelper {
 
   public static final String LAZY_FIELD_KEY = "lazyField";
   public static final String LAZY_FIELD_TEXT = "These are some field bytes";
-  public static Field lazyField = new Field(LAZY_FIELD_KEY, customType, LAZY_FIELD_TEXT);
+  public static Field lazyField = new Field(LAZY_FIELD_KEY, LAZY_FIELD_TEXT, customType);
   
   public static final String LARGE_LAZY_FIELD_KEY = "largeLazyField";
   public static String LARGE_LAZY_FIELD_TEXT;
@@ -142,13 +142,13 @@ class DocHelper {
   //From Issue 509
   public static final String FIELD_UTF1_TEXT = "field one \u4e00text";
   public static final String TEXT_FIELD_UTF1_KEY = "textField1Utf8";
-  public static Field textUtfField1 = new Field(TEXT_FIELD_UTF1_KEY, customType, FIELD_UTF1_TEXT);
+  public static Field textUtfField1 = new Field(TEXT_FIELD_UTF1_KEY, FIELD_UTF1_TEXT, customType);
 
   public static final String FIELD_UTF2_TEXT = "field field field \u4e00two text";
   //Fields will be lexicographically sorted.  So, the order is: field, text, two
   public static final int [] FIELD_UTF2_FREQS = {3, 1, 1};
   public static final String TEXT_FIELD_UTF2_KEY = "textField2Utf8";
-  public static Field textUtfField2 = new Field(TEXT_FIELD_UTF2_KEY, customType2, FIELD_UTF2_TEXT);
+  public static Field textUtfField2 = new Field(TEXT_FIELD_UTF2_KEY, FIELD_UTF2_TEXT, customType2);
  
   
   
@@ -200,7 +200,7 @@ class DocHelper {
     lazyFieldBinary = new BinaryField(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES);
     fields[fields.length - 2] = lazyFieldBinary;
     LARGE_LAZY_FIELD_TEXT = buffer.toString();
-    largeLazyField = new Field(LARGE_LAZY_FIELD_KEY, customType, LARGE_LAZY_FIELD_TEXT);
+    largeLazyField = new Field(LARGE_LAZY_FIELD_KEY, LARGE_LAZY_FIELD_TEXT, customType);
     fields[fields.length - 1] = largeLazyField;
     for (int i=0; i<fields.length; i++) {
       IndexableField f = fields[i];
@@ -304,15 +304,15 @@ class DocHelper {
     customType1.setStoreTermVectorOffsets(true);
 
     final Document doc = new Document();
-    doc.add(new Field("id", customType1, Integer.toString(n)));
-    doc.add(new Field("indexname", customType1, indexName));
+    doc.add(new Field("id", Integer.toString(n), customType1));
+    doc.add(new Field("indexname", indexName, customType1));
     sb.append("a");
     sb.append(n);
-    doc.add(new Field("field1", customType, sb.toString()));
+    doc.add(new Field("field1", sb.toString(), customType));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i + 1), customType, sb.toString()));
+      doc.add(new Field("field" + (i + 1), sb.toString(), customType));
     }
     return doc;
   }

@@ -273,7 +273,7 @@ public abstract class FieldType extends FieldProperties {
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
   protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
-    Field f = new Field(name, type, val);
+    Field f = new Field(name, val, type);
     f.setBoost(boost);
     return f;
   }
@@ -389,7 +389,7 @@ public abstract class FieldType extends FieldProperties {
     }
 
     @Override
-    public TokenStreamInfo getStream(String fieldName, Reader reader) {
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer ts = new Tokenizer(reader) {
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -406,7 +406,7 @@ public abstract class FieldType extends FieldProperties {
         }
       };
 
-      return new TokenStreamInfo(ts, ts);
+      return new TokenStreamComponents(ts);
     }
   }
 

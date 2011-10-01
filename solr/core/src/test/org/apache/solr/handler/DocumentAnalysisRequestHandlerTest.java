@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -252,8 +253,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     NamedList<NamedList<Object>> whitetokResult = documentResult.get("whitetok");
     assertNotNull("an analysis for the 'whitetok' field should be returned", whitetokResult);
     queryResult = whitetokResult.get("query");
-    tokenList = (List<NamedList>) queryResult.get("org.apache.lucene.analysis.core.WhitespaceTokenizer");
-    assertNotNull("Expecting the 'WhitespaceTokenizer' to be applied on the query for the 'whitetok' field", tokenList);
+    tokenList = (List<NamedList>) queryResult.get(MockTokenizer.class.getName());
+    assertNotNull("Expecting the 'MockTokenizer' to be applied on the query for the 'whitetok' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("JUMPING", null, "word", 0, 7, 1, new int[]{1}, null, false));
     indexResult = whitetokResult.get("index");

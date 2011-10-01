@@ -1059,7 +1059,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Document d = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
-      d.add(new Field("c", customType, "v"));
+      d.add(new Field("c", "v", customType));
       w.addDocument(d);
       w.close();
     }
@@ -1097,7 +1097,7 @@ public class TestAddIndexes extends LuceneTestCase {
         new MockAnalyzer(random)).setMergePolicy(lmp2);
     IndexWriter w2 = new IndexWriter(src, conf2);
     Document doc = new Document();
-    doc.add(new Field("c", TextField.TYPE_STORED, "some text"));
+    doc.add(new Field("c", "some text", TextField.TYPE_STORED));
     w2.addDocument(doc);
     doc = new Document();
     doc.add(new StringField("d", "delete"));

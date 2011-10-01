@@ -18,7 +18,6 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Set;
 
 import org.apache.lucene.index.PerDocWriteState;
@@ -26,7 +25,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 
 /** @lucene.experimental */
 public abstract class Codec {
@@ -34,22 +32,9 @@ public abstract class Codec {
   /** Unique name that's used to retrieve this codec when
    *  reading the index */
   public final String name;
-  protected final boolean dvUseCompoundFile;
-  protected final Comparator<BytesRef> docValuesSortComparator;
   
   protected Codec(String name) {
-    this(name, true);
-  }
-  
-  protected Codec(String name, boolean docValuesUseCompoundFile) {
-    this(name, docValuesUseCompoundFile, BytesRef.getUTF8SortedAsUnicodeComparator());
-  }
-
-  protected Codec(String name, boolean docValuesUseCompoundFile,
-      Comparator<BytesRef> docValuesSortComparator) {
     this.name = name;
-    this.dvUseCompoundFile = docValuesUseCompoundFile;
-    this.docValuesSortComparator = docValuesSortComparator;
   }
 
   /** Writes a new segment */
@@ -87,38 +72,6 @@ public abstract class Codec {
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);
-
-  /**
-   * Returns <code>true</code> iff compound file should be used for
-   * IndexDocValues, otherwise <code>false</code>. The default is
-   * <code>true</code>.
-   * <p>
-   * NOTE: To change the default value you need to subclass a {@link Codec} with
-   * a distinct name since this value is final and should not be changed to
-   * prevent the risk of a index corruption. This setting is private to a
-   * {@link Codec}. If you intend to change this value on an existing
-   * {@link Codec} re-indexing is required.
-   * 
-   * @return <code>true</code> iff compound file should be used for
-   *         IndexDocValues, otherwise <code>false</code>.
-   */
-  public boolean getDocValuesUseCFS() {
-    return dvUseCompoundFile;
-  }
-
-  /**
-   * Returns the {@link BytesRef} comparator for sorted IndexDocValue variants.
-   * The default is {@link BytesRef#getUTF8SortedAsUnicodeComparator()}.
-   * <p>
-   * NOTE: To change the default value you need to subclass a {@link Codec} with
-   * a distinct name since this value is final and should not be changed to
-   * prevent the risk of a index corruption. This setting is private to a
-   * {@link Codec}. If you intend to change this value on an existing
-   * {@link Codec} re-indexing is required.
-   */
-  public Comparator<BytesRef> getDocValuesSortComparator() {
-    return docValuesSortComparator;
-  }
   
   @Override
   public String toString() {

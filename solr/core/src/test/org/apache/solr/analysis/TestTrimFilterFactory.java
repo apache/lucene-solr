@@ -21,8 +21,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * Simple tests to ensure this factory is working
@@ -33,7 +33,7 @@ public class TestTrimFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("updateOffsets", "false");
     factory.init(args);
-    TokenStream ts = factory.create(new KeywordTokenizer(new StringReader("trim me    ")));
+    TokenStream ts = factory.create(new MockTokenizer(new StringReader("trim me    "), MockTokenizer.KEYWORD, false));
     assertTokenStreamContents(ts, new String[] { "trim me" });
   }
 }

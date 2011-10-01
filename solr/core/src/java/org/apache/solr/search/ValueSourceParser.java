@@ -483,19 +483,20 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return Math.atan2(a.doubleVal(doc), b.doubleVal(doc));
       }
     });
-    addParser(new Double2Parser("max") {
+    addParser("max", new ValueSourceParser() {
       @Override
-      public double func(int doc, DocValues a, DocValues b) {
-        return Math.max(a.doubleVal(doc), b.doubleVal(doc));
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new MaxFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
-    addParser(new Double2Parser("min") {
+    addParser("min", new ValueSourceParser() {
       @Override
-      public double func(int doc, DocValues a, DocValues b) {
-        return Math.min(a.doubleVal(doc), b.doubleVal(doc));
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
-
     addParser("sqedist", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {

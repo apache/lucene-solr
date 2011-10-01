@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -67,7 +66,7 @@ import org.apache.lucene.util.Version;
  * @deprecated (4.0) use the pattern-based analysis in the analysis/pattern package instead.
  */
 @Deprecated
-public final class PatternAnalyzer extends ReusableAnalyzerBase {
+public final class PatternAnalyzer extends Analyzer {
   
   /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
   public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");
@@ -323,7 +322,8 @@ public final class PatternAnalyzer extends ReusableAnalyzerBase {
    * as one might think - kudos to the Sun regex developers.
    */
   private static final class PatternTokenizer extends Tokenizer {
-    
+
+    private final Pattern pattern;
     private String str;
     private final boolean toLowerCase;
     private Matcher matcher;
@@ -333,6 +333,7 @@ public final class PatternAnalyzer extends ReusableAnalyzerBase {
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public PatternTokenizer(String str, Pattern pattern, boolean toLowerCase) {
+      this.pattern = pattern;
       this.str = str;
       this.matcher = pattern.matcher(str);
       this.toLowerCase = toLowerCase;
@@ -376,6 +377,7 @@ public final class PatternAnalyzer extends ReusableAnalyzerBase {
     public void reset(Reader input) throws IOException {
       super.reset(input);
       this.str = PatternAnalyzer.toString(input);
+      this.matcher = pattern.matcher(this.str);
     }
 
     @Override

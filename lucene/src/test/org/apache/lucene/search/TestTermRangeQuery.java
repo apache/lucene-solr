@@ -190,7 +190,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     assertFalse("queries with different inclusive are not equal", query.equals(other));
   }
 
-  private static class SingleCharAnalyzer extends ReusableAnalyzerBase {
+  private static class SingleCharAnalyzer extends Analyzer {
 
     private static class SingleCharTokenizer extends Tokenizer {
       char[] buffer = new char[1];

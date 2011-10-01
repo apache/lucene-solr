@@ -29,7 +29,7 @@ import com.ibm.icu.text.Normalizer2;
  * Tests the ICUNormalizer2Filter
  */
 public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
-  Analyzer a = new ReusableAnalyzerBase() {
+  Analyzer a = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
@@ -59,7 +59,7 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
   }
   
   public void testAlternate() throws IOException {
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);

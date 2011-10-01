@@ -17,7 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class Direct8 extends PackedInts.ReaderImpl
     values = new byte[valueCount];
   }
 
-  public Direct8(IndexInput in, int valueCount)
+  public Direct8(DataInput in, int valueCount)
           throws IOException {
     super(valueCount, BITS_PER_VALUE);
     byte[] values = new byte[valueCount];

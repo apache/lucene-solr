@@ -23,7 +23,6 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
@@ -435,7 +434,7 @@ public class TestSpans extends LuceneTestCase {
                                 slop,
                                 ordered);
   
-        spanScorer = searcher.createNormalizedWeight(snq).scorer(leaves[i], ScorerContext.def());
+        spanScorer = searcher.createNormalizedWeight(snq).scorer(leaves[i], true, false, leaves[i].reader.getLiveDocs());
       } finally {
         searcher.setSimilarityProvider(oldSim);
       }

@@ -193,7 +193,7 @@ public class FuzzyLikeThisQuery extends Query
     private void addTerms(IndexReader reader,FieldVals f) throws IOException
     {
         if(f.queryString==null) return;
-        TokenStream ts=analyzer.reusableTokenStream(f.fieldName,new StringReader(f.queryString));
+        TokenStream ts=analyzer.tokenStream(f.fieldName, new StringReader(f.queryString));
         CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
         
         int corpusNumDocs=reader.numDocs();

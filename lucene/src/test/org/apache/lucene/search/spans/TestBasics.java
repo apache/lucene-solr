@@ -96,7 +96,7 @@ public class TestBasics extends LuceneTestCase {
     }
   }
   
-  static final Analyzer simplePayloadAnalyzer = new ReusableAnalyzerBase() {
+  static final Analyzer simplePayloadAnalyzer = new Analyzer() {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {

@@ -19,13 +19,13 @@ package org.apache.lucene.analysis.core;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Analyzer;
 
 /**
  * "Tokenizes" the entire stream as a single token. This is useful
  * for data like zip codes, ids, and some product names.
  */
-public final class KeywordAnalyzer extends ReusableAnalyzerBase {
+public final class KeywordAnalyzer extends Analyzer {
   public KeywordAnalyzer() {
   }
 

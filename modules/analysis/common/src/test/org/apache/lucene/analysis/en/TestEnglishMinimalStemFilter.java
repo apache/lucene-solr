@@ -24,13 +24,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * Simple tests for {@link EnglishMinimalStemFilter}
  */
 public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new ReusableAnalyzerBase() {
+  private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {

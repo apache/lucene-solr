@@ -17,7 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.DataOutput;
 
 import java.io.IOException;
 
@@ -38,7 +38,7 @@ class PackedWriter extends PackedInts.Writer {
   private final long[] masks;
   private int written = 0;
 
-  public PackedWriter(IndexOutput out, int valueCount, int bitsPerValue)
+  public PackedWriter(DataOutput out, int valueCount, int bitsPerValue)
                                                             throws IOException {
     super(out, valueCount, bitsPerValue);
 

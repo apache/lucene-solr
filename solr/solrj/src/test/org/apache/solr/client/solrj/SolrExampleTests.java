@@ -364,13 +364,22 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     rsp = server.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 0, rsp.getResults().getNumFound() );
     
+    // TODO: not a great way to test this - timing is easily out
+    // of whack due to parallel tests and various computer specs/load
     Thread.sleep( 1000 ); // wait 1 sec
 
     // now check that it comes out...
     rsp = server.query( new SolrQuery( "id:id3") );
     
-    if(rsp.getResults().getNumFound() == 0) {
-      // wait and try again for slower machines
+    int cnt = 0;
+    while (rsp.getResults().getNumFound() == 0) {
+      // wait and try again for slower/busier machines
+      // and/or parallel test effects.
+      
+      if (cnt++ == 10) {
+        break;
+      }
+      
       Thread.sleep( 2000 ); // wait 2 seconds...
       
       rsp = server.query( new SolrQuery( "id:id3") );
@@ -391,11 +400,18 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // now check that it comes out...
     rsp = server.query( new SolrQuery( "id:id4") );
 
-    if(rsp.getResults().getNumFound() == 0) {
-      // wait and try again for slower machines
+    cnt = 0;
+    while (rsp.getResults().getNumFound() == 0) {
+      // wait and try again for slower/busier machines
+      // and/or parallel test effects.
+      
+      if (cnt++ == 10) {
+        break;
+      }
+      
       Thread.sleep( 2000 ); // wait 2 seconds...
       
-      rsp = server.query( new SolrQuery( "id:id4") );
+      rsp = server.query( new SolrQuery( "id:id3") );
     }
     
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );

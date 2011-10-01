@@ -17,7 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class Direct32 extends PackedInts.ReaderImpl
     values = new int[valueCount];
   }
 
-  public Direct32(IndexInput in, int valueCount) throws IOException {
+  public Direct32(DataInput in, int valueCount) throws IOException {
     super(valueCount, BITS_PER_VALUE);
     int[] values = new int[valueCount];
     for(int i=0;i<valueCount;i++) {

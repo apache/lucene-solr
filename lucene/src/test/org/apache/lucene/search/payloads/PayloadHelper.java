@@ -55,7 +55,7 @@ public class PayloadHelper {
 
   public IndexReader reader;
 
-  public final class PayloadAnalyzer extends ReusableAnalyzerBase {
+  public final class PayloadAnalyzer extends Analyzer {
 
     public PayloadAnalyzer() {
       super(new PerFieldReuseStrategy());
@@ -125,9 +125,9 @@ public class PayloadHelper {
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, TextField.TYPE_STORED, English.intToEnglish(i)));
-      doc.add(new Field(MULTI_FIELD, TextField.TYPE_STORED, English.intToEnglish(i) + "  " + English.intToEnglish(i)));
-      doc.add(new Field(NO_PAYLOAD_FIELD, TextField.TYPE_STORED, English.intToEnglish(i)));
+      doc.add(new Field(FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new Field(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = IndexReader.open(writer, true);

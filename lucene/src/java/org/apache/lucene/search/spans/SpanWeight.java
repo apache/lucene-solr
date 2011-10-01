@@ -23,6 +23,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
@@ -67,13 +68,14 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-    return new SpanScorer(query.getSpans(context), this, similarity.sloppyDocScorer(stats, query.getField(), context));
+  public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+      boolean topScorer, Bits acceptDocs) throws IOException {
+    return new SpanScorer(query.getSpans(context, acceptDocs), this, similarity.sloppyDocScorer(stats, query.getField(), context));
   }
 
   @Override
   public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-    Scorer scorer = scorer(context, ScorerContext.def());
+    Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

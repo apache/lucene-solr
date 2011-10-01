@@ -35,6 +35,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.zookeeper.jmx.ManagedUtil;
 import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ServerConfig;
+import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
@@ -108,9 +109,16 @@ public class ZkTestServer {
      */
     protected void shutdown() throws IOException {
       zooKeeperServer.shutdown();
-      zooKeeperServer.getZKDatabase().close();
-      waitForServerDown(getZkHost() + ":" + getPort(), 5000);
-      cnxnFactory.shutdown();
+      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
+      if (zkDb != null) {
+        zkDb.close();
+      }
+      if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
+        waitForServerDown(getZkHost() + ":" + getPort(), 5000);
+      }
+      if (cnxnFactory != null) {
+        cnxnFactory.shutdown();
+      }
     }
 
     public int getLocalPort() {

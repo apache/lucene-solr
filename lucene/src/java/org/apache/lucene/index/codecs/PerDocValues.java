@@ -51,5 +51,4 @@ public abstract class PerDocValues implements Closeable {
    * Returns all fields this {@link PerDocValues} contains values for.
    */
   public abstract Collection<String> fields();
-  
 }

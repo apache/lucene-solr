@@ -476,7 +476,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(numSpans, cnt);
   }
 
-  final class PayloadAnalyzer extends ReusableAnalyzerBase {
+  final class PayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -530,7 +530,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
   }
   
-  public final class TestPayloadAnalyzer extends ReusableAnalyzerBase {
+  public final class TestPayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {

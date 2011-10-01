@@ -17,7 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
@@ -141,14 +141,14 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
   }
 
   /**
-   * Creates an array with content retrieved from the given IndexInput.
-   * @param in       an IndexInput, positioned at the start of Packed64-content.
+   * Creates an array with content retrieved from the given DataInput.
+   * @param in       a DataInput, positioned at the start of Packed64-content.
    * @param valueCount  the number of elements.
    * @param bitsPerValue the number of bits available for any given value.
    * @throws java.io.IOException if the values for the backing array could not
    *                             be retrieved.
    */
-  public Packed64(IndexInput in, int valueCount, int bitsPerValue)
+  public Packed64(DataInput in, int valueCount, int bitsPerValue)
                                                             throws IOException {
     super(valueCount, bitsPerValue);
     int size = size(valueCount, bitsPerValue);

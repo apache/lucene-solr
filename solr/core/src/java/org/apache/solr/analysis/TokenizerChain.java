@@ -17,10 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.*;
 
 import java.io.Reader;
 
@@ -52,11 +49,11 @@ public final class TokenizerChain extends SolrAnalyzer {
   public TokenFilterFactory[] getTokenFilterFactories() { return filters; }
 
   @Override
-  public Reader charStream(Reader reader){
-    if( charFilters != null && charFilters.length > 0 ){
+  public Reader initReader(Reader reader) {
+    if (charFilters != null && charFilters.length > 0) {
       CharStream cs = CharReader.get( reader );
-      for (int i=0; i<charFilters.length; i++) {
-        cs = charFilters[i].create(cs);
+      for (CharFilterFactory charFilter : charFilters) {
+        cs = charFilter.create(cs);
       }
       reader = cs;
     }
@@ -64,13 +61,13 @@ public final class TokenizerChain extends SolrAnalyzer {
   }
 
   @Override
-  public TokenStreamInfo getStream(String fieldName, Reader reader) {
-    Tokenizer tk = tokenizer.create(charStream(reader));
+  protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
+    Tokenizer tk = tokenizer.create(aReader);
     TokenStream ts = tk;
-    for (int i=0; i<filters.length; i++) {
-      ts = filters[i].create(ts);
+    for (TokenFilterFactory filter : filters) {
+      ts = filter.create(ts);
     }
-    return new TokenStreamInfo(tk,ts);
+    return new TokenStreamComponents(tk, ts);
   }
 
   @Override

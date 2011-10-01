@@ -95,10 +95,10 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link LowerCaseTokenizer} filtered with
    *         {@link StopFilter}
    */

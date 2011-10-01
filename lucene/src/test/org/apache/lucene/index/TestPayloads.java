@@ -405,7 +405,7 @@ public class TestPayloads extends LuceneTestCase {
     /**
      * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
      */
-    private static class PayloadAnalyzer extends ReusableAnalyzerBase {
+    private static class PayloadAnalyzer extends Analyzer {
         Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
 
         public PayloadAnalyzer() {
@@ -611,14 +611,14 @@ public class TestPayloads extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
                                                      new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     Document doc = new Document();
-    doc.add(new Field("hasMaybepayload", TextField.TYPE_STORED, "here we go"));
+    doc.add(new Field("hasMaybepayload", "here we go", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
 
     writer = new RandomIndexWriter(random, dir,
                                    new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     doc = new Document();
-    doc.add(new Field("hasMaybepayload2", TextField.TYPE_STORED, "here we go"));
+    doc.add(new Field("hasMaybepayload2", "here we go", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.optimize();

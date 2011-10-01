@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -32,7 +31,7 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  * Simple tests for {@link RussianLightStemFilter}
  */
 public class TestRussianLightStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new ReusableAnalyzerBase() {
+  private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {

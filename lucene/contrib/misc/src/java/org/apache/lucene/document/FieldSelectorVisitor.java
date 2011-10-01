@@ -90,7 +90,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
       ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
       ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-      doc.add(new Field(fieldInfo.name, ft, new String(b, "UTF-8"))); 
+      doc.add(new Field(fieldInfo.name, new String(b, "UTF-8"), ft));
       return accept != FieldSelectorResult.LOAD;
     case LAZY_LOAD:
     case LATENT:

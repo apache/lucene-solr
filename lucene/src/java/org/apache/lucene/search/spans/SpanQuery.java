@@ -23,12 +23,13 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
   /** Expert: Returns the matches for this query in an index.  Used internally
    * to search for spans. */
-  public abstract Spans getSpans(AtomicReaderContext context) throws IOException;
+  public abstract Spans getSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 
   /** Returns the name of the field matched by this query.*/
   public abstract String getField();

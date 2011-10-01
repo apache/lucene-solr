@@ -117,7 +117,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     String[] y = StandardTokenizer.TOKEN_TYPES;
   }
 
-  private static class LowerCaseWhitespaceAnalyzer extends ReusableAnalyzerBase {
+  private static class LowerCaseWhitespaceAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {

@@ -59,13 +59,13 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   /** Test reuse of MorfologikFilter with leftover stems. */
   public final void testLeftoverStems() throws IOException {
     Analyzer a = getTestAnalyzer();
-    TokenStream ts_1 = a.reusableTokenStream("dummy", new StringReader("liście"));
+    TokenStream ts_1 = a.tokenStream("dummy", new StringReader("liście"));
     CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
     ts_1.reset();
     ts_1.incrementToken();
     assertEquals("first stream", "liść", termAtt_1.toString());
 
-    TokenStream ts_2 = a.reusableTokenStream("dummy", new StringReader("danych"));
+    TokenStream ts_2 = a.tokenStream("dummy", new StringReader("danych"));
     CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
     ts_2.reset();
     ts_2.incrementToken();
@@ -96,7 +96,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test morphosyntactic annotations. */
   public final void testPOSAttribute() throws IOException {
-    TokenStream ts = getTestAnalyzer().reusableTokenStream("dummy", new StringReader("liście"));
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader("liście"));
 
     assertPOSToken(ts, "liść",  "subst:pl:acc.nom.voc:m3");
     assertPOSToken(ts, "list",  "subst:sg:loc.voc:m3");

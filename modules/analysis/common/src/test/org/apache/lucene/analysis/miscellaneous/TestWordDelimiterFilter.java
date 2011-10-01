@@ -213,7 +213,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String field, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -241,7 +241,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 1, 1, 1 });
     
     /* analyzer that will consume tokens with large position increments */
-    Analyzer a2 = new ReusableAnalyzerBase() {
+    Analyzer a2 = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String field, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -274,7 +274,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 6, 14, 19 },
         new int[] { 1, 11, 1 });
 
-    Analyzer a3 = new ReusableAnalyzerBase() {
+    Analyzer a3 = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String field, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);

@@ -597,15 +597,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   {
     Document doc = new Document();
     doc.add(new TextField("content", "aaa"));
-    doc.add(new Field("id", StringField.TYPE_STORED, Integer.toString(id)));
+    doc.add(new Field("id", Integer.toString(id), StringField.TYPE_STORED));
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setStoreTermVectors(true);
     customType2.setStoreTermVectorPositions(true);
     customType2.setStoreTermVectorOffsets(true);
-    doc.add(new Field("autf8", customType2, "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd"));
-    doc.add(new Field("utf8", customType2, "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd"));
-    doc.add(new Field("content2", customType2, "here is more content with aaa aaa aaa"));
-    doc.add(new Field("fie\u2C77ld", customType2, "field with non-ascii name"));
+    doc.add(new Field("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", customType2));
+    doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", customType2));
+    doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
+    doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
     doc.add(new NumericField("trieInt", 4).setIntValue(id));
     doc.add(new NumericField("trieLong", 4).setLongValue(id));
@@ -616,12 +616,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setIndexOptions(IndexOptions.DOCS_ONLY);
-    Field f = new Field("content3", customType, "aaa");
+    Field f = new Field("content3", "aaa", customType);
     doc.add(f);
     FieldType customType2 = new FieldType();
     customType2.setStored(true);
     customType2.setIndexOptions(IndexOptions.DOCS_ONLY);
-    f = new Field("content4", customType2, "aaa");
+    f = new Field("content4", "aaa", customType2);
     doc.add(f);
     writer.addDocument(doc);
   }

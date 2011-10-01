@@ -103,7 +103,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testPositionIncrementGap() throws IOException {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
@@ -138,7 +138,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testTokenReuse() throws IOException {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);

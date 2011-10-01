@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.Collator;
 import java.text.DateFormat;
 import java.util.*;
 
@@ -474,30 +473,27 @@ public abstract class QueryParserBase {
 
     TokenStream source;
     try {
-      source = analyzer.reusableTokenStream(field, new StringReader(queryText));
+      source = analyzer.tokenStream(field, new StringReader(queryText));
       source.reset();
     } catch (IOException e) {
-      source = analyzer.tokenStream(field, new StringReader(queryText));
+      throw new ParseException("Unable to initialize TokenStream to analyze query text", e);
     }
     CachingTokenFilter buffer = new CachingTokenFilter(source);
     TermToBytesRefAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
-    boolean success = false;
     try {
       buffer.reset();
-      success = true;
     } catch (IOException e) {
-      // success==false if we hit an exception
+      throw new ParseException("Unable to initialize TokenStream to analyze query text", e);
     }
-    if (success) {
-      if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
-        termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
-      }
-      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-      }
+
+    if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
+      termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
+    }
+    if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
     }
 
     int positionCount = 0;
@@ -529,7 +525,7 @@ public abstract class QueryParserBase {
       source.close();
     }
     catch (IOException e) {
-      // ignore
+      throw new ParseException("Cannot close TokenStream analyzing query text", e);
     }
 
     BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
@@ -786,10 +782,10 @@ public abstract class QueryParserBase {
     TokenStream source;
       
     try {
-      source = analyzer.reusableTokenStream(field, new StringReader(part));
+      source = analyzer.tokenStream(field, new StringReader(part));
       source.reset();
     } catch (IOException e) {
-      source = analyzer.tokenStream(field, new StringReader(part));
+      throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);
     }
       
     TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
@@ -808,7 +804,9 @@ public abstract class QueryParserBase {
     try {
       source.end();
       source.close();
-    } catch (IOException ignored) {}
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to end & close TokenStream after analyzing range part: " + part, e);
+    }
     
     return new BytesRef(bytes);
   }

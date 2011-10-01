@@ -172,7 +172,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         adoc("id", "14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
 
-    assertTrue(trigger.waitForNewSearcher(10000));
+    assertTrue(trigger.waitForNewSearcher(15000));
 
     req.setContentStreams( toContentStreams(
         adoc("id", "15", "subject", "info" ), null ) );
@@ -216,7 +216,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
 
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForNewSearcher(30000));
+    assertTrue(trigger.waitForNewSearcher(45000));
     trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -330,7 +330,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     }
     req.close();
     
-    assertTrue(softTrigger.waitForNewSearcher(10000));
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
     
     assertTrue(trigger.waitForNewSearcher(10000));
@@ -489,11 +489,11 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertTrue("expected:>=2 but got " + totalCommits, totalCommits >= 2);
     assertQ("deleted and time has passed", req("id:529") ,"//result[@numFound=0]" );
     
-    // now make the call 5 times really fast and make sure it 
-    // only commits once
+    // now make the call 2 times really fast and make sure id:500
+    // is not visible right away
     req.setContentStreams( toContentStreams(
         adoc("id", "500" ), null ) );
-    for( int i=0;i<5; i++ ) {
+    for( int i=0;i<2; i++ ) {
       handler.handleRequest( req, rsp );
     }
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );

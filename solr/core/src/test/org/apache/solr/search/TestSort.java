@@ -150,8 +150,8 @@ public class TestSort extends SolrTestCaseJ4 {
 
   public void testSort() throws Exception {
     Directory dir = new RAMDirectory();
-    Field f = new Field("f", StringField.TYPE_UNSTORED,"0");
-    Field f2 = new Field("f2", StringField.TYPE_UNSTORED,"0");
+    Field f = new Field("f", "0", StringField.TYPE_UNSTORED);
+    Field f2 = new Field("f2", "0", StringField.TYPE_UNSTORED);
 
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
       IndexWriter iw = new IndexWriter(

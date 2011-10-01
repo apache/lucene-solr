@@ -86,7 +86,7 @@ public abstract class Tokenizer extends TokenStream {
   }
 
   /** Expert: Reset the tokenizer to a new reader.  Typically, an
-   *  analyzer (in its reusableTokenStream method) will use
+   *  analyzer (in its tokenStream method) will use
    *  this to re-use a previously created tokenizer. */
   public void reset(Reader input) throws IOException {
     this.input = input;

@@ -137,7 +137,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     DataTokenStream dts2 = new DataTokenStream("2",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
     // this test requires that no payloads ever be randomly present!
-    final Analyzer noPayloadsAnalyzer = new ReusableAnalyzerBase() {
+    final Analyzer noPayloadsAnalyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.KEYWORD, false));

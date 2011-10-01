@@ -171,8 +171,8 @@ public class TestIndexableField extends LuceneTestCase {
       if (numeric()) {
         return new NumericField(name()).setIntValue(counter).tokenStream(analyzer);
       }
-      return readerValue() != null ? analyzer.reusableTokenStream(name(), readerValue()) :
-          analyzer.reusableTokenStream(name(), new StringReader(stringValue()));
+      return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
+          analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
   }
 

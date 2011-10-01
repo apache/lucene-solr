@@ -42,7 +42,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * </ul>
  * @see MockTokenizer
  */
-public final class MockAnalyzer extends ReusableAnalyzerBase {
+public final class MockAnalyzer extends Analyzer {
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;
   private final CharacterRunAutomaton filter;

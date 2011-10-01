@@ -22,7 +22,7 @@ import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.Weight.ScorerContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -77,6 +77,7 @@ public class QueryValueSource extends ValueSource {
 
 class QueryDocValues extends FloatDocValues {
   final AtomicReaderContext readerContext;
+  final Bits acceptDocs;
   final Weight weight;
   final float defVal;
   final Map fcontext;
@@ -95,6 +96,7 @@ class QueryDocValues extends FloatDocValues {
     super(vs);
 
     this.readerContext = readerContext;
+    this.acceptDocs = readerContext.reader.getLiveDocs();
     this.defVal = vs.defVal;
     this.q = vs.q;
     this.fcontext = fcontext;
@@ -121,7 +123,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return defVal;
-        scorer = weight.scorer(readerContext, ScorerContext.def());
+        scorer = weight.scorer(readerContext, true, false, acceptDocs);
         if (scorer==null) {
           noMatches = true;
           return defVal;
@@ -152,7 +154,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return false;
-        scorer = weight.scorer(readerContext, ScorerContext.def());
+        scorer = weight.scorer(readerContext, true, false, acceptDocs);
         scorerDoc = -1;
         if (scorer==null) {
           noMatches = true;
@@ -210,7 +212,7 @@ class QueryDocValues extends FloatDocValues {
             mval.exists = false;
             return;
           }
-          scorer = weight.scorer(readerContext, ScorerContext.def());
+          scorer = weight.scorer(readerContext, true, false, acceptDocs);
           scorerDoc = -1;
           if (scorer==null) {
             noMatches = true;

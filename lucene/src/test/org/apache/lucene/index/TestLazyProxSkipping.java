@@ -68,7 +68,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     private void createIndex(int numHits) throws IOException {
         int numDocs = 500;
         
-        final Analyzer analyzer = new ReusableAnalyzerBase() {
+        final Analyzer analyzer = new Analyzer() {
           @Override
           public TokenStreamComponents createComponents(String fieldName, Reader reader) {
             return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));

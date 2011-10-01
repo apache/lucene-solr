@@ -31,7 +31,7 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.3
 
 
-Upgrading from Solr 3.4-dev
+Upgrading from Solr 3.5-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -91,6 +91,8 @@ New Features
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
   (Massimo Schiavon, Mark Miller)
+  SOLR-2799: Update CloudState incrementally rather than always reading the data at each zk 
+  node. (Jamie Johnson via Mark Miller)
 
 * SOLR-1729: Evaluation of NOW for date math is done only once per request for
   consistency, and is also propagated to shards in distributed search.
@@ -368,6 +370,12 @@ Bug Fixes
 
 * SOLR-2780: Fixed issue where multi select facets didn't respect group.truncate parameter.
   (Martijn van Groningen, Ramzi Alqrainy)
+  
+* SOLR-2793: In rare cases (most likely during shutdown), a SolrIndexSearcher can be left
+  open if the executor rejects a task. (Mark Miller)
+
+* SOLR-2791: Replication: abortfetch command is broken if replication was started
+  by fetchindex command instead of a regular poll (Yury Kats via shalin)
 
  Other Changes
 ----------------------
@@ -389,6 +397,11 @@ Bug Fixes
 * SOLR-2771: Solr modules' tests should not depend on solr-core test classes;
   move BufferingRequestProcessor from solr-core tests to test-framework so that
   the Solr Cell module can use it. (janhoy, Steve Rowe)
+
+* LUCENE-3457: Upgrade commons-compress to 1.2 (Doron Cohen)
+
+* SOLR-2757: min() and max() functions now support an arbitrary number of 
+  ValueSources  (Bill Bell via hossman)
 
 ==================  3.4.0  ==================
 

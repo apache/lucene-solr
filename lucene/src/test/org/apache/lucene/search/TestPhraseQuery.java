@@ -55,7 +55,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    Analyzer analyzer = new ReusableAnalyzerBase() {
+    Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
         return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
@@ -636,7 +636,7 @@ public class TestPhraseQuery extends LuceneTestCase {
               break;
             }
           }
-          TokenStream ts = analyzer.reusableTokenStream("ignore", new StringReader(term));
+          TokenStream ts = analyzer.tokenStream("ignore", new StringReader(term));
           CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
           ts.reset();
           while(ts.incrementToken()) {

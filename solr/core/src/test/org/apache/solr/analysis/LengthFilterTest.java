@@ -21,8 +21,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 public class LengthFilterTest extends BaseTokenTestCase {
 
@@ -34,7 +34,7 @@ public class LengthFilterTest extends BaseTokenTestCase {
     // default: args.put("enablePositionIncrements", "false");
     factory.init(args);
     String test = "foo foobar super-duper-trooper";
-    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(test)));
+    TokenStream stream = factory.create(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 1 });
 
     factory = new LengthFilterFactory();
@@ -43,7 +43,7 @@ public class LengthFilterTest extends BaseTokenTestCase {
     args.put(LengthFilterFactory.MAX_KEY, String.valueOf(10));
     args.put("enablePositionIncrements", "true");
     factory.init(args);
-    stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(test)));
+    stream = factory.create(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 2 });
   }
 }

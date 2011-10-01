@@ -57,7 +57,7 @@ public class TermsFilterBuilder implements FilterBuilder {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 
     try {
-      TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+      TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       Term term = null;
       BytesRef bytes = termAtt.getBytesRef();

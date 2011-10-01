@@ -167,11 +167,12 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
   }
 
   /**
-   * Resets this stream to the beginning. This is an optional operation, so
-   * subclasses may or may not implement this method. {@link #reset()} is not needed for
-   * the standard indexing process. However, if the tokens of a
-   * <code>TokenStream</code> are intended to be consumed more than once, it is
-   * necessary to implement {@link #reset()}. Note that if your TokenStream
+   * This method is called by a consumer before it begins consumption using
+   * {@link #incrementToken()}.
+   * <p/>
+   * Resets this stream to the beginning.  As all TokenStreams must be reusable,
+   * any implementations which have state that needs to be reset between usages
+   * of the TokenStream, must implement this method. Note that if your TokenStream
    * caches tokens and feeds them back again after a reset, it is imperative
    * that you clone the tokens when you store them away (on the first pass) as
    * well as when you return them (on future passes after {@link #reset()}).

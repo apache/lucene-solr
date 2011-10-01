@@ -84,8 +84,16 @@ public class CloudState {
         }
         Map<String,Slice> slices = new HashMap<String,Slice>();
         for (String shardIdZkPath : shardIdNames) {
+          Slice oldSlice = null;
+          if (oldCloudState.getCollectionStates().containsKey(collection)
+              && oldCloudState.getCollectionStates().get(collection)
+                  .containsKey(shardIdZkPath)) {
+            oldSlice = oldCloudState.getCollectionStates().get(collection)
+                .get(shardIdZkPath);
+          }
+          
           Map<String,ZkNodeProps> shardsMap = readShards(zkClient, shardIdPaths
-              + "/" + shardIdZkPath);
+              + "/" + shardIdZkPath, oldSlice);
           Slice slice = new Slice(shardIdZkPath, shardsMap);
           slices.put(shardIdZkPath, slice);
         }
@@ -108,7 +116,7 @@ public class CloudState {
    * @throws InterruptedException
    * @throws IOException
    */
-  private static Map<String,ZkNodeProps> readShards(SolrZkClient zkClient, String shardsZkPath)
+  private static Map<String,ZkNodeProps> readShards(SolrZkClient zkClient, String shardsZkPath, Slice oldSlice)
       throws KeeperException, InterruptedException, IOException {
 
     Map<String,ZkNodeProps> shardNameToProps = new HashMap<String,ZkNodeProps>();
@@ -120,12 +128,18 @@ public class CloudState {
 
     List<String> shardZkPaths = zkClient.getChildren(shardsZkPath, null);
     
-    for(String shardPath : shardZkPaths) {
-      byte[] data = zkClient.getData(shardsZkPath + "/" + shardPath, null,
-          null);
+    for (String shardPath : shardZkPaths) {
+      ZkNodeProps props;
+      if (oldSlice != null && oldSlice.getShards().containsKey(shardPath)) {
+        props = oldSlice.getShards().get(shardPath);
+      } else {
+        byte[] data = zkClient.getData(shardsZkPath + "/" + shardPath, null,
+            null);
+        
+        props = new ZkNodeProps();
+        props.load(data);
+      }
       
-      ZkNodeProps props = new ZkNodeProps();
-      props.load(data);
       shardNameToProps.put(shardPath, props);
     }
 

@@ -101,7 +101,7 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
    * Set maximum allowed token length.  If a token is seen
    * that exceeds this length then it is discarded.  This
    * setting only takes effect the next time tokenStream or
-   * reusableTokenStream is called.
+   * tokenStream is called.
    */
   public void setMaxTokenLength(int length) {
     maxTokenLength = length;

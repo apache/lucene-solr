@@ -189,4 +189,4 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 //        WB3b.  ÷ (Newline | CR | LF)
 //        WB14.  Any ÷ Any
 //
-[^] { /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }
+[^] { /* Break so we don't hit fall-through warning: */ break; /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }

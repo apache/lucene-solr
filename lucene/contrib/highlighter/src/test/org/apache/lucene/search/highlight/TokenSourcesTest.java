@@ -48,7 +48,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TokenSourcesTest extends LuceneTestCase {
   private static final String FIELD = "text";
 
-  private static final class OverlapAnalyzer extends ReusableAnalyzerBase {
+  private static final class OverlapAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -109,7 +109,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -158,7 +158,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -206,7 +206,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -255,7 +255,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
+      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

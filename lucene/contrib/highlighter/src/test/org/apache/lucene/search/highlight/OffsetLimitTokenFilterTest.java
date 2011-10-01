@@ -49,7 +49,7 @@ public class OffsetLimitTokenFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[] {"short", "toolong",
         "evenmuchlongertext"});
     
-    checkOneTermReuse(new ReusableAnalyzerBase() {
+    checkOneTermReuse(new Analyzer() {
       
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {

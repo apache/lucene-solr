@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.cn;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer; // javadoc @link
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 
@@ -31,14 +30,14 @@ import org.apache.lucene.analysis.Tokenizer;
  * This analyzer will be removed in Lucene 5.0
  */
 @Deprecated
-public final class ChineseAnalyzer extends ReusableAnalyzerBase {
+public final class ChineseAnalyzer extends Analyzer {
 
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link ChineseTokenizer} filtered with
    *         {@link ChineseFilter}
    */

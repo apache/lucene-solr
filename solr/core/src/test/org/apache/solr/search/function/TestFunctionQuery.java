@@ -571,7 +571,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     dofunc("sqrt(9)", Math.sqrt(9));
     dofunc("cbrt(8)", Math.cbrt(8));
     dofunc("max(0,1)", Math.max(0,1));
+    dofunc("max(10,3,8,7,5,4)", Math.max(Math.max(Math.max(Math.max(Math.max(10,3),8),7),5),4));
     dofunc("min(0,1)", Math.min(0,1));
+    dofunc("min(10,3,8,7,5,4)", Math.min(Math.min(Math.min(Math.min(Math.min(10,3),8),7),5),4));
     dofunc("log(100)", Math.log10(100));
     dofunc("ln(3)", Math.log(3));
     dofunc("exp(1)", Math.exp(1));

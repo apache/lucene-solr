@@ -142,7 +142,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
-    doc.add( new Field( F, customType, "aaa" ) );
+    doc.add( new Field( F, "aaa", customType) );
     //doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();

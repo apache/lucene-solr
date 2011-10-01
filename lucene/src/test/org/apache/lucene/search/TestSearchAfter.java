@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -43,8 +43,8 @@ public class TestSearchAfter extends LuceneTestCase {
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
-      document.add(newField("english", English.intToEnglish(i), StringField.TYPE_UNSTORED));
-      document.add(newField("oddeven", (i % 2 == 0) ? "even" : "odd", StringField.TYPE_UNSTORED));
+      document.add(newField("english", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      document.add(newField("oddeven", (i % 2 == 0) ? "even" : "odd", TextField.TYPE_UNSTORED));
       iw.addDocument(document);
     }
     reader = iw.getReader();

@@ -21,8 +21,8 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
@@ -210,12 +210,12 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     factoryDefault.inform(loader);
     
     TokenStream ts = factoryDefault.create(
-        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader(testText)));
+        new MockTokenizer(new StringReader(testText), MockTokenizer.WHITESPACE, false));
     BaseTokenTestCase.assertTokenStreamContents(ts, 
         new String[] { "I", "borrowed", "5", "400", "00", "540000", "at", "25", "interest", "rate", "interestrate" });
 
     ts = factoryDefault.create(
-        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader("foo\u200Dbar")));
+        new MockTokenizer(new StringReader("foo\u200Dbar"), MockTokenizer.WHITESPACE, false));
     BaseTokenTestCase.assertTokenStreamContents(ts, 
         new String[] { "foo", "bar", "foobar" });
 
@@ -228,13 +228,13 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     factoryCustom.inform(loader);
     
     ts = factoryCustom.create(
-        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader(testText)));
+        new MockTokenizer(new StringReader(testText), MockTokenizer.WHITESPACE, false));
     BaseTokenTestCase.assertTokenStreamContents(ts, 
         new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interest", "rate", "interestrate" });
     
     /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
     ts = factoryCustom.create(
-        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader("foo\u200Dbar")));
+        new MockTokenizer(new StringReader("foo\u200Dbar"), MockTokenizer.WHITESPACE, false));
     BaseTokenTestCase.assertTokenStreamContents(ts, 
         new String[] { "foo\u200Dbar" });
   }

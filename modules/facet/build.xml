@@ -29,6 +29,14 @@
   <property name="build.dir" location="build/" />
   <property name="dist.dir" location="dist/" />
 
+  <property name="examples.dir" location="src/examples"/>
+
+  <path id="classpath">
+    <path refid="base.classpath" />
+    <pathelement location="${build.dir}/classes/java" />
+    <pathelement location="${build.dir}/classes/examples" />
+  </path>
+    
   <path id="examples.classpath">
     <path refid="classpath" />
     <pathelement location="${build.dir}/classes/java" />
@@ -49,7 +57,7 @@
   </path>
 
   <target name="compile-examples" description="Compiles Facets examples">
-    <compile srcdir="src/examples" destdir="${build.dir}/classes/examples">
+    <compile srcdir="${examples.dir}" destdir="${build.dir}/classes/examples">
       <classpath refid="examples.classpath" />
     </compile>
   </target>
@@ -64,4 +72,22 @@
 
   <target name="jar-core" depends="common.jar-core,jar-examples" />
 
+  <target name="javadocs" depends="compile-core">
+	<sequential>
+      <mkdir dir="${javadoc.dir}/contrib-${name}"/>
+      <copy todir="${javadoc.dir}/contrib-${name}" file="docs/userguide.html" />
+      <!-- javadoc core classes -->
+      <invoke-javadoc
+        destdir="${javadoc.dir}/contrib-${name}"
+        title="${Name} ${version} contrib-${name} API">
+        <sources>
+          <link href=""/>
+          <packageset dir="${src.dir}"/>
+          <packageset dir="${examples.dir}"/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}/contrib-${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+    </sequential>
+  </target>
+    
 </project>

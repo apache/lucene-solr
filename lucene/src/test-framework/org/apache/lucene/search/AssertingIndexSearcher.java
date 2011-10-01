@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.util.Bits;
 
 /** 
  * Helper class that adds some extra checks to ensure correct
@@ -67,8 +68,9 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-        return w.scorer(context, scorerContext);
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+          boolean topScorer, Bits acceptDocs) throws IOException {
+        return w.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
       }
 
       @Override

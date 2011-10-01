@@ -128,7 +128,7 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  public static final class QPTestAnalyzer extends ReusableAnalyzerBase {
+  public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters MockTokenizer with StopFilter. */
     @Override
@@ -345,7 +345,7 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  private class SimpleCJKAnalyzer extends ReusableAnalyzerBase {
+  private class SimpleCJKAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       return new TokenStreamComponents(new SimpleCJKTokenizer(reader));
@@ -1242,7 +1242,7 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  private class CannedAnalyzer extends ReusableAnalyzerBase {
+  private class CannedAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String ignored, Reader alsoIgnored) {
       return new TokenStreamComponents(new CannedTokenStream());

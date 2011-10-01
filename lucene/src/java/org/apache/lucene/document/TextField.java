@@ -50,16 +50,16 @@ public final class TextField extends Field {
 
   /** Creates a new un-stored TextField */
   public TextField(String name, Reader reader) {
-    super(name, TextField.TYPE_UNSTORED, reader);
+    super(name, reader, TextField.TYPE_UNSTORED);
   }
 
   /** Creates a new un-stored TextField */
   public TextField(String name, String value) {
-    super(name, TextField.TYPE_UNSTORED, value);
+    super(name, value, TextField.TYPE_UNSTORED);
   }
   
   /** Creates a new un-stored TextField */
   public TextField(String name, TokenStream stream) {
-    super(name, TextField.TYPE_UNSTORED, stream);
+    super(name, stream, TextField.TYPE_UNSTORED);
   }
 }

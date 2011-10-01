@@ -103,11 +103,11 @@ public class DocMaker {
         numericFields = new HashMap<String,NumericField>();
         
         // Initialize the map with the default fields.
-        fields.put(BODY_FIELD, new Field(BODY_FIELD, bodyFt, ""));
-        fields.put(TITLE_FIELD, new Field(TITLE_FIELD, ft, ""));
-        fields.put(DATE_FIELD, new Field(DATE_FIELD, ft, ""));
-        fields.put(ID_FIELD, new Field(ID_FIELD, StringField.TYPE_STORED, ""));
-        fields.put(NAME_FIELD, new Field(NAME_FIELD, ft, ""));
+        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyFt));
+        fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", ft));
+        fields.put(DATE_FIELD, new Field(DATE_FIELD, "", ft));
+        fields.put(ID_FIELD, new Field(ID_FIELD, "", StringField.TYPE_STORED));
+        fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
 
         numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD));
         numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD));
@@ -127,12 +127,12 @@ public class DocMaker {
      */
     Field getField(String name, FieldType ft) {
       if (!reuseFields) {
-        return new Field(name, ft, "");
+        return new Field(name, "", ft);
       }
       
       Field f = fields.get(name);
       if (f == null) {
-        f = new Field(name, ft, "");
+        f = new Field(name, "", ft);
         fields.put(name, f);
       }
       return f;

@@ -143,7 +143,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
-    Field f = new Field("field", customType, stream);
+    Field f = new Field("field", stream, customType);
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);

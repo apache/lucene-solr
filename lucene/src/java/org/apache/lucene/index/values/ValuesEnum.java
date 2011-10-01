@@ -44,9 +44,9 @@ import org.apache.lucene.util.LongsRef;
 public abstract class ValuesEnum extends DocIdSetIterator {
   private AttributeSource source;
   private final ValueType enumType;
-  protected BytesRef bytesRef;
-  protected FloatsRef floatsRef;
-  protected LongsRef intsRef;
+  protected BytesRef bytesRef = new BytesRef(1);
+  protected FloatsRef floatsRef = new FloatsRef(1);
+  protected LongsRef intsRef = new LongsRef(1);
 
   /**
    * Creates a new {@link ValuesEnum} for the given type. The
@@ -62,28 +62,6 @@ public abstract class ValuesEnum extends DocIdSetIterator {
   protected ValuesEnum(AttributeSource source, ValueType enumType) {
     this.source = source;
     this.enumType = enumType;
-    switch (enumType) {
-    case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_SORTED:
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_VAR_DEREF:
-    case BYTES_VAR_SORTED:
-    case BYTES_VAR_STRAIGHT:
-      bytesRef = new BytesRef();
-      break;
-    case FIXED_INTS_16:
-    case FIXED_INTS_32:
-    case FIXED_INTS_64:
-    case FIXED_INTS_8:
-    case VAR_INTS:
-      intsRef = new LongsRef(1);
-      break;
-    case FLOAT_32:
-    case FLOAT_64:
-      floatsRef = new FloatsRef(1);
-      break;
-    
-    }
   }
 
   /**

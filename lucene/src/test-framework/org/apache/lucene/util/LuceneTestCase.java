@@ -43,7 +43,6 @@ import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
-import org.apache.lucene.index.codecs.mockrandom.MockRandomDocValuesCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
@@ -281,8 +280,6 @@ public abstract class LuceneTestCase extends Assert {
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
     swapCodec(new MockRandomCodec(random), cp);
-    // give docvalues non-cfs testcoverage
-    swapCodec(new MockRandomDocValuesCodec(random), cp);
 
     return cp.lookup(codec);
   }
@@ -1159,7 +1156,7 @@ public abstract class LuceneTestCase extends Assert {
   public static Field newField(Random random, String name, String value, FieldType type) {
     if (usually(random) || !type.indexed()) {
       // most of the time, don't modify the params
-      return new Field(name, type, value);
+      return new Field(name, value, type);
     }
 
     FieldType newType = new FieldType(type);
@@ -1186,7 +1183,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     */
     
-    return new Field(name, newType, value);
+    return new Field(name, value, newType);
   }
   
   /** return a random Locale from the available locales on the system */

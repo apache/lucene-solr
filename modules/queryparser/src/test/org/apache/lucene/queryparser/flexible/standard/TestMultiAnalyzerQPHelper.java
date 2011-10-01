@@ -143,7 +143,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
    * Expands "multi" to "multi" and "multi2", both at the same position, and
    * expands "triplemulti" to "triplemulti", "multi3", and "multi2".
    */
-  private class MultiAnalyzer extends ReusableAnalyzerBase {
+  private class MultiAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -210,7 +210,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
    * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1). Does not work
    * correctly for input other than "the quick brown ...".
    */
-  private class PosIncrementAnalyzer extends ReusableAnalyzerBase {
+  private class PosIncrementAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {

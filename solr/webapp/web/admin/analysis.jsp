@@ -152,7 +152,7 @@
     if (qval!="" && highlight) {
       Reader reader = new StringReader(qval);
       Analyzer analyzer =  field.getType().getQueryAnalyzer();
-      TokenStream tstream = analyzer.reusableTokenStream(field.getName(),reader);
+      TokenStream tstream = analyzer.tokenStream(field.getName(), reader);
       TermToBytesRefAttribute bytesAtt = tstream.getAttribute(TermToBytesRefAttribute.class);
       tstream.reset();
       matches = new HashSet<BytesRef>();
@@ -204,7 +204,7 @@
          }
        }
 
-       TokenStream tstream = tfac.create(tchain.charStream(new StringReader(val)));
+       TokenStream tstream = tfac.create(tchain.initReader(new StringReader(val)));
        List<AttributeSource> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());
@@ -241,7 +241,7 @@
        }
 
      } else {
-       TokenStream tstream = analyzer.reusableTokenStream(field.getName(),new StringReader(val));
+       TokenStream tstream = analyzer.tokenStream(field.getName(), new StringReader(val));
        tstream.reset();
        List<AttributeSource> tokens = getTokens(tstream);
        if (verbose) {

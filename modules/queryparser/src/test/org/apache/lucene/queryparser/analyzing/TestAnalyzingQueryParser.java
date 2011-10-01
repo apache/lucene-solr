@@ -134,7 +134,7 @@ final class TestFoldingFilter extends TokenFilter {
   }
 }
 
-final class ASCIIAnalyzer extends ReusableAnalyzerBase {
+final class ASCIIAnalyzer extends Analyzer {
 
   @Override
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {

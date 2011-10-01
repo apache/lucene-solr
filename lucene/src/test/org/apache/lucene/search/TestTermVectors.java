@@ -67,9 +67,9 @@ public class TestTermVectors extends LuceneTestCase {
       } else {
         ft.setStoreTermVectors(true);
       }
-      doc.add(new Field("field", ft, English.intToEnglish(i)));
+      doc.add(new Field("field", English.intToEnglish(i), ft));
       //test no term vectors too
-      doc.add(new Field("noTV", TextField.TYPE_STORED, English.intToEnglish(i)));
+      doc.add(new Field("noTV", English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

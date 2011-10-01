@@ -28,13 +28,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * Simple tests for {@link GalicianStemFilter}
  */
 public class TestGalicianStemFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer = new ReusableAnalyzerBase() {
+  private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {

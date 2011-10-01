@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.analysis.TokenStream;
@@ -55,7 +54,7 @@ import org.apache.lucene.util.Version;
  * </p>
  * @lucene.experimental
  */
-public final class SmartChineseAnalyzer extends ReusableAnalyzerBase {
+public final class SmartChineseAnalyzer extends Analyzer {
 
   private final Set<?> stopWords;
   

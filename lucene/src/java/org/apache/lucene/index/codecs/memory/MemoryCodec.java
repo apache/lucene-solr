@@ -787,22 +787,22 @@ public class MemoryCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, EXTENSION));
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     extensions.add(EXTENSION);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
+    DefaultDocValuesConsumer.getExtensions(extensions);
   }
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
+    return new DefaultDocValuesConsumer(state);
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), IOContext.READONCE);
+    return new DefaultDocValuesProducer(state);
   }
 }

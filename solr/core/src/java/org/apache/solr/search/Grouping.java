@@ -666,7 +666,7 @@ public class Grouping {
       }
 
       sort = sort == null ? Sort.RELEVANCE : sort;
-      firstPass = new TermFirstPassGroupingCollectorJava6(groupBy, sort, actualGroupsToFind);
+      firstPass = new TermFirstPassGroupingCollector(groupBy, sort, actualGroupsToFind);
       return firstPass;
     }
 
@@ -1012,22 +1012,6 @@ public class Grouping {
       docValues = groupByVS.getValues(vsContext, readerContext);
       filler = docValues.getValueFiller();
       mval = filler.getValue();
-    }
-
-    @Override
-    protected CollectedSearchGroup<MutableValue> pollLast() {
-      return orderedGroups.pollLast();
-    }
-  }
-
-  static class TermFirstPassGroupingCollectorJava6 extends TermFirstPassGroupingCollector {
-    public TermFirstPassGroupingCollectorJava6(String groupField, Sort groupSort, int topNGroups) throws IOException {
-      super(groupField, groupSort, topNGroups);
-    }
-
-    @Override
-    protected CollectedSearchGroup<BytesRef> pollLast() {
-      return orderedGroups.pollLast();
     }
   }
 

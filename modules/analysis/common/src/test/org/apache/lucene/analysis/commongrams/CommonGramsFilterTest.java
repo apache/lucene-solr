@@ -84,7 +84,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    * @return Map<String,String>
    */
   public void testCommonGramsQueryFilter() throws Exception {
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String field, Reader in) {
         Tokenizer tokenizer = new MockTokenizer(in, MockTokenizer.WHITESPACE, false);
@@ -154,7 +154,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testCommonGramsFilter() throws Exception {
-    Analyzer a = new ReusableAnalyzerBase() {
+    Analyzer a = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String field, Reader in) {
         Tokenizer tokenizer = new MockTokenizer(in, MockTokenizer.WHITESPACE, false);

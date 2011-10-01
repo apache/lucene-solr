@@ -66,7 +66,7 @@ public class Test2BPostings extends LuceneTestCase {
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setOmitNorms(true);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
-    Field field = new Field("field", ft, new MyTokenStream());
+    Field field = new Field("field", new MyTokenStream(), ft);
     doc.add(field);
     
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;

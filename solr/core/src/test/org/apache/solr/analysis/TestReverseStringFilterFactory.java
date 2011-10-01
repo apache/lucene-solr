@@ -20,9 +20,9 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Simple tests to ensure the Reverse string filter factory is working.
@@ -33,7 +33,7 @@ public class TestReverseStringFilterFactory extends BaseTokenTestCase {
    */
   public void testReversing() throws Exception {
     Reader reader = new StringReader("simple test");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ReverseStringFilterFactory factory = new ReverseStringFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     TokenStream stream = factory.create(tokenizer);

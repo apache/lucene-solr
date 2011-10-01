@@ -26,36 +26,57 @@ import org.apache.lucene.search.Filter;
  * (Follows the boolean logic in BooleanClause for composition 
  * of queries.)
  */
-public class FilterClause {
+public final class FilterClause {
 
-	private final Occur occur;
-	private final Filter filter;
+  private final Occur occur;
+  private final Filter filter;
 
-	/**
-	 * Create a new FilterClause
-	 * @param filter A Filter object containing a BitSet
-	 * @param occur A parameter implementation indicating SHOULD, MUST or MUST NOT
-	 */
-	
-	public FilterClause(Filter filter, Occur occur) {
-		this.occur = occur;
-		this.filter = filter;
-	}
+  /**
+   * Create a new FilterClause
+   * @param filter A Filter object containing a BitSet
+   * @param occur A parameter implementation indicating SHOULD, MUST or MUST NOT
+   */
 
-	/**
-	 * Returns this FilterClause's filter
-	 * @return A Filter object
-	 */
-	public Filter getFilter() {
-		return filter;
-	}
+  public FilterClause(Filter filter, Occur occur) {
+    this.occur = occur;
+    this.filter = filter;
+  }
 
-	/**
-	 * Returns this FilterClause's occur parameter
-	 * @return An Occur object
-	 */
-	public Occur getOccur() {
-		return occur;
-	}
+  /**
+   * Returns this FilterClause's filter
+   * @return A Filter object
+   */
+  public Filter getFilter() {
+    return filter;
+  }
+
+  /**
+   * Returns this FilterClause's occur parameter
+   * @return An Occur object
+   */
+  public Occur getOccur() {
+    return occur;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this)
+      return true;
+    if (o == null || !(o instanceof FilterClause))
+      return false;
+    final FilterClause other = (FilterClause)o;
+    return this.filter.equals(other.filter)
+      && this.occur == other.occur;
+  }
+
+  @Override
+  public int hashCode() {
+    return filter.hashCode() ^ occur.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return occur.toString() + filter.toString();
+  }
 
 }

@@ -181,8 +181,8 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
 
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setOmitNorms(true);
-    parentStreamField = new Field(Consts.FIELD_PAYLOADS, ft, parentStream);
-    fullPathField = new Field(Consts.FULL, StringField.TYPE_STORED, "");
+    parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
+    fullPathField = new Field(Consts.FULL, "", StringField.TYPE_STORED);
 
     this.nextID = indexWriter.maxDoc();
 

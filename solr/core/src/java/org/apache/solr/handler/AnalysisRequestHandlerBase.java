@@ -88,7 +88,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
       TokenStream tokenStream = null;
       try {
-        tokenStream = analyzer.reusableTokenStream(context.getFieldName(), new StringReader(value));
+        tokenStream = analyzer.tokenStream(context.getFieldName(), new StringReader(value));
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -113,7 +113,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    TokenStream tokenStream = tfac.create(tokenizerChain.charStream(new StringReader(value)));
+    TokenStream tokenStream = tfac.create(tokenizerChain.initReader(new StringReader(value)));
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
@@ -140,20 +140,25 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @param analyzer The analyzer to use.
    */
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
-    final Set<BytesRef> tokens = new HashSet<BytesRef>();
-    final TokenStream tokenStream = analyzer.tokenStream("", new StringReader(query));
-    final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
-    final BytesRef bytes = bytesAtt.getBytesRef();
     try {
+      final Set<BytesRef> tokens = new HashSet<BytesRef>();
+      final TokenStream tokenStream = analyzer.tokenStream("", new StringReader(query));
+      final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+      final BytesRef bytes = bytesAtt.getBytesRef();
+
       tokenStream.reset();
+
       while (tokenStream.incrementToken()) {
         bytesAtt.fillBytesRef();
         tokens.add(new BytesRef(bytes));
       }
+
+      tokenStream.end();
+      tokenStream.close();
+      return tokens;
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
     }
-    return tokens;
   }
 
   /**
@@ -197,7 +202,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   /**
    * Converts the list of Tokens to a list of NamedLists representing the tokens.
    *
-   * @param tokens  Tokens to convert
+   * @param tokenList  Tokens to convert
    * @param context The analysis context
    *
    * @return List of NamedLists containing the relevant information taken from the tokens

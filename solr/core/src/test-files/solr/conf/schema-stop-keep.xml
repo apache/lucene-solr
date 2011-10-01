@@ -34,7 +34,7 @@
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
     <fieldtype name="stop-one" class="solr.TextField">
       <analyzer>
-        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true"
                 words="stop-1.txt"/>
@@ -43,7 +43,7 @@
     </fieldtype>
     <fieldtype name="stop-two" class="solr.TextField">
       <analyzer>
-        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <tokenizer class="solr.MockTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true"
                 words="stop-1.txt,stop-2.txt"/>

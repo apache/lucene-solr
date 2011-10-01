@@ -115,7 +115,7 @@ public class SynonymMap {
      *  separates by {@link SynonymMap#WORD_SEPARATOR}.
      *  reuse and its chars must not be null. */
     public static CharsRef analyze(Analyzer analyzer, String text, CharsRef reuse) throws IOException {
-      TokenStream ts = analyzer.reusableTokenStream("", new StringReader(text));
+      TokenStream ts = analyzer.tokenStream("", new StringReader(text));
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
       ts.reset();

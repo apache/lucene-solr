@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Simple tests to ensure this factory is working
@@ -44,7 +44,7 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "test." },
         new int[] { 0, 5, 8 },
@@ -61,8 +61,11 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    ts.reset();
     assertFalse(ts.incrementToken());
+    ts.end();
+    ts.close();
   }
   
   // 012345678
@@ -77,7 +80,7 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenTestCase {
     factory.init(args);
     CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa#bb#cc" },
         new int[] { 0 },

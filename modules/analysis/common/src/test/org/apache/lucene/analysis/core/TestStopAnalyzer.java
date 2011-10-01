@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
@@ -51,6 +50,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
     CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
+    stream.reset();
     
     while (stream.incrementToken()) {
       assertFalse(inValidTokens.contains(termAtt.toString()));

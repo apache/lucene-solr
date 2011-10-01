@@ -118,6 +118,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      long endNumOpens = SolrIndexSearcher.numOpens.get();
      long endNumCloses = SolrIndexSearcher.numCloses.get();
 
+     SolrIndexSearcher.numOpens.getAndSet(0);
+     SolrIndexSearcher.numCloses.getAndSet(0);
+
+     
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
        log.error(msg);
@@ -136,6 +140,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void endTrackingWriters() {
      long endNumOpens = SolrIndexWriter.numOpens.get();
      long endNumCloses = SolrIndexWriter.numCloses.get();
+     
+     SolrIndexWriter.numOpens.getAndSet(0);
+     SolrIndexWriter.numCloses.getAndSet(0);
 
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexWriter opens=" + (endNumOpens-numWriterOpens) + " closes=" + (endNumCloses-numWriterCloses);

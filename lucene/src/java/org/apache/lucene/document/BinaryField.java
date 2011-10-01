@@ -31,16 +31,16 @@ public final class BinaryField extends Field {
 
   /** Creates a new BinaryField */
   public BinaryField(String name, byte[] value) {
-    super(name, BinaryField.TYPE_STORED, value);
+    super(name, value, BinaryField.TYPE_STORED);
   }
   
   /** Creates a new BinaryField */
   public BinaryField(String name, byte[] value, int offset, int length) {
-    super(name, BinaryField.TYPE_STORED, value, offset, length);
+    super(name, value, offset, length, BinaryField.TYPE_STORED);
   }
 
   /** Creates a new BinaryField */
   public BinaryField(String name, BytesRef bytes) {
-    super(name, BinaryField.TYPE_STORED, bytes);
+    super(name, bytes, BinaryField.TYPE_STORED);
   }
 }

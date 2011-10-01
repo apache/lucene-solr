@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -36,7 +35,7 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  *
  */
 public class TestGermanStemFilter extends BaseTokenStreamTestCase {
-  Analyzer analyzer = new ReusableAnalyzerBase() {
+  Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {

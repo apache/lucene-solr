@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,11 +78,11 @@ public class NearSpansOrdered extends Spans {
   private SpanNearQuery query;
   private boolean collectPayloads = true;
   
-  public NearSpansOrdered(SpanNearQuery spanNearQuery, AtomicReaderContext context) throws IOException {
-    this(spanNearQuery, context, true);
+  public NearSpansOrdered(SpanNearQuery spanNearQuery, AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    this(spanNearQuery, context, acceptDocs, true);
   }
 
-  public NearSpansOrdered(SpanNearQuery spanNearQuery, AtomicReaderContext context, boolean collectPayloads)
+  public NearSpansOrdered(SpanNearQuery spanNearQuery, AtomicReaderContext context, Bits acceptDocs, boolean collectPayloads)
   throws IOException {
     if (spanNearQuery.getClauses().length < 2) {
       throw new IllegalArgumentException("Less than 2 clauses: "
@@ -94,7 +95,7 @@ public class NearSpansOrdered extends Spans {
     matchPayload = new LinkedList<byte[]>();
     subSpansByDoc = new Spans[clauses.length];
     for (int i = 0; i < clauses.length; i++) {
-      subSpans[i] = clauses[i].getSpans(context);
+      subSpans[i] = clauses[i].getSpans(context, acceptDocs);
       subSpansByDoc[i] = subSpans[i]; // used in toSameDoc()
     }
     query = spanNearQuery; // kept for toString() only.
