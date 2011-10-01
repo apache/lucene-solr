@@ -25,6 +25,7 @@ import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NRTManager; // javadocs
+import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
@@ -141,19 +142,11 @@ public class SearcherManager implements Closeable {
         IndexReader newReader = currentSearcher.getIndexReader().reopen();
         if (newReader != currentSearcher.getIndexReader()) {
           IndexSearcher newSearcher = new IndexSearcher(newReader, es);
-          if (warmer != null) {
-            boolean success = false;
-            try {
-              warmer.warm(newSearcher);
-              success = true;
-            } finally {
-              if (!success) {
-                newReader.decRef();
-              }
-            }
-          }
           boolean success = false;
           try {
+            if (warmer != null) {
+              warmer.warm(newSearcher);
+            }
             swapSearcher(newSearcher);
             success = true;
           } finally {
