@@ -186,11 +186,39 @@ public abstract class DocumentsWriterPerThreadPool {
     if (numThreadStatesActive < perThreads.length) {
       final ThreadState threadState = perThreads[numThreadStatesActive];
       threadState.lock(); // lock so nobody else will get this ThreadState
-      numThreadStatesActive++; // increment will publish the ThreadState
-      threadState.perThread.initialize();
-      return threadState;
+      boolean unlock = true;
+      try {
+        if (threadState.isActive()) {
+          // unreleased thread states are deactivated during DW#close()
+          numThreadStatesActive++; // increment will publish the ThreadState
+          assert threadState.perThread != null;
+          threadState.perThread.initialize();
+          unlock = false;
+          return threadState;
+        }
+        // unlock since the threadstate is not active anymore - we are closed!
+        assert assertUnreleasedThreadStatesInactive();
+        return null;
+      } finally {
+        if (unlock) {
+          // in any case make sure we unlock if we fail 
+          threadState.unlock();
+        }
+      }
     }
     return null;
+  }
+  
+  private synchronized boolean assertUnreleasedThreadStatesInactive() {
+    for (int i = numThreadStatesActive; i < perThreads.length; i++) {
+      assert perThreads[i].tryLock() : "unreleased threadstate should not be locked";
+      try {
+        assert !perThreads[i].isActive() : "expected unreleased thread state to be inactive";
+      } finally {
+        perThreads[i].unlock();
+      }
+    }
+    return true;
   }
   
   /**
