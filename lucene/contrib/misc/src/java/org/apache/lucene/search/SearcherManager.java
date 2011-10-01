@@ -152,7 +152,15 @@ public class SearcherManager implements Closeable {
               }
             }
           }
-          swapSearcher(newSearcher);
+          boolean success = false;
+          try {
+            swapSearcher(newSearcher);
+            success = true;
+          } finally {
+            if (!success) {
+              release(newSearcher);
+            }
+          }
           return true;
         } else {
           return false;
@@ -204,7 +212,12 @@ public class SearcherManager implements Closeable {
    *  affected, and they should still call {@link #release}
    *  after they are done. */
   @Override
-  public void close() throws IOException {
-    swapSearcher(null);
+  public synchronized void close() throws IOException {
+    if (currentSearcher != null) {
+      // make sure we can call this more than once
+      // closeable javadoc says:
+      //   if this is already closed then invoking this method has no effect.
+      swapSearcher(null);
+    }
   }
 }
