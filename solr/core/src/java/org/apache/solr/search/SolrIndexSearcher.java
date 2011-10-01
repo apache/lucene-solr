@@ -2080,7 +2080,7 @@ class FilterImpl extends Filter {
         iterators.add(iter);
       }
       for (Weight w : weights) {
-        Scorer scorer = w.scorer(context, Weight.ScorerContext.def());
+        Scorer scorer = w.scorer(context, true, false, context.reader.getLiveDocs());
         if (scorer == null) return null;
         iterators.add(scorer);
       }

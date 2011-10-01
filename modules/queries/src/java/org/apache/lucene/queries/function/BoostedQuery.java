@@ -20,6 +20,7 @@ package org.apache.lucene.queries.function;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -91,8 +92,10 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(context, ScorerContext.def());
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
+      // we are gonna advance() the subscorer
+      Scorer subQueryScorer = qWeight.scorer(context, true, false, acceptDocs);
       if(subQueryScorer == null) {
         return null;
       }

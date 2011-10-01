@@ -164,10 +164,11 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
       final IndexReader reader = context.reader;
-      final Bits liveDocs = reader.getLiveDocs();
+      final Bits liveDocs = acceptDocs;
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
@@ -227,7 +228,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, ScorerContext.def());
+      Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

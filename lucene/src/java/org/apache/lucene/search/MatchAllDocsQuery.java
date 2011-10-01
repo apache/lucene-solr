@@ -38,9 +38,9 @@ public class MatchAllDocsQuery extends Query {
     private final int maxDoc;
     private final Bits liveDocs;
 
-    MatchAllScorer(IndexReader reader, Weight w, float score) throws IOException {
+    MatchAllScorer(IndexReader reader, Bits liveDocs, Weight w, float score) throws IOException {
       super(w);
-      liveDocs = reader.getLiveDocs();
+      this.liveDocs = liveDocs;
       this.score = score;
       maxDoc = reader.maxDoc();
     }
@@ -104,8 +104,9 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new MatchAllScorer(context.reader, this, queryWeight);
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
+      return new MatchAllScorer(context.reader, acceptDocs, this, queryWeight);
     }
 
     @Override

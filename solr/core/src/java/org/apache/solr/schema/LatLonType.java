@@ -366,13 +366,14 @@ class SpatialDistanceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new SpatialScorer(context, this, queryWeight);
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
+      return new SpatialScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context, ScorerContext.def().scoreDocsInOrder(true).topScorer(true))).explain(doc);
+      return ((SpatialScorer)scorer(context, true, true, context.reader.getLiveDocs())).explain(doc);
     }
   }
 
@@ -400,13 +401,13 @@ class SpatialDistanceQuery extends Query {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(AtomicReaderContext readerContext, SpatialWeight w, float qWeight) throws IOException {
+    public SpatialScorer(AtomicReaderContext readerContext, Bits acceptDocs, SpatialWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
       this.qWeight = qWeight;
       this.reader = readerContext.reader;
       this.maxDoc = reader.maxDoc();
-      this.liveDocs = reader.getLiveDocs();
+      this.liveDocs = acceptDocs;
       latVals = latSource.getValues(weight.latContext, readerContext);
       lonVals = lonSource.getValues(weight.lonContext, readerContext);
 

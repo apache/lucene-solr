@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -105,9 +106,11 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext context, ScorerContext scoreContext)
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+          boolean topScorer, Bits acceptDocs)
           throws IOException {
-        final Scorer scorer = weight.scorer(context, ScorerContext.def());
+        // we will advance() the subscorer
+        final Scorer scorer = weight.scorer(context, true, false, acceptDocs);
         if (scorer == null) {
           return null;
         }

@@ -25,7 +25,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ComplexExplanation;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.search.payloads.PayloadNearQuery.PayloadNearSpanScorer;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -34,6 +33,7 @@ import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.SpanScorer;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -79,8 +79,9 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context),
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
+      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context, acceptDocs),
           this, similarity.sloppyDocScorer(stats, query.getField(), context));
     }
 
@@ -174,7 +175,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, ScorerContext.def());
+      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, true, false, context.reader.getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

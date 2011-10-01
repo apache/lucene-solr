@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
@@ -73,14 +74,15 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
         return null;
       }
       // TODO should we reuse the DocsEnum here? 
-      final DocsEnum docs = termsEnum.docs(context.reader.getLiveDocs(), null);
+      final DocsEnum docs = termsEnum.docs(acceptDocs, null);
       assert docs != null;
       return new TermScorer(this, docs, createDocScorer(context));
     }

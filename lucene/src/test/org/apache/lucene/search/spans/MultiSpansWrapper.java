@@ -49,7 +49,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
   public static Spans wrap(ReaderContext topLevelReaderContext, SpanQuery query) throws IOException {
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topLevelReaderContext);
     if(leaves.length == 1) {
-      return query.getSpans(leaves[0]);
+      return query.getSpans(leaves[0], leaves[0].reader.getLiveDocs());
     }
     return new MultiSpansWrapper(leaves, query);
   }
@@ -60,14 +60,14 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
       return false;
     }
     if (current == null) {
-      current = query.getSpans(leaves[leafOrd]);
+      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs());
     }
     while(true) {
       if (current.next()) {
         return true;
       }
       if (++leafOrd < leaves.length) {
-        current = query.getSpans(leaves[leafOrd]);
+        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs());
       } else {
         current = null;
         break;
@@ -85,17 +85,17 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     int subIndex = ReaderUtil.subIndex(target, leaves);
     assert subIndex >= leafOrd;
     if (subIndex != leafOrd) {
-      current = query.getSpans(leaves[subIndex]);
+      current = query.getSpans(leaves[subIndex], leaves[subIndex].reader.getLiveDocs());
       leafOrd = subIndex;
     } else if (current == null) {
-      current = query.getSpans(leaves[leafOrd]);
+      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs());
     }
     while (true) {
       if (current.skipTo(target - leaves[leafOrd].docBase)) {
         return true;
       }
       if (++leafOrd < leaves.length) {
-        current = query.getSpans(leaves[leafOrd]);
+        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs());
       } else {
           current = null;
           break;

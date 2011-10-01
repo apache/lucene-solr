@@ -176,7 +176,7 @@ public class PayloadSpanUtil {
       throws IOException {
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
     for (AtomicReaderContext atomicReaderContext : leaves) {
-      final Spans spans = query.getSpans(atomicReaderContext);
+      final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader.getLiveDocs());
       while (spans.next() == true) {
         if (spans.isPayloadAvailable()) {
           Collection<byte[]> payload = spans.getPayload();

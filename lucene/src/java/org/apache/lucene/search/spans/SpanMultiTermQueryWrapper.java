@@ -27,6 +27,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopTermsRewrite;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.BooleanClause.Occur; // javadocs only
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TermContext;
 
 /**
@@ -89,7 +90,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
   
   @Override
-  public Spans getSpans(AtomicReaderContext context) throws IOException {
+  public Spans getSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     throw new UnsupportedOperationException("Query should have been rewritten");
   }
 

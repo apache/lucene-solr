@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
@@ -238,7 +239,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(context, ScorerContext.def().scoreDocsInOrder(true).topScorer(true)) == null) {
+        if (w.scorer(context, true, true, context.reader.getLiveDocs()) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -300,11 +301,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext)
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs)
         throws IOException {
       if (termConjunction) {
         // specialized scorer for term conjunctions
-        return createConjunctionTermScorer(context);
+        return createConjunctionTermScorer(context, acceptDocs);
       }
       List<Scorer> required = new ArrayList<Scorer>();
       List<Scorer> prohibited = new ArrayList<Scorer>();
@@ -312,7 +314,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(context, ScorerContext.def());
+        Scorer subScorer = w.scorer(context, true, false, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -327,7 +329,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Check if we can return a BooleanScorer
-      if (!scorerContext.scoreDocsInOrder && scorerContext.topScorer && required.size() == 0 && prohibited.size() < 32) {
+      if (!scoreDocsInOrder && topScorer && required.size() == 0 && prohibited.size() < 32) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
@@ -345,7 +347,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
     }
 
-    private Scorer createConjunctionTermScorer(AtomicReaderContext context)
+    private Scorer createConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs)
         throws IOException {
       final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
       for (int i = 0; i < docsAndFreqs.length; i++) {
@@ -356,7 +358,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         }
         final ExactDocScorer docScorer = weight.createDocScorer(context);
         docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docs(
-            context.reader.getLiveDocs(), null), termsEnum.docFreq(), docScorer);
+            acceptDocs, null), termsEnum.docFreq(), docScorer);
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
           docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
