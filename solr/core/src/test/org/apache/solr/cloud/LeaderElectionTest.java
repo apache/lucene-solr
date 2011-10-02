@@ -248,6 +248,14 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     String leader = null;
     int tries = 30;
     while (true) {
+      if (!zkClient.exists("/collections/collection1/leader_elect/shard1/leader")) {
+        if (tries-- == 0) {
+          printLayout(server.getZkAddress());
+          fail("No registered leader was found");
+        }
+        Thread.sleep(1000);
+        continue;
+      }
       List<String> leaderChildren = zkClient.getChildren(
           "/collections/collection1/leader_elect/shard1/leader", null);
       if (leaderChildren.size() > 0) {
