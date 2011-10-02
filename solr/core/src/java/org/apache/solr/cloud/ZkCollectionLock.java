@@ -56,7 +56,7 @@ public class ZkCollectionLock {
       if (cnt++ == 15) {
         // get out of line
         lock.unlock();
-        throw new RuntimeException("Coulnd't aquire the shard lock");
+        throw new RuntimeException("Couldn't acquire the shard lock");
       }
       Thread.sleep(1000);
     }
