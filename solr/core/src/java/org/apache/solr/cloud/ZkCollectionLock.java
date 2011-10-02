@@ -37,7 +37,6 @@ public class ZkCollectionLock {
           
           @Override
           public void lockAcquired() {
-            System.out.println("I got the lock!");
             gotLock = true;
           }
         });
@@ -55,6 +54,8 @@ public class ZkCollectionLock {
     int cnt = 0;
     while (!gotLock) {
       if (cnt++ == 15) {
+        // get out of line
+        lock.unlock();
         throw new RuntimeException("Coulnd't aquire the shard lock");
       }
       Thread.sleep(1000);
