@@ -18,6 +18,8 @@ package org.apache.solr.cloud.lock;
  */
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +34,7 @@ import org.junit.Test;
  * test for writelock
  */
 public class WriteLockTest extends SolrTestCaseJ4 {
-  private static int TIMEOUT = 10 * 1000;
+  private static int TIMEOUT = 30 * 1000;
   protected String dir = "/" + getClass().getName();
   protected WriteLock[] nodes;
   protected CountDownLatch latch = new CountDownLatch(1);
@@ -40,8 +42,8 @@ public class WriteLockTest extends SolrTestCaseJ4 {
   private boolean workAroundClosingLastZNodeFails = true;
   private boolean killLeader = true;
   private ZkTestServer server;
-  private SolrZkClient zkClient;
   private String zkDir;
+  private List<SolrZkClient> zkClients = new ArrayList<SolrZkClient>();
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -58,12 +60,11 @@ public class WriteLockTest extends SolrTestCaseJ4 {
     server.run();
     AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-    zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
   }
   
   @Test
   public void runTest() throws Exception {
-    doTest(3);
+    doTest(5);
   }
   
   class LockCallback implements LockListener {
@@ -80,6 +81,8 @@ public class WriteLockTest extends SolrTestCaseJ4 {
   protected void doTest(int count) throws Exception {
     nodes = new WriteLock[count];
     for (int i = 0; i < count; i++) {
+      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      zkClients.add(zkClient);
       WriteLock leader = new WriteLock(zkClient.getSolrZooKeeper(), dir, null);
       leader.setLockListener(new LockCallback());
       nodes[i] = leader;
@@ -114,6 +117,7 @@ public class WriteLockTest extends SolrTestCaseJ4 {
         // Thread.sleep(10000);
         WriteLock second = nodes[1];
         dumpNodes(count);
+        
         // lets assert that the first election is the leader
         assertTrue("The second znode should be the leader " + second.getId(),
             second.isOwner());
@@ -150,6 +154,12 @@ public class WriteLockTest extends SolrTestCaseJ4 {
     }
   }
   
+  private void printLayout(String zkHost) throws Exception {
+    SolrZkClient zkClient = new SolrZkClient(zkHost, 10000);
+    zkClient.printLayoutToStdOut();
+    zkClient.close();
+  }
+  
   protected void dumpNodes(int count) {
     for (int i = 0; i < count; i++) {
       WriteLock node = nodes[i];
@@ -176,7 +186,9 @@ public class WriteLockTest extends SolrTestCaseJ4 {
         }
       }
     }
-    zkClient.close();
+    for (SolrZkClient client : zkClients) {
+      client.close();
+    }
     server.shutdown();
     super.tearDown();
     
