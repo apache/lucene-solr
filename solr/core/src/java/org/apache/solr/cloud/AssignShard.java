@@ -49,7 +49,7 @@ public class AssignShard {
   public String assignShard(String collection, int slices)
       throws KeeperException, InterruptedException {
     // we want the collection lock
-    ZkCollectionLock lock = new ZkCollectionLock(client);
+    ZkCollectionLock lock = new ZkCollectionLock(client, collection);
     lock.lock();
     String returnShardId = null;
     try {

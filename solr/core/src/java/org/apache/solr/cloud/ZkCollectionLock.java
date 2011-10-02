@@ -26,9 +26,9 @@ public class ZkCollectionLock {
   private WriteLock lock;
   private volatile boolean gotLock = false;
   
-  public ZkCollectionLock(SolrZkClient zkClient) {
+  public ZkCollectionLock(SolrZkClient zkClient, String collection) {
     lock = new WriteLock(zkClient.getSolrZooKeeper(),
-        "/collections/collection1/shards_lock", null, new LockListener() {
+        "/collections/" + collection + "/shards_lock", null, new LockListener() {
           
           @Override
           public void lockReleased() {
@@ -56,7 +56,7 @@ public class ZkCollectionLock {
       if (cnt++ == 15) {
         // get out of line
         lock.unlock();
-        throw new RuntimeException("Couldn't acquire the shard lock");
+        throw new RuntimeException("Couldn't acquire the shards lock");
       }
       Thread.sleep(1000);
     }
