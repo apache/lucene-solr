@@ -34,9 +34,9 @@ public class CheckHits {
   /**
    * Some explains methods calculate their values though a slightly
    * different  order of operations from the actual scoring method ...
-   * this allows for a small amount of variation
+   * this allows for a small amount of relative variation
    */
-  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.02f;
+  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.001f;
     
   /**
    * Tests that all documents up to maxDoc which are *not* in the
@@ -305,6 +305,10 @@ public class CheckHits {
 
   }
 
+  private static float explainToleranceDelta(float f1, float f2) {
+    return Math.max(f1, f2) * EXPLAIN_SCORE_TOLERANCE_DELTA;
+  }
+
   /** 
    * Assert that an explanation has the expected score, and optionally that its
    * sub-details max/sum/factor match to that score.
@@ -323,7 +327,7 @@ public class CheckHits {
     float value = expl.getValue();
     Assert.assertEquals(q+": score(doc="+doc+")="+score+
         " != explanationScore="+value+" Explanation: "+expl,
-        score,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
+        score,value,explainToleranceDelta(score, value));
 
     if (!deep) return;
 
@@ -393,7 +397,7 @@ public class CheckHits {
         }
         Assert.assertEquals(q+": actual subDetails combined=="+combined+
             " != value="+value+" Explanation: "+expl,
-            combined,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
+            combined,value,explainToleranceDelta(combined, value));
       }
     }
   }
