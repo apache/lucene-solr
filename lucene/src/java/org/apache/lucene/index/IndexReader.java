@@ -571,7 +571,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * IndexReader instance which you must eventually close
    */  
   public static IndexReader openIfChanged(IndexReader oldReader) throws IOException {
-    return oldReader.doOpenIfChanged();
+    final IndexReader newReader = oldReader.doOpenIfChanged();
+    assert newReader != oldReader;
+    return newReader;
   }
 
   /**
@@ -583,7 +585,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #openIfChanged(IndexReader)
    */
   public static IndexReader openIfChanged(IndexReader oldReader, boolean readOnly) throws IOException {
-    return oldReader.doOpenIfChanged(readOnly);
+    final IndexReader newReader = oldReader.doOpenIfChanged(readOnly);
+    assert newReader != oldReader;
+    return newReader;
   }
 
   /**
@@ -596,7 +600,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   // TODO: should you be able to specify readOnly?
   public static IndexReader openIfChanged(IndexReader oldReader, IndexCommit commit) throws IOException {
-    return oldReader.doOpenIfChanged(commit);
+    final IndexReader newReader = oldReader.doOpenIfChanged(commit);
+    assert newReader != oldReader;
+    return newReader;
   }
 
   /**
@@ -661,7 +667,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @lucene.experimental
    */
   public static IndexReader openIfChanged(IndexReader oldReader, IndexWriter writer, boolean applyAllDeletes) throws IOException {
-    return oldReader.doOpenIfChanged(writer, applyAllDeletes);
+    final IndexReader newReader = oldReader.doOpenIfChanged(writer, applyAllDeletes);
+    assert newReader != oldReader;
+    return newReader;
   }
 
   protected IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
