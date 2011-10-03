@@ -306,7 +306,7 @@ public class CheckHits {
   }
 
   private static float explainToleranceDelta(float f1, float f2) {
-    return Math.max(f1, f2) * EXPLAIN_SCORE_TOLERANCE_DELTA;
+    return Math.max(Math.abs(f1), Math.abs(f2)) * EXPLAIN_SCORE_TOLERANCE_DELTA;
   }
 
   /** 
