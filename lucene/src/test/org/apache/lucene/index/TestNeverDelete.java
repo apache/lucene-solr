@@ -92,8 +92,8 @@ public class TestNeverDelete extends LuceneTestCase {
       for(String fileName : allFiles) {
         assertTrue("file " + fileName + " does not exist", d.fileExists(fileName));
       }
-      IndexReader r2 = r.reopen();
-      if (r2 != r) {
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      if (r2 != null) {
         r.close();
         r = r2;
       }

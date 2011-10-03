@@ -65,8 +65,8 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
         if (r == null) {
           r = IndexReader.open(w.w, false);
         } else {
-          final IndexReader r2 = r.reopen();
-          if (r2 != r) {
+          final IndexReader r2 = IndexReader.openIfChanged(r);
+          if (r2 != null) {
             r.close();
             r = r2;
           }

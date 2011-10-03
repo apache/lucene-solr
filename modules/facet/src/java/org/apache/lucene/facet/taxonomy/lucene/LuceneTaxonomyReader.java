@@ -368,8 +368,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // safely read indexReader without holding the write lock, because
     // no other thread can be writing at this time (this method is the
     // only possible writer, and it is "synchronized" to avoid this case).
-    IndexReader r2 = indexReader.reopen();
-    if (indexReader != r2) {
+    IndexReader r2 = IndexReader.openIfChanged(indexReader);
+    if (r2 != null) {
       IndexReader oldreader = indexReader;
       // we can close the old searcher, but need to synchronize this
       // so that we don't close it in the middle that another routine

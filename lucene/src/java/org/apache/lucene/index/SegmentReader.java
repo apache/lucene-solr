@@ -204,13 +204,13 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public synchronized IndexReader reopen()
+  protected synchronized IndexReader doOpenIfChanged()
     throws CorruptIndexException, IOException {
     return reopenSegment(si, false, readOnly);
   }
 
   @Override
-  public synchronized IndexReader reopen(boolean openReadOnly)
+  protected synchronized IndexReader doOpenIfChanged(boolean openReadOnly)
     throws CorruptIndexException, IOException {
     return reopenSegment(si, false, openReadOnly);
   }
@@ -233,7 +233,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // if we're cloning we need to run through the reopenSegment logic
     // also if both old and new readers aren't readonly, we clone to avoid sharing modifications
     if (normsUpToDate && deletionsUpToDate && !doClone && openReadOnly && readOnly) {
-      return this;
+      return null;
     }    
 
     // When cloning, the incoming SegmentInfos should not

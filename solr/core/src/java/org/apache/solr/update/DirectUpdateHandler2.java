@@ -385,11 +385,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     IndexReader currentReader = previousSearcher.getIndexReader();
     IndexReader newReader;
 
-    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(core), true);
+    newReader = IndexReader.openIfChanged(currentReader, indexWriterProvider.getIndexWriter(core), true);
   
     
-    if (newReader == currentReader) {
+    if (newReader == null) {
       currentReader.incRef();
+      newReader = currentReader;
     }
 
     return new SolrIndexSearcher(core, schema, "main", newReader, true, true, true, core.getDirectoryFactory());

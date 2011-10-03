@@ -54,7 +54,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * multiple searches instead of creating a new one
  * per-search.  If your index has changed and you wish to
  * see the changes reflected in searching, you should
- * use {@link IndexReader#reopen} to obtain a new reader and
+ * use {@link IndexReader#openIfChanged} to obtain a new reader and
  * then create a new IndexSearcher from that.  Also, for
  * low-latency turnaround it's best to use a near-real-time
  * reader ({@link IndexReader#open(IndexWriter,boolean)}).

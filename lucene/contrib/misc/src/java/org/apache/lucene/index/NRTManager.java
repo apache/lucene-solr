@@ -307,7 +307,14 @@ public class NRTManager implements Closeable {
 
     // Start from whichever searcher is most current:
     final IndexSearcher startSearcher = noDeletesSearchingGen.get() > searchingGen.get() ? noDeletesCurrentSearcher : currentSearcher;
-    final IndexReader nextReader = startSearcher.getIndexReader().reopen(writer, applyDeletes);
+    IndexReader nextReader = IndexReader.openIfChanged(startSearcher.getIndexReader(), writer, applyDeletes);
+    if (nextReader == null) {
+      // NOTE: doesn't happen currently in Lucene (reopen on
+      // NRT reader always returns new reader), but could in
+      // the future:
+      nextReader = startSearcher.getIndexReader();
+      nextReader.incRef();
+    }
 
     if (nextReader != startSearcher.getIndexReader()) {
       final IndexSearcher nextSearcher = new IndexSearcher(nextReader, es);

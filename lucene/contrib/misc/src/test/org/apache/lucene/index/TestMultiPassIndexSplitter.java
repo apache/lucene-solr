@@ -45,9 +45,6 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     input = IndexReader.open(dir, false);
     // delete the last doc
     input.deleteDocument(input.maxDoc() - 1);
-    IndexReader inputOld = input;
-    input = input.reopen(true);
-    inputOld.close();
   }
   
   @Override

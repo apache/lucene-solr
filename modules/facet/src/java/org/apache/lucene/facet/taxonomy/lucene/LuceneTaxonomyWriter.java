@@ -564,8 +564,8 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
 
   private synchronized void refreshReader() throws IOException {
     if (reader != null) {
-      IndexReader r2 = reader.reopen();
-      if (reader != r2) {
+      IndexReader r2 = IndexReader.openIfChanged(reader);
+      if (r2 != null) {
         reader.close();
         reader = r2;
       }

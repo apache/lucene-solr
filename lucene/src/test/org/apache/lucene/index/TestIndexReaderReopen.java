@@ -192,8 +192,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         iwriter.commit();
         if (withReopen) {
           // reopen
-          IndexReader r2 = reader.reopen();
-          if (reader != r2) {
+          IndexReader r2 = IndexReader.openIfChanged(reader);
+          if (r2 != null) {
             reader.close();
             reader = r2;
           }
@@ -468,12 +468,15 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       modifyIndex(0, dir2);
       assertRefCountEquals(1 + mode, reader1);
       
-      IndexReader multiReader2 = multiReader1.reopen();
+      IndexReader multiReader2 = IndexReader.openIfChanged(multiReader1);
+      assertNotNull(multiReader2);
       // index1 hasn't changed, so multiReader2 should share reader1 now with multiReader1
       assertRefCountEquals(2 + mode, reader1);
       
       modifyIndex(0, dir1);
-      IndexReader reader2 = reader1.reopen();
+      IndexReader reader2 = IndexReader.openIfChanged(reader1);
+      assertNotNull(reader2);
+      assertNull(IndexReader.openIfChanged(reader2));
       assertRefCountEquals(2 + mode, reader1);
 
       if (mode == 1) {
@@ -481,7 +484,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       
       modifyIndex(1, dir1);
-      IndexReader reader3 = reader2.reopen();
+      IndexReader reader3 = IndexReader.openIfChanged(reader2);
+      assertNotNull(reader3);
       assertRefCountEquals(2 + mode, reader1);
       assertRefCountEquals(1, reader2);
       
@@ -541,13 +545,16 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       modifyIndex(1, dir2);
       assertRefCountEquals(1 + mode, reader1);
       
-      IndexReader parallelReader2 = parallelReader1.reopen();
+      IndexReader parallelReader2 = IndexReader.openIfChanged(parallelReader1);
+      assertNotNull(parallelReader2);
+      assertNull(IndexReader.openIfChanged(parallelReader2));
       // index1 hasn't changed, so parallelReader2 should share reader1 now with multiReader1
       assertRefCountEquals(2 + mode, reader1);
       
       modifyIndex(0, dir1);
       modifyIndex(0, dir2);
-      IndexReader reader2 = reader1.reopen();
+      IndexReader reader2 = IndexReader.openIfChanged(reader1);
+      assertNotNull(reader2);
       assertRefCountEquals(2 + mode, reader1);
 
       if (mode == 1) {
@@ -555,7 +562,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       
       modifyIndex(4, dir1);
-      IndexReader reader3 = reader2.reopen();
+      IndexReader reader3 = IndexReader.openIfChanged(reader2);
+      assertNotNull(reader3);
       assertRefCountEquals(2 + mode, reader1);
       assertRefCountEquals(1, reader2);
       
@@ -609,25 +617,29 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     modifier.deleteDocument(0);
     modifier.close();
     
-    IndexReader reader2 = reader1.reopen();
+    IndexReader reader2 = IndexReader.openIfChanged(reader1);
+    assertNotNull(reader2);
     modifier = IndexReader.open(dir1, false);
     DefaultSimilarity sim = new DefaultSimilarity();
     modifier.setNorm(1, "field1", sim.encodeNormValue(50f));
     modifier.setNorm(1, "field2", sim.encodeNormValue(50f));
     modifier.close();
     
-    IndexReader reader3 = reader2.reopen();
+    IndexReader reader3 = IndexReader.openIfChanged(reader2);
+    assertNotNull(reader3);
     SegmentReader segmentReader3 = getOnlySegmentReader(reader3);
     modifier = IndexReader.open(dir1, false);
     modifier.deleteDocument(2);
     modifier.close();
 
-    IndexReader reader4 = reader3.reopen();
+    IndexReader reader4 = IndexReader.openIfChanged(reader3);
+    assertNotNull(reader4);
     modifier = IndexReader.open(dir1, false);
     modifier.deleteDocument(3);
     modifier.close();
 
-    IndexReader reader5 = reader3.reopen();
+    IndexReader reader5 = IndexReader.openIfChanged(reader3);
+    assertNotNull(reader5);
     
     // Now reader2-reader5 references reader1. reader1 and reader2
     // share the same norms. reader3, reader4, reader5 also share norms.
@@ -738,11 +750,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     for (int i = 0; i < n; i++) {
       if (i % 2 == 0) {
-        IndexReader refreshed = reader.reopen();
-        if (refreshed != reader) {
+        IndexReader refreshed = IndexReader.openIfChanged(reader);
+        if (refreshed != null) {
           readersToClose.add(reader);
+          reader = refreshed;
         }
-        reader = refreshed;
       }
       final IndexReader r = reader;
       
@@ -766,7 +778,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 break;
               } else {
                 // not synchronized
-                IndexReader refreshed = r.reopen();
+                IndexReader refreshed = IndexReader.openIfChanged(r);
+                if (refreshed == null) {
+                  refreshed = r;
+                }
                 
                 IndexSearcher searcher = newSearcher(refreshed);
                 ScoreDoc[] hits = searcher.search(
@@ -907,7 +922,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       IndexReader refreshed = null;
       try {
-        refreshed = reader.reopen();
+        refreshed = IndexReader.openIfChanged(reader);
+        if (refreshed == null) {
+          refreshed = reader;
+        }
       } finally {
         if (refreshed == null && r != null) {
           // Hit exception -- close opened reader
@@ -1094,7 +1112,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     r2.deleteDocument(0);
     r2.close();
 
-    IndexReader r3 = r1.reopen();
+    IndexReader r3 = IndexReader.openIfChanged(r1);
+    assertNotNull(r3);
     assertTrue(r1 != r3);
     r1.close();
     try {
@@ -1118,7 +1137,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     modifyIndex(5, dir); // Add another doc (3 segments)
 
-    IndexReader r2 = r1.reopen(); // MSR
+    IndexReader r2 = IndexReader.openIfChanged(r1); // MSR
+    assertNotNull(r2);
+    assertNull(IndexReader.openIfChanged(r2));
     assertTrue(r1 != r2);
 
     SegmentReader sr1 = (SegmentReader) r1.getSequentialSubReaders()[0]; // Get SRs for the first segment from original
@@ -1151,7 +1172,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     // Add doc:
     modifyIndex(5, dir);
 
-    IndexReader r2 = r1.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(r1);
+    assertNotNull(r2);
     assertTrue(r1 != r2);
 
     IndexReader[] rs2 = r2.getSequentialSubReaders();
@@ -1207,7 +1229,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     Collection<IndexCommit> commits = IndexReader.listCommits(dir);
     for (final IndexCommit commit : commits) {
-      IndexReader r2 = r.reopen(commit);
+      IndexReader r2 = IndexReader.openIfChanged(r, commit);
+      assertNotNull(r2);
       assertTrue(r2 != r);
 
       // Reader should be readOnly
@@ -1262,7 +1285,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertEquals(17, ints[0]);
 
     // Reopen to readonly w/ no chnages
-    IndexReader r3 = r.reopen(true);
+    IndexReader r3 = IndexReader.openIfChanged(r, true);
+    assertNotNull(r3);
     assertTrue(((DirectoryReader) r3).readOnly);
     r3.close();
 
@@ -1271,7 +1295,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     writer.commit();
 
     // Reopen reader1 --> reader2
-    IndexReader r2 = r.reopen(true);
+    IndexReader r2 = IndexReader.openIfChanged(r, true);
+    assertNotNull(r2);
     r.close();
     assertTrue(((DirectoryReader) r2).readOnly);
     IndexReader[] subs = r2.getSequentialSubReaders();

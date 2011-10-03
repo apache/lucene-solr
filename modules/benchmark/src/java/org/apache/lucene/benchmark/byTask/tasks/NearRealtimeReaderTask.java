@@ -77,8 +77,8 @@ public class NearRealtimeReaderTask extends PerfTask {
       }
 
       t = System.currentTimeMillis();
-      final IndexReader newReader = r.reopen();
-      if (r != newReader) {
+      final IndexReader newReader = IndexReader.openIfChanged(r);
+      if (newReader != null) {
         final int delay = (int) (System.currentTimeMillis()-t);
         if (reopenTimes.length == reopenCount) {
           reopenTimes = ArrayUtil.grow(reopenTimes, 1+reopenCount);
