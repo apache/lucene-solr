@@ -12,7 +12,6 @@ including, but not limited to:
   - Apache Tomcat (lib/servlet-api-2.4.jar)
   - Apache Commons
   - Apache Geronimo (stax API jar)
-  - Apache Log4j (contrib/clustering)
 
 This product includes tests written with EasyMock Copyright 2001-2007
 Tammo Freese (http://www.easymock.org/)
