@@ -179,7 +179,7 @@ public class MultiPhraseQuery extends Query {
         int docFreq;
 
         if (terms.length > 1) {
-          postingsEnum = new UnionDocsAndPositionsEnum(reader, terms);
+          postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, reader, terms);
 
           // coarse -- this overcounts since a given doc can
           // have more than one terms:
@@ -435,9 +435,8 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private DocsQueue _queue;
   private IntQueue _posList;
 
-  public UnionDocsAndPositionsEnum(IndexReader indexReader, Term[] terms) throws IOException {
+  public UnionDocsAndPositionsEnum(Bits liveDocs, IndexReader indexReader, Term[] terms) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
-    final Bits liveDocs = indexReader.getLiveDocs();
     for (int i = 0; i < terms.length; i++) {
       DocsAndPositionsEnum postings = indexReader.termPositionsEnum(liveDocs,
                                                                     terms[i].field(),
