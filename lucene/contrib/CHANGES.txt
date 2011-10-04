@@ -109,6 +109,8 @@ Bug Fixes
 
  * LUCENE-3446: Fix NPE in BooleanFilter when DocIdSet/DocIdSetIterator is null.
    Converted code to FixedBitSet and simplified.  (Uwe Schindler, Shuji Umino)
+   
+ * LUCENE-3484: Fix NPE in TaxonomyWriter: parents array creation was not thread safe.
 
 API Changes
  

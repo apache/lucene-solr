@@ -709,9 +709,8 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
     return true;
   }
 
-  // TODO (Facet): synchronization of some sort?
   private ParentArray parentArray;
-  private ParentArray getParentArray() throws IOException {
+  private synchronized ParentArray getParentArray() throws IOException {
     if (parentArray==null) {
       if (reader == null) {
         reader = openReader();
