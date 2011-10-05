@@ -21,9 +21,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
 
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.util.CharacterUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -36,6 +41,7 @@ public class HunspellStemmer {
   
   private final HunspellDictionary dictionary;
   private final StringBuilder segment = new StringBuilder();
+  private CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_34);
 
   /**
    * Constructs a new HunspellStemmer which will use the provided HunspellDictionary to create its stems
@@ -79,7 +85,7 @@ public class HunspellStemmer {
    */
   public List<Stem> uniqueStems(char word[], int length) {
     List<Stem> stems = new ArrayList<Stem>();
-    CharArraySet terms = new CharArraySet(dictionary.getVersion(), 8, false);
+    CharArraySet terms = new CharArraySet(dictionary.getVersion(), 8, dictionary.isIgnoreCase());
     if (dictionary.lookupWord(word, 0, length) != null) {
       stems.add(new Stem(word, length));
       terms.add(word);
@@ -167,6 +173,12 @@ public class HunspellStemmer {
    */
   @SuppressWarnings("unchecked")
   public List<Stem> applyAffix(char strippedWord[], int length, HunspellAffix affix, int recursionDepth) {
+    if(dictionary.isIgnoreCase()) {
+      for(int i=0;i<strippedWord.length;){
+        i += Character.toChars(
+              Character.toLowerCase(charUtils.codePointAt(strippedWord, i)), strippedWord, i);
+      }
+    }
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
     if (!affix.checkCondition(segment)) {
@@ -174,7 +186,7 @@ public class HunspellStemmer {
     }
 
     List<Stem> stems = new ArrayList<Stem>();
-    
+
     List<HunspellWord> words = dictionary.lookupWord(strippedWord, 0, length);
     if (words != null) {
       for (HunspellWord hunspellWord : words) {
@@ -294,15 +306,24 @@ public class HunspellStemmer {
    * @throws ParseException Can be thrown while parsing the files
    */
   public static void main(String[] args) throws IOException, ParseException {
-    if (args.length != 2) {
-      System.out.println("usage: HunspellStemmer <affix location> <dic location>");
+    boolean ignoreCase = false;
+    int offset = 0;
+    
+    if (args.length < 2) {
+      System.out.println("usage: HunspellStemmer [-i] <affix location> <dic location>");
       System.exit(1);
     }
 
-    InputStream affixInputStream = new FileInputStream(args[0]);
-    InputStream dicInputStream = new FileInputStream(args[1]);
+    if(args[offset].equals("-i")) {
+      ignoreCase = true;
+      System.out.println("Ignoring case. All stems will be returned lowercased");
+      offset++;
+    }
+    
+    InputStream affixInputStream = new FileInputStream(args[offset++]);
+    InputStream dicInputStream = new FileInputStream(args[offset++]);
 
-    HunspellDictionary dictionary = new HunspellDictionary(affixInputStream, dicInputStream, Version.LUCENE_34);
+    HunspellDictionary dictionary = new HunspellDictionary(affixInputStream, dicInputStream, Version.LUCENE_34, ignoreCase);
 
     affixInputStream.close();
     dicInputStream.close();

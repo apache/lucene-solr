@@ -34,14 +34,7 @@ public class HunspellStemmerTest {
 
   @BeforeClass
   public static void beforeClass() throws IOException, ParseException {
-    InputStream affixStream = HunspellStemmerTest.class.getResourceAsStream("test.aff");
-    InputStream dictStream = HunspellStemmerTest.class.getResourceAsStream("test.dic");
-
-    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStream, Version.LUCENE_34);
-    stemmer = new HunspellStemmer(dictionary);
-
-    affixStream.close();
-    dictStream.close();
+    createStemmer(true);
   }
 
   @Test
@@ -71,6 +64,63 @@ public class HunspellStemmerTest {
 
     assertEquals(1, stems.size());
     assertEquals("ab", stems.get(0).getStemString());
+  }
+
+  @Test
+  public void testStem_ignoreCase() throws IOException, ParseException {
+    List<HunspellStemmer.Stem> stems;
+    createStemmer(true);
+
+    stems = stemmer.stem("apache");
+    assertEquals(1, stems.size());
+    assertEquals("apach", stems.get(0).getStemString());
+
+    stems = stemmer.stem("APACHE");
+    assertEquals(1, stems.size());
+    assertEquals("apach", stems.get(0).getStemString());
+
+    stems = stemmer.stem("Apache");
+    assertEquals(1, stems.size());
+    assertEquals("apach", stems.get(0).getStemString());
+    
+    stems = stemmer.stem("foos");
+    assertEquals(1, stems.size());
+    assertEquals("foo", stems.get(0).getStemString());
+    
+    stems = stemmer.stem("food");
+    assertEquals(1, stems.size());
+    assertEquals("foo", stems.get(0).getStemString());
+    
+    stems = stemmer.stem("Foos");
+    assertEquals(1, stems.size());
+    assertEquals("foo", stems.get(0).getStemString());
+    
+    stems = stemmer.stem("Food");
+    assertEquals(1, stems.size());
+    assertEquals("foo", stems.get(0).getStemString());
+  }
+
+  @Test
+  public void testStem_caseSensitive() throws IOException, ParseException {
+    createStemmer(false);
+    List<HunspellStemmer.Stem> stems = stemmer.stem("apache");
+    assertEquals(0, stems.size());
+
+    stems = stemmer.stem("Apache");
+    assertEquals(1, stems.size());
+    assertEquals("Apach", stems.get(0).getStemString());
+  }
+
+  
+  private static void createStemmer(boolean ignoreCase) throws IOException, ParseException {
+    InputStream affixStream = HunspellStemmerTest.class.getResourceAsStream("test.aff");
+    InputStream dictStream = HunspellStemmerTest.class.getResourceAsStream("test.dic");
+
+    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStream, Version.LUCENE_34, ignoreCase);
+    stemmer = new HunspellStemmer(dictionary);
+
+    affixStream.close();
+    dictStream.close();
   }
 
 }
