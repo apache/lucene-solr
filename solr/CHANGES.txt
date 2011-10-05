@@ -24,7 +24,7 @@ $Id$
 ==================  4.0.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Tika 0.8
+Apache Tika 0.10
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -402,6 +402,8 @@ Bug Fixes
 
 * SOLR-2757: min() and max() functions now support an arbitrary number of 
   ValueSources  (Bill Bell via hossman)
+
+* SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
 ==================  3.4.0  ==================
 
