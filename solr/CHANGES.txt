@@ -408,6 +408,8 @@ Bug Fixes
 
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
+* SOLR-2792: Allow case insensitive Hunspell stemming (janhoy, rmuir)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
