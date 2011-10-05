@@ -41,8 +41,8 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
         if (VERBOSE) {
           System.out.println("TEST: now reopen r=" + r);
         }
-        final IndexReader r2 = r.reopen();
-        if (r != r2) {
+        final IndexReader r2 = IndexReader.openIfChanged(r);
+        if (r2 != null) {
           r.close();
           r = r2;
         }

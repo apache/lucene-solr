@@ -111,7 +111,7 @@ public class SearcherManager implements Closeable {
   }
 
   /** You must call this, periodically, to perform a
-   *  reopen.  This calls {@link IndexReader#reopen} on the
+   *  reopen.  This calls {@link IndexReader#openIfChanged} on the
    *  underlying reader, and if that returns a new reader,
    *  it's warmed (if you provided a {@link SearcherWarmer}
    *  and then swapped into production.
@@ -139,8 +139,8 @@ public class SearcherManager implements Closeable {
     // threads just return immediately:
     if (reopening.tryAcquire()) {
       try {
-        IndexReader newReader = currentSearcher.getIndexReader().reopen();
-        if (newReader != currentSearcher.getIndexReader()) {
+        IndexReader newReader = IndexReader.openIfChanged(currentSearcher.getIndexReader());
+        if (newReader != null) {
           IndexSearcher newSearcher = new IndexSearcher(newReader, es);
           boolean success = false;
           try {

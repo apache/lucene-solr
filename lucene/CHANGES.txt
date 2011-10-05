@@ -19,6 +19,11 @@ Changes in backwards compatibility policy
   As this is expert API, most code will not be affected.
   (Uwe Schindler, Doron Cohen, Mike McCandless)
 
+* LUCENE-3464: IndexReader.reopen has been renamed to
+  IndexReader.openIfChanged (a static method), and now returns null
+  (instead of the old reader) if there are no changes in the index, to
+  prevent the common pitfall of accidentally closing the old reader.
+
 Bug fixes
 
 * SOLR-2762: (backport form 4.x line): FSTLookup could return duplicate 

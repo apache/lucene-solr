@@ -92,7 +92,8 @@ public class TestIndexReader extends LuceneTestCase {
         addDocumentWithFields(writer);
       writer.close();
 
-      IndexReader r3 = r2.reopen();
+      IndexReader r3 = IndexReader.openIfChanged(r2);
+      assertNotNull(r3);
       assertFalse(c.equals(r3.getIndexCommit()));
       assertFalse(r2.getIndexCommit().isOptimized());
       r3.close();
@@ -103,7 +104,8 @@ public class TestIndexReader extends LuceneTestCase {
       writer.optimize();
       writer.close();
 
-      r3 = r2.reopen();
+      r3 = IndexReader.openIfChanged(r2);
+      assertNotNull(r3);
       assertTrue(r3.getIndexCommit().isOptimized());
       r2.close();
       r3.close();
@@ -937,7 +939,8 @@ public class TestIndexReader extends LuceneTestCase {
         addDocumentWithFields(writer);
       writer.close();
 
-      IndexReader r2 = r.reopen();
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      assertNotNull(r2);
       assertFalse(c.equals(r2.getIndexCommit()));
       assertFalse(r2.getIndexCommit().isOptimized());
       r2.close();
@@ -948,7 +951,9 @@ public class TestIndexReader extends LuceneTestCase {
       writer.optimize();
       writer.close();
 
-      r2 = r.reopen();
+      r2 = IndexReader.openIfChanged(r);
+      assertNotNull(r2);
+      assertNull(IndexReader.openIfChanged(r2));
       assertTrue(r2.getIndexCommit().isOptimized());
 
       r.close();
@@ -983,7 +988,8 @@ public class TestIndexReader extends LuceneTestCase {
       writer.close();
 
       // Make sure reopen is still readonly:
-      IndexReader r2 = r.reopen();
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      assertNotNull(r2);
       r.close();
 
       assertFalse(r == r2);
@@ -1002,7 +1008,8 @@ public class TestIndexReader extends LuceneTestCase {
       writer.close();
 
       // Make sure reopen to a single segment is still readonly:
-      IndexReader r3 = r2.reopen();
+      IndexReader r3 = IndexReader.openIfChanged(r2);
+      assertNotNull(r3);
       assertFalse(r3 == r2);
       r2.close();
       
@@ -1148,7 +1155,8 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
 
     // Reopen reader1 --> reader2
-    IndexReader r2 = r.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    assertNotNull(r2);
     r.close();
     IndexReader sub0 = r2.getSequentialSubReaders()[0];
     final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number");
@@ -1175,7 +1183,8 @@ public class TestIndexReader extends LuceneTestCase {
     assertEquals(36, r1.getUniqueTermCount());
     writer.addDocument(doc);
     writer.commit();
-    IndexReader r2 = r.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    assertNotNull(r2);
     r.close();
     try {
       r2.getUniqueTermCount();
@@ -1222,7 +1231,9 @@ public class TestIndexReader extends LuceneTestCase {
     writer.close();
 
     // LUCENE-1718: ensure re-open carries over no terms index:
-    IndexReader r2 = r.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    assertNotNull(r2);
+    assertNull(IndexReader.openIfChanged(r2));
     r.close();
     IndexReader[] subReaders = r2.getSequentialSubReaders();
     assertEquals(2, subReaders.length);
@@ -1246,8 +1257,8 @@ public class TestIndexReader extends LuceneTestCase {
     writer.addDocument(doc);
     writer.prepareCommit();
     assertTrue(r.isCurrent());
-    IndexReader r2 = r.reopen();
-    assertTrue(r == r2);
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    assertNull(r2);
     writer.commit();
     assertFalse(r.isCurrent());
     writer.close();

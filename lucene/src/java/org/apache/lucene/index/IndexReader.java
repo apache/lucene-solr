@@ -23,6 +23,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.VirtualMethod;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -335,7 +336,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #reopen(IndexWriter,boolean)
+   * @see #openIfChanged(IndexReader,IndexWriter,boolean)
    *
    * @lucene.experimental
    */
@@ -461,6 +462,178 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /**
+   * If the index has changed since the provided reader was
+   * opened, open and return a new reader; else, return
+   * null.  The new reader, if not null, will be the same
+   * type of reader as the previous one, ie an NRT reader
+   * will open a new NRT reader, a MultiReader will open a
+   * new MultiReader,  etc.
+   *
+   * <p>This method is typically far less costly than opening a
+   * fully new <code>IndexReader</code> as it shares
+   * resources (for example sub-readers) with the provided
+   * <code>IndexReader</code>, when possible.
+   *
+   * <p>The provided reader is not closed (you are responsible
+   * for doing so); if a new reader is returned you also
+   * must eventually close it.  Be sure to never close a
+   * reader while other threads are still using it; see
+   * <code>SearcherManager</code> in
+   * <code>contrib/misc</code> to simplify managing this.
+   *
+   * <p>If a new reader is returned, it's safe to make changes
+   * (deletions, norms) with it.  All shared mutable state
+   * with the old reader uses "copy on write" semantics to
+   * ensure the changes are not seen by other readers.
+   *
+   * <p><b>NOTE</b>: If the provided reader is a near real-time
+   * reader, this method will return another near-real-time
+   * reader.
+   * 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   * @return null if there are no changes; else, a new
+   * IndexReader instance which you must eventually close
+   */  
+  public static IndexReader openIfChanged(IndexReader oldReader) throws IOException {
+    if (oldReader.hasNewReopenAPI1) {
+      final IndexReader newReader = oldReader.doOpenIfChanged();
+      assert newReader != oldReader;
+      return newReader;
+    } else {
+      final IndexReader newReader = oldReader.reopen();
+      if (newReader == oldReader) {
+        return null;
+      } else {
+        return newReader;
+      }
+    }
+  }
+
+  /**
+   * If the index has changed since the provided reader was
+   * opened, open and return a new reader, with the
+   * specified <code>readOnly</code>; else, return
+   * null.
+   *
+   * @see #openIfChanged(IndexReader)
+   */
+  public static IndexReader openIfChanged(IndexReader oldReader, boolean readOnly) throws IOException {
+    if (oldReader.hasNewReopenAPI2) {
+      final IndexReader newReader = oldReader.doOpenIfChanged(readOnly);
+      assert newReader != oldReader;
+      return newReader;
+    } else {
+      final IndexReader newReader = oldReader.reopen(readOnly);
+      if (newReader == oldReader) {
+        return null;
+      } else {
+        return newReader;
+      }
+    }
+  }
+
+  /**
+   * If the IndexCommit differs from what the
+   * provided reader is searching, or the provided reader is
+   * not already read-only, open and return a new
+   * <code>readOnly=true</code> reader; else, return null.
+   *
+   * @see #openIfChanged(IndexReader)
+   */
+  // TODO: should you be able to specify readOnly?
+  public static IndexReader openIfChanged(IndexReader oldReader, IndexCommit commit) throws IOException {
+    if (oldReader.hasNewReopenAPI3) {
+      final IndexReader newReader = oldReader.doOpenIfChanged(commit);
+      assert newReader != oldReader;
+      return newReader;
+    } else {
+      final IndexReader newReader = oldReader.reopen(commit);
+      if (newReader == oldReader) {
+        return null;
+      } else {
+        return newReader;
+      }
+    }
+  }
+
+  /**
+   * Expert: If there changes (committed or not) in the
+   * {@link IndexWriter} versus what the provided reader is
+   * searching, then open and return a new read-only
+   * IndexReader searching both committed and uncommitted
+   * changes from the writer; else, return null (though, the
+   * current implementation never returns null).
+   *
+   * <p>This provides "near real-time" searching, in that
+   * changes made during an {@link IndexWriter} session can be
+   * quickly made available for searching without closing
+   * the writer nor calling {@link #commit}.
+   *
+   * <p>It's <i>near</i> real-time because there is no hard
+   * guarantee on how quickly you can get a new reader after
+   * making changes with IndexWriter.  You'll have to
+   * experiment in your situation to determine if it's
+   * fast enough.  As this is a new and experimental
+   * feature, please report back on your findings so we can
+   * learn, improve and iterate.</p>
+   *
+   * <p>The very first time this method is called, this
+   * writer instance will make every effort to pool the
+   * readers that it opens for doing merges, applying
+   * deletes, etc.  This means additional resources (RAM,
+   * file descriptors, CPU time) will be consumed.</p>
+   *
+   * <p>For lower latency on reopening a reader, you should
+   * call {@link IndexWriterConfig#setMergedSegmentWarmer} to
+   * pre-warm a newly merged segment before it's committed
+   * to the index.  This is important for minimizing
+   * index-to-search delay after a large merge.  </p>
+   *
+   * <p>If an addIndexes* call is running in another thread,
+   * then this reader will only search those segments from
+   * the foreign index that have been successfully copied
+   * over, so far.</p>
+   *
+   * <p><b>NOTE</b>: Once the writer is closed, any
+   * outstanding readers may continue to be used.  However,
+   * if you attempt to reopen any of those readers, you'll
+   * hit an {@link AlreadyClosedException}.</p>
+   *
+   * @return IndexReader that covers entire index plus all
+   * changes made so far by this IndexWriter instance, or
+   * null if there are no new changes
+   *
+   * @param writer The IndexWriter to open from
+   *
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
+   *
+   * @throws IOException
+   *
+   * @lucene.experimental
+   */
+  public static IndexReader openIfChanged(IndexReader oldReader, IndexWriter writer, boolean applyAllDeletes) throws IOException {
+    if (oldReader.hasNewReopenAPI4) {
+      final IndexReader newReader = oldReader.doOpenIfChanged(writer, applyAllDeletes);
+      assert newReader != oldReader;
+      return newReader;
+    } else {
+      final IndexReader newReader = oldReader.reopen(writer, applyAllDeletes);
+      if (newReader == oldReader) {
+        return null;
+      } else {
+        return newReader;
+      }
+    }
+  }
+
+  /**
    * Refreshes an IndexReader if the index has changed since this instance 
    * was (re)opened. 
    * <p>
@@ -504,28 +677,50 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   */  
-  public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support reopen().");
+   * @deprecated Use IndexReader#openIfChanged(IndexReader) instead
+   */
+  @Deprecated
+  public IndexReader reopen() throws CorruptIndexException, IOException {
+    final IndexReader newReader = IndexReader.openIfChanged(this);
+    if (newReader == null) {
+      return this;
+    } else {
+      return newReader;
+    }
   }
-  
 
   /** Just like {@link #reopen()}, except you can change the
    *  readOnly of the original reader.  If the index is
    *  unchanged but readOnly is different then a new reader
-   *  will be returned. */
-  public synchronized IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support reopen().");
+   *  will be returned.
+   * @deprecated Use
+   * IndexReader#openIfChanged(IndexReader,boolean) instead */
+  @Deprecated
+  public IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
+    final IndexReader newReader = IndexReader.openIfChanged(this, openReadOnly);
+    if (newReader == null) {
+      return this;
+    } else {
+      return newReader;
+    }
   }
-  
+
   /** Expert: reopen this reader on a specific commit point.
    *  This always returns a readOnly reader.  If the
    *  specified commit point matches what this reader is
    *  already on, and this reader is already readOnly, then
    *  this same instance is returned; if it is not already
-   *  readOnly, a readOnly clone is returned. */
-  public synchronized IndexReader reopen(final IndexCommit commit) throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support reopen(IndexCommit).");
+   *  readOnly, a readOnly clone is returned.
+   * @deprecated Use IndexReader#openIfChanged(IndexReader,IndexCommit) instead
+   */
+  @Deprecated
+  public IndexReader reopen(IndexCommit commit) throws CorruptIndexException, IOException {
+    final IndexReader newReader = IndexReader.openIfChanged(this, commit);
+    if (newReader == null) {
+      return this;
+    } else {
+      return newReader;
+    }
   }
 
   /**
@@ -595,8 +790,31 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException
    *
    * @lucene.experimental
+   * @deprecated Use IndexReader#openIfChanged(IndexReader,IndexReader,boolean) instead
    */
+  @Deprecated
   public IndexReader reopen(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    final IndexReader newReader = IndexReader.openIfChanged(this, writer, applyAllDeletes);
+    if (newReader == null) {
+      return this;
+    } else {
+      return newReader;
+    }
+  }
+
+  protected IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not support reopen().");
+  }
+  
+  protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not support reopen().");
+  }
+
+  protected IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not support reopen(IndexCommit).");
+  }
+
+  protected IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
     return writer.getReader(applyAllDeletes);
   }
 
@@ -611,7 +829,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * changes to the index on close, but the old reader still
    * reflects all changes made up until it was cloned.
    * <p>
-   * Like {@link #reopen()}, it's safe to make changes to
+   * Like {@link #openIfChanged(IndexReader)}, it's safe to make changes to
    * either the original or the cloned reader: all shared
    * mutable state obeys "copy on write" semantics to ensure
    * the changes are not seen by other readers.
@@ -697,7 +915,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * implemented in the IndexReader base class.
    *
    * <p>If this reader is based on a Directory (ie, was
-   * created by calling {@link #open}, or {@link #reopen} on
+   * created by calling {@link #open}, or {@link #openIfChanged} on
    * a reader based on a Directory), then this method
    * returns the version recorded in the commit that the
    * reader opened.  This version is advanced every time
@@ -705,7 +923,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * <p>If instead this reader is a near real-time reader
    * (ie, obtained by a call to {@link
-   * IndexWriter#getReader}, or by calling {@link #reopen}
+   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method returns
    * the version of the last commit done by the writer.
    * Note that even as further changes are made with the
@@ -738,14 +956,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * index since this reader was opened.
    *
    * <p>If this reader is based on a Directory (ie, was
-   * created by calling {@link #open}, or {@link #reopen} on
+   * created by calling {@link #open}, or {@link #openIfChanged} on
    * a reader based on a Directory), then this method checks
    * if any further commits (see {@link IndexWriter#commit}
    * have occurred in that directory).</p>
    *
    * <p>If instead this reader is a near real-time reader
    * (ie, obtained by a call to {@link
-   * IndexWriter#getReader}, or by calling {@link #reopen}
+   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method checks if
    * either a new commmit has occurred, or any new
    * uncommitted changes have taken place via the writer.
@@ -753,7 +971,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * merging, this method will still return false.</p>
    *
    * <p>In any event, if this returns false, you should call
-   * {@link #reopen} to get a new reader that sees the
+   * {@link #openIfChanged} to get a new reader that sees the
    * changes.</p>
    *
    * @throws CorruptIndexException if the index is corrupt
@@ -1415,6 +1633,54 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
   }
+
+  // Back compat for reopen()
+  @Deprecated
+  private static final VirtualMethod<IndexReader> reopenMethod1 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "reopen");
+  @Deprecated
+  private static final VirtualMethod<IndexReader> doOpenIfChangedMethod1 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "doOpenIfChanged");
+  @Deprecated
+  private final boolean hasNewReopenAPI1 =
+    VirtualMethod.compareImplementationDistance(getClass(),
+        doOpenIfChangedMethod1, reopenMethod1) >= 0; // its ok for both to be overridden
+
+  // Back compat for reopen(boolean openReadOnly)
+  @Deprecated
+  private static final VirtualMethod<IndexReader> reopenMethod2 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "reopen", boolean.class);
+  @Deprecated
+  private static final VirtualMethod<IndexReader> doOpenIfChangedMethod2 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "doOpenIfChanged", boolean.class);
+  @Deprecated
+  private final boolean hasNewReopenAPI2 =
+    VirtualMethod.compareImplementationDistance(getClass(),
+        doOpenIfChangedMethod2, reopenMethod2) >= 0; // its ok for both to be overridden
+
+  // Back compat for reopen(IndexCommit commit)
+  @Deprecated
+  private static final VirtualMethod<IndexReader> reopenMethod3 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "reopen", IndexCommit.class);
+  @Deprecated
+  private static final VirtualMethod<IndexReader> doOpenIfChangedMethod3 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "doOpenIfChanged", IndexCommit.class);
+  @Deprecated
+  private final boolean hasNewReopenAPI3 =
+    VirtualMethod.compareImplementationDistance(getClass(),
+        doOpenIfChangedMethod3, reopenMethod3) >= 0; // its ok for both to be overridden
+
+  // Back compat for reopen(IndexWriter writer, boolean applyDeletes)
+  @Deprecated
+  private static final VirtualMethod<IndexReader> reopenMethod4 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "reopen", IndexWriter.class, boolean.class);
+  @Deprecated
+  private static final VirtualMethod<IndexReader> doOpenIfChangedMethod4 =
+    new VirtualMethod<IndexReader>(IndexReader.class, "doOpenIfChanged", IndexWriter.class, boolean.class);
+  @Deprecated
+  private final boolean hasNewReopenAPI4 =
+    VirtualMethod.compareImplementationDistance(getClass(),
+        doOpenIfChangedMethod4, reopenMethod4) >= 0; // its ok for both to be overridden
 
   /** For IndexReader implementations that use
    *  TermInfosReader to read terms, this returns the

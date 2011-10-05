@@ -1077,10 +1077,11 @@ public final class SolrCore implements SolrInfoMBean {
       if (newestSearcher != null && solrConfig.reopenReaders
           && indexDirFile.equals(newIndexDirFile)) {
         IndexReader currentReader = newestSearcher.get().getReader();
-        IndexReader newReader = currentReader.reopen();
+        IndexReader newReader = IndexReader.openIfChanged(currentReader);
 
-        if (newReader == currentReader) {
+        if (newReader == null) {
           currentReader.incRef();
+          newReader = currentReader;
         }
 
         tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);

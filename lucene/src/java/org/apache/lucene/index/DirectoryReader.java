@@ -183,7 +183,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     initialize(readers.toArray(new SegmentReader[readers.size()]));
   }
 
-  /** This constructor is only used for {@link #reopen()} */
+  /** This constructor is only used for {@link #doOpenIfChanged()} */
   DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
                   Map<String,byte[]> oldNormsCache, boolean readOnly, boolean doClone, int termInfosIndexDivisor,
                   Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
@@ -234,18 +234,21 @@ class DirectoryReader extends IndexReader implements Cloneable {
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = SegmentReader.get(readOnly, infos.info(i), termInfosIndexDivisor);
           newReader.readerFinishedListeners = readerFinishedListeners;
-        } else {
-          newReader = newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
-          assert newReader.readerFinishedListeners == readerFinishedListeners;
-        }
-        if (newReader == newReaders[i]) {
-          // this reader will be shared between the old and the new one,
-          // so we must incRef it
-          readerShared[i] = true;
-          newReader.incRef();
-        } else {
           readerShared[i] = false;
           newReaders[i] = newReader;
+        } else {
+          newReader = newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
+          if (newReader == null) {
+            // this reader will be shared between the old and the new one,
+            // so we must incRef it
+            readerShared[i] = true;
+            newReaders[i].incRef();
+          } else {
+            assert newReader.readerFinishedListeners == readerFinishedListeners;
+            readerShared[i] = false;
+            // Steal ref returned to us by reopenSegment:
+            newReaders[i] = newReader;
+          }
         }
         success = true;
       } finally {
@@ -359,8 +362,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   @Override
   public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
-    // doReopen calls ensureOpen
-    DirectoryReader newReader = doReopen((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
+    // doOpenIfChanged calls ensureOpen
+    DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
 
     if (this != newReader) {
       newReader.deletionPolicy = deletionPolicy;
@@ -383,22 +386,24 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public final IndexReader reopen() throws CorruptIndexException, IOException {
+  protected final IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     // Preserve current readOnly
-    return doReopen(readOnly, null);
+    return doOpenIfChanged(readOnly, null);
   }
 
   @Override
-  public final IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
-    return doReopen(openReadOnly, null);
+  protected final IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
+    return doOpenIfChanged(openReadOnly, null);
   }
 
   @Override
-  public final IndexReader reopen(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return doReopen(true, commit);
+  protected final IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return doOpenIfChanged(true, commit);
   }
 
-  private final IndexReader doReopenFromWriter(boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
+  // NOTE: always returns a non-null result (ie new reader)
+  // but that could change someday
+  private final IndexReader doOpenFromWriter(boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
     assert readOnly;
 
     if (!openReadOnly) {
@@ -417,7 +422,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return reader;
   }
 
-  private IndexReader doReopen(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
+  private IndexReader doOpenIfChanged(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
     ensureOpen();
 
     assert commit == null || openReadOnly;
@@ -425,13 +430,13 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // If we were obtained by writer.getReader(), re-ask the
     // writer to get a new reader.
     if (writer != null) {
-      return doReopenFromWriter(openReadOnly, commit);
+      return doOpenFromWriter(openReadOnly, commit);
     } else {
-      return doReopenNoWriter(openReadOnly, commit);
+      return doOpenNoWriter(openReadOnly, commit);
     }
   }
 
-  private synchronized IndexReader doReopenNoWriter(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
+  private synchronized IndexReader doOpenNoWriter(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
 
     if (commit == null) {
       if (hasChanges) {
@@ -446,25 +451,26 @@ class DirectoryReader extends IndexReader implements Cloneable {
         if (openReadOnly) {
           return clone(openReadOnly);
         } else {
-          return this;
+          return null;
         }
       } else if (isCurrent()) {
         if (openReadOnly != readOnly) {
           // Just fallback to clone
           return clone(openReadOnly);
         } else {
-          return this;
+          return null;
         }
       }
     } else {
-      if (directory != commit.getDirectory())
+      if (directory != commit.getDirectory()) {
         throw new IOException("the specified commit does not match the specified Directory");
+      }
       if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getCurrentSegmentFileName())) {
         if (readOnly != openReadOnly) {
           // Just fallback to clone
           return clone(openReadOnly);
         } else {
-          return this;
+          return null;
         }
       }
     }
@@ -474,12 +480,12 @@ class DirectoryReader extends IndexReader implements Cloneable {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-        return doReopen(infos, false, openReadOnly);
+        return doOpenIfChanged(infos, false, openReadOnly);
       }
     }.run(commit);
   }
 
-  private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
+  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
     if (openReadOnly) {
       reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone, termInfosIndexDivisor, readerFinishedListeners);

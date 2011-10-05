@@ -667,8 +667,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
 
-    IndexReader r2 = r1.reopen();
-    if (r2 != r1) {
+    IndexReader r2 = IndexReader.openIfChanged(r1);
+    if (r2 != null) {
       r1.close();
       r1 = r2;
     }
@@ -699,7 +699,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, searcher.search(q, 10).totalHits);
     searcher.close();
     try {
-      r.reopen();
+      IndexReader.openIfChanged(r);
       fail("failed to hit AlreadyClosedException");
     } catch (AlreadyClosedException ace) {
       // expected
@@ -758,8 +758,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     int lastCount = 0;
     while(System.currentTimeMillis() < endTime) {
-      IndexReader r2 = r.reopen();
-      if (r2 != r) {
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      if (r2 != null) {
         r.close();
         r = r2;
       }
@@ -775,7 +775,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       threads[i].join();
     }
     // final check
-    IndexReader r2 = r.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(r);
     if (r2 != r) {
       r.close();
       r = r2;
@@ -850,7 +850,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     int sum = 0;
     while(System.currentTimeMillis() < endTime) {
-      IndexReader r2 = r.reopen();
+      IndexReader r2 = IndexReader.openIfChanged(r);
       if (r2 != r) {
         r.close();
         r = r2;
@@ -865,8 +865,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
       threads[i].join();
     }
     // at least search once
-    IndexReader r2 = r.reopen();
-    if (r2 != r) {
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    if (r2 != null) {
       r.close();
       r = r2;
     }
