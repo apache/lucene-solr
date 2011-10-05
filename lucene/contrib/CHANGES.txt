@@ -54,6 +54,10 @@ Bug Fixes
    
  * LUCENE-3484: Fix NPE in TaxonomyWriter: parents array creation was not thread safe.
    (Doron Cohen)
+   
+ * LUCENE-3485: Fix a bug in LuceneTaxonomyReader, where calling decRef() might
+   close the inner IndexReader, leaving the taxonomy reader in limbo.
+   (Gilad Barkai via Shai Erera)
 
 API Changes
  
