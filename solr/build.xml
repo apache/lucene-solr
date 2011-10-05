@@ -456,12 +456,14 @@
           <packageset dir="contrib/dataimporthandler/src/java"/>
           <packageset dir="contrib/dataimporthandler-extras/src/java"/>
           <packageset dir="contrib/extraction/src/java"/>
+          <packageset dir="contrib/langid/src/java"/>
           <packageset dir="contrib/uima/src/java"/>
           <group title="Core" packages="org.apache.*" />
           <group title="SolrJ" packages="org.apache.solr.common.*,org.apache.solr.client.solrj*" />
           <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
           <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
+          <group title="contrib: Solr LangId" packages="org.apache.solr.update.processor.LanguageIdentifier*,org.apache.solr.update.processor.LangIdParams*,org.apache.solr.update.processor.DetectedLanguage*" />
           <group title="contrib: Solr UIMA" packages="org.apache.solr.uima*" />
         </sources>
       </invoke-javadoc>

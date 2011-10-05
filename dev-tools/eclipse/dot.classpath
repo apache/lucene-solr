@@ -71,6 +71,9 @@
 	<classpathentry kind="src" path="solr/contrib/extraction/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/resources"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/test"/>

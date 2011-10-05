@@ -354,6 +354,9 @@ New Features
 * SOLR-2769: Added factory for the new Hunspell stemmer capable of doing stemming 
   for 99 languages (janhoy, cmale)
 
+* SOLR-1979: New contrib "langid". Adds language identification capabilities as an 
+  Update Processor, using Tika's LanguageIdentifier (janhoy, Tommaso Teofili, gsingers)
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
