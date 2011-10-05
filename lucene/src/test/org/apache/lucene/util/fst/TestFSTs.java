@@ -53,10 +53,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.fst.FST.Arc;
 
+@UseNoMemoryExpensiveCodec
 public class TestFSTs extends LuceneTestCase {
 
   private MockDirectoryWrapper dir;

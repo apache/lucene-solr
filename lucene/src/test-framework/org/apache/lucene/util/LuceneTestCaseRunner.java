@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -156,6 +157,19 @@ public class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
   
   public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
     super(clazz);
+    
+    // This TestRunner can handle only LuceneTestCase subclasses
+    if (!LuceneTestCase.class.isAssignableFrom(clazz)) {
+      throw new UnsupportedOperationException("LuceneTestCaseRunner can only be used with LuceneTestCase.");
+    }
+    
+    final boolean useNoMemoryExpensiveCodec = LuceneTestCase.useNoMemoryExpensiveCodec =
+      clazz.isAnnotationPresent(UseNoMemoryExpensiveCodec.class);
+    if (useNoMemoryExpensiveCodec) {
+      System.err.println("NOTE: Using no memory expensive codecs (Memory, SimpleText) for " +
+        clazz.getSimpleName() + ".");
+    }
+    
     // evil we cannot init our random here, because super() calls computeTestMethods!!!!;
     Filter f = new Filter() {
       
