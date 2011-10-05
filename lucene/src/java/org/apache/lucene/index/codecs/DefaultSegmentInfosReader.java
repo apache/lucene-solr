@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldsReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexFormatTooNewException;
@@ -79,7 +78,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
           }
 
           try {
-            FieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+            DefaultFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
           } finally {
             // If we opened the directory, close it
             if (dir != directory) dir.close();

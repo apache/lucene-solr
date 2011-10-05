@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -18,6 +18,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -25,7 +28,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-final class FieldsWriter {
+/** @lucene.experimental */
+public final class DefaultFieldsWriter extends FieldsWriter {
   // NOTE: bit 0 is free here!  You can steal it!
   static final int FIELD_IS_BINARY = 1 << 1;
 
@@ -63,7 +67,7 @@ final class FieldsWriter {
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
-  FieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  DefaultFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
 
@@ -83,7 +87,7 @@ final class FieldsWriter {
     }
   }
 
-  FieldsWriter(IndexOutput fdx, IndexOutput fdt) {
+  DefaultFieldsWriter(IndexOutput fdx, IndexOutput fdt) {
     directory = null;
     segment = null;
     fieldsStream = fdt;
@@ -98,17 +102,17 @@ final class FieldsWriter {
   // and adds a new entry for this document into the index
   // stream.  This assumes the buffer was already written
   // in the correct fields format.
-  void startDocument(int numStoredFields) throws IOException {
+  public void startDocument(int numStoredFields) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
     fieldsStream.writeVInt(numStoredFields);
   }
 
-  void skipDocument() throws IOException {
+  public void skipDocument() throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
     fieldsStream.writeVInt(0);
   }
 
-  void close() throws IOException {
+  public void close() throws IOException {
     if (directory != null) {
       try {
         IOUtils.close(fieldsStream, indexStream);
@@ -118,7 +122,7 @@ final class FieldsWriter {
     }
   }
 
-  void abort() {
+  public void abort() {
     if (directory != null) {
       try {
         close();
@@ -135,7 +139,7 @@ final class FieldsWriter {
     }
   }
 
-  final void writeField(int fieldNumber, IndexableField field) throws IOException {
+  public final void writeField(int fieldNumber, IndexableField field) throws IOException {
     fieldsStream.writeVInt(fieldNumber);
     int bits = 0;
     final BytesRef bytes;
@@ -201,7 +205,7 @@ final class FieldsWriter {
    *  document.  The stream IndexInput is the
    *  fieldsStream from which we should bulk-copy all
    *  bytes. */
-  final void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
+  public final void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
     long position = fieldsStream.getFilePointer();
     long start = position;
     for(int i=0;i<numDocs;i++) {
@@ -212,7 +216,7 @@ final class FieldsWriter {
     assert fieldsStream.getFilePointer() == position;
   }
 
-  final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
+  public final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
 
     int storedCount = 0;
