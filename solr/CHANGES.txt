@@ -100,6 +100,7 @@ Bug Fixes
 * SOLR-2757: min() and max() functions now support an arbitrary number of 
   ValueSources  (Bill Bell via hossman)
 
+* SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
 ==================  3.4.0  ==================
 
