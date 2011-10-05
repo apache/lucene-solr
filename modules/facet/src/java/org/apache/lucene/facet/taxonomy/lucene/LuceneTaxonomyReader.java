@@ -69,7 +69,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   private ReadWriteLock indexReaderLock = new ReentrantReadWriteLock();
 
   // The following are the limited-size LRU caches used to cache the latest
-  // results from getOrdinal() and getCategoryCache().
+  // results from getOrdinal() and getLabel().
   // Because LRUHashMap is not thread-safe, we need to synchronize on this
   // object when using it. Unfortunately, this is not optimal under heavy
   // contention because it means that while one thread is using the cache
@@ -82,8 +82,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   // the mistake of locking out readers while waiting for disk in a cache
   // miss - below, we do not hold cache lock while reading missing data from
   // disk.
-  private final LRUHashMap<String, Integer> getOrdinalCache;
-  private final LRUHashMap<Integer, String> getCategoryCache;
+  private final LRUHashMap<String, Integer> ordinalCache;
+  private final LRUHashMap<Integer, String> categoryCache;
 
   // getParent() needs to be extremely efficient, to the point that we need
   // to fetch all the data in advance into memory, and answer these calls
@@ -117,10 +117,10 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
 
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    getOrdinalCache = new LRUHashMap<String, Integer>(4000);
-    getCategoryCache = new LRUHashMap<Integer, String>(4000);
+    ordinalCache = new LRUHashMap<String, Integer>(4000);
+    categoryCache = new LRUHashMap<Integer, String>(4000);
 
-    // TODO (Facet): consider lazily create parent array it when asked, not in the constructor
+    // TODO (Facet): consider lazily create parent array when asked, not in the constructor
     parentArray = new ParentArray();
     parentArray.refresh(indexReader);
   }
@@ -149,11 +149,11 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    */
   public void setCacheSize(int size) {
     ensureOpen();
-    synchronized(getCategoryCache) {
-      getCategoryCache.setMaxSize(size);
+    synchronized(categoryCache) {
+      categoryCache.setMaxSize(size);
     }
-    synchronized(getOrdinalCache) {
-      getOrdinalCache.setMaxSize(size);
+    synchronized(ordinalCache) {
+      ordinalCache.setMaxSize(size);
     }
   }
 
@@ -180,8 +180,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     String path = categoryPath.toString(delimiter);
 
     // First try to find the answer in the LRU cache:
-    synchronized(getOrdinalCache) {
-      Integer res = getOrdinalCache.get(path);
+    synchronized(ordinalCache) {
+      Integer res = ordinalCache.get(path);
       if (res!=null) {
         return res.intValue();
       }
@@ -207,10 +207,10 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // other thread already added the same category to the cache. We do
     // not care about this possibilty, as LRUCache replaces previous values
     // of the same keys (it doesn't store duplicates).
-    synchronized(getOrdinalCache) {
+    synchronized(ordinalCache) {
       // GB: new Integer(int); creates a new object each and every time.
       // Integer.valueOf(int) might not (See JavaDoc). 
-      getOrdinalCache.put(path, Integer.valueOf(ret));
+      ordinalCache.put(path, Integer.valueOf(ret));
     }
 
     return ret;
@@ -254,8 +254,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // Integer.valueOf(int) might not (See JavaDoc). 
     Integer catIDInteger = Integer.valueOf(catID);
 
-    synchronized(getCategoryCache) {
-      String res = getCategoryCache.get(catIDInteger);
+    synchronized(categoryCache) {
+      String res = categoryCache.get(catIDInteger);
       if (res!=null) {
         return res;
       }
@@ -287,8 +287,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // other thread already added the same category to the cache. We do
     // not care about this possibility, as LRUCache replaces previous
     // values of the same keys (it doesn't store duplicates).
-    synchronized (getCategoryCache) {
-      getCategoryCache.put(catIDInteger, ret);
+    synchronized (categoryCache) {
+      categoryCache.put(catIDInteger, ret);
     }
 
     return ret;
@@ -389,7 +389,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
 
       // Remove any INVALID_ORDINAL values from the ordinal cache,
       // because it is possible those are now answered by the new data!
-      Iterator<Entry<String, Integer>> i = getOrdinalCache.entrySet().iterator();
+      Iterator<Entry<String, Integer>> i = ordinalCache.entrySet().iterator();
       while (i.hasNext()) {
         Entry<String, Integer> e = i.next();
         if (e.getValue().intValue() == INVALID_ORDINAL) {
@@ -413,8 +413,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
 
     parentArray = null;
     childrenArrays = null;
-    getCategoryCache.clear();
-    getOrdinalCache.clear();
+    categoryCache.clear();
+    ordinalCache.clear();
   }
 
   public int getSize() {
