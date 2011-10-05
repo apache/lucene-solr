@@ -17,10 +17,10 @@ You will need Solr up and running.  Then, simply add the extraction JAR file, pl
 to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequestHandler for more details on hooking it in
  and configuring.
 
- Tika Dependency
- ---------------
+Tika Dependency
+---------------
 
-Current Version: Tika 0.8 (released 11/07/2010)
+Current Version: Tika 0.10 (released 2011-09-30)
 
 $Id$
 
@@ -30,7 +30,7 @@ $Id$
 
 ================== Release 3.5.0 ==================
 
-(No Changes)
+* SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
 ================== Release 3.4.0 ==================
 

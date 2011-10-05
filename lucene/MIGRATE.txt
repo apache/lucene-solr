@@ -522,3 +522,8 @@ you can now do this:
   It is now necessary to use Analyzer.TokenStreamComponents to define an analysis process.
   Analyzer also has its own way of managing the reuse of TokenStreamComponents (either
   globally, or per-field).  To define another Strategy, implement Analyzer.ReuseStrategy.
+
+* LUCENE-3464: IndexReader.reopen has been renamed to
+  IndexReader.openIfChanged (a static method), and now returns null
+  (instead of the old reader) if there are no changes to the index, to
+  prevent the common pitfall of accidentally closing the old reader.

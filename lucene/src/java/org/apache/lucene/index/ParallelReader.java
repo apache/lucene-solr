@@ -229,12 +229,12 @@ public class ParallelReader extends IndexReader {
    * <br>
    * If one or more subreaders could be re-opened (i. e. subReader.reopen() 
    * returned a new instance != subReader), then a new ParallelReader instance 
-   * is returned, otherwise this instance is returned.
+   * is returned, otherwise null is returned.
    * <p>
    * A re-opened instance might share one or more subreaders with the old 
    * instance. Index modification operations result in undefined behavior
    * when performed before the old instance is closed.
-   * (see {@link IndexReader#reopen()}).
+   * (see {@link IndexReader#openIfChanged}).
    * <p>
    * If subreaders are shared, then the reference count of those
    * readers is increased to ensure that the subreaders remain open
@@ -244,7 +244,7 @@ public class ParallelReader extends IndexReader {
    * @throws IOException if there is a low-level IO error 
    */
   @Override
-  public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     // doReopen calls ensureOpen
     return doReopen(false);
   }
@@ -262,15 +262,16 @@ public class ParallelReader extends IndexReader {
         IndexReader newReader = null;
         if (doClone) {
           newReader = (IndexReader) oldReader.clone();
+          reopened = true;
         } else {
-          newReader = oldReader.reopen();
+          newReader = IndexReader.openIfChanged(oldReader);
+          if (newReader != null) {
+            reopened = true;
+          } else {
+            newReader = oldReader;
+          }
         }
         newReaders.add(newReader);
-        // if at least one of the subreaders was updated we remember that
-        // and return a new ParallelReader
-        if (newReader != oldReader) {
-          reopened = true;
-        }
       }
       success = true;
     } finally {
@@ -310,7 +311,7 @@ public class ParallelReader extends IndexReader {
       return pr;
     } else {
       // No subreader was refreshed
-      return this;
+      return null;
     }
   }
 

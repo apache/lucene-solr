@@ -115,7 +115,8 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.modifyIndex(5, dir1);
     
-    IndexReader reader2 = reader1.reopen();
+    IndexReader reader2 = IndexReader.openIfChanged(reader1);
+    assertNotNull(reader2);
     assertTrue(reader1 != reader2);
 
     assertTrue(deleteWorked(1, reader2));
@@ -156,7 +157,8 @@ public class TestIndexReaderClone extends LuceneTestCase {
     assertTrue(deleteWorked(1, reader));
     assertEquals(docCount-1, reader.numDocs());
 
-    IndexReader readOnlyReader = reader.reopen(true);
+    IndexReader readOnlyReader = IndexReader.openIfChanged(reader, true);
+    assertNotNull(readOnlyReader);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
     }
@@ -394,7 +396,10 @@ public class TestIndexReaderClone extends LuceneTestCase {
     assertDelDocsRefCountEquals(1, clonedSegmentReader);
 
     // test a reopened reader
-    IndexReader reopenedReader = clonedReader.reopen();
+    IndexReader reopenedReader = IndexReader.openIfChanged(clonedReader);
+    if (reopenedReader == null) {
+      reopenedReader = clonedReader;
+    }
     IndexReader cloneReader2 = (IndexReader) reopenedReader.clone();
     SegmentReader cloneSegmentReader2 = getOnlySegmentReader(cloneReader2);
     assertDelDocsRefCountEquals(2, cloneSegmentReader2);

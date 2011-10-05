@@ -26,6 +26,7 @@ import java.text.NumberFormat;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -151,6 +152,7 @@ public class DocumentsWriterPerThread {
   }
   private final static boolean INFO_VERBOSE = false;
   final DocumentsWriter parent;
+  final CodecProvider codecProvider;
   final IndexWriter writer;
   final Directory directory;
   final DocState docState;
@@ -181,6 +183,7 @@ public class DocumentsWriterPerThread {
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
     this.infoStream = parent.infoStream;
+    this.codecProvider = this.writer.codecs;
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();

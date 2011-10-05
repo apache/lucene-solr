@@ -17,11 +17,16 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /** Holds a set of codecs, keyed by name.  You subclass
  *  this, instantiate it, and register your codecs, then
@@ -104,6 +109,16 @@ public class CodecProvider {
   
   public SegmentInfosReader getSegmentInfosReader() {
     return infosReader;
+  }
+  
+  /** expert */
+  public FieldsReader fieldsReader(Directory directory, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException {
+    return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
+  }
+
+  /** expert */
+  public FieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+    return new DefaultFieldsWriter(directory, segment, context);
   }
 
   static private CodecProvider defaultCodecs = new CoreCodecProvider();

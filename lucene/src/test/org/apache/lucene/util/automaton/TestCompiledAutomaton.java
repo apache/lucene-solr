@@ -19,6 +19,7 @@ package org.apache.lucene.util.automaton;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,12 +31,12 @@ import org.apache.lucene.util._TestUtil;
 public class TestCompiledAutomaton extends LuceneTestCase {
 
   private CompiledAutomaton build(String... strings) {
-    final List<Automaton> as = new ArrayList<Automaton>();
+    final List<BytesRef> terms = new ArrayList<BytesRef>();
     for(String s : strings) {
-      as.add(BasicAutomata.makeString(s));
+      terms.add(new BytesRef(s));
     }
-    Automaton a = BasicOperations.union(as);
-    a.determinize();
+    Collections.sort(terms);
+    final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
     return new CompiledAutomaton(a, true, false);
   }
 
@@ -93,7 +94,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    final int numTerms = atLeast(1000);
+    final int numTerms = atLeast(400);
     final Set<String> terms = new HashSet<String>();
     while(terms.size() != numTerms) {
       terms.add(randomString());
@@ -107,7 +108,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    CompiledAutomaton c = build("foo", "fob", "goo");
+    CompiledAutomaton c = build("fob", "foo", "goo");
     testFloor(c, "goo", "goo");
     testFloor(c, "ga", "foo");
     testFloor(c, "g", "foo");

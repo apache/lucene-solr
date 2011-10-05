@@ -34,8 +34,8 @@ public class ReopenReaderTask extends PerfTask {
   @Override
   public int doLogic() throws IOException {
     IndexReader r = getRunData().getIndexReader();
-    IndexReader nr = r.reopen();
-    if (nr != r) {
+    IndexReader nr = IndexReader.openIfChanged(r);
+    if (nr != null) {
       getRunData().setIndexReader(nr);
       nr.decRef();
     }

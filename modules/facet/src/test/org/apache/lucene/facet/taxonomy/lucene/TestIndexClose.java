@@ -160,10 +160,10 @@ public class TestIndexClose extends LuceneTestCase {
         //        System.err.println("opened "+mynum);
       }
       @Override
-      public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
-        IndexReader n = in.reopen();
-        if (n==in) {
-          return this;
+      protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
+        IndexReader n = IndexReader.openIfChanged(in);
+        if (n == null) {
+          return null;
         }
         return new InstrumentedIndexReader(n);
       }

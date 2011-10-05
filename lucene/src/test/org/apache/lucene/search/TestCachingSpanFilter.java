@@ -152,10 +152,12 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
   private static IndexReader refreshReader(IndexReader reader) throws IOException {
     IndexReader oldReader = reader;
-    reader = reader.reopen();
-    if (reader != oldReader) {
+    reader = IndexReader.openIfChanged(reader);
+    if (reader != null) {
       oldReader.close();
+      return reader;
+    } else {
+      return oldReader;
     }
-    return reader;
   }
 }

@@ -135,8 +135,8 @@ public class TestRollingUpdates extends LuceneTestCase {
             if (open == null) {
               open = IndexReader.open(writer, true);
             }
-            IndexReader reader = open.reopen();
-            if (reader != open) {
+            IndexReader reader = IndexReader.openIfChanged(open);
+            if (reader != null) {
               open.close();
               open = reader;
             }

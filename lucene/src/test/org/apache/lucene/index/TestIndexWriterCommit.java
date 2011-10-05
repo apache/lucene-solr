@@ -348,7 +348,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
                   f.setValue(s);
                   w.addDocument(doc);
                   w.commit();
-                  IndexReader r2 = r.reopen();
+                  IndexReader r2 = IndexReader.openIfChanged(r);
+                  assertNotNull(r2);
                   assertTrue(r2 != r);
                   r.close();
                   r = r2;
@@ -390,7 +391,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
     writer.commit();
-    IndexReader reader2 = reader.reopen();
+    IndexReader reader2 = IndexReader.openIfChanged(reader);
+    assertNotNull(reader2);
     assertEquals(0, reader.numDocs());
     assertEquals(23, reader2.numDocs());
     reader.close();
@@ -530,7 +532,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     writer.commit();
 
-    IndexReader reader3 = reader.reopen();
+    IndexReader reader3 = IndexReader.openIfChanged(reader);
+    assertNotNull(reader3);
     assertEquals(0, reader.numDocs());
     assertEquals(0, reader2.numDocs());
     assertEquals(23, reader3.numDocs());
@@ -586,10 +589,10 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     writer.rollback();
 
-    IndexReader reader3 = reader.reopen();
+    IndexReader reader3 = IndexReader.openIfChanged(reader);
+    assertNull(reader3);
     assertEquals(0, reader.numDocs());
     assertEquals(0, reader2.numDocs());
-    assertEquals(0, reader3.numDocs());
     reader.close();
     reader2.close();
 
@@ -597,8 +600,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for (int i = 0; i < 17; i++)
       TestIndexWriter.addDoc(writer);
 
-    assertEquals(0, reader3.numDocs());
-    reader3.close();
     reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
     reader.close();

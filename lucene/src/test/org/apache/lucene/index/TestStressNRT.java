@@ -147,7 +147,7 @@ public class TestStressNRT extends LuceneTestCase {
                       if (VERBOSE) {
                         System.out.println("TEST: " + Thread.currentThread().getName() + ": reopen reader=" + oldReader + " version=" + version);
                       }
-                      newReader = oldReader.reopen(writer.w, true);
+                      newReader = IndexReader.openIfChanged(oldReader, writer.w, true);
                     }
                   } else {
                     // assertU(commit());
@@ -158,13 +158,14 @@ public class TestStressNRT extends LuceneTestCase {
                     if (VERBOSE) {
                       System.out.println("TEST: " + Thread.currentThread().getName() + ": now reopen after commit");
                     }
-                    newReader = oldReader.reopen();
+                    newReader = IndexReader.openIfChanged(oldReader);
                   }
 
                   // Code below assumes newReader comes w/
                   // extra ref:
-                  if (newReader == oldReader) {
-                    newReader.incRef();
+                  if (newReader == null) {
+                    oldReader.incRef();
+                    newReader = oldReader;
                   }
 
                   oldReader.decRef();

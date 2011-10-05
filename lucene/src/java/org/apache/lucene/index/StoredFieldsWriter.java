@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -33,10 +35,12 @@ final class StoredFieldsWriter {
   int freeCount;
 
   final DocumentsWriterPerThread.DocState docState;
+  final CodecProvider codecProvider;
 
   public StoredFieldsWriter(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     this.docState = docWriter.docState;
+    this.codecProvider = docWriter.codecProvider;
   }
 
   private int numStoredFields;
@@ -77,7 +81,7 @@ final class StoredFieldsWriter {
 
   private synchronized void initFieldsWriter(IOContext context) throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment(), context);
+      fieldsWriter = codecProvider.fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
       lastDocID = 0;
     }
   }

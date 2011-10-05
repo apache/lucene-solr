@@ -1402,7 +1402,8 @@ public class TestIndexWriter extends LuceneTestCase {
       if (iter == 1) {
         w.commit();
       }
-      IndexReader r2 = r.reopen();
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      assertNotNull(r2);
       assertTrue(r != r2);
       files = Arrays.asList(dir.listAll());
 

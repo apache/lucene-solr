@@ -385,11 +385,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     IndexReader currentReader = previousSearcher.getIndexReader();
     IndexReader newReader;
 
-    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(core), true);
+    newReader = IndexReader.openIfChanged(currentReader, indexWriterProvider.getIndexWriter(core), true);
   
     
-    if (newReader == currentReader) {
+    if (newReader == null) {
       currentReader.incRef();
+      newReader = currentReader;
     }
 
     return new SolrIndexSearcher(core, schema, "main", newReader, true, true, true, core.getDirectoryFactory());
@@ -490,15 +491,15 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
-    if (commitTracker.getTimeUpperBound() > 0) {
+    if (commitTracker.getDocsUpperBound() > 0) {
       lst.add("autocommit maxDocs", commitTracker.getDocsUpperBound());
     }
     if (commitTracker.getTimeUpperBound() > 0) {
       lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");
     }
     lst.add("autocommits", commitTracker.getCommitCount());
-    if (softCommitTracker.getTimeUpperBound() > 0) {
-      lst.add("soft autocommit maxDocs", softCommitTracker.getTimeUpperBound());
+    if (softCommitTracker.getDocsUpperBound() > 0) {
+      lst.add("soft autocommit maxDocs", softCommitTracker.getDocsUpperBound());
     }
     if (softCommitTracker.getTimeUpperBound() > 0) {
       lst.add("soft autocommit maxTime", "" + softCommitTracker.getTimeUpperBound() + "ms");
