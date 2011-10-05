@@ -359,6 +359,7 @@ final class SegmentMerger {
     int docCount = 0;
     if (matchingFieldsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
+      // nocommit: not if they are different impls, and this shouldn't be here (this stuff should be in codec)
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
         IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, docCount, len);
@@ -474,6 +475,7 @@ final class SegmentMerger {
     final int maxDoc = reader.reader.maxDoc();
     if (matchingVectorsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
+      // nocommit: not if they are different impls, and this shouldn't be here (this stuff should be in codec)
       int docCount = 0;
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
