@@ -514,17 +514,17 @@ public final class Bytes {
           Writer.DATA_EXTENSION), context);
       boolean success = false;
       try {
-      version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
-      if (doIndex) {
-        idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.INDEX_EXTENSION), context);
-        final int version2 = CodecUtil.checkHeader(idxIn, codecName,
-            maxVersion, maxVersion);
-        assert version == version2;
-      } else {
-        idxIn = null;
-      }
-      success = true;
+        version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
+        if (doIndex) {
+          idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+                                                               Writer.INDEX_EXTENSION), context);
+          final int version2 = CodecUtil.checkHeader(idxIn, codecName,
+                                                     maxVersion, maxVersion);
+          assert version == version2;
+        } else {
+          idxIn = null;
+        }
+        success = true;
       } finally {
         if (!success) {
           closeInternal();

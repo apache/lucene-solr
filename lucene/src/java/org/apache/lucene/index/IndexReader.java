@@ -233,7 +233,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public boolean tryIncRef() {
     int count;
     while ((count = refCount.get()) > 0) {
-      if(refCount.compareAndSet(count, count+1)) {
+      if (refCount.compareAndSet(count, count+1)) {
         return true;
       }
     }
