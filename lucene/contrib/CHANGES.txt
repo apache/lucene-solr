@@ -58,6 +58,9 @@ Bug Fixes
  * LUCENE-3485: Fix a bug in LuceneTaxonomyReader, where calling decRef() might
    close the inner IndexReader, leaving the taxonomy reader in limbo.
    (Gilad Barkai via Shai Erera)
+   
+ * LUCENE-3495: Fix BlockJoinQuery to properly implement getBoost()/setBoost().
+   (Robert Muir)
 
 API Changes
  
