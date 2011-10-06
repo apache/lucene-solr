@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * lowest node it finds, and if that node goes down, starts the whole process
  * over by checking if it's the lowest sequential node, etc.
  * 
+ * TODO: now we could just reuse the lock package code for leader election
  */
 public class SliceLeaderElector {
   private static Logger log = LoggerFactory.getLogger(SliceLeaderElector.class);
