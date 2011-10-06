@@ -89,6 +89,18 @@ public final class ZkController {
 
   private AssignShard assignShard;
 
+  public static void main(String[] args) throws Exception {
+    ZkController zkController = new ZkController(args[0], 15000, 5000, args[1], args[2], args[3], new CurrentCoreDescriptorProvider() {
+      
+      @Override
+      public List<CoreDescriptor> getCurrentDescriptors() {
+        // do nothing
+        return null;
+      }
+    });
+    
+    zkController.uploadConfigDir(new File(args[4]), args[5]);
+  }
 
 
   /**
@@ -670,6 +682,14 @@ public final class ZkController {
                 if (collectionProps.containsKey(CONFIGNAME_PROP)) {
                   break;
                 }
+              }
+              // if there is only one conf, use that
+              List<String> configNames = zkClient.getChildren(CONFIGS_ZKNODE, null);
+              if (configNames.size() == 1) {
+                // no config set named, but there is only 1 - use it
+                log.info("Only one config set found in zk - using it:" + configNames.get(0));
+                collectionProps.put(CONFIGNAME_PROP,  configNames.get(0));
+                break;
               }
               log.info("Could not find collection configName - pausing for 2 seconds and trying again - try: " + retry);
               Thread.sleep(2000);
