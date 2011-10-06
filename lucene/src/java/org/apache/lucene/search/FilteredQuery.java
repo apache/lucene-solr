@@ -71,24 +71,18 @@ extends Query {
       
       @Override
       public float sumOfSquaredWeights() throws IOException { 
-        return weight.sumOfSquaredWeights() * getBoost() * getBoost(); 
+        return weight.sumOfSquaredWeights() * getBoost() * getBoost(); // boost sub-weight
       }
 
       @Override
       public void normalize (float v) { 
-        weight.normalize(v);
-        value = weight.getValue() * getBoost();
+        weight.normalize(v * getBoost()); // incorporate boost
+        value = weight.getValue();
       }
 
       @Override
       public Explanation explain (IndexReader ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
-        if (getBoost()!=1) {
-          Explanation preBoost = inner;
-          inner = new Explanation(inner.getValue()*getBoost(),"product of:");
-          inner.addDetail(new Explanation(getBoost(),"boost"));
-          inner.addDetail(preBoost);
-        }
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir);
         DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
@@ -161,7 +155,7 @@ extends Query {
           }
 
           @Override
-          public float score() throws IOException { return getBoost() * scorer.score(); }
+          public float score() throws IOException { return scorer.score(); }
         };
       }
     };
