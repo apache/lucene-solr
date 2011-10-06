@@ -1,4 +1,4 @@
-package org.apache.lucene.search.grouping;
+package org.apache.lucene.search.grouping.term;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,13 +19,15 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.*;
 
 /**
- * A base implementation of {@link AbstractAllGroupHeadsCollector} for retrieving the most relevant groups when grouping
+ * A base implementation of {@link org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector} for retrieving the most relevant groups when grouping
  * on a string based group field. More specifically this all concrete implementations of this base implementation
  * use {@link org.apache.lucene.search.FieldCache.DocTermsIndex}.
  *

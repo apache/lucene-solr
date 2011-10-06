@@ -18,15 +18,21 @@
 package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
+import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.function.FunctionSecondPassGroupingCollector;
+import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
+import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
@@ -972,215 +978,6 @@ public class Grouping {
      */
     protected Integer getNumberOfGroups() {
       return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
-    }
-
-  }
-
-  static class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<MutableValue> {
-
-    private final ValueSource groupByVS;
-    private final Map vsContext;
-
-    private DocValues docValues;
-    private DocValues.ValueFiller filler;
-    private MutableValue mval;
-
-    FunctionFirstPassGroupingCollector(ValueSource groupByVS, Map vsContext, Sort groupSort, int topNGroups) throws IOException {
-      super(groupSort, topNGroups);
-      this.groupByVS = groupByVS;
-      this.vsContext = vsContext;
-    }
-
-    @Override
-    protected MutableValue getDocGroupValue(int doc) {
-      filler.fillValue(doc);
-      return mval;
-    }
-
-    @Override
-    protected MutableValue copyDocGroupValue(MutableValue groupValue, MutableValue reuse) {
-      if (reuse != null) {
-        reuse.copy(groupValue);
-        return reuse;
-      }
-      return groupValue.duplicate();
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext readerContext) throws IOException {
-      super.setNextReader(readerContext);
-      docValues = groupByVS.getValues(vsContext, readerContext);
-      filler = docValues.getValueFiller();
-      mval = filler.getValue();
-    }
-  }
-
-  static class FunctionSecondPassGroupingCollector extends AbstractSecondPassGroupingCollector<MutableValue> {
-
-    private final ValueSource groupByVS;
-    private final Map vsContext;
-
-    private DocValues docValues;
-    private DocValues.ValueFiller filler;
-    private MutableValue mval;
-
-    FunctionSecondPassGroupingCollector(Collection<SearchGroup<MutableValue>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields, ValueSource groupByVS, Map vsContext) throws IOException {
-      super(searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
-      this.groupByVS = groupByVS;
-      this.vsContext = vsContext;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected SearchGroupDocs<MutableValue> retrieveGroup(int doc) throws IOException {
-      filler.fillValue(doc);
-      return groupMap.get(mval);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void setNextReader(AtomicReaderContext readerContext) throws IOException {
-      super.setNextReader(readerContext);
-      docValues = groupByVS.getValues(vsContext, readerContext);
-      filler = docValues.getValueFiller();
-      mval = filler.getValue();
-    }
-  }
-
-
-  static class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<MutableValue> {
-
-    private final Map vsContext;
-    private final ValueSource groupBy;
-    private final SortedSet<MutableValue> groups = new TreeSet<MutableValue>();
-
-    private DocValues docValues;
-    private DocValues.ValueFiller filler;
-    private MutableValue mval;
-
-    FunctionAllGroupsCollector(ValueSource groupBy, Map vsContext) {
-      this.vsContext = vsContext;
-      this.groupBy = groupBy;
-    }
-
-    public Collection<MutableValue> getGroups() {
-      return groups;
-    }
-
-    public void collect(int doc) throws IOException {
-      filler.fillValue(doc);
-      if (!groups.contains(mval)) {
-        groups.add(mval.duplicate());
-      }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      docValues = groupBy.getValues(vsContext, context);
-      filler = docValues.getValueFiller();
-      mval = filler.getValue();
-    }
-
-  }
-
-
-  static class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollector<FunctionAllGroupHeadsCollector.GroupHead> {
-
-    private final ValueSource groupBy;
-    private final Map vsContext;
-    private final Map<MutableValue, GroupHead> groups;
-    private final Sort sortWithinGroup;
-
-    private DocValues docValues;
-    private DocValues.ValueFiller filler;
-    private MutableValue mval;
-    private AtomicReaderContext readerContext;
-    private Scorer scorer;
-
-    FunctionAllGroupHeadsCollector(ValueSource groupBy, Map vsContext, Sort sortWithinGroup) {
-      super(sortWithinGroup.getSort().length);
-      groups = new HashMap<MutableValue, GroupHead>();
-      this.sortWithinGroup = sortWithinGroup;
-      this.groupBy = groupBy;
-      this.vsContext = vsContext;
-
-      final SortField[] sortFields = sortWithinGroup.getSort();
-      for (int i = 0; i < sortFields.length; i++) {
-        reversed[i] = sortFields[i].getReverse() ? -1 : 1;
-      }
-    }
-
-    protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
-      filler.fillValue(doc);
-      GroupHead groupHead = groups.get(mval);
-      if (groupHead == null) {
-        MutableValue groupValue = mval.duplicate();
-        groupHead = new GroupHead(groupValue, sortWithinGroup, doc);
-        groups.put(groupValue, groupHead);
-        temporalResult.stop = true;
-      } else {
-        temporalResult.stop = false;
-      }
-      this.temporalResult.groupHead = groupHead;
-    }
-
-    protected Collection<GroupHead> getCollectedGroupHeads() {
-      return groups.values();
-    }
-
-    public void setScorer(Scorer scorer) throws IOException {
-      this.scorer = scorer;
-      for (GroupHead groupHead : groups.values()) {
-        for (FieldComparator comparator : groupHead.comparators) {
-          comparator.setScorer(scorer);
-        }
-      }
-    }
-
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.readerContext = context;
-      docValues = groupBy.getValues(vsContext, context);
-      filler = docValues.getValueFiller();
-      mval = filler.getValue();
-
-      for (GroupHead groupHead : groups.values()) {
-        for (int i = 0; i < groupHead.comparators.length; i++) {
-          groupHead.comparators[i] = groupHead.comparators[i].setNextReader(context);
-        }
-      }
-    }
-
-    class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<MutableValue> {
-
-      final FieldComparator[] comparators;
-
-      private GroupHead(MutableValue groupValue, Sort sort, int doc) throws IOException {
-        super(groupValue, doc + readerContext.docBase);
-        final SortField[] sortFields = sort.getSort();
-        comparators = new FieldComparator[sortFields.length];
-        for (int i = 0; i < sortFields.length; i++) {
-          comparators[i] = sortFields[i].getComparator(1, i).setNextReader(readerContext);
-          comparators[i].setScorer(scorer);
-          comparators[i].copy(0, doc);
-          comparators[i].setBottom(0);
-        }
-      }
-
-      public int compare(int compIDX, int doc) throws IOException {
-        return comparators[compIDX].compareBottom(doc);
-      }
-
-      public void updateDocHead(int doc) throws IOException {
-        for (FieldComparator comparator : comparators) {
-          comparator.copy(0, doc);
-          comparator.setBottom(0);
-        }
-        this.doc = doc + readerContext.docBase;
-      }
     }
 
   }

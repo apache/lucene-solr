@@ -26,7 +26,11 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -36,7 +40,7 @@ import org.apache.lucene.util._TestUtil;
 import java.io.IOException;
 import java.util.*;
 
-public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
+public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     final String groupField = "author";
@@ -107,30 +111,30 @@ public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
     int maxDoc = indexSearcher.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id", SortField.Type.INT, true));
-    AbstractAllGroupHeadsCollector c1 = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+    AbstractAllGroupHeadsCollector c1 = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, c1.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, c1.retrieveGroupHeads(maxDoc), maxDoc));
 
-    AbstractAllGroupHeadsCollector c2 = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+    AbstractAllGroupHeadsCollector c2 = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "some")), c2);
     assertTrue(arrayContains(new int[]{2, 3, 4}, c2.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 4}, c2.retrieveGroupHeads(maxDoc), maxDoc));
 
-    AbstractAllGroupHeadsCollector c3 = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+    AbstractAllGroupHeadsCollector c3 = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), c3);
     assertTrue(arrayContains(new int[]{1, 5}, c3.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{1, 5}, c3.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
     Sort sortWithinGroup2 = new Sort(new SortField("id", SortField.Type.STRING, true));
-    AbstractAllGroupHeadsCollector c4 = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup2);
+    AbstractAllGroupHeadsCollector c4 = createRandomCollector(groupField, sortWithinGroup2);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c4);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, c4.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, c4.retrieveGroupHeads(maxDoc), maxDoc));
 
     Sort sortWithinGroup3 = new Sort(new SortField("id", SortField.Type.STRING, false));
-    AbstractAllGroupHeadsCollector c5 = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup3);
+    AbstractAllGroupHeadsCollector c5 = createRandomCollector(groupField, sortWithinGroup3);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c5);
     // 7 b/c higher doc id wins, even if order of field is in not in reverse.
     assertTrue(arrayContains(new int[]{0, 3, 4, 6}, c5.retrieveGroupHeads()));
@@ -279,7 +283,7 @@ public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
           final String searchTerm = "real" + random.nextInt(3);
           boolean sortByScoreOnly = random.nextBoolean();
           Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
-          AbstractAllGroupHeadsCollector allGroupHeadsCollector = TermAllGroupHeadsCollector.create("group", sortWithinGroup);
+          AbstractAllGroupHeadsCollector allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup);
           s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
           int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
           int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
@@ -340,6 +344,7 @@ public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
 
 
   private boolean arrayContains(int[] expected, int[] actual) {
+    Arrays.sort(actual); // in some cases the actual docs aren't sorted by docid. This method expects that.
     if (expected.length != actual.length) {
       return false;
     }
@@ -467,6 +472,15 @@ public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
         return 0;
       }
     };
+  }
+
+  private AbstractAllGroupHeadsCollector createRandomCollector(String groupField, Sort sortWithinGroup) throws IOException {
+    if (random.nextBoolean()) {
+      ValueSource vs = new BytesRefFieldSource(groupField);
+      return new FunctionAllGroupHeadsCollector(vs, new HashMap(), sortWithinGroup);
+    } else {
+      return TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+    }
   }
 
 
