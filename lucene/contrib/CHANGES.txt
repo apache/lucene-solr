@@ -112,6 +112,9 @@ Bug Fixes
    
  * LUCENE-3484: Fix NPE in TaxonomyWriter: parents array creation was not thread safe.
    (Doron Cohen)
+   
+ * LUCENE-3495: Fix BlockJoinQuery to properly implement getBoost()/setBoost().
+   (Robert Muir)
 
 API Changes
  

@@ -122,6 +122,24 @@ public class TestBlockJoin extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  public void testBoostBug() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+    
+    BlockJoinQuery q = new BlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), BlockJoinQuery.ScoreMode.Avg);
+    s.search(q, 10);
+    BooleanQuery bq = new BooleanQuery();
+    bq.setBoost(2f); // we boost the BQ
+    bq.add(q, BooleanClause.Occur.MUST);
+    s.search(bq, 10);
+    s.close();
+    r.close();
+    dir.close();
+  }
 
   private String[][] getRandomFields(int maxUniqueValues) {
 
