@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -26,6 +27,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SchemaField;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -33,6 +35,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** @lucene.experimental */
 class NullUpdateLog extends UpdateLog {
@@ -80,6 +83,11 @@ class NullUpdateLog extends UpdateLog {
   @Override
   public void close() {
   }
+
+  @Override
+  public VersionInfo getVersionInfo() {
+    return null;
+  }
 }
 
 /** @lucene.experimental */
@@ -105,6 +113,12 @@ public class FSUpdateLog extends UpdateLog {
   private String dataDir;
   private String lastDataDir;
 
+  private VersionInfo versionInfo;
+  @Override
+  public VersionInfo getVersionInfo() {
+    return versionInfo;
+  }
+
   @Override
   public void init(PluginInfo info) {
     dataDir = (String)info.initArgs.get("dir");
@@ -124,6 +138,8 @@ public class FSUpdateLog extends UpdateLog {
     tlogDir.mkdirs();
     tlogFiles = getLogList(tlogDir);
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
+
+    versionInfo = new VersionInfo(uhandler, 64);
   }
 
   static class LogPtr {

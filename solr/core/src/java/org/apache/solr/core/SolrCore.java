@@ -42,10 +42,7 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.processor.LogUpdateProcessorFactory;
-import org.apache.solr.update.processor.RunUpdateProcessorFactory;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.update.processor.*;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -661,6 +658,7 @@ public final class SolrCore implements SolrInfoMBean {
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
               new LogUpdateProcessorFactory(),
+              new VersionProcessorFactory(),
               new RunUpdateProcessorFactory()
       };
       def = new UpdateRequestProcessorChain(factories, this);

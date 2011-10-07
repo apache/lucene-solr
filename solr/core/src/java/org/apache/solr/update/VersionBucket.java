@@ -17,32 +17,10 @@
 
 package org.apache.solr.update;
 
-import org.apache.solr.request.SolrQueryRequest;
-
-
-/** An index update command encapsulated in an object (Command pattern)
- *
- *
- */
-  public class UpdateCommand {
-    protected final SolrQueryRequest req;
-    protected final String commandName;
-    protected long version;
-
-    public UpdateCommand(String commandName, SolrQueryRequest req) {
-      this.req = req;
-      this.commandName = commandName;
-    }
-
-    @Override
-    public String toString() {
-      return commandName;
-    }
-
-    public long getVersion() {
-      return version;
-    }
-    public void setVersion(long version) {
-      this.version = version;
-    }
-  }
+// TODO: make inner?
+// TODO: store the highest possible in the index on a commit (but how to not block adds?)
+// TODO: could also store highest possible in the transaction log after a commit.
+// Or on a new index, just scan "version" for the max?
+public class VersionBucket {
+  long highest;
+}
