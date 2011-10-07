@@ -56,9 +56,9 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
         switch (fieldInfo.getDocValues()) {
           case BYTES_FIXED_DEREF:
           case BYTES_VAR_DEREF:
-          case BYTES_VAR_SORTED:
-          case BYTES_FIXED_SORTED:
           case BYTES_VAR_STRAIGHT:
+          case BYTES_FIXED_SORTED:
+          case BYTES_VAR_SORTED:
             files.add(IndexFileNames.segmentFileName(filename, "",
                 Writer.INDEX_EXTENSION));
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
@@ -77,7 +77,6 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
                 Writer.DATA_EXTENSION));
             break;
-        
           default:
             assert false;
         }

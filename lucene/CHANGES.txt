@@ -548,6 +548,10 @@ New features
 * LUCENE-2309: Added IndexableField.tokenStream(Analyzer) which is now 
   responsible for creating the TokenStreams for Fields when they are to 
   be indexed.  (Chris Male)
+  
+* LUCENE-3433: Added random access for non RAM resident IndexDocValues. RAM
+  resident and disk resident IndexDocValues are now exposed via the Source
+  interface. ValuesEnum has been removed in favour of Source. (Simon Willnauer)
 
 Optimizations
 

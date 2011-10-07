@@ -23,14 +23,14 @@ import java.util.Comparator;
 import org.apache.lucene.index.values.Bytes.BytesSortedSourceBase;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
-import org.apache.lucene.index.values.FixedDerefBytesImpl.Reader.DerefBytesEnum;
+import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.packed.PackedInts;
 
 // Stores fixed-length byte[] by deref, ie when two docs
 // have the same value, they store only 1 byte[]
@@ -44,7 +44,7 @@ class FixedSortedBytesImpl {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
-  static class Writer extends DerefBytesWriterBase {
+  static final class Writer extends DerefBytesWriterBase {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
@@ -57,9 +57,10 @@ class FixedSortedBytesImpl {
     // some last docs that we didn't see
     @Override
     public void finishInternal(int docCount) throws IOException {
+      fillDefault(docCount);
       final IndexOutput datOut = getOrCreateDataOut();
       final int count = hash.size();
-      final int[] address = new int[count+1]; // addr 0 is default values
+      final int[] address = new int[count]; // addr 0 is default values
       datOut.writeInt(size);
       if (size != -1) {
         final int[] sortedEntries = hash.sort(comp);
@@ -70,7 +71,7 @@ class FixedSortedBytesImpl {
           final BytesRef bytes = hash.get(e, bytesRef);
           assert bytes.length == size;
           datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
-          address[e + 1] = 1 + i;
+          address[e] = i;
         }
       }
       final IndexOutput idxOut = getOrCreateIndexOut();
@@ -79,65 +80,101 @@ class FixedSortedBytesImpl {
     }
   }
 
-  public static class Reader extends BytesReaderBase {
+  static final class Reader extends BytesReaderBase {
     private final int size;
-    private final int numValuesStored;
+    private final int valueCount;
+    private final Comparator<BytesRef> comparator;
 
-    public Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context);
+    public Reader(Directory dir, String id, int maxDoc, IOContext context,
+        ValueType type, Comparator<BytesRef> comparator) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context, type);
       size = datIn.readInt();
-      numValuesStored = idxIn.readInt();
+      valueCount = idxIn.readInt();
+      this.comparator = comparator;
     }
 
     @Override
-    public org.apache.lucene.index.values.IndexDocValues.Source load()
+    public Source load() throws IOException {
+      return new FixedSortedSource(cloneData(), cloneIndex(), size,
+          valueCount, comparator);
+    }
+
+    @Override
+    public Source getDirectSource() throws IOException {
+      return new DirectFixedSortedSource(cloneData(), cloneIndex(), size,
+          valueCount, comparator, type);
+    }
+  }
+
+  static final class FixedSortedSource extends BytesSortedSourceBase {
+    private final int valueCount;
+    private final int size;
+
+    FixedSortedSource(IndexInput datIn, IndexInput idxIn, int size,
+        int numValues, Comparator<BytesRef> comp) throws IOException {
+      super(datIn, idxIn, comp, size * numValues, ValueType.BYTES_FIXED_SORTED);
+      this.size = size;
+      this.valueCount = numValues;
+      closeIndexInput();
+    }
+
+    @Override
+    public int getValueCount() {
+      return valueCount;
+    }
+
+    @Override
+    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+      return data.fillSlice(bytesRef, (ord * size), size);
+    }
+  }
+
+  static final class DirectFixedSortedSource extends SortedSource {
+    final PackedInts.RandomAccessReaderIterator docToOrdIndex;
+    private final IndexInput datIn;
+    private final long basePointer;
+    private final int size;
+    private final int valueCount;
+
+    DirectFixedSortedSource(IndexInput datIn, IndexInput idxIn, int size,
+        int valueCount, Comparator<BytesRef> comp, ValueType type)
         throws IOException {
-      return loadSorted(null);
+      super(type, comp);
+      docToOrdIndex = PackedInts.getRandomAccessReaderIterator(idxIn);
+      basePointer = datIn.getFilePointer();
+      this.datIn = datIn;
+      this.size = size;
+      this.valueCount = valueCount;
     }
 
     @Override
-    public SortedSource loadSorted(Comparator<BytesRef> comp)
-        throws IOException {
-      return new Source(cloneData(), cloneIndex(), size, numValuesStored, comp);
-    }
-
-    private static class Source extends BytesSortedSourceBase {
-      private final int valueCount;
-      private final int size;
-
-      public Source(IndexInput datIn, IndexInput idxIn, int size,
-          int numValues, Comparator<BytesRef> comp) throws IOException {
-        super(datIn, idxIn, comp, size * numValues, ValueType.BYTES_FIXED_SORTED);
-        this.size = size;
-        this.valueCount = numValues;
-        closeIndexInput();
-      }
-
-      @Override
-      public int getByValue(BytesRef bytes, BytesRef tmpRef) {
-        return binarySearch(bytes, tmpRef, 0, valueCount - 1);
-      }
-
-      @Override
-      public int getValueCount() {
-        return valueCount;
-      }
-
-      @Override
-      protected BytesRef deref(int ord, BytesRef bytesRef) {
-        return data.fillSlice(bytesRef, (ord * size), size);
+    public int ord(int docID) {
+      try {
+        return (int) docToOrdIndex.get(docID);
+      } catch (IOException e) {
+        throw new IllegalStateException("failed to get ord", e);
       }
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      // do unsorted
-      return new DerefBytesEnum(source, cloneData(), cloneIndex(), size);
+    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+      try {
+        datIn.seek(basePointer + size * ord);
+        if (bytesRef.bytes.length < size) {
+          bytesRef.grow(size);
+        }
+        datIn.readBytes(bytesRef.bytes, 0, size);
+        bytesRef.length = size;
+        bytesRef.offset = 0;
+        return bytesRef;
+      } catch (IOException ex) {
+        throw new IllegalStateException("failed to getByOrd", ex);
+      }
     }
 
     @Override
-    public ValueType type() {
-      return ValueType.BYTES_FIXED_SORTED;
+    public int getValueCount() {
+      return valueCount;
     }
   }
 }

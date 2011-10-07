@@ -58,11 +58,11 @@ public abstract class DocValuesReaderBase extends PerDocValues {
   public Collection<String> fields() {
     return docValues().keySet();
   }
-
+  
   public Comparator<BytesRef> getComparator() throws IOException {
     return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
-  
+
   // Only opens files... doesn't actually load any values
   protected TreeMap<String, IndexDocValues> load(FieldInfos fieldInfos,
       String segment, int docCount, Directory dir, int codecId, IOContext context)
@@ -121,9 +121,9 @@ public abstract class DocValuesReaderBase extends PerDocValues {
     case VAR_INTS:
       return Ints.getValues(dir, id, docCount, type, context);
     case FLOAT_32:
-      return Floats.getValues(dir, id, docCount, context);
+      return Floats.getValues(dir, id, docCount, context, type);
     case FLOAT_64:
-      return Floats.getValues(dir, id, docCount, context);
+      return Floats.getValues(dir, id, docCount, context, type);
     case BYTES_FIXED_STRAIGHT:
       return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, true, docCount, getComparator(), context);
     case BYTES_FIXED_DEREF:

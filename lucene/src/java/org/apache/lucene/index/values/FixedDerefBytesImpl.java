@@ -20,16 +20,17 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
-import org.apache.lucene.index.values.Bytes.DerefBytesSourceBase;
-import org.apache.lucene.index.values.Bytes.DerefBytesEnumBase;
+import org.apache.lucene.index.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
+import org.apache.lucene.index.values.DirectSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.packed.PackedInts;
 
 // Stores fixed-length byte[] by deref, ie when two docs
 // have the same value, they store only 1 byte[]
@@ -66,63 +67,61 @@ class FixedDerefBytesImpl {
     }
   }
 
-  public static class Reader extends BytesReaderBase {
+  public static class FixedDerefReader extends BytesReaderBase {
     private final int size;
     private final int numValuesStored;
-    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context);
+    FixedDerefReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context, ValueType.BYTES_FIXED_DEREF);
       size = datIn.readInt();
       numValuesStored = idxIn.readInt();
     }
 
     @Override
     public Source load() throws IOException {
-      return new Source(cloneData(), cloneIndex(), size, numValuesStored);
-    }
-
-    private static final class Source extends DerefBytesSourceBase {
-      private final int size;
-
-      protected Source(IndexInput datIn, IndexInput idxIn, int size, long numValues) throws IOException {
-        super(datIn, idxIn, size * numValues, ValueType.BYTES_FIXED_DEREF);
-        this.size = size;
-      }
-
-      @Override
-      public BytesRef getBytes(int docID, BytesRef bytesRef) {
-        final int id = (int) addresses.get(docID);
-        if (id == 0) {
-          bytesRef.length = 0;
-          return bytesRef;
-        }
-        return data.fillSlice(bytesRef, ((id - 1) * size), size);
-      }
-
+      return new FixedDerefSource(cloneData(), cloneIndex(), size, numValuesStored);
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-        return new DerefBytesEnum(source, cloneData(), cloneIndex(), size);
+    public Source getDirectSource()
+        throws IOException {
+      return new DirectFixedDerefSource(cloneData(), cloneIndex(), size, type());
     }
+  }
+  
+  static final class FixedDerefSource extends BytesSourceBase {
+    private final int size;
+    private final PackedInts.Reader addresses;
 
-    final static class DerefBytesEnum extends DerefBytesEnumBase {
-
-      public DerefBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn, int size) throws IOException {
-        super(source, datIn, idxIn, size, ValueType.BYTES_FIXED_DEREF);
-      }
-
-      protected void fill(long address, BytesRef ref) throws IOException {
-        datIn.seek(fp + ((address - 1) * size));
-        datIn.readBytes(ref.bytes, 0, size);
-        ref.length = size;
-        ref.offset = 0;
-      }
+    protected FixedDerefSource(IndexInput datIn, IndexInput idxIn, int size, long numValues) throws IOException {
+      super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * numValues,
+          ValueType.BYTES_FIXED_DEREF);
+      this.size = size;
+      addresses = PackedInts.getReader(idxIn);
     }
 
     @Override
-    public ValueType type() {
-      return ValueType.BYTES_FIXED_DEREF;
+    public BytesRef getBytes(int docID, BytesRef bytesRef) {
+      final int id = (int) addresses.get(docID);
+      return data.fillSlice(bytesRef, (id * size), size);
+    }
+
+  }
+  
+  final static class DirectFixedDerefSource extends DirectSource {
+    private final PackedInts.RandomAccessReaderIterator index;
+    private final int size;
+
+    DirectFixedDerefSource(IndexInput data, IndexInput index, int size, ValueType type)
+        throws IOException {
+      super(data, type);
+      this.size = size;
+      this.index = PackedInts.getRandomAccessReaderIterator(index);
+    }
+
+    @Override
+    protected int position(int docID) throws IOException {
+      data.seek(baseOffset + index.get(docID) * size);
+      return size;
     }
   }
 

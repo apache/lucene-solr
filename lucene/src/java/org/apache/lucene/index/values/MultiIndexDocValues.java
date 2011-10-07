@@ -19,7 +19,6 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -28,6 +27,7 @@ import org.apache.lucene.util.ReaderUtil;
  * {@link IndexDocValues}
  * 
  * @lucene.experimental
+ * @lucene.internal
  */
 public class MultiIndexDocValues extends IndexDocValues {
 
@@ -57,13 +57,8 @@ public class MultiIndexDocValues extends IndexDocValues {
   }
 
   @Override
-  public ValuesEnum getEnum(AttributeSource source) throws IOException {
-    return new MultiValuesEnum(docValuesIdx, starts);
-  }
-
-  @Override
   public Source load() throws IOException {
-    return new MultiSource(docValuesIdx, starts);
+    return new MultiSource(docValuesIdx, starts, false);
   }
 
   public IndexDocValues reset(DocValuesIndex[] docValuesIdx) {
@@ -86,11 +81,6 @@ public class MultiIndexDocValues extends IndexDocValues {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      return emptySoruce.getEnum(attrSource);
-    }
-
-    @Override
     public Source load() throws IOException {
       return emptySoruce;
     }
@@ -99,69 +89,11 @@ public class MultiIndexDocValues extends IndexDocValues {
     public ValueType type() {
       return emptySoruce.type();
     }
-  }
 
-  private static class MultiValuesEnum extends ValuesEnum {
-    private DocValuesIndex[] docValuesIdx;
-    private final int maxDoc;
-    private int currentStart;
-    private int currentMax;
-    private int currentDoc = -1;
-    private ValuesEnum currentEnum;
-    private final int[] starts;
-
-    public MultiValuesEnum(DocValuesIndex[] docValuesIdx, int[] starts)
-        throws IOException {
-      super(docValuesIdx[0].docValues.type());
-      this.docValuesIdx = docValuesIdx;
-      final DocValuesIndex last = docValuesIdx[docValuesIdx.length - 1];
-      maxDoc = last.start + last.length;
-      final DocValuesIndex idx = docValuesIdx[0];
-      currentEnum = idx.docValues.getEnum(this.attributes());
-      currentEnum.copyFrom(this);
-      intsRef = currentEnum.intsRef;
-      currentMax = idx.length;
-      currentStart = 0;
-      this.starts = starts;
-    }
 
     @Override
-    public void close() throws IOException {
-      currentEnum.close();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      assert target > currentDoc : "target " + target
-          + " must be > than the current doc " + currentDoc;
-      int relativeDoc = target - currentStart;
-      do {
-        if (target >= maxDoc) {// we are beyond max doc
-          return currentDoc = NO_MORE_DOCS;
-        }
-        if (target >= currentMax) {
-          final int idx = ReaderUtil.subIndex(target, starts);
-          currentEnum.close();
-          currentEnum = docValuesIdx[idx].docValues.getEnum();
-          currentEnum.copyFrom(this);
-          currentStart = docValuesIdx[idx].start;
-          currentMax = currentStart + docValuesIdx[idx].length;
-          relativeDoc = target - currentStart;
-        }
-        target = currentMax; // make sure that we advance to the next enum if the current is exhausted
-
-      } while ((relativeDoc = currentEnum.advance(relativeDoc)) == NO_MORE_DOCS);
-      return currentDoc = currentStart + relativeDoc;
-    }
-
-    @Override
-    public int docID() {
-      return currentDoc;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return advance(currentDoc + 1);
+    public Source getDirectSource() throws IOException {
+      return emptySoruce;
     }
   }
 
@@ -171,12 +103,14 @@ public class MultiIndexDocValues extends IndexDocValues {
     private Source current;
     private final int[] starts;
     private final DocValuesIndex[] docValuesIdx;
+    private boolean direct;
 
-    public MultiSource(DocValuesIndex[] docValuesIdx, int[] starts) {
+    public MultiSource(DocValuesIndex[] docValuesIdx, int[] starts, boolean direct) {
+      super(docValuesIdx[0].docValues.type());
       this.docValuesIdx = docValuesIdx;
       this.starts = starts;
       assert docValuesIdx.length != 0;
-
+      this.direct = direct;
     }
 
     public long getInt(int docID) {
@@ -193,7 +127,11 @@ public class MultiIndexDocValues extends IndexDocValues {
             + " for doc id: " + docID + " slices : " + Arrays.toString(starts);
         assert docValuesIdx[idx] != null;
         try {
-          current = docValuesIdx[idx].docValues.getSource();
+          if (direct) {
+            current = docValuesIdx[idx].docValues.getDirectSource();
+          } else {
+            current = docValuesIdx[idx].docValues.getSource();
+          }
         } catch (IOException e) {
           throw new RuntimeException("load failed", e); // TODO how should we
           // handle this
@@ -214,24 +152,12 @@ public class MultiIndexDocValues extends IndexDocValues {
       final int doc = ensureSource(docID);
       return current.getBytes(doc, bytesRef);
     }
-
-    @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      throw new UnsupportedOperationException(); // TODO
-    }
-
-    @Override
-    public ValueType type() {
-      return docValuesIdx[0].docValues.type();
-    }
-
   }
 
   private static class EmptySource extends Source {
-    private final ValueType type;
 
     public EmptySource(ValueType type) {
-      this.type = type;
+      super(type);
     }
 
     @Override
@@ -250,20 +176,15 @@ public class MultiIndexDocValues extends IndexDocValues {
     public long getInt(int docID) {
       return 0;
     }
-
-    @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      return ValuesEnum.emptyEnum(type);
-    }
-
-    @Override
-    public ValueType type() {
-      return type;
-    }
   }
 
   @Override
   public ValueType type() {
     return this.docValuesIdx[0].docValues.type();
+  }
+
+  @Override
+  public Source getDirectSource() throws IOException {
+    return new MultiSource(docValuesIdx, starts, true);
   }
 }

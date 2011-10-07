@@ -19,14 +19,9 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.IndexDocValuesArray.ByteValues;
-import org.apache.lucene.index.values.IndexDocValuesArray.IntValues;
-import org.apache.lucene.index.values.IndexDocValuesArray.LongValues;
-import org.apache.lucene.index.values.IndexDocValuesArray.ShortValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
@@ -37,10 +32,13 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public final class Ints {
+  protected static final String CODEC_NAME = "Ints";
+  protected static final int VERSION_START = 0;
+  protected static final int VERSION_CURRENT = VERSION_START;
 
   private Ints() {
   }
-
+  
   public static Writer getWriter(Directory dir, String id, Counter bytesUsed,
       ValueType type, IOContext context) throws IOException {
     return type == ValueType.VAR_INTS ? new PackedIntValues.PackedIntsWriter(dir, id,
@@ -50,15 +48,42 @@ public final class Ints {
   public static IndexDocValues getValues(Directory dir, String id, int numDocs,
       ValueType type, IOContext context) throws IOException {
     return type == ValueType.VAR_INTS ? new PackedIntValues.PackedIntsReader(dir, id,
-        numDocs, context) : new IntsReader(dir, id, numDocs, context);
+        numDocs, context) : new IntsReader(dir, id, numDocs, context, type);
+  }
+  
+  private static ValueType sizeToType(int size) {
+    switch (size) {
+    case 1:
+      return ValueType.FIXED_INTS_8;
+    case 2:
+      return ValueType.FIXED_INTS_16;
+    case 4:
+      return ValueType.FIXED_INTS_32;
+    case 8:
+      return ValueType.FIXED_INTS_64;
+    default:
+      throw new IllegalStateException("illegal size " + size);
+    }
+  }
+  
+  private static int typeToSize(ValueType type) {
+    switch (type) {
+    case FIXED_INTS_16:
+      return 2;
+    case FIXED_INTS_32:
+      return 4;
+    case FIXED_INTS_64:
+      return 8;
+    case FIXED_INTS_8:
+      return 1;
+    default:
+      throw new IllegalStateException("illegal type " + type);
+    }
   }
 
-  static class IntsWriter extends FixedStraightBytesImpl.Writer {
-    protected static final String CODEC_NAME = "Ints";
-    protected static final int VERSION_START = 0;
-    protected static final int VERSION_CURRENT = VERSION_START;
 
-    private final ValueType valueType;
+  static class IntsWriter extends FixedStraightBytesImpl.Writer {
+    private final IndexDocValuesArray template;
 
     public IntsWriter(Directory dir, String id, Counter bytesUsed,
         IOContext context, ValueType valueType) throws IOException {
@@ -68,46 +93,15 @@ public final class Ints {
     protected IntsWriter(Directory dir, String id, String codecName,
         int version, Counter bytesUsed, IOContext context, ValueType valueType) throws IOException {
       super(dir, id, codecName, version, bytesUsed, context);
-      this.valueType = valueType;
-      final int expectedSize = getSize(valueType);
+      final int expectedSize = typeToSize(valueType);
       this.bytesRef = new BytesRef(expectedSize);
       bytesRef.length = expectedSize;
+      template = IndexDocValuesArray.TEMPLATES.get(valueType);
     }
     
-    private static int getSize(ValueType type) {
-      switch (type) {
-      case FIXED_INTS_16:
-        return 2;
-      case FIXED_INTS_32:
-        return 4;
-      case FIXED_INTS_64:
-        return 8;
-      case FIXED_INTS_8:
-        return 1;
-      default:
-        throw new IllegalStateException("illegal type " + type);
-      }
-    }
-
     @Override
     public void add(int docID, long v) throws IOException {
-      switch (valueType) {
-      case FIXED_INTS_64:
-        bytesRef.copy(v);
-        break;
-      case FIXED_INTS_32:
-        bytesRef.copy((int) (0xFFFFFFFF & v));
-        break;
-      case FIXED_INTS_16:
-        bytesRef.copy((short) (0xFFFFL & v));
-        break;
-      case FIXED_INTS_8:
-        bytesRef.bytes[0] = (byte) (0xFFL & v);
-        break;
-      default:
-        throw new IllegalStateException("illegal type " + valueType);
-      }
-
+      template.toBytes(v, bytesRef);
       add(docID, bytesRef);
     }
 
@@ -116,72 +110,27 @@ public final class Ints {
       add(docID, docValues.getInt());
     }
   }
-
-  final static class IntsReader extends FixedStraightBytesImpl.Reader {
-    private final ValueType type;
+  
+  final static class IntsReader extends FixedStraightBytesImpl.FixedStraightReader {
     private final IndexDocValuesArray arrayTemplate;
 
-    IntsReader(Directory dir, String id, int maxDoc, IOContext context)
+    IntsReader(Directory dir, String id, int maxDoc, IOContext context, ValueType type)
         throws IOException {
-      super(dir, id, IntsWriter.CODEC_NAME, IntsWriter.VERSION_CURRENT, maxDoc,
-          context);
-      switch (size) {
-      case 8:
-        type = ValueType.FIXED_INTS_64;
-        arrayTemplate = new LongValues();
-        break;
-      case 4:
-        type = ValueType.FIXED_INTS_32;
-        arrayTemplate = new IntValues();
-        break;
-      case 2:
-        type = ValueType.FIXED_INTS_16;
-        arrayTemplate = new ShortValues();
-        break;
-      case 1:
-        type = ValueType.FIXED_INTS_8;
-        arrayTemplate = new ByteValues();
-        break;
-      default:
-        throw new IllegalStateException("illegal size: " + size);
-      }
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc,
+          context, type);
+      arrayTemplate = IndexDocValuesArray.TEMPLATES.get(type);
+      assert arrayTemplate != null;
+      assert type == sizeToType(size);
     }
 
     @Override
     public Source load() throws IOException {
-      boolean success = false;
-      IndexInput input = null;
+      final IndexInput indexInput = cloneData();
       try {
-        input = cloneData();
-        final Source source = arrayTemplate.newFromInput(input, maxDoc);
-        success = true;
-        return source;
+        return arrayTemplate.newFromInput(indexInput, maxDoc);
       } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(input, datIn);
-        }
+        IOUtils.close(indexInput);
       }
-    }
-
-    @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      final IndexInput input = cloneData();
-      boolean success = false;
-      try {
-        final ValuesEnum valuesEnum = arrayTemplate.getDirectEnum(source,
-            input, maxDoc);
-        success = true;
-        return valuesEnum;
-      } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(input);
-        }
-      }
-    }
-
-    @Override
-    public ValueType type() {
-      return type;
     }
   }
 }

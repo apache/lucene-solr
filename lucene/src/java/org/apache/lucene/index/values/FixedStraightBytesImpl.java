@@ -24,11 +24,12 @@ import java.io.IOException;
 import org.apache.lucene.index.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
+import org.apache.lucene.index.values.DirectSource;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.BytesRef;
@@ -137,8 +138,8 @@ class FixedStraightBytesImpl {
       datOut = getOrCreateDataOut();
       boolean success = false;
       try {
-        if (state.liveDocs == null && state.reader instanceof Reader ) {
-          Reader reader = (Reader) state.reader;
+        if (state.liveDocs == null && state.reader instanceof FixedStraightReader ) {
+          FixedStraightReader reader = (FixedStraightReader) state.reader;
           final int maxDocs = reader.maxDoc;
           if (maxDocs == 0) {
             return;
@@ -175,8 +176,9 @@ class FixedStraightBytesImpl {
     }
     
     @Override
-    protected void mergeDoc(int docID) throws IOException {
+    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
       assert lastDocID < docID;
+      currentMergeSource.getBytes(sourceDoc, bytesRef);
       if (size == -1) {
         size = bytesRef.length;
         datOut.writeInt(size);
@@ -236,16 +238,16 @@ class FixedStraightBytesImpl {
   
   }
   
-  public static class Reader extends BytesReaderBase {
+  public static class FixedStraightReader extends BytesReaderBase {
     protected final int size;
     protected final int maxDoc;
     
-    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      this(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context);
+    FixedStraightReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      this(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, ValueType.BYTES_FIXED_STRAIGHT);
     }
 
-    protected Reader(Directory dir, String id, String codec, int version, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, codec, version, false, context);
+    protected FixedStraightReader(Directory dir, String id, String codec, int version, int maxDoc, IOContext context, ValueType type) throws IOException {
+      super(dir, id, codec, version, false, context, type);
       size = datIn.readInt();
       this.maxDoc = maxDoc;
     }
@@ -253,155 +255,83 @@ class FixedStraightBytesImpl {
     @Override
     public Source load() throws IOException {
       return size == 1 ? new SingleByteSource(cloneData(), maxDoc) : 
-        new StraightBytesSource(cloneData(), size, maxDoc);
+        new FixedStraightSource(cloneData(), size, maxDoc, type);
     }
 
     @Override
     public void close() throws IOException {
       datIn.close();
     }
-    
-    // specialized version for single bytes
-    private static class SingleByteSource extends Source {
-      private final int maxDoc;
-      private final byte[] data;
-
-      public SingleByteSource(IndexInput datIn, int maxDoc) throws IOException {
-        this.maxDoc = maxDoc;
-        try {
-          data = new byte[maxDoc];
-          datIn.readBytes(data, 0, data.length, false);
-        } finally {
-          IOUtils.close(datIn);
-        }
-
-      }
-
-      @Override
-      public BytesRef getBytes(int docID, BytesRef bytesRef) {
-        bytesRef.length = 1;
-        bytesRef.bytes = data;
-        bytesRef.offset = docID;
-        return bytesRef;
-      }
-      
-      @Override
-      public ValueType type() {
-        return ValueType.BYTES_FIXED_STRAIGHT;
-      }
-
-      @Override
-      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-        return new SourceEnum(attrSource, type(), this, maxDoc) {
-          @Override
-          public int advance(int target) throws IOException {
-            if (target >= numDocs) {
-              return pos = NO_MORE_DOCS;
-            }
-            bytesRef.length = 1;
-            bytesRef.bytes = data;
-            bytesRef.offset = target;
-            return pos = target;
-          }
-        };
-      }
-
-    }
-
-    private final static class StraightBytesSource extends BytesSourceBase {
-      private final int size;
-      private final int maxDoc;
-
-      public StraightBytesSource(IndexInput datIn, int size, int maxDoc)
-          throws IOException {
-        super(datIn, null, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc, ValueType.BYTES_FIXED_STRAIGHT);
-        this.size = size;
-        this.maxDoc = maxDoc;
-      }
-
-      @Override
-      public BytesRef getBytes(int docID, BytesRef bytesRef) {
-        return data.fillSlice(bytesRef, docID * size, size);
-      }
-      
-      @Override
-      public int getValueCount() {
-        return maxDoc;
-      }
-
-      @Override
-      protected int maxDoc() {
-        return maxDoc;
-      }
-    }
-
-    @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      return new FixedStraightBytesEnum(source, cloneData(), size, maxDoc);
-    }
-
    
-
     @Override
-    public ValueType type() {
-      return ValueType.BYTES_FIXED_STRAIGHT;
+    public Source getDirectSource() throws IOException {
+      return new DirectFixedStraightSource(cloneData(), size, type());
     }
   }
   
-  static class FixedStraightBytesEnum extends ValuesEnum {
-    private final IndexInput datIn;
+  // specialized version for single bytes
+  private static final class SingleByteSource extends Source {
+    private final byte[] data;
+
+    public SingleByteSource(IndexInput datIn, int maxDoc) throws IOException {
+      super(ValueType.BYTES_FIXED_STRAIGHT);
+      try {
+        data = new byte[maxDoc];
+        datIn.readBytes(data, 0, data.length, false);
+      } finally {
+        IOUtils.close(datIn);
+      }
+    }
+    
+    @Override
+    public boolean hasArray() {
+      return true;
+    }
+
+    @Override
+    public Object getArray() {
+      return data;
+    }
+
+    @Override
+    public BytesRef getBytes(int docID, BytesRef bytesRef) {
+      bytesRef.length = 1;
+      bytesRef.bytes = data;
+      bytesRef.offset = docID;
+      return bytesRef;
+    }
+  }
+
+  
+  private final static class FixedStraightSource extends BytesSourceBase {
     private final int size;
-    private final int maxDoc;
-    private int pos = -1;
-    private final long fp;
 
-    public FixedStraightBytesEnum(AttributeSource source, IndexInput datIn,
-        int size, int maxDoc) throws IOException {
-      super(source, ValueType.BYTES_FIXED_STRAIGHT);
-      this.datIn = datIn;
+    public FixedStraightSource(IndexInput datIn, int size, int maxDoc, ValueType type)
+        throws IOException {
+      super(datIn, null, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc,
+          type);
       this.size = size;
-      this.maxDoc = maxDoc;
-      bytesRef.grow(size);
-      bytesRef.length = size;
-      bytesRef.offset = 0;
-      fp = datIn.getFilePointer();
-    }
-
-    protected void copyFrom(ValuesEnum valuesEnum) {
-      super.copyFrom(valuesEnum);
-      if (bytesRef.bytes.length < size) {
-        bytesRef.grow(size);
-      }
-      bytesRef.length = size;
-      bytesRef.offset = 0;
-    }
-
-    public void close() throws IOException {
-      datIn.close();
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      if (target >= maxDoc || size == 0) {
-        return pos = NO_MORE_DOCS;
-      }
-      if ((target - 1) != pos) // pos inc == 1
-        datIn.seek(fp + target * size);
-      datIn.readBytes(bytesRef.bytes, 0, size);
-      return pos = target;
+    public BytesRef getBytes(int docID, BytesRef bytesRef) {
+      return data.fillSlice(bytesRef, docID * size, size);
+    }
+  }
+  
+  public final static class DirectFixedStraightSource extends DirectSource {
+    private final int size;
+
+    DirectFixedStraightSource(IndexInput input, int size, ValueType type) {
+      super(input, type);
+      this.size = size;
     }
 
     @Override
-    public int docID() {
-      return pos;
+    protected int position(int docID) throws IOException {
+      data.seek(baseOffset + size * docID);
+      return size;
     }
 
-    @Override
-    public int nextDoc() throws IOException {
-      if (pos >= maxDoc) {
-        return pos = NO_MORE_DOCS;
-      }
-      return advance(pos + 1);
-    }
   }
 }

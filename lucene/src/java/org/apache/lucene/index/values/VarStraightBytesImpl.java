@@ -20,18 +20,19 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
+import org.apache.lucene.index.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
-import org.apache.lucene.index.values.Bytes.DerefBytesSourceBase;
+import org.apache.lucene.index.values.DirectSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -66,7 +67,7 @@ class VarStraightBytesImpl {
     }
 
     // Fills up to but not including this docID
-    private void fill(final int docID) {
+    private void fill(final int docID, final long nextAddress) {
       if (docID >= docToAddress.length) {
         int oldSize = docToAddress.length;
         docToAddress = ArrayUtil.grow(docToAddress, 1 + docID);
@@ -74,7 +75,7 @@ class VarStraightBytesImpl {
             * RamUsageEstimator.NUM_BYTES_INT);
       }
       for (int i = lastDocID + 1; i < docID; i++) {
-        docToAddress[i] = address;
+        docToAddress[i] = nextAddress;
       }
     }
 
@@ -84,7 +85,7 @@ class VarStraightBytesImpl {
       if (bytes.length == 0) {
         return; // default
       }
-      fill(docID);
+      fill(docID, address);
       docToAddress[docID] = address;
       pool.copy(bytes);
       address += bytes.length;
@@ -97,15 +98,15 @@ class VarStraightBytesImpl {
       datOut = getOrCreateDataOut();
       boolean success = false;
       try {
-        if (state.liveDocs == null && state.reader instanceof Reader) {
+        if (state.liveDocs == null && state.reader instanceof VarStraightReader) {
           // bulk merge since we don't have any deletes
-          Reader reader = (Reader) state.reader;
+          VarStraightReader reader = (VarStraightReader) state.reader;
           final int maxDocs = reader.maxDoc;
           if (maxDocs == 0) {
             return;
           }
           if (lastDocID+1 < state.docBase) {
-            fill(state.docBase);
+            fill(state.docBase, address);
             lastDocID = state.docBase-1;
           }
           final long numDataBytes;
@@ -147,13 +148,14 @@ class VarStraightBytesImpl {
     }
     
     @Override
-    protected void mergeDoc(int docID) throws IOException {
+    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
       assert merge;
       assert lastDocID < docID;
+      currentMergeSource.getBytes(sourceDoc, bytesRef);
       if (bytesRef.length == 0) {
         return; // default
       }
-      fill(docID);
+      fill(docID, address);
       datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
       docToAddress[docID] = address;
       address += bytesRef.length;
@@ -186,20 +188,21 @@ class VarStraightBytesImpl {
       try {
         if (lastDocID == -1) {
           idxOut.writeVLong(0);
-          final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+          final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount+1,
               PackedInts.bitsRequired(0));
-          for (int i = 0; i < docCount; i++) {
+          for (int i = 0; i < docCount+1; i++) {
             w.add(0);
           }
           w.finish();
         } else {
-          fill(docCount);
+          fill(docCount, address);
           idxOut.writeVLong(address);
-          final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+          final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount+1,
               PackedInts.bitsRequired(address));
           for (int i = 0; i < docCount; i++) {
             w.add(docToAddress[i]);
           }
+          w.add(address);
           w.finish();
         }
         success = true;
@@ -220,115 +223,59 @@ class VarStraightBytesImpl {
     }
   }
 
-  public static class Reader extends BytesReaderBase {
+  public static class VarStraightReader extends BytesReaderBase {
     private final int maxDoc;
 
-    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context);
+    VarStraightReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context, ValueType.BYTES_VAR_STRAIGHT);
       this.maxDoc = maxDoc;
     }
 
     @Override
     public Source load() throws IOException {
-      return new Source(cloneData(), cloneIndex());
-    }
-
-    private class Source extends DerefBytesSourceBase {
-
-      public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
-        super(datIn, idxIn, idxIn.readVLong(), ValueType.BYTES_VAR_STRAIGHT);
-      }
-
-      @Override
-      public BytesRef getBytes(int docID, BytesRef bytesRef) {
-        final long address = addresses.get(docID);
-        final int length = docID == maxDoc - 1 ? (int) (totalLengthInBytes - address)
-            : (int) (addresses.get(1 + docID) - address);
-        return data.fillSlice(bytesRef, address, length);
-      }
-      
-      @Override
-      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-        return new SourceEnum(attrSource, type(), this, maxDoc()) {
-          @Override
-          public int advance(int target) throws IOException {
-            if (target >= numDocs) {
-              return pos = NO_MORE_DOCS;
-            }
-            source.getBytes(target, bytesRef);
-            return pos = target;
-          }
-        };
-      }
+      return new VarStraightSource(cloneData(), cloneIndex());
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      return new VarStraightBytesEnum(source, cloneData(), cloneIndex());
+    public Source getDirectSource()
+        throws IOException {
+      return new DirectVarStraightSource(cloneData(), cloneIndex(), type());
     }
+  }
+  
+  private static final class VarStraightSource extends BytesSourceBase {
+    private final PackedInts.Reader addresses;
 
-    private class VarStraightBytesEnum extends ValuesEnum {
-      private final PackedInts.ReaderIterator addresses;
-      private final IndexInput datIn;
-      private final IndexInput idxIn;
-      private final long fp;
-      private final long totBytes;
-      private int pos = -1;
-      private long nextAddress;
-
-      protected VarStraightBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn) throws IOException {
-        super(source, ValueType.BYTES_VAR_STRAIGHT);
-        totBytes = idxIn.readVLong();
-        fp = datIn.getFilePointer();
-        addresses = PackedInts.getReaderIterator(idxIn);
-        this.datIn = datIn;
-        this.idxIn = idxIn;
-        nextAddress = addresses.next();
-      }
-
-      @Override
-      public void close() throws IOException {
-        datIn.close();
-        idxIn.close();
-      }
-
-      @Override
-      public int advance(final int target) throws IOException {
-        if (target >= maxDoc) {
-          return pos = NO_MORE_DOCS;
-        }
-        final long addr = pos+1 == target ? nextAddress : addresses.advance(target);
-        if (addr == totBytes) { // empty values at the end
-          bytesRef.length = 0;
-          bytesRef.offset = 0;
-          return pos = target;
-        }
-        datIn.seek(fp + addr);
-        final int size = (int) (target == maxDoc - 1 ? totBytes - addr
-            : (nextAddress = addresses.next()) - addr);
-        if (bytesRef.bytes.length < size) {
-          bytesRef.grow(size);
-        }
-        bytesRef.length = size;
-        datIn.readBytes(bytesRef.bytes, 0, size);
-        return pos = target;
-      }
-
-      @Override
-      public int docID() {
-        return pos;
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        return advance(pos + 1);
-      }
+    public VarStraightSource(IndexInput datIn, IndexInput idxIn) throws IOException {
+      super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong(),
+          ValueType.BYTES_VAR_STRAIGHT);
+      addresses = PackedInts.getReader(idxIn);
     }
 
     @Override
-    public ValueType type() {
-      return ValueType.BYTES_VAR_STRAIGHT;
+    public BytesRef getBytes(int docID, BytesRef bytesRef) {
+      final long address = addresses.get(docID);
+      return data.fillSlice(bytesRef, address,
+          (int) (addresses.get(docID + 1) - address));
+    }
+  }
+  
+  public final static class DirectVarStraightSource extends DirectSource {
+
+    private final PackedInts.RandomAccessReaderIterator index;
+
+    DirectVarStraightSource(IndexInput data, IndexInput index, ValueType type)
+        throws IOException {
+      super(data, type);
+      index.readVLong();
+      this.index = PackedInts.getRandomAccessReaderIterator(index);
+    }
+
+    @Override
+    protected int position(int docID) throws IOException {
+      final long offset = index.get(docID);
+      data.seek(baseOffset + offset);
+      return (int) (index.next() - offset);
     }
   }
 }

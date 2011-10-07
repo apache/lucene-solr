@@ -85,6 +85,14 @@ public class PackedInts {
     long advance(int ord) throws IOException;
   }
   
+  public static interface RandomAccessReaderIterator extends ReaderIterator {
+    /**
+     * @param index the position of the wanted value.
+     * @return the value at the stated index.
+     */
+    long get(int index) throws IOException;
+  }
+  
   /**
    * A packed integer array that can be modified.
    * @lucene.internal
@@ -195,6 +203,17 @@ public class PackedInts {
    * @lucene.internal
    */
   public static ReaderIterator getReaderIterator(IndexInput in) throws IOException {
+    return getRandomAccessReaderIterator(in);
+  }
+  
+  /**
+   * Retrieve PackedInts as a {@link RandomAccessReaderIterator}
+   * @param in positioned at the beginning of a stored packed int structure.
+   * @return an iterator to access the values
+   * @throws IOException if the structure could not be retrieved.
+   * @lucene.internal
+   */
+  public static RandomAccessReaderIterator getRandomAccessReaderIterator(IndexInput in) throws IOException {
     CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;

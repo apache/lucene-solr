@@ -22,9 +22,9 @@ import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Exposes {@link Writer} and reader ({@link Source}) for 32 bit and 64 bit
@@ -37,37 +37,47 @@ import org.apache.lucene.util.Counter;
  */
 public class Floats {
   
-  public static Writer getWriter(Directory dir, String id, int precisionBytes,
-      Counter bytesUsed, IOContext context) throws IOException {
-    if (precisionBytes != 4 && precisionBytes != 8) {
-      throw new IllegalArgumentException("precisionBytes must be 4 or 8; got "
-          + precisionBytes);
-    }
-    return new FloatsWriter(dir, id, bytesUsed, context, precisionBytes);
-
+  protected static final String CODEC_NAME = "Floats";
+  protected static final int VERSION_START = 0;
+  protected static final int VERSION_CURRENT = VERSION_START;
+  
+  public static Writer getWriter(Directory dir, String id, Counter bytesUsed,
+      IOContext context, ValueType type) throws IOException {
+    return new FloatsWriter(dir, id, bytesUsed, context, type);
   }
 
-  public static IndexDocValues getValues(Directory dir, String id, int maxDoc, IOContext context)
+  public static IndexDocValues getValues(Directory dir, String id, int maxDoc, IOContext context, ValueType type)
       throws IOException {
-    return new FloatsReader(dir, id, maxDoc, context);
+    return new FloatsReader(dir, id, maxDoc, context, type);
+  }
+  
+  private static int typeToSize(ValueType type) {
+    switch (type) {
+    case FLOAT_32:
+      return 4;
+    case FLOAT_64:
+      return 8;
+    default:
+      throw new IllegalStateException("illegal type " + type);
+    }
   }
   
   final static class FloatsWriter extends FixedStraightBytesImpl.Writer {
+   
     private final int size; 
+    private final IndexDocValuesArray template;
     public FloatsWriter(Directory dir, String id, Counter bytesUsed,
-        IOContext context, int size) throws IOException {
-      super(dir, id, bytesUsed, context);
+        IOContext context, ValueType type) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      size = typeToSize(type);
       this.bytesRef = new BytesRef(size);
-      this.size = size;
       bytesRef.length = size;
+      template = IndexDocValuesArray.TEMPLATES.get(type);
+      assert template != null;
     }
     
     public void add(int docID, double v) throws IOException {
-      if (size == 8) {
-        bytesRef.copy(Double.doubleToRawLongBits(v));        
-      } else {
-        bytesRef.copy(Float.floatToRawIntBits((float)v));
-      }
+      template.toBytes(v, bytesRef);
       add(docID, bytesRef);
     }
     
@@ -76,19 +86,14 @@ public class Floats {
       add(docID, docValues.getFloat());
     }
   }
-
   
-  final static class FloatsReader extends FixedStraightBytesImpl.Reader {
+  final static class FloatsReader extends FixedStraightBytesImpl.FixedStraightReader {
     final IndexDocValuesArray arrayTemplate;
-    FloatsReader(Directory dir, String id, int maxDoc, IOContext context)
+    FloatsReader(Directory dir, String id, int maxDoc, IOContext context, ValueType type)
         throws IOException {
-      super(dir, id, maxDoc, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, type);
+      arrayTemplate = IndexDocValuesArray.TEMPLATES.get(type);
       assert size == 4 || size == 8;
-      if (size == 4) {
-        arrayTemplate = new IndexDocValuesArray.FloatValues();
-      } else {
-        arrayTemplate = new IndexDocValuesArray.DoubleValues();
-      }
     }
     
     @Override
@@ -97,19 +102,10 @@ public class Floats {
       try {
         return arrayTemplate.newFromInput(indexInput, maxDoc);
       } finally {
-        indexInput.close();
+        IOUtils.close(indexInput);
       }
     }
     
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      IndexInput indexInput = (IndexInput) datIn.clone();
-      return arrayTemplate.getDirectEnum(source, indexInput, maxDoc);
-    }
-
-    @Override
-    public ValueType type() {
-      return arrayTemplate.type();
-    }
   }
 
 }
