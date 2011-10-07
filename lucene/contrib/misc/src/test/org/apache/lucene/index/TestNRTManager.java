@@ -93,7 +93,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
       final SearcherManager manager = nrt.waitForGeneration(gen, false);
-      final IndexSearcher s = manager.acquire();// nocommit get(gen, false);
+      final IndexSearcher s = manager.acquire();
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
       }
