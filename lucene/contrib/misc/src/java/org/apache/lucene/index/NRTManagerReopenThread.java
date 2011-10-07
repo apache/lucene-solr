@@ -80,12 +80,13 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 
 public class NRTManagerReopenThread extends Thread implements NRTManager.WaitingListener, Closeable {
+  
   private final NRTManager manager;
   private final long targetMaxStaleNS;
   private final long targetMinStaleNS;
   private boolean finish;
-  private boolean waitingNeedsDeletes;
   private long waitingGen;
+  private boolean waitingNeedsDeletes;
 
   /**
    * Create NRTManagerReopenThread, to periodically reopen the NRT searcher.
@@ -131,7 +132,7 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
   }
 
   @Override
-    public void run() {
+  public void run() {
     // TODO: maybe use private thread ticktock timer, in
     // case clock shift messes up nanoTime?
     long lastReopenStartNS = System.nanoTime();
@@ -139,8 +140,6 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
     //System.out.println("reopen: start");
     try {
       while (true) {
-
-        final boolean doApplyDeletes;
 
         boolean hasWaiting = false;
 
@@ -176,16 +175,13 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
             //System.out.println("reopen: finish");
             return;
           }
-
-          doApplyDeletes = hasWaiting ? waitingNeedsDeletes : true;
-          waitingNeedsDeletes = false;
           //System.out.println("reopen: start hasWaiting=" + hasWaiting);
         }
 
         lastReopenStartNS = System.nanoTime();
         try {
           //final long t0 = System.nanoTime();
-          manager.reopen(doApplyDeletes);
+          manager.maybeReopen(waitingNeedsDeletes);
           //System.out.println("reopen took " + ((System.nanoTime()-t0)/1000000.0) + " msec");
         } catch (IOException ioe) {
           //System.out.println(Thread.currentThread().getName() + ": IOE");

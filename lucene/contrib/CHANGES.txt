@@ -176,6 +176,11 @@ API Changes
    new FieldValueQueryNode<CharSequence>, which this last one implements
    FieldableQueryNode and thew new ValueQueryNode
    (Vinicius Barros via Uwe Schindler)
+   
+ * LUCENE-3488: Factored out SearcherManager from NRTManager. NRTManager
+   now manages SearcherManager instances instead of IndexSearcher directly.
+   Acquiring a SearcherManager is non-blocking unless the caller explicitly
+   requires to acquire a certain SearcherManager generation. (Simon Willnauer)
 
 Optimizations
 

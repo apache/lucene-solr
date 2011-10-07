@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -29,6 +31,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
 
 public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
@@ -41,25 +44,35 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected IndexSearcher getFinalSearcher() throws Exception  {
-    writer.commit();
-    mgr.maybeReopen();
+    if (!isNRT) {
+      writer.commit();
+    }
+    assertTrue(mgr.maybeReopen() || mgr.isSearcherCurrent());
     return mgr.acquire();
   }
 
   private SearcherManager mgr;
+  private boolean isNRT;
 
   @Override
   protected void doAfterWriter(ExecutorService es) throws Exception {
     // SearcherManager needs to see empty commit:
-    writer.commit();
-    mgr = new SearcherManager(dir,
-                              new SearcherWarmer() {
-                                @Override
-                                public void warm(IndexSearcher s) throws IOException {
-                                  TestSearcherManager.this.warmCalled = true;
-                                  s.search(new TermQuery(new Term("body", "united")), 10);
-                                }
-                              }, es);
+    final SearcherWarmer warmer = new SearcherWarmer() {
+      @Override
+      public void warm(IndexSearcher s) throws IOException {
+        TestSearcherManager.this.warmCalled = true;
+        s.search(new TermQuery(new Term("body", "united")), 10);
+      }
+    };
+    if (random.nextBoolean()) {
+      mgr = SearcherManager.open(writer, true, warmer, es);
+      isNRT = true;
+    } else {
+      writer.commit();
+      mgr = SearcherManager.open(dir, warmer, es);
+      isNRT = false;
+    }
+    
   }
 
   @Override
@@ -126,19 +139,20 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     writer.commit();
     final CountDownLatch awaitEnterWarm = new CountDownLatch(1);
     final CountDownLatch awaitClose = new CountDownLatch(1);
-
-    final SearcherManager searcherManager = new SearcherManager(dir,
-        new SearcherWarmer() {
-          @Override
-          public void warm(IndexSearcher s) throws IOException {
-            try {
-              awaitEnterWarm.countDown();
-              awaitClose.await();
-            } catch (InterruptedException e) {
-              //
-            }
-          }
-        });
+    final ExecutorService es = random.nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
+    final SearcherWarmer warmer = new SearcherWarmer() {
+      @Override
+      public void warm(IndexSearcher s) throws IOException {
+        try {
+          awaitEnterWarm.countDown();
+          awaitClose.await();
+        } catch (InterruptedException e) {
+          //
+        }
+      }
+    };
+    final SearcherManager searcherManager = random.nextBoolean() ? SearcherManager.open(dir,
+        warmer, es) : SearcherManager.open(writer, random.nextBoolean(), warmer, es);
     IndexSearcher searcher = searcherManager.acquire();
     try {
       assertEquals(1, searcher.getIndexReader().numDocs());
@@ -185,6 +199,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     assertNull("" + exc[0], exc[0]);
     writer.close();
     dir.close();
-
+    if (es != null) {
+      es.shutdown();
+      es.awaitTermination(1, TimeUnit.SECONDS);
+    }
   }
 }
