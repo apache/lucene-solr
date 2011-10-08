@@ -144,8 +144,11 @@ public class FSUpdateLog extends UpdateLog {
 
   static class LogPtr {
     final long pointer;
-    public LogPtr(long pointer) {
+    final long version;
+
+    public LogPtr(long pointer, long version) {
       this.pointer = pointer;
+      this.version = version;
     }
 
     public String toString() {
@@ -178,7 +181,7 @@ public class FSUpdateLog extends UpdateLog {
     synchronized (this) {
       ensureLog();
       long pos = tlog.write(cmd);
-      LogPtr ptr = new LogPtr(pos);
+      LogPtr ptr = new LogPtr(pos, cmd.getVersion());
       map.put(cmd.getIndexedId(), ptr);
       // System.out.println("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
@@ -191,7 +194,7 @@ public class FSUpdateLog extends UpdateLog {
     synchronized (this) {
       ensureLog();
       long pos = tlog.writeDelete(cmd);
-      LogPtr ptr = new LogPtr(pos);
+      LogPtr ptr = new LogPtr(pos, cmd.version);
       map.put(br, ptr);
       // System.out.println("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
@@ -206,7 +209,7 @@ public class FSUpdateLog extends UpdateLog {
       // realtime-get could just do a reopen of the searcher
       // optimistic concurrency? Maybe we shouldn't support deleteByQuery w/ optimistic concurrency
       long pos = tlog.writeDeleteByQuery(cmd);
-      LogPtr ptr = new LogPtr(pos);
+      LogPtr ptr = new LogPtr(pos, cmd.getVersion());
       // System.out.println("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
@@ -500,7 +503,7 @@ class TransactionLog {
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
         codec.writeInt(UpdateLog.ADD);  // should just take one byte
-        codec.writeLong(0);  // the version... should also just be one byte if 0
+        codec.writeLong(cmd.getVersion());
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
         // fos.flushBuffer();  // flush later
         return pos;
@@ -522,7 +525,7 @@ class TransactionLog {
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
         codec.writeInt(UpdateLog.DELETE);  // should just take one byte
-        codec.writeLong(0);  // the version... should also just be one byte if 0
+        codec.writeLong(cmd.getVersion());
         BytesRef br = cmd.getIndexedId();
         codec.writeByteArray(br.bytes, br.offset, br.length);
         // fos.flushBuffer();  // flush later
@@ -545,7 +548,7 @@ class TransactionLog {
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
         codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
-        codec.writeLong(0);  // the version... should also just be one byte if 0
+        codec.writeLong(cmd.getVersion());
         codec.writeStr(cmd.query);
         // fos.flushBuffer();  // flush later
         return pos;
