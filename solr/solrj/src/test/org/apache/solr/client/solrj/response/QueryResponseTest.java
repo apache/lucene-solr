@@ -112,6 +112,8 @@ public class QueryResponseTest extends LuceneTestCase {
     assertEquals(7, manufacturedateDt.getCounts().get(1).getCount());
     assertEquals("2007-02-13T15:26:37Z", manufacturedateDt.getCounts().get(2).getValue());
     assertEquals(0, manufacturedateDt.getCounts().get(2).getCount());
+    assertEquals(90, manufacturedateDt.getBefore());
+    assertEquals(1, manufacturedateDt.getAfter());
   }
 
   @Test

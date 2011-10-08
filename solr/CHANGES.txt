@@ -357,6 +357,9 @@ New Features
 * SOLR-1979: New contrib "langid". Adds language identification capabilities as an 
   Update Processor, using Tika's LanguageIdentifier (janhoy, Tommaso Teofili, gsingers)
 
+* SOLR-2818: Added before/after count response parsing support for range facets in
+  SolrJ. (Bernhard Frauendienst via Martijn van Groningen)  
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
