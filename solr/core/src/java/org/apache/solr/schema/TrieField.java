@@ -368,27 +368,29 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
   @Override
   public CharsRef indexedToReadable(BytesRef indexedForm, CharsRef charsRef) {
-    final char[] value;
+    final String value;
     switch (type) {
       case INTEGER:
-        value = Integer.toString( NumericUtils.prefixCodedToInt(indexedForm) ).toCharArray();
+        value = Integer.toString( NumericUtils.prefixCodedToInt(indexedForm) );
         break;
       case FLOAT:
-        value = Float.toString( NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(indexedForm)) ).toCharArray();
+        value = Float.toString( NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(indexedForm)) );
         break;
       case LONG:
-        value = Long.toString( NumericUtils.prefixCodedToLong(indexedForm) ).toCharArray();
+        value = Long.toString( NumericUtils.prefixCodedToLong(indexedForm) );
         break;
       case DOUBLE:
-        value = Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) ).toCharArray();
+        value = Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) );
         break;
       case DATE:
-        value = dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) ).toCharArray();
+        value = dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
-    charsRef.copy(value, 0, value.length);
+    charsRef.grow(value.length());
+    charsRef.length = value.length();
+    value.getChars(0, charsRef.length, charsRef.chars, 0);
     return charsRef;
   }
 
