@@ -178,7 +178,8 @@ public class RandomIndexWriter implements Closeable {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_STRAIGHT:
     case BYTES_FIXED_SORTED:
-      final String randomUnicodeString = _TestUtil.randomUnicodeString(random, fixedBytesLength);
+      //make sure we use a valid unicode string with a fixed size byte length
+      final String randomUnicodeString = _TestUtil.randomFixedByteLengthUnicodeString(random, fixedBytesLength);
       BytesRef fixedRef = new BytesRef(randomUnicodeString);
       if (fixedRef.length > fixedBytesLength) {
         fixedRef = new BytesRef(fixedRef.bytes, 0, fixedBytesLength);
