@@ -72,6 +72,8 @@
         <str name="gap">+1YEAR</str>
         <date name="start">2005-02-13T15:26:37Z</date>
         <date name="end">2008-02-13T15:26:37Z</date>
+        <int name="before">90</int>
+        <int name="after">1</int>
       </lst>
     </lst>
   </lst>
