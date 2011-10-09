@@ -277,6 +277,8 @@ public class BM25Similarity extends Similarity {
     private final float avgdl;
     /** query's inner boost */
     private final float queryBoost;
+    /** query's outer boost (only for explain) */
+    private float topLevelBoost;
     /** weight (idf * boost) */
     private float weight;
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
@@ -299,6 +301,7 @@ public class BM25Similarity extends Similarity {
     @Override
     public void normalize(float queryNorm, float topLevelBoost) {
       // we don't normalize with queryNorm at all, we just capture the top-level boost
+      this.topLevelBoost = topLevelBoost;
       this.weight = idf.getValue() * queryBoost * topLevelBoost;
     } 
   }
@@ -307,8 +310,8 @@ public class BM25Similarity extends Similarity {
     Explanation result = new Explanation();
     result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
     
-    Explanation boostExpl = new Explanation(stats.queryBoost, "boost");
-    if (stats.queryBoost != 1.0f)
+    Explanation boostExpl = new Explanation(stats.queryBoost * stats.topLevelBoost, "boost");
+    if (boostExpl.getValue() != 1.0f)
       result.addDetail(boostExpl);
     
     result.addDetail(stats.idf);
