@@ -20,10 +20,15 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.*;
+import org.omg.PortableInterceptor.RequestInfo;
 
 
 /**
@@ -50,6 +55,13 @@ class VersionProcessor extends UpdateRequestProcessor
   private final UpdateLog ulog;
   private final VersionInfo vinfo;
   private final boolean versionsStored;
+  private final boolean returnVersions = true; // todo: default to false and make configurable
+  private final SolrQueryResponse rsp;
+
+  private NamedList addsResponse = null;
+  private NamedList deleteResponse = null;
+  private final SchemaField idField;
+  private CharsRef scratch;
 
   public VersionProcessor(SolrQueryRequest req, UpdateRequestProcessor next) {
     super( next );
@@ -58,6 +70,11 @@ class VersionProcessor extends UpdateRequestProcessor
     this.ulog = updateHandler.getUpdateLog();
     this.vinfo = ulog.getVersionInfo();
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
+
+    // TODO: better way to get the response, or pass back info to it?
+    SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
+    this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
+    this.idField = req.getSchema().getUniqueKeyField();
   }
 
   // TODO: move this to AddUpdateCommand/DeleteUpdateCommand and cache it? And make the hash pluggable of course.
@@ -86,7 +103,7 @@ class VersionProcessor extends UpdateRequestProcessor
       // even if we don't store the version field, synchronizing on the bucket
       // will enable us to know what version happened first, and thus enable
       // realtime-get to work reliably.
-      // TODO: if verisons aren't stored, do we need to set on the cmd anyway for some reason?
+      // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
       // there may be other reasons in the future for a version on the commands
       if (versionsStored) {
         long version = vinfo.getNewClock();
@@ -96,6 +113,21 @@ class VersionProcessor extends UpdateRequestProcessor
 
       super.processAdd(cmd);
     }
+
+    if (returnVersions && rsp != null) {
+      if (addsResponse == null) {
+        addsResponse = new NamedList<String>();
+        rsp.add("adds",addsResponse);
+      }
+      if (scratch == null) scratch = new CharsRef();
+      idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
+      addsResponse.add(scratch.toString(), cmd.getVersion());
+    }
+
+    // TODO: keep track of errors?  needs to be done at a higher level though since
+    // an id may fail before it gets to this processor.
+    // Given that, it may also make sense to move the version reporting out of this
+    // processor too.
   }
 
   @Override
@@ -119,6 +151,16 @@ class VersionProcessor extends UpdateRequestProcessor
         cmd.setVersion(version);
       }
       super.processDelete(cmd);
+    }
+
+    if (returnVersions && rsp != null) {
+      if (deleteResponse == null) {
+        deleteResponse = new NamedList<String>();
+        rsp.add("deletes",deleteResponse);
+      }
+      if (scratch == null) scratch = new CharsRef();
+      idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
+      deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
     }
   }
 
