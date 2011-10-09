@@ -17,18 +17,24 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
  *
  */
-public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
+public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
@@ -49,10 +55,37 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
   
-  public BasicDistributedZkTest() {
+  public FullDistributedZkTest() {
     fixShardCount = true;
-    
+    shardCount = 6;
     System.setProperty("CLOUD_UPDATE_DELAY", "0");
+  }
+  
+  @Override
+  protected void createServers(int numShards) throws Exception {
+    System.setProperty("collection", "control_collection");
+    controlJetty = createJetty(testDir, testDir + "/control/data", "control_shard");
+    System.clearProperty("collection");
+    controlClient = createNewSolrServer(controlJetty.getLocalPort());
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 1; i <= numShards; i++) {
+      if (sb.length() > 0) sb.append(',');
+      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + i, null, "solrconfig-distrib-update.xml");
+      jettys.add(j);
+      clients.add(createNewSolrServer(j.getLocalPort()));
+
+    }
+    
+    // build the shard string
+    for (int i = 1; i <= numShards/2; i++) {
+      JettySolrRunner j = jettys.get(i);
+      JettySolrRunner j2 = jettys.get(i + (numShards/2 - 1));
+      if (sb.length() > 0) sb.append(',');
+      sb.append("localhost:").append(j.getLocalPort()).append(context);
+      sb.append("|localhost:").append(j2.getLocalPort()).append(context);
+    }
+    shards = sb.toString();
   }
   
   @Override
@@ -64,10 +97,10 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < shardCount; i++) {
+      for (int i = 0; i < shardCount / 2; i++) {
         if (i > 0)
           sb.append(',');
-        sb.append("shard" + (i + 3));
+        sb.append("shard" + (i+1));
       }
       params.set("shards", sb.toString());
       params.set("distrib", "true");
@@ -75,7 +108,40 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   }
   
   @Override
+  protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
+    controlClient.add(doc);
+ 
+    boolean pick = random.nextBoolean();
+    
+    int mod = (clients.size() / 2);
+    
+    int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % mod;
+    
+    if (pick) {
+      which = which + mod;
+    }
+    
+    CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients.get(which);
+
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.add(doc);
+    ureq.setParam("update.chain", "distrib-update-chain");
+    ureq.process(client);
+  }
+  
+  /* (non-Javadoc)
+   * @see org.apache.solr.BaseDistributedSearchTestCase#doTest()
+   * 
+   * Create 3 shards, each with one replica
+   */
+  @Override
   public void doTest() throws Exception {
+    printLayout();
+    // make sure 'shard1' was auto-assigned
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    assertTrue("shard1 was not found in zk layout", zkClient.exists("/solr/collections/collection1/shards/shard1"));
+    zkClient.close();
+    
     del("*:*");
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
@@ -186,15 +252,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
 
-    /*** TODO: the failure may come back in "exception"
-    try {
-      // test error produced for field that is invalid for schema
-      query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
-      TestCase.fail("SolrServerException expected for invalid field that is not in schema");
-    } catch (SolrServerException ex) {
-      // expected
-    }
-    ***/
 
     // Try to get better coverage for refinement queries by turning off over requesting.
     // This makes it much more likely that we may not get the top facet values and hence

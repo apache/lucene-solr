@@ -159,7 +159,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    System.setProperty("solr.solr.home", getSolrHome());
     testDir = new File(TEMP_DIR,
             getClass().getName() + "-" + System.currentTimeMillis());
     testDir.mkdirs();
@@ -238,10 +237,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   
   public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride) throws Exception {
     System.setProperty("solr.data.dir", dataDir);
-    JettySolrRunner jetty = new JettySolrRunner("/solr", 0, solrConfigOverride);
     if(shardList != null) {
       System.setProperty("shard", shardList);
     }
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride);
+
     jetty.start();
     System.clearProperty("shard");
     return jetty;

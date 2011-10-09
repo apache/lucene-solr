@@ -79,7 +79,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         
         elector.setupForSlice("shard1", "collection1");
         seq = elector.joinElection("shard1", "collection1",
-            Integer.toString(nodeNumber));
+            Integer.toString(nodeNumber), null);
         seqToThread.put(seq, this);
         // run forever - we will be explicitly killed
         Thread.sleep(Integer.MAX_VALUE);
@@ -103,14 +103,14 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     SliceLeaderElector elector = new SliceLeaderElector(zkClient1);
     
     elector.setupForSlice("shard2", "collection1");
-    elector.joinElection("shard2", "collection1", "dummynode1");
+    elector.joinElection("shard2", "collection1", "dummynode1", null);
     
     SolrZkClient zkClient2 = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     
     SliceLeaderElector elector2 = new SliceLeaderElector(zkClient2);
     
     elector2.setupForSlice("shard2", "collection1");
-    elector2.joinElection("shard2", "collection1", "dummynode2");
+    elector2.joinElection("shard2", "collection1", "dummynode2", null);
     
     List<ClientThread> threads = new ArrayList<ClientThread>();
     

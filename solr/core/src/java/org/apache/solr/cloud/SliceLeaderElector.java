@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
@@ -77,13 +79,15 @@ public class SliceLeaderElector {
    * @param collection
    * @param seq
    * @param leaderId
+   * @param props 
    * @throws KeeperException
    * @throws InterruptedException
+   * @throws IOException 
    * @throws UnsupportedEncodingException
    */
   private void checkIfIamLeader(final String shardId, final String collection,
-      final int seq, final String leaderId) throws KeeperException,
-      InterruptedException {
+      final int seq, final String leaderId, final ZkNodeProps props) throws KeeperException,
+      InterruptedException, IOException {
     // get all other numbers...
     String holdElectionPath = getElectionPath(shardId, collection)
         + ELECTION_NODE;
@@ -91,7 +95,7 @@ public class SliceLeaderElector {
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
-      runIamLeaderProcess(shardId, collection, leaderId);
+      runIamLeaderProcess(shardId, collection, leaderId, props);
     } else {
       // I am not the leader - watch the node below me
       int i = 1;
@@ -111,13 +115,15 @@ public class SliceLeaderElector {
               public void process(WatchedEvent event) {
                 // am I the next leader?
                 try {
-                  checkIfIamLeader(shardId, collection, seq, leaderId);
+                  checkIfIamLeader(shardId, collection, seq, leaderId, props);
                 } catch (KeeperException e) {
                   log.warn("", e);
                   
                 } catch (InterruptedException e) {
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
+                  log.warn("", e);
+                } catch (IOException e) {
                   log.warn("", e);
                 }
               }
@@ -126,17 +132,18 @@ public class SliceLeaderElector {
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
-        checkIfIamLeader(shardId, collection, seq, leaderId);
+        checkIfIamLeader(shardId, collection, seq, leaderId, props);
       }
     }
   }
 
   private void runIamLeaderProcess(final String shardId,
-      final String collection, final String leaderId) throws KeeperException,
-      InterruptedException {
+      final String collection, final String leaderId, ZkNodeProps props) throws KeeperException,
+      InterruptedException, IOException {
     String currentLeaderZkPath = getElectionPath(shardId, collection)
         + LEADER_NODE;
-    zkClient.makePath(currentLeaderZkPath + "/" + leaderId,  CreateMode.EPHEMERAL);
+    // TODO: leader election tests do not currently set the props
+    zkClient.makePath(currentLeaderZkPath + "/" + leaderId, props == null ? null : props.store(), CreateMode.EPHEMERAL);
   }
   
   /**
@@ -193,14 +200,15 @@ public class SliceLeaderElector {
    * @param shardId
    * @param collection
    * @param shardZkNodeName
+   * @param props 
    * @return sequential node number
    * @throws KeeperException
    * @throws InterruptedException
+   * @throws IOException 
    * @throws UnsupportedEncodingException
    */
   public int joinElection(String shardId, String collection,
-      String shardZkNodeName) throws KeeperException, InterruptedException,
-      UnsupportedEncodingException {
+      String shardZkNodeName, ZkNodeProps props) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = getElectionPath(shardId, collection)
         + SliceLeaderElector.ELECTION_NODE;
     
@@ -209,6 +217,7 @@ public class SliceLeaderElector {
     int tries = 0;
     while (cont) {
       try {
+        
         leaderSeqPath = zkClient.create(shardsElectZkPath + "/n_", null,
             CreateMode.EPHEMERAL_SEQUENTIAL);
         cont = false;
@@ -224,7 +233,7 @@ public class SliceLeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(shardId, collection, seq, shardZkNodeName);
+    checkIfIamLeader(shardId, collection, seq, shardZkNodeName, props);
     
     return seq;
   }

@@ -243,18 +243,18 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
       cloudState2 = zkController2.getCloudState();
       slices = cloudState2.getSlices("testcore");
       
-      if (slices != null && slices.containsKey(host + ":1661_solr_testcore")
-          && slices.get(host + ":1661_solr_testcore").getShards().size() > 0) {
+      if (slices != null && slices.containsKey("shard1")
+          && slices.get("shard1").getShards().size() > 0) {
         break;
       }
       Thread.sleep(500);
     }
 
     assertNotNull(slices);
-    assertTrue(slices.containsKey(host + ":1661_solr_testcore"));
+    assertTrue(slices.containsKey("shard1"));
 
-    Slice slice = slices.get(host + ":1661_solr_testcore");
-    assertEquals(host + ":1661_solr_testcore", slice.getName());
+    Slice slice = slices.get("shard1");
+    assertEquals("shard1", slice.getName());
 
     Map<String,ZkNodeProps> shards = slice.getShards();
 

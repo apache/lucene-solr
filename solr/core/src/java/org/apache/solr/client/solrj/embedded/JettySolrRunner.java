@@ -51,19 +51,20 @@ public class JettySolrRunner {
 
   private boolean waitOnSolr = false;
 
-  public JettySolrRunner(String context, int port) {
-    this.init(context, port);
+  public JettySolrRunner(String solrHome, String context, int port) {
+    this.init(solrHome, context, port);
   }
 
-  public JettySolrRunner(String context, int port, String solrConfigFilename) {
-    this.init(context, port);
+  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename) {
+    this.init(solrHome, context, port);
     this.solrConfigFilename = solrConfigFilename;
   }
 
-  private void init(String context, int port) {
+  private void init(String solrHome, String context, int port) {
     this.context = context;
     server = new Server(port);
     server.setStopAtShutdown(true);
+    System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
       // SelectChannelConnector connector = new SelectChannelConnector();
       // Normal SocketConnector is what solr's example server uses by default
@@ -99,6 +100,8 @@ public class JettySolrRunner {
             Handler.REQUEST);
         if (solrConfigFilename != null)
           System.clearProperty("solrconfig");
+
+        System.clearProperty("solr.solr.home");
       }
 
       public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
@@ -172,7 +175,7 @@ public class JettySolrRunner {
    */
   public static void main(String[] args) {
     try {
-      JettySolrRunner jetty = new JettySolrRunner("/solr", 8983);
+      JettySolrRunner jetty = new JettySolrRunner(".", "/solr", 8983);
       jetty.start();
     } catch (Exception ex) {
       ex.printStackTrace();

@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.util.Iterator;
 import java.util.List;
@@ -500,6 +499,7 @@ public final class ZkController {
     if (shardId == null) {
       shardId = assignShard.assignShard(collection, 3); // nocommit: hard coded
                                                         // number of slices
+      cloudDesc.setShardId(shardId);
     }
     String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + shardId;
 
@@ -510,10 +510,7 @@ public final class ZkController {
           + shardUrl);
     }
 
-    ZkNodeProps props = new ZkNodeProps();
-    props.put(ZkStateReader.URL_PROP, shardUrl);
-    
-    props.put(ZkStateReader.NODE_NAME, getNodeName());
+    ZkNodeProps props = getShardZkProps(shardUrl);
 
     byte[] bytes = props.store();
     
@@ -544,15 +541,24 @@ public final class ZkController {
     }
     
     // leader election
-    doLeaderElectionProcess(shardId, collection, shardZkNodeName);
+    doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
     return shardId;
   }
 
+
+  private ZkNodeProps getShardZkProps(String shardUrl) {
+    ZkNodeProps props = new ZkNodeProps();
+    props.put(ZkStateReader.URL_PROP, shardUrl);
+    
+    props.put(ZkStateReader.NODE_NAME, getNodeName());
+    return props;
+  }
+
   private void doLeaderElectionProcess(String shardId,
-      final String collection, String shardZkNodeName) throws KeeperException,
-      InterruptedException, UnsupportedEncodingException {
+      final String collection, String shardZkNodeName, ZkNodeProps props) throws KeeperException,
+      InterruptedException, IOException {
    
-    leaderElector.joinElection(shardId, collection, shardZkNodeName);
+    leaderElector.joinElection(shardId, collection, shardZkNodeName, props);
   }
 
   /**

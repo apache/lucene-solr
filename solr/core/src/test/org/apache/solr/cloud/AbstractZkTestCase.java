@@ -84,6 +84,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
     putConfig(zkClient, config);
     putConfig(zkClient, schema);
+    putConfig(zkClient, "solrconfig-distrib-update.xml");
     putConfig(zkClient, "stopwords.txt");
     putConfig(zkClient, "protwords.txt");
     putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
