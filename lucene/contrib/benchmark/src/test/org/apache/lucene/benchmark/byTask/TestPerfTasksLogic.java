@@ -38,6 +38,7 @@ import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -772,6 +773,42 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     reader.close();
   }
 
+  /**
+   * Test indexing with facets tasks.
+   */
+  public void testIndexingWithFacets() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "docs.file=" + getReuters20LinesFile(),
+        "content.source.log.step=100",
+        "content.source.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "merge.factor=3",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "ResetSystemErase",
+        "CreateIndex",
+        "CreateTaxonomyIndex",
+        "{ \"AddDocs\"  AddFacetedDoc > : * ",
+        "CloseIndex",
+        "CloseTaxonomyIndex",
+        "OpenTaxonomyReader",
+    };
+
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+    PerfRunData runData = benchmark.getRunData();
+    assertNull("taxo writer was not properly closed",runData.getTaxonomyWriter());
+    TaxonomyReader taxoReader = runData.getTaxonomyReader();
+    assertNotNull("taxo reader was not opened", taxoReader);
+    assertTrue("nothing was added to the taxnomy (expecting root and at least one addtional category)",taxoReader.getSize()>1);
+    taxoReader.close();
+  }
+  
   /**
    * Test that we can call optimize(maxNumSegments).
    */

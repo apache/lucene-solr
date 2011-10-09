@@ -5,6 +5,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+10/07/2011
+  LUCENE-3262: Facet benchmarking - Benchmark tasks and sources were added for indexing
+  with facets, demonstrated in facets.alg. (Gilad Barkai, Doron Cohen)
+    
 09/25/2011
   LUCENE-3457: Upgrade commons-compress to 1.2 (and undo LUCENE-2980's workaround).
   (Doron Cohen)
