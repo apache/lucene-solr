@@ -141,6 +141,17 @@
     <property name="analyzers-common.uptodate" value="true"/>
   </target>
 
+  <property name="facet.jar" value="${common.dir}/../modules/facet/build/lucene-facet-${version}.jar"/>
+  <target name="check-facet-uptodate" unless="facet.uptodate">
+    <module-uptodate name="facet" jarfile="${facet.jar}" property="facet.uptodate"/>
+  </target>
+  <target name="jar-facet" unless="facet.uptodate" depends="check-facet-uptodate">
+    <ant dir="${common.dir}/../modules/facet" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="facet.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-icu.jar" value="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"/>
   <target name="check-analyzers-icu-uptodate" unless="analyzers-icu.uptodate">
     <module-uptodate name="analysis/icu" jarfile="${analyzers-icu.jar}" property="analyzers-icu.uptodate"/>

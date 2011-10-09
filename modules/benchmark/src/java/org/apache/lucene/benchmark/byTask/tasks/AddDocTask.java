@@ -17,12 +17,14 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.text.NumberFormat;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
 
 /**
- * Add a document, optionally with of a certain size.
+ * Add a document, optionally of a certain size.
  * <br>Other side effects: none.
  * <br>Takes optional param: document size. 
  */
@@ -34,9 +36,12 @@ public class AddDocTask extends PerfTask {
 
   private int docSize = 0;
   
-  // volatile data passed between setup(), doLogic(), tearDown().
-  private Document doc = null;
-  
+  /** 
+   * volatile data passed between setup(), doLogic(), tearDown().
+   * the doc is created at setup() and added at doLogic(). 
+   */
+  protected Document doc = null;
+
   @Override
   public void setup() throws Exception {
     super.setup();
@@ -56,7 +61,7 @@ public class AddDocTask extends PerfTask {
 
   @Override
   protected String getLogMessage(int recsCount) {
-    return "added " + recsCount + " docs";
+    return String.format("added %9d docs",recsCount);
   }
   
   @Override

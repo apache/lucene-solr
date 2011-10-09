@@ -1,4 +1,4 @@
-package org.apache.lucene.benchmark.byTask.feeds;
+package org.apache.lucene.benchmark.byTask.tasks;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,20 +19,25 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 import java.io.IOException;
 
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.util.IOUtils;
+
 /**
- * Represents content from a specified source, such as TREC, Reuters etc. A
- * {@link ContentSource} is responsible for creating {@link DocData} objects for
- * its documents to be consumed by {@link DocMaker}. It also keeps track
- * of various statistics, such as how many documents were generated, size in
- * bytes etc.
- * <p>
- * For supported configuration parameters see {@link ContentItemsSource}.
+ * Close taxonomy index.
+ * <br>Other side effects: taxonomy writer object in perfRunData is nullified.
  */
-public abstract class ContentSource extends ContentItemsSource {
-  
-  /** Returns the next {@link DocData} from the content source. 
-   * Implementations must account for multi-threading, as multiple threads 
-   * can call this method simultaneously. */
-  public abstract DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException;
+public class CloseTaxonomyIndexTask extends PerfTask {
+
+  public CloseTaxonomyIndexTask(PerfRunData runData) {
+    super(runData);
+  }
+
+  @Override
+  public int doLogic() throws IOException {
+    IOUtils.close(getRunData().getTaxonomyWriter());
+    getRunData().setTaxonomyWriter(null);
+
+    return 1;
+  }
 
 }

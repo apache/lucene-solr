@@ -1,4 +1,4 @@
-package org.apache.lucene.benchmark.byTask.feeds;
+package org.apache.lucene.benchmark.byTask.tasks;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,20 +19,27 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 import java.io.IOException;
 
-/**
- * Represents content from a specified source, such as TREC, Reuters etc. A
- * {@link ContentSource} is responsible for creating {@link DocData} objects for
- * its documents to be consumed by {@link DocMaker}. It also keeps track
- * of various statistics, such as how many documents were generated, size in
- * bytes etc.
- * <p>
- * For supported configuration parameters see {@link ContentItemsSource}.
- */
-public abstract class ContentSource extends ContentItemsSource {
-  
-  /** Returns the next {@link DocData} from the content source. 
-   * Implementations must account for multi-threading, as multiple threads 
-   * can call this method simultaneously. */
-  public abstract DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
 
+/**
+ * Open a taxonomy index reader.
+ * <br>Other side effects: taxonomy reader object in perfRunData is set.
+ */
+public class OpenTaxonomyReaderTask extends PerfTask {
+
+  public OpenTaxonomyReaderTask(PerfRunData runData) {
+    super(runData);
+  }
+
+  @Override
+  public int doLogic() throws IOException {
+    PerfRunData runData = getRunData();
+    LuceneTaxonomyReader taxoReader = new LuceneTaxonomyReader(runData.getTaxonomyDir());
+    runData.setTaxonomyReader(taxoReader);
+    // We transfer reference to the run data
+    taxoReader.decRef();
+    return 1;
+  }
+ 
 }
