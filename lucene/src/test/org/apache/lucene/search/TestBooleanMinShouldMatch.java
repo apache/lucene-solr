@@ -355,12 +355,11 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
               found=true;
               float otherScore = top1.scoreDocs[other].score;
               // check if scores match
-              if (Math.abs(otherScore-score)>1.0e-6f) {
-                        fail("Doc " + id + " scores don't match\n"
-                + CheckHits.topdocsString(top1,0,0)
-                + CheckHits.topdocsString(top2,0,0)
-                + "for query:" + q2.toString());
-              }
+              assertEquals("Doc " + id + " scores don't match\n"
+                  + CheckHits.topdocsString(top1,0,0)
+                  + CheckHits.topdocsString(top2,0,0)
+                  + "for query:" + q2.toString(),
+                  score, otherScore, 1.0e-6f);
             }
           }
 
