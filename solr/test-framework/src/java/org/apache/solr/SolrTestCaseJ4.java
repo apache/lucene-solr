@@ -672,6 +672,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Send JSON update commands */
   public static String updateJ(String json, SolrParams args) throws Exception {
     SolrCore core = h.getCore();
+    if (args == null) args = params("wt","json","indent","true");
     DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/udate/json");
     if (handler == null) {
@@ -679,6 +680,63 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       handler.init(null);
     }
     return connection.request(handler, args, json);
+  }
+
+  public static SolrInputDocument sdoc(Object... fieldsAndValues) {
+    SolrInputDocument sd = new SolrInputDocument();
+    for (int i=0; i<fieldsAndValues.length; i+=2) {
+      sd.addField((String)fieldsAndValues[i], fieldsAndValues[i+1]);
+    }
+    return sd;
+  }
+
+  /** Creates JSON from a SolrInputDocument.  Doesn't currently handle boosts. */
+  public static String json(SolrInputDocument doc) {
+     CharArr out = new CharArr();
+    try {
+      out.append('{');
+      boolean firstField = true;
+      for (SolrInputField sfield : doc) {
+        if (firstField) firstField=false;
+        else out.append(',');
+        JSONUtil.writeString(sfield.getName(), 0, sfield.getName().length(), out);
+        out.append(':');
+        if (sfield.getValueCount() > 1) {
+          out.append('[');
+        }
+        boolean firstVal = true;
+        for (Object val : sfield) {
+          if (firstVal) firstVal=false;
+          else out.append(',');
+          out.append(JSONUtil.toJSON(val));
+        }
+        if (sfield.getValueCount() > 1) {
+          out.append(']');
+        }
+      }
+      out.append('}');
+    } catch (IOException e) {
+      // should never happen
+    }
+    return out.toString();
+  }
+
+  /** Creates a JSON add command from a SolrInputDocument list.  Doesn't currently handle boosts. */
+  public static String jsonAdd(SolrInputDocument... docs) {
+    CharArr out = new CharArr();
+    try {
+      out.append('[');
+      boolean firstField = true;
+      for (SolrInputDocument doc : docs) {
+        if (firstField) firstField=false;
+        else out.append(',');
+        out.append(json(doc));
+      }
+      out.append(']');
+    } catch (IOException e) {
+      // should never happen
+    }
+    return out.toString();
   }
 
 
