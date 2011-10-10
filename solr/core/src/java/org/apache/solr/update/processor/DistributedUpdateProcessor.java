@@ -409,6 +409,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         public Request call() throws Exception {
           
           try {
+            // TODO: what about https?
             String url;
             if (!shard.startsWith("http://")) {
               url = "http://" + sreq.shard;
