@@ -365,7 +365,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 assertEquals(1, doclist.size());
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
                 long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
-                if (foundVal < Math.abs(info.val) || foundVer==info.version && (foundVal != info.val)) {
+                if (foundVal < Math.abs(info.val)
+                    || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
                   verbose("ERROR, id=", id, "found=",response,"model",info);
                   assertTrue(false);
                 }
@@ -495,11 +496,12 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 // assertU("<delete><id>" + id + "</id></delete>");
                 Long version = deleteAndGetVersion(Integer.toString(id));
+                assertTrue(version < 0);
 
                 // only update model if the version is newer
                 synchronized (model) {
                   DocInfo currInfo = model.get(id);
-                  if (version > currInfo.version) {
+                  if (Math.abs(version) > Math.abs(currInfo.version)) {
                     model.put(id, new DocInfo(version, -nextVal));
                   }
                 }
@@ -524,6 +526,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
                 Long version = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal)));
+                assertTrue(version > 0);
+
                 // only update model if the version is newer
                 synchronized (model) {
                   DocInfo currInfo = model.get(id);
@@ -599,7 +603,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 assertEquals(1, doclist.size());
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
                 long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
-                if (foundVer < Math.abs(info.version) || foundVer==info.version && (foundVal != info.val)) {
+                if (foundVer < Math.abs(info.version)
+                    || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
                   verbose("ERROR, id=", id, "found=",response,"model",info);
                   assertTrue(false);
                 }

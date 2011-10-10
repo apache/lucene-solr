@@ -36,6 +36,7 @@ public abstract class UpdateLog implements PluginInfoInitialized {
   public abstract void preSoftCommit(CommitUpdateCommand cmd);
   public abstract void postSoftCommit(CommitUpdateCommand cmd);
   public abstract Object lookup(BytesRef indexedId);
+  public abstract Long lookupVersion(BytesRef indexedId);
   public abstract void close();
   public abstract VersionInfo getVersionInfo();
 }

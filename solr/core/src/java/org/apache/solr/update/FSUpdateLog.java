@@ -81,6 +81,11 @@ class NullUpdateLog extends UpdateLog {
   }
 
   @Override
+  public Long lookupVersion(BytesRef indexedId) {
+    return null;
+  }
+
+  @Override
   public void close() {
   }
 
@@ -322,6 +327,36 @@ public class FSUpdateLog extends UpdateLog {
       lookupLog.decref();
     }
 
+  }
+
+  @Override
+  public Long lookupVersion(BytesRef indexedId) {
+    LogPtr entry;
+    TransactionLog lookupLog;
+
+    synchronized (this) {
+      entry = map.get(indexedId);
+      lookupLog = tlog;  // something found in "map" will always be in "tlog"
+      // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in map " +  System.identityHashCode(map) + " got " + entry + " lookupLog=" + lookupLog);
+      if (entry == null && prevMap != null) {
+        entry = prevMap.get(indexedId);
+        // something found in prevMap will always be found in preMapLog (which could be tlog or prevTlog)
+        lookupLog = prevMapLog;
+        // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+      }
+      if (entry == null && prevMap2 != null) {
+        entry = prevMap2.get(indexedId);
+        // something found in prevMap2 will always be found in preMapLog2 (which could be tlog or prevTlog)
+        lookupLog = prevMapLog2;
+        // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap2 " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+      }
+    }
+
+    if (entry == null) {
+      return null;
+    }
+
+    return entry.version;
   }
 
 

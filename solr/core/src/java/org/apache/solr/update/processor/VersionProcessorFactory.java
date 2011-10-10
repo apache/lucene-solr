@@ -147,7 +147,7 @@ class VersionProcessor extends UpdateRequestProcessor
     VersionBucket bucket = vinfo.bucket(hash(cmd));
     synchronized (bucket) {
       if (versionsStored) {
-        long version = vinfo.getNewClock();
+        long version =  -vinfo.getNewClock();    // deletes have negative version
         cmd.setVersion(version);
       }
       super.processDelete(cmd);
