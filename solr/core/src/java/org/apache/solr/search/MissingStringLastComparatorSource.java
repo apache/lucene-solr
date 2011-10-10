@@ -24,9 +24,6 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.packed.Direct16;
-import org.apache.lucene.util.packed.Direct32;
-import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.io.IOException;
@@ -438,15 +435,19 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
   public static FieldComparator createComparator(IndexReader reader, TermOrdValComparator_SML parent) throws IOException {
     parent.termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, parent.field);
     final PackedInts.Reader docToOrd = parent.termsIndex.getDocToOrd();
-    PerSegmentComparator perSegComp;
+    PerSegmentComparator perSegComp = null;
+    if (docToOrd.hasArray()) {
+      final Object arr = docToOrd.getArray();
+      if (arr instanceof byte[]) {
+        perSegComp = new ByteOrdComparator((byte[]) arr, parent);
+      } else if (arr instanceof short[]) {
+        perSegComp = new ShortOrdComparator((short[]) arr, parent);
+      } else if (arr instanceof int[]) {
+        perSegComp = new IntOrdComparator((int[]) arr, parent);
+      }
+    }
 
-    if (docToOrd instanceof Direct8) {
-      perSegComp = new ByteOrdComparator(((Direct8) docToOrd).getArray(), parent);
-    } else if (docToOrd instanceof Direct16) {
-      perSegComp = new ShortOrdComparator(((Direct16) docToOrd).getArray(), parent);
-    } else if (docToOrd instanceof Direct32) {
-      perSegComp = new IntOrdComparator(((Direct32) docToOrd).getArray(), parent);
-    } else {
+    if (perSegComp == null) {
       perSegComp = new AnyOrdComparator(docToOrd, parent);
     }
 

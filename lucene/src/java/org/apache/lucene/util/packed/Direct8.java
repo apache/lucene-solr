@@ -28,7 +28,7 @@ import java.util.Arrays;
  * @lucene.internal
  */
 
-public class Direct8 extends PackedInts.ReaderImpl
+class Direct8 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
   private byte[] values;
   private static final int BITS_PER_VALUE = 8;
@@ -69,10 +69,6 @@ public class Direct8 extends PackedInts.ReaderImpl
     this.values = values;
   }
 
-  public byte[] getArray() {
-    return values;
-  }
-
   public long get(final int index) {
     return 0xFFL & values[index];
   }
@@ -87,5 +83,15 @@ public class Direct8 extends PackedInts.ReaderImpl
 
   public void clear() {
     Arrays.fill(values, (byte)0);
+  }
+
+  @Override
+  public Object getArray() {
+    return values;
+  }
+
+  @Override
+  public boolean hasArray() {
+    return true;
   }
 }

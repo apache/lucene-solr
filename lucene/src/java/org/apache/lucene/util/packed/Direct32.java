@@ -28,7 +28,7 @@ import java.util.Arrays;
  * @lucene.internal
  */
 
-public class Direct32 extends PackedInts.ReaderImpl
+class Direct32 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
   private int[] values;
   private static final int BITS_PER_VALUE = 32;
@@ -64,10 +64,6 @@ public class Direct32 extends PackedInts.ReaderImpl
     this.values = values;
   }
 
-  public int[] getArray() {
-    return values;
-  }
-
   public long get(final int index) {
     return 0xFFFFFFFFL & values[index];
   }
@@ -83,5 +79,15 @@ public class Direct32 extends PackedInts.ReaderImpl
 
   public void clear() {
     Arrays.fill(values, 0);
+  }
+  
+  @Override
+  public int[] getArray() {
+    return values;
+  }
+
+  @Override
+  public boolean hasArray() {
+    return true;
   }
 }

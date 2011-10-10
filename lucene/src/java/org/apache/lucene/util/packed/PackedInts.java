@@ -65,6 +65,25 @@ public class PackedInts {
      * @return the number of values.
      */
     int size();
+
+    /**
+     * Expert: if the bit-width of this reader matches one of
+     * java's native types, returns the underlying array
+     * (ie, byte[], short[], int[], long[]); else, returns
+     * null.  Note that when accessing the array you must
+     * upgrade the type (bitwise AND with all ones), to
+     * interpret the full value as unsigned.  Ie,
+     * bytes[idx]&0xFF, shorts[idx]&0xFFFF, etc.
+     */
+    Object getArray();
+
+    /**
+     * Returns true if this implementation is backed by a
+     * native java array.
+     *
+     * @see #getArray
+     */
+    boolean hasArray();
   }
 
   /**
@@ -136,6 +155,14 @@ public class PackedInts {
 
     public long getMaxValue() { // Convenience method
       return maxValue(bitsPerValue);
+    }
+
+    public Object getArray() {
+      return null;
+    }
+
+    public boolean hasArray() {
+      return false;
     }
   }
 

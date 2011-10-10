@@ -22,9 +22,6 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.util.*;
-import org.apache.lucene.util.packed.Direct16;
-import org.apache.lucene.util.packed.Direct32;
-import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -450,8 +447,15 @@ public class SimpleFacets {
       DocIterator iter = docs.iterator();
 
       PackedInts.Reader ordReader = si.getDocToOrd();
-      if (ordReader instanceof Direct32) {
-        int[] ords = ((Direct32)ordReader).getArray();
+      final Object arr;
+      if (ordReader.hasArray()) {
+        arr = ordReader.getArray();
+      } else {
+        arr = null;
+      }
+
+      if (arr instanceof int[]) {
+        int[] ords = (int[]) arr;
         if (prefix==null) {
           while (iter.hasNext()) {
             counts[ords[iter.nextDoc()]]++;
@@ -463,8 +467,8 @@ public class SimpleFacets {
             if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
           }
         }
-      } else if (ordReader instanceof Direct16) {
-        short[] ords = ((Direct16)ordReader).getArray();
+      } else if (arr instanceof short[]) {
+        short[] ords = (short[]) arr;
         if (prefix==null) {
           while (iter.hasNext()) {
             counts[ords[iter.nextDoc()] & 0xffff]++;
@@ -476,8 +480,8 @@ public class SimpleFacets {
             if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
           }
         }
-      } else if (ordReader instanceof Direct8) {
-        byte[] ords = ((Direct8)ordReader).getArray();
+      } else if (arr instanceof byte[]) {
+        byte[] ords = (byte[]) arr;
         if (prefix==null) {
           while (iter.hasNext()) {
             counts[ords[iter.nextDoc()] & 0xff]++;
