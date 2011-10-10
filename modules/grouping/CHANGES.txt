@@ -9,3 +9,8 @@ Optimizations
 
 LUCENE-3468: Replaced last() and remove() with pollLast() in
              FirstPassGroupingCollector (Martijn van Groningen)
+
+API Changes
+
+LUCENE-3483: Move Function grouping collectors from Solr to
+             grouping module. (Martijn van Groningen)

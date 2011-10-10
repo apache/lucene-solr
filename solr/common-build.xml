@@ -43,7 +43,6 @@
   <property name="tests.userdir" value="src/test-files"/>
   <property name="example" value="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${build.dir}/docs/api"/>
-  <property name="javadoc.link" value="http://java.sun.com/javase/6/docs/api/"/>
   <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.threadspercpu" value="2"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>

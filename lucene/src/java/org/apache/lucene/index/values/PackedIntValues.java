@@ -21,18 +21,15 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.FixedStraightBytesImpl.FixedBytesWriterBase;
 import org.apache.lucene.index.values.IndexDocValues.Source;
-import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
 import org.apache.lucene.index.values.IndexDocValuesArray.LongValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -51,7 +48,6 @@ class PackedIntValues {
 
   static class PackedIntsWriter extends FixedBytesWriterBase {
 
-    private LongsRef intsRef;
     private long minValue;
     private long maxValue;
     private boolean started;
@@ -114,10 +110,10 @@ class PackedIntValues {
     }
 
     @Override
-    protected void mergeDoc(int docID) throws IOException {
+    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
-        add(docID, intsRef.get());
+        add(docID, currentMergeSource.getInt(sourceDoc));
     }
 
     private void writePackedInts(IndexOutput datOut, int docCount) throws IOException {
@@ -139,12 +135,6 @@ class PackedIntValues {
         w.add(defaultValue);
       }
       w.finish();
-      w.finish();
-    }
-
-    @Override
-    protected void setNextEnum(ValuesEnum valuesEnum) {
-      intsRef = valuesEnum.getInt();
     }
 
     @Override
@@ -215,29 +205,16 @@ class PackedIntValues {
       datIn.close();
     }
 
-    @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      final IndexInput input = (IndexInput) datIn.clone();
-      boolean success = false;
-      try {
-        final ValuesEnum inst;
-        if (values == null) {
-          inst = new PackedIntsEnumImpl(source, input);
-        } else {
-          inst = values.getDirectEnum(source, input, numDocs);
-        }
-        success = true;
-        return inst;
-      } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(input);
-        }
-      }
-    }
 
     @Override
     public ValueType type() {
       return ValueType.VAR_INTS;
+    }
+
+
+    @Override
+    public Source getDirectSource() throws IOException {
+      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource((IndexInput) datIn.clone(), 8, ValueType.FIXED_INTS_64) : new DirectPackedIntsSource((IndexInput) datIn.clone());
     }
   }
 
@@ -248,7 +225,7 @@ class PackedIntValues {
     private final PackedInts.Reader values;
 
     public PackedIntsSource(IndexInput dataIn) throws IOException {
-
+      super(ValueType.VAR_INTS);
       minValue = dataIn.readLong();
       defaultValue = dataIn.readLong();
       values = PackedInts.getReader(dataIn);
@@ -263,72 +240,41 @@ class PackedIntValues {
       final long value = values.get(docID);
       return value == defaultValue ? 0 : minValue + value;
     }
-
-    @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      return new SourceEnum(attrSource, type(), this, values.size()) {
-        @Override
-        public int advance(int target) throws IOException {
-          if (target >= numDocs)
-            return pos = NO_MORE_DOCS;
-          intsRef.ints[intsRef.offset] = source.getInt(target);
-          return pos = target;
-        }
-      };
-    }
-
-    @Override
-    public ValueType type() {
-      return ValueType.VAR_INTS;
-    }
   }
 
-  private static final class PackedIntsEnumImpl extends ValuesEnum {
-    private final PackedInts.ReaderIterator ints;
+  private static final class DirectPackedIntsSource extends Source {
+    private final PackedInts.RandomAccessReaderIterator ints;
     private long minValue;
-    private final IndexInput dataIn;
     private final long defaultValue;
-    private final int maxDoc;
-    private int pos = -1;
 
-    private PackedIntsEnumImpl(AttributeSource source, IndexInput dataIn)
+    private DirectPackedIntsSource(IndexInput dataIn)
         throws IOException {
-      super(source, ValueType.VAR_INTS);
-      intsRef.offset = 0;
-      this.dataIn = dataIn;
+      super(ValueType.VAR_INTS);
       minValue = dataIn.readLong();
       defaultValue = dataIn.readLong();
-      this.ints = PackedInts.getReaderIterator(dataIn);
-      maxDoc = ints.size();
+      this.ints = PackedInts.getRandomAccessReaderIterator(dataIn);
     }
 
     @Override
-    public void close() throws IOException {
-      ints.close();
-      dataIn.close();
+    public double getFloat(int docID) {
+      return getInt(docID);
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      if (target >= maxDoc) {
-        return pos = NO_MORE_DOCS;
+    public BytesRef getBytes(int docID, BytesRef ref) {
+      ref.grow(8);
+      ref.copy(getInt(docID));
+      return ref;
+    }
+
+    @Override
+    public long getInt(int docID) {
+      try {
+      final long val = ints.get(docID);
+      return val == defaultValue ? 0 : minValue + val;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
-      final long val = ints.advance(target);
-      intsRef.ints[intsRef.offset] = val == defaultValue ? 0 : minValue + val;
-      return pos = target;
-    }
-
-    @Override
-    public int docID() {
-      return pos;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      if (pos >= maxDoc) {
-        return pos = NO_MORE_DOCS;
-      }
-      return advance(pos + 1);
     }
   }
 

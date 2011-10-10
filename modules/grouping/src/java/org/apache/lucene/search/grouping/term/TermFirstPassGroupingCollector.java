@@ -1,4 +1,4 @@
-package org.apache.lucene.search.grouping;
+package org.apache.lucene.search.grouping.term;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,12 +20,13 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
 /**
- * Concrete implementation of {@link AbstractFirstPassGroupingCollector} that groups based on
+ * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector} that groups based on
  * field values and more specifically uses {@link org.apache.lucene.search.FieldCache.DocTermsIndex}
  * to collect groups.
  *

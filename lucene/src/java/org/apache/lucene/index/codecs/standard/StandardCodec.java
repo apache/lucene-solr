@@ -110,19 +110,19 @@ public class StandardCodec extends Codec {
   public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
     StandardPostingsReader.files(dir, segmentInfo, codecID, files);
     BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecID, files, getDocValuesUseCFS());
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecID, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     getStandardExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
 
   public static void getStandardExtensions(Set<String> extensions) {
     extensions.add(FREQ_EXTENSION);
     extensions.add(PROX_EXTENSION);
     BlockTreeTermsReader.getExtensions(extensions);
+    DefaultDocValuesConsumer.getExtensions(extensions);
   }
 
   @Override
@@ -132,11 +132,11 @@ public class StandardCodec extends Codec {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
+    return new DefaultDocValuesConsumer(state);
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
+    return new DefaultDocValuesProducer(state);
   }
 }

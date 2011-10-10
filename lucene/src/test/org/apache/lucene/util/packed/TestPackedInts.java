@@ -115,12 +115,38 @@ public class TestPackedInts extends LuceneTestCase {
           assertEquals(fp, in.getFilePointer());
           in.close();
         }
+        
+        { // test reader iterator get
+          IndexInput in = d.openInput("out.bin", newIOContext(random));
+          PackedInts.RandomAccessReaderIterator intsEnum = PackedInts.getRandomAccessReaderIterator(in);
+          for (int i = 0; i < valueCount; i++) {
+            final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
+                + valueCount + " nbits=" + nbits + " for "
+                + intsEnum.getClass().getSimpleName();
+            final int ord = random.nextInt(valueCount);
+            long seek = intsEnum.get(ord);
+            assertEquals(msg, seek, values[ord]);
+            if (random.nextBoolean() && ord < valueCount-1) {
+              if (random.nextBoolean()) {
+                assertEquals(msg, values[ord+1], intsEnum.advance(ord+1));
+              } else {
+                assertEquals(msg, values[ord+1], intsEnum.next());
+              }
+            }
+          }
+          if (intsEnum.ord() < valueCount - 1)
+            assertEquals(values[valueCount - 1], intsEnum
+                .advance(valueCount - 1));
+          assertEquals(valueCount - 1, intsEnum.ord());
+          assertEquals(fp, in.getFilePointer());
+          in.close();
+        }
         ceil *= 2;
         d.close();
       }
     }
   }
-
+  
   public void testControlledEquality() {
     final int VALUE_COUNT = 255;
     final int BITS_PER_VALUE = 8;

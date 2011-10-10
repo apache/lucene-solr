@@ -1,4 +1,4 @@
-package org.apache.lucene.search.grouping;
+package org.apache.lucene.search.grouping.term;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,8 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
+import org.apache.lucene.search.grouping.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;

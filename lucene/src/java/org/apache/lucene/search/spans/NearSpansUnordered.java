@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
@@ -131,7 +132,7 @@ public class NearSpansUnordered extends Spans {
   }
 
 
-  public NearSpansUnordered(SpanNearQuery query, AtomicReaderContext context)
+  public NearSpansUnordered(SpanNearQuery query, AtomicReaderContext context, Bits acceptDocs)
     throws IOException {
     this.query = query;
     this.slop = query.getSlop();
@@ -141,7 +142,7 @@ public class NearSpansUnordered extends Spans {
     subSpans = new Spans[clauses.length];    
     for (int i = 0; i < clauses.length; i++) {
       SpansCell cell =
-        new SpansCell(clauses[i].getSpans(context), i);
+        new SpansCell(clauses[i].getSpans(context, acceptDocs), i);
       ordered.add(cell);
       subSpans[i] = cell.spans;
     }

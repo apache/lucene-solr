@@ -128,7 +128,7 @@ public class MultiPerDocValues extends PerDocValues {
           if (docsUpto != start) {
             type = values.type();
             docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(
-                new MultiIndexDocValues.DummyDocValues(start, type), docsUpto, start
+                new MultiIndexDocValues.EmptyDocValues(start, type), docsUpto, start
                     - docsUpto));
           }
           docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(values, start,
@@ -137,7 +137,7 @@ public class MultiPerDocValues extends PerDocValues {
 
         } else if (i + 1 == subs.length && !docValuesIndex.isEmpty()) {
           docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(
-              new MultiIndexDocValues.DummyDocValues(start, type), docsUpto, start
+              new MultiIndexDocValues.EmptyDocValues(start, type), docsUpto, start
                   - docsUpto));
         }
       }

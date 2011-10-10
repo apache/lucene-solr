@@ -38,6 +38,7 @@ import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -137,18 +138,19 @@ public class BlockJoinQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      return childWeight.getValueForNormalization();
+      return childWeight.getValueForNormalization() * joinQuery.getBoost() * joinQuery.getBoost();
     }
 
     @Override
     public void normalize(float norm, float topLevelBoost) {
-      childWeight.normalize(norm, topLevelBoost);
+      childWeight.normalize(norm, topLevelBoost * joinQuery.getBoost());
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext readerContext, ScorerContext context) throws IOException {
+    public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer childScorer = childWeight.scorer(readerContext, ScorerContext.def().scoreDocsInOrder(true).topScorer(false));
+      final Scorer childScorer = childWeight.scorer(readerContext, true, false, acceptDocs);
 
       if (childScorer == null) {
         // No matches
@@ -354,10 +356,12 @@ public class BlockJoinQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query childRewrite = childQuery.rewrite(reader);
     if (childRewrite != childQuery) {
-      return new BlockJoinQuery(childQuery,
+      Query rewritten = new BlockJoinQuery(childQuery,
                                 childRewrite,
                                 parentsFilter,
                                 scoreMode);
+      rewritten.setBoost(getBoost());
+      return rewritten;
     } else {
       return this;
     }
@@ -366,16 +370,6 @@ public class BlockJoinQuery extends Query {
   @Override
   public String toString(String field) {
     return "BlockJoinQuery ("+childQuery.toString()+")";
-  }
-
-  @Override
-  public void setBoost(float boost) {
-    throw new UnsupportedOperationException("this query cannot support boosting; please use childQuery.setBoost instead");
-  }
-
-  @Override
-  public float getBoost() {
-    throw new UnsupportedOperationException("this query cannot support boosting; please use childQuery.getBoost instead");
   }
 
   @Override

@@ -41,7 +41,7 @@ import java.util.Map;
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValuesEnum;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1070,27 +1070,28 @@ public class CheckIndex {
           if (docValues == null) {
             continue;
           }
-          final ValuesEnum values = docValues.getEnum();
-          while (values.nextDoc() != ValuesEnum.NO_MORE_DOCS) {
+          final Source values = docValues.getDirectSource();
+          final int maxDoc = reader.maxDoc();
+          for (int i = 0; i < maxDoc; i++) {
             switch (fieldInfo.docValues) {
-            case BYTES_FIXED_DEREF:
             case BYTES_FIXED_SORTED:
+            case BYTES_VAR_SORTED:
+            case BYTES_FIXED_DEREF:
             case BYTES_FIXED_STRAIGHT:
             case BYTES_VAR_DEREF:
-            case BYTES_VAR_SORTED:
             case BYTES_VAR_STRAIGHT:
-              values.bytes();
+              values.getBytes(i, new BytesRef());
               break;
             case FLOAT_32:
             case FLOAT_64:
-              values.getFloat();
+              values.getFloat(i);
               break;
             case VAR_INTS:
             case FIXED_INTS_16:
             case FIXED_INTS_32:
             case FIXED_INTS_64:
             case FIXED_INTS_8:
-              values.getInt();
+              values.getInt(i);
               break;
             default:
               throw new IllegalArgumentException("Field: " + fieldInfo.name

@@ -30,7 +30,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
@@ -170,7 +169,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     Weight w = searcher.createNormalizedWeight(q);
     ReaderContext topReaderContext = searcher.getTopReaderContext();
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
-    Scorer s = w.scorer(leaves[0], ScorerContext.def());
+    Scorer s = w.scorer(leaves[0], true, false, leaves[0].reader.getLiveDocs());
     assertEquals(1, s.advance(1));
   }
   

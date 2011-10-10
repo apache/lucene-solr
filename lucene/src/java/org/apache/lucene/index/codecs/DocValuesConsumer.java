@@ -92,48 +92,38 @@ public abstract class DocValuesConsumer {
    * 
    * @param mergeState
    *          the state to merge
-   * @param values
-   *          the docValues to merge in
+   * @param docValues docValues array containing one instance per reader (
+   *          {@link MergeState#readers}) or <code>null</code> if the reader has
+   *          no {@link IndexDocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  public void merge(org.apache.lucene.index.codecs.MergeState mergeState,
-      IndexDocValues values) throws IOException {
+  public void merge(MergeState mergeState, IndexDocValues[] docValues) throws IOException {
     assert mergeState != null;
-    // TODO we need some kind of compatibility notation for values such
-    // that two slightly different segments can be merged eg. fixed vs.
-    // variable byte len or float32 vs. float64
-    boolean merged = false;
-    /*
-     * We ignore the given DocValues here and merge from the subReaders directly
-     * to support bulk copies on the DocValues Writer level. if this gets merged
-     * with MultiDocValues the writer can not optimize for bulk-copyable data
-     */
+    boolean hasMerged = false;
     for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
       final org.apache.lucene.index.codecs.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
-      final IndexDocValues r = reader.reader.docValues(mergeState.fieldInfo.name);
-      if (r != null) {
-        merged = true;
-        merge(new Writer.MergeState(r, mergeState.docBase[readerIDX], reader.reader.maxDoc(),
+      if (docValues[readerIDX] != null) {
+        hasMerged = true;
+        merge(new Writer.SingleSubMergeState(docValues[readerIDX], mergeState.docBase[readerIDX], reader.reader.maxDoc(),
                                     reader.liveDocs));
       }
     }
-    if (merged) {
+    // only finish if no exception is thrown!
+    if (hasMerged) {
       finish(mergeState.mergedDocCount);
     }
   }
 
   /**
-   * Merges the given {@link MergeState} into this {@link DocValuesConsumer}.
-   * {@link MergeState#docBase} must always be increasing. Merging segments out
-   * of order is not supported.
+   * Merges the given {@link SingleSubMergeState} into this {@link DocValuesConsumer}.
    * 
    * @param mergeState
-   *          the {@link MergeState} to merge
+   *          the {@link SingleSubMergeState} to merge
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  protected abstract void merge(MergeState mergeState) throws IOException;
+  protected abstract void merge(SingleSubMergeState mergeState) throws IOException;
 
   /**
    * Specialized auxiliary MergeState is necessary since we don't want to
@@ -141,7 +131,7 @@ public abstract class DocValuesConsumer {
    * created for each merged low level {@link IndexReader} we are merging to
    * support low level bulk copies.
    */
-  public static class MergeState {
+  public static class SingleSubMergeState {
     /**
      * the source reader for this MergeState - merged values should be read from
      * this instance
@@ -154,7 +144,7 @@ public abstract class DocValuesConsumer {
     /** the not deleted bits for this MergeState */
     public final Bits liveDocs;
 
-    public MergeState(IndexDocValues reader, int docBase, int docCount, Bits liveDocs) {
+    public SingleSubMergeState(IndexDocValues reader, int docBase, int docCount, Bits liveDocs) {
       assert reader != null;
       this.reader = reader;
       this.docBase = docBase;

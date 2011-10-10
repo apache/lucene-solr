@@ -24,12 +24,19 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
+import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TermAllGroupsCollectorTest extends LuceneTestCase {
+import java.io.IOException;
+import java.util.HashMap;
+
+public class AllGroupsCollectorTest extends LuceneTestCase {
 
   public void testTotalGroupCount() throws Exception {
 
@@ -95,19 +102,29 @@ public class TermAllGroupsCollectorTest extends LuceneTestCase {
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
     w.close();
 
-    TermAllGroupsCollector c1 = new TermAllGroupsCollector(groupField);
+    AbstractAllGroupsCollector c1 = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
     assertEquals(4, c1.getGroupCount());
 
-    TermAllGroupsCollector c2 = new TermAllGroupsCollector(groupField);
+    AbstractAllGroupsCollector c2 = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "some")), c2);
     assertEquals(3, c2.getGroupCount());
 
-    TermAllGroupsCollector c3 = new TermAllGroupsCollector(groupField);
+    AbstractAllGroupsCollector c3 = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), c3);
     assertEquals(2, c3.getGroupCount());
 
     indexSearcher.getIndexReader().close();
     dir.close();
   }
+
+  private AbstractAllGroupsCollector createRandomCollector(String groupField) throws IOException {
+    if (random.nextBoolean()) {
+      return new TermAllGroupsCollector(groupField);
+    } else {
+      ValueSource vs = new BytesRefFieldSource(groupField);
+      return new FunctionAllGroupsCollector(vs, new HashMap());
+    }
+  }
+
 }

@@ -47,8 +47,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FloatsRef;
-import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Before;
@@ -136,7 +134,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Collections.shuffle(values, random);
     ValueType first = values.get(0);
     ValueType second = values.get(1);
-    String msg = "[first=" + first.name() + ", second=" + second.name() + "]";
     // index first index
     Directory d_1 = newDirectory();
     IndexWriter w_1 = new IndexWriter(d_1, writerConfig(random.nextBoolean()));
@@ -171,36 +168,66 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     // check values
     
     IndexReader merged = IndexReader.open(w, true);
-    ValuesEnum vE_1 = getValuesEnum(getDocValues(r_1, first.name()));
-    ValuesEnum vE_2 = getValuesEnum(getDocValues(r_2, second.name()));
-    ValuesEnum vE_1_merged = getValuesEnum(getDocValues(merged, first.name()));
-    ValuesEnum vE_2_merged = getValuesEnum(getDocValues(merged, second
+    Source source_1 = getSource(getDocValues(r_1, first.name()));
+    Source source_2 = getSource(getDocValues(r_2, second.name()));
+    Source source_1_merged = getSource(getDocValues(merged, first.name()));
+    Source source_2_merged = getSource(getDocValues(merged, second
         .name()));
-    switch (second) { // these variants don't advance over missing values
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_VAR_STRAIGHT:
-    case FLOAT_32:
-    case FLOAT_64:
-    case VAR_INTS:
-    case FIXED_INTS_16:
-    case FIXED_INTS_32:
-    case FIXED_INTS_64:
-    case FIXED_INTS_8:
-      assertEquals(msg, valuesPerIndex-1, vE_2_merged.advance(valuesPerIndex-1));
+    for (int i = 0; i < r_1.maxDoc(); i++) {
+      switch (first) {
+      case BYTES_FIXED_DEREF:
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_VAR_DEREF:
+      case BYTES_VAR_STRAIGHT:
+      case BYTES_FIXED_SORTED:
+      case BYTES_VAR_SORTED:
+        assertEquals(source_1.getBytes(i, new BytesRef()),
+            source_1_merged.getBytes(i, new BytesRef()));
+        break;
+      case FIXED_INTS_16:
+      case FIXED_INTS_32:
+      case FIXED_INTS_64:
+      case FIXED_INTS_8:
+      case VAR_INTS:
+        assertEquals(source_1.getInt(i), source_1_merged.getInt(i));
+        break;
+      case FLOAT_32:
+      case FLOAT_64:
+        assertEquals(source_1.getFloat(i), source_1_merged.getFloat(i), 0.0d);
+        break;
+      default:
+        fail("unkonwn " + first);
+      }
     }
-    
-    for (int i = 0; i < valuesPerIndex; i++) {
-      assertEquals(msg, i, vE_1.nextDoc());
-      assertEquals(msg, i, vE_1_merged.nextDoc());
 
-      assertEquals(msg, i, vE_2.nextDoc());
-      assertEquals(msg, i + valuesPerIndex, vE_2_merged.nextDoc());
+    for (int i = r_1.maxDoc(); i < merged.maxDoc(); i++) {
+      switch (second) {
+      case BYTES_FIXED_DEREF:
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_VAR_DEREF:
+      case BYTES_VAR_STRAIGHT:
+      case BYTES_FIXED_SORTED:
+      case BYTES_VAR_SORTED:
+        assertEquals(source_2.getBytes(i - r_1.maxDoc(), new BytesRef()),
+            source_2_merged.getBytes(i, new BytesRef()));
+        break;
+      case FIXED_INTS_16:
+      case FIXED_INTS_32:
+      case FIXED_INTS_64:
+      case FIXED_INTS_8:
+      case VAR_INTS:
+        assertEquals(source_2.getInt(i - r_1.maxDoc()),
+            source_2_merged.getInt(i));
+        break;
+      case FLOAT_32:
+      case FLOAT_64:
+        assertEquals(source_2.getFloat(i - r_1.maxDoc()),
+            source_2_merged.getFloat(i), 0.0d);
+        break;
+      default:
+        fail("unkonwn " + first);
+      }
     }
-    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_1.nextDoc());
-    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_2.nextDoc());
-    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_1_merged.advance(valuesPerIndex*2));
-    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_2_merged.nextDoc());
-
     // close resources
     r_1.close();
     r_2.close();
@@ -260,22 +287,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertEquals("index " + i, 0, value);
         }
 
-        ValuesEnum intsEnum = getValuesEnum(intsReader);
-        assertTrue(intsEnum.advance(base) >= base);
-
-        intsEnum = getValuesEnum(intsReader);
-        LongsRef enumRef = intsEnum.getInt();
-
         int expected = 0;
         for (int i = base; i < r.numDocs(); i++, expected++) {
           while (deleted.get(expected)) {
             expected++;
           }
-          assertEquals("advance failed at index: " + i + " of " + r.numDocs()
-              + " docs", i, intsEnum.advance(i));
           assertEquals(val + " mod: " + mod + " index: " +  i, expected%mod, ints.getInt(i));
-          assertEquals(expected%mod, enumRef.get());
-
         }
       }
         break;
@@ -289,20 +306,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertEquals(val + " failed for doc: " + i + " base: " + base,
               0.0d, value, 0.0d);
         }
-        ValuesEnum floatEnum = getValuesEnum(floatReader);
-        assertTrue(floatEnum.advance(base) >= base);
-
-        floatEnum = getValuesEnum(floatReader);
-        FloatsRef enumRef = floatEnum.getFloat();
         int expected = 0;
         for (int i = base; i < r.numDocs(); i++, expected++) {
           while (deleted.get(expected)) {
             expected++;
           }
-          assertEquals("advance failed at index: " + i + " of " + r.numDocs()
-              + " docs base:" + base, i, floatEnum.advance(i));
-          assertEquals(floatEnum.getClass() + " index " + i, 2.0 * expected,
-              enumRef.get(), 0.00001);
           assertEquals("index " + i, 2.0 * expected, floats.getFloat(i),
               0.00001);
         }
@@ -320,7 +328,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.close();
     d.close();
   }
-
+  
   public void runTestIndexBytes(IndexWriterConfig cfg, boolean withDeletions)
       throws CorruptIndexException, LockObtainFailedException, IOException {
     final Directory d = newDirectory();
@@ -353,6 +361,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         switch (byteIndexValue) {
         case BYTES_VAR_STRAIGHT:
         case BYTES_FIXED_STRAIGHT:
+        case BYTES_FIXED_DEREF:
+        case BYTES_FIXED_SORTED:
           // fixed straight returns bytesref with zero bytes all of fixed
           // length
           assertNotNull("expected none null - " + msg, br);
@@ -365,23 +375,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
             }
           }
           break;
-        case BYTES_VAR_SORTED:
-        case BYTES_FIXED_SORTED:
-        case BYTES_VAR_DEREF:
-        case BYTES_FIXED_DEREF:
         default:
           assertNotNull("expected none null - " + msg, br);
-          assertEquals(0, br.length);
+          assertEquals(byteIndexValue + "", 0, br.length);
           // make sure we advance at least until base
-          ValuesEnum bytesEnum = getValuesEnum(bytesReader);
-          final int advancedTo = bytesEnum.advance(0);
-          assertTrue(byteIndexValue.name() + " advanced failed base:" + base
-              + " advancedTo: " + advancedTo, base <= advancedTo);
         }
       }
 
-      ValuesEnum bytesEnum = getValuesEnum(bytesReader);
-      final BytesRef enumRef = bytesEnum.bytes();
       // test the actual doc values added in this iteration
       assertEquals(base + numRemainingValues, r.numDocs());
       int v = 0;
@@ -393,17 +393,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           upto += bytesSize;
         }
         BytesRef br = bytes.getBytes(i, new BytesRef());
-        if (bytesEnum.docID() != i) {
-          assertEquals("seek failed for index " + i + " " + msg, i, bytesEnum
-              .advance(i));
-        }
         assertTrue(msg, br.length > 0);
         for (int j = 0; j < br.length; j++, upto++) {
-          assertTrue(" enumRef not initialized " + msg,
-              enumRef.bytes.length > 0);
-          assertEquals(
-              "EnumRef Byte at index " + j + " doesn't match - " + msg, upto,
-              enumRef.bytes[enumRef.offset + j]);
           if (!(br.bytes.length > br.offset + j))
             br = bytes.getBytes(i, new BytesRef());
           assertTrue("BytesRef index exceeded [" + msg + "] offset: "
@@ -446,33 +437,23 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   private Source getSource(IndexDocValues values) throws IOException {
-    Source source;
-    if (random.nextInt(10) == 0) {
-      source = values.load();
-    } else {
-      // getSource uses cache internally
-      source = values.getSource();
+    // getSource uses cache internally
+    switch(random.nextInt(5)) {
+    case 3:
+      return values.load();
+    case 2:
+      return values.getDirectSource();
+    case 1:
+      return values.getSource();
+    default:
+      return values.getSource();
     }
-    assertNotNull(source);
-    return source;
   }
 
-  private ValuesEnum getValuesEnum(IndexDocValues values) throws IOException {
-    ValuesEnum valuesEnum;
-    if (!(values instanceof MultiIndexDocValues) && random.nextInt(10) == 0) {
-      // TODO not supported by MultiDocValues yet!
-      valuesEnum = getSource(values).getEnum();
-    } else {
-      valuesEnum = values.getEnum();
-
-    }
-    assertNotNull(valuesEnum);
-    return valuesEnum;
-  }
 
   private static EnumSet<ValueType> BYTES = EnumSet.of(ValueType.BYTES_FIXED_DEREF,
-      ValueType.BYTES_FIXED_SORTED, ValueType.BYTES_FIXED_STRAIGHT, ValueType.BYTES_VAR_DEREF,
-      ValueType.BYTES_VAR_SORTED, ValueType.BYTES_VAR_STRAIGHT);
+      ValueType.BYTES_FIXED_STRAIGHT, ValueType.BYTES_VAR_DEREF,
+      ValueType.BYTES_VAR_STRAIGHT, ValueType.BYTES_FIXED_SORTED, ValueType.BYTES_VAR_SORTED);
 
   private static EnumSet<ValueType> NUMERICS = EnumSet.of(ValueType.VAR_INTS,
       ValueType.FIXED_INTS_16, ValueType.FIXED_INTS_32,

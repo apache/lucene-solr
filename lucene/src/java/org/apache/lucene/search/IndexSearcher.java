@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -569,13 +568,11 @@ public class IndexSearcher implements Closeable {
 
     // TODO: should we make this
     // threaded...?  the Collector could be sync'd?
-    ScorerContext scorerContext =  ScorerContext.def().scoreDocsInOrder(true).topScorer(true);
     // always use single thread:
     if (filter == null) {
       for (int i = 0; i < leaves.length; i++) { // search each subreader
         collector.setNextReader(leaves[i]);
-        scorerContext = scorerContext.scoreDocsInOrder(!collector.acceptsDocsOutOfOrder());
-        Scorer scorer = weight.scorer(leaves[i], scorerContext);
+        Scorer scorer = weight.scorer(leaves[i], !collector.acceptsDocsOutOfOrder(), true, leaves[i].reader.getLiveDocs());
         if (scorer != null) {
           scorer.score(collector);
         }
@@ -593,7 +590,8 @@ public class IndexSearcher implements Closeable {
 
     assert filter != null;
     
-    Scorer scorer = weight.scorer(context, ScorerContext.def());
+    // we are gonna advance() this scorer, so we set inorder=true/toplevel=false 
+    Scorer scorer = weight.scorer(context, true, false, context.reader.getLiveDocs());
     if (scorer == null) {
       return;
     }

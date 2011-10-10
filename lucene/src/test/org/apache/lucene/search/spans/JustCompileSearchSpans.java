@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Bits;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a
@@ -82,7 +83,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public Spans getSpans(AtomicReaderContext context) throws IOException {
+    public Spans getSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

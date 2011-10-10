@@ -19,7 +19,10 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.TypePromoter;
+import org.apache.lucene.index.values.ValueType;
 
 /**
  * Abstract API that consumes per document values. Concrete implementations of
@@ -40,28 +43,75 @@ public abstract class PerDocConsumer implements Closeable{
    * Consumes and merges the given {@link PerDocValues} producer
    * into this consumers format.   
    */
-  public void merge(MergeState mergeState, PerDocValues producer)
+  public void merge(MergeState mergeState)
       throws IOException {
-    Iterable<String> fields = producer.fields();
-    for (String field : fields) {
-      mergeState.fieldInfo = mergeState.fieldInfos.fieldInfo(field);
-      assert mergeState.fieldInfo != null : "FieldInfo for field is null: "
-          + field;
-      if (mergeState.fieldInfo.hasDocValues()) {
-        final IndexDocValues docValues = producer.docValues(field);
-        if (docValues == null) {
-          /*
-           * It is actually possible that a fieldInfo has a values type but no
-           * values are actually available. this can happen if there are already
-           * segments without values around.
-           */
+    final FieldInfos fieldInfos = mergeState.fieldInfos;
+    final IndexDocValues[] docValues = new IndexDocValues[mergeState.readers.size()];
+    final PerDocValues[] perDocValues = new PerDocValues[mergeState.readers.size()];
+    // pull all PerDocValues 
+    for (int i = 0; i < perDocValues.length; i++) {
+      perDocValues[i] =  mergeState.readers.get(i).reader.perDocValues();
+    }
+    for (FieldInfo fieldInfo : fieldInfos) {
+      mergeState.fieldInfo = fieldInfo;
+      TypePromoter currentPromoter = TypePromoter.getIdentityPromoter();
+      if (fieldInfo.hasDocValues()) {
+        for (int i = 0; i < perDocValues.length; i++) {
+          if (perDocValues[i] != null) { // get all IDV to merge
+            docValues[i] = perDocValues[i].docValues(fieldInfo.name);
+            if (docValues[i] != null) {
+              currentPromoter = promoteValueType(fieldInfo, docValues[i], currentPromoter);
+              if (currentPromoter == null) {
+                break;
+              }     
+            }
+          }
+        }
+        
+        if (currentPromoter == null) {
+          fieldInfo.resetDocValues(null);
           continue;
         }
+        assert currentPromoter != TypePromoter.getIdentityPromoter();
+        if (fieldInfo.getDocValues() != currentPromoter.type()) {
+          // reset the type if we got promoted
+          fieldInfo.resetDocValues(currentPromoter.type());
+        }
+        
         final DocValuesConsumer docValuesConsumer = addValuesField(mergeState.fieldInfo);
         assert docValuesConsumer != null;
         docValuesConsumer.merge(mergeState, docValues);
       }
     }
-
+    /* NOTE: don't close the perDocProducers here since they are private segment producers
+     * and will be closed once the SegmentReader goes out of scope */ 
   }
+
+  protected TypePromoter promoteValueType(final FieldInfo fieldInfo, final IndexDocValues docValues,
+      TypePromoter currentPromoter) {
+    assert currentPromoter != null;
+    final TypePromoter incomingPromoter = TypePromoter.create(docValues.type(),  docValues.getValueSize());
+    assert incomingPromoter != null;
+    final TypePromoter newPromoter = currentPromoter.promote(incomingPromoter);
+    return newPromoter == null ? handleIncompatibleValueType(fieldInfo, incomingPromoter, currentPromoter) : newPromoter;    
+  }
+
+  /**
+   * Resolves a conflicts of incompatible {@link TypePromoter}s. The default
+   * implementation promotes incompatible types to
+   * {@link ValueType#BYTES_VAR_STRAIGHT} and preserves all values. If this
+   * method returns <code>null</code> all docvalues for the given
+   * {@link FieldInfo} are dropped and all values are lost.
+   * 
+   * @param incomingPromoter
+   *          the incompatible incoming promoter
+   * @param currentPromoter
+   *          the current promoter
+   * @return a promoted {@link TypePromoter} or <code>null</code> iff this index
+   *         docvalues should be dropped for this field.
+   */
+  protected TypePromoter handleIncompatibleValueType(FieldInfo fieldInfo, TypePromoter incomingPromoter, TypePromoter currentPromoter) {
+    return TypePromoter.create(ValueType.BYTES_VAR_STRAIGHT, TypePromoter.VAR_TYPE_VALUE_SIZE);
+  }
+  
 }

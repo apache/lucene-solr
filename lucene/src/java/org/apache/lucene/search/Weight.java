@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.util.Bits;
 
 /**
  * Expert: Calculate query weights and build query scorers.
@@ -34,7 +35,8 @@ import org.apache.lucene.search.similarities.SimilarityProvider;
  * {@link IndexReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)})
+ * {@link AtomicReaderContext} ({@link #scorer(IndexReader.AtomicReaderContext, 
+ * boolean, boolean, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link ReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -49,7 +51,7 @@ import org.apache.lucene.search.similarities.SimilarityProvider;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)}.
+ * {@link #scorer(IndexReader.AtomicReaderContext, boolean, boolean, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -89,17 +91,33 @@ public abstract class Weight {
    * 
    * @param context
    *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
-   * @param scorerContext the {@link ScorerContext} holding the scores context variables
+   * @param scoreDocsInOrder
+   *          specifies whether in-order scoring of documents is required. Note
+   *          that if set to false (i.e., out-of-order scoring is required),
+   *          this method can return whatever scoring mode it supports, as every
+   *          in-order scorer is also an out-of-order one. However, an
+   *          out-of-order scorer may not support {@link Scorer#nextDoc()}
+   *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
+   *          request an in-order scorer if use of these methods is required.
+   * @param topScorer
+   *          if true, {@link Scorer#score(Collector)} will be called; if false,
+   *          {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)} will
+   *          be called.
+   * @param acceptDocs
+   *          Bits that represent the allowable docs to match (typically deleted docs
+   *          but possibly filtering other documents)
+   *          
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException
    */
-  public abstract Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException;
+  public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+      boolean topScorer, Bits acceptDocs) throws IOException;
 
   /**
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)} to
+   * {@link #scorer(IndexReader.AtomicReaderContext, boolean, boolean, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>
@@ -107,83 +125,4 @@ public abstract class Weight {
    * the <code>Scorer</code> scores documents in-order.
    */
   public boolean scoresDocsOutOfOrder() { return false; }
-
-  /**
-   * A struct like class encapsulating a scorer's context variables.
-   * ScorerContex is a strictly immutable struct that follows a
-   * <tt>create on modification</tt> pattern. If a context variable changes
-   * through one of the modifiers like {@link #topScorer(boolean)} a new
-   * {@link ScorerContext} instance is creates. If the modifier call doesn't
-   * change the instance the method call has no effect and the same instance is
-   * returned from the modifier.
-   * 
-   * @lucene.experimental
-   */
-  public static final class ScorerContext {
-   
-    /**
-     * Specifies whether in-order scoring of documents is required. Note that if
-     * set to false (i.e., out-of-order scoring is required), this method can
-     * return whatever scoring mode it supports, as every in-order scorer is
-     * also an out-of-order one. However, an out-of-order scorer may not support
-     * {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)}, therefore it
-     * is recommended to request an in-order scorer if use of these methods is
-     * required.
-     */
-    public final boolean scoreDocsInOrder;
-    
-    /**
-     * if <code>true</code>, {@link Scorer#score(Collector)} will be called; if
-     * false, {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)} will
-     * be called instead.
-     */
-    public final boolean topScorer;
-    
-    
-    private static final ScorerContext DEFAULT_CONTEXT = new ScorerContext(true, false);
-
-    /**
-     * Returns a default {@link ScorerContext} template initialized with:
-     * <ul>
-     * <li>{@link #scoreDocsInOrder} = <code>true</code></li>
-     * <li>{@link #topScorer} = <code>false</code></li>
-     * </ul>
-     */
-    public static ScorerContext def() {
-      return DEFAULT_CONTEXT;
-    }
-    
-    private ScorerContext(boolean scoreDocsInOrder, boolean topScorer) {
-      this.scoreDocsInOrder = scoreDocsInOrder;
-      this.topScorer = topScorer;
-    }
-
-    /**
-     * Creates and returns a copy of this context with the given value for
-     * {@link #scoreDocsInOrder} and returns a new instance of
-     * {@link ScorerContext} iff the given value differs from the
-     * {@link #scoreDocsInOrder}. Otherwise, this method has no effect and
-     * returns this instance.
-     */
-    public ScorerContext scoreDocsInOrder(boolean scoreDocsInOrder) {
-      if (this.scoreDocsInOrder == scoreDocsInOrder) {
-        return this;
-      }
-      return new ScorerContext(scoreDocsInOrder, topScorer);
-    }
-    
-    /**
-     * Creates and returns a copy of this context with the given value for
-     * {@link #topScorer} and returns a new instance of
-     * {@link ScorerContext} iff the given value differs from the
-     * {@link #topScorer}. Otherwise, this method has no effect and
-     * returns this instance.
-     */
-    public ScorerContext topScorer(boolean topScorer) {
-      if (this.topScorer == topScorer) {
-        return this;
-      }
-      return new ScorerContext(scoreDocsInOrder, topScorer);
-    }
-  }
 }

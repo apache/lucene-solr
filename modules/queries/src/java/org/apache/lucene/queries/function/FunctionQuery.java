@@ -89,13 +89,14 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new AllScorer(context, this, queryWeight);
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException {
+      return new AllScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context, ScorerContext.def().scoreDocsInOrder(true).topScorer(true))).explain(doc);
+      return ((AllScorer)scorer(context, true, true, context.reader.getLiveDocs())).explain(doc);
     }
   }
 
@@ -106,18 +107,15 @@ public class FunctionQuery extends Query {
     final float qWeight;
     int doc=-1;
     final DocValues vals;
-    final boolean hasDeletions;
     final Bits liveDocs;
 
-    public AllScorer(AtomicReaderContext context, FunctionWeight w, float qWeight) throws IOException {
+    public AllScorer(AtomicReaderContext context, Bits acceptDocs, FunctionWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
       this.qWeight = qWeight;
       this.reader = context.reader;
       this.maxDoc = reader.maxDoc();
-      this.hasDeletions = reader.hasDeletions();
-      this.liveDocs = MultiFields.getLiveDocs(reader);
-      assert !hasDeletions || liveDocs != null;
+      this.liveDocs = acceptDocs;
       vals = func.getValues(weight.context, context);
     }
 
@@ -137,7 +135,7 @@ public class FunctionQuery extends Query {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (hasDeletions && !liveDocs.get(doc)) continue;
+        if (liveDocs != null && !liveDocs.get(doc)) continue;
         return doc;
       }
     }

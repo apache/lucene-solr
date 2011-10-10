@@ -311,12 +311,20 @@ public class QueryResponse extends SolrResponseBase
           Number gap = (Number) rawGap;
           Number start = (Number) values.get("start");
           Number end = (Number) values.get("end");
-          rangeFacet = new RangeFacet.Numeric(facet.getKey(), start, end, gap);
+
+          Number before = (Number) values.get("before");
+          Number after = (Number) values.get("after");
+
+          rangeFacet = new RangeFacet.Numeric(facet.getKey(), start, end, gap, before, after);
         } else {
           String gap = (String) rawGap;
           Date start = (Date) values.get("start");
           Date end = (Date) values.get("end");
-          rangeFacet = new RangeFacet.Date(facet.getKey(), start, end, gap);
+
+          Number before = (Number) values.get("before");
+          Number after = (Number) values.get("after");
+
+          rangeFacet = new RangeFacet.Date(facet.getKey(), start, end, gap, before, after);
         }
 
         NamedList<Integer> counts = (NamedList<Integer>) values.get("counts");

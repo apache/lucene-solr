@@ -289,7 +289,7 @@ public class TrecContentSource extends ContentSource {
     // here, everything else is already private to that thread, so we're safe.
     try {
       docData = trecDocParser.parse(docData, name, this, docBuf, parsedPathType);
-      addDoc();
+      addItem();
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
     }

@@ -24,6 +24,7 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
@@ -31,12 +32,15 @@ import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.FileUtils;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Data maintained by a performance test run.
@@ -45,11 +49,21 @@ import org.apache.lucene.store.RAMDirectory;
  * <ul>
  *  <li>Configuration.
  *  <li>Directory, Writer, Reader.
- *  <li>Docmaker and a few instances of QueryMaker.
+ *  <li>Taxonomy Directory, Writer, Reader.
+ *  <li>DocMaker, FacetSource and a few instances of QueryMaker.
  *  <li>Analyzer.
  *  <li>Statistics data which updated during the run.
  * </ul>
- * Config properties: work.dir=&lt;path to root of docs and index dirs| Default: work&gt;
+ * Config properties:
+ * <ul>
+ *  <li><b>work.dir</b>=&lt;path to root of docs and index dirs| Default: work&gt;
+ *  <li><b>analyzer</b>=&lt;class name for analyzer| Default: StandardAnalyzer&gt;
+ *  <li><b>doc.maker</b>=&lt;class name for doc-maker| Default: DocMaker&gt;
+ *  <li><b>facet.source</b>=&lt;class name for facet-source| Default: RandomFacetSource&gt;
+ *  <li><b>query.maker</b>=&lt;class name for query-maker| Default: SimpleQueryMaker&gt;
+ *  <li><b>log.queries</b>=&lt;whether queries should be printed| Default: false&gt;
+ *  <li><b>directory</b>=&lt;type of directory to use for the index| Default: RAMDirectory&gt;
+ *  <li><b>taxonomy.directory</b>=&lt;type of directory for taxonomy index| Default: RAMDirectory&gt;
  * </ul>
  */
 public class PerfRunData {
@@ -62,7 +76,12 @@ public class PerfRunData {
   private Directory directory;
   private Analyzer analyzer;
   private DocMaker docMaker;
+  private FacetSource facetSource;
   private Locale locale;
+
+  private Directory taxonomyDir;
+  private TaxonomyWriter taxonomyWriter;
+  private TaxonomyReader taxonomyReader;
   
   // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
   private HashMap<Class<? extends ReadTask>,QueryMaker> readTaskQueryMaker;
@@ -73,6 +92,7 @@ public class PerfRunData {
   private IndexWriter indexWriter;
   private Config config;
   private long startTimeMillis;
+
   
   // constructor
   public PerfRunData (Config config) throws Exception {
@@ -84,6 +104,10 @@ public class PerfRunData {
     docMaker = Class.forName(config.get("doc.maker",
         "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).asSubclass(DocMaker.class).newInstance();
     docMaker.setConfig(config);
+    // facet source
+    facetSource = Class.forName(config.get("facet.source",
+        "org.apache.lucene.benchmark.byTask.feeds.RandomFacetSource")).asSubclass(FacetSource.class).newInstance();
+    facetSource.setConfig(config);
     // query makers
     readTaskQueryMaker = new HashMap<Class<? extends ReadTask>,QueryMaker>();
     qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker")).asSubclass(QueryMaker.class);
@@ -104,30 +128,17 @@ public class PerfRunData {
   public void reinit(boolean eraseIndex) throws Exception {
 
     // cleanup index
-    if (indexWriter!=null) {
-      indexWriter.close();
-      indexWriter = null;
-    }
-    if (indexReader!=null) {
-      indexReader.close();
-      indexReader = null;
-    }
-    if (directory!=null) {
-      directory.close();
-    }
+    IOUtils.close(indexWriter, indexReader, directory);
+    indexWriter = null;
+    indexReader = null;
+
+    IOUtils.close(taxonomyWriter, taxonomyReader, taxonomyDir);
+    taxonomyWriter = null;
+    taxonomyReader = null;
     
     // directory (default is ram-dir).
-    if ("FSDirectory".equals(config.get("directory","RAMDirectory"))) {
-      File workDir = new File(config.get("work.dir","work"));
-      File indexDir = new File(workDir,"index");
-      if (eraseIndex && indexDir.exists()) {
-        FileUtils.fullyDelete(indexDir);
-      }
-      indexDir.mkdirs();
-      directory = FSDirectory.open(indexDir);
-    } else {
-      directory = new RAMDirectory();
-    }
+    directory = createDirectory(eraseIndex, "index", "directory");
+    taxonomyDir = createDirectory(eraseIndex, "taxo", "taxonomy.directory");
 
     // inputs
     resetInputs();
@@ -138,6 +149,21 @@ public class PerfRunData {
 
     // Re-init clock
     setStartTimeMillis();
+  }
+
+  private Directory createDirectory(boolean eraseIndex, String dirName,
+      String dirParam) throws IOException {
+    if ("FSDirectory".equals(config.get(dirParam,"RAMDirectory"))) {
+      File workDir = new File(config.get("work.dir","work"));
+      File indexDir = new File(workDir,dirName);
+      if (eraseIndex && indexDir.exists()) {
+        FileUtils.fullyDelete(indexDir);
+      }
+      indexDir.mkdirs();
+      return FSDirectory.open(indexDir);
+    } 
+
+    return new RAMDirectory();
   }
   
   public long setStartTimeMillis() {
@@ -174,6 +200,57 @@ public class PerfRunData {
   }
 
   /**
+   * @return Returns the taxonomy directory
+   */
+  public Directory getTaxonomyDir() {
+    return taxonomyDir;
+  }
+  
+  /**
+   * Set the taxonomy reader. Takes ownership of that taxonomy reader, that is,
+   * internally performs taxoReader.incRef() (If caller no longer needs that 
+   * reader it should decRef()/close() it after calling this method, otherwise, 
+   * the reader will remain open). 
+   * @param taxoReader The taxonomy reader to set.
+   */
+  public synchronized void setTaxonomyReader(TaxonomyReader taxoReader) throws IOException {
+    if (taxoReader == this.taxonomyReader) {
+      return;
+    }
+    if (taxonomyReader != null) {
+      taxonomyReader.decRef();
+    }
+    
+    if (taxoReader != null) {
+      taxoReader.incRef();
+    }
+    this.taxonomyReader = taxoReader;
+  }
+  
+  /**
+   * @return Returns the taxonomyReader.  NOTE: this returns a
+   * reference.  You must call TaxonomyReader.decRef() when
+   * you're done.
+   */
+  public synchronized TaxonomyReader getTaxonomyReader() {
+    if (taxonomyReader != null) {
+      taxonomyReader.incRef();
+    }
+    return taxonomyReader;
+  }
+  
+  /**
+   * @param taxoWriter The taxonomy writer to set.
+   */
+  public void setTaxonomyWriter(TaxonomyWriter taxoWriter) {
+    this.taxonomyWriter = taxoWriter;
+  }
+  
+  public TaxonomyWriter getTaxonomyWriter() {
+    return taxonomyWriter;
+  }
+  
+  /**
    * @return Returns the indexReader.  NOTE: this returns a
    * reference.  You must call IndexReader.decRef() when
    * you're done.
@@ -198,13 +275,22 @@ public class PerfRunData {
   }
 
   /**
+   * Set the index reader. Takes ownership of that index reader, that is,
+   * internally performs indexReader.incRef() (If caller no longer needs that 
+   * reader it should decRef()/close() it after calling this method, otherwise, 
+   * the reader will remain open). 
    * @param indexReader The indexReader to set.
    */
   public synchronized void setIndexReader(IndexReader indexReader) throws IOException {
+    if (indexReader == this.indexReader) {
+      return;
+    }
+    
     if (this.indexReader != null) {
       // Release current IR
       this.indexReader.decRef();
     }
+
     this.indexReader = indexReader;
     if (indexReader != null) {
       // Hold reference to new IR
@@ -246,6 +332,11 @@ public class PerfRunData {
     return docMaker;
   }
 
+  /** Returns the facet source. */
+  public FacetSource getFacetSource() {
+    return facetSource;
+  }
+
   /**
    * @return the locale
    */
@@ -269,6 +360,7 @@ public class PerfRunData {
 
   public void resetInputs() throws IOException {
     docMaker.resetInputs();
+    facetSource.resetInputs();
     for (final QueryMaker queryMaker : readTaskQueryMaker.values()) {
       queryMaker.resetInputs();
     }

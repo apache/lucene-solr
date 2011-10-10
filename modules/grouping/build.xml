@@ -18,8 +18,9 @@
  -->
 
 <project name="grouping" default="default">
+  
     <description>
-        Collectors for grouping search results
+       Grouping module. Collectors for grouping search results
     </description>
 
     <property name="build.dir" location="build/" />
@@ -29,5 +30,18 @@
     <import file="../../lucene/contrib/contrib-build.xml"/>
     <property name="working.dir" location="work"/>
 
+    <path id="test.classpath">
+      <path refid="test.base.classpath" />
+      <pathelement path="${queries.jar}" />
+    </path>
+
+    <path id="classpath">
+      <pathelement path="${queries.jar}" />
+      <path refid="base.classpath"/>
+    </path>
+
     <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven" />
+    <target name="compile" depends="jar-queries,common.compile-core" description="Compiles facet classes" />
+    <target name="jar-core" depends="common.jar-core" />
+
 </project>

@@ -1,4 +1,4 @@
-package org.apache.solr.update;
+package org.apache.lucene.benchmark.byTask.tasks;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,19 +19,27 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.solr.core.SolrCore;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
 
-public interface IndexWriterProvider {
-  
-  public void newIndexWriter(SolrCore core) throws IOException;
-  
-  public IndexWriter getIndexWriter(SolrCore core) throws IOException;
+/**
+ * Open a taxonomy index reader.
+ * <br>Other side effects: taxonomy reader object in perfRunData is set.
+ */
+public class OpenTaxonomyReaderTask extends PerfTask {
 
-  public void decref() throws IOException;
-  
-  public void incref();
+  public OpenTaxonomyReaderTask(PerfRunData runData) {
+    super(runData);
+  }
 
-  public void rollbackIndexWriter(SolrCore core) throws IOException;
-  
+  @Override
+  public int doLogic() throws IOException {
+    PerfRunData runData = getRunData();
+    LuceneTaxonomyReader taxoReader = new LuceneTaxonomyReader(runData.getTaxonomyDir());
+    runData.setTaxonomyReader(taxoReader);
+    // We transfer reference to the run data
+    taxoReader.decRef();
+    return 1;
+  }
+ 
 }

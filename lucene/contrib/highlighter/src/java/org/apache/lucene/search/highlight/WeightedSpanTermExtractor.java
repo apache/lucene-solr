@@ -41,6 +41,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.Bits;
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
@@ -248,11 +249,12 @@ public class WeightedSpanTermExtractor {
     for (final String field : fieldNames) {
 
       AtomicReaderContext context = getLeafContextForField(field);
+      Bits acceptDocs = context.reader.getLiveDocs();
       final Spans spans;
       if (mustRewriteQuery) {
-        spans = queries.get(field).getSpans(context);
+        spans = queries.get(field).getSpans(context, acceptDocs);
       } else {
-        spans = spanQuery.getSpans(context);
+        spans = spanQuery.getSpans(context, acceptDocs);
       }
 
 

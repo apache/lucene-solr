@@ -69,23 +69,23 @@ public class SimpleTextCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(getPostingsFileName(segmentInfo.name, id));
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     extensions.add(POSTINGS_EXTENSION);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
+    DefaultDocValuesConsumer.getExtensions(extensions);
   }
   
   // TODO: would be great if these used a plain text impl
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
+    return new DefaultDocValuesConsumer(state);
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
+    return new DefaultDocValuesProducer(state);
   }
 }

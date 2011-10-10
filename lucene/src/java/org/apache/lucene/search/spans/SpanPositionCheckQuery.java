@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -81,8 +82,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected abstract AcceptStatus acceptPosition(Spans spans) throws IOException;
 
   @Override
-  public Spans getSpans(final AtomicReaderContext context) throws IOException {
-    return new PositionCheckSpan(context);
+  public Spans getSpans(final AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    return new PositionCheckSpan(context, acceptDocs);
   }
 
 
@@ -106,8 +107,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected class PositionCheckSpan extends Spans {
     private Spans spans;
 
-    public PositionCheckSpan(AtomicReaderContext context) throws IOException {
-      spans = match.getSpans(context);
+    public PositionCheckSpan(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      spans = match.getSpans(context, acceptDocs);
     }
 
     @Override

@@ -19,8 +19,12 @@ package org.apache.lucene.search.grouping;
 
 import java.util.Arrays;
 
-/** A native int set where one value is reserved to mean "EMPTY" */
-class SentinelIntSet {
+/**
+ * A native int set where one value is reserved to mean "EMPTY"
+ *
+ * @lucene.internal
+ */
+public class SentinelIntSet {
   public int[] keys;
   public int count;
   public final int emptyVal;
