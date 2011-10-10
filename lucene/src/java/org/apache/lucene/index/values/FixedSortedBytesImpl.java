@@ -104,6 +104,11 @@ class FixedSortedBytesImpl {
       return new DirectFixedSortedSource(cloneData(), cloneIndex(), size,
           valueCount, comparator, type);
     }
+    
+    @Override
+    public int getValueSize() {
+      return size;
+    }
   }
 
   static final class FixedSortedSource extends BytesSortedSourceBase {

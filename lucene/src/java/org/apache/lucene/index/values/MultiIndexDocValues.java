@@ -46,6 +46,8 @@ public class MultiIndexDocValues extends IndexDocValues {
 
   private DocValuesIndex[] docValuesIdx;
   private int[] starts;
+  private ValueType type;
+  private int valueSize;
 
   public MultiIndexDocValues() {
     starts = new int[0];
@@ -62,38 +64,51 @@ public class MultiIndexDocValues extends IndexDocValues {
   }
 
   public IndexDocValues reset(DocValuesIndex[] docValuesIdx) {
-    int[] start = new int[docValuesIdx.length];
+    final int[] start = new int[docValuesIdx.length];
+    TypePromoter promoter = TypePromoter.getIdentityPromoter();
     for (int i = 0; i < docValuesIdx.length; i++) {
       start[i] = docValuesIdx[i].start;
+      if (!(docValuesIdx[i].docValues instanceof EmptyDocValues)) {
+        // only promote if not a dummy
+        final TypePromoter incomingPromoter = TypePromoter.create(
+            docValuesIdx[i].docValues.type(),
+            docValuesIdx[i].docValues.getValueSize());
+        promoter = promoter.promote(incomingPromoter);
+        if (promoter == null) {
+          throw new IllegalStateException("Can not promote " + incomingPromoter);
+        }
+      }
     }
+    this.type = promoter.type();
+    this.valueSize = promoter.getValueSize();
     this.starts = start;
     this.docValuesIdx = docValuesIdx;
     return this;
   }
 
-  public static class DummyDocValues extends IndexDocValues {
+  public static class EmptyDocValues extends IndexDocValues {
     final int maxDoc;
-    final Source emptySoruce;
+    final Source emptySource;
 
-    public DummyDocValues(int maxDoc, ValueType type) {
+    public EmptyDocValues(int maxDoc, ValueType type) {
       this.maxDoc = maxDoc;
-      this.emptySoruce = new EmptySource(type);
+      this.emptySource = new EmptySource(type);
     }
 
     @Override
     public Source load() throws IOException {
-      return emptySoruce;
+      return emptySource;
     }
 
     @Override
     public ValueType type() {
-      return emptySoruce.type();
+      return emptySource.type();
     }
 
 
     @Override
     public Source getDirectSource() throws IOException {
-      return emptySoruce;
+      return emptySource;
     }
   }
 
@@ -180,7 +195,12 @@ public class MultiIndexDocValues extends IndexDocValues {
 
   @Override
   public ValueType type() {
-    return this.docValuesIdx[0].docValues.type();
+    return type;
+  }
+
+  @Override
+  public int getValueSize() {
+    return valueSize;
   }
 
   @Override

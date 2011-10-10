@@ -93,9 +93,9 @@ public final class Ints {
     protected IntsWriter(Directory dir, String id, String codecName,
         int version, Counter bytesUsed, IOContext context, ValueType valueType) throws IOException {
       super(dir, id, codecName, version, bytesUsed, context);
-      final int expectedSize = typeToSize(valueType);
-      this.bytesRef = new BytesRef(expectedSize);
-      bytesRef.length = expectedSize;
+      size = typeToSize(valueType);
+      this.bytesRef = new BytesRef(size);
+      bytesRef.length = size;
       template = IndexDocValuesArray.TEMPLATES.get(valueType);
     }
     
@@ -108,6 +108,18 @@ public final class Ints {
     @Override
     public void add(int docID, PerDocFieldValues docValues) throws IOException {
       add(docID, docValues.getInt());
+    }
+    
+    @Override
+    protected void setMergeBytes(int sourceDoc) {
+      final long value = currentMergeSource.getInt(sourceDoc);
+      template.toBytes(value, bytesRef);
+    }
+    
+    @Override
+    protected boolean tryBulkMerge(IndexDocValues docValues) {
+      // only bulk merge if value type is the same otherwise size differs
+      return super.tryBulkMerge(docValues) && docValues.type() == template.type();
     }
   }
   

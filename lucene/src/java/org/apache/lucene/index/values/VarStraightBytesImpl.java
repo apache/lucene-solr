@@ -93,7 +93,7 @@ class VarStraightBytesImpl {
     }
     
     @Override
-    protected void merge(MergeState state) throws IOException {
+    protected void merge(SingleSubMergeState state) throws IOException {
       merge = true;
       datOut = getOrCreateDataOut();
       boolean success = false;

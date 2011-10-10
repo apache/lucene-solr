@@ -59,6 +59,7 @@ class FixedStraightBytesImpl {
         int version, Counter bytesUsed, IOContext context) throws IOException {
       super(dir, id, codecName, version, bytesUsed, context);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
+      pool.nextBuffer();
     }
     
     @Override
@@ -70,7 +71,6 @@ class FixedStraightBytesImpl {
           throw new IllegalArgumentException("bytes arrays > " + Short.MAX_VALUE + " are not supported");
         }
         size = bytes.length;
-        pool.nextBuffer();
       } else if (bytes.length != size) {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
@@ -120,7 +120,7 @@ class FixedStraightBytesImpl {
   }
 
   static class Writer extends FixedBytesWriterBase {
-    private boolean merge;
+    private boolean hasMerged;
     private IndexOutput datOut;
     
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context) throws IOException {
@@ -133,12 +133,15 @@ class FixedStraightBytesImpl {
 
 
     @Override
-    protected void merge(MergeState state) throws IOException {
-      merge = true;
+    protected void merge(SingleSubMergeState state) throws IOException {
       datOut = getOrCreateDataOut();
       boolean success = false;
       try {
-        if (state.liveDocs == null && state.reader instanceof FixedStraightReader ) {
+        if (!hasMerged && size != -1) {
+          datOut.writeInt(size);
+        }
+
+        if (state.liveDocs == null && tryBulkMerge(state.reader)) {
           FixedStraightReader reader = (FixedStraightReader) state.reader;
           final int maxDocs = reader.maxDoc;
           if (maxDocs == 0) {
@@ -172,23 +175,32 @@ class FixedStraightBytesImpl {
         if (!success) {
           IOUtils.closeWhileHandlingException(datOut);
         }
+        hasMerged = true;
       }
+    }
+    
+    protected boolean tryBulkMerge(IndexDocValues docValues) {
+      return docValues instanceof FixedStraightReader;
     }
     
     @Override
     protected void mergeDoc(int docID, int sourceDoc) throws IOException {
       assert lastDocID < docID;
-      currentMergeSource.getBytes(sourceDoc, bytesRef);
+      setMergeBytes(sourceDoc);
       if (size == -1) {
         size = bytesRef.length;
         datOut.writeInt(size);
       }
-      assert size == bytesRef.length;
+      assert size == bytesRef.length : "size: " + size + " ref: " + bytesRef.length;
       if (lastDocID+1 < docID) {
         fill(datOut, docID);
       }
       datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
       lastDocID = docID;
+    }
+    
+    protected void setMergeBytes(int sourceDoc) {
+      currentMergeSource.getBytes(sourceDoc, bytesRef);
     }
 
 
@@ -203,7 +215,7 @@ class FixedStraightBytesImpl {
     public void finish(int docCount) throws IOException {
       boolean success = false;
       try {
-        if (!merge) {
+        if (!hasMerged) {
           // indexing path - no disk IO until here
           assert datOut == null;
           datOut = getOrCreateDataOut();
@@ -266,6 +278,11 @@ class FixedStraightBytesImpl {
     @Override
     public Source getDirectSource() throws IOException {
       return new DirectFixedStraightSource(cloneData(), size, type());
+    }
+    
+    @Override
+    public int getValueSize() {
+      return size;
     }
   }
   

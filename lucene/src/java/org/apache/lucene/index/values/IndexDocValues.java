@@ -107,6 +107,17 @@ public abstract class IndexDocValues implements Closeable {
   }
 
   /**
+   * Returns the size per value in bytes or <code>-1</code> iff size per value
+   * is variable.
+   * 
+   * @return the size per value in bytes or <code>-1</code> iff size per value
+   * is variable.
+   */
+  public int getValueSize() {
+    return -1;
+  }
+
+  /**
    * Sets the {@link SourceCache} used by this {@link IndexDocValues} instance. This
    * method should be called before {@link #load()} is called. All {@link Source} instances in the currently used cache will be closed
    * before the new cache is installed.

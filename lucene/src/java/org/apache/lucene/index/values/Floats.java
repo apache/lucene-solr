@@ -85,6 +85,18 @@ public class Floats {
     public void add(int docID, PerDocFieldValues docValues) throws IOException {
       add(docID, docValues.getFloat());
     }
+    
+    @Override
+    protected boolean tryBulkMerge(IndexDocValues docValues) {
+      // only bulk merge if value type is the same otherwise size differs
+      return super.tryBulkMerge(docValues) && docValues.type() == template.type();
+    }
+    
+    @Override
+    protected void setMergeBytes(int sourceDoc) {
+      final double value = currentMergeSource.getFloat(sourceDoc);
+      template.toBytes(value, bytesRef);
+    }
   }
   
   final static class FloatsReader extends FixedStraightBytesImpl.FixedStraightReader {

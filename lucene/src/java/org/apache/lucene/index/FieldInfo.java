@@ -86,7 +86,7 @@ public final class FieldInfo {
   public int getCodecId() {
     return codecId;
   }
-
+  
   @Override
   public Object clone() {
     FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
@@ -128,6 +128,12 @@ public final class FieldInfo {
   }
   void setDocValues(ValueType v) {
     if (docValues == null) {
+      docValues = v;
+    }
+  }
+  
+  public void resetDocValues(ValueType v) {
+    if (docValues != null) {
       docValues = v;
     }
   }

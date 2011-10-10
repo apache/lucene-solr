@@ -138,7 +138,7 @@ public abstract class Writer extends DocValuesConsumer {
   public abstract void finish(int docCount) throws IOException;
 
   @Override
-  protected void merge(MergeState state) throws IOException {
+  protected void merge(SingleSubMergeState state) throws IOException {
     // This enables bulk copies in subclasses per MergeState, subclasses can
     // simply override this and decide if they want to merge
     // segments using this generic implementation or if a bulk merge is possible

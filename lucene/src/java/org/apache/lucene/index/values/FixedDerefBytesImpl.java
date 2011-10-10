@@ -86,6 +86,12 @@ class FixedDerefBytesImpl {
         throws IOException {
       return new DirectFixedDerefSource(cloneData(), cloneIndex(), size, type());
     }
+
+    @Override
+    public int getValueSize() {
+      return size;
+    }
+    
   }
   
   static final class FixedDerefSource extends BytesSourceBase {
