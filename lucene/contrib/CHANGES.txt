@@ -100,6 +100,11 @@ New Features
    refCount is used to safely close the reader only once all threads are done
    using it.  (Michael McCandless)
 
+ * LUCENE-3486: Add SearcherLifetimeManager, to manage retrieving the
+   same searcher used in a previous search to ensure follow-on actions
+   (next page, drill down, etc.) use the same searcher as before (Mike
+   McCandless)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the

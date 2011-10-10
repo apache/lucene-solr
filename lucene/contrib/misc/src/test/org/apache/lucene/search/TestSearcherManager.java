@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +40,10 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   boolean warmCalled;
 
+  private SearcherLifetimeManager.Pruner pruner;
+
   public void testSearcherManager() throws Exception {
+    pruner = new SearcherLifetimeManager.PruneByAge(TEST_NIGHTLY ? _TestUtil.nextInt(random, 1, 20) : 1);
     runTest("TestSearcherManager");
   }
 
@@ -52,6 +57,8 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   }
 
   private SearcherManager mgr;
+  private SearcherLifetimeManager lifetimeMGR;
+  private final List<Long> pastSearchers = new ArrayList<Long>();
   private boolean isNRT;
 
   @Override
@@ -73,6 +80,8 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       isNRT = false;
     }
     
+
+    lifetimeMGR = new SearcherLifetimeManager();
   }
 
   @Override
@@ -86,7 +95,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             Thread.sleep(_TestUtil.nextInt(random, 1, 100));
             writer.commit();
             Thread.sleep(_TestUtil.nextInt(random, 1, 5));
-            mgr.maybeReopen();
+            if (mgr.maybeReopen()) {
+              lifetimeMGR.prune(pruner);
+            }
           }
         } catch (Throwable t) {
           System.out.println("TEST: reopen thread hit exc");
@@ -111,15 +122,48 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       // synchronous to your search threads, but still we
       // test as apps will presumably do this for
       // simplicity:
-      mgr.maybeReopen();
+      if (mgr.maybeReopen()) {
+        lifetimeMGR.prune(pruner);
+      }
     }
 
-    return mgr.acquire();
+    IndexSearcher s = null;
+
+    synchronized(pastSearchers) {
+      while (pastSearchers.size() != 0 && random.nextDouble() < 0.25) {
+        // 1/4 of the time pull an old searcher, ie, simulate
+        // a user doing a follow-on action on a previous
+        // search (drilling down/up, clicking next/prev page,
+        // etc.)
+        final Long token = pastSearchers.get(random.nextInt(pastSearchers.size()));
+        s = lifetimeMGR.acquire(token);
+        if (s == null) {
+          // Searcher was pruned
+          pastSearchers.remove(token);
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (s == null) {
+      s = mgr.acquire();
+      if (s.getIndexReader().numDocs() != 0) {
+        Long token = lifetimeMGR.record(s);
+        synchronized(pastSearchers) {
+          if (!pastSearchers.contains(token)) {
+            pastSearchers.add(token);
+          }
+        }
+      }
+    }
+
+    return s;
   }
 
   @Override
   protected void releaseSearcher(IndexSearcher s) throws Exception {
-    mgr.release(s);
+    s.getIndexReader().decRef();
   }
 
   @Override
@@ -129,6 +173,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       System.out.println("TEST: now close SearcherManager");
     }
     mgr.close();
+    lifetimeMGR.close();
   }
   
   public void testIntermediateClose() throws IOException, InterruptedException {
