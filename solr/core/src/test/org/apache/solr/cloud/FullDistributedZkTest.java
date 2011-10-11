@@ -54,6 +54,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
+  private int sliceCount = 3;
   
   public FullDistributedZkTest() {
     fixShardCount = true;
@@ -97,7 +98,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < shardCount / 2; i++) {
+      for (int i = 0; i < sliceCount ; i++) {
         if (i > 0)
           sb.append(',');
         sb.append("shard" + (i+1));
@@ -113,12 +114,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
  
     boolean pick = random.nextBoolean();
     
-    int mod = (clients.size() / 2);
+    int mod = sliceCount;
     
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % mod;
     
     if (pick) {
-      which = which + mod;
+      which = which + (mod * random.nextInt(sliceCount - 1));
     }
     
     CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients.get(which);
