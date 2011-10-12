@@ -24,8 +24,8 @@ import org.apache.lucene.index.TermDocs;
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-  private TermDocs termDocs;
-  private byte[] norms;
+  private final TermDocs termDocs;
+  private final byte[] norms;
   private float weightValue;
   private int doc = -1;
   private int freq;
@@ -36,7 +36,7 @@ final class TermScorer extends Scorer {
   private int pointerMax;
 
   private static final int SCORE_CACHE_SIZE = 32;
-  private float[] scoreCache = new float[SCORE_CACHE_SIZE];
+  private final float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
   /**
    * Construct a <code>TermScorer</code>.
