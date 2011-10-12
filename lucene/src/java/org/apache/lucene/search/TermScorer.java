@@ -25,15 +25,15 @@ import org.apache.lucene.search.similarities.Similarity;
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-  private DocsEnum docsEnum;
+  private final DocsEnum docsEnum;
   private int doc = -1;
   private int freq;
 
   private int pointer;
   private int pointerMax;
 
-  private int[] docs;
-  private int[] freqs;
+  private final int[] docs;
+  private final int[] freqs;
   private final DocsEnum.BulkReadResult bulkResult;
   private final Similarity.ExactDocScorer docScorer;
   
@@ -53,17 +53,13 @@ final class TermScorer extends Scorer {
     this.docScorer = docScorer;
     this.docsEnum = td;
     bulkResult = td.getBulkResult();
+    docs = bulkResult.docs.ints;
+    freqs = bulkResult.freqs.ints;
   }
 
   @Override
   public void score(Collector c) throws IOException {
     score(c, Integer.MAX_VALUE, nextDoc());
-  }
-
-  private final void refillBuffer() throws IOException {
-    pointerMax = docsEnum.read();  // refill
-    docs = bulkResult.docs.ints;
-    freqs = bulkResult.freqs.ints;
   }
 
   // firstDocID is ignored since nextDoc() sets 'doc'
@@ -74,7 +70,7 @@ final class TermScorer extends Scorer {
       //System.out.println("TS: collect doc=" + doc);
       c.collect(doc);                      // collect score
       if (++pointer >= pointerMax) {
-        refillBuffer();
+        pointerMax = docsEnum.read();  // refill
         if (pointerMax != 0) {
           pointer = 0;
         } else {
@@ -109,7 +105,7 @@ final class TermScorer extends Scorer {
   public int nextDoc() throws IOException {
     pointer++;
     if (pointer >= pointerMax) {
-      refillBuffer();
+      pointerMax = docsEnum.read();  // refill
       if (pointerMax != 0) {
         pointer = 0;
       } else {
