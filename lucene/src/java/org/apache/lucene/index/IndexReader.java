@@ -870,7 +870,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * (ie, obtained by a call to {@link
    * IndexWriter#getReader}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method checks if
-   * either a new commmit has occurred, or any new
+   * either a new commit has occurred, or any new
    * uncommitted changes have taken place via the writer.
    * Note that even if the writer has only performed
    * merging, this method will still return false.</p>

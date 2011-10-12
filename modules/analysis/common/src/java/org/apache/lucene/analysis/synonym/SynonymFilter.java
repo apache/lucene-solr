@@ -65,13 +65,13 @@ import org.apache.lucene.util.fst.FST;
  * <p><b>NOTE</b>: when a match occurs, the output tokens
  * associated with the matching rule are "stacked" on top of
  * the input stream (if the rule had
- * <code>keepOrig=true</code>) and also on top of aother
+ * <code>keepOrig=true</code>) and also on top of another
  * matched rule's output tokens.  This is not a correct
- * solution, as really the output should be an abitrary
+ * solution, as really the output should be an arbitrary
  * graph/lattice.  For example, with the above match, you
  * would expect an exact <code>PhraseQuery</code> <code>"y b
  * c"</code> to match the parsed tokens, but it will fail to
- * do so.  This limitations is necessary because Lucene's
+ * do so.  This limitation is necessary because Lucene's
  * TokenStream (and index) cannot yet represent an arbitrary
  * graph.</p>
  *
@@ -90,7 +90,7 @@ import org.apache.lucene.util.fst.FST;
 // http://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_string_matching_algorithm
 // It improves over the current approach here
 // because it does not fully re-start matching at every
-// token.  For exampl,e if one pattern is "a b c x"
+// token.  For example if one pattern is "a b c x"
 // and another is "b c d" and the input is "a b c d", on
 // trying to parse "a b c x" but failing when you got to x,
 // rather than starting over again your really should

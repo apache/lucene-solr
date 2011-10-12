@@ -695,7 +695,7 @@ public final class SegmentInfo implements Cloneable {
    *  <p>Current format looks like
    *  <code>_a(3.1):c45/4->_1</code>, which means the segment's
    *  name is <code>_a</code>; it was created with Lucene 3.1 (or
-   *  '?' if it's unkown); it's using compound file
+   *  '?' if it's unknown); it's using compound file
    *  format (would be <code>C</code> if not compound); it
    *  has 45 documents; it has 4 deletions (this part is
    *  left off when there are no deletions); it's using the
@@ -718,7 +718,7 @@ public final class SegmentInfo implements Cloneable {
       }
     } catch (Throwable e) {
       // Messy: because getHasVectors may be used in an
-      // un-thread-safe way, and may attempt to open an fnm
+      // thread-unsafe way, and may attempt to open an fnm
       // file that has since (legitimately) been deleted by
       // IndexWriter, instead of throwing these exceptions
       // up, just add v? to indicate we don't know if this

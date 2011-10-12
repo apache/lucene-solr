@@ -107,7 +107,7 @@ public final class Bytes {
    * @param bytesUsed
    *          an {@link AtomicLong} instance to track the used bytes within the
    *          {@link Writer}. A call to {@link Writer#finish(int)} will release
-   *          all internally used resources and frees the memeory tracking
+   *          all internally used resources and frees the memory tracking
    *          reference.
    * @param context 
    * @return a new {@link Writer} instance

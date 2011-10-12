@@ -766,7 +766,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           arcs[arcIdx] = new FST.Arc<BytesRef>();
         }
 
-        // TODO: if the automaon is "smallish" we really
+        // TODO: if the automaton is "smallish" we really
         // should use the terms index to seek at least to
         // the initial term and likely to subsequent terms
         // (or, maybe just fallback to ATE for such cases).

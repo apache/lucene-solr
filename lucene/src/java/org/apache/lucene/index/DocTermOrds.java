@@ -101,7 +101,7 @@ import java.util.Comparator;
 
 public class DocTermOrds {
 
-  // Term ords are shifted by this, internally, to reseve
+  // Term ords are shifted by this, internally, to reserve
   // values 0 (end term) and 1 (index is a pointer into byte array)
   private final static int TNUM_OFFSET = 2;
 

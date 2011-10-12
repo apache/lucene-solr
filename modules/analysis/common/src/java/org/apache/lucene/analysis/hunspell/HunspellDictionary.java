@@ -225,7 +225,7 @@ public class HunspellDictionary {
   }
 
   /**
-   * Parses the encoding specificed in the affix file readable through the provided InputStream
+   * Parses the encoding specified in the affix file readable through the provided InputStream
    *
    * @param affix InputStream for reading the affix file
    * @return Encoding specified in the affix file
@@ -277,10 +277,10 @@ public class HunspellDictionary {
   }
 
   /**
-   * Determines the appropriate {@link FlagParsingStrategy} based on the FLAG definiton line taken from the affix file
+   * Determines the appropriate {@link FlagParsingStrategy} based on the FLAG definition line taken from the affix file
    *
    * @param flagLine Line containing the flag information
-   * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG definiton
+   * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG definition
    */
   private FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
     String flagType = flagLine.substring(5);

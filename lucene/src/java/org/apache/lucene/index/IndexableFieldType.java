@@ -21,28 +21,28 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 public interface IndexableFieldType {
 
-  /* True if this field should be indexed (inverted) */
+  /** True if this field should be indexed (inverted) */
   public boolean indexed();
 
-  /* True if the field's value should be stored */
+  /** True if the field's value should be stored */
   public boolean stored();
 
-  /* True if this field's value should be analyzed */
+  /** True if this field's value should be analyzed */
   public boolean tokenized();
 
-  /* True if term vectors should be indexed */
+  /** True if term vectors should be indexed */
   public boolean storeTermVectors();
 
-  /* True if term vector offsets should be indexed */
+  /** True if term vector offsets should be indexed */
   public boolean storeTermVectorOffsets();
 
-  /* True if term vector positions should be indexed */
+  /** True if term vector positions should be indexed */
   public boolean storeTermVectorPositions();
 
-  /* True if norms should not be indexed */
+  /** True if norms should not be indexed */
   public boolean omitNorms();
 
-  /* {@link IndexOptions}, describing what should be
+  /** {@link IndexOptions}, describing what should be
    * recorded into the inverted index */
   public IndexOptions indexOptions();
 }
