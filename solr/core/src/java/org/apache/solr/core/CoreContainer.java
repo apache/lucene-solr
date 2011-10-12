@@ -88,6 +88,7 @@ public class CoreContainer
   private SolrZkServer zkServer;
 
   private String zkHost;
+  private int numShards;
 
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
@@ -164,7 +165,7 @@ public class CoreContainer
         } else {
           log.info("Zookeeper client=" + zookeeperHost);          
         }
-        zkController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, new CurrentCoreDescriptorProvider() {
+        zkController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, numShards, new CurrentCoreDescriptorProvider() {
           
           @Override
           public List<CoreDescriptor> getCurrentDescriptors() {
@@ -339,6 +340,9 @@ public class CoreContainer
 
     hostContext = cfg.get("solr/cores/@hostContext", "solr");
     host = cfg.get("solr/cores/@host", null);
+    
+    // TODO: allow override by core so you can change on the fly?
+    numShards = cfg.getInt("solr/cores/@numShards", 3);
 
     if(shareSchema){
       indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();

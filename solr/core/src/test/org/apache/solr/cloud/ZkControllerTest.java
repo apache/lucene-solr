@@ -89,7 +89,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       }
 
       zkController = new ZkController(server.getZkAddress(),
-          TIMEOUT, 1000, "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 1000, "localhost", "8983", "solr", 3, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -168,7 +168,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       }
       zkClient.close();
       ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, TIMEOUT,
-          "localhost", "8983", "/solr", new CurrentCoreDescriptorProvider() {
+          "localhost", "8983", "/solr", 3, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -202,7 +202,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkController = new ZkController(server.getZkAddress(),
-          TIMEOUT, 10000, "localhost", "8983", "/solr", new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 10000, "localhost", "8983", "/solr", 3, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -242,7 +242,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkController = new ZkController(server.getZkAddress(),
-          TIMEOUT, 10000, "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 10000, "localhost", "8983", "solr", 3, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {

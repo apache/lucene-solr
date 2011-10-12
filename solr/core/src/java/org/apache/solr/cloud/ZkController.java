@@ -88,8 +88,10 @@ public final class ZkController {
 
   private AssignShard assignShard;
 
+  private int numShards;
+
   public static void main(String[] args) throws Exception {
-    ZkController zkController = new ZkController(args[0], 15000, 5000, args[1], args[2], args[3], new CurrentCoreDescriptorProvider() {
+    ZkController zkController = new ZkController(args[0], 15000, 5000, args[1], args[2], args[3], -1, new CurrentCoreDescriptorProvider() {
       
       @Override
       public List<CoreDescriptor> getCurrentDescriptors() {
@@ -110,18 +112,20 @@ public final class ZkController {
    * @param localHost
    * @param locaHostPort
    * @param localHostContext
+   * @param numShards 
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
    */
   public ZkController(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      String localHostContext, int numShards, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
  
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = localHost;
+    this.numShards = numShards;
 
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
@@ -497,8 +501,7 @@ public final class ZkController {
     
     String shardId = cloudDesc.getShardId();
     if (shardId == null) {
-      shardId = assignShard.assignShard(collection, 3); // nocommit: hard coded
-                                                        // number of slices
+      shardId = assignShard.assignShard(collection, numShards);
       cloudDesc.setShardId(shardId);
     }
     String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + shardId;

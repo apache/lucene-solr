@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.BeforeClass;
 
 /**
  *
@@ -54,12 +55,17 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
-  private int sliceCount = 3;
+  private static final int sliceCount = 3;
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("CLOUD_UPDATE_DELAY", "0");
+    System.setProperty("numShards", Integer.toString(sliceCount));
+  }
   
   public FullDistributedZkTest() {
     fixShardCount = true;
     shardCount = 6;
-    System.setProperty("CLOUD_UPDATE_DELAY", "0");
   }
   
   @Override
@@ -114,12 +120,10 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
  
     boolean pick = random.nextBoolean();
     
-    int mod = sliceCount;
-    
-    int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % mod;
+    int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % sliceCount;
     
     if (pick) {
-      which = which + (mod * random.nextInt(sliceCount - 1));
+      which = which + ((shardCount / sliceCount) * random.nextInt(sliceCount-1));
     }
     
     CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients.get(which);

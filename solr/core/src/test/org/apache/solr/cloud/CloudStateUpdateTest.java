@@ -167,7 +167,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
       removeShardFromZk(server.getZkAddress(), zkClient, shardsPath1);
       
       zkController = new ZkController(server.getZkAddress(), TIMEOUT, 1000,
-          "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
+          "localhost", "8983", "solr", 3, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
