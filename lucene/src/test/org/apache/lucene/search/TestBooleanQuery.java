@@ -17,6 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +36,7 @@ import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.lucene.util._TestUtil;
 
 public class TestBooleanQuery extends LuceneTestCase {
   
@@ -183,6 +187,113 @@ public class TestBooleanQuery extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
-}
- 
 
+  public void testBS2DisjunctionNextVsAdvance() throws Exception {
+    final Directory d = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, d);
+    final int numDocs = atLeast(300);
+    for(int docUpto=0;docUpto<numDocs;docUpto++) {
+      String contents = "a";
+      if (random.nextInt(20) <= 16) {
+        contents += " b";
+      }
+      if (random.nextInt(20) <= 8) {
+        contents += " c";
+      }
+      if (random.nextInt(20) <= 4) {
+        contents += " d";
+      }
+      if (random.nextInt(20) <= 2) {
+        contents += " e";
+      }
+      if (random.nextInt(20) <= 1) {
+        contents += " f";
+      }
+      Document doc = new Document();
+      doc.add(new TextField("field", contents));
+      w.addDocument(doc);
+    }
+    w.optimize();
+    final IndexReader r = w.getReader();
+    final IndexSearcher s = newSearcher(r);
+    w.close();
+
+    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+      if (VERBOSE) {
+        System.out.println("iter=" + iter);
+      }
+      final List<String> terms = new ArrayList<String>(Arrays.asList("a", "b", "c", "d", "e", "f"));
+      final int numTerms = _TestUtil.nextInt(random, 1, terms.size());
+      while(terms.size() > numTerms) {
+        terms.remove(random.nextInt(terms.size()));
+      }
+
+      if (VERBOSE) {
+        System.out.println("  terms=" + terms);
+      }
+
+      final BooleanQuery q = new BooleanQuery();
+      for(String term : terms) {
+        q.add(new BooleanClause(new TermQuery(new Term("field", term)), BooleanClause.Occur.SHOULD));
+      }
+
+      Weight weight = s.createNormalizedWeight(q);
+
+      Scorer scorer = weight.scorer(s.leafContexts[0],
+                                          true, false, null);
+
+      // First pass: just use .nextDoc() to gather all hits
+      final List<ScoreDoc> hits = new ArrayList<ScoreDoc>();
+      while(scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        hits.add(new ScoreDoc(scorer.docID(), scorer.score()));
+      }
+
+      if (VERBOSE) {
+        System.out.println("  " + hits.size() + " hits");
+      }
+
+      // Now, randomly next/advance through the list and
+      // verify exact match:
+      for(int iter2=0;iter2<10;iter2++) {
+
+        weight = s.createNormalizedWeight(q);
+        scorer = weight.scorer(s.leafContexts[0],
+                               true, false, null);
+
+        if (VERBOSE) {
+          System.out.println("  iter2=" + iter2);
+        }
+
+        int upto = -1;
+        while(upto < hits.size()) {
+          final int nextUpto;
+          final int nextDoc;
+          final int left = hits.size() - upto;
+          if (left == 1 || random.nextBoolean()) {
+            // next
+            nextUpto = 1+upto;
+            nextDoc = scorer.nextDoc();
+          } else {
+            // advance
+            int inc = _TestUtil.nextInt(random, 1, left-1);
+            nextUpto = inc + upto;
+            nextDoc = scorer.advance(hits.get(nextUpto).doc);
+          }
+
+          if (nextUpto == hits.size()) {
+            assertEquals(DocIdSetIterator.NO_MORE_DOCS, nextDoc);
+          } else {
+            final ScoreDoc hit = hits.get(nextUpto);
+            assertEquals(hit.doc, nextDoc);
+            // Test for precise float equality:
+            assertTrue("doc " + hit.doc + " has wrong score: expected=" + hit.score + " actual=" + scorer.score(), hit.score == scorer.score());
+          }
+          upto = nextUpto;
+        }
+      }
+    }
+    
+    r.close();
+    d.close();
+  }
+}

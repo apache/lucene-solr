@@ -158,6 +158,7 @@ public class TestTypePromotion extends LuceneTestCase {
         break;
       case Int:
         assertEquals(msg, values[id], directSource.getInt(i));
+        break;
       default:
         break;
       }

@@ -93,7 +93,7 @@ public abstract class DocValuesConsumer {
    * @param mergeState
    *          the state to merge
    * @param docValues docValues array containing one instance per reader (
-   *          {@link MergeState#readers}) or <code>null</code> if the reader has
+   *          {@link org.apache.lucene.index.codecs.MergeState#readers}) or <code>null</code> if the reader has
    *          no {@link IndexDocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs

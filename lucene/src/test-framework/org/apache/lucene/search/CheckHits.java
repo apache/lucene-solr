@@ -313,7 +313,9 @@ public class CheckHits {
 
   }
 
-  private static float explainToleranceDelta(float f1, float f2) {
+  /** returns a reasonable epsilon for comparing two floats,
+   *  where minor differences are acceptable such as score vs. explain */
+  public static float explainToleranceDelta(float f1, float f2) {
     return Math.max(EXPLAIN_SCORE_TOLERANCE_MINIMUM, Math.max(Math.abs(f1), Math.abs(f2)) * EXPLAIN_SCORE_TOLERANCE_DELTA);
   }
 

@@ -646,6 +646,10 @@ Bug fixes
 * LUCENE-3215: SloppyPhraseScorer sometimes computed Infinite freq
   (Robert Muir, Doron Cohen)  
 
+* LUCENE-3503: DisjunctionSumScorer would give slightly different scores
+  for a document depending if you used nextDoc() versus advance().
+  (Mike McCandless, Robert Muir)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
