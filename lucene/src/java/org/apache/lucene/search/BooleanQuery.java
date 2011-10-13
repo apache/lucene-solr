@@ -310,7 +310,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Check if we can return a BooleanScorer
-      if (!scoreDocsInOrder && topScorer && required.size() == 0 && prohibited.size() < 32) {
+      if (!scoreDocsInOrder && topScorer && required.size() == 0) {
         return new BooleanScorer(this, disableCoord, similarity, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
@@ -337,10 +337,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         } else if (c.isProhibited()) {
           ++numProhibited;
         }
-      }
-      
-      if (numProhibited > 32) { // cannot use BS
-        return false;
       }
       
       // scorer() will return an out-of-order scorer if requested.

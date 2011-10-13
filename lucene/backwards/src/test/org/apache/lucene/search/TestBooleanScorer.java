@@ -62,32 +62,4 @@ public class TestBooleanScorer extends LuceneTestCase
     ir.close();
     directory.close();
   }
-  
-  public void testEmptyBucketWithMoreDocs() throws Exception {
-    // This test checks the logic of nextDoc() when all sub scorers have docs
-    // beyond the first bucket (for example). Currently, the code relies on the
-    // 'more' variable to work properly, and this test ensures that if the logic
-    // changes, we have a test to back it up.
-    
-    Similarity sim = Similarity.getDefault();
-    Scorer[] scorers = new Scorer[] {new Scorer(sim) {
-      private int doc = -1;
-      @Override public float score() throws IOException { return 0; }
-      @Override public int docID() { return doc; }
-      
-      @Override public int nextDoc() throws IOException {
-        return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
-      }
-
-      @Override public int advance(int target) throws IOException {
-        return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
-      }
-      
-    }};
-    BooleanScorer bs = new BooleanScorer(null, false, sim, 1, Arrays.asList(scorers), null, scorers.length);
-    
-    assertEquals("should have received 3000", 3000, bs.nextDoc());
-    assertEquals("should have received NO_MORE_DOCS", DocIdSetIterator.NO_MORE_DOCS, bs.nextDoc());
-  }
-
 }
