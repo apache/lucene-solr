@@ -86,7 +86,7 @@ New Features
   DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
   levenshtein automata.  (James Dyer, rmuir)
    
-* SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
+* SOLR-1873: SolrCloud - added shared/central config and core/shard management via zookeeper,
   built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
