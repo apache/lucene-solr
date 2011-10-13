@@ -191,7 +191,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, dir);
     
-    final int numTerms = atLeast(1000);
+    final int numTerms = atLeast(300);
 
     final Set<String> terms = new HashSet<String>();
     final Collection<String> pendingTerms = new ArrayList<String>();
