@@ -122,7 +122,7 @@ public abstract class FSDirectory extends Directory {
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
   private int chunkSize = DEFAULT_READ_CHUNK_SIZE; // LUCENE-1566
 
-  // null means no limite
+  // null means no limit
   private volatile RateLimiter mergeWriteRateLimiter;
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
