@@ -17,12 +17,15 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
@@ -51,17 +54,22 @@ public class AssignShard {
     lock.lock();
     String returnShardId = null;
     try {
-      // lets read the current shards - we want to read straight from zk, and we
-      // assume we have some kind
+      // lets read the current shards - we want to read straight from zk (we
+      // need the absolute latest info), and we assume we have some kind
       // of collection level lock
-      String shardIdPaths = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
-          + ZkStateReader.SHARDS_ZKNODE;
       
-      List<String> shardIdNames = client.getChildren(shardIdPaths, null);
+      // TODO: this made a lot more sense when the cluster state was on multiple nodes
+      // and it was just a single getChildren read.
+
+      CloudState state = CloudState.load(client.getData(ZkStateReader.CLUSTER_STATE, null, null));
+      Map<String, Slice> sliceMap = state.getSlices(collection);
       
-      if (shardIdNames.size() == 0) {
+      if (sliceMap == null) {
         return "shard1";
       }
+      
+      List<String> shardIdNames = new ArrayList<String>(sliceMap.keySet());
+
       
       if (shardIdNames.size() < slices) {
         return "shard" + (shardIdNames.size() + 1);
@@ -70,7 +78,7 @@ public class AssignShard {
       // else figure out which shard needs more replicas
       final Map<String,Integer> map = new HashMap<String,Integer>();
       for (String shardId : shardIdNames) {
-        int cnt = client.getChildren(shardIdPaths + "/" + shardId, null).size();
+    	int cnt = sliceMap.get(shardId).getShards().size();
         map.put(shardId, cnt);
       }
 

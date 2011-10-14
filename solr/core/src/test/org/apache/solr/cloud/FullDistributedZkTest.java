@@ -38,7 +38,7 @@ import org.junit.BeforeClass;
 public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
-  private static final boolean DEBUG = false;
+  private static final boolean DEBUG = true;
   String t1="a_t";
   String i1="a_si";
   String nint = "n_i";
@@ -141,12 +141,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
    */
   @Override
   public void doTest() throws Exception {
-    printLayout();
-    // make sure 'shard1' was auto-assigned
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    assertTrue("shard1 was not found in zk layout", zkClient.exists("/solr/collections/collection1/shards/shard1"));
-    zkClient.close();
-    
+
     del("*:*");
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);

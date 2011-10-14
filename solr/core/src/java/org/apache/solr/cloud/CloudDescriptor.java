@@ -24,7 +24,8 @@ public class CloudDescriptor {
   private String shardId;
   private String collectionName;
   private SolrParams params;
-
+  private String roles;
+  
   public void setShardId(String shardId) {
     this.shardId = shardId;
   }
@@ -41,6 +42,14 @@ public class CloudDescriptor {
     this.collectionName = collectionName;
   }
 
+  public String getRoles(){
+	  return roles;
+  }
+  
+  public void setRoles(String roles){
+	  this.roles = roles;
+  }
+  
   /** Optional parameters that can change how a core is created. */
   public SolrParams getParams() {
     return params;

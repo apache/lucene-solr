@@ -93,9 +93,7 @@ public class CloudSolrServer extends SolrServer {
       if (zkStateReader != null) return;
       try {
         ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout, zkClientTimeout);
-        zk.makeCollectionsNodeWatches();
-        zk.makeShardZkNodeWatches(false);
-        zk.updateCloudState(true);
+        zk.createClusterStateWatchersAndUpdate();
         zkStateReader = zk;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();

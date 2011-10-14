@@ -411,6 +411,10 @@ public class CoreContainer
           if (opt != null) {
             p.getCloudDescriptor().setCollectionName(opt);
           }
+          opt = DOMUtil.getAttr(node, "roles", null);
+          if(opt != null){
+        	  p.getCloudDescriptor().setRoles(opt);
+          }
         }
         opt = DOMUtil.getAttr(node, "properties", null);
         if (opt != null) {
@@ -429,29 +433,6 @@ public class CoreContainer
       catch (Throwable ex) {
         SolrConfig.severeErrors.add( ex );
         SolrException.logOnce(log,null,ex);
-      }
-    }
-    
-    if(zkController != null) {
-      try {
-        synchronized (zkController.getZkStateReader().getUpdateLock()) {
-          zkController.getZkStateReader().makeShardZkNodeWatches(false);
-          zkController.getZkStateReader().updateCloudState(true);
-        }
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      } catch (KeeperException e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      } catch (IOException e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
       }
     }
   }
