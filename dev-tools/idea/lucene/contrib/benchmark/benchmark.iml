@@ -24,6 +24,7 @@
       </library>
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
+    <orderEntry type="module" module-name="facet" />
     <orderEntry type="module" module-name="highlighter" />
     <orderEntry type="module" module-name="remote" />
     <orderEntry type="module" module-name="icu" />
