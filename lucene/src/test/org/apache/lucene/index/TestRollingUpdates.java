@@ -35,7 +35,8 @@ public class TestRollingUpdates extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random);
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    final int SIZE = atLeast(20);
+    w.setInfoStream(VERBOSE ? System.out : null);
+    final int SIZE = atLeast(TEST_NIGHTLY ? 100 : 20);
     int id = 0;
     IndexReader r = null;
     final int numUpdates = (int) (SIZE * (2+random.nextDouble()));
