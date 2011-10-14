@@ -596,6 +596,11 @@ Bug fixes
   rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
   Simon Willnauer, Mike McCandless)
 
+* LUCENE-3515: Fix terrible merge performance versus 3.x, especially
+  when the directory isn't MMapDirectory, due to failing to reuse
+  DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
+  Robert Muir, Simon Willnauer, Mike McCandless)
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy

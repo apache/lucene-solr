@@ -42,6 +42,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(provider));
+    w.setInfoStream(VERBOSE ? System.out : null);
     final int SIZE = atLeast(TEST_NIGHTLY ? 100 : 20);
     int id = 0;
     IndexReader r = null;
