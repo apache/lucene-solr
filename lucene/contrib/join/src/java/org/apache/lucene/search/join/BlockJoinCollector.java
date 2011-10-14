@@ -403,14 +403,16 @@ public class BlockJoinCollector extends Collector {
     // unbox once
     final int slot = _slot;
 
-    if (offset >= queue.size()) {
+    if (sortedGroups == null) {
+      if (offset >= queue.size()) {
+        return null;
+      }
+      sortQueue();
+    } else if (offset > sortedGroups.length) {
       return null;
     }
-    int totalGroupedHitCount = 0;
 
-    if (sortedGroups == null) {
-      sortQueue();
-    }
+    int totalGroupedHitCount = 0;
 
     final FakeScorer fakeScorer = new FakeScorer();
 
