@@ -36,9 +36,6 @@ public class TestForTooMuchCloning extends LuceneTestCase {
   // Make sure we don't clone IndexInputs too frequently
   // during merging:
   public void test() throws Exception {
-    String codec = CodecProvider.getDefault().getFieldCodec("field");
-    // TODO: once LUCENE-3517 is fixed, remove this:
-    assumeFalse("PulsingCodec fails this test because of over-cloning", codec.equals("Pulsing") || codec.equals("MockRandom"));
     final MockDirectoryWrapper dir = newDirectory();
     final TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setMaxMergeAtOnce(2);
