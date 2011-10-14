@@ -18,7 +18,6 @@ package org.apache.lucene.search.join;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -387,14 +386,16 @@ public class BlockJoinCollector extends Collector {
     // unbox once
     final int slot = _slot;
 
-    if (offset >= queue.size()) {
+    if (sortedGroups == null) {
+      if (offset >= queue.size()) {
+        return null;
+      }
+      sortQueue();
+    } else if (offset > sortedGroups.length) {
       return null;
     }
-    int totalGroupedHitCount = 0;
 
-    if (sortedGroups == null) {
-      sortQueue();
-    }
+    int totalGroupedHitCount = 0;
 
     final FakeScorer fakeScorer = new FakeScorer();
 
