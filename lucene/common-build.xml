@@ -534,7 +534,6 @@
 	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir="@{tempDir}/@{threadNum}">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
-	        <enable package="org.apache.lucene"/>
 	        <enable package="org.apache.solr"/>
 	      </assertions>
 	      
