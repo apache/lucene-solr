@@ -432,7 +432,7 @@ class BufferedDeletesStream {
   }
 
   // Delete by query
-  private synchronized long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, SegmentReader reader) throws IOException {
+  private static long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, SegmentReader reader) throws IOException {
     long delCount = 0;
     final AtomicReaderContext readerContext = (AtomicReaderContext) reader.getTopReaderContext();
     for (QueryAndLimit ent : queriesIter) {
