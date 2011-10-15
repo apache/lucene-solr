@@ -303,7 +303,7 @@ public class LanguageIdentifierUpdateProcessor extends UpdateRequestProcessor im
   protected List<DetectedLanguage> detectLanguage(String content) {
     List<DetectedLanguage> languages = new ArrayList<DetectedLanguage>();
     if(content.trim().length() != 0) { 
-      LanguageIdentifier identifier = new LanguageIdentifier(content.toString());
+      LanguageIdentifier identifier = new LanguageIdentifier(content);
       // FIXME: Hack - we get the distance from toString and calculate our own certainty score
       Double distance = Double.parseDouble(tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
       // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than isReasonablyCertain()
