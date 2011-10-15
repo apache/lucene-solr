@@ -330,12 +330,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     
     @Override
     public boolean scoresDocsOutOfOrder() {
-      int numProhibited = 0;
       for (BooleanClause c : clauses) {
         if (c.isRequired()) {
           return false; // BS2 (in-order) will be used by scorer()
-        } else if (c.isProhibited()) {
-          ++numProhibited;
         }
       }
       
