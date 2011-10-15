@@ -18,16 +18,17 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
@@ -63,7 +64,6 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void doAfterWriter(ExecutorService es) throws Exception {
-    // SearcherManager needs to see empty commit:
     final SearcherWarmer warmer = new SearcherWarmer() {
       @Override
       public void warm(IndexSearcher s) throws IOException {
@@ -75,6 +75,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       mgr = SearcherManager.open(writer, true, warmer, es);
       isNRT = true;
     } else {
+      // SearcherManager needs to see empty commit:
       writer.commit();
       mgr = SearcherManager.open(dir, warmer, es);
       isNRT = false;
@@ -178,8 +179,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   
   public void testIntermediateClose() throws IOException, InterruptedException {
     Directory dir = newDirectory();
+    // Test can deadlock if we use SMS:
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+                                                                   TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergeScheduler(new ConcurrentMergeScheduler()));
     writer.addDocument(new Document());
     writer.commit();
     final CountDownLatch awaitEnterWarm = new CountDownLatch(1);
