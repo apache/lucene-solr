@@ -61,7 +61,6 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
   protected SolrParams appends;
   protected SolrParams invariants;
 
-  @Override
   public void inform(SolrCore core) {
   }
 
