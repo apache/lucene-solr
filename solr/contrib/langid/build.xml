@@ -27,6 +27,7 @@
 
 	<path id="classpath">
     <fileset dir="../extraction/lib" includes="*.jar"/>
+    <fileset dir="lib" includes="*.jar"/>
     <path refid="solr.base.classpath"/>   
   </path>
 
