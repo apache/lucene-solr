@@ -51,7 +51,7 @@ import org.apache.lucene.util._TestUtil;
 
 // TODO
 //   - mix in optimize, addIndexes
-//   - randomoly mix in non-congruent docs
+//   - randomly mix in non-congruent docs
 
 /** Utility class that spawns multiple indexing and
  *  searching threads. */
