@@ -1541,7 +1541,7 @@
     -->
     <!--
      <updateRequestProcessorChain name="langid">
-       <processor class="org.apache.solr.update.processor.LanguageIdentifierUpdateProcessorFactory">
+       <processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
          <str name="langid.fl">text,title,subject,description</str>
          <str name="langid.langField">language_s</str>
          <str name="langid.fallback">en</str>

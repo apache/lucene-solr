@@ -33,12 +33,12 @@
 	<classpathentry kind="src" path="modules/analysis/stempel/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/stempel/src/test"/>
 	<classpathentry kind="src" path="modules/analysis/morfologik/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/morfologik/src/test"/>	
+	<classpathentry kind="src" path="modules/analysis/morfologik/src/test"/>
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
 	<classpathentry kind="src" path="modules/facet/src/java"/>
- 	<classpathentry kind="src" path="modules/facet/src/examples"/>
- 	<classpathentry kind="src" path="modules/facet/src/test"/>
+	<classpathentry kind="src" path="modules/facet/src/examples"/>
+	<classpathentry kind="src" path="modules/facet/src/test"/>
 	<classpathentry kind="src" path="modules/grouping/src/java"/>
 	<classpathentry kind="src" path="modules/grouping/src/test"/>
 	<classpathentry kind="src" path="modules/join/src/java"/>
@@ -71,18 +71,19 @@
 	<classpathentry kind="src" path="solr/contrib/extraction/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/test-files"/>
-  <classpathentry kind="src" path="solr/contrib/langid/src/java"/>
-  <classpathentry kind="src" path="solr/contrib/langid/src/test"/>
-  <classpathentry kind="src" path="solr/contrib/langid/src/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/langid/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/langid/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/langid/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/resources"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/uima/src/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/langid/src/resources"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/sandbox/lib/jakarta-regexp-1.4.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8_1_1.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
@@ -156,6 +157,8 @@
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-tagger-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-wst-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uimaj-core-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/langid/lib/langdetect-r111.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/langid/lib/jsonic-1.2.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

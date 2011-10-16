@@ -26,7 +26,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.tika.language.LanguageIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +39,15 @@ import java.util.regex.Pattern;
 
 
 /**
- * Identifies the language of a set of input fields using Tika's
- * LanguageIdentifier. Also supports mapping of field names based
+ * Identifies the language of a set of input fields. 
+ * Also supports mapping of field names based
  * on detected language. 
- * The tika-core-x.y.jar must be on the classpath
  * <p>
  * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
  * @since 3.5
+ * @lucene.experimental
  */
-public class LanguageIdentifierUpdateProcessor extends UpdateRequestProcessor implements LangIdParams {
+public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestProcessor implements LangIdParams {
 
   protected final static Logger log = LoggerFactory
           .getLogger(LanguageIdentifierUpdateProcessor.class);
@@ -300,23 +299,7 @@ public class LanguageIdentifierUpdateProcessor extends UpdateRequestProcessor im
    * @param content The content to identify
    * @return List of detected language(s) according to RFC-3066
    */
-  protected List<DetectedLanguage> detectLanguage(String content) {
-    List<DetectedLanguage> languages = new ArrayList<DetectedLanguage>();
-    if(content.trim().length() != 0) { 
-      LanguageIdentifier identifier = new LanguageIdentifier(content);
-      // FIXME: Hack - we get the distance from toString and calculate our own certainty score
-      Double distance = Double.parseDouble(tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
-      // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than isReasonablyCertain()
-      Double certainty = 1 - (5 * distance); 
-      certainty = (certainty < 0) ? 0 : certainty;
-      DetectedLanguage language = new DetectedLanguage(identifier.getLanguage(), certainty);
-      languages.add(language);
-      log.debug("Language detected as "+language+" with a certainty of "+language.getCertainty()+" (Tika distance="+identifier.toString()+")");
-    } else {
-      log.debug("No input text to detect language from, returning empty list");
-    }
-    return languages;
-  }
+  protected abstract List<DetectedLanguage> detectLanguage(String content);
 
   /**
    * Chooses a language based on the list of candidates detected 

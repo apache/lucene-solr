@@ -34,7 +34,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * and override the defaults. Here is the simplest processor config possible:
  * 
  * <pre class="prettyprint" >
- * &lt;processor class=&quot;org.apache.solr.update.processor.LanguageIdentifierUpdateProcessorFactory&quot;&gt;
+ * &lt;processor class=&quot;org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;langid.fl&quot;&gt;title,text&lt;/str&gt;
  *   &lt;str name=&quot;langid.langField&quot;&gt;language_s&lt;/str&gt;
  * &lt;/processor&gt;
@@ -42,7 +42,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
  * @since 3.5
  */
-public class LanguageIdentifierUpdateProcessorFactory extends
+public class TikaLanguageIdentifierUpdateProcessorFactory extends
         UpdateRequestProcessorFactory implements SolrCoreAware, LangIdParams {
 
   protected SolrParams defaults;
@@ -87,7 +87,7 @@ public class LanguageIdentifierUpdateProcessorFactory extends
     if(req != null) {
       SolrPluginUtils.setDefaults(req, defaults, appends, invariants);
     }
-    return new LanguageIdentifierUpdateProcessor(req, rsp, next);
+    return new TikaLanguageIdentifierUpdateProcessor(req, rsp, next);
   }
 
 

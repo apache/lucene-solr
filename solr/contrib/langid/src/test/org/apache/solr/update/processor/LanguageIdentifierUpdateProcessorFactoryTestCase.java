@@ -31,7 +31,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
-public class LanguageIdentifierUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
+public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends SolrTestCaseJ4 {
 
   protected static SolrRequestParsers _parser;
   protected static SolrQueryRequest req;
@@ -189,17 +189,15 @@ public class LanguageIdentifierUpdateProcessorFactoryTest extends SolrTestCaseJ4
     return doc;
   }
 
-  private SolrInputDocument tooShortDoc() {
+  protected SolrInputDocument tooShortDoc() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("text", "This text is too short");
     return doc;
   }
 
-  private LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception {
-    return new LanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(null, parameters, null), resp, null);
-  }
+  protected abstract LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception;
 
-  private void assertLang(String langCode, String... fieldsAndValues) throws Exception {
+  protected void assertLang(String langCode, String... fieldsAndValues) throws Exception {
     if(liProcessor == null)
       throw new Exception("Processor must be initialized before calling assertLang()");
     SolrInputDocument doc = sid(fieldsAndValues);

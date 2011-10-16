@@ -253,6 +253,18 @@ Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
 
 Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup/)
  
+=========================================================================
+==  Language Detection Notices                                         ==
+=========================================================================
+
+The following notices apply to the libraries in contrib/langid/lib:
+
+This product includes software developed by Cybozu Labs, Inc.
+(c)2010 All rights reserved by Cybozu Labs, Inc.
+http://code.google.com/p/language-detection/
+
+This product includes software developed by the Jsonic project:
+http://sourceforge.jp/projects/jsonic/
 
 =========================================================================
 ==     Carrot2 Notice                                                  ==
