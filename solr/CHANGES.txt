@@ -355,7 +355,8 @@ New Features
   for 99 languages (janhoy, cmale)
 
 * SOLR-1979: New contrib "langid". Adds language identification capabilities as an 
-  Update Processor, using Tika's LanguageIdentifier (janhoy, Tommaso Teofili, gsingers)
+  Update Processor, using Tika's LanguageIdentifier or Cybozu language-detection
+  library (janhoy, Tommaso Teofili, gsingers)
 
 * SOLR-2818: Added before/after count response parsing support for range facets in
   SolrJ. (Bernhard Frauendienst via Martijn van Groningen)  
