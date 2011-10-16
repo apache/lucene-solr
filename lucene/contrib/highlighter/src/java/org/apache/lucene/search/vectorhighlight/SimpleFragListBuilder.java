@@ -28,13 +28,28 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
  */
 public class SimpleFragListBuilder implements FragListBuilder {
   
-  public static final int MARGIN = 6;
-  public static final int MIN_FRAG_CHAR_SIZE = MARGIN * 3;
+  public static final int MARGIN_DEFAULT = 6;
+  public static final int MIN_FRAG_CHAR_SIZE_FACTOR = 3;
+
+  final int margin;
+  final int minFragCharSize;
+
+  public SimpleFragListBuilder( int margin ){
+    if( margin < 0 )
+      throw new IllegalArgumentException( "margin(" + margin + ") is too small. It must be 0 or higher." );
+
+    this.margin = margin;
+    this.minFragCharSize = Math.max( 1, margin * MIN_FRAG_CHAR_SIZE_FACTOR );
+  }
+
+  public SimpleFragListBuilder(){
+    this( MARGIN_DEFAULT );
+  }
 
   public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList, int fragCharSize) {
-    if( fragCharSize < MIN_FRAG_CHAR_SIZE )
+    if( fragCharSize < minFragCharSize )
       throw new IllegalArgumentException( "fragCharSize(" + fragCharSize + ") is too small. It must be " +
-          MIN_FRAG_CHAR_SIZE + " or higher." );
+          minFragCharSize + " or higher." );
 
     FieldFragList ffl = new FieldFragList( fragCharSize );
 
@@ -56,8 +71,8 @@ public class SimpleFragListBuilder implements FragListBuilder {
 
       wpil.clear();
       wpil.add( phraseInfo );
-      int st = phraseInfo.getStartOffset() - MARGIN < startOffset ?
-          startOffset : phraseInfo.getStartOffset() - MARGIN;
+      int st = phraseInfo.getStartOffset() - margin < startOffset ?
+          startOffset : phraseInfo.getStartOffset() - margin;
       int en = st + fragCharSize;
       if( phraseInfo.getEndOffset() > en )
         en = phraseInfo.getEndOffset();

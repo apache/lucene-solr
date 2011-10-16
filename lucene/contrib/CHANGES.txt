@@ -130,6 +130,9 @@ API Changes
  * LUCENE-3436: Add SuggestMode to the spellchecker, so you can specify the strategy
    for suggesting related terms.  (James Dyer via Robert Muir)
 
+ * LUCENE-3513: Add SimpleFragListBuilder constructor with margin parameter.
+   (Kelsey Francis via Koji Sekiguchi)
+
 ======================= Lucene 3.4.0 ================
 
 New Features
