@@ -324,6 +324,9 @@ public abstract class LuceneTestCase extends Assert {
     random.setSeed(staticSeed);
     random.initialized = true;
   }
+  
+  @Deprecated
+  private static boolean icuTested = false;
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
@@ -375,6 +378,20 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     savedLocale = Locale.getDefault();
+    
+    // START hack to init ICU safely before we randomize locales.
+    // ICU fails during classloading when a special Java7-only locale is the default
+    // see: http://bugs.icu-project.org/trac/ticket/8734
+    if (!icuTested) {
+      icuTested = true;
+      try {
+        Locale.setDefault(Locale.US);
+        Class.forName("com.ibm.icu.util.ULocale");
+      } catch (ClassNotFoundException cnfe) {
+        // ignore if no ICU is in classpath
+      }
+    }
+    // END hack
     
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
