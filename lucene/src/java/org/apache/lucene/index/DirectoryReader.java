@@ -433,7 +433,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     IndexReader reader = writer.getReader(applyAllDeletes);
 
     // If in fact no changes took place, return null:
-    if (reader.getVersion() == getVersion()) {
+    if (reader.getVersion() == segmentInfos.getVersion()) {
       reader.decRef();
       return null;
     }
