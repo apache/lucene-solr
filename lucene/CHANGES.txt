@@ -622,6 +622,13 @@ Changes in backwards compatibility policy
   (instead of the old reader) if there are no changes in the index, to
   prevent the common pitfall of accidentally closing the old reader.
 
+Changes in runtime behavior
+
+* LUCENE-3520: IndexReader.openIfChanged, when passed a near-real-time
+  reader, will now return null if there are no changes.  The API has
+  always reserved the right to do this; it's just that in the past for
+  near-real-time readers it never did. (Mike McCandless)
+
 Bug fixes
 
 * LUCENE-3412: SloppyPhraseScorer was returning non-deterministic results 

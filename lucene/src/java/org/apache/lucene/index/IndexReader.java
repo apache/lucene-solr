@@ -561,10 +561,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * with the old reader uses "copy on write" semantics to
    * ensure the changes are not seen by other readers.
    *
-   * <p><b>NOTE</b>: If the provided reader is a near real-time
-   * reader, this method will return another near-real-time
-   * reader.
-   * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @return null if there are no changes; else, a new

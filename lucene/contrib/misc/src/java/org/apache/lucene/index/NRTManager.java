@@ -93,10 +93,10 @@ public class NRTManager implements Closeable {
       SearcherWarmer warmer, boolean alwaysApplyDeletes) throws IOException {
     this.writer = writer;
     if (alwaysApplyDeletes) {
-      withoutDeletes = withDeletes = new SearcherManagerRef(true, 0,  SearcherManager.open(writer, true, warmer, es));
+      withoutDeletes = withDeletes = new SearcherManagerRef(true, 0,  new SearcherManager(writer, true, warmer, es));
     } else {
-      withDeletes = new SearcherManagerRef(true, 0,  SearcherManager.open(writer, true, warmer, es));
-      withoutDeletes = new SearcherManagerRef(false, 0,  SearcherManager.open(writer, false, warmer, es));
+      withDeletes = new SearcherManagerRef(true, 0, new SearcherManager(writer, true, warmer, es));
+      withoutDeletes = new SearcherManagerRef(false, 0, new SearcherManager(writer, false, warmer, es));
     }
     indexingGen = new AtomicLong(1);
   }

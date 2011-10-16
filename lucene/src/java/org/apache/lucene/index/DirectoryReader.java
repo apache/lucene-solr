@@ -406,8 +406,15 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return doOpenIfChanged(true, commit);
   }
 
-  // NOTE: always returns a non-null result (ie new reader)
-  // but that could change someday
+  @Override
+  protected final IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
+      return doOpenIfChanged();
+    } else {    
+      return super.doOpenIfChanged(writer, applyAllDeletes);
+    }
+  }
+
   private final IndexReader doOpenFromWriter(boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
     assert readOnly;
 
@@ -419,10 +426,18 @@ class DirectoryReader extends IndexReader implements Cloneable {
       throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
     }
 
-    // TODO: right now we *always* make a new reader; in
-    // the future we could have write make some effort to
-    // detect that no changes have occurred
+    if (writer.nrtIsCurrent(segmentInfos)) {
+      return null;
+    }
+
     IndexReader reader = writer.getReader(applyAllDeletes);
+
+    // If in fact no changes took place, return null:
+    if (reader.getVersion() == getVersion()) {
+      reader.decRef();
+      return null;
+    }
+
     reader.readerFinishedListeners = readerFinishedListeners;
     return reader;
   }

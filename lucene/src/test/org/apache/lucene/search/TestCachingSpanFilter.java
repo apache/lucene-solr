@@ -116,10 +116,10 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     // make sure we get a cache hit when we reopen readers
     // that had no new deletions
+    // Deletes nothing:
+    writer.deleteDocuments(new Term("foo", "bar"));
     reader = refreshReader(reader);
-    assertTrue(reader != oldReader);
-    searcher.close();
-    searcher = newSearcher(reader, false);
+    assertTrue(reader == oldReader);
     int missCount = filter.missCount;
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);

@@ -64,23 +64,76 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 
-public abstract class SearcherManager {
+public final class SearcherManager {
 
-  protected volatile IndexSearcher currentSearcher;
-  protected final ExecutorService es;
-  protected final SearcherWarmer warmer;
-  protected final Semaphore reopenLock = new Semaphore(1);
+  private volatile IndexSearcher currentSearcher;
+  private final ExecutorService es;
+  private final SearcherWarmer warmer;
+  private final Semaphore reopenLock = new Semaphore(1);
   
-  protected SearcherManager(IndexReader openedReader, SearcherWarmer warmer,
+  /**
+   * Creates and returns a new SearcherManager from the given {@link IndexWriter}. 
+   * @param writer the IndexWriter to open the IndexReader from.
+   * @param applyAllDeletes If <code>true</code>, all buffered deletes will
+   *        be applied (made visible) in the {@link IndexSearcher} / {@link IndexReader}.
+   *        If <code>false</code>, the deletes may or may not be applied, but remain buffered 
+   *        (in IndexWriter) so that they will be applied in the future.
+   *        Applying deletes can be costly, so if your app can tolerate deleted documents
+   *        being returned you might gain some performance by passing <code>false</code>.
+   *        See {@link IndexReader#openIfChanged(IndexReader, IndexWriter, boolean)}.
+   * @param warmer An optional {@link SearcherWarmer}. Pass
+   *        <code>null</code> if you don't require the searcher to warmed
+   *        before going live.  If this is  <code>non-null</code> then a
+   *        merged segment warmer is installed on the
+   *        provided IndexWriter's config.
+   * @param es An optional {@link ExecutorService} so different segments can
+   *        be searched concurrently (see {@link
+   *        IndexSearcher#IndexSearcher(IndexReader,ExecutorService)}.  Pass <code>null</code>
+   *        to search segments sequentially.
+   *        
+   * @throws IOException
+   */
+  public SearcherManager(IndexWriter writer, boolean applyAllDeletes,
+      final SearcherWarmer warmer, final ExecutorService es) throws IOException {
+    this.es = es;
+    this.warmer = warmer;
+    currentSearcher = new IndexSearcher(IndexReader.open(writer, applyAllDeletes));
+    if (warmer != null) {
+      writer.getConfig().setMergedSegmentWarmer(
+          new IndexWriter.IndexReaderWarmer() {
+            @Override
+            public void warm(IndexReader reader) throws IOException {
+              warmer.warm(new IndexSearcher(reader, es));
+            }
+          });
+    }
+  }
+
+  /**
+   * Creates and returns a new SearcherManager from the given {@link Directory}. 
+   * @param dir the directory to open the IndexReader on.
+   * @param warmer An optional {@link SearcherWarmer}.  Pass
+   *        <code>null</code> if you don't require the searcher to warmed
+   *        before going live.  If this is  <code>non-null</code> then a
+   *        merged segment warmer is installed on the
+   *        provided IndexWriter's config.
+   * @param es And optional {@link ExecutorService} so different segments can
+   *        be searched concurrently (see {@link
+   *        IndexSearcher#IndexSearcher(IndexReader,ExecutorService)}.  Pass <code>null</code>
+   *        to search segments sequentially.
+   *        
+   * @throws IOException
+   */
+  public SearcherManager(Directory dir, SearcherWarmer warmer,
       ExecutorService es) throws IOException {
     this.es = es;
     this.warmer = warmer;
-    currentSearcher = new IndexSearcher(openedReader, es);
+    currentSearcher = new IndexSearcher(IndexReader.open(dir, true), es);
   }
 
   /**
    * You must call this, periodically, to perform a reopen. This calls
-   * {@link #openIfChanged(IndexReader)} with the underlying reader, and if that returns a
+   * {@link IndexReader#openIfChanged(IndexReader)} with the underlying reader, and if that returns a
    * new reader, it's warmed (if you provided a {@link SearcherWarmer} and then
    * swapped into production.
    * 
@@ -103,7 +156,9 @@ public abstract class SearcherManager {
     // threads just return immediately:
     if (reopenLock.tryAcquire()) {
       try {
-        final IndexReader newReader = openIfChanged(currentSearcher.getIndexReader());
+        // IR.openIfChanged preserves NRT and applyDeletes
+        // in the newly returned reader:
+        final IndexReader newReader = IndexReader.openIfChanged(currentSearcher.getIndexReader());
         if (newReader != null) {
           final IndexSearcher newSearcher = new IndexSearcher(newReader, es);
           boolean success = false;
@@ -190,122 +245,10 @@ public abstract class SearcherManager {
     }
   }
 
-  protected synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
+  private synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
     ensureOpen();
     final IndexSearcher oldSearcher = currentSearcher;
     currentSearcher = newSearcher;
     release(oldSearcher);
-  }
-
-  protected abstract IndexReader openIfChanged(IndexReader oldReader)
-      throws IOException;
-
-  /**
-   * Creates and returns a new SearcherManager from the given {@link IndexWriter}. 
-   * @param writer the IndexWriter to open the IndexReader from.
-   * @param applyAllDeletes If <code>true</code>, all buffered deletes will
-   *        be applied (made visible) in the {@link IndexSearcher} / {@link IndexReader}.
-   *        If <code>false</code>, the deletes are not applied but remain buffered 
-   *        (in IndexWriter) so that they will be applied in the future.
-   *        Applying deletes can be costly, so if your app can tolerate deleted documents
-   *        being returned you might gain some performance by passing <code>false</code>.
-   * @param warmer An optional {@link SearcherWarmer}. Pass
-   *        <code>null</code> if you don't require the searcher to warmed
-   *        before going live.  If this is  <code>non-null</code> then a
-   *        merged segment warmer is installed on the
-   *        provided IndexWriter's config.
-   * @param es An optional {@link ExecutorService} so different segments can
-   *        be searched concurrently (see {@link
-   *        IndexSearcher#IndexSearcher(IndexReader,ExecutorService)}.  Pass <code>null</code>
-   *        to search segments sequentially.
-   *        
-   * @see IndexReader#openIfChanged(IndexReader, IndexWriter, boolean)
-   * @throws IOException
-   */
-  public static SearcherManager open(IndexWriter writer, boolean applyAllDeletes,
-      SearcherWarmer warmer, ExecutorService es) throws IOException {
-    final IndexReader open = IndexReader.open(writer, true);
-    boolean success = false;
-    try {
-      SearcherManager manager = new NRTSearcherManager(writer, applyAllDeletes,
-          open, warmer, es);
-      success = true;
-      return manager;
-    } finally {
-      if (!success) {
-        open.close();
-      }
-    }
-  }
-
-  /**
-   * Creates and returns a new SearcherManager from the given {@link Directory}. 
-   * @param dir the directory to open the IndexReader on.
-   * @param warmer An optional {@link SearcherWarmer}.  Pass
-   *        <code>null</code> if you don't require the searcher to warmed
-   *        before going live.  If this is  <code>non-null</code> then a
-   *        merged segment warmer is installed on the
-   *        provided IndexWriter's config.
-   * @param es And optional {@link ExecutorService} so different segments can
-   *        be searched concurrently (see {@link
-   *        IndexSearcher#IndexSearcher(IndexReader,ExecutorService)}.  Pass <code>null</code>
-   *        to search segments sequentially.
-   *        
-   * @throws IOException
-   */
-  public static SearcherManager open(Directory dir, SearcherWarmer warmer,
-      ExecutorService es) throws IOException {
-    final IndexReader open = IndexReader.open(dir, true);
-    boolean success = false;
-    try {
-      SearcherManager manager = new DirectorySearchManager(open, warmer, es);
-      success = true;
-      return manager;
-    } finally {
-      if (!success) {
-        open.close();
-      }
-    }
-  }
-
-  static final class NRTSearcherManager extends SearcherManager {
-    private final IndexWriter writer;
-    private final boolean applyDeletes;
-
-    NRTSearcherManager(final IndexWriter writer, final boolean applyDeletes,
-        final IndexReader openedReader, final SearcherWarmer warmer, final ExecutorService es)
-        throws IOException {
-      super(openedReader, warmer, es);
-      this.writer = writer;
-      this.applyDeletes = applyDeletes;
-      if (warmer != null) {
-        writer.getConfig().setMergedSegmentWarmer(
-            new IndexWriter.IndexReaderWarmer() {
-              @Override
-              public void warm(IndexReader reader) throws IOException {
-                warmer.warm(new IndexSearcher(reader, es));
-              }
-            });
-      }
-    }
-
-    @Override
-    protected IndexReader openIfChanged(IndexReader oldReader)
-        throws IOException {
-      return IndexReader.openIfChanged(oldReader, writer, applyDeletes);
-    }
-  }
-
-  static final class DirectorySearchManager extends SearcherManager {
-    DirectorySearchManager(IndexReader openedReader,
-        SearcherWarmer warmer, ExecutorService es) throws IOException {
-      super(openedReader, warmer, es);
-    }
-
-    @Override
-    protected IndexReader openIfChanged(IndexReader oldReader)
-        throws IOException {
-      return IndexReader.openIfChanged(oldReader, true);
-    }
   }
 }

@@ -235,10 +235,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // make sure we get a cache hit when we reopen reader
     // that had no change to deletions
+    writer.deleteDocuments(new Term("foo", "bar"));
     reader = refreshReader(reader);
-    assertTrue(reader != oldReader);
-    searcher.close();
-    searcher = newSearcher(reader, false);
+    assertTrue(reader == oldReader);
     int missCount = filter.missCount;
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);

@@ -72,12 +72,12 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       }
     };
     if (random.nextBoolean()) {
-      mgr = SearcherManager.open(writer, true, warmer, es);
+      mgr = new SearcherManager(writer, true, warmer, es);
       isNRT = true;
     } else {
       // SearcherManager needs to see empty commit:
       writer.commit();
-      mgr = SearcherManager.open(dir, warmer, es);
+      mgr = new SearcherManager(dir, warmer, es);
       isNRT = false;
     }
     
@@ -198,8 +198,8 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         }
       }
     };
-    final SearcherManager searcherManager = random.nextBoolean() ? SearcherManager.open(dir,
-        warmer, es) : SearcherManager.open(writer, random.nextBoolean(), warmer, es);
+    final SearcherManager searcherManager = random.nextBoolean() ? new SearcherManager(dir,
+        warmer, es) : new SearcherManager(writer, random.nextBoolean(), warmer, es);
     IndexSearcher searcher = searcherManager.acquire();
     try {
       assertEquals(1, searcher.getIndexReader().numDocs());
