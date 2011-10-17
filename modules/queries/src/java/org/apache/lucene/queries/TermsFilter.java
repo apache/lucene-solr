@@ -72,6 +72,9 @@ public class TermsFilter extends Filter {
     for (Term term : terms) {
       if (!term.field().equals(lastField)) {
         termsC = fields.terms(term.field());
+        if (termsC == null) {
+          return result;
+        }
         termsEnum = termsC.iterator();
         lastField = term.field();
       }
