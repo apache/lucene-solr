@@ -147,7 +147,7 @@ public abstract class TermsEnum {
    *  call this when the enum is unpositioned.  This method
    *  will not return null.
    *  
-   * @param liveDocs set bits are documents that should not
+   * @param liveDocs unset bits are documents that should not
    * be returned
    * @param reuse pass a prior DocsEnum for possible reuse */
   public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException;
@@ -155,7 +155,10 @@ public abstract class TermsEnum {
   /** Get {@link DocsAndPositionsEnum} for the current term.
    *  Do not call this when the enum is unpositioned.
    *  This method will only return null if positions were
-   *  not indexed into the postings by this codec. */
+   *  not indexed into the postings by this codec.
+   *  @param liveDocs unset bits are documents that should not
+   *  be returned
+   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse */
   public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException;
 
   /**
