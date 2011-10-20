@@ -63,6 +63,14 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-jsonic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-langdetect</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-parsers</artifactId>
     </dependency>
@@ -78,6 +86,11 @@
     <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
     <sourceDirectory>src/java</sourceDirectory>
     <testSourceDirectory>src/test</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>src/resources</directory>
+      </resource>
+    </resources>
     <testResources>
       <testResource>
         <directory>src/test-files</directory>
