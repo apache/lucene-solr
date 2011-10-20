@@ -222,6 +222,16 @@
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
+        <artifactId>solr-jsonic</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-langdetect</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-noggit</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -675,6 +685,35 @@
                   <version>${patched.jetty.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/example/lib/jetty-util-${patched.jetty.version}.jar</file>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-jsonic</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>install-file</goal>
+                </goals>
+                <configuration>
+                  <!-- jsonic v1.2.7 is in the central maven repo - remove this once upgraded. -->
+                  <groupId>org.apache.solr</groupId>
+                  <artifactId>solr-jsonic</artifactId>
+                  <version>${project.version}</version>
+                  <packaging>jar</packaging>
+                  <file>solr/contrib/langid/lib/jsonic-1.2.0.jar</file>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-langdetect</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>install-file</goal>
+                </goals>
+                <configuration>
+                  <groupId>org.apache.solr</groupId>
+                  <artifactId>solr-langdetect</artifactId>
+                  <version>${project.version}</version>
+                  <packaging>jar</packaging>
+                  <file>solr/contrib/langid/lib/langdetect-r111.jar</file>
                 </configuration>
               </execution>
             </executions>
