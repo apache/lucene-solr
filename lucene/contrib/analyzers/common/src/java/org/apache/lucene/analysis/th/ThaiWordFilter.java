@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.th;
 import java.io.IOException;
 import java.util.Locale;
 import java.lang.Character.UnicodeBlock;
-import javax.swing.text.Segment;
 import java.text.BreakIterator;
 
 import org.apache.lucene.analysis.TokenFilter;
@@ -28,6 +27,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharArrayIterator;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -56,7 +56,7 @@ public final class ThaiWordFilter extends TokenFilter {
     DBBI_AVAILABLE = proto.isBoundary(4);
   }
   private final BreakIterator breaker = (BreakIterator) proto.clone();
-  private final Segment charIterator = new Segment();
+  private final CharArrayIterator charIterator = CharArrayIterator.newWordInstance();
   
   private final boolean handlePosIncr;
   
@@ -121,9 +121,7 @@ public final class ThaiWordFilter extends TokenFilter {
     }
     
     // reinit CharacterIterator
-    charIterator.array = clonedTermAtt.buffer();
-    charIterator.offset = 0;
-    charIterator.count = clonedTermAtt.length();
+    charIterator.setText(clonedTermAtt.buffer(), 0, clonedTermAtt.length());
     breaker.setText(charIterator);
     int end = breaker.next();
     if (end != BreakIterator.DONE) {
