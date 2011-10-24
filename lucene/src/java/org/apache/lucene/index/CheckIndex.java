@@ -768,6 +768,15 @@ public class CheckIndex {
         is.search(new TermQuery(lastTerm), 1);
       }
 
+      try {
+        long uniqueTermCountAllFields = reader.getUniqueTermCount();
+        if (status.termCount != uniqueTermCountAllFields) {
+          throw new RuntimeException("termCount mismatch " + uniqueTermCountAllFields + " vs " + (status.termCount));
+        }
+      } catch (UnsupportedOperationException ex) {
+        // not supported
+      }
+      
       msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
 
     } catch (Throwable e) {
