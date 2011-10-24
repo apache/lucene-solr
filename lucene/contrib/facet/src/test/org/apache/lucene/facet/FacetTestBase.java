@@ -311,7 +311,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       System.err.println("Results are not the same!");
       System.err.println("Expected:\n" + expectedResults);
       System.err.println("Actual" + actualResults);
-      fail("Results are not the same!");
+      throw new NotSameResultError();
     }
   }
   
@@ -323,4 +323,12 @@ public abstract class FacetTestBase extends LuceneTestCase {
     }
     return sb.toString().replaceAll("Residue:.*.0", "").replaceAll("Num valid Descendants.*", "");
   }
+  
+  /** Special Error class for ability to ignore only this error and retry... */ 
+  public static class NotSameResultError extends Error {
+    public NotSameResultError() {
+      super("Results are not the same!");
+    }
+  }
+  
 }

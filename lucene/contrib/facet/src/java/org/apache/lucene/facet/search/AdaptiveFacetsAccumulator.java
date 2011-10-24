@@ -2,12 +2,15 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.index.IndexReader;
 
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.search.sampling.RandomSampler;
+import org.apache.lucene.facet.search.sampling.RepeatableSampler;
 import org.apache.lucene.facet.search.sampling.Sampler;
 import org.apache.lucene.facet.search.sampling.SamplingAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -44,7 +47,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
   
-  private Sampler sampler = new Sampler();
+  private Sampler sampler = new RandomSampler();
 
   /**
    * Create an {@link AdaptiveFacetsAccumulator} 

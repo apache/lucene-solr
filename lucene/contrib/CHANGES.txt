@@ -74,6 +74,10 @@ Bug Fixes
  * LUCENE-3301: Added a workaround for buggy BreakIterator implementations in
    Java that crash on certain inputs containing supplementary characters.
    (Robert Muir)
+   
+ * LUCENE-3501: RandomSample was not random.
+   Replaced with RandomSampler. For previous behavior use RepeatableSampler.
+   (Gilad Barkai, Shai Erera, Doron Cohen)
 
 API Changes
  
