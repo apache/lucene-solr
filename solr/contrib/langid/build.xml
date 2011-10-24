@@ -31,4 +31,12 @@
     <path refid="solr.base.classpath"/>   
   </path>
 
+  <dirname file="${ant.file.solr-langid}" property="solr-langid.dir"/>
+  <target name="dist-maven" depends="jar-core,javadocs,jar-src,contrib-build.dist-maven">
+    <m2-deploy-with-pom-template pom.xml="${solr-langid.dir}/lib/jsonic-pom.xml.template"
+                                 jar.file="${solr-langid.dir}/lib/jsonic-1.2.0.jar" />
+
+    <m2-deploy-with-pom-template pom.xml="${solr-langid.dir}/lib/langdetect-pom.xml.template"
+                                 jar.file="${solr-langid.dir}/lib/langdetect-r111.jar" />
+  </target>
 </project>
