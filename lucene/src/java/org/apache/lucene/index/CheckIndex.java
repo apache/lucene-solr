@@ -726,6 +726,9 @@ public class CheckIndex {
           }
 
           final int docFreq = terms.docFreq();
+          if (docFreq <= 0) {
+            throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
+          }
           status.totFreq += docFreq;
           sumDocFreq += docFreq;
 
@@ -823,6 +826,9 @@ public class CheckIndex {
             throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
           }
           if (hasTotalTermFreq) {
+            if (totalTermFreq2 <= 0) {
+              throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
+            }
             sumTotalTermFreq += totalTermFreq;
             if (totalTermFreq != totalTermFreq2) {
               throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);

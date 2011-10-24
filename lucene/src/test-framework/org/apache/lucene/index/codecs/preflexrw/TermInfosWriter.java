@@ -199,6 +199,11 @@ final class TermInfosWriter implements Closeable {
       if (ch1 != ch2)
         return ch1-ch2;
     }
+    if (utf16Result1.length == 0 && lastFieldNumber == -1) {
+      // If there is a field named "" (empty string) with a term text of "" (empty string) then we
+      // will get 0 on this comparison, yet, it's "OK". 
+      return -1;
+    }
     return utf16Result1.length - utf16Result2.length;
   }
 

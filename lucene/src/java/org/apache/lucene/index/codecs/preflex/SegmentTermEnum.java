@@ -61,6 +61,7 @@ public final class SegmentTermEnum implements Cloneable {
   int skipInterval;
   int newSuffixStart;
   int maxSkipLevels;
+  private boolean first = true;
 
   SegmentTermEnum(IndexInput i, FieldInfos fis, boolean isi)
           throws CorruptIndexException, IOException {
@@ -123,6 +124,7 @@ public final class SegmentTermEnum implements Cloneable {
     prevBuffer.reset();
     //System.out.println("  ste doSeek prev=" + prevBuffer.toTerm() + " this=" + this);
     termInfo.set(ti);
+    first = p == -1;
   }
 
   /** Increments the enumeration to the next element.  True if one exists.*/
@@ -162,6 +164,13 @@ public final class SegmentTermEnum implements Cloneable {
   final int scanTo(Term term) throws IOException {
     scanBuffer.set(term);
     int count = 0;
+    if (first) {
+      // Always force initial next() in case term is
+      // Term("", "")
+      next();
+      first = false;
+      count++;
+    }
     while (scanBuffer.compareTo(termBuffer) > 0 && next()) {
       count++;
     }
