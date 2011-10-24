@@ -1075,7 +1075,27 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-
+  // LUCENE-3526
+  public void testEmptyFieldNameTerms() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    doc.add(newField("", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);  
+    writer.close();
+    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader subreader = SegmentReader.getOnlySegmentReader(reader);
+    TermEnum te = subreader.terms();
+    assertTrue(te.next());
+    assertEquals(new Term("", "a"), te.term());
+    assertTrue(te.next());
+    assertEquals(new Term("", "b"), te.term());
+    assertTrue(te.next());
+    assertEquals(new Term("", "c"), te.term());
+    assertFalse(te.next());
+    reader.close();
+    dir.close();
+  }
 
   private static final class MockIndexWriter extends IndexWriter {
 
