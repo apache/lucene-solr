@@ -678,6 +678,9 @@ public class CheckIndex {
         lastTerm = term;
 
         final int docFreq = termEnum.docFreq();
+        if (docFreq <= 0) {
+          throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
+        }
         termPositions.seek(term);
         int lastDoc = -1;
         int freq0 = 0;
