@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs.perfield;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,10 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
@@ -59,20 +63,20 @@ import org.apache.lucene.store.IndexOutput;
  * 
  * @lucene.internal
  */
-final class SegmentCodecs implements Cloneable {
+public final class SegmentCodecs implements Cloneable {
   /**
    * internal structure to map codecs to fields - don't modify this from outside
    * of this class!
    */
-  final Codec[] codecs;
-  final CodecProvider provider;
+  public final Codec[] codecs;
+  public final CodecProvider provider;
   private final Codec codec;
   
-  SegmentCodecs(CodecProvider provider, IndexInput input) throws IOException {
+  public SegmentCodecs(CodecProvider provider, IndexInput input) throws IOException {
     this(provider, read(input, provider));
   }
   
-  SegmentCodecs(CodecProvider provider, Codec... codecs) {
+  public SegmentCodecs(CodecProvider provider, Codec... codecs) {
     this.provider = provider;
     this.codecs = codecs;
     if (codecs.length == 1 && codecs[0] instanceof PreFlexCodec) {
@@ -82,11 +86,11 @@ final class SegmentCodecs implements Cloneable {
     }
   }
 
-  Codec codec() {
+  public Codec codec() {
     return codec;
   }
 
-  void write(IndexOutput out) throws IOException {
+  public void write(IndexOutput out) throws IOException {
     out.writeVInt(codecs.length);
     for (Codec codec : codecs) {
       out.writeString(codec.name);
@@ -104,7 +108,7 @@ final class SegmentCodecs implements Cloneable {
     return list.toArray(Codec.EMPTY);
   }
 
-  void files(Directory dir, SegmentInfo info, Set<String> files)
+  public void files(Directory dir, SegmentInfo info, Set<String> files)
       throws IOException {
     final Codec[] codecArray = codecs;
     for (int i = 0; i < codecArray.length; i++) {
@@ -126,7 +130,7 @@ final class SegmentCodecs implements Cloneable {
    * </p>
    * @see FieldInfo#getCodecId()
    */
-  final static class SegmentCodecsBuilder {
+  public final static class SegmentCodecsBuilder {
     private final Map<Codec, Integer> codecRegistry = new IdentityHashMap<Codec, Integer>();
     private final ArrayList<Codec> codecs = new ArrayList<Codec>();
     private final CodecProvider provider;
@@ -135,11 +139,11 @@ final class SegmentCodecs implements Cloneable {
       this.provider = provider;
     }
     
-    static SegmentCodecsBuilder create(CodecProvider provider) {
+    public static SegmentCodecsBuilder create(CodecProvider provider) {
       return new SegmentCodecsBuilder(provider);
     }
     
-    SegmentCodecsBuilder tryAddAndSet(FieldInfo fi) {
+    public SegmentCodecsBuilder tryAddAndSet(FieldInfo fi) {
       if (fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
         final Codec fieldCodec = provider.lookup(provider
             .getFieldCodec(fi.name));
@@ -154,11 +158,11 @@ final class SegmentCodecs implements Cloneable {
       return this;
     }
     
-    SegmentCodecs build() {
+    public SegmentCodecs build() {
       return new SegmentCodecs(provider, codecs.toArray(Codec.EMPTY));
     }
     
-    SegmentCodecsBuilder clear() {
+    public SegmentCodecsBuilder clear() {
       codecRegistry.clear();
       codecs.clear();
       return this;

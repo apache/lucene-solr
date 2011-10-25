@@ -28,6 +28,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 
+import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
@@ -43,7 +44,7 @@ public class SegmentWriteState {
   // Lazily created:
   public BitVector liveDocs;
 
-  final SegmentCodecs segmentCodecs;
+  public final SegmentCodecs segmentCodecs;
   public final int codecId;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
@@ -72,7 +73,7 @@ public class SegmentWriteState {
   /**
    * Create a shallow {@link SegmentWriteState} copy final a codec ID
    */
-  SegmentWriteState(SegmentWriteState state, int codecId) {
+  public SegmentWriteState(SegmentWriteState state, int codecId) {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentName = state.segmentName;

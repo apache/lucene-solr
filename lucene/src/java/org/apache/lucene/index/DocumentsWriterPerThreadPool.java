@@ -20,8 +20,8 @@ import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
-import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.perfield.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.util.SetOnce;
 
 /**

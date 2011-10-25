@@ -78,7 +78,7 @@ public final class FieldInfo {
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !storePayloads;
   }
 
-  void setCodecId(int codecId) {
+  public void setCodecId(int codecId) {
     assert this.codecId == UNASSIGNED_CODEC_ID : "CodecId can only be set once.";
     this.codecId = codecId;
   }

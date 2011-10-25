@@ -40,6 +40,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.FSDirectory;

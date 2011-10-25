@@ -29,9 +29,9 @@ import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.SegmentCodecs; // Required for Java 1.5 javadocs
-import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
+import org.apache.lucene.index.codecs.perfield.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -235,7 +235,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * <p>
    * Note: this ctor should not be used during indexing use
    * {@link FieldInfos#FieldInfos(FieldInfos)} or
-   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder)}
+   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.codecs.perfield.SegmentCodecs.SegmentCodecsBuilder)}
    * instead.
    */
   public FieldInfos() {
