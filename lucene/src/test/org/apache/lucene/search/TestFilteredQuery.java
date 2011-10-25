@@ -81,6 +81,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.close ();
 
     searcher = newSearcher(reader);
+
     query = new TermQuery (new Term ("field", "three"));
     filter = newStaticFilterB();
   }
@@ -105,10 +106,9 @@ public class TestFilteredQuery extends LuceneTestCase {
     directory.close();
     super.tearDown();
   }
-
-  public void testFilteredQuery()
-  throws Exception {
-    Query filteredquery = new FilteredQuery (query, filter);
+  
+  public void testFilteredQuery() throws Exception {
+    Query filteredquery = new FilteredQuery(query, filter);
     ScoreDoc[] hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
@@ -195,16 +195,25 @@ public class TestFilteredQuery extends LuceneTestCase {
     QueryUtils.check(random, filteredquery,searcher);
   }
 
-  public void testBoolean() throws Exception {
+  public void testBooleanMUST() throws Exception {
     BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQuery(new MatchAllDocsQuery(),
-        new SingleDocTestFilter(0));
+    Query query = new FilteredQuery(new MatchAllDocsQuery(), new SingleDocTestFilter(0));
     bq.add(query, BooleanClause.Occur.MUST);
-    query = new FilteredQuery(new MatchAllDocsQuery(),
-        new SingleDocTestFilter(1));
+    query = new FilteredQuery(new MatchAllDocsQuery(), new SingleDocTestFilter(1));
     bq.add(query, BooleanClause.Occur.MUST);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
+    QueryUtils.check(random, query,searcher);    
+  }
+
+  public void testBooleanSHOULD() throws Exception {
+    BooleanQuery bq = new BooleanQuery();
+    Query query = new FilteredQuery(new MatchAllDocsQuery(), new SingleDocTestFilter(0));
+    bq.add(query, BooleanClause.Occur.SHOULD);
+    query = new FilteredQuery(new MatchAllDocsQuery(), new SingleDocTestFilter(1));
+    bq.add(query, BooleanClause.Occur.SHOULD);
+    ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
+    assertEquals(2, hits.length);
     QueryUtils.check(random, query,searcher);    
   }
 
@@ -212,13 +221,28 @@ public class TestFilteredQuery extends LuceneTestCase {
   // scoring, inside FilteredQuery, works
   public void testBoolean2() throws Exception {
     BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQuery(bq,
-        new SingleDocTestFilter(0));
+    Query query = new FilteredQuery(bq, new SingleDocTestFilter(0));
     bq.add(new TermQuery(new Term("field", "one")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random, query,searcher);    
+  }
+  
+  public void testChainedFilters() throws Exception {
+    Query query = new FilteredQuery(new FilteredQuery(
+      new MatchAllDocsQuery(), new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "three"))))),
+      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))));
+    ScoreDoc[] hits = searcher.search(query, 10).scoreDocs;
+    assertEquals(2, hits.length);
+    QueryUtils.check(random, query, searcher);    
+
+    // one more:
+    query = new FilteredQuery(query,
+      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))));
+    hits = searcher.search(query, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    QueryUtils.check(random, query, searcher);    
   }
 }
 

@@ -568,64 +568,13 @@ public class IndexSearcher extends Searcher {
     // threaded...?  the Collector could be sync'd?
 
     // always use single thread:
-    if (filter == null) {
-      for (int i = 0; i < subReaders.length; i++) { // search each subreader
-        collector.setNextReader(subReaders[i], docBase + docStarts[i]);
-        Scorer scorer = weight.scorer(subReaders[i], !collector.acceptsDocsOutOfOrder(), true);
-        if (scorer != null) {
-          scorer.score(collector);
-        }
-      }
-    } else {
-      for (int i = 0; i < subReaders.length; i++) { // search each subreader
-        collector.setNextReader(subReaders[i], docBase + docStarts[i]);
-        searchWithFilter(subReaders[i], weight, filter, collector);
-      }
-    }
-  }
-
-  private void searchWithFilter(IndexReader reader, Weight weight,
-      final Filter filter, final Collector collector) throws IOException {
-
-    assert filter != null;
-    
-    Scorer scorer = weight.scorer(reader, true, false);
-    if (scorer == null) {
-      return;
-    }
-
-    int docID = scorer.docID();
-    assert docID == -1 || docID == DocIdSetIterator.NO_MORE_DOCS;
-
-    // CHECKME: use ConjunctionScorer here?
-    DocIdSet filterDocIdSet = filter.getDocIdSet(reader);
-    if (filterDocIdSet == null) {
-      // this means the filter does not accept any documents.
-      return;
-    }
-    
-    DocIdSetIterator filterIter = filterDocIdSet.iterator();
-    if (filterIter == null) {
-      // this means the filter does not accept any documents.
-      return;
-    }
-    int filterDoc = filterIter.nextDoc();
-    int scorerDoc = scorer.advance(filterDoc);
-    
-    collector.setScorer(scorer);
-    while (true) {
-      if (scorerDoc == filterDoc) {
-        // Check if scorer has exhausted, only before collecting.
-        if (scorerDoc == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        collector.collect(scorerDoc);
-        filterDoc = filterIter.nextDoc();
-        scorerDoc = scorer.advance(filterDoc);
-      } else if (scorerDoc > filterDoc) {
-        filterDoc = filterIter.advance(scorerDoc);
-      } else {
-        scorerDoc = scorer.advance(filterDoc);
+    for (int i = 0; i < subReaders.length; i++) { // search each subreader
+      collector.setNextReader(subReaders[i], docBase + docStarts[i]);
+      final Scorer scorer = (filter == null) ?
+        weight.scorer(subReaders[i], !collector.acceptsDocsOutOfOrder(), true) :
+        FilteredQuery.getFilteredScorer(subReaders[i], getSimilarity(), weight, weight, filter);
+      if (scorer != null) {
+        scorer.score(collector);
       }
     }
   }

@@ -70,6 +70,10 @@ extends Query {
       public float getValue() { return value; }
       
       @Override
+      public boolean scoresDocsOutOfOrder() {
+        return false;
+      }
+
       public float sumOfSquaredWeights() throws IOException { 
         return weight.sumOfSquaredWeights() * getBoost() * getBoost(); // boost sub-weight
       }
@@ -105,58 +109,106 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
-          throws IOException {
-        final Scorer scorer = weight.scorer(indexReader, true, false);
-        if (scorer == null) {
-          return null;
-        }
-        DocIdSet docIdSet = filter.getDocIdSet(indexReader);
-        if (docIdSet == null) {
-          return null;
-        }
-        final DocIdSetIterator docIdSetIterator = docIdSet.iterator();
-        if (docIdSetIterator == null) {
-          return null;
-        }
+      public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+        // Hackidy-Häck-Hack for backwards compatibility, as we cannot change IndexSearcher API in 3.x, but still want
+        // to move the searchWithFilter implementation to this class: to enable access to our scorer() implementation
+        // from IndexSearcher, we moved this method up to the main class. In Lucene trunk,
+        // FilteredQuery#getFilteredScorer is inlined here - in 3.x we delegate:
+        return FilteredQuery.getFilteredScorer(indexReader, similarity, weight, this, filter);
+      }
+    };
+  }
+  
+  /** Hackidy-Häck-Hack for backwards compatibility, as we cannot change IndexSearcher API in 3.x, but still want
+   * to move the searchWithFilter implementation to this class: to enable access to our scorer() implementation
+   * from IndexSearcher without instantiating a separate {@link Weight}, we make the inner implementation accessible.
+   * @param indexReader the atomic reader
+   * @param similarity the Similarity to use (deprecated)
+   * @param weight the weight to wrap
+   * @param wrapperWeight must be identical to {@code weight} for usage in {@link IndexSearcher}, but it is different inside this query
+   * @param filter the Filter to wrap
+   * @lucene.internal
+   */
+  static Scorer getFilteredScorer(final IndexReader indexReader, final Similarity similarity,
+                                  final Weight weight, final Weight wrapperWeight, final Filter filter) throws IOException {
+    assert filter != null;
 
-        return new Scorer(similarity, this) {
+    final DocIdSet filterDocIdSet = filter.getDocIdSet(indexReader);
+    if (filterDocIdSet == null) {
+      // this means the filter does not accept any documents.
+      return null;
+    }
+    
+    final DocIdSetIterator filterIter = filterDocIdSet.iterator();
+    if (filterIter == null) {
+      // this means the filter does not accept any documents.
+      return null;
+    }
 
-          private int doc = -1;
-          
-          private int advanceToCommon(int scorerDoc, int disiDoc) throws IOException {
-            while (scorerDoc != disiDoc) {
-              if (scorerDoc < disiDoc) {
-                scorerDoc = scorer.advance(disiDoc);
-              } else {
-                disiDoc = docIdSetIterator.advance(scorerDoc);
-              }
+    // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
+    final Scorer scorer = weight.scorer(indexReader, true, false);
+    return (scorer == null) ? null : new Scorer(similarity, wrapperWeight) {
+      private int scorerDoc = -1, filterDoc = -1;
+      
+      // optimization: we are topScorer and collect directly using short-circuited algo
+      @Override
+      public void score(Collector collector) throws IOException {
+        int filterDoc = filterIter.nextDoc();
+        int scorerDoc = scorer.advance(filterDoc);
+        // the normalization trick already applies the boost of this query,
+        // so we can use the wrapped scorer directly:
+        collector.setScorer(scorer);
+        for (;;) {
+          if (scorerDoc == filterDoc) {
+            // Check if scorer has exhausted, only before collecting.
+            if (scorerDoc == DocIdSetIterator.NO_MORE_DOCS) {
+              break;
             }
+            collector.collect(scorerDoc);
+            filterDoc = filterIter.nextDoc();
+            scorerDoc = scorer.advance(filterDoc);
+          } else if (scorerDoc > filterDoc) {
+            filterDoc = filterIter.advance(scorerDoc);
+          } else {
+            scorerDoc = scorer.advance(filterDoc);
+          }
+        }
+      }
+      
+      private int advanceToNextCommonDoc() throws IOException {
+        for (;;) {
+          if (scorerDoc < filterDoc) {
+            scorerDoc = scorer.advance(filterDoc);
+          } else if (scorerDoc == filterDoc) {
             return scorerDoc;
+          } else {
+            filterDoc = filterIter.advance(scorerDoc);
           }
+        }
+      }
 
-          @Override
-          public int nextDoc() throws IOException {
-            int scorerDoc, disiDoc;
-            return doc = (disiDoc = docIdSetIterator.nextDoc()) != NO_MORE_DOCS
-                && (scorerDoc = scorer.nextDoc()) != NO_MORE_DOCS
-                && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
-          }
-          
-          @Override
-          public int docID() { return doc; }
-          
-          @Override
-          public int advance(int target) throws IOException {
-            int disiDoc, scorerDoc;
-            return doc = (disiDoc = docIdSetIterator.advance(target)) != NO_MORE_DOCS
-                && (scorerDoc = scorer.advance(disiDoc)) != NO_MORE_DOCS 
-                && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
-          }
+      @Override
+      public int nextDoc() throws IOException {
+        filterDoc = filterIter.nextDoc();
+        return advanceToNextCommonDoc();
+      }
+      
+      @Override
+      public int advance(int target) throws IOException {
+        if (target > filterDoc) {
+          filterDoc = filterIter.advance(target);
+        }
+        return advanceToNextCommonDoc();
+      }
 
-          @Override
-          public float score() throws IOException { return scorer.score(); }
-        };
+      @Override
+      public int docID() {
+        return scorerDoc;
+      }
+      
+      @Override
+      public float score() throws IOException {
+        return scorer.score();
       }
     };
   }
