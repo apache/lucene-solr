@@ -718,6 +718,11 @@ Optimizations
 * LUCENE-3494: Optimize FilteredQuery to remove a multiply in score()
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-3534: Remove filter logic from IndexSearcher and delegate to
+  FilteredQuery's Scorer. This is a partial backport of a cleanup in
+  FilteredQuery/IndexSearcher added by LUCENE-1536 to Lucene 4.0.
+  (Uwe Schindler)
+
 Test Cases
 
 * LUCENE-3420: Disable the finalness checks in TokenStream and Analyzer
