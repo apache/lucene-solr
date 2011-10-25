@@ -189,6 +189,12 @@ Changes in backwards compatibility policy
   -1 to be consistent with this behavior across other index statistics.
   (Robert Muir)
 
+* LUCENE-1536: The abstract FilteredDocIdSet.match() method is no longer
+  allowed to throw IOException. This change was required to make it conform
+  to the Bits interface. This method should never do I/O for performance reasons.
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
+  
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -337,6 +343,15 @@ API Changes
   Fixed MemoryCodec and SimpleTextCodec to optimize the seekExact
   case, and fixed places in Lucene to use seekExact when possible.
   (Mike McCandless)
+
+* LUCENE-1536: Filter.getDocIdSet() now takes an acceptDocs Bits interface (like
+  Scorer) limiting the documents that can appear in the returned DocIdSet.
+  Filters are now required to respect these acceptDocs, otherwise deleted documents
+  may get returned by searches. Most filters will pass these Bits down to DocsEnum,
+  but those, e.g. working on FieldCache, may need to use BitsFilteredDocIdSet.wrap()
+  to exclude them.
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
 
 New features
 
@@ -557,6 +572,19 @@ New features
 * LUCENE-3433: Added random access for non RAM resident IndexDocValues. RAM
   resident and disk resident IndexDocValues are now exposed via the Source
   interface. ValuesEnum has been removed in favour of Source. (Simon Willnauer)
+
+* LUCENE-1536: Filters can now be applied down-low, if their DocIdSet implements
+  a new bits() method, returning all documents in a random access way. If the
+  DocIdSet is not too sparse, it will be passed as acceptDocs down to the Scorer
+  as replacement for IndexReader's live docs.
+  In addition, FilteredQuery backs now IndexSearcher's filtering search methods.
+  Using FilteredQuery you can chain Filters in a very performant way
+  [new FilteredQuery(new FilteredQuery(query, filter1), filter2)], which was not
+  possible with IndexSearcher's methods. FilteredQuery also allows to override
+  the heuristics used to decide if filtering should be done random access or
+  using a conjunction on DocIdSet's iterator().
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
 
 Optimizations
 

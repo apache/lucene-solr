@@ -121,7 +121,8 @@ public class PKIndexSplitter {
       
       final int maxDoc = in.maxDoc();
       final FixedBitSet bits = new FixedBitSet(maxDoc);
-      final DocIdSet docs = preserveFilter.getDocIdSet((AtomicReaderContext) in.getTopReaderContext());
+      // ignore livedocs here, as we filter them later:
+      final DocIdSet docs = preserveFilter.getDocIdSet((AtomicReaderContext) in.getTopReaderContext(), null);
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
         if (it != null) {

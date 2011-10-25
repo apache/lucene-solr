@@ -505,7 +505,7 @@ public class BlockGroupingCollector extends Collector {
     subDocUpto = 0;
     docBase = readerContext.docBase;
     //System.out.println("setNextReader base=" + docBase + " r=" + readerContext.reader);
-    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext).iterator();
+    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext, readerContext.reader.getLiveDocs()).iterator();
     groupEndDocID = -1;
 
     currentReaderContext = readerContext;

@@ -65,7 +65,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     try {
       IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(ramDir, true));
       try {
-        assertNull(filter.getDocIdSet((AtomicReaderContext) reader.getTopReaderContext()));
+        assertNull(filter.getDocIdSet((AtomicReaderContext) reader.getTopReaderContext(), reader.getLiveDocs()));
       }
       finally {
         reader.close();

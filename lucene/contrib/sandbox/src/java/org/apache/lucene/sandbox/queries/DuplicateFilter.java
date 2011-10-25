@@ -70,17 +70,16 @@ public class DuplicateFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     if (processingMode == ProcessingMode.PM_FAST_INVALIDATION) {
-      return fastBits(context.reader);
+      return fastBits(context.reader, acceptDocs);
     } else {
-      return correctBits(context.reader);
+      return correctBits(context.reader, acceptDocs);
     }
   }
 
-  private FixedBitSet correctBits(IndexReader reader) throws IOException {
+  private FixedBitSet correctBits(IndexReader reader, Bits acceptDocs) throws IOException {
     FixedBitSet bits = new FixedBitSet(reader.maxDoc()); //assume all are INvalid
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
     Terms terms = reader.fields().terms(fieldName);
 
     if (terms == null) {
@@ -94,7 +93,7 @@ public class DuplicateFilter extends Filter {
       if (currTerm == null) {
         break;
       } else {
-        docs = termsEnum.docs(liveDocs, docs);
+        docs = termsEnum.docs(acceptDocs, docs);
         int doc = docs.nextDoc();
         if (doc != DocsEnum.NO_MORE_DOCS) {
           if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
@@ -116,10 +115,9 @@ public class DuplicateFilter extends Filter {
     return bits;
   }
 
-  private FixedBitSet fastBits(IndexReader reader) throws IOException {
+  private FixedBitSet fastBits(IndexReader reader, Bits acceptDocs) throws IOException {
     FixedBitSet bits = new FixedBitSet(reader.maxDoc());
     bits.set(0, reader.maxDoc()); //assume all are valid
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
     Terms terms = reader.fields().terms(fieldName);
 
     if (terms == null) {
@@ -135,7 +133,7 @@ public class DuplicateFilter extends Filter {
       } else {
         if (termsEnum.docFreq() > 1) {
           // unset potential duplicates
-          docs = termsEnum.docs(liveDocs, docs);
+          docs = termsEnum.docs(acceptDocs, docs);
           int doc = docs.nextDoc();
           if (doc != DocsEnum.NO_MORE_DOCS) {
             if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {

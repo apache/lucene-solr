@@ -17,9 +17,16 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
 import org.apache.lucene.search.DocIdSetIterator;
+
+import java.io.IOException;
 
 /**
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
@@ -230,5 +237,76 @@ public class BitDocSet extends DocSetBase {
   @Override
   protected BitDocSet clone() {
     return new BitDocSet((OpenBitSet)bits.clone(), size);
+  }
+
+  @Override
+  public Filter getTopFilter() {
+    final OpenBitSet bs = bits;
+    // TODO: if cardinality isn't cached, do a quick measure of sparseness
+    // and return null from bits() if too sparse.
+
+    return new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(final IndexReader.AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+        IndexReader reader = context.reader;
+
+        if (context.isTopLevel) {
+          return BitsFilteredDocIdSet.wrap(bs, acceptDocs);
+        }
+
+        final int base = context.docBase;
+        final int maxDoc = reader.maxDoc();
+        final int max = base + maxDoc;   // one past the max doc in this segment.
+
+        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
+          @Override
+          public DocIdSetIterator iterator() throws IOException {
+            return new DocIdSetIterator() {
+              int pos=base-1;
+              int adjustedDoc=-1;
+
+              @Override
+              public int docID() {
+                return adjustedDoc;
+              }
+
+              @Override
+              public int nextDoc() throws IOException {
+                pos = bs.nextSetBit(pos+1);
+                return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
+              }
+
+              @Override
+              public int advance(int target) throws IOException {
+                if (target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
+                pos = bs.nextSetBit(target+base);
+                return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
+              }
+            };
+          }
+
+          @Override
+          public boolean isCacheable() {
+            return true;
+          }
+
+          @Override
+          public Bits bits() throws IOException {
+            return new Bits() {
+              @Override
+              public boolean get(int index) {
+                return bs.fastGet(index + base);
+              }
+
+              @Override
+              public int length() {
+                return maxDoc;
+              }
+            };
+          }
+
+        }, acceptDocs);
+      }
+    };
   }
 }

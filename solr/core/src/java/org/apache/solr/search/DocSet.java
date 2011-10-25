@@ -18,10 +18,12 @@
 package org.apache.solr.search;
 
 import org.apache.solr.common.SolrException;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
@@ -270,18 +272,18 @@ abstract class DocSetBase implements DocSet {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
         IndexReader reader = context.reader;
 
         if (context.isTopLevel) {
-          return bs;
+          return BitsFilteredDocIdSet.wrap(bs, acceptDocs);
         }
 
         final int base = context.docBase;
         final int maxDoc = reader.maxDoc();
         final int max = base + maxDoc;   // one past the max doc in this segment.
 
-        return new DocIdSet() {
+        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
@@ -313,7 +315,13 @@ abstract class DocSetBase implements DocSet {
             return true;
           }
 
-        };
+          @Override
+          public Bits bits() throws IOException {
+            // sparse filters should not use random access
+            return null;
+          }
+
+        }, acceptDocs);
       }
     };
   }

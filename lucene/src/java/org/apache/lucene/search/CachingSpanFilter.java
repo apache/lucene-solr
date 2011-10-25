@@ -19,8 +19,11 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Wraps another SpanFilter's result and caches it.  The purpose is to allow
@@ -40,30 +43,59 @@ public class CachingSpanFilter extends SpanFilter {
    * @param filter Filter to cache results of
    */
   public CachingSpanFilter(SpanFilter filter) {
-    this(filter, CachingWrapperFilter.DeletesMode.RECACHE);
-  }
-
-  /**
-   * @param filter Filter to cache results of
-   * @param deletesMode See {@link CachingWrapperFilter.DeletesMode}
-   */
-  public CachingSpanFilter(SpanFilter filter, CachingWrapperFilter.DeletesMode deletesMode) {
     this.filter = filter;
-    if (deletesMode == CachingWrapperFilter.DeletesMode.DYNAMIC) {
-      throw new IllegalArgumentException("DeletesMode.DYNAMIC is not supported");
-    }
-    this.cache = new CachingWrapperFilter.FilterCache<SpanFilterResult>(deletesMode) {
-      @Override
-      protected SpanFilterResult mergeLiveDocs(final Bits liveDocs, final SpanFilterResult value) {
-        throw new IllegalStateException("DeletesMode.DYNAMIC is not supported");
-      }
-    };
+    this.cache = new CachingWrapperFilter.FilterCache<SpanFilterResult>();
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-    SpanFilterResult result = getCachedResult(context);
-    return result != null ? result.getDocIdSet() : null;
+  public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+    final SpanFilterResult result = getCachedResult(context);
+    return BitsFilteredDocIdSet.wrap(result.getDocIdSet(), acceptDocs);
+  }
+
+  @Override
+  public SpanFilterResult bitSpans(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+    final SpanFilterResult result = getCachedResult(context);
+    if (acceptDocs == null) {
+      return result;
+    } else {
+      // TODO: filter positions more efficient
+      List<SpanFilterResult.PositionInfo> allPositions = result.getPositions();
+      List<SpanFilterResult.PositionInfo> positions = new ArrayList<SpanFilterResult.PositionInfo>(allPositions.size() / 2 + 1);
+      for (SpanFilterResult.PositionInfo p : allPositions) {
+        if (acceptDocs.get(p.getDoc())) {
+          positions.add(p);
+        }        
+      }
+      return new SpanFilterResult(BitsFilteredDocIdSet.wrap(result.getDocIdSet(), acceptDocs), positions);
+    }
+  }
+
+  /** Provide the DocIdSet to be cached, using the DocIdSet provided
+   *  by the wrapped Filter.
+   *  <p>This implementation returns the given {@link DocIdSet}, if {@link DocIdSet#isCacheable}
+   *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
+   *  an {@link FixedBitSet}.
+   */
+  protected SpanFilterResult spanFilterResultToCache(SpanFilterResult result, IndexReader reader) throws IOException {
+    if (result == null || result.getDocIdSet() == null) {
+      // this is better than returning null, as the nonnull result can be cached
+      return SpanFilterResult.EMPTY_SPAN_FILTER_RESULT;
+    } else if (result.getDocIdSet().isCacheable()) {
+      return result;
+    } else {
+      final DocIdSetIterator it = result.getDocIdSet().iterator();
+      // null is allowed to be returned by iterator(),
+      // in this case we wrap with the empty set,
+      // which is cacheable.
+      if (it == null) {
+        return SpanFilterResult.EMPTY_SPAN_FILTER_RESULT;
+      } else {
+        final FixedBitSet bits = new FixedBitSet(reader.maxDoc());
+        bits.or(it);
+        return new SpanFilterResult(bits, result.getPositions());
+      }
+    }
   }
   
   // for testing
@@ -71,27 +103,21 @@ public class CachingSpanFilter extends SpanFilter {
 
   private SpanFilterResult getCachedResult(AtomicReaderContext context) throws IOException {
     final IndexReader reader = context.reader;
-
     final Object coreKey = reader.getCoreCacheKey();
-    final Object delCoreKey = reader.hasDeletions() ? reader.getLiveDocs() : coreKey;
 
-    SpanFilterResult result = cache.get(reader, coreKey, delCoreKey);
+    SpanFilterResult result = cache.get(reader, coreKey);
     if (result != null) {
       hitCount++;
       return result;
+    } else {
+      missCount++;
+      // cache miss: we use no acceptDocs here
+      // (this saves time on building SpanFilterResult, the acceptDocs will be applied on the cached set)
+      result = spanFilterResultToCache(filter.bitSpans(context, null/**!!!*/), reader);
+      cache.put(coreKey, result);
     }
-
-    missCount++;
-    result = filter.bitSpans(context);
-
-    cache.put(coreKey, delCoreKey, result);
+    
     return result;
-  }
-
-
-  @Override
-  public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
-    return getCachedResult(context);
   }
 
   @Override

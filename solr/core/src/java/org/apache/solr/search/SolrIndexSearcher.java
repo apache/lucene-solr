@@ -631,9 +631,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     for (int i=0; i<leaves.length; i++) {
       final AtomicReaderContext leaf = leaves[i];
       final IndexReader reader = leaf.reader;
+      final Bits liveDocs = reader.getLiveDocs();   // TODO: the filter may already only have liveDocs...
       DocIdSet idSet = null;
       if (pf.filter != null) {
-        idSet = pf.filter.getDocIdSet(leaf);
+        idSet = pf.filter.getDocIdSet(leaf, liveDocs);
         if (idSet == null) continue;
       }
       DocIdSetIterator idIter = null;
@@ -643,7 +644,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
 
       collector.setNextReader(leaf);
-      Bits liveDocs = reader.getLiveDocs();
       int max = reader.maxDoc();
 
       if (idIter == null) {
@@ -2056,8 +2056,8 @@ class FilterImpl extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-    DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context);
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context, acceptDocs);
     if (weights.size() == 0) return sub;
     return new FilterSet(sub, context);
   }
@@ -2088,6 +2088,11 @@ class FilterImpl extends Filter {
       if (iterators.size()==1) return iterators.get(0);
       if (iterators.size()==2) return new DualFilterIterator(iterators.get(0), iterators.get(1));
       return new FilterIterator(iterators.toArray(new DocIdSetIterator[iterators.size()]));
+    }
+
+    @Override
+    public Bits bits() throws IOException {
+      return null;  // don't use random access
     }
   }
 

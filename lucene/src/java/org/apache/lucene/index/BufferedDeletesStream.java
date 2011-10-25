@@ -438,7 +438,7 @@ class BufferedDeletesStream {
     for (QueryAndLimit ent : queriesIter) {
       Query query = ent.query;
       int limit = ent.limit;
-      final DocIdSet docs = new QueryWrapperFilter(query).getDocIdSet(readerContext);
+      final DocIdSet docs = new QueryWrapperFilter(query).getDocIdSet(readerContext, readerContext.reader.getLiveDocs());
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
         if (it != null) {
@@ -448,11 +448,8 @@ class BufferedDeletesStream {
               break;
 
             reader.deleteDocument(doc);
-            // TODO: we could/should change
-            // reader.deleteDocument to return boolean
-            // true if it did in fact delete, because here
-            // we could be deleting an already-deleted doc
-            // which makes this an upper bound:
+            // as we use getLiveDocs() to filter out already deleted documents,
+            // we only delete live documents, so the counting is right:
             delCount++;
           }
         }

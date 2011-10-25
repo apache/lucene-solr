@@ -21,7 +21,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.search.SolrFilter;
 
 import java.io.IOException;
@@ -72,13 +74,17 @@ public class ValueSourceRangeFilter extends SolrFilter {
 
 
   @Override
-  public DocIdSet getDocIdSet(final Map context, final AtomicReaderContext readerContext) throws IOException {
-     return new DocIdSet() {
+  public DocIdSet getDocIdSet(final Map context, final AtomicReaderContext readerContext, Bits acceptDocs) throws IOException {
+     return BitsFilteredDocIdSet.wrap(new DocIdSet() {
        @Override
-      public DocIdSetIterator iterator() throws IOException {
+       public DocIdSetIterator iterator() throws IOException {
          return valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader, lowerVal, upperVal, includeLower, includeUpper);
        }
-     };
+       @Override
+       public Bits bits() throws IOException {
+         return null;  // don't use random access
+       }
+     }, acceptDocs);
   }
 
   @Override

@@ -17,7 +17,9 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -655,7 +657,7 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
         IndexReader reader = context.reader;
 
         final int base = context.docBase;
@@ -688,7 +690,7 @@ public class SortedIntDocSet extends DocSetBase {
         lastEndIdx = endIdx;
 
 
-        return new DocIdSet() {
+        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
@@ -751,7 +753,13 @@ public class SortedIntDocSet extends DocSetBase {
             return true;
           }
 
-        };
+          @Override
+          public Bits bits() throws IOException {
+            // random access is expensive for this set
+            return null;
+          }
+
+        }, acceptDocs);
       }
     };
   }

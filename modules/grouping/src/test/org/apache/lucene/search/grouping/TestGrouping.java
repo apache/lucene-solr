@@ -1221,11 +1221,11 @@ public class TestGrouping extends LuceneTestCase {
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
-      search(ctx, weight, null, collector);
+      search(ctx, weight, collector);
     }
 
     public TopDocs search(Weight weight, int topN) throws IOException {
-      return search(ctx, weight, null, null, topN);
+      return search(ctx, weight, null, topN);
     }
 
     @Override

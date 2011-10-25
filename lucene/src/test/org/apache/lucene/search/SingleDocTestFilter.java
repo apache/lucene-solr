@@ -18,9 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 
-import java.util.BitSet;
 import java.io.IOException;
 
 public class SingleDocTestFilter extends Filter {
@@ -31,9 +31,10 @@ public class SingleDocTestFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-    BitSet bits = new BitSet(context.reader.maxDoc());
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    FixedBitSet bits = new FixedBitSet(context.reader.maxDoc());
     bits.set(doc);
-    return new DocIdBitSet(bits);
+    if (acceptDocs != null && !acceptDocs.get(doc)) bits.clear(doc);
+    return bits;
   }
 }

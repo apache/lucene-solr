@@ -24,8 +24,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 
 
 /** Simple DocIdSet and DocIdSetIterator backed by a BitSet */
-public class DocIdBitSet extends DocIdSet {
-  private BitSet bitSet;
+public class DocIdBitSet extends DocIdSet implements Bits {
+  private final BitSet bitSet;
     
   public DocIdBitSet(BitSet bitSet) {
     this.bitSet = bitSet;
@@ -34,6 +34,11 @@ public class DocIdBitSet extends DocIdSet {
   @Override
   public DocIdSetIterator iterator() {
     return new DocIdBitSetIterator(bitSet);
+  }
+
+  @Override
+  public Bits bits() {
+    return this;
   }
 
   /** This DocIdSet implementation is cacheable. */
@@ -46,7 +51,18 @@ public class DocIdBitSet extends DocIdSet {
    * Returns the underlying BitSet. 
    */
   public BitSet getBitSet() {
-	return this.bitSet;
+    return this.bitSet;
+  }
+  
+  @Override
+  public boolean get(int index) {
+    return bitSet.get(index);
+  }
+  
+  @Override
+  public int length() {
+    // the size may not be correct...
+    return bitSet.size(); 
   }
   
   private static class DocIdBitSetIterator extends DocIdSetIterator {

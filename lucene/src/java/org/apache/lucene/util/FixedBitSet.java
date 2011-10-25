@@ -67,6 +67,11 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   }
 
   @Override
+  public Bits bits() {
+    return this;
+  }
+
+  @Override
   public int length() {
     return numBits;
   }

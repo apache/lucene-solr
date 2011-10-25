@@ -54,7 +54,7 @@ public class TermsFilter extends Filter {
    */
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     IndexReader reader = context.reader;
     FixedBitSet result = new FixedBitSet(reader.maxDoc());
     Fields fields = reader.fields();
@@ -64,7 +64,6 @@ public class TermsFilter extends Filter {
     }
 
     BytesRef br = new BytesRef();
-    Bits liveDocs = reader.getLiveDocs();
     String lastField = null;
     Terms termsC = null;
     TermsEnum termsEnum = null;
@@ -82,7 +81,7 @@ public class TermsFilter extends Filter {
       if (terms != null) { // TODO this check doesn't make sense, decide which variable its supposed to be for
         br.copy(term.bytes());
         if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
-          docs = termsEnum.docs(liveDocs, docs);
+          docs = termsEnum.docs(acceptDocs, docs);
           while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
             result.set(docs.docID());
           }

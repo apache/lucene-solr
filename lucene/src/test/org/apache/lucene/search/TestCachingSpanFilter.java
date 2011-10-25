@@ -69,33 +69,21 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     final SpanFilter startFilter = new SpanQueryFilter(new SpanTermQuery(new Term("id", "1")));
 
-    // ignore deletions
-    CachingSpanFilter filter = new CachingSpanFilter(startFilter, CachingWrapperFilter.DeletesMode.IGNORE);
-        
+    CachingSpanFilter filter = new CachingSpanFilter(startFilter);
+
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
-    ConstantScoreQuery constantScore = new ConstantScoreQuery(filter);
+    int missCount = filter.missCount;
+    assertTrue(missCount > 0);
+    Query constantScore = new ConstantScoreQuery(filter);
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
+    assertEquals(missCount, filter.missCount);
 
-    // now delete the doc, refresh the reader, and see that
-    // it's not there
-    _TestUtil.keepFullyDeletedSegments(writer.w);
-    writer.deleteDocuments(new Term("id", "1"));
-
-    reader = refreshReader(reader);
-    searcher.close();
-    searcher = newSearcher(reader, false);
-
-    docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
-    assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
-
-    docs = searcher.search(constantScore, 1);
-    assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
-
-
-    // force cache to regenerate:
-    filter = new CachingSpanFilter(startFilter, CachingWrapperFilter.DeletesMode.RECACHE);
+    // NOTE: important to hold ref here so GC doesn't clear
+    // the cache entry!  Else the assert below may sometimes
+    // fail:
+    IndexReader oldReader = reader;
 
     writer.addDocument(doc);
     reader = refreshReader(reader);
@@ -103,27 +91,19 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     searcher = newSearcher(reader, false);
         
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
-    assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
+    assertEquals("[query + filter] Should find 2 hits...", 2, docs.totalHits);
+    assertTrue(filter.missCount > missCount);
+    missCount = filter.missCount;
 
     constantScore = new ConstantScoreQuery(filter);
     docs = searcher.search(constantScore, 1);
-    assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
+    assertEquals("[just filter] Should find a hit...", 2, docs.totalHits);
+    assertEquals(missCount, filter.missCount);
 
     // NOTE: important to hold ref here so GC doesn't clear
     // the cache entry!  Else the assert below may sometimes
     // fail:
-    IndexReader oldReader = reader;
-
-    // make sure we get a cache hit when we reopen readers
-    // that had no new deletions
-    // Deletes nothing:
-    writer.deleteDocuments(new Term("foo", "bar"));
-    reader = refreshReader(reader);
-    assertTrue(reader == oldReader);
-    int missCount = filter.missCount;
-    docs = searcher.search(constantScore, 1);
-    assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
-    assertEquals(missCount, filter.missCount);
+    IndexReader oldReader2 = reader;
 
     // now delete the doc, refresh the reader, and see that it's not there
     writer.deleteDocuments(new Term("id", "1"));
@@ -134,15 +114,18 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
+    assertEquals(missCount, filter.missCount);
 
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
+    assertEquals(missCount, filter.missCount);
 
     // NOTE: silliness to make sure JRE does not optimize
     // away our holding onto oldReader to prevent
     // CachingWrapperFilter's WeakHashMap from dropping the
     // entry:
     assertTrue(oldReader != null);
+    assertTrue(oldReader2 != null);
 
     searcher.close();
     writer.close();
@@ -160,4 +143,5 @@ public class TestCachingSpanFilter extends LuceneTestCase {
       return oldReader;
     }
   }
+  
 }

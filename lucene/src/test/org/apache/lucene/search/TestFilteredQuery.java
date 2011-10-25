@@ -28,6 +28,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -82,6 +83,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.close ();
 
     searcher = newSearcher(reader);
+
     query = new TermQuery (new Term ("field", "three"));
     filter = newStaticFilterB();
   }
@@ -90,10 +92,11 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterB() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (AtomicReaderContext context) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+        if (acceptDocs == null) acceptDocs = new Bits.MatchAllBits(5);
         BitSet bitset = new BitSet(5);
-        bitset.set (1);
-        bitset.set (3);
+        if (acceptDocs.get(1)) bitset.set(1);
+        if (acceptDocs.get(3)) bitset.set(3);
         return new DocIdBitSet(bitset);
       }
     };
@@ -106,10 +109,16 @@ public class TestFilteredQuery extends LuceneTestCase {
     directory.close();
     super.tearDown();
   }
+  
+  public void testFilteredQuery() throws Exception {
+    // force the filter to be executed as bits
+    tFilteredQuery(true);
+    // force the filter to be executed as iterator
+    tFilteredQuery(false);
+  }
 
-  public void testFilteredQuery()
-  throws Exception {
-    Query filteredquery = new FilteredQuery (query, filter);
+  private void tFilteredQuery(final boolean useRandomAccess) throws Exception {
+    Query filteredquery = new FilteredQueryRA(query, filter, useRandomAccess);
     ScoreDoc[] hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
@@ -119,18 +128,18 @@ public class TestFilteredQuery extends LuceneTestCase {
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
 
-    filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "one")), filter);
+    filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "one")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (2, hits.length);
     QueryUtils.check(random, filteredquery,searcher);
 
-    filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "x")), filter);
+    filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "x")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (3, hits[0].doc);
     QueryUtils.check(random, filteredquery,searcher);
 
-    filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "y")), filter);
+    filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "y")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (0, hits.length);
     QueryUtils.check(random, filteredquery,searcher);
@@ -147,7 +156,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     
     BooleanQuery bq2 = new BooleanQuery();
     tq = new TermQuery (new Term ("field", "one"));
-    filteredquery = new FilteredQuery(tq, f);
+    filteredquery = new FilteredQueryRA(tq, f, useRandomAccess);
     filteredquery.setBoost(boost);
     bq2.add(filteredquery, Occur.MUST);
     bq2.add(new TermQuery (new Term ("field", "five")), Occur.MUST);
@@ -161,7 +170,8 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterA() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (AtomicReaderContext context) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+        assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
         BitSet bitset = new BitSet(5);
         bitset.set(0, 5);
         return new DocIdBitSet(bitset);
@@ -187,39 +197,111 @@ public class TestFilteredQuery extends LuceneTestCase {
    * This tests FilteredQuery's rewrite correctness
    */
   public void testRangeQuery() throws Exception {
+    // force the filter to be executed as bits
+    tRangeQuery(true);
+    tRangeQuery(false);
+  }
+
+  private void tRangeQuery(final boolean useRandomAccess) throws Exception {
     TermRangeQuery rq = TermRangeQuery.newStringRange(
         "sorter", "b", "d", true, true);
 
-    Query filteredquery = new FilteredQuery(rq, filter);
+    Query filteredquery = new FilteredQueryRA(rq, filter, useRandomAccess);
     ScoreDoc[] hits = searcher.search(filteredquery, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random, filteredquery,searcher);
   }
 
-  public void testBoolean() throws Exception {
+  public void testBooleanMUST() throws Exception {
+    // force the filter to be executed as bits
+    tBooleanMUST(true);
+    // force the filter to be executed as iterator
+    tBooleanMUST(false);
+  }
+
+  private void tBooleanMUST(final boolean useRandomAccess) throws Exception {
     BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQuery(new MatchAllDocsQuery(),
-        new SingleDocTestFilter(0));
+    Query query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(0), useRandomAccess);
     bq.add(query, BooleanClause.Occur.MUST);
-    query = new FilteredQuery(new MatchAllDocsQuery(),
-        new SingleDocTestFilter(1));
+    query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(1), useRandomAccess);
     bq.add(query, BooleanClause.Occur.MUST);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     QueryUtils.check(random, query,searcher);    
   }
 
+  public void testBooleanSHOULD() throws Exception {
+    // force the filter to be executed as bits
+    tBooleanSHOULD(true);
+    // force the filter to be executed as iterator
+    tBooleanSHOULD(false);
+  }
+
+  private void tBooleanSHOULD(final boolean useRandomAccess) throws Exception {
+    BooleanQuery bq = new BooleanQuery();
+    Query query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(0), useRandomAccess);
+    bq.add(query, BooleanClause.Occur.SHOULD);
+    query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(1), useRandomAccess);
+    bq.add(query, BooleanClause.Occur.SHOULD);
+    ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
+    assertEquals(2, hits.length);
+    QueryUtils.check(random, query,searcher);    
+  }
+
   // Make sure BooleanQuery, which does out-of-order
   // scoring, inside FilteredQuery, works
   public void testBoolean2() throws Exception {
+    // force the filter to be executed as bits
+    tBoolean2(true);
+    // force the filter to be executed as iterator
+    tBoolean2(false);
+  }
+
+  private void tBoolean2(final boolean useRandomAccess) throws Exception {
     BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQuery(bq,
-        new SingleDocTestFilter(0));
+    Query query = new FilteredQueryRA(bq, new SingleDocTestFilter(0), useRandomAccess);
     bq.add(new TermQuery(new Term("field", "one")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random, query, searcher);    
+  }
+  
+  public void testChainedFilters() throws Exception {
+    // force the filter to be executed as bits
+    tChainedFilters(true);
+    // force the filter to be executed as iterator
+    tChainedFilters(false);
+  }
+  
+  private void tChainedFilters(final boolean useRandomAccess) throws Exception {
+    Query query = new TestFilteredQuery.FilteredQueryRA(new TestFilteredQuery.FilteredQueryRA(
+      new MatchAllDocsQuery(), new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "three")))), useRandomAccess),
+      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))), useRandomAccess);
+    ScoreDoc[] hits = searcher.search(query, 10).scoreDocs;
+    assertEquals(2, hits.length);
+    QueryUtils.check(random, query, searcher);    
+
+    // one more:
+    query = new TestFilteredQuery.FilteredQueryRA(query,
+      new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))), useRandomAccess);
+    hits = searcher.search(query, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    QueryUtils.check(random, query, searcher);    
+  }
+
+  public static final class FilteredQueryRA extends FilteredQuery {
+    private final boolean useRandomAccess;
+  
+    public FilteredQueryRA(Query q, Filter f, boolean useRandomAccess) {
+      super(q,f);
+      this.useRandomAccess = useRandomAccess;
+    }
+    
+    @Override
+    protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
+      return useRandomAccess;
+    }
   }
 }
 
