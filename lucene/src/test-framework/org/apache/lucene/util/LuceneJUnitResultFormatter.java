@@ -66,7 +66,8 @@ public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
   private static final org.apache.lucene.store.Lock lock;
 
   static {
-    File lockDir = new File(System.getProperty("java.io.tmpdir"),
+    File lockDir = new File(
+        System.getProperty("tests.lockdir", System.getProperty("java.io.tmpdir")),
         "lucene_junit_lock");
     lockDir.mkdirs();
     if (!lockDir.exists()) {
