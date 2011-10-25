@@ -133,6 +133,7 @@
   <property name="build.dir" location="build"/>
   <!-- Needed in case a contrib needs the original build, also for compile-tools to be called from contrib -->
   <property name="common.build.dir" location="${common.dir}/build"/>
+  <property name="tests.lockdir" location="${common.build.dir}"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
@@ -546,6 +547,8 @@
 	
 	      <!-- allow tests to control debug prints -->
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+              <!-- directory for formatter lock -->
+	      <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
               <!-- set the codec tests should run with -->
 	      <sysproperty key="tests.codec" value="${tests.codec}"/>
               <!-- set the codec provider tests should run with -->
