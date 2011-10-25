@@ -107,7 +107,7 @@
             </program>
             <program>
               <mainClass>org.apache.lucene.store.LockVerifyServer</mainClass>
-              <name>IndexReader</name>
+              <name>LockVerifyServer</name>
             </program>
             <program>
               <mainClass>org.apache.lucene.util.English</mainClass>
