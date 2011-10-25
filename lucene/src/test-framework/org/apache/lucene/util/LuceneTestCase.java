@@ -245,6 +245,9 @@ public abstract class LuceneTestCase extends Assert {
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
     testsFailed = false;
+    
+    // verify assertions are enabled (do last, for smooth cleanup)
+    assertTrue("assertions are not enabled!", assertionsEnabled());
   }
   
   @AfterClass
@@ -1284,4 +1287,15 @@ public abstract class LuceneTestCase extends Assert {
   
   @Ignore("just a hack")
   public final void alwaysIgnoredTestMethod() {}
+  
+  /** check if assertions are enabled */
+  private static boolean assertionsEnabled() {
+    try {
+      assert Boolean.FALSE.booleanValue();
+      return false; // should never get here
+    } catch (AssertionError e) {
+      return true;
+    }
+  }
+  
 }

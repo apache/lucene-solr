@@ -25,15 +25,6 @@ import org.apache.lucene.analysis.TokenStream;
 
 public class TestAssertions extends LuceneTestCase {
 
-  public void testBasics() {
-    try {
-      assert Boolean.FALSE.booleanValue();
-      fail("assertions are not enabled!");
-    } catch (AssertionError e) {
-      assert Boolean.TRUE.booleanValue();
-    }
-  }
-  
   static class TestAnalyzer1 extends Analyzer {
     @Override
     public final TokenStream tokenStream(String s, Reader r) { return null; }
@@ -82,17 +73,22 @@ public class TestAssertions extends LuceneTestCase {
     
     new TestAnalyzer2();
     
+    boolean doFail = false;
     try {
       new TestAnalyzer3();
-      fail("TestAnalyzer3 should fail assertion");
+      doFail = true;
     } catch (AssertionError e) {
+      // expected
     }
+    assertFalse("TestAnalyzer3 should fail assertion", doFail);
     
     try {
       new TestAnalyzer4();
-      fail("TestAnalyzer4 should fail assertion");
+      doFail = true;
     } catch (AssertionError e) {
+      // expected
     }
+    assertFalse("TestAnalyzer4 should fail assertion", doFail);
     
     new TestTokenStream1();
     
@@ -100,9 +96,11 @@ public class TestAssertions extends LuceneTestCase {
     
     try {
       new TestTokenStream3();
-      fail("TestTokenStream3 should fail assertion");
+      doFail = true;
     } catch (AssertionError e) {
+      // expected
     }
+    assertFalse("TestTokenStream3 should fail assertion", doFail);
   }
 
 }
