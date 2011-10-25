@@ -396,8 +396,6 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
       throw new NullPointerException("name cannot be null");
     if (value == null)
       throw new NullPointerException("value cannot be null");
-    if (name.length() == 0 && value.length() == 0)
-      throw new IllegalArgumentException("name and value cannot both be empty");
     if (index == Index.NO && store == Store.NO)
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
          + "is neither indexed nor stored");

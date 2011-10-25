@@ -1096,6 +1096,33 @@ public class TestIndexWriter extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+  
+  public void testEmptyFieldNameEmptyTerm() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    // TODO: why do we throw IAE: name and value cannot both be empty in Field ctor?!
+    doc.add(newField("", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("", "a", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("", "b", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("", "c", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    writer.addDocument(doc);  
+    writer.close();
+    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader subreader = SegmentReader.getOnlySegmentReader(reader);
+    TermEnum te = subreader.terms();
+    assertTrue(te.next());
+    assertEquals(new Term("", ""), te.term());
+    assertTrue(te.next());
+    assertEquals(new Term("", "a"), te.term());
+    assertTrue(te.next());
+    assertEquals(new Term("", "b"), te.term());
+    assertTrue(te.next());
+    assertEquals(new Term("", "c"), te.term());
+    assertFalse(te.next());
+    reader.close();
+    dir.close();
+  }
 
   private static final class MockIndexWriter extends IndexWriter {
 

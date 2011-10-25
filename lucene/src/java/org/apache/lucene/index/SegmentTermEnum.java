@@ -25,6 +25,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   FieldInfos fieldInfos;
   long size;
   long position = -1;
+  private boolean first = true;
 
   private TermBuffer termBuffer = new TermBuffer();
   private TermBuffer prevBuffer = new TermBuffer();
@@ -116,6 +117,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     termBuffer.set(t);
     prevBuffer.reset();
     termInfo.set(ti);
+    first = p == -1;
   }
 
   /** Increments the enumeration to the next element.  True if one exists.*/
@@ -163,6 +165,12 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   final int scanTo(Term term) throws IOException {
     scanBuffer.set(term);
     int count = 0;
+    if (first) {
+      // Always force initial next() in case term is Term("", "")
+      next();
+      first = false;
+      count++;
+    }
     while (scanBuffer.compareTo(termBuffer) > 0 && next()) {
       count++;
     }
