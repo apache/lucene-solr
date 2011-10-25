@@ -443,6 +443,7 @@
           <configuration>
             <reportFormat>plain</reportFormat>
             <workingDirectory>${project.build.directory}/test</workingDirectory>
+            <argLine>-Xmx512M</argLine>
             <systemPropertyVariables>
               <tempDir>.</tempDir>
               <jetty.testMode>1</jetty.testMode>
