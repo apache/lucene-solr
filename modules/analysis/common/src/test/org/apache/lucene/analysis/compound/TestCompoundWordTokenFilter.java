@@ -17,15 +17,20 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.StringReader;
-import org.xml.sax.InputSource;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
+import org.xml.sax.InputSource;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   public void testHyphenationCompoundWordsDA() throws Exception {
@@ -166,45 +171,45 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     String[] dict = {"ab", "cd", "ef"};
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
-			new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-				new StringReader(
-					"abcdef")
-				),
-			dict,
-			CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
-			CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
-			CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
+      new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+        new StringReader(
+          "abcdef")
+        ),
+      dict,
+      CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+      CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+      CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
 
     assertTokenStreamContents(tf,
-			new String[] { "abcdef", "ab", "cd", "ef" },
-			new int[] { 0, 0, 2, 4},
-			new int[] { 6, 2, 4, 6},
-			new int[] { 1, 0, 0, 0}
-			);
+      new String[] { "abcdef", "ab", "cd", "ef" },
+      new int[] { 0, 0, 2, 4},
+      new int[] { 6, 2, 4, 6},
+      new int[] { 1, 0, 0, 0}
+      );
   }
 
   public void testWordComponentWithLessThanMinimumLength() throws Exception {
     String[] dict = {"abc", "d", "efg"};
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
-			new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-				new StringReader(
-					"abcdefg")
-				),
-			dict,
-			CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
-			CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
-			CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
+      new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+        new StringReader(
+          "abcdefg")
+        ),
+      dict,
+      CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+      CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+      CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
 
-	// since "d" is shorter than the minimum subword size, it should not be added to the token stream
+  // since "d" is shorter than the minimum subword size, it should not be added to the token stream
     assertTokenStreamContents(tf,
-			new String[] { "abcdefg", "abc", "efg" },
-			new int[] { 0, 0, 4},
-			new int[] { 7, 3, 7},
-			new int[] { 1, 0, 0}
-			);
+      new String[] { "abcdefg", "abc", "efg" },
+      new int[] { 0, 0, 4},
+      new int[] { 7, 3, 7},
+      new int[] { 1, 0, 0}
+      );
   }
-  
+
   public void testReset() throws Exception {
     String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
         "Aufgabe", "Überwachung" };
@@ -226,6 +231,66 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     tf.reset();
     assertTrue(tf.incrementToken());
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.toString());
+  }
+
+  public void testRetainMockAttribute() throws Exception {
+    String[] dict = { "abc", "d", "efg" };
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+        new StringReader("abcdefg"));
+    TokenStream stream = new MockRetainAttributeFilter(tokenizer);
+    stream = new DictionaryCompoundWordTokenFilter(
+        TEST_VERSION_CURRENT, stream, dict,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+        CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
+    MockRetainAttribute retAtt = stream.addAttribute(MockRetainAttribute.class);
+    while (stream.incrementToken()) {
+      assertTrue("Custom attribute value was lost", retAtt.getRetain());
+    }
+
+  }
+
+  public static interface MockRetainAttribute extends Attribute {
+    void setRetain(boolean attr);
+    boolean getRetain();
+  }
+
+  public static final class MockRetainAttributeImpl extends AttributeImpl implements MockRetainAttribute {
+    private boolean retain = false;
+    @Override
+    public void clear() {
+      retain = false;
+    }
+    public boolean getRetain() {
+      return retain;
+    }
+    public void setRetain(boolean retain) {
+      this.retain = retain;
+    }
+    @Override
+    public void copyTo(AttributeImpl target) {
+      MockRetainAttribute t = (MockRetainAttribute) target;
+      t.setRetain(retain);
+    }
+  }
+
+  private static class MockRetainAttributeFilter extends TokenFilter {
+    
+    MockRetainAttribute retainAtt = addAttribute(MockRetainAttribute.class);
+    
+    MockRetainAttributeFilter(TokenStream input) {
+      super(input);
+    }
+    
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()){
+        retainAtt.setRetain(true); 
+        return true;
+      } else {
+      return false;
+      }
+    }
   }
 
 }

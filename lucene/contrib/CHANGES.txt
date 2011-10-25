@@ -82,6 +82,9 @@ Changes in backwards compatibility policy
  * LUCENE-3446: Removed BooleanFilter.finalResult() due to change to
    FixedBitSet.  (Uwe Schindler)
 
+ * LUCENE-3508: Changed some method signatures in decompounding TokenFilters
+   to make them no longer use the Token class.  (Uwe Schindler)
+
 New Features
 
  * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,
@@ -128,6 +131,10 @@ Bug Fixes
  * LUCENE-3301: Added a workaround for buggy BreakIterator implementations in
    Java that crash on certain inputs containing supplementary characters.
    (Robert Muir)
+
+ * LUCENE-3508: Decompounders based on CompoundWordTokenFilterBase can now be
+   used with custom attributes. All those attributes are preserved and set on all
+   added decompounded tokens.  (Spyros Kapnissis, Uwe Schindler)
 
 API Changes
  
