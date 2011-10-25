@@ -47,7 +47,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
    * @return true if input docid should be in the result set, false otherwise.
    * @see #FilteredDocIdSetIterator(DocIdSetIterator)
    */
-  abstract protected boolean match(int doc) throws IOException;
+  protected abstract boolean match(int doc);
 	
   @Override
   public int docID() {

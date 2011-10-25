@@ -33,7 +33,6 @@ import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -141,6 +140,8 @@ final class SegmentMerger {
     if (fieldInfos.hasVectors()) {
       mergeVectors();
     }
+    // write FIS once merge is done. IDV might change types or drops fields
+    fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
     return mergedDocs;
   }
 
@@ -254,7 +255,6 @@ final class SegmentMerger {
       }
     }
     final SegmentCodecs codecInfo = fieldInfos.buildSegmentCodecs(false);
-    fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
 
     int docCount = 0;
 
@@ -359,7 +359,6 @@ final class SegmentMerger {
     int docCount = 0;
     if (matchingFieldsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
-      // nocommit: not if they are different impls, and this shouldn't be here (this stuff should be in codec)
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
         IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, docCount, len);
@@ -475,7 +474,6 @@ final class SegmentMerger {
     final int maxDoc = reader.reader.maxDoc();
     if (matchingVectorsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
-      // nocommit: not if they are different impls, and this shouldn't be here (this stuff should be in codec)
       int docCount = 0;
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
@@ -586,28 +584,16 @@ final class SegmentMerger {
   }
 
   private void mergePerDoc() throws IOException {
-    final List<PerDocValues> perDocProducers = new ArrayList<PerDocValues>();    
-    final List<ReaderUtil.Slice> perDocSlices = new ArrayList<ReaderUtil.Slice>();
-    int docBase = 0;
-    for (MergeState.IndexReaderAndLiveDocs r : readers) {
-      final int maxDoc = r.reader.maxDoc();
-      final PerDocValues producer = r.reader.perDocValues();
-      if (producer != null) {
-        perDocSlices.add(new ReaderUtil.Slice(docBase, maxDoc, perDocProducers
-            .size()));
-        perDocProducers.add(producer);
-      }
-      docBase += maxDoc;
-    }
-    if (!perDocSlices.isEmpty()) {
       final PerDocConsumer docsConsumer = codec
           .docsConsumer(new PerDocWriteState(segmentWriteState));
+      // TODO: remove this check when 3.x indexes are no longer supported
+      // (3.x indexes don't have docvalues)
+      if (docsConsumer == null) {
+        return;
+      }
       boolean success = false;
       try {
-        final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(
-            perDocProducers.toArray(PerDocValues.EMPTY_ARRAY),
-            perDocSlices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
-        docsConsumer.merge(mergeState, multiPerDocValues);
+        docsConsumer.merge(mergeState);
         success = true;
       } finally {
         if (success) {
@@ -616,11 +602,8 @@ final class SegmentMerger {
           IOUtils.closeWhileHandlingException(docsConsumer);
         }
       }
-    }
-    /* don't close the perDocProducers here since they are private segment producers
-     * and will be closed once the SegmentReader goes out of scope */ 
   }
-
+  
   private MergeState mergeState;
 
   public boolean getAnyNonBulkMerges() {

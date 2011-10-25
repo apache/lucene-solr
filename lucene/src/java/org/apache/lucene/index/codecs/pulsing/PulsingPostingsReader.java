@@ -18,6 +18,8 @@ package org.apache.lucene.index.codecs.pulsing;
  */
 
 import java.io.IOException;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -29,6 +31,9 @@ import org.apache.lucene.index.codecs.BlockTermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -172,8 +177,6 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     }
   }
 
-  // TODO: we could actually reuse, by having TL that
-  // holds the last wrapped reuse, and vice-versa
   @Override
   public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
     PulsingTermState termState = (PulsingTermState) _termState;
@@ -185,20 +188,29 @@ public class PulsingPostingsReader extends PostingsReaderBase {
           postings = new PulsingDocsEnum(field);
         }
       } else {
-        postings = new PulsingDocsEnum(field);
+        // the 'reuse' is actually the wrapped enum
+        PulsingDocsEnum previous = (PulsingDocsEnum) getOther(reuse);
+        if (previous != null && previous.canReuse(field)) {
+          postings = previous;
+        } else {
+          postings = new PulsingDocsEnum(field);
+        }
+      }
+      if (reuse != postings) {
+        setOther(postings, reuse); // postings.other = reuse
       }
       return postings.reset(liveDocs, termState);
     } else {
-      // TODO: not great that we lose reuse of PulsingDocsEnum in this case:
       if (reuse instanceof PulsingDocsEnum) {
-        return wrappedPostingsReader.docs(field, termState.wrappedTermState, liveDocs, null);
+        DocsEnum wrapped = wrappedPostingsReader.docs(field, termState.wrappedTermState, liveDocs, getOther(reuse));
+        setOther(wrapped, reuse); // wrapped.other = reuse
+        return wrapped;
       } else {
         return wrappedPostingsReader.docs(field, termState.wrappedTermState, liveDocs, reuse);
       }
     }
   }
 
-  // TODO: -- not great that we can't always reuse
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (field.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
@@ -216,13 +228,23 @@ public class PulsingPostingsReader extends PostingsReaderBase {
           postings = new PulsingDocsAndPositionsEnum(field);
         }
       } else {
-        postings = new PulsingDocsAndPositionsEnum(field);
+        // the 'reuse' is actually the wrapped enum
+        PulsingDocsAndPositionsEnum previous = (PulsingDocsAndPositionsEnum) getOther(reuse);
+        if (previous != null && previous.canReuse(field)) {
+          postings = previous;
+        } else {
+          postings = new PulsingDocsAndPositionsEnum(field);
+        }
       }
-
+      if (reuse != postings) {
+        setOther(postings, reuse); // postings.other = reuse 
+      }
       return postings.reset(liveDocs, termState);
     } else {
       if (reuse instanceof PulsingDocsAndPositionsEnum) {
-        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, null);
+        DocsAndPositionsEnum wrapped = wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, (DocsAndPositionsEnum) getOther(reuse));
+        setOther(wrapped, reuse); // wrapped.other = reuse
+        return wrapped;
       } else {
         return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, reuse);
       }
@@ -498,5 +520,70 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   @Override
   public void close() throws IOException {
     wrappedPostingsReader.close();
+  }
+  
+  /** for a docsenum, gets the 'other' reused enum.
+   * Example: Pulsing(Standard).
+   * when doing a term range query you are switching back and forth
+   * between Pulsing and Standard
+   * 
+   * The way the reuse works is that Pulsing.other = Standard and
+   * Standard.other = Pulsing.
+   */
+  private DocsEnum getOther(DocsEnum de) {
+    if (de == null) {
+      return null;
+    } else {
+      final AttributeSource atts = de.attributes();
+      return atts.addAttribute(PulsingEnumAttribute.class).enums().get(this);
+    }
+  }
+  
+  /** 
+   * for a docsenum, sets the 'other' reused enum.
+   * see getOther for an example.
+   */
+  private DocsEnum setOther(DocsEnum de, DocsEnum other) {
+    final AttributeSource atts = de.attributes();
+    return atts.addAttribute(PulsingEnumAttribute.class).enums().put(this, other);
+  }
+
+  /** 
+   * A per-docsenum attribute that stores additional reuse information
+   * so that pulsing enums can keep a reference to their wrapped enums,
+   * and vice versa. this way we can always reuse.
+   * 
+   * @lucene.internal */
+  public static interface PulsingEnumAttribute extends Attribute {
+    public Map<PulsingPostingsReader,DocsEnum> enums();
+  }
+    
+  /** @lucene.internal */
+  public static final class PulsingEnumAttributeImpl extends AttributeImpl implements PulsingEnumAttribute {
+    // we could store 'other', but what if someone 'chained' multiple postings readers,
+    // this could cause problems?
+    // TODO: we should consider nuking this map and just making it so if you do this,
+    // you don't reuse? and maybe pulsingPostingsReader should throw an exc if it wraps
+    // another pulsing, because this is just stupid and wasteful. 
+    // we still have to be careful in case someone does Pulsing(Stomping(Pulsing(...
+    private final Map<PulsingPostingsReader,DocsEnum> enums = 
+      new IdentityHashMap<PulsingPostingsReader,DocsEnum>();
+      
+    public Map<PulsingPostingsReader,DocsEnum> enums() {
+      return enums;
+    }
+
+    @Override
+    public void clear() {
+      // our state is per-docsenum, so this makes no sense.
+      // its best not to clear, in case a wrapped enum has a per-doc attribute or something
+      // and is calling clearAttributes(), so they don't nuke the reuse information!
+    }
+
+    @Override
+    public void copyTo(AttributeImpl target) {
+      // this makes no sense for us, because our state is per-docsenum.
+      // we don't want to copy any stuff over to another docsenum ever!
+    }
   }
 }

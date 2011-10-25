@@ -16,7 +16,7 @@ package org.apache.lucene.search;
  */
 
 import java.util.ArrayList;
-
+import java.util.Collections;
 import java.util.List;
 
 
@@ -29,6 +29,9 @@ import java.util.List;
 public class SpanFilterResult {
   private DocIdSet docIdSet;
   private List<PositionInfo> positions;//Spans spans;
+  
+  public static final SpanFilterResult EMPTY_SPAN_FILTER_RESULT =
+    new SpanFilterResult(DocIdSet.EMPTY_DOCIDSET, Collections.<PositionInfo>emptyList());
   
   /**
   *

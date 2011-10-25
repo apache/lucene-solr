@@ -53,6 +53,7 @@ import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.search.cache.ShortValuesCreator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -730,7 +731,8 @@ public class TestSort extends LuceneTestCase {
     // a filter that only allows through the first hit
     Filter filt = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+        assertNull("acceptDocs should be null, as we have no deletions", acceptDocs);
         BitSet bs = new BitSet(context.reader.maxDoc());
         bs.set(0, context.reader.maxDoc());
         bs.set(docs1.scoreDocs[0].doc);

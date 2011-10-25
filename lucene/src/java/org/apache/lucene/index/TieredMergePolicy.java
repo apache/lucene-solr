@@ -39,7 +39,7 @@ import java.util.ArrayList;
  *  <p>For normal merging, this policy first computes a
  *  "budget" of how many segments are allowed by be in the
  *  index.  If the index is over-budget, then the policy
- *  sorts segments by decresing size (pro-rating by percent
+ *  sorts segments by decreasing size (pro-rating by percent
  *  deletes), and then finds the least-cost merge.  Merge
  *  cost is measured by a combination of the "skew" of the
  *  merge (size of largest seg divided by smallest seg),

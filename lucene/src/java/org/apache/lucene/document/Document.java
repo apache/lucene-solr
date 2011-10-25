@@ -47,25 +47,7 @@ public final class Document implements Iterable<IndexableField> {
 
   @Override
   public Iterator<IndexableField> iterator() {
-
-    return new Iterator<IndexableField>() {
-      private int fieldUpto = 0;
-      
-      @Override
-      public boolean hasNext() {
-        return fieldUpto < fields.size();
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public IndexableField next() {
-        return fields.get(fieldUpto++);
-      }
-    };
+    return fields.iterator();
   }
 
   /**

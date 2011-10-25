@@ -111,10 +111,12 @@ public class CodecProvider {
     return infosReader;
   }
   
+  /** expert */
   public FieldsReader fieldsReader(Directory directory, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException {
     return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
   }
 
+  /** expert */
   public FieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     return new DefaultFieldsWriter(directory, segment, context);
   }

@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
@@ -155,7 +156,7 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
   static class NoMatchFilter extends Filter {
 
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       return null;
 		}
 

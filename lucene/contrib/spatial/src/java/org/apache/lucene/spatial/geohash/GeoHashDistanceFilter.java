@@ -26,6 +26,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FilteredDocIdSet;
 import org.apache.lucene.spatial.DistanceUtils;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.spatial.tier.DistanceFilter;
 
@@ -57,7 +58,7 @@ public class GeoHashDistanceFilter extends DistanceFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
 
     final DocTerms geoHashValues = FieldCache.DEFAULT.getTerms(context.reader, geoHashField);
     final BytesRef br = new BytesRef();
@@ -65,7 +66,7 @@ public class GeoHashDistanceFilter extends DistanceFilter {
     final int docBase = nextDocBase;
     nextDocBase += context.reader.maxDoc();
 
-    return new FilteredDocIdSet(startingFilter.getDocIdSet(context)) {
+    return new FilteredDocIdSet(startingFilter.getDocIdSet(context, acceptDocs)) {
       @Override
       public boolean match(int doc) {
 

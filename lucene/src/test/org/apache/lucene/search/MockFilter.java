@@ -19,15 +19,16 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.DocIdBitSet;
-import java.util.BitSet;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.Bits;
 
 public class MockFilter extends Filter {
   private boolean wasCalled;
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
     wasCalled = true;
-    return new DocIdBitSet(new BitSet());
+    return new FixedBitSet(context.reader.maxDoc());
   }
 
   public void clear() {

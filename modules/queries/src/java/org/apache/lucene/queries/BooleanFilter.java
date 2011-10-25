@@ -24,10 +24,12 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -48,7 +50,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
    * of the filters that have been added.
    */
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     FixedBitSet res = null;
     final IndexReader reader = context.reader;
     
@@ -91,12 +93,13 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       }
     }
 
-    return res != null ? res : DocIdSet.EMPTY_DOCIDSET;
+    return res != null ? BitsFilteredDocIdSet.wrap(res, acceptDocs) : DocIdSet.EMPTY_DOCIDSET;
   }
 
   private static DocIdSetIterator getDISI(Filter filter, AtomicReaderContext context)
       throws IOException {
-    final DocIdSet set = filter.getDocIdSet(context);
+    // we dont pass acceptDocs, we will filter at the end using an additional filter
+    final DocIdSet set = filter.getDocIdSet(context, null);
     return (set == null || set == DocIdSet.EMPTY_DOCIDSET) ? null : set.iterator();
   }
 

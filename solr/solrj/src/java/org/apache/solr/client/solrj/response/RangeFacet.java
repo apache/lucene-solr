@@ -32,11 +32,16 @@ public abstract class RangeFacet<B, G> {
   private final B end;
   private final G gap;
 
-  protected RangeFacet(String name, B start, B end, G gap) {
+  private final Number before;
+  private final Number after;
+
+  protected RangeFacet(String name, B start, B end, G gap, Number before, Number after) {
     this.name = name;
     this.start = start;
     this.end = end;
     this.gap = gap;
+    this.before = before;
+    this.after = after;
   }
 
   public void addCount(String value, int count) {
@@ -63,19 +68,26 @@ public abstract class RangeFacet<B, G> {
     return gap;
   }
 
+  public Number getBefore() {
+    return before;
+  }
+
+  public Number getAfter() {
+    return after;
+  }
 
   public static class Numeric extends RangeFacet<Number, Number> {
 
-    public Numeric(String name, Number start, Number end, Number gap) {
-      super(name, start, end, gap);
+    public Numeric(String name, Number start, Number end, Number gap, Number before, Number after) {
+      super(name, start, end, gap, before, after);
     }
 
   }
 
   public static class Date extends RangeFacet<java.util.Date, String> {
 
-    public Date(String name, java.util.Date start, java.util.Date end, String gap) {
-      super(name, start, end, gap);
+    public Date(String name, java.util.Date start, java.util.Date end, String gap, Number before, Number after) {
+      super(name, start, end, gap, before, after);
     }
 
   }

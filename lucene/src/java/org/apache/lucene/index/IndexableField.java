@@ -40,7 +40,7 @@ public interface IndexableField {
 
   // TODO: add attrs to this API?
 
-  /* Field name */
+  /** Field name */
   public String name();
 
   // NOTE: if doc/field impl has the notion of "doc level boost"
@@ -49,24 +49,24 @@ public interface IndexableField {
   /** Field boost (you must pre-multiply in any doc boost). */
   public float boost();
   
-  /* Non-null if this field has a binary value */
+  /** Non-null if this field has a binary value */
   public BytesRef binaryValue();
 
-  /* Non-null if this field has a string value */
+  /** Non-null if this field has a string value */
   public String stringValue();
 
-  /* Non-null if this field has a Reader value */
+  /** Non-null if this field has a Reader value */
   public Reader readerValue();
 
   // Numeric field:
-  /* True if this field is numeric */
+  /** True if this field is numeric */
   public boolean numeric();
 
-  /* Numeric {@link NumericField.DataType}; only used if
+  /** Numeric {@link org.apache.lucene.document.NumericField.DataType}; only used if
    * the field is numeric */
   public NumericField.DataType numericDataType();
 
-  /* Numeric value; only used if the field is numeric */
+  /** Numeric value; only used if the field is numeric */
   public Number numericValue();
 
   /**
@@ -76,10 +76,10 @@ public interface IndexableField {
    */
   public IndexableFieldType fieldType();
   
-  /* Non-null if doc values should be indexed */
+  /** Non-null if doc values should be indexed */
   public PerDocFieldValues docValues();
 
-  /* DocValues type; only used if docValues is non-null */
+  /** DocValues type; only used if docValues is non-null */
   public ValueType docValuesType();
 
   /**

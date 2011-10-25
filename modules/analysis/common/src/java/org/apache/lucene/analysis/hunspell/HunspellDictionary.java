@@ -27,6 +27,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public class HunspellDictionary {
 
@@ -43,11 +44,15 @@ public class HunspellDictionary {
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
 
+  private static final boolean IGNORE_CASE_DEFAULT = false;
+
   private CharArrayMap<List<HunspellWord>> words;
   private CharArrayMap<List<HunspellAffix>> prefixes;
   private CharArrayMap<List<HunspellAffix>> suffixes;
 
   private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy(); // Default flag parsing strategy
+  private boolean ignoreCase = IGNORE_CASE_DEFAULT;
+
   private final Version version;
 
   /**
@@ -61,7 +66,22 @@ public class HunspellDictionary {
    * @throws ParseException Can be thrown if the content of the files does not meet expected formats
    */
   public HunspellDictionary(InputStream affix, InputStream dictionary, Version version) throws IOException, ParseException {
-    this(affix, Arrays.asList(dictionary), version);
+    this(affix, Arrays.asList(dictionary), version, IGNORE_CASE_DEFAULT);
+  }
+
+  /**
+   * Creates a new HunspellDictionary containing the information read from the provided InputStreams to hunspell affix
+   * and dictionary files
+   *
+   * @param affix InputStream for reading the hunspell affix file
+   * @param dictionary InputStream for reading the hunspell dictionary file
+   * @param version Lucene Version
+   * @param ignoreCase If true, dictionary matching will be case insensitive
+   * @throws IOException Can be thrown while reading from the InputStreams
+   * @throws ParseException Can be thrown if the content of the files does not meet expected formats
+   */
+  public HunspellDictionary(InputStream affix, InputStream dictionary, Version version, boolean ignoreCase) throws IOException, ParseException {
+    this(affix, Arrays.asList(dictionary), version, ignoreCase);
   }
 
   /**
@@ -71,15 +91,17 @@ public class HunspellDictionary {
    * @param affix InputStream for reading the hunspell affix file
    * @param dictionaries InputStreams for reading the hunspell dictionary file
    * @param version Lucene Version
+   * @param ignoreCase If true, dictionary matching will be case insensitive
    * @throws IOException Can be thrown while reading from the InputStreams
    * @throws ParseException Can be thrown if the content of the files does not meet expected formats
    */
-  public HunspellDictionary(InputStream affix, List<InputStream> dictionaries, Version version) throws IOException, ParseException {
+  public HunspellDictionary(InputStream affix, List<InputStream> dictionaries, Version version, boolean ignoreCase) throws IOException, ParseException {
     this.version = version;
+    this.ignoreCase = ignoreCase;
     String encoding = getDictionaryEncoding(affix);
     CharsetDecoder decoder = getJavaEncoding(encoding);
     readAffixFile(affix, decoder);
-    words = new CharArrayMap<List<HunspellWord>>(version, 65535 /* guess */, false);
+    words = new CharArrayMap<List<HunspellWord>>(version, 65535 /* guess */, this.ignoreCase);
     for (InputStream dictionary : dictionaries) {
       readDictionaryFile(dictionary, decoder);
     }
@@ -129,8 +151,8 @@ public class HunspellDictionary {
    * @throws IOException Can be thrown while reading from the InputStream
    */
   private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException {
-    prefixes = new CharArrayMap<List<HunspellAffix>>(version, 8, false);
-    suffixes = new CharArrayMap<List<HunspellAffix>>(version, 8, false);
+    prefixes = new CharArrayMap<List<HunspellAffix>>(version, 8, ignoreCase);
+    suffixes = new CharArrayMap<List<HunspellAffix>>(version, 8, ignoreCase);
     
     BufferedReader reader = new BufferedReader(new InputStreamReader(affixStream, decoder));
     String line = null;
@@ -203,7 +225,7 @@ public class HunspellDictionary {
   }
 
   /**
-   * Parses the encoding specificed in the affix file readable through the provided InputStream
+   * Parses the encoding specified in the affix file readable through the provided InputStream
    *
    * @param affix InputStream for reading the affix file
    * @return Encoding specified in the affix file
@@ -255,10 +277,10 @@ public class HunspellDictionary {
   }
 
   /**
-   * Determines the appropriate {@link FlagParsingStrategy} based on the FLAG definiton line taken from the affix file
+   * Determines the appropriate {@link FlagParsingStrategy} based on the FLAG definition line taken from the affix file
    *
    * @param flagLine Line containing the flag information
-   * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG definiton
+   * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG definition
    */
   private FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
     String flagType = flagLine.substring(5);
@@ -308,6 +330,9 @@ public class HunspellDictionary {
         wordForm = new HunspellWord(flagParsingStrategy.parseFlags(line.substring(flagSep + 1, end)));
         Arrays.sort(wordForm.getFlags());
         entry = line.substring(0, flagSep);
+        if(ignoreCase) {
+          entry = entry.toLowerCase(Locale.ENGLISH);
+        }
       }
       
       List<HunspellWord> entries = words.get(entry);
@@ -407,5 +432,9 @@ public class HunspellDictionary {
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
+  }
+
+  public boolean isIgnoreCase() {
+    return ignoreCase;
   }
 }

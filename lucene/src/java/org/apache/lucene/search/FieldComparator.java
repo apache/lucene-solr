@@ -26,9 +26,6 @@ import org.apache.lucene.search.cache.*;
 import org.apache.lucene.search.cache.CachedArray.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.packed.Direct16;
-import org.apache.lucene.util.packed.Direct32;
-import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.io.IOException;
@@ -1222,14 +1219,21 @@ public abstract class FieldComparator<T> {
       final int docBase = context.docBase;
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
       final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
-      FieldComparator perSegComp;
-      if (docToOrd instanceof Direct8) {
-        perSegComp = new ByteOrdComparator(((Direct8) docToOrd).getArray(), termsIndex, docBase);
-      } else if (docToOrd instanceof Direct16) {
-        perSegComp = new ShortOrdComparator(((Direct16) docToOrd).getArray(), termsIndex, docBase);
-      } else if (docToOrd instanceof Direct32) {
-        perSegComp = new IntOrdComparator(((Direct32) docToOrd).getArray(), termsIndex, docBase);
-      } else {
+      FieldComparator perSegComp = null;
+      if (docToOrd.hasArray()) {
+        final Object arr = docToOrd.getArray();
+        if (arr instanceof byte[]) {
+          perSegComp = new ByteOrdComparator((byte[]) arr, termsIndex, docBase);
+        } else if (arr instanceof short[]) {
+          perSegComp = new ShortOrdComparator((short[]) arr, termsIndex, docBase);
+        } else if (arr instanceof int[]) {
+          perSegComp = new IntOrdComparator((int[]) arr, termsIndex, docBase);
+        }
+        // Don't specialize the long[] case since it's not
+        // possible, ie, worse case is MAX_INT-1 docs with
+        // every one having a unique value.
+      }
+      if (perSegComp == null) {
         perSegComp = new AnyOrdComparator(docToOrd, termsIndex, docBase);
       }
 

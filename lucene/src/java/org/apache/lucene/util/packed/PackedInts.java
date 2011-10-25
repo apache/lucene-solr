@@ -65,6 +65,25 @@ public class PackedInts {
      * @return the number of values.
      */
     int size();
+
+    /**
+     * Expert: if the bit-width of this reader matches one of
+     * java's native types, returns the underlying array
+     * (ie, byte[], short[], int[], long[]); else, returns
+     * null.  Note that when accessing the array you must
+     * upgrade the type (bitwise AND with all ones), to
+     * interpret the full value as unsigned.  Ie,
+     * bytes[idx]&0xFF, shorts[idx]&0xFFFF, etc.
+     */
+    Object getArray();
+
+    /**
+     * Returns true if this implementation is backed by a
+     * native java array.
+     *
+     * @see #getArray
+     */
+    boolean hasArray();
   }
 
   /**
@@ -83,6 +102,14 @@ public class PackedInts {
      * @return the value at the given position
      * @throws IOException if reading the value throws an IOException*/
     long advance(int ord) throws IOException;
+  }
+  
+  public static interface RandomAccessReaderIterator extends ReaderIterator {
+    /**
+     * @param index the position of the wanted value.
+     * @return the value at the stated index.
+     */
+    long get(int index) throws IOException;
   }
   
   /**
@@ -128,6 +155,14 @@ public class PackedInts {
 
     public long getMaxValue() { // Convenience method
       return maxValue(bitsPerValue);
+    }
+
+    public Object getArray() {
+      return null;
+    }
+
+    public boolean hasArray() {
+      return false;
     }
   }
 
@@ -195,6 +230,17 @@ public class PackedInts {
    * @lucene.internal
    */
   public static ReaderIterator getReaderIterator(IndexInput in) throws IOException {
+    return getRandomAccessReaderIterator(in);
+  }
+  
+  /**
+   * Retrieve PackedInts as a {@link RandomAccessReaderIterator}
+   * @param in positioned at the beginning of a stored packed int structure.
+   * @return an iterator to access the values
+   * @throws IOException if the structure could not be retrieved.
+   * @lucene.internal
+   */
+  public static RandomAccessReaderIterator getRandomAccessReaderIterator(IndexInput in) throws IOException {
     CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;

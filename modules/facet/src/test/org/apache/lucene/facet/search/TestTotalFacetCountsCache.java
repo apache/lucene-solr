@@ -299,7 +299,8 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     writers[0].taxWriter.close();
 
     readers[0].taxReader.refresh();
-    IndexReader r2 = readers[0].indexReader.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(readers[0].indexReader);
+    assertNotNull(r2);
     // Hold on to the 'original' reader so we can do some checks with it
     IndexReader origReader = null;
 

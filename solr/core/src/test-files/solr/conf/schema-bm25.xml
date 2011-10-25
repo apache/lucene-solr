@@ -47,4 +47,7 @@
 
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
+  
+  <!-- when using non-vector space models, its recommended to disable coord() etc -->
+  <similarityProvider class="solr.BasicSimilarityProviderFactory"/>
 </schema>

@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -989,5 +990,44 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     SolrQuery query = new SolrQuery("北京大学");
     QueryResponse rsp = server.query( query );
     assertEquals(1, rsp.getResults().getNumFound());
+  }
+  
+
+  @Test
+  public void testRealtimeGet() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    
+    // Now add something...
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "id", "DOCID", 1.0f );
+    doc.addField( "name", "hello", 1.0f );
+    server.add( doc );
+    server.commit();  // Since the transaction log is disabled in the example, we need to commit
+    
+    SolrQuery q = new SolrQuery();
+    q.setQueryType("/get");
+    q.set("id", "DOCID");
+    q.set("fl", "id,name,aaa:[value v=aaa]");
+    
+    // First Try with the BinaryResponseParser
+    QueryRequest req = new QueryRequest( q );
+    req.setResponseParser(new BinaryResponseParser());
+    QueryResponse rsp = req.process(server);
+    SolrDocument out = (SolrDocument)rsp.getResponse().get("doc");
+    assertEquals("DOCID", out.get("id"));
+    assertEquals("hello", out.get("name"));
+    assertEquals("aaa", out.get("aaa"));
+
+    // Then with the XMLResponseParser
+    req.setResponseParser(new XMLResponseParser());
+    rsp = req.process(server);
+    out = (SolrDocument)rsp.getResponse().get("doc");
+    assertEquals("DOCID", out.get("id"));
+    assertEquals("hello", out.get("name"));
+    assertEquals("aaa", out.get("aaa"));
   }
 }

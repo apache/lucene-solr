@@ -119,6 +119,11 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
     return new OpenBitSetIterator(bits, wlen);
   }
 
+  @Override
+  public Bits bits() {
+    return this;
+  }
+
   /** This DocIdSet implementation is cacheable. */
   @Override
   public boolean isCacheable() {

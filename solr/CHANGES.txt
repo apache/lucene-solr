@@ -24,7 +24,7 @@ $Id$
 ==================  4.0.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Tika 0.8
+Apache Tika 0.10
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -86,7 +86,7 @@ New Features
   DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
   levenshtein automata.  (James Dyer, rmuir)
    
-* SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
+* SOLR-1873: SolrCloud - added shared/central config and core/shard management via zookeeper,
   built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
@@ -354,6 +354,13 @@ New Features
 * SOLR-2769: Added factory for the new Hunspell stemmer capable of doing stemming 
   for 99 languages (janhoy, cmale)
 
+* SOLR-1979: New contrib "langid". Adds language identification capabilities as an 
+  Update Processor, using Tika's LanguageIdentifier or Cybozu language-detection
+  library (janhoy, Tommaso Teofili, gsingers)
+
+* SOLR-2818: Added before/after count response parsing support for range facets in
+  SolrJ. (Bernhard Frauendienst via Martijn van Groningen)  
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
@@ -402,6 +409,10 @@ Bug Fixes
 
 * SOLR-2757: min() and max() functions now support an arbitrary number of 
   ValueSources  (Bill Bell via hossman)
+
+* SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
+
+* SOLR-2792: Allow case insensitive Hunspell stemming (janhoy, rmuir)
 
 ==================  3.4.0  ==================
 

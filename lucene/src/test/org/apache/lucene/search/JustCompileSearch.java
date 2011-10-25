@@ -160,7 +160,7 @@ final class JustCompileSearch {
     // still added here in case someone will add abstract methods in the future.
     
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       return null;
     }
   }
@@ -288,12 +288,12 @@ final class JustCompileSearch {
   static final class JustCompileSpanFilter extends SpanFilter {
 
     @Override
-    public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
+    public SpanFilterResult bitSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       return null;
     }    
   }

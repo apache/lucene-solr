@@ -1,8 +1,6 @@
 package org.apache.lucene.facet.search.sampling;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -15,8 +13,6 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.util.RandomSample;
-import org.apache.lucene.facet.util.ScoredDocIdsUtils;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -48,11 +44,9 @@ import org.apache.lucene.facet.util.ScoredDocIdsUtils;
  * 
  * @lucene.experimental
  */
-public class Sampler {
+public abstract class Sampler {
 
-  private static final Logger logger = Logger.getLogger(Sampler.class.getName());
-
-  private final SamplingParams samplingParams;
+  protected final SamplingParams samplingParams;
   
   /**
    * Construct with {@link SamplingParams}
@@ -103,24 +97,18 @@ public class Sampler {
     sampleSetSize = Math.max(sampleSetSize, samplingParams.getMinSampleSize());
     sampleSetSize = Math.min(sampleSetSize, samplingParams.getMaxSampleSize());
 
-    int[] sampleSet = null;
-    try {
-      sampleSet = RandomSample.repeatableSample(docids, actualSize,
-          sampleSetSize);
-    } catch (IOException e) {
-      if (logger.isLoggable(Level.WARNING)) {
-        logger.log(Level.WARNING, "sampling failed: "+e.getMessage()+" - falling back to no sampling!", e);
-      }
-      return new SampleResult(docids, 1d);
-    }
-
-    ScoredDocIDs sampled = ScoredDocIdsUtils.createScoredDocIDsSubset(docids,
-        sampleSet);
-    if (logger.isLoggable(Level.FINEST)) {
-      logger.finest("******************** " + sampled.size());
-    }
-    return new SampleResult(sampled, sampled.size()/(double)docids.size());
+    return createSample(docids, actualSize, sampleSetSize);
   }
+
+  /**
+   * Create and return a sample of the input set
+   * @param docids input set out of which a sample is to be created 
+   * @param actualSize original size of set, prior to sampling
+   * @param sampleSetSize required size of sample set
+   * @return sample of the input set in the required size
+   */
+  protected abstract SampleResult createSample(ScoredDocIDs docids, int actualSize,
+      int sampleSetSize) throws IOException;
 
   /**
    * Get a fixer of sample facet accumulation results. Default implementation

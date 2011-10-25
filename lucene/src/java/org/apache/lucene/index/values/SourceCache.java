@@ -18,36 +18,29 @@ package org.apache.lucene.index.values;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
-import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract base class for {@link IndexDocValues} {@link Source} /
- * {@link SortedSource} cache.
+ * Abstract base class for {@link IndexDocValues} {@link Source} cache.
  * <p>
- * {@link Source} and {@link SortedSource} instances loaded via
- * {@link IndexDocValues#load()} and {@link IndexDocValues#loadSorted(Comparator)} are
- * entirely memory resident and need to be maintained by the caller. Each call
- * to {@link IndexDocValues#load()} or {@link IndexDocValues#loadSorted(Comparator)} will
- * cause an entire reload of the underlying data. Source and
- * {@link SortedSource} instances obtained from {@link IndexDocValues#getSource()}
- * and {@link IndexDocValues#getSource()} respectively are maintained by a
- * {@link SourceCache} that is closed ({@link #close(IndexDocValues)}) once the
- * {@link IndexReader} that created the {@link IndexDocValues} instance is closed.
+ * {@link Source} instances loaded via {@link IndexDocValues#load()} are entirely memory resident
+ * and need to be maintained by the caller. Each call to
+ * {@link IndexDocValues#load()} will cause an entire reload of
+ * the underlying data. Source instances obtained from
+ * {@link IndexDocValues#getSource()} and {@link IndexDocValues#getSource()}
+ * respectively are maintained by a {@link SourceCache} that is closed (
+ * {@link #close(IndexDocValues)}) once the {@link IndexReader} that created the
+ * {@link IndexDocValues} instance is closed.
  * <p>
- * Unless {@link Source} and {@link SortedSource} instances are managed by
- * another entity it is recommended to use the cached variants to obtain a
- * source instance.
+ * Unless {@link Source} instances are managed by another entity it is
+ * recommended to use the cached variants to obtain a source instance.
  * <p>
  * Implementation of this API must be thread-safe.
  * 
  * @see IndexDocValues#setCache(SourceCache)
  * @see IndexDocValues#getSource()
- * @see IndexDocValues#getSortedSorted(Comparator)
  * 
  * @lucene.experimental
  */
@@ -63,17 +56,7 @@ public abstract class SourceCache {
   public abstract Source load(IndexDocValues values) throws IOException;
 
   /**
-   * Atomically loads a {@link SortedSource} into the cache from the given
-   * {@link IndexDocValues} and returns it iff no other {@link SortedSource} has
-   * already been cached. Otherwise the cached source is returned.
-   * <p>
-   * This method will not return <code>null</code>
-   */
-  public abstract SortedSource loadSorted(IndexDocValues values,
-      Comparator<BytesRef> comp) throws IOException;
-
-  /**
-   * Atomically invalidates the cached {@link Source} and {@link SortedSource}
+   * Atomically invalidates the cached {@link Source} 
    * instances if any and empties the cache.
    */
   public abstract void invalidate(IndexDocValues values);
@@ -87,14 +70,13 @@ public abstract class SourceCache {
 
   /**
    * Simple per {@link IndexDocValues} instance cache implementation that holds a
-   * {@link Source} and {@link SortedSource} reference as a member variable.
+   * {@link Source} a member variable.
    * <p>
    * If a {@link DirectSourceCache} instance is closed or invalidated the cached
    * reference are simply set to <code>null</code>
    */
   public static final class DirectSourceCache extends SourceCache {
     private Source ref;
-    private SortedSource sortedRef;
 
     public synchronized Source load(IndexDocValues values) throws IOException {
       if (ref == null) {
@@ -103,17 +85,8 @@ public abstract class SourceCache {
       return ref;
     }
 
-    public synchronized SortedSource loadSorted(IndexDocValues values,
-        Comparator<BytesRef> comp) throws IOException {
-      if (sortedRef == null) {
-        sortedRef = values.loadSorted(comp);
-      }
-      return sortedRef;
-    }
-
     public synchronized void invalidate(IndexDocValues values) {
       ref = null;
-      sortedRef = null;
     }
   }
 

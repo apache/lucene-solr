@@ -677,8 +677,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
 
-    IndexReader r2 = r1.reopen();
-    if (r2 != r1) {
+    IndexReader r2 = IndexReader.openIfChanged(r1);
+    if (r2 != null) {
       r1.close();
       r1 = r2;
     }
@@ -709,7 +709,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, searcher.search(q, 10).totalHits);
     searcher.close();
     try {
-      r.reopen();
+      IndexReader.openIfChanged(r);
       fail("failed to hit AlreadyClosedException");
     } catch (AlreadyClosedException ace) {
       // expected
@@ -766,8 +766,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     int lastCount = 0;
     while(System.currentTimeMillis() < endTime) {
-      IndexReader r2 = r.reopen();
-      if (r2 != r) {
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      if (r2 != null) {
         r.close();
         r = r2;
       }
@@ -783,7 +783,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       threads[i].join();
     }
     // final check
-    IndexReader r2 = r.reopen();
+    IndexReader r2 = IndexReader.openIfChanged(r);
     if (r2 != r) {
       r.close();
       r = r2;
@@ -856,8 +856,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     int sum = 0;
     while(System.currentTimeMillis() < endTime) {
-      IndexReader r2 = r.reopen();
-      if (r2 != r) {
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      if (r2 != null) {
         r.close();
         r = r2;
       }
@@ -871,8 +871,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
       threads[i].join();
     }
     // at least search once
-    IndexReader r2 = r.reopen();
-    if (r2 != r) {
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    if (r2 != null) {
       r.close();
       r = r2;
     }
@@ -1016,4 +1016,40 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
   }
   
+  public void testReopenAfterNoRealChange() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(
+        d,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    w.setInfoStream(VERBOSE ? System.out : null);
+
+    IndexReader r = w.getReader(); // start pooling readers
+
+    IndexReader r2 = IndexReader.openIfChanged(r);
+    assertNull(r2);
+    
+    w.addDocument(new Document());
+    IndexReader r3 = IndexReader.openIfChanged(r);
+    assertNotNull(r3);
+    assertTrue(r3.getVersion() != r.getVersion());
+    assertTrue(r3.isCurrent());
+
+    // Deletes nothing in reality...:
+    w.deleteDocuments(new Term("foo", "bar"));
+
+    // ... but IW marks this as not current:
+    assertFalse(r3.isCurrent());
+    IndexReader r4 = IndexReader.openIfChanged(r3);
+    assertNull(r4);
+
+    // Deletes nothing in reality...:
+    w.deleteDocuments(new Term("foo", "bar"));
+    IndexReader r5 = IndexReader.openIfChanged(r3, w, true);
+    assertNull(r5);
+
+    r3.close();
+
+    w.close();
+    d.close();
+  }
 }

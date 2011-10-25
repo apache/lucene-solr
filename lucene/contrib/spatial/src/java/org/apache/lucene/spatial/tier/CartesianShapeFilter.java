@@ -45,8 +45,7 @@ public class CartesianShapeFilter extends Filter {
   }
   
   @Override
-  public DocIdSet getDocIdSet(final AtomicReaderContext context) throws IOException {
-    final Bits liveDocs = context.reader.getLiveDocs();
+  public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
     final List<Double> area = shape.getArea();
     final int sz = area.size();
     
@@ -58,7 +57,7 @@ public class CartesianShapeFilter extends Filter {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
-          return context.reader.termDocsEnum(liveDocs, fieldName, bytesRef);
+          return context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef);
         }
         
         @Override
@@ -71,7 +70,7 @@ public class CartesianShapeFilter extends Filter {
       for (int i =0; i< sz; i++) {
         double boxId = area.get(i).doubleValue();
         NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
-        final DocsEnum docsEnum = context.reader.termDocsEnum(liveDocs, fieldName, bytesRef);
+        final DocsEnum docsEnum = context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef);
         if (docsEnum == null) continue;
         // iterate through all documents
         // which have this boxId

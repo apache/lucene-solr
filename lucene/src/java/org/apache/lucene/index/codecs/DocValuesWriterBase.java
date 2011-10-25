@@ -54,13 +54,14 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   @Override
   public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
     return Writer.create(field.getDocValues(),
-        docValuesId(segmentName, codecId, field.number),
+        docValuesId(segmentName, codecId, field.number), 
         getDirectory(), getComparator(), bytesUsed, context);
   }
 
   public static String docValuesId(String segmentsName, int codecID, int fieldId) {
     return segmentsName + "_" + codecID + "-" + fieldId;
   }
+  
   
   public Comparator<BytesRef> getComparator() throws IOException {
     return BytesRef.getUTF8SortedAsUnicodeComparator();

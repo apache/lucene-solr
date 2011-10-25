@@ -52,7 +52,7 @@ public class HunspellWord {
   /**
    * Returns the flags associated with the word
    *
-   * @return Flags asssociated with the word
+   * @return Flags associated with the word
    */
   public char[] getFlags() {
     return flags;

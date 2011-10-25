@@ -1,0 +1,23 @@
+Apache Solr Language Identifier
+
+
+Introduction
+------------
+This module is intended to be used while indexing documents.
+It is implemented as an UpdateProcessor to be placed in an UpdateChain.
+Its purpose is to identify language from documents and tag the document with language code.
+The module can optionally map field names to their language specific counterpart,
+e.g. if the input is "title" and language is detected as "en", map to "title_en".
+Language may be detected globally for the document, and/or individually per field.
+
+The module currently relies on Tika's language identification capabilities.
+
+Getting Started
+---------------
+Please refer to the module documentation at http://wiki.apache.org/solr/LanguageDetection
+
+Dependencies
+------------
+This contrib depends on Tika Core, which is part of extraction contrib.
+The easiest is thus to first install extraction contrib and then langid.
+Alternatively you can include tika-core manually on your classpath.

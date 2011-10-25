@@ -16,6 +16,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 
@@ -34,5 +35,5 @@ public abstract class SpanFilter extends Filter{
    * @return A {@link SpanFilterResult}
    * @throws java.io.IOException if there was an issue accessing the necessary information
    * */
-  public abstract SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException;
+  public abstract SpanFilterResult bitSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 }

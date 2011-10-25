@@ -57,6 +57,14 @@ public class TestBlockJoin extends LuceneTestCase {
     return job;
   }
 
+  // ... has multiple qualifications
+  private Document makeQualification(String qualification, int year) {
+    Document job = new Document();
+    job.add(newField("qualification", qualification, StringField.TYPE_STORED));
+    job.add(new NumericField("year").setIntValue(year));
+    return job;
+  }
+
   public void testSimple() throws Exception {
 
     final Directory dir = newDirectory();
@@ -119,6 +127,24 @@ public class TestBlockJoin extends LuceneTestCase {
     Document parentDoc = s.doc(group.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
+    r.close();
+    dir.close();
+  }
+  
+  public void testBoostBug() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+    
+    BlockJoinQuery q = new BlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), BlockJoinQuery.ScoreMode.Avg);
+    s.search(q, 10);
+    BooleanQuery bq = new BooleanQuery();
+    bq.setBoost(2f); // we boost the BQ
+    bq.add(q, BooleanClause.Occur.MUST);
+    s.search(bq, 10);
+    s.close();
     r.close();
     dir.close();
   }
@@ -473,5 +499,95 @@ public class TestBlockJoin extends LuceneTestCase {
         }
       }
     }
+  }
+
+  public void testMultiChildTypes() throws Exception {
+
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+
+    final List<Document> docs = new ArrayList<Document>();
+
+    docs.add(makeJob("java", 2007));
+    docs.add(makeJob("python", 2010));
+    docs.add(makeQualification("maths", 1999));
+    docs.add(makeResume("Lisa", "United Kingdom"));
+    w.addDocuments(docs);
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = new IndexSearcher(r);
+
+    // Create a filter that defines "parent" documents in the index - in this case resumes
+    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+
+    // Define child document criteria (finds an example of relevant work experience)
+    BooleanQuery childJobQuery = new BooleanQuery();
+    childJobQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
+    childJobQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+
+    BooleanQuery childQualificationQuery = new BooleanQuery();
+    childQualificationQuery.add(new BooleanClause(new TermQuery(new Term("qualification", "maths")), Occur.MUST));
+    childQualificationQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 1980, 2000, true, true), Occur.MUST));
+
+
+    // Define parent document criteria (find a resident in the UK)
+    Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
+
+    // Wrap the child document query to 'join' any matches
+    // up to corresponding parent:
+    BlockJoinQuery childJobJoinQuery = new BlockJoinQuery(childJobQuery, parentsFilter, BlockJoinQuery.ScoreMode.Avg);
+    BlockJoinQuery childQualificationJoinQuery = new BlockJoinQuery(childQualificationQuery, parentsFilter, BlockJoinQuery.ScoreMode.Avg);
+
+    // Combine the parent and nested child queries into a single query for a candidate
+    BooleanQuery fullQuery = new BooleanQuery();
+    fullQuery.add(new BooleanClause(parentQuery, Occur.MUST));
+    fullQuery.add(new BooleanClause(childJobJoinQuery, Occur.MUST));
+    fullQuery.add(new BooleanClause(childQualificationJoinQuery, Occur.MUST));
+
+    //????? How do I control volume of jobs vs qualifications per parent?
+    BlockJoinCollector c = new BlockJoinCollector(Sort.RELEVANCE, 10, true, false);
+
+    s.search(fullQuery, c);
+
+    //Examine "Job" children
+    boolean showNullPointerIssue=true;
+    if (showNullPointerIssue) {
+      TopGroups<Integer> jobResults = c.getTopGroups(childJobJoinQuery, null, 0, 10, 0, true);
+
+      //assertEquals(1, results.totalHitCount);
+      assertEquals(1, jobResults.totalGroupedHitCount);
+      assertEquals(1, jobResults.groups.length);
+
+      final GroupDocs<Integer> group = jobResults.groups[0];
+      assertEquals(1, group.totalHits);
+
+      Document childJobDoc = s.doc(group.scoreDocs[0].doc);
+      //System.out.println("  doc=" + group.scoreDocs[0].doc);
+      assertEquals("java", childJobDoc.get("skill"));
+      assertNotNull(group.groupValue);
+      Document parentDoc = s.doc(group.groupValue);
+      assertEquals("Lisa", parentDoc.get("name"));
+    }
+
+    //Now Examine qualification children
+    TopGroups<Integer> qualificationResults = c.getTopGroups(childQualificationJoinQuery, null, 0, 10, 0, true);
+
+    //!!!!! This next line can null pointer - but only if prior "jobs" section called first
+    assertEquals(1, qualificationResults.totalGroupedHitCount);
+    assertEquals(1, qualificationResults.groups.length);
+
+    final GroupDocs<Integer> qGroup = qualificationResults.groups[0];
+    assertEquals(1, qGroup.totalHits);
+
+    Document childQualificationDoc = s.doc(qGroup.scoreDocs[0].doc);
+    assertEquals("maths", childQualificationDoc.get("qualification"));
+    assertNotNull(qGroup.groupValue);
+    Document parentDoc = s.doc(qGroup.groupValue);
+    assertEquals("Lisa", parentDoc.get("name"));
+
+
+    r.close();
+    dir.close();
   }
 }

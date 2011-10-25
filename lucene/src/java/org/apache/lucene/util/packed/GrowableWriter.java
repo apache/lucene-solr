@@ -60,6 +60,16 @@ public class GrowableWriter implements PackedInts.Mutable {
     return current;
   }
 
+  @Override
+  public Object getArray() {
+    return current.getArray();
+  }
+
+  @Override
+  public boolean hasArray() {
+    return current.hasArray();
+  }
+
   public void set(int index, long value) {
     if (value >= currentMaxValue) {
       int bpv = getBitsPerValue();

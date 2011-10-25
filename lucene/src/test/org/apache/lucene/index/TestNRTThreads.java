@@ -22,11 +22,13 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 
 // TODO
 //   - mix in optimize, addIndexes
 //   - randomoly mix in non-congruent docs
 
+@UseNoMemoryExpensiveCodec
 public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
   
   @Override
@@ -41,8 +43,8 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
         if (VERBOSE) {
           System.out.println("TEST: now reopen r=" + r);
         }
-        final IndexReader r2 = r.reopen();
-        if (r != r2) {
+        final IndexReader r2 = IndexReader.openIfChanged(r);
+        if (r2 != null) {
           r.close();
           r = r2;
         }

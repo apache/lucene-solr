@@ -99,14 +99,14 @@ public class MultiReader extends IndexReader implements Cloneable {
   /**
    * Tries to reopen the subreaders.
    * <br>
-   * If one or more subreaders could be re-opened (i. e. subReader.reopen() 
-   * returned a new instance != subReader), then a new MultiReader instance 
+   * If one or more subreaders could be re-opened (i. e. IndexReader.openIfChanged(subReader) 
+   * returned a new instance), then a new MultiReader instance 
    * is returned, otherwise this instance is returned.
    * <p>
    * A re-opened instance might share one or more subreaders with the old 
    * instance. Index modification operations result in undefined behavior
    * when performed before the old instance is closed.
-   * (see {@link IndexReader#reopen()}).
+   * (see {@link IndexReader#openIfChanged}).
    * <p>
    * If subreaders are shared, then the reference count of those
    * readers is increased to ensure that the subreaders remain open
@@ -116,8 +116,8 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error 
    */
   @Override
-  public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
-    return doReopen(false);
+  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
+    return doOpenIfChanged(false);
   }
   
   /**
@@ -132,7 +132,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public synchronized Object clone() {
     try {
-      return doReopen(true);
+      return doOpenIfChanged(true);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -146,33 +146,35 @@ public class MultiReader extends IndexReader implements Cloneable {
   /**
    * If clone is true then we clone each of the subreaders
    * @param doClone
-   * @return New IndexReader, or same one (this) if
-   *   reopen/clone is not necessary
+   * @return New IndexReader, or null if open/clone is not necessary
    * @throws CorruptIndexException
    * @throws IOException
    */
-  protected IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
+  protected IndexReader doOpenIfChanged(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
-    boolean reopened = false;
+    boolean changed = false;
     IndexReader[] newSubReaders = new IndexReader[subReaders.length];
     
     boolean success = false;
     try {
       for (int i = 0; i < subReaders.length; i++) {
-        if (doClone)
+        if (doClone) {
           newSubReaders[i] = (IndexReader) subReaders[i].clone();
-        else
-          newSubReaders[i] = subReaders[i].reopen();
-        // if at least one of the subreaders was updated we remember that
-        // and return a new MultiReader
-        if (newSubReaders[i] != subReaders[i]) {
-          reopened = true;
+          changed = true;
+        } else {
+          final IndexReader newSubReader = IndexReader.openIfChanged(subReaders[i]);
+          if (newSubReader != null) {
+            newSubReaders[i] = newSubReader;
+            changed = true;
+          } else {
+            newSubReaders[i] = subReaders[i];
+          }
         }
       }
       success = true;
     } finally {
-      if (!success && reopened) {
+      if (!success && changed) {
         for (int i = 0; i < newSubReaders.length; i++) {
           if (newSubReaders[i] != subReaders[i]) {
             try {
@@ -185,7 +187,7 @@ public class MultiReader extends IndexReader implements Cloneable {
       }
     }
 
-    if (reopened) {
+    if (changed) {
       boolean[] newDecrefOnClose = new boolean[subReaders.length];
       for (int i = 0; i < subReaders.length; i++) {
         if (newSubReaders[i] == subReaders[i]) {
@@ -197,7 +199,7 @@ public class MultiReader extends IndexReader implements Cloneable {
       mr.decrefOnClose = newDecrefOnClose;
       return mr;
     } else {
-      return this;
+      return null;
     }
   }
 

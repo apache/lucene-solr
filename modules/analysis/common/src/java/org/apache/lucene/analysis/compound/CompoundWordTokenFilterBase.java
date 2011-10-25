@@ -24,20 +24,17 @@ import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
- * Base class for decomposition token filters. <a name="version"/>
+ * Base class for decomposition token filters.
  * <p>
  * You must specify the required {@link Version} compatibility when creating
  * CompoundWordTokenFilterBase:
@@ -46,6 +43,13 @@ import org.apache.lucene.util.Version;
  * supplementary characters in strings and char arrays provided as compound word
  * dictionaries.
  * </ul>
+ * <p>If you pass in a {@link org.apache.lucene.analysis.util.CharArraySet} as dictionary,
+ * it should be case-insensitive unless it contains only lowercased entries and you
+ * have {@link org.apache.lucene.analysis.core.LowerCaseFilter} before this filter in your analysis chain.
+ * For optional performance (as this filter does lots of lookups to the dictionary,
+ * you should use the latter analysis chain/CharArraySet). Be aware: If you supply arbitrary
+ * {@link Set Sets} to the ctors, they will be automatically
+ * transformed to case-insensitive!
  */
 public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   /**
@@ -64,35 +68,20 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   public static final int DEFAULT_MAX_SUBWORD_SIZE = 15;
   
   protected final CharArraySet dictionary;
-  protected final LinkedList<Token> tokens;
+  protected final LinkedList<CompoundToken> tokens;
   protected final int minWordSize;
   protected final int minSubwordSize;
   protected final int maxSubwordSize;
   protected final boolean onlyLongestMatch;
   
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
+  protected final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  protected final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-  private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
   
-  private final Token wrapper = new Token();
-
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    this(matchVersion, input,makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
-  }
-  
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, boolean onlyLongestMatch) {
-    this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
-  }
+  private AttributeSource.State current;
 
   protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary, boolean onlyLongestMatch) {
     this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
-  }
-
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary) {
-    this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
   protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary) {
@@ -102,7 +91,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input);
     
-    this.tokens=new LinkedList<Token>();
+    this.tokens=new LinkedList<CompoundToken>();
     this.minWordSize=minWordSize;
     this.minSubwordSize=minSubwordSize;
     this.maxSubwordSize=maxSubwordSize;
@@ -111,113 +100,68 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     if (dictionary==null || dictionary instanceof CharArraySet) {
       this.dictionary = (CharArraySet) dictionary;
     } else {
-      this.dictionary = new CharArraySet(matchVersion, dictionary.size(), false);
-      addAllLowerCase(this.dictionary, dictionary);
+      this.dictionary = new CharArraySet(matchVersion, dictionary, true);
     }
-  }
-
-  /**
-   * Create a set of words from an array
-   * The resulting Set does case insensitive matching
-   * TODO We should look for a faster dictionary lookup approach.
-   * @param dictionary 
-   * @return {@link Set} of lowercased terms 
-   */
-  public static Set<?> makeDictionary(final String[] dictionary) {
-    return makeDictionary(Version.LUCENE_30, dictionary);
-  }
-  
-  public static Set<?> makeDictionary(final Version matchVersion, final String[] dictionary) {
-    if (dictionary == null) {
-      return null;
-    }
-    // is the below really case insensitive? 
-    CharArraySet dict = new CharArraySet(matchVersion, dictionary.length, false);
-    addAllLowerCase(dict, Arrays.asList(dictionary));
-    return dict;
-  }
-  
-  private void setToken(final Token token) throws IOException {
-    clearAttributes();
-    termAtt.copyBuffer(token.buffer(), 0, token.length());
-    flagsAtt.setFlags(token.getFlags());
-    typeAtt.setType(token.type());
-    offsetAtt.setOffset(token.startOffset(), token.endOffset());
-    posIncAtt.setPositionIncrement(token.getPositionIncrement());
-    payloadAtt.setPayload(token.getPayload());
   }
   
   @Override
   public final boolean incrementToken() throws IOException {
-    if (tokens.size() > 0) {
-      setToken(tokens.removeFirst());
+    if (!tokens.isEmpty()) {
+      assert current != null;
+      CompoundToken token = tokens.removeFirst();
+      restoreState(current); // keep all other attributes untouched
+      termAtt.setEmpty().append(token.txt);
+      offsetAtt.setOffset(token.startOffset, token.endOffset);
+      posIncAtt.setPositionIncrement(0);
       return true;
     }
 
-    if (!input.incrementToken())
-      return false;
-    
-    wrapper.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-    wrapper.setStartOffset(offsetAtt.startOffset());
-    wrapper.setEndOffset(offsetAtt.endOffset());
-    wrapper.setFlags(flagsAtt.getFlags());
-    wrapper.setType(typeAtt.type());
-    wrapper.setPositionIncrement(posIncAtt.getPositionIncrement());
-    wrapper.setPayload(payloadAtt.getPayload());
-    
-    decompose(wrapper);
-
-    if (tokens.size() > 0) {
-      setToken(tokens.removeFirst());
+    current = null; // not really needed, but for safety
+    if (input.incrementToken()) {
+      // Only words longer than minWordSize get processed
+      if (termAtt.length() >= this.minWordSize) {
+        decompose();
+        // only capture the state if we really need it for producing new tokens
+        if (!tokens.isEmpty()) {
+          current = captureState();
+        }
+      }
+      // return original token:
       return true;
     } else {
       return false;
     }
   }
-  
-  protected static void addAllLowerCase(CharArraySet target, Collection<?> col) {
-    for (Object obj : col) {
-      String string = (String) obj;
-      target.add(string.toLowerCase(Locale.ENGLISH));
-    }
-  }
-  
-  protected static char[] makeLowerCaseCopy(final char[] buffer) {
-    char[] result=new char[buffer.length];
-    System.arraycopy(buffer, 0, result, 0, buffer.length);
-    
-    for (int i=0;i<buffer.length;++i) {
-       result[i]=Character.toLowerCase(buffer[i]);
-    }
-    
-    return result;
-  }
-  
-  protected final Token createToken(final int offset, final int length,
-      final Token prototype) {
-    int newStart = prototype.startOffset() + offset;
-    Token t = prototype.clone(prototype.buffer(), offset, length, newStart, newStart+length);
-    t.setPositionIncrement(0);
-    return t;
-  }
 
-  protected void decompose(final Token token) {
-    // In any case we give the original token back
-    tokens.add((Token) token.clone());
-
-    // Only words longer than minWordSize get processed
-    if (token.length() < this.minWordSize) {
-      return;
-    }
-    
-    decomposeInternal(token);
-  }
-  
-  protected abstract void decomposeInternal(final Token token);
+  /** Decomposes the current {@link #termAtt} and places {@link CompoundToken} instances in the {@link #tokens} list.
+   * The original token may not be placed in the list, as it is automatically passed through this filter.
+   */
+  protected abstract void decompose();
 
   @Override
   public void reset() throws IOException {
     super.reset();
     tokens.clear();
+    current = null;
   }
+  
+  /**
+   * Helper class to hold decompounded token information
+   */
+  protected class CompoundToken {
+    public final CharSequence txt;
+    public final int startOffset, endOffset;
+
+    /** Construct the compound token based on a slice of the current {@link CompoundWordTokenFilterBase#termAtt}. */
+    public CompoundToken(int offset, int length) {
+      final int newStart = CompoundWordTokenFilterBase.this.offsetAtt.startOffset() + offset;
+      this.txt = CompoundWordTokenFilterBase.this.termAtt.subSequence(offset, offset + length);
+      // TODO: This ignores the original endOffset, if a CharFilter/Tokenizer/Filter removed
+      // chars from the term, offsets may not match correctly (other filters producing tokens
+      // may also have this problem):
+      this.startOffset = newStart;
+      this.endOffset = newStart + length;
+    }
+
+  }  
 }

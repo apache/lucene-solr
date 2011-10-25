@@ -153,6 +153,7 @@
       <pathelement path="${highlighter.jar}"/>
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
+      <pathelement path="${facet.jar}"/>
       <path refid="base.classpath"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
@@ -241,7 +242,7 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="init" depends="contrib-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser"/>
+    <target name="init" depends="contrib-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
   
     <target name="clean-javacc">
       <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">

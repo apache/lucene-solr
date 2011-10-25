@@ -44,9 +44,9 @@ field fall into a single group.</p>
   </ul>
 
 <p>The implementation is two-pass: the first pass ({@link
-  org.apache.lucene.search.grouping.TermFirstPassGroupingCollector})
+  org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector})
   gathers the top groups, and the second pass ({@link
-  org.apache.lucene.search.grouping.TermSecondPassGroupingCollector})
+  org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector})
   gathers documents within those groups.  If the search is costly to
   run you may want to use the {@link
   org.apache.lucene.search.CachingCollector} class, which
@@ -178,6 +178,12 @@ fields, <code>FieldCache</code>, etc.).
   int maxDoc = s.maxDoc();
   FixedBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
 </pre>
+
+<p>For each of the above collectors there is also a variant that works with <code>ValueSource</code> instead of
+   of fields. Concretely this means that these variants can work with functions. These variants are slower than
+   there term based counter parts. These implementations are located in the
+   <code>org.apache.lucene.search.grouping.function</code> package.
+</p>
 
 </body>
 </html>

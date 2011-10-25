@@ -96,6 +96,11 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
+  public long getUniqueTermCount() throws IOException {
+    return -1;
+  }
+
+  @Override
   public long getSumTotalTermFreq() throws IOException {
     long sum = 0;
     for(Terms terms : subs) {

@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDocIdSet extends LuceneTestCase {
@@ -114,7 +115,7 @@ public class TestDocIdSet extends LuceneTestCase {
     // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         return null;
       }
     };

@@ -146,6 +146,9 @@ public abstract class TextResponseWriter {
       writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
       SolrDocument doc = toSolrDocument( (Document)val );
+      if( returnFields.getTransformer() != null ) {
+        returnFields.getTransformer().transform( doc, -1 );
+      }
       writeSolrDocument(name, doc, returnFields, 0 );
     } else if (val instanceof SolrDocument) {
       writeSolrDocument(name, (SolrDocument)val, returnFields, 0);

@@ -105,7 +105,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    * results.
    */
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     final IndexReader reader = context.reader;
     final Fields fields = reader.fields();
     if (fields == null) {
@@ -125,13 +125,12 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       // fill into a FixedBitSet
       final FixedBitSet bitSet = new FixedBitSet(context.reader.maxDoc());
       int termCount = 0;
-      final Bits liveDocs = reader.getLiveDocs();
       DocsEnum docsEnum = null;
       do {
         termCount++;
         // System.out.println("  iter termCount=" + termCount + " term=" +
         // enumerator.term().toBytesString());
-        docsEnum = termsEnum.docs(liveDocs, docsEnum);
+        docsEnum = termsEnum.docs(acceptDocs, docsEnum);
         final DocsEnum.BulkReadResult result = docsEnum.getBulkResult();
         while (true) {
           final int count = docsEnum.read();

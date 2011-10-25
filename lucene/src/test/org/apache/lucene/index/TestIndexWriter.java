@@ -869,6 +869,46 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+  
+  public void testEmptyFieldNameTerms() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    doc.add(newField("", "a b c", TextField.TYPE_UNSTORED));
+    writer.addDocument(doc);  
+    writer.close();
+    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader subreader = getOnlySegmentReader(reader);
+    TermsEnum te = subreader.fields().terms("").iterator();
+    assertEquals(new BytesRef("a"), te.next());
+    assertEquals(new BytesRef("b"), te.next());
+    assertEquals(new BytesRef("c"), te.next());
+    assertNull(te.next());
+    reader.close();
+    dir.close();
+  }
+  
+  public void testEmptyFieldNameWithEmptyTerm() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    doc.add(newField("", "", StringField.TYPE_UNSTORED));
+    doc.add(newField("", "a", StringField.TYPE_UNSTORED));
+    doc.add(newField("", "b", StringField.TYPE_UNSTORED));
+    doc.add(newField("", "c", StringField.TYPE_UNSTORED));
+    writer.addDocument(doc);  
+    writer.close();
+    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader subreader = getOnlySegmentReader(reader);
+    TermsEnum te = subreader.fields().terms("").iterator();
+    assertEquals(new BytesRef(""), te.next());
+    assertEquals(new BytesRef("a"), te.next());
+    assertEquals(new BytesRef("b"), te.next());
+    assertEquals(new BytesRef("c"), te.next());
+    assertNull(te.next());
+    reader.close();
+    dir.close();
+  }
 
 
 
@@ -1402,7 +1442,8 @@ public class TestIndexWriter extends LuceneTestCase {
       if (iter == 1) {
         w.commit();
       }
-      IndexReader r2 = r.reopen();
+      IndexReader r2 = IndexReader.openIfChanged(r);
+      assertNotNull(r2);
       assertTrue(r != r2);
       files = Arrays.asList(dir.listAll());
 

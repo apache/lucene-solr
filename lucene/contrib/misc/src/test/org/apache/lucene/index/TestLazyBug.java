@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
 
 /**
  * Test demonstrating EOF bug on the last field of the last doc
- * if other docs have allready been accessed.
+ * if other docs have already been accessed.
  */
 public class TestLazyBug extends LuceneTestCase {
 

@@ -55,7 +55,7 @@ class DisjunctionSumScorer extends Scorer {
   /** The number of subscorers that provide the current match. */
   protected int nrMatchers = -1;
 
-  private float currentScore = Float.NaN;
+  private double currentScore = Float.NaN;
   
   /** Construct a <code>DisjunctionScorer</code>.
    * @param weight The weight to be used.
@@ -195,7 +195,7 @@ class DisjunctionSumScorer extends Scorer {
    * Initially invalid, until {@link #nextDoc()} is called the first time.
    */
   @Override
-  public float score() throws IOException { return currentScore; }
+  public float score() throws IOException { return (float)currentScore; }
    
   @Override
   public int docID() {

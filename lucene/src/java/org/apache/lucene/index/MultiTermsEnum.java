@@ -77,7 +77,7 @@ public final class MultiTermsEnum extends TermsEnum {
     subDocs = new MultiDocsEnum.EnumWithSlice[slices.length];
     subDocsAndPositions = new MultiDocsAndPositionsEnum.EnumWithSlice[slices.length];
     for(int i=0;i<slices.length;i++) {
-      subs[i] = new TermsEnumWithSlice(slices[i]);
+      subs[i] = new TermsEnumWithSlice(i, slices[i]);
       subDocs[i] = new MultiDocsEnum.EnumWithSlice();
       subDocs[i].slice = slices[i];
       subDocsAndPositions[i] = new MultiDocsAndPositionsEnum.EnumWithSlice();
@@ -347,11 +347,16 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
-    final MultiDocsEnum docsEnum;
-    if (reuse != null) {
+    MultiDocsEnum docsEnum;
+    // Can only reuse if incoming enum is also a MultiDocsEnum
+    if (reuse != null && reuse instanceof MultiDocsEnum) {
       docsEnum = (MultiDocsEnum) reuse;
+      // ... and was previously created w/ this MultiTermsEnum:
+      if (!docsEnum.canReuse(this)) {
+        docsEnum = new MultiDocsEnum(this, subs.length);
+      }
     } else {
-      docsEnum = new MultiDocsEnum();
+      docsEnum = new MultiDocsEnum(this, subs.length);
     }
     
     final MultiBits multiLiveDocs;
@@ -390,8 +395,11 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      final DocsEnum subDocsEnum = entry.terms.docs(b, null);
+      assert entry.index < docsEnum.subDocsEnum.length: entry.index + " vs " + docsEnum.subDocsEnum.length + "; " + subs.length;
+      final DocsEnum subDocsEnum = entry.terms.docs(b, docsEnum.subDocsEnum[entry.index]);
+
       if (subDocsEnum != null) {
+        docsEnum.subDocsEnum[entry.index] = subDocsEnum;
         subDocs[upto].docsEnum = subDocsEnum;
         subDocs[upto].slice = entry.subSlice;
 
@@ -408,11 +416,16 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    final MultiDocsAndPositionsEnum docsAndPositionsEnum;
-    if (reuse != null) {
+    MultiDocsAndPositionsEnum docsAndPositionsEnum;
+    // Can only reuse if incoming enum is also a MultiDocsAndPositionsEnum
+    if (reuse != null && reuse instanceof MultiDocsAndPositionsEnum) {
       docsAndPositionsEnum = (MultiDocsAndPositionsEnum) reuse;
+      // ... and was previously created w/ this MultiTermsEnum:
+      if (!docsAndPositionsEnum.canReuse(this)) {
+        docsAndPositionsEnum = new MultiDocsAndPositionsEnum(this, subs.length);
+      }
     } else {
-      docsAndPositionsEnum = new MultiDocsAndPositionsEnum();
+      docsAndPositionsEnum = new MultiDocsAndPositionsEnum(this, subs.length);
     }
     
     final MultiBits multiLiveDocs;
@@ -452,9 +465,11 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, null);
+      assert entry.index < docsAndPositionsEnum.subDocsAndPositionsEnum.length: entry.index + " vs " + docsAndPositionsEnum.subDocsAndPositionsEnum.length + "; " + subs.length;
+      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index]);
 
       if (subPostings != null) {
+        docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index] = subPostings;
         subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
         subDocsAndPositions[upto].slice = entry.subSlice;
         upto++;
@@ -479,9 +494,11 @@ public final class MultiTermsEnum extends TermsEnum {
     private final ReaderUtil.Slice subSlice;
     private TermsEnum terms;
     public BytesRef current;
+    final int index;
 
-    public TermsEnumWithSlice(ReaderUtil.Slice subSlice) {
+    public TermsEnumWithSlice(int index, ReaderUtil.Slice subSlice) {
       this.subSlice = subSlice;
+      this.index = index;
       assert subSlice.length >= 0: "length=" + subSlice.length;
     }
 

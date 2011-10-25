@@ -184,6 +184,17 @@ Changes in backwards compatibility policy
   with the old tokenStream() method removed.  Consequently it is now mandatory
   for all Analyzers to support reusability. (Chris Male)
 
+* LUCENE-3473: IndexReader.getUniqueTermCount() no longer throws UOE when
+  it cannot be easily determined (e.g. Multi*Readers). Instead, it returns
+  -1 to be consistent with this behavior across other index statistics.
+  (Robert Muir)
+
+* LUCENE-1536: The abstract FilteredDocIdSet.match() method is no longer
+  allowed to throw IOException. This change was required to make it conform
+  to the Bits interface. This method should never do I/O for performance reasons.
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
+  
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -332,6 +343,15 @@ API Changes
   Fixed MemoryCodec and SimpleTextCodec to optimize the seekExact
   case, and fixed places in Lucene to use seekExact when possible.
   (Mike McCandless)
+
+* LUCENE-1536: Filter.getDocIdSet() now takes an acceptDocs Bits interface (like
+  Scorer) limiting the documents that can appear in the returned DocIdSet.
+  Filters are now required to respect these acceptDocs, otherwise deleted documents
+  may get returned by searches. Most filters will pass these Bits down to DocsEnum,
+  but those, e.g. working on FieldCache, may need to use BitsFilteredDocIdSet.wrap()
+  to exclude them.
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
 
 New features
 
@@ -548,6 +568,23 @@ New features
 * LUCENE-2309: Added IndexableField.tokenStream(Analyzer) which is now 
   responsible for creating the TokenStreams for Fields when they are to 
   be indexed.  (Chris Male)
+  
+* LUCENE-3433: Added random access for non RAM resident IndexDocValues. RAM
+  resident and disk resident IndexDocValues are now exposed via the Source
+  interface. ValuesEnum has been removed in favour of Source. (Simon Willnauer)
+
+* LUCENE-1536: Filters can now be applied down-low, if their DocIdSet implements
+  a new bits() method, returning all documents in a random access way. If the
+  DocIdSet is not too sparse, it will be passed as acceptDocs down to the Scorer
+  as replacement for IndexReader's live docs.
+  In addition, FilteredQuery backs now IndexSearcher's filtering search methods.
+  Using FilteredQuery you can chain Filters in a very performant way
+  [new FilteredQuery(new FilteredQuery(query, filter1), filter2)], which was not
+  possible with IndexSearcher's methods. FilteredQuery also allows to override
+  the heuristics used to decide if filtering should be done random access or
+  using a conjunction on DocIdSet's iterator().
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
 
 Optimizations
 
@@ -592,6 +629,11 @@ Bug fixes
   rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
   Simon Willnauer, Mike McCandless)
 
+* LUCENE-3515: Fix terrible merge performance versus 3.x, especially
+  when the directory isn't MMapDirectory, due to failing to reuse
+  DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
+  Robert Muir, Simon Willnauer, Mike McCandless)
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy
@@ -607,6 +649,18 @@ Changes in backwards compatibility policy
     constructor
   As this is expert API, most code will not be affected.
   (Uwe Schindler, Doron Cohen, Mike McCandless)
+
+* LUCENE-3464: IndexReader.reopen has been renamed to
+  IndexReader.openIfChanged (a static method), and now returns null
+  (instead of the old reader) if there are no changes in the index, to
+  prevent the common pitfall of accidentally closing the old reader.
+
+Changes in runtime behavior
+
+* LUCENE-3520: IndexReader.openIfChanged, when passed a near-real-time
+  reader, will now return null if there are no changes.  The API has
+  always reserved the right to do this; it's just that in the past for
+  near-real-time readers it never did. (Mike McCandless)
 
 Bug fixes
 
@@ -637,6 +691,15 @@ Bug fixes
 * LUCENE-3215: SloppyPhraseScorer sometimes computed Infinite freq
   (Robert Muir, Doron Cohen)  
 
+* LUCENE-3503: DisjunctionSumScorer would give slightly different scores
+  for a document depending if you used nextDoc() versus advance().
+  (Mike McCandless, Robert Muir)
+
+* LUCENE-3529: Properly support indexing an empty field with empty term text.
+  Previously, if you had assertions enabled you would receive an error during
+  flush, if you didn't, you would get an invalid index.  
+  (Mike McCandless, Robert Muir)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
@@ -651,6 +714,9 @@ Optimizations
 * LUCENE-3426: Add NGramPhraseQuery which extends PhraseQuery and tries to 
   reduce the number of terms of the query when rewrite(), in order to improve 
   performance.  (Robert Muir, Koji Sekiguchi)
+  
+* LUCENE-3494: Optimize FilteredQuery to remove a multiply in score()
+  (Uwe Schindler, Robert Muir)
 
 Test Cases
 

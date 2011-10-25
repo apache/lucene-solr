@@ -102,7 +102,7 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
   // all the similarities that we rotate through
   /** The DFR basic models to test. */
   static BasicModel[] BASIC_MODELS = {
-    new BasicModelBE(), /* TODO: enable new BasicModelD(), */ new BasicModelG(),
+    /* TODO: enable new BasicModelBE(), */ /* TODO: enable new BasicModelD(), */ new BasicModelG(),
     new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
     /* TODO: enable new BasicModelP() */
   };

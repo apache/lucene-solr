@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -65,7 +66,7 @@ final class SegmentCodecs implements Cloneable {
    */
   final Codec[] codecs;
   final CodecProvider provider;
-  private final Codec codec = new PerFieldCodecWrapper(this);
+  private final Codec codec;
   
   SegmentCodecs(CodecProvider provider, IndexInput input) throws IOException {
     this(provider, read(input, provider));
@@ -74,6 +75,11 @@ final class SegmentCodecs implements Cloneable {
   SegmentCodecs(CodecProvider provider, Codec... codecs) {
     this.provider = provider;
     this.codecs = codecs;
+    if (codecs.length == 1 && codecs[0] instanceof PreFlexCodec) {
+      this.codec = codecs[0]; // hack for backwards break... don't wrap the codec in preflex
+    } else {
+      this.codec = new PerFieldCodecWrapper(this);
+    }
   }
 
   Codec codec() {

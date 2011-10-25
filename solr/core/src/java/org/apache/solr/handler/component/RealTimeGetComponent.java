@@ -29,6 +29,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -100,6 +101,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     RefCounted<SolrIndexSearcher> searcherHolder = null;
 
+    DocTransformer transformer = rsp.getReturnFields().getTransformer();
    try {
      SolrIndexSearcher searcher = null;
 
@@ -115,7 +117,11 @@ public class RealTimeGetComponent extends SearchComponent
            int oper = (Integer)entry.get(0);
            switch (oper) {
              case UpdateLog.ADD:
-              docList.add(toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), req.getSchema()));
+               SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), req.getSchema());
+               if(transformer!=null) {
+                 transformer.transform(doc, -1); // unknown docID
+               }
+              docList.add(doc);
               break;
              case UpdateLog.DELETE:
               break;
@@ -135,7 +141,11 @@ public class RealTimeGetComponent extends SearchComponent
        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
        if (docid < 0) continue;
        Document luceneDocument = searcher.doc(docid);
-       docList.add(toSolrDoc(luceneDocument,  req.getSchema()));
+       SolrDocument doc = toSolrDoc(luceneDocument,  req.getSchema());
+       if( transformer != null ) {
+         transformer.transform(doc, docid);
+       }
+       docList.add(doc);
      }
 
    } finally {

@@ -31,6 +31,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -199,8 +200,8 @@ public class TestSort extends SolrTestCaseJ4 {
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
           @Override
-          public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-            return randSet(context.reader.maxDoc());
+          public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+            return BitsFilteredDocIdSet.wrap(randSet(context.reader.maxDoc()), acceptDocs);
           }
         };
 

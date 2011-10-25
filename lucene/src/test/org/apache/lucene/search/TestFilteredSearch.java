@@ -30,6 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 
@@ -95,7 +96,8 @@ public class TestFilteredSearch extends LuceneTestCase {
     }
 
     @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context) {
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
+      assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
       assert context.isAtomic;
       final FixedBitSet set = new FixedBitSet(context.reader.maxDoc());
       int docBase = context.docBase;

@@ -130,5 +130,32 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       if (directory != null) directory.close();
     }
   }
+
+  public void testConstantScoreQueryAndFilter() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, d);
+    Document doc = new Document();
+    doc.add(newField("field", "a", StringField.TYPE_UNSTORED));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newField("field", "b", StringField.TYPE_UNSTORED));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+
+    Filter filterB = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "b"))));
+    Query query = new ConstantScoreQuery(filterB);
+
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(1, s.search(query, filterB, 1).totalHits); // Query for field:b, Filter field:b
+
+    Filter filterA = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "a"))));
+    query = new ConstantScoreQuery(filterA);
+
+    assertEquals(0, s.search(query, filterB, 1).totalHits); // Query field:b, Filter field:a
+
+    r.close();
+    d.close();
+  }
   
 }

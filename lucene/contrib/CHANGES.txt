@@ -82,6 +82,9 @@ Changes in backwards compatibility policy
  * LUCENE-3446: Removed BooleanFilter.finalResult() due to change to
    FixedBitSet.  (Uwe Schindler)
 
+ * LUCENE-3508: Changed some method signatures in decompounding TokenFilters
+   to make them no longer use the Token class.  (Uwe Schindler)
+
 New Features
 
  * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,
@@ -100,6 +103,11 @@ New Features
    refCount is used to safely close the reader only once all threads are done
    using it.  (Michael McCandless)
 
+ * LUCENE-3486: Add SearcherLifetimeManager, to manage retrieving the
+   same searcher used in a previous search to ensure follow-on actions
+   (next page, drill down, etc.) use the same searcher as before (Mike
+   McCandless)
+
 Bug Fixes
 
  * LUCENE-3417: DictionaryCompoundWordFilter did not properly add tokens from the
@@ -109,11 +117,32 @@ Bug Fixes
 
  * LUCENE-3446: Fix NPE in BooleanFilter when DocIdSet/DocIdSetIterator is null.
    Converted code to FixedBitSet and simplified.  (Uwe Schindler, Shuji Umino)
+   
+ * LUCENE-3484: Fix NPE in TaxonomyWriter: parents array creation was not thread safe.
+   (Doron Cohen)
+   
+ * LUCENE-3495: Fix BlockJoinQuery to properly implement getBoost()/setBoost().
+   (Robert Muir)
+
+ * LUCENE-3519: BlockJoinCollector always returned null when you tried
+   to retrieve top groups for any BlockJoinQuery after the first (Mark
+   Harwood, Mike McCandless)
+
+ * LUCENE-3301: Added a workaround for buggy BreakIterator implementations in
+   Java that crash on certain inputs containing supplementary characters.
+   (Robert Muir)
+
+ * LUCENE-3508: Decompounders based on CompoundWordTokenFilterBase can now be
+   used with custom attributes. All those attributes are preserved and set on all
+   added decompounded tokens.  (Spyros Kapnissis, Uwe Schindler)
 
 API Changes
  
  * LUCENE-3436: Add SuggestMode to the spellchecker, so you can specify the strategy
    for suggesting related terms.  (James Dyer via Robert Muir)
+
+ * LUCENE-3513: Add SimpleFragListBuilder constructor with margin parameter.
+   (Kelsey Francis via Koji Sekiguchi)
 
 ======================= Lucene 3.4.0 ================
 
@@ -170,6 +199,11 @@ API Changes
    new FieldValueQueryNode<CharSequence>, which this last one implements
    FieldableQueryNode and thew new ValueQueryNode
    (Vinicius Barros via Uwe Schindler)
+   
+ * LUCENE-3488: Factored out SearcherManager from NRTManager. NRTManager
+   now manages SearcherManager instances instead of IndexSearcher directly.
+   Acquiring a SearcherManager is non-blocking unless the caller explicitly
+   requires to acquire a certain SearcherManager generation. (Simon Willnauer)
 
 Optimizations
 

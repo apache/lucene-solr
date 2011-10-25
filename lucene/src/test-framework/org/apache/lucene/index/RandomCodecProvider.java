@@ -48,7 +48,7 @@ public class RandomCodecProvider extends CodecProvider {
   private Map<String,Codec> previousMappings = new HashMap<String,Codec>();
   private final int perFieldSeed;
   
-  public RandomCodecProvider(Random random) {
+  public RandomCodecProvider(Random random, boolean useNoMemoryExpensiveCodec) {
     this.perFieldSeed = random.nextInt();
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
@@ -61,8 +61,10 @@ public class RandomCodecProvider extends CodecProvider {
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
     register(new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
-    register(new SimpleTextCodec());
-    register(new MemoryCodec());
+    if (!useNoMemoryExpensiveCodec) {
+      register(new SimpleTextCodec());
+      register(new MemoryCodec());
+    }
     Collections.shuffle(knownCodecs, random);
   }
   

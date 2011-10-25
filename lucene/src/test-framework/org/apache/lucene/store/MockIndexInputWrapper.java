@@ -57,6 +57,7 @@ public class MockIndexInputWrapper extends IndexInput {
 
   @Override
   public Object clone() {
+    dir.inputCloneCount.incrementAndGet();
     IndexInput iiclone = (IndexInput) delegate.clone();
     MockIndexInputWrapper clone = new MockIndexInputWrapper(dir, name, iiclone);
     clone.isClone = true;

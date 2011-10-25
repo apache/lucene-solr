@@ -34,9 +34,17 @@ public class CheckHits {
   /**
    * Some explains methods calculate their values though a slightly
    * different  order of operations from the actual scoring method ...
-   * this allows for a small amount of variation
+   * this allows for a small amount of relative variation
    */
-  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.02f;
+  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.001f;
+  
+  /**
+   * In general we use a relative epsilon, but some tests do crazy things
+   * like boost documents with 0, creating tiny tiny scores where the
+   * relative difference is large but the absolute difference is tiny.
+   * we ensure the the epsilon is always at least this big.
+   */
+  public static float EXPLAIN_SCORE_TOLERANCE_MINIMUM = 1e-6f;
     
   /**
    * Tests that all documents up to maxDoc which are *not* in the
@@ -305,6 +313,12 @@ public class CheckHits {
 
   }
 
+  /** returns a reasonable epsilon for comparing two floats,
+   *  where minor differences are acceptable such as score vs. explain */
+  public static float explainToleranceDelta(float f1, float f2) {
+    return Math.max(EXPLAIN_SCORE_TOLERANCE_MINIMUM, Math.max(Math.abs(f1), Math.abs(f2)) * EXPLAIN_SCORE_TOLERANCE_DELTA);
+  }
+
   /** 
    * Assert that an explanation has the expected score, and optionally that its
    * sub-details max/sum/factor match to that score.
@@ -323,7 +337,7 @@ public class CheckHits {
     float value = expl.getValue();
     Assert.assertEquals(q+": score(doc="+doc+")="+score+
         " != explanationScore="+value+" Explanation: "+expl,
-        score,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
+        score,value,explainToleranceDelta(score, value));
 
     if (!deep) return;
 
@@ -393,7 +407,7 @@ public class CheckHits {
         }
         Assert.assertEquals(q+": actual subDetails combined=="+combined+
             " != value="+value+" Explanation: "+expl,
-            combined,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
+            combined,value,explainToleranceDelta(combined, value));
       }
     }
   }

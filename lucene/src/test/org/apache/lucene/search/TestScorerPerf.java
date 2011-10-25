@@ -1,5 +1,6 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -141,7 +142,8 @@ public class TestScorerPerf extends LuceneTestCase {
     final BitSet rnd = sets[random.nextInt(sets.length)];
     Query q = new ConstantScoreQuery(new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
+        assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
         return new DocIdBitSet(rnd);
       }
     });

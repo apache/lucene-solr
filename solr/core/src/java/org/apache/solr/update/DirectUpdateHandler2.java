@@ -55,7 +55,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
 public class DirectUpdateHandler2 extends UpdateHandler {
-  protected SolrCoreState indexWriterProvider;
+  protected SolrCoreState solrCoreState;
   protected final Lock commitLock = new ReentrantLock();
 
   // stats
@@ -81,7 +81,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
    
-    indexWriterProvider = new DefaultSolrCoreState(core.getDirectoryFactory());
+    solrCoreState = new DefaultSolrCoreState(core.getDirectoryFactory());
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
@@ -97,11 +97,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) throws IOException {
     super(core);
     if (updateHandler instanceof DirectUpdateHandler2) {
-      this.indexWriterProvider = ((DirectUpdateHandler2)updateHandler).indexWriterProvider;
+      this.solrCoreState = ((DirectUpdateHandler2)updateHandler).solrCoreState;
     } else {
       // the impl has changed, so we cannot use the old state - decref it
       updateHandler.decref();
-      indexWriterProvider = new DefaultSolrCoreState(core.getDirectoryFactory());
+      solrCoreState = new DefaultSolrCoreState(core.getDirectoryFactory());
     }
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
@@ -120,18 +120,18 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   private void deleteAll() throws IOException {
     SolrCore.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
-    indexWriterProvider.getIndexWriter(core).deleteAll();
+    solrCoreState.getIndexWriter(core).deleteAll();
   }
 
   protected void rollbackWriter() throws IOException {
     numDocsPending.set(0);
-    indexWriterProvider.rollbackIndexWriter(core);
+    solrCoreState.rollbackIndexWriter(core);
     
   }
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
-    IndexWriter writer = indexWriterProvider.getIndexWriter(core);
+    IndexWriter writer = solrCoreState.getIndexWriter(core);
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
@@ -195,7 +195,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    indexWriterProvider.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
+    solrCoreState.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
 
     ulog.delete(cmd);
  
@@ -228,7 +228,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if (delAll) {
         deleteAll();
       } else {
-        indexWriterProvider.getIndexWriter(core).deleteDocuments(q);
+        solrCoreState.getIndexWriter(core).deleteDocuments(q);
       }
 
       ulog.deleteByQuery(cmd);
@@ -260,7 +260,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     
     IndexReader[] readers = cmd.readers;
     if (readers != null && readers.length > 0) {
-      indexWriterProvider.getIndexWriter(core).addIndexes(readers);
+      solrCoreState.getIndexWriter(core).addIndexes(readers);
       rc = 1;
     } else {
       rc = 0;
@@ -279,7 +279,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
-    IndexWriter writer = indexWriterProvider.getIndexWriter(core);
+    IndexWriter writer = solrCoreState.getIndexWriter(core);
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
     } else {
@@ -385,11 +385,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     IndexReader currentReader = previousSearcher.getIndexReader();
     IndexReader newReader;
 
-    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(core), true);
+    newReader = IndexReader.openIfChanged(currentReader, solrCoreState.getIndexWriter(core), true);
   
     
-    if (newReader == currentReader) {
+    if (newReader == null) {
       currentReader.incRef();
+      newReader = currentReader;
     }
 
     return new SolrIndexSearcher(core, schema, "main", newReader, true, true, true, core.getDirectoryFactory());
@@ -397,7 +398,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   
   @Override
   public void newIndexWriter() throws IOException {
-    indexWriterProvider.newIndexWriter(core);
+    solrCoreState.newIndexWriter(core);
   }
   
   /**
@@ -449,7 +450,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     numDocsPending.set(0);
 
-    indexWriterProvider.decref();
+    solrCoreState.decref();
     
     log.info("closed " + this);
   }
@@ -490,15 +491,15 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
-    if (commitTracker.getTimeUpperBound() > 0) {
+    if (commitTracker.getDocsUpperBound() > 0) {
       lst.add("autocommit maxDocs", commitTracker.getDocsUpperBound());
     }
     if (commitTracker.getTimeUpperBound() > 0) {
       lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");
     }
     lst.add("autocommits", commitTracker.getCommitCount());
-    if (softCommitTracker.getTimeUpperBound() > 0) {
-      lst.add("soft autocommit maxDocs", softCommitTracker.getTimeUpperBound());
+    if (softCommitTracker.getDocsUpperBound() > 0) {
+      lst.add("soft autocommit maxDocs", softCommitTracker.getDocsUpperBound());
     }
     if (softCommitTracker.getTimeUpperBound() > 0) {
       lst.add("soft autocommit maxTime", "" + softCommitTracker.getTimeUpperBound() + "ms");
@@ -527,13 +528,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
   
   public SolrCoreState getIndexWriterProvider() {
-    return indexWriterProvider;
+    return solrCoreState;
   }
 
   @Override
   public void decref() {
     try {
-      indexWriterProvider.decref();
+      solrCoreState.decref();
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "", e, false);
     }
@@ -541,6 +542,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   @Override
   public void incref() {
-    indexWriterProvider.incref();
+    solrCoreState.incref();
   }
 }

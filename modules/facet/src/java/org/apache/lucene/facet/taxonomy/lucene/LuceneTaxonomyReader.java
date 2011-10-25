@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.taxonomy.lucene;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -10,17 +9,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.lucene.Consts.LoadFullPathOnly;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.collections.LRUHashMap;
@@ -71,7 +69,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   private ReadWriteLock indexReaderLock = new ReentrantReadWriteLock();
 
   // The following are the limited-size LRU caches used to cache the latest
-  // results from getOrdinal() and getCategoryCache().
+  // results from getOrdinal() and getLabel().
   // Because LRUHashMap is not thread-safe, we need to synchronize on this
   // object when using it. Unfortunately, this is not optimal under heavy
   // contention because it means that while one thread is using the cache
@@ -84,8 +82,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   // the mistake of locking out readers while waiting for disk in a cache
   // miss - below, we do not hold cache lock while reading missing data from
   // disk.
-  private final LRUHashMap<String, Integer> getOrdinalCache;
-  private final LRUHashMap<Integer, String> getCategoryCache;
+  private final LRUHashMap<String, Integer> ordinalCache;
+  private final LRUHashMap<Integer, String> categoryCache;
 
   // getParent() needs to be extremely efficient, to the point that we need
   // to fetch all the data in advance into memory, and answer these calls
@@ -102,6 +100,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
 
   private char delimiter = Consts.DEFAULT_DELIMITER;
 
+  private volatile boolean closed = false;
+  
   /**
    * Open for reading a taxonomy stored in a given {@link Directory}.
    * @param directory
@@ -117,10 +117,10 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
 
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    getOrdinalCache = new LRUHashMap<String, Integer>(4000);
-    getCategoryCache = new LRUHashMap<Integer, String>(4000);
+    ordinalCache = new LRUHashMap<String, Integer>(4000);
+    categoryCache = new LRUHashMap<Integer, String>(4000);
 
-    // TODO (Facet): consider lazily create parent array it when asked, not in the constructor
+    // TODO (Facet): consider lazily create parent array when asked, not in the constructor
     parentArray = new ParentArray();
     parentArray.refresh(indexReader);
   }
@@ -129,40 +129,15 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     return IndexReader.open(directory);
   }
 
-  // convenience constructors... deprecated because they cause confusion
-  // because they use parent directory instead of the actual directory.
-  private Directory ourDirectory = null; // remember directory to close later, but only if we opened it here
   /**
-   * Open for reading a taxonomy stored in a subdirectory of a given
-   * directory on the file system.
-   * @param parentDir The parent directory of the taxonomy's directory
-   * (usually this would be the directory holding the index).
-   * @param name The name of the taxonomy, and the subdirectory holding it. 
-   * @throws CorruptIndexException if the Taxonomy is corrupted.
-   * @throws IOException if another error occurred.
-   */  
-  @Deprecated
-  public LuceneTaxonomyReader(File parentDir, String name)
-  throws CorruptIndexException, IOException {
-    this(FSDirectory.open(new File(parentDir, name)));
-    ourDirectory = indexReader.directory(); // remember to close the directory we opened
+   * @throws AlreadyClosedException if this IndexReader is closed
+   */
+  protected final void ensureOpen() throws AlreadyClosedException {
+    if (indexReader.getRefCount() <= 0) {
+      throw new AlreadyClosedException("this TaxonomyReader is closed");
+    }
   }
-
-  /**
-   * Open for reading a taxonomy stored in a subdirectory of a given
-   * directory on the file system.
-   * @param parentDir The parent directory of the taxonomy's directory.
-   * @param name The name of the taxonomy, and the subdirectory holding it. 
-   * @throws CorruptIndexException if the Taxonomy is corrupted.
-   * @throws IOException if another error occurred.
-   */  
-  @Deprecated
-  public LuceneTaxonomyReader(String parentDir, String name)
-  throws CorruptIndexException, IOException {
-    this(FSDirectory.open(new File(parentDir, name)));
-    ourDirectory = indexReader.directory(); // rememebr to close the directory we opened
-  }
-
+  
   /**
    * setCacheSize controls the maximum allowed size of each of the caches
    * used by {@link #getPath(int)} and {@link #getOrdinal(CategoryPath)}.
@@ -173,11 +148,12 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * @param size the new maximum cache size, in number of entries.
    */
   public void setCacheSize(int size) {
-    synchronized(getCategoryCache) {
-      getCategoryCache.setMaxSize(size);
+    ensureOpen();
+    synchronized(categoryCache) {
+      categoryCache.setMaxSize(size);
     }
-    synchronized(getOrdinalCache) {
-      getOrdinalCache.setMaxSize(size);
+    synchronized(ordinalCache) {
+      ordinalCache.setMaxSize(size);
     }
   }
 
@@ -192,18 +168,20 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * LuceneTaxonomyReader objects you create.
    */
   public void setDelimiter(char delimiter) {
+    ensureOpen();
     this.delimiter = delimiter;
   }
 
   public int getOrdinal(CategoryPath categoryPath) throws IOException {
+    ensureOpen();
     if (categoryPath.length()==0) {
       return ROOT_ORDINAL;
     }
     String path = categoryPath.toString(delimiter);
 
     // First try to find the answer in the LRU cache:
-    synchronized(getOrdinalCache) {
-      Integer res = getOrdinalCache.get(path);
+    synchronized(ordinalCache) {
+      Integer res = ordinalCache.get(path);
       if (res!=null) {
         return res.intValue();
       }
@@ -229,16 +207,17 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // other thread already added the same category to the cache. We do
     // not care about this possibilty, as LRUCache replaces previous values
     // of the same keys (it doesn't store duplicates).
-    synchronized(getOrdinalCache) {
+    synchronized(ordinalCache) {
       // GB: new Integer(int); creates a new object each and every time.
       // Integer.valueOf(int) might not (See JavaDoc). 
-      getOrdinalCache.put(path, Integer.valueOf(ret));
+      ordinalCache.put(path, Integer.valueOf(ret));
     }
 
     return ret;
   }
 
   public CategoryPath getPath(int ordinal) throws CorruptIndexException, IOException {
+    ensureOpen();
     // TODO (Facet): Currently, the LRU cache we use (getCategoryCache) holds
     // strings with delimiters, not CategoryPath objects, so even if
     // we have a cache hit, we need to process the string and build a new
@@ -255,6 +234,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   }
 
   public boolean getPath(int ordinal, CategoryPath result) throws CorruptIndexException, IOException {
+    ensureOpen();
     String label = getLabel(ordinal);
     if (label==null) {
       return false;
@@ -265,6 +245,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   }
 
   private String getLabel(int catID) throws CorruptIndexException, IOException {
+    ensureOpen();
     // First try to find the answer in the LRU cache. It is very
     // unfortunate that we need to allocate an Integer object here -
     // it would have been better if we used a hash table specifically
@@ -273,8 +254,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // Integer.valueOf(int) might not (See JavaDoc). 
     Integer catIDInteger = Integer.valueOf(catID);
 
-    synchronized(getCategoryCache) {
-      String res = getCategoryCache.get(catIDInteger);
+    synchronized(categoryCache) {
+      String res = categoryCache.get(catIDInteger);
       if (res!=null) {
         return res;
       }
@@ -306,14 +287,15 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // other thread already added the same category to the cache. We do
     // not care about this possibility, as LRUCache replaces previous
     // values of the same keys (it doesn't store duplicates).
-    synchronized (getCategoryCache) {
-      getCategoryCache.put(catIDInteger, ret);
+    synchronized (categoryCache) {
+      categoryCache.put(catIDInteger, ret);
     }
 
     return ret;
   }
 
   public int getParent(int ordinal) {
+    ensureOpen();
     // Note how we don't need to hold the read lock to do the following,
     // because the array reference is volatile, ensuring the correct
     // visibility and ordering: if we get the new reference, the new
@@ -344,6 +326,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    */
 
   public int[] getParentArray() {
+    ensureOpen();
     // Note how we don't need to hold the read lock to do the following,
     // because the array reference is volatile, ensuring the correct
     // visibility and ordering: if we get the new reference, the new
@@ -355,6 +338,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   // method in this class) to ensure that it never gets called concurrently
   // with itself.
   public synchronized void refresh() throws IOException {
+    ensureOpen();
     /*
      * Since refresh() can be a lengthy operation, it is very important that we
      * avoid locking out all readers for its duration. This is why we don't hold
@@ -368,8 +352,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     // safely read indexReader without holding the write lock, because
     // no other thread can be writing at this time (this method is the
     // only possible writer, and it is "synchronized" to avoid this case).
-    IndexReader r2 = indexReader.reopen();
-    if (indexReader != r2) {
+    IndexReader r2 = IndexReader.openIfChanged(indexReader);
+    if (r2 != null) {
       IndexReader oldreader = indexReader;
       // we can close the old searcher, but need to synchronize this
       // so that we don't close it in the middle that another routine
@@ -405,7 +389,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
 
       // Remove any INVALID_ORDINAL values from the ordinal cache,
       // because it is possible those are now answered by the new data!
-      Iterator<Entry<String, Integer>> i = getOrdinalCache.entrySet().iterator();
+      Iterator<Entry<String, Integer>> i = ordinalCache.entrySet().iterator();
       while (i.hasNext()) {
         Entry<String, Integer> e = i.next();
         if (e.getValue().intValue() == INVALID_ORDINAL) {
@@ -416,13 +400,25 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   }
 
   public void close() throws IOException {
-    indexReader.close();
-    if (ourDirectory!=null) {
-      ourDirectory.close();
+    if (!closed) {
+      decRef();
+      closed = true;
     }
+  }
+  
+  /** Do the actual closing, free up resources */
+  private void doClose() throws IOException {
+    indexReader.close();
+    closed = true;
+
+    parentArray = null;
+    childrenArrays = null;
+    categoryCache.clear();
+    ordinalCache.clear();
   }
 
   public int getSize() {
+    ensureOpen();
     indexReaderLock.readLock().lock();
     try {
       return indexReader.numDocs();
@@ -432,6 +428,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   }
 
   public Map<String, String> getCommitUserData() {
+    ensureOpen();
     return indexReader.getCommitUserData();
   }
   
@@ -439,6 +436,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   Object childrenArraysRebuild = new Object();
 
   public ChildrenArrays getChildrenArrays() {
+    ensureOpen();
     // Check if the taxonomy grew since we built the array, and if it
     // did, create new (and larger) arrays and fill them as required.
     // We do all this under a lock, two prevent to concurrent calls to
@@ -492,6 +490,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
   }
 
   public String toString(int max) {
+    ensureOpen();
     StringBuilder sb = new StringBuilder();
     int upperl = Math.min(max, this.indexReader.maxDoc());
     for (int i = 0; i < upperl; i++) {
@@ -537,6 +536,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * @return lucene indexReader
    */
   IndexReader getInternalIndexReader() {
+    ensureOpen();
     return this.indexReader;
   }
 
@@ -547,13 +547,20 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * @throws IOException 
    */
   public void decRef() throws IOException {
-    this.indexReader.decRef();
+    ensureOpen();
+    if (indexReader.getRefCount() == 1) {
+      // Do not decRef the indexReader - doClose does it by calling reader.close()
+      doClose();
+    } else {
+      indexReader.decRef();
+    }
   }
   
   /**
    * Expert: returns the current refCount for this taxonomy reader
    */
   public int getRefCount() {
+    ensureOpen();
     return this.indexReader.getRefCount();
   }
   
@@ -565,6 +572,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * otherwise the reader may never be closed. 
    */
   public void incRef() {
+    ensureOpen();
     this.indexReader.incRef();
   }
 }

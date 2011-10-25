@@ -49,7 +49,7 @@ import org.apache.lucene.util.PriorityQueue;
  *  being that the documents in each group must always be
  *  indexed as a block.  This collector also fills in
  *  TopGroups.totalGroupCount without requiring the separate
- *  {@link TermAllGroupsCollector}.  However, this collector does
+ *  {@link org.apache.lucene.search.grouping.term.TermAllGroupsCollector}.  However, this collector does
  *  not fill in the groupValue of each group; this field
  *  will always be null.
  *
@@ -505,7 +505,7 @@ public class BlockGroupingCollector extends Collector {
     subDocUpto = 0;
     docBase = readerContext.docBase;
     //System.out.println("setNextReader base=" + docBase + " r=" + readerContext.reader);
-    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext).iterator();
+    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext, readerContext.reader.getLiveDocs()).iterator();
     groupEndDocID = -1;
 
     currentReaderContext = readerContext;

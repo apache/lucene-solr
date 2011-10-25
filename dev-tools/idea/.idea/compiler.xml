@@ -6,9 +6,11 @@
       <entry name=".+\.(gif|png|jpeg|jpg)" />
     </resourceExtensions>
     <wildcardResourcePatterns>
+      <entry name="?*.aff"/>
       <entry name="?*.brk" />
       <entry name="?*.bz2" />
       <entry name="?*.csv" />
+      <entry name="?*.dic"/>
       <entry name="?*.docx"/>
       <entry name="?*.dtd" />
       <entry name="?*.ftl" />
@@ -20,6 +22,7 @@
       <entry name="?*.jpeg" />
       <entry name="?*.jpg" />
       <entry name="?*.mem" />
+      <entry name="?*.mt" />
       <entry name="?*.nrm" />
       <entry name="?*.pdf" />
       <entry name="?*.png" />

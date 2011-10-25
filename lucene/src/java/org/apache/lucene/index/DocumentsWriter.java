@@ -411,7 +411,7 @@ final class DocumentsWriter {
          */
         try {
           synchronized (ticketQueue) {
-            // Each flush is assigned a ticket in the order they accquire the ticketQueue lock
+            // Each flush is assigned a ticket in the order they acquire the ticketQueue lock
             ticket =  new FlushTicket(flushingDWPT.prepareFlush(), true);
             ticketQueue.add(ticket);
           }

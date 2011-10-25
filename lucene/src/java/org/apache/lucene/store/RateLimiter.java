@@ -63,7 +63,7 @@ public class RateLimiter {
    *  with a biggish count, not one byte at a time. */
   public void pause(long bytes) {
 
-    // TODO: this is purely instantenous rate; maybe we
+    // TODO: this is purely instantaneous rate; maybe we
     // should also offer decayed recent history one?
     final long targetNS = lastNS = lastNS + ((long) (bytes * nsPerByte));
     long curNS = System.nanoTime();
@@ -71,7 +71,7 @@ public class RateLimiter {
       lastNS = curNS;
     }
 
-    // While loop because Thread.sleep doesn't alway sleep
+    // While loop because Thread.sleep doesn't always sleep
     // enough:
     while(true) {
       final long pauseNS = targetNS - curNS;

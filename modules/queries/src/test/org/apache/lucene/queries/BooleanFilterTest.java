@@ -35,6 +35,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -94,7 +95,7 @@ public class BooleanFilterTest extends LuceneTestCase {
   private Filter getNullDISFilter() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
         return null;
       }
     };
@@ -103,7 +104,7 @@ public class BooleanFilterTest extends LuceneTestCase {
   private Filter getNullDISIFilter() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
         return new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() {
@@ -122,7 +123,7 @@ public class BooleanFilterTest extends LuceneTestCase {
   private void tstFilterCard(String mes, int expected, Filter filt)
       throws Exception {
     // BooleanFilter never returns null DIS or null DISI!
-    DocIdSetIterator disi = filt.getDocIdSet(new AtomicReaderContext(reader)).iterator();
+    DocIdSetIterator disi = filt.getDocIdSet(new AtomicReaderContext(reader), reader.getLiveDocs()).iterator();
     int actual = 0;
     while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       actual++;
