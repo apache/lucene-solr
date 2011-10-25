@@ -662,6 +662,11 @@ Bug fixes
   for a document depending if you used nextDoc() versus advance().
   (Mike McCandless, Robert Muir)
 
+* LUCENE-3529: Properly support indexing an empty field with empty term text.
+  Previously, if you had assertions enabled you would receive an error during
+  flush, if you didn't, you would get an invalid index.  
+  (Mike McCandless, Robert Muir)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
