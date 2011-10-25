@@ -724,6 +724,10 @@ Test Cases
   for implementing subclasses in different packages, where assertions are not
   enabled. (Uwe Schindler)
 
+* LUCENE-3506: tests relying on assertions being enabled were no-op because
+  they ignored AssertionError. With this fix now entire test framework 
+  (all tests) fail if assertions are disabled. (Doron Cohen)
+  
 ======================= Lucene 3.4.0 =======================
 
 Bug fixes
