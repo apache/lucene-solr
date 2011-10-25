@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.compound;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -27,14 +28,20 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.xml.sax.InputSource;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
+
+  private static CharArraySet makeDictionary(String... dictionary) {
+    return new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList(dictionary), true);
+  }
+
   public void testHyphenationCompoundWordsDA() throws Exception {
-    String[] dict = { "læse", "hest" };
+    CharArraySet dict = makeDictionary("læse", "hest");
 
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
@@ -53,7 +60,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testHyphenationCompoundWordsDELongestMatch() throws Exception {
-    String[] dict = { "basketball", "basket", "ball", "kurv" };
+    CharArraySet dict = makeDictionary("basketball", "basket", "ball", "kurv");
 
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
@@ -121,9 +128,9 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testDumbCompoundWordsSE() throws Exception {
-    String[] dict = { "Bil", "Dörr", "Motor", "Tak", "Borr", "Slag", "Hammar",
+    CharArraySet dict = makeDictionary("Bil", "Dörr", "Motor", "Tak", "Borr", "Slag", "Hammar",
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiol", "Makare", "Gesäll",
-        "Sko", "Vind", "Rute", "Torkare", "Blad" };
+        "Sko", "Vind", "Rute", "Torkare", "Blad");
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
         new MockTokenizer( 
@@ -151,9 +158,9 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testDumbCompoundWordsSELongestMatch() throws Exception {
-    String[] dict = { "Bil", "Dörr", "Motor", "Tak", "Borr", "Slag", "Hammar",
+    CharArraySet dict = makeDictionary("Bil", "Dörr", "Motor", "Tak", "Borr", "Slag", "Hammar",
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiols", "Makare", "Gesäll",
-        "Sko", "Vind", "Rute", "Torkare", "Blad", "Fiolsfodral" };
+        "Sko", "Vind", "Rute", "Torkare", "Blad", "Fiolsfodral");
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
         new MockTokenizer(new StringReader("Basfiolsfodralmakaregesäll"), MockTokenizer.WHITESPACE, false),
@@ -168,7 +175,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testTokenEndingWithWordComponentOfMinimumLength() throws Exception {
-    String[] dict = {"ab", "cd", "ef"};
+    CharArraySet dict = makeDictionary("ab", "cd", "ef");
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
       new WhitespaceTokenizer(TEST_VERSION_CURRENT,
@@ -189,7 +196,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testWordComponentWithLessThanMinimumLength() throws Exception {
-    String[] dict = {"abc", "d", "efg"};
+    CharArraySet dict = makeDictionary("abc", "d", "efg");
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
       new WhitespaceTokenizer(TEST_VERSION_CURRENT,
@@ -211,8 +218,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testReset() throws Exception {
-    String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
-        "Aufgabe", "Überwachung" };
+    CharArraySet dict = makeDictionary("Rind", "Fleisch", "Draht", "Schere", "Gesetz",
+        "Aufgabe", "Überwachung");
 
     Tokenizer wsTokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
         "Rindfleischüberwachungsgesetz"));
@@ -234,7 +241,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testRetainMockAttribute() throws Exception {
-    String[] dict = { "abc", "d", "efg" };
+    CharArraySet dict = makeDictionary("abc", "d", "efg");
     Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
         new StringReader("abcdefg"));
     TokenStream stream = new MockRetainAttributeFilter(tokenizer);

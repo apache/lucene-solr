@@ -43,56 +43,10 @@ import org.apache.lucene.util.Version;
  * have {@link org.apache.lucene.analysis.core.LowerCaseFilter} before this filter in your analysis chain.
  * For optional performance (as this filter does lots of lookups to the dictionary,
  * you should use the latter analysis chain/CharArraySet). Be aware: If you supply arbitrary
- * {@link Set Sets} to the ctors or {@code String[]} dictionaries, they will be automatically
+ * {@link Set Sets} to the ctors, they will be automatically
  * transformed to case-insensitive!
  */
 public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
-  /**
-   * Creates a new {@link DictionaryCompoundWordTokenFilter}.
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the
-   *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase#version"
-   *          >CompoundWordTokenFilterBase</a> for details.
-   * @param input
-   *          the {@link TokenStream} to process
-   * @param dictionary
-   *          the word dictionary to match against
-   * @param minWordSize
-   *          only words longer than this get processed
-   * @param minSubwordSize
-   *          only subwords longer than this get to the output stream
-   * @param maxSubwordSize
-   *          only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch
-   *          Add only the longest matching subword to the stream
-   * @deprecated Use the constructors taking {@link Set}
-   */
-  @Deprecated
-  public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, String[] dictionary,
-      int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
-  }
-
-  /**
-   * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   * 
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the
-   *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase#version"
-   *          >CompoundWordTokenFilterBase</a> for details.
-   * 
-   * @param input
-   *          the {@link TokenStream} to process
-   * @param dictionary
-   *          the word dictionary to match against
-   * @deprecated Use the constructors taking {@link Set}
-   */
-  @Deprecated
-  public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, String[] dictionary) {
-    super(matchVersion, input, dictionary);
-  }
   
   /**
    * Creates a new {@link DictionaryCompoundWordTokenFilter}

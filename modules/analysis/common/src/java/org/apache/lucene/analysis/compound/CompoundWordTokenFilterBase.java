@@ -48,7 +48,7 @@ import org.apache.lucene.util.Version;
  * have {@link org.apache.lucene.analysis.core.LowerCaseFilter} before this filter in your analysis chain.
  * For optional performance (as this filter does lots of lookups to the dictionary,
  * you should use the latter analysis chain/CharArraySet). Be aware: If you supply arbitrary
- * {@link Set Sets} to the ctors or {@code String[]} dictionaries, they will be automatically
+ * {@link Set Sets} to the ctors, they will be automatically
  * transformed to case-insensitive!
  */
 public abstract class CompoundWordTokenFilterBase extends TokenFilter {
@@ -102,33 +102,6 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     } else {
       this.dictionary = new CharArraySet(matchVersion, dictionary, true);
     }
-  }
-
-  /** @deprecated Use the constructors taking {@link Set} */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary) {
-    this(matchVersion, input,makeDictionary(matchVersion,dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
-  }
-
-  /** @deprecated Use the constructors taking {@link Set} */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    this(matchVersion, input,makeDictionary(matchVersion,dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
-  }
-  
-  /** @deprecated Use the constructors taking {@link Set} */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, boolean onlyLongestMatch) {
-    this(matchVersion, input,makeDictionary(matchVersion,dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
-  }
-
-  /** @deprecated Only available for backwards compatibility. */
-  @Deprecated
-  public static CharArraySet makeDictionary(final Version matchVersion, final String[] dictionary) {
-    if (dictionary == null) {
-      return null;
-    }
-    return new CharArraySet(matchVersion, Arrays.asList(dictionary), true);
   }
   
   @Override
@@ -190,5 +163,5 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       this.endOffset = newStart + length;
     }
 
-	}  
+  }  
 }
