@@ -1589,26 +1589,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns the number of unique terms (across all fields)
    *  in this reader.
    *
-   *  @throws UnsupportedOperationException if this count
+   *  @return number of unique terms or -1 if this count
    *  cannot be easily determined (eg Multi*Readers).
    *  Instead, you should call {@link
    *  #getSequentialSubReaders} and ask each sub reader for
    *  its unique term count. */
   public long getUniqueTermCount() throws IOException {
-    long numTerms = 0;
     final Fields fields = fields();
     if (fields == null) {
       return 0;
     }
-    FieldsEnum it = fields.iterator();
-    while(true) {
-      String field = it.next();
-      if (field == null) {
-        break;
-      }
-      numTerms += fields.terms(field).getUniqueTermCount();
-    }
-    return numTerms;
+    return fields.getUniqueTermCount();
   }
 
   /** For IndexReader implementations that use

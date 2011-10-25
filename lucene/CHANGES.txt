@@ -184,6 +184,11 @@ Changes in backwards compatibility policy
   with the old tokenStream() method removed.  Consequently it is now mandatory
   for all Analyzers to support reusability. (Chris Male)
 
+* LUCENE-3473: IndexReader.getUniqueTermCount() no longer throws UOE when
+  it cannot be easily determined (e.g. Multi*Readers). Instead, it returns
+  -1 to be consistent with this behavior across other index statistics.
+  (Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

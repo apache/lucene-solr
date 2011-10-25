@@ -32,5 +32,31 @@ public abstract class Fields {
    *  null if the field does not exist. */
   public abstract Terms terms(String field) throws IOException;
   
+  /** Returns the number of terms for all fields, or -1 if this 
+   *  measure isn't stored by the codec. Note that, just like 
+   *  other term measures, this measure does not take deleted 
+   *  documents into account. */
+  // TODO: deprecate?
+  public long getUniqueTermCount() throws IOException {
+    long numTerms = 0;
+    FieldsEnum it = iterator();
+    while(true) {
+      String field = it.next();
+      if (field == null) {
+        break;
+      }
+      Terms terms = terms(field);
+      if (terms != null) {
+        final long termCount = terms.getUniqueTermCount();
+        if (termCount == -1) {
+          return -1;
+        }
+          
+        numTerms += termCount;
+      }
+    }
+    return numTerms;
+  }
+  
   public final static Fields[] EMPTY_ARRAY = new Fields[0];
 }

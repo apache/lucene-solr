@@ -37,7 +37,7 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     CodecProvider provider = CodecProvider.getDefault();
     //provider.register(new MemoryCodec());
-    if (random.nextBoolean()) {
+    if ( (!"PreFlex".equals(provider.getDefaultFieldCodec())) && random.nextBoolean()) {
       provider.setFieldCodec("docid", "Memory");
     }
 

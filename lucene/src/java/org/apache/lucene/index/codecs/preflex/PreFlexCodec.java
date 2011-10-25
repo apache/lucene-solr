@@ -84,11 +84,11 @@ public class PreFlexCodec extends Codec {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    throw new UnsupportedOperationException("PerDocConsumer is not supported by Preflex codec");
+    return null;
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    throw new UnsupportedOperationException("PerDocValues is not supported by Preflex codec");
+    return null;
   }
 }

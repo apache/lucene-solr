@@ -818,7 +818,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   @Override
   public long getUniqueTermCount() throws IOException {
-    throw new UnsupportedOperationException("");
+    return -1;
   }
 
   @Override

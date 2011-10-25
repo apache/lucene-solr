@@ -162,6 +162,11 @@ public class PreFlexFields extends FieldsProducer {
     return preTerms.get(field);
   }
 
+  @Override
+  public long getUniqueTermCount() throws IOException {
+    return getTermsDict().size();
+  }
+
   synchronized private TermInfosReader getTermsDict() {
     if (tis != null) {
       return tis;
@@ -238,6 +243,11 @@ public class PreFlexFields extends FieldsProducer {
       } else {
         return BytesRef.getUTF8SortedAsUTF16Comparator();
       }
+    }
+
+    @Override
+    public long getUniqueTermCount() throws IOException {
+      return -1;
     }
 
     @Override

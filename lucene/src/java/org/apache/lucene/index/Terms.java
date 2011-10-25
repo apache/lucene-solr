@@ -155,10 +155,12 @@ public abstract class Terms {
     return termsEnum.docsAndPositions(liveDocs, reuse);
   }
 
-  public long getUniqueTermCount() throws IOException {
-    throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
-  }
-
+  /** Returns the number of terms for this field, or -1 if this 
+   *  measure isn't stored by the codec. Note that, just like 
+   *  other term measures, this measure does not take deleted 
+   *  documents into account. */
+  public abstract long getUniqueTermCount() throws IOException;
+  
   /** Returns the sum of {@link TermsEnum#totalTermFreq} for
    *  all terms in this field, or -1 if this measure isn't
    *  stored by the codec (or if this fields omits term freq
