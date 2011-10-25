@@ -33,7 +33,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
@@ -106,7 +106,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     dir.close();
   }
 
-  private static class StandardCodecWithOrds extends Codec {
+  private static class StandardCodecWithOrds extends PostingsFormat {
     
     public StandardCodecWithOrds() {
       super("StandardOrds");

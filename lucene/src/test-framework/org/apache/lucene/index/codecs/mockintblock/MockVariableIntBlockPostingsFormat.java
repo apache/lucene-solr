@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.mocksep;
+package org.apache.lucene.index.codecs.mockintblock;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,43 +24,133 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.sep.IntStreamFactory;
+import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.index.codecs.sep.IntIndexOutput;
+import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
+import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
+import org.apache.lucene.index.codecs.sep.SepPostingsReader;
+import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
+import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
+import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
-import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
-import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.codecs.sep.SepPostingsReader;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
- * A silly codec that simply writes each file separately as
- * single vInts.  Don't use this (performance will be poor)!
- * This is here just to test the core sep codec
- * classes.
+ * A silly test codec to verify core support for variable
+ * sized int block encoders is working.  The int encoder
+ * used here writes baseBlockSize ints at once, if the first
+ * int is <= 3, else 2*baseBlockSize.
  */
-public class MockSepCodec extends Codec {
 
-  public MockSepCodec() {
-    super("MockSep");
+public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
+  private final int baseBlockSize;
+  
+  public MockVariableIntBlockPostingsFormat(int baseBlockSize) {
+    super("MockVariableIntBlock");
+    this.baseBlockSize = baseBlockSize;
+  }
+
+  @Override
+  public String toString() {
+    return name + "(baseBlockSize="+ baseBlockSize + ")";
+  }
+
+  public static class MockIntFactory extends IntStreamFactory {
+
+    private final int baseBlockSize;
+
+    public MockIntFactory(int baseBlockSize) {
+      this.baseBlockSize = baseBlockSize;
+    }
+
+    @Override
+    public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
+      final IndexInput in = dir.openInput(fileName, context);
+      final int baseBlockSize = in.readInt();
+      return new VariableIntBlockIndexInput(in) {
+
+        @Override
+        protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
+          return new BlockReader() {
+            public void seek(long pos) {}
+            public int readBlock() throws IOException {
+              buffer[0] = in.readVInt();
+              final int count = buffer[0] <= 3 ? baseBlockSize-1 : 2*baseBlockSize-1;
+              assert buffer.length >= count: "buffer.length=" + buffer.length + " count=" + count;
+              for(int i=0;i<count;i++) {
+                buffer[i+1] = in.readVInt();
+              }
+              return 1+count;
+            }
+          };
+        }
+      };
+    }
+
+    @Override
+    public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
+      final IndexOutput out = dir.createOutput(fileName, context);
+      boolean success = false;
+      try {
+        out.writeInt(baseBlockSize);
+        VariableIntBlockIndexOutput ret = new VariableIntBlockIndexOutput(out, 2*baseBlockSize) {
+          int pendingCount;
+          final int[] buffer = new int[2+2*baseBlockSize];
+          
+          @Override
+          protected int add(int value) throws IOException {
+            assert value >= 0;
+            buffer[pendingCount++] = value;
+            // silly variable block length int encoder: if
+            // first value <= 3, we write N vints at once;
+            // else, 2*N
+            final int flushAt = buffer[0] <= 3 ? baseBlockSize : 2*baseBlockSize;
+            
+            // intentionally be non-causal here:
+            if (pendingCount == flushAt+1) {
+              for(int i=0;i<flushAt;i++) {
+                out.writeVInt(buffer[i]);
+              }
+              buffer[0] = buffer[flushAt];
+              pendingCount = 1;
+              return flushAt;
+            } else {
+              return 0;
+            }
+          }
+        };
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(out);
+        }
+      }
+    }
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-
-    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new MockSingleIntFactory());
+    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new MockIntFactory(baseBlockSize));
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -91,9 +181,10 @@ public class MockSepCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-
-    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir, state.segmentInfo,
-        state.context, new MockSingleIntFactory(), state.codecId);
+    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
+                                                              state.segmentInfo,
+                                                              state.context,
+                                                              new MockIntFactory(baseBlockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -119,7 +210,7 @@ public class MockSepCodec extends Codec {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.context,
-                                                StandardCodec.TERMS_CACHE_SIZE,
+                                                StandardPostingsFormat.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
       return ret;
@@ -144,10 +235,6 @@ public class MockSepCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    getSepExtensions(extensions);
-  }
-
-  public static void getSepExtensions(Set<String> extensions) {
     SepPostingsWriter.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);

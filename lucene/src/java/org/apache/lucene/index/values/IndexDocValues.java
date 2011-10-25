@@ -24,7 +24,7 @@ import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.BytesRef;
 
@@ -40,13 +40,13 @@ import org.apache.lucene.util.BytesRef;
  * performance {@link IndexDocValues} should be consumed per-segment just like
  * IndexReader.
  * <p>
- * {@link IndexDocValues} are fully integrated into the {@link Codec} API.
+ * {@link IndexDocValues} are fully integrated into the {@link PostingsFormat} API.
  * Custom implementations can be exposed on a per field basis via
  * {@link CodecProvider}.
  * 
  * @see ValueType for limitations and default implementation documentation
  * @see IndexDocValuesField for adding values to the index
- * @see Codec#docsConsumer(org.apache.lucene.index.PerDocWriteState) for
+ * @see PostingsFormat#docsConsumer(org.apache.lucene.index.PerDocWriteState) for
  *      customization
  * @lucene.experimental
  */

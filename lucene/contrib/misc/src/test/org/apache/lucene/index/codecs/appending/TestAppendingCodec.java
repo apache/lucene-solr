@@ -34,7 +34,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
@@ -50,14 +50,14 @@ import org.apache.lucene.util.Version;
 public class TestAppendingCodec extends LuceneTestCase {
   
   static class AppendingCodecProvider extends CodecProvider {
-    Codec appending = new AppendingCodec();
+    PostingsFormat appending = new AppendingPostingsFormat();
     SegmentInfosWriter infosWriter = new AppendingSegmentInfosWriter();
     SegmentInfosReader infosReader = new AppendingSegmentInfosReader();
     public AppendingCodecProvider() {
       setDefaultFieldCodec(appending.name);
     }
     @Override
-    public Codec lookup(String name) {
+    public PostingsFormat lookup(String name) {
       return appending;
     }
    

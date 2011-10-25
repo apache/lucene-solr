@@ -110,7 +110,7 @@ public final class TermInfosReader {
       segment = seg;
       fieldInfos = fis;
 
-      origEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexCodec.TERMS_EXTENSION),
+      origEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexPostingsFormat.TERMS_EXTENSION),
                                                          context), fieldInfos, false);
       size = origEnum.size;
 
@@ -118,7 +118,7 @@ public final class TermInfosReader {
       if (indexDivisor != -1) {
         // Load terms index
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
-        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexCodec.TERMS_INDEX_EXTENSION),
+        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexPostingsFormat.TERMS_INDEX_EXTENSION),
                                                                                   context), fieldInfos, true);
 
         try {

@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
@@ -228,7 +228,7 @@ public final class SegmentInfo implements Cloneable {
     } else {
       // codec ID on FieldInfo is 0 so it will simply use the first codec available
       // TODO what todo if preflex is not available in the provider? register it or fail?
-      segmentCodecs = new SegmentCodecs(codecs, new Codec[] { codecs.lookup("PreFlex")});
+      segmentCodecs = new SegmentCodecs(codecs, new PostingsFormat[] { codecs.lookup("PreFlex")});
     }
     diagnostics = input.readStringStringMap();
 

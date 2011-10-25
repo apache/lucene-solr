@@ -35,7 +35,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.spelling.QueryConverter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.Version;
 

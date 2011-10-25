@@ -27,9 +27,9 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -49,7 +49,7 @@ import org.apache.lucene.store.IndexOutput;
  * {@link FieldInfos#buildSegmentCodecs(boolean)} The {@link FieldInfo#codecId}
  * assigned by {@link SegmentCodecsBuilder} refers to the codecs ordinal
  * maintained inside {@link SegmentCodecs}. This ord is later used to get the
- * right codec when the segment is opened in a reader.The {@link Codec} returned
+ * right codec when the segment is opened in a reader.The {@link PostingsFormat} returned
  * from {@link SegmentCodecs#codec()} in turn uses {@link SegmentCodecs}
  * internal structure to select and initialize the right codec for a fields when
  * it is written.
@@ -68,49 +68,49 @@ public final class SegmentCodecs implements Cloneable {
    * internal structure to map codecs to fields - don't modify this from outside
    * of this class!
    */
-  public final Codec[] codecs;
+  public final PostingsFormat[] codecs;
   public final CodecProvider provider;
-  private final Codec codec;
+  private final PostingsFormat codec;
   
   public SegmentCodecs(CodecProvider provider, IndexInput input) throws IOException {
     this(provider, read(input, provider));
   }
   
-  public SegmentCodecs(CodecProvider provider, Codec... codecs) {
+  public SegmentCodecs(CodecProvider provider, PostingsFormat... codecs) {
     this.provider = provider;
     this.codecs = codecs;
-    if (codecs.length == 1 && codecs[0] instanceof PreFlexCodec) {
+    if (codecs.length == 1 && codecs[0] instanceof PreFlexPostingsFormat) {
       this.codec = codecs[0]; // hack for backwards break... don't wrap the codec in preflex
     } else {
-      this.codec = new PerFieldCodecWrapper(this);
+      this.codec = new PerFieldPostingsFormat(this);
     }
   }
 
-  public Codec codec() {
+  public PostingsFormat codec() {
     return codec;
   }
 
   public void write(IndexOutput out) throws IOException {
     out.writeVInt(codecs.length);
-    for (Codec codec : codecs) {
+    for (PostingsFormat codec : codecs) {
       out.writeString(codec.name);
     }
   }
 
-  private static Codec[] read(IndexInput in, CodecProvider provider) throws IOException {
+  private static PostingsFormat[] read(IndexInput in, CodecProvider provider) throws IOException {
     final int size = in.readVInt();
-    final ArrayList<Codec> list = new ArrayList<Codec>();
+    final ArrayList<PostingsFormat> list = new ArrayList<PostingsFormat>();
     for (int i = 0; i < size; i++) {
       final String codecName = in.readString();
-      final Codec lookup = provider.lookup(codecName);
+      final PostingsFormat lookup = provider.lookup(codecName);
       list.add(i, lookup);
     }
-    return list.toArray(Codec.EMPTY);
+    return list.toArray(PostingsFormat.EMPTY);
   }
 
   public void files(Directory dir, SegmentInfo info, Set<String> files)
       throws IOException {
-    final Codec[] codecArray = codecs;
+    final PostingsFormat[] codecArray = codecs;
     for (int i = 0; i < codecArray.length; i++) {
       codecArray[i].files(dir, info, i, files);
     }      
@@ -131,8 +131,8 @@ public final class SegmentCodecs implements Cloneable {
    * @see FieldInfo#getCodecId()
    */
   public final static class SegmentCodecsBuilder {
-    private final Map<Codec, Integer> codecRegistry = new IdentityHashMap<Codec, Integer>();
-    private final ArrayList<Codec> codecs = new ArrayList<Codec>();
+    private final Map<PostingsFormat, Integer> codecRegistry = new IdentityHashMap<PostingsFormat, Integer>();
+    private final ArrayList<PostingsFormat> codecs = new ArrayList<PostingsFormat>();
     private final CodecProvider provider;
 
     private SegmentCodecsBuilder(CodecProvider provider) {
@@ -145,7 +145,7 @@ public final class SegmentCodecs implements Cloneable {
     
     public SegmentCodecsBuilder tryAddAndSet(FieldInfo fi) {
       if (fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
-        final Codec fieldCodec = provider.lookup(provider
+        final PostingsFormat fieldCodec = provider.lookup(provider
             .getFieldCodec(fi.name));
         Integer ord = codecRegistry.get(fieldCodec);
         if (ord == null) {
@@ -159,7 +159,7 @@ public final class SegmentCodecs implements Cloneable {
     }
     
     public SegmentCodecs build() {
-      return new SegmentCodecs(provider, codecs.toArray(Codec.EMPTY));
+      return new SegmentCodecs(provider, codecs.toArray(PostingsFormat.EMPTY));
     }
     
     public SegmentCodecsBuilder clear() {

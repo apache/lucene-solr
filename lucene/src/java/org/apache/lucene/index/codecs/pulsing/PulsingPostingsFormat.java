@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs.pulsing;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,66 +28,92 @@ import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
+import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
+import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
 import org.apache.lucene.store.Directory;
 
-/** Default codec. 
+/** This codec "inlines" the postings for terms that have
+ *  low docFreq.  It wraps another codec, which is used for
+ *  writing the non-inlined terms.
+ *
+ *  Currently in only inlines docFreq=1 terms, and
+ *  otherwise uses the normal "standard" codec. 
  *  @lucene.experimental */
-public class StandardCodec extends Codec {
 
+public class PulsingPostingsFormat extends PostingsFormat {
+
+  private final int freqCutoff;
   private final int minBlockSize;
   private final int maxBlockSize;
 
-  public StandardCodec() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+  public PulsingPostingsFormat() {
+    this(1);
+  }
+  
+  public PulsingPostingsFormat(int freqCutoff) {
+    this(freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  public StandardCodec(int minBlockSize, int maxBlockSize) {
-    super("Standard");
+  /** Terms with freq <= freqCutoff are inlined into terms
+   *  dict. */
+  public PulsingPostingsFormat(int freqCutoff, int minBlockSize, int maxBlockSize) {
+    super("Pulsing");
+    this.freqCutoff = freqCutoff;
     this.minBlockSize = minBlockSize;
     assert minBlockSize > 1;
     this.maxBlockSize = maxBlockSize;
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new StandardPostingsWriter(state);
+  public String toString() {
+    return name + "(freqCutoff=" + freqCutoff + " minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
+  }
 
-    // TODO: should we make the terms index more easily
-    // pluggable?  Ie so that this codec would record which
-    // index impl was used, and switch on loading?
-    // Or... you must make a new Codec for this?
+  @Override
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    // We wrap StandardPostingsWriter, but any PostingsWriterBase
+    // will work:
+
+    PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
+
+    // Terms that have <= freqCutoff number of docs are
+    // "pulsed" (inlined):
+    PostingsWriterBase pulsingWriter = new PulsingPostingsWriter(freqCutoff, docsWriter);
+
+    // Terms dict
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, minBlockSize, maxBlockSize);
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, minBlockSize, maxBlockSize);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        docs.close();
+        pulsingWriter.close();
       }
     }
   }
 
-  public final static int TERMS_CACHE_SIZE = 1024;
-
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+
+    // We wrap StandardPostingsReader, but any StandardPostingsReader
+    // will work:
+    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+    PostingsReaderBase pulsingReader = new PulsingPostingsReader(docsReader);
 
     boolean success = false;
     try {
       FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.dir,
-                                                    state.fieldInfos,
-                                                    state.segmentInfo.name,
-                                                    postings,
+                                                    state.dir, state.fieldInfos, state.segmentInfo.name,
+                                                    pulsingReader,
                                                     state.context,
                                                     state.codecId,
                                                     state.termsIndexDivisor);
@@ -95,16 +121,14 @@ public class StandardCodec extends Codec {
       return ret;
     } finally {
       if (!success) {
-        postings.close();
+        pulsingReader.close();
       }
     }
   }
 
-  /** Extension of freq postings file */
-  static final String FREQ_EXTENSION = "frq";
-
-  /** Extension of prox postings file */
-  static final String PROX_EXTENSION = "prx";
+  public int getFreqCutoff() {
+    return freqCutoff;
+  }
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
@@ -115,19 +139,8 @@ public class StandardCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    getStandardExtensions(extensions);
-  }
-
-  public static void getStandardExtensions(Set<String> extensions) {
-    extensions.add(FREQ_EXTENSION);
-    extensions.add(PROX_EXTENSION);
-    BlockTreeTermsReader.getExtensions(extensions);
+    StandardPostingsFormat.getStandardExtensions(extensions);
     DefaultDocValuesConsumer.getExtensions(extensions);
-  }
-
-  @Override
-  public String toString() {
-    return name + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 
   @Override

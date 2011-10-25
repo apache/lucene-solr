@@ -21,7 +21,7 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
 import org.apache.lucene.util.*;
 
 import java.util.*;
@@ -282,7 +282,7 @@ public class TestSurrogates extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random,
                                                 dir,
                                                 newIndexWriterConfig( TEST_VERSION_CURRENT,
-                                                                      new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
+                                                                      new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWPostingsFormat())));
 
     final int numField = _TestUtil.nextInt(random, 2, 5);
 

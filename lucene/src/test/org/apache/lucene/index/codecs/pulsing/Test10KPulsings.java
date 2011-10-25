@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -51,7 +51,7 @@ import org.junit.Ignore;
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
+    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingPostingsFormat(1));
     
     File f = _TestUtil.getTempDir("10kpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
@@ -101,7 +101,7 @@ public class Test10KPulsings extends LuceneTestCase {
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
+    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingPostingsFormat(1));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
@@ -123,9 +123,9 @@ public class Test10KPulsings extends LuceneTestCase {
     
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
 
-    Codec codec = cp.lookup(cp.getFieldCodec("field"));
-    assertTrue(codec instanceof PulsingCodec);
-    PulsingCodec pulsing = (PulsingCodec) codec;
+    PostingsFormat codec = cp.lookup(cp.getFieldCodec("field"));
+    assertTrue(codec instanceof PulsingPostingsFormat);
+    PulsingPostingsFormat pulsing = (PulsingPostingsFormat) codec;
     final int freq = pulsing.getFreqCutoff() + 1;
     
     for (int i = 0; i < 10050; i++) {

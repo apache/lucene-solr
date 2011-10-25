@@ -34,7 +34,7 @@ import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -50,8 +50,8 @@ import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
+import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSingleIntFactory;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsReader;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriter;
@@ -76,12 +76,12 @@ import org.apache.lucene.util._TestUtil;
  * Randomly combines terms index impl w/ postings impls.
  */
 
-public class MockRandomCodec extends Codec {
+public class MockRandomPostingsFormat extends PostingsFormat {
   private final boolean useSepDocValues;
   private final Random seedRandom;
   private final String SEED_EXT = "sd";
   
-  public MockRandomCodec(Random random) {
+  public MockRandomPostingsFormat(Random random) {
     super("MockRandom");
     this.useSepDocValues = random.nextBoolean();
     this.seedRandom = new Random(random.nextLong());
@@ -96,9 +96,9 @@ public class MockRandomCodec extends Codec {
       salt = random.nextInt();
       delegates.add(new MockSingleIntFactory());
       final int blockSize = _TestUtil.nextInt(random, 1, 2000);
-      delegates.add(new MockFixedIntBlockCodec.MockIntFactory(blockSize));
+      delegates.add(new MockFixedIntBlockPostingsFormat.MockIntFactory(blockSize));
       final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
-      delegates.add(new MockVariableIntBlockCodec.MockIntFactory(baseBlockSize));
+      delegates.add(new MockVariableIntBlockPostingsFormat.MockIntFactory(baseBlockSize));
       // TODO: others
     }
 

@@ -37,7 +37,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
@@ -81,9 +81,12 @@ import org.apache.lucene.util.fst.FST;
  *
  * @lucene.experimental */
 
-public class MemoryCodec extends Codec {
+// TODO: Maybe name this 'Cached' or something to reflect
+// the reality that it is actually written to disk, but
+// loads itself in ram?
+public class MemoryPostingsFormat extends PostingsFormat {
   
-  public MemoryCodec() {
+  public MemoryPostingsFormat() {
     super("Memory");
   }
 

@@ -20,7 +20,7 @@ package org.apache.solr.core;
 import java.util.Map;
 
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
@@ -79,14 +79,14 @@ public class TestCodecProviderSupport extends SolrTestCaseJ4 {
     }
 
     try {
-      codecProvider.register(new StandardCodec());
+      codecProvider.register(new StandardPostingsFormat());
       fail("should be unmodifiable");
     } catch (UnsupportedOperationException e) {
       //
     }
 
     try {
-      codecProvider.unregister(new StandardCodec());
+      codecProvider.unregister(new StandardPostingsFormat());
       fail("should be unmodifiable");
     } catch (UnsupportedOperationException e) {
       //

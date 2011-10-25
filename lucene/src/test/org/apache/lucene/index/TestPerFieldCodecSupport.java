@@ -28,15 +28,15 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
 import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
-import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -159,8 +159,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     }
     addDocs2(writer, 10);
     writer.commit();
-    Codec origContentCodec = provider.lookup("MockSep");
-    Codec newContentCodec = provider.lookup("Standard");
+    PostingsFormat origContentCodec = provider.lookup("MockSep");
+    PostingsFormat newContentCodec = provider.lookup("Standard");
     assertHybridCodecPerField(_TestUtil.checkIndex(dir, provider), "content",
         origContentCodec, origContentCodec, newContentCodec);
     assertEquals(30, writer.maxDoc());
@@ -194,14 +194,14 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   }
 
   public void assertCodecPerFieldOptimized(Status checkIndex, String field,
-      Codec codec) {
+      PostingsFormat codec) {
     assertEquals(1, checkIndex.segmentInfos.size());
     final CodecProvider provider = checkIndex.segmentInfos.get(0).codec.provider;
     assertEquals(codec, provider.lookup(provider.getFieldCodec(field)));
 
   }
 
-  public void assertCodecPerField(Status checkIndex, String field, Codec codec) {
+  public void assertCodecPerField(Status checkIndex, String field, PostingsFormat codec) {
     for (SegmentInfoStatus info : checkIndex.segmentInfos) {
       final CodecProvider provider = info.codec.provider;
       assertEquals(codec, provider.lookup(provider.getFieldCodec(field)));
@@ -209,7 +209,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   }
 
   public void assertHybridCodecPerField(Status checkIndex, String field,
-      Codec... codec) throws IOException {
+      PostingsFormat... codec) throws IOException {
     List<SegmentInfoStatus> segmentInfos = checkIndex.segmentInfos;
     assertEquals(segmentInfos.size(), codec.length);
     for (int i = 0; i < codec.length; i++) {
@@ -241,10 +241,10 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   public static class MockCodecProvider extends CodecProvider {
 
     public MockCodecProvider() {
-      StandardCodec standardCodec = new StandardCodec();
+      StandardPostingsFormat standardCodec = new StandardPostingsFormat();
       setDefaultFieldCodec(standardCodec.name);
-      SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
-      MockSepCodec mockSepCodec = new MockSepCodec();
+      SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
+      MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
       register(standardCodec);
       register(mockSepCodec);
       register(simpleTextCodec);
@@ -256,10 +256,10 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   public static class MockCodecProvider2 extends CodecProvider {
 
     public MockCodecProvider2() {
-      StandardCodec standardCodec = new StandardCodec();
+      StandardPostingsFormat standardCodec = new StandardPostingsFormat();
       setDefaultFieldCodec(standardCodec.name);
-      SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
-      MockSepCodec mockSepCodec = new MockSepCodec();
+      SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
+      MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
       register(standardCodec);
       register(mockSepCodec);
       register(simpleTextCodec);
@@ -278,12 +278,12 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
       CodecProvider provider = new CodecProvider();
-      Codec[] codecs = new Codec[] { new StandardCodec(),
-          new SimpleTextCodec(), new MockSepCodec(),
-          new PulsingCodec(1 + random.nextInt(20)),
-          new MockVariableIntBlockCodec(1 + random.nextInt(10)),
-          new MockFixedIntBlockCodec(1 + random.nextInt(10)) };
-      for (Codec codec : codecs) {
+      PostingsFormat[] codecs = new PostingsFormat[] { new StandardPostingsFormat(),
+          new SimpleTextPostingsFormat(), new MockSepPostingsFormat(),
+          new PulsingPostingsFormat(1 + random.nextInt(20)),
+          new MockVariableIntBlockPostingsFormat(1 + random.nextInt(10)),
+          new MockFixedIntBlockPostingsFormat(1 + random.nextInt(10)) };
+      for (PostingsFormat codec : codecs) {
         provider.register(codec);
       }
       int num = _TestUtil.nextInt(random, 30, 60);

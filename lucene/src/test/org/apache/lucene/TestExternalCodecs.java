@@ -70,7 +70,7 @@ public class TestExternalCodecs extends LuceneTestCase {
   // TODO
   //   - good improvement would be to write through to disk,
   //     and then load into ram from disk
-  public static class RAMOnlyCodec extends Codec {
+  public static class RAMOnlyCodec extends PostingsFormat {
     
     public RAMOnlyCodec() {
       super("RamOnly");

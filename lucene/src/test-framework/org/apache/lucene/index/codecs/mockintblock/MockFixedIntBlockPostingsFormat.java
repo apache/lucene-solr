@@ -24,7 +24,7 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
@@ -34,9 +34,9 @@ import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
 import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.index.codecs.sep.SepPostingsReader;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
-import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
+import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
+import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -47,59 +47,54 @@ import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * A silly test codec to verify core support for variable
+ * A silly test codec to verify core support for fixed
  * sized int block encoders is working.  The int encoder
- * used here writes baseBlockSize ints at once, if the first
- * int is <= 3, else 2*baseBlockSize.
+ * used here just writes each block as a series of vInt.
  */
 
-public class MockVariableIntBlockCodec extends Codec {
-  private final int baseBlockSize;
-  
-  public MockVariableIntBlockCodec(int baseBlockSize) {
-    super("MockVariableIntBlock");
-    this.baseBlockSize = baseBlockSize;
+public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
+
+  private final int blockSize;
+
+  public MockFixedIntBlockPostingsFormat(int blockSize) {
+    super("MockFixedIntBlock");
+    this.blockSize = blockSize;
   }
 
   @Override
   public String toString() {
-    return name + "(baseBlockSize="+ baseBlockSize + ")";
+    return name + "(blockSize=" + blockSize + ")";
+  }
+
+  // only for testing
+  public IntStreamFactory getIntFactory() {
+    return new MockIntFactory(blockSize);
   }
 
   public static class MockIntFactory extends IntStreamFactory {
+    private final int blockSize;
 
-    private final int baseBlockSize;
-
-    public MockIntFactory(int baseBlockSize) {
-      this.baseBlockSize = baseBlockSize;
+    public MockIntFactory(int blockSize) {
+      this.blockSize = blockSize;
     }
 
     @Override
     public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
-      final IndexInput in = dir.openInput(fileName, context);
-      final int baseBlockSize = in.readInt();
-      return new VariableIntBlockIndexInput(in) {
+      return new FixedIntBlockIndexInput(dir.openInput(fileName, context)) {
 
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
           return new BlockReader() {
             public void seek(long pos) {}
-            public int readBlock() throws IOException {
-              buffer[0] = in.readVInt();
-              final int count = buffer[0] <= 3 ? baseBlockSize-1 : 2*baseBlockSize-1;
-              assert buffer.length >= count: "buffer.length=" + buffer.length + " count=" + count;
-              for(int i=0;i<count;i++) {
-                buffer[i+1] = in.readVInt();
+            public void readBlock() throws IOException {
+              for(int i=0;i<buffer.length;i++) {
+                buffer[i] = in.readVInt();
               }
-              return 1+count;
             }
           };
         }
@@ -108,33 +103,15 @@ public class MockVariableIntBlockCodec extends Codec {
 
     @Override
     public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
-      final IndexOutput out = dir.createOutput(fileName, context);
+      IndexOutput out = dir.createOutput(fileName, context);
       boolean success = false;
       try {
-        out.writeInt(baseBlockSize);
-        VariableIntBlockIndexOutput ret = new VariableIntBlockIndexOutput(out, 2*baseBlockSize) {
-          int pendingCount;
-          final int[] buffer = new int[2+2*baseBlockSize];
-          
+        FixedIntBlockIndexOutput ret = new FixedIntBlockIndexOutput(out, blockSize) {
           @Override
-          protected int add(int value) throws IOException {
-            assert value >= 0;
-            buffer[pendingCount++] = value;
-            // silly variable block length int encoder: if
-            // first value <= 3, we write N vints at once;
-            // else, 2*N
-            final int flushAt = buffer[0] <= 3 ? baseBlockSize : 2*baseBlockSize;
-            
-            // intentionally be non-causal here:
-            if (pendingCount == flushAt+1) {
-              for(int i=0;i<flushAt;i++) {
-                out.writeVInt(buffer[i]);
-              }
-              buffer[0] = buffer[flushAt];
-              pendingCount = 1;
-              return flushAt;
-            } else {
-              return 0;
+          protected void flushBlock() throws IOException {
+            for(int i=0;i<buffer.length;i++) {
+              assert buffer[i] >= 0;
+              out.writeVInt(buffer[i]);
             }
           }
         };
@@ -150,7 +127,7 @@ public class MockVariableIntBlockCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new MockIntFactory(baseBlockSize));
+    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new MockIntFactory(blockSize));
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -184,7 +161,7 @@ public class MockVariableIntBlockCodec extends Codec {
     PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
                                                               state.segmentInfo,
                                                               state.context,
-                                                              new MockIntFactory(baseBlockSize), state.codecId);
+                                                              new MockIntFactory(blockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -193,8 +170,8 @@ public class MockVariableIntBlockCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       state.codecId, state.context);
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.codecId,
+                                                       IOContext.DEFAULT);
       success = true;
     } finally {
       if (!success) {
@@ -210,7 +187,7 @@ public class MockVariableIntBlockCodec extends Codec {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.context,
-                                                StandardCodec.TERMS_CACHE_SIZE,
+                                                StandardPostingsFormat.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
       return ret;

@@ -44,7 +44,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
@@ -351,10 +351,10 @@ public class _TestUtil {
     return new String(buffer, 0, i);
   }
 
-  public static CodecProvider alwaysCodec(final Codec c) {
+  public static CodecProvider alwaysCodec(final PostingsFormat c) {
     CodecProvider p = new CodecProvider() {
       @Override
-      public Codec lookup(String name) {
+      public PostingsFormat lookup(String name) {
         // can't do this until we fix PreFlexRW to not
         //impersonate PreFlex:
         if (name.equals(c.name)) {

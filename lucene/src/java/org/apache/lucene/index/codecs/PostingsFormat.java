@@ -27,13 +27,13 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 
 /** @lucene.experimental */
-public abstract class Codec {
-  public static final Codec[] EMPTY = new Codec[0];
+public abstract class PostingsFormat {
+  public static final PostingsFormat[] EMPTY = new PostingsFormat[0];
   /** Unique name that's used to retrieve this codec when
    *  reading the index */
   public final String name;
   
-  protected Codec(String name) {
+  protected PostingsFormat(String name) {
     this.name = name;
   }
 

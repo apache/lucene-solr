@@ -21,7 +21,7 @@ import java.util.Set;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -40,7 +40,7 @@ import org.apache.lucene.index.codecs.PerDocValues;
  * @lucene.experimental
  */
 @Deprecated
-public class PreFlexCodec extends Codec {
+public class PreFlexPostingsFormat extends PostingsFormat {
 
   /** Extension of terms file */
   public static final String TERMS_EXTENSION = "tis";
@@ -54,7 +54,7 @@ public class PreFlexCodec extends Codec {
   /** Extension of prox postings file */
   public static final String PROX_EXTENSION = "prx";
 
-  public PreFlexCodec() {
+  public PreFlexPostingsFormat() {
     super("PreFlex");
   }
   

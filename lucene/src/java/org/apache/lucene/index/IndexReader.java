@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
@@ -764,7 +764,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * the index.
    * 
    * @param directory where the index resides.
-   * @param codecs the {@link CodecProvider} holding all {@link Codec}s required to open the index
+   * @param codecs the {@link CodecProvider} holding all {@link PostingsFormat}s required to open the index
    * @return version number.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -800,7 +800,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * this index.
    * 
    * @param directory where the index resides.
-   * @param codecs the {@link CodecProvider} provider holding all {@link Codec}s required to open the index
+   * @param codecs the {@link CodecProvider} provider holding all {@link PostingsFormat}s required to open the index
    * @return commit userData.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error

@@ -19,7 +19,7 @@ package org.apache.solr.core;
 import java.util.Collection;
 import java.util.Set;
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
@@ -41,7 +41,7 @@ final class SchemaCodecProvider extends CodecProvider {
   }
 
   @Override
-  public Codec lookup(String name) {
+  public PostingsFormat lookup(String name) {
     synchronized (delegate) {
       return delegate.lookup(name);
     }
@@ -72,12 +72,12 @@ final class SchemaCodecProvider extends CodecProvider {
   }
 
   @Override
-  public void register(Codec codec) {
+  public void register(PostingsFormat codec) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void unregister(Codec codec) {
+  public void unregister(PostingsFormat codec) {
     throw new UnsupportedOperationException();
   }
 

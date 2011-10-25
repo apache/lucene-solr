@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -106,8 +106,8 @@ final class TermInfosWriter implements Closeable {
 
         try {
           directory.deleteFile(IndexFileNames.segmentFileName(segment, "",
-              (isIndex ? PreFlexCodec.TERMS_INDEX_EXTENSION
-                  : PreFlexCodec.TERMS_EXTENSION)));
+              (isIndex ? PreFlexPostingsFormat.TERMS_INDEX_EXTENSION
+                  : PreFlexPostingsFormat.TERMS_EXTENSION)));
         } catch (IOException ignored) {
         }
       }
@@ -125,8 +125,8 @@ final class TermInfosWriter implements Closeable {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(IndexFileNames.segmentFileName(segment, "",
-        (isIndex ? PreFlexCodec.TERMS_INDEX_EXTENSION
-            : PreFlexCodec.TERMS_EXTENSION)), IOContext.DEFAULT);
+        (isIndex ? PreFlexPostingsFormat.TERMS_INDEX_EXTENSION
+            : PreFlexPostingsFormat.TERMS_EXTENSION)), IOContext.DEFAULT);
     boolean success = false;
     try {
     output.writeInt(FORMAT_CURRENT);              // write format
@@ -147,8 +147,8 @@ final class TermInfosWriter implements Closeable {
 
         try {
           directory.deleteFile(IndexFileNames.segmentFileName(segment, "",
-              (isIndex ? PreFlexCodec.TERMS_INDEX_EXTENSION
-                  : PreFlexCodec.TERMS_EXTENSION)));
+              (isIndex ? PreFlexPostingsFormat.TERMS_INDEX_EXTENSION
+                  : PreFlexPostingsFormat.TERMS_EXTENSION)));
         } catch (IOException ignored) {
         }
       }

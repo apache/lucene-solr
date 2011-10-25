@@ -38,7 +38,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
@@ -48,7 +48,7 @@ import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
 import org.apache.lucene.store.Directory;
@@ -63,7 +63,7 @@ public class TestPulsingReuse extends LuceneTestCase {
   // TODO: this is a basic test. this thing is complicated, add more
   public void testSophisticatedReuse() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
+    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingPostingsFormat(1));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
@@ -142,7 +142,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     dir.close();
   }
   
-  static class NestedPulsing extends Codec {
+  static class NestedPulsing extends PostingsFormat {
     public NestedPulsing() {
       super("NestedPulsing");
     }
@@ -209,7 +209,7 @@ public class TestPulsingReuse extends LuceneTestCase {
 
     @Override
     public void getExtensions(Set<String> extensions) {
-      StandardCodec.getStandardExtensions(extensions);
+      StandardPostingsFormat.getStandardExtensions(extensions);
       DefaultDocValuesConsumer.getExtensions(extensions);
     }
   }

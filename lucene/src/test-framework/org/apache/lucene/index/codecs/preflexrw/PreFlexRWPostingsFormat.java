@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
 import org.apache.lucene.index.codecs.preflex.PreFlexFields;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -32,9 +32,9 @@ import org.apache.lucene.util.LuceneTestCase;
  *
  * @lucene.experimental
  */
-public class PreFlexRWCodec extends PreFlexCodec {
+public class PreFlexRWPostingsFormat extends PreFlexPostingsFormat {
 
-  public PreFlexRWCodec() {
+  public PreFlexRWPostingsFormat() {
     // NOTE: we impersonate the PreFlex codec so that it can
     // read the segments we write!
   }

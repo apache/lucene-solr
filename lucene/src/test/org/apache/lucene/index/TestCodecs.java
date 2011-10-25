@@ -32,9 +32,9 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -395,7 +395,7 @@ public class TestCodecs extends LuceneTestCase {
   public static class MockSepCodecs extends CodecProvider {
 
     protected MockSepCodecs() {
-      this.register(new MockSepCodec());
+      this.register(new MockSepPostingsFormat());
       this.setDefaultFieldCodec("MockSep");
     }
     
@@ -460,7 +460,7 @@ public class TestCodecs extends LuceneTestCase {
         final FieldData field = fields[TestCodecs.random.nextInt(fields.length)];
         final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
         assertTrue(field.fieldInfo.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID);
-        if (si.getSegmentCodecs().codecs[field.fieldInfo.getCodecId()] instanceof PreFlexCodec) {
+        if (si.getSegmentCodecs().codecs[field.fieldInfo.getCodecId()] instanceof PreFlexPostingsFormat) {
           // code below expects unicode sort order
           continue;
         }
@@ -622,7 +622,7 @@ public class TestCodecs extends LuceneTestCase {
     Arrays.sort(fields);
     for (final FieldData field : fields) {
       assertTrue(field.fieldInfo.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID);
-      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.getCodecId()] instanceof PreFlexCodec) {
+      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.getCodecId()] instanceof PreFlexPostingsFormat) {
         // code below expects unicode sort order
         continue;
       }

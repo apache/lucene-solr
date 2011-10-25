@@ -39,15 +39,15 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
-import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
-import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
+import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -211,7 +211,7 @@ public abstract class LuceneTestCase extends Assert {
   // saves default codec: we do this statically as many build indexes in @beforeClass
   private static String savedDefaultCodec;
   // default codec: not set when we use a per-field provider.
-  private static Codec codec;
+  private static PostingsFormat codec;
   // default codec provider
   private static CodecProvider savedCodecProvider;
   
@@ -226,8 +226,8 @@ public abstract class LuceneTestCase extends Assert {
 
   private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "MockRandom"};
 
-  private static void swapCodec(Codec c, CodecProvider cp) {
-    Codec prior = null;
+  private static void swapCodec(PostingsFormat c, CodecProvider cp) {
+    PostingsFormat prior = null;
     try {
       prior = cp.lookup(c.name);
     } catch (IllegalArgumentException iae) {
@@ -239,7 +239,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   // returns current default codec
-  static Codec installTestCodecs(String codec, CodecProvider cp) {
+  static PostingsFormat installTestCodecs(String codec, CodecProvider cp) {
     savedDefaultCodec = cp.getDefaultFieldCodec();
 
     final boolean codecHasParam;
@@ -269,37 +269,37 @@ public abstract class LuceneTestCase extends Assert {
       // If we're running w/ PreFlex codec we must swap in the
       // test-only PreFlexRW codec (since core PreFlex can
       // only read segments):
-      swapCodec(new PreFlexRWCodec(), cp);
+      swapCodec(new PreFlexRWPostingsFormat(), cp);
     }
 
-    swapCodec(new MockSepCodec(), cp);
+    swapCodec(new MockSepPostingsFormat(), cp);
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock), cp);
-    swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
+    swapCodec(new PulsingPostingsFormat(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock), cp);
+    swapCodec(new MockFixedIntBlockPostingsFormat(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
-    swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
-    swapCodec(new MockRandomCodec(random), cp);
+    swapCodec(new MockVariableIntBlockPostingsFormat(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
+    swapCodec(new MockRandomPostingsFormat(random), cp);
 
     return cp.lookup(codec);
   }
   
   // returns current PreFlex codec
-  static void removeTestCodecs(Codec codec, CodecProvider cp) {
+  static void removeTestCodecs(PostingsFormat codec, CodecProvider cp) {
     if (codec.name.equals("PreFlex")) {
-      final Codec preFlex = cp.lookup("PreFlex");
+      final PostingsFormat preFlex = cp.lookup("PreFlex");
       if (preFlex != null) {
         cp.unregister(preFlex);
       }
-      cp.register(new PreFlexCodec());
+      cp.register(new PreFlexPostingsFormat());
     }
     cp.unregister(cp.lookup("MockSep"));
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
     cp.unregister(cp.lookup("MockRandom"));
-    swapCodec(new PulsingCodec(), cp);
+    swapCodec(new PulsingPostingsFormat(), cp);
     cp.setDefaultFieldCodec(savedDefaultCodec);
   }
 

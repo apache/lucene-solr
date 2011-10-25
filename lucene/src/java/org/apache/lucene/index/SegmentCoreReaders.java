@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -86,7 +86,7 @@ final class SegmentCoreReaders {
       fieldInfos = si.getFieldInfos();
       
       this.termsIndexDivisor = termsIndexDivisor;
-      final Codec codec = segmentCodecs.codec();
+      final PostingsFormat codec = segmentCodecs.codec();
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, context, termsIndexDivisor);
       // Ask codec for its Fields
       fields = codec.fieldsProducer(segmentReadState);

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.regex.Pattern;
 
-import org.apache.lucene.index.codecs.Codec;  // for javadocs
+import org.apache.lucene.index.codecs.PostingsFormat;  // for javadocs
 
 /**
  * This class contains useful constants representing filenames and extensions
@@ -31,7 +31,7 @@ import org.apache.lucene.index.codecs.Codec;  // for javadocs
  * {@link #segmentFileName(String, String, String) segmentFileName}).
  *
  * <p><b>NOTE</b>: extensions used by codecs are not
- * listed here.  You must interact with the {@link Codec}
+ * listed here.  You must interact with the {@link PostingsFormat}
  * directly.
  *
  * @lucene.internal

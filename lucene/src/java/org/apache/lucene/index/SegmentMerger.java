@@ -27,7 +27,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
@@ -67,7 +67,7 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private Codec codec;
+  private PostingsFormat codec;
   private SegmentWriteState segmentWriteState;
 
   private PayloadProcessorProvider payloadProcessorProvider;

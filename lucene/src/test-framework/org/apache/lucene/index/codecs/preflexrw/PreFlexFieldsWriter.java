@@ -29,7 +29,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
 import org.apache.lucene.index.codecs.standard.DefaultSkipListWriter;
 import org.apache.lucene.store.IndexOutput;
@@ -50,12 +50,12 @@ class PreFlexFieldsWriter extends FieldsConsumer {
                                    state.fieldInfos,
                                    state.termIndexInterval);
 
-    final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexCodec.FREQ_EXTENSION);
+    final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexPostingsFormat.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(freqFile, state.context);
     totalNumDocs = state.numDocs;
 
     if (state.fieldInfos.hasProx()) {
-      final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexCodec.PROX_EXTENSION);
+      final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexPostingsFormat.PROX_EXTENSION);
       proxOut = state.directory.createOutput(proxFile, state.context);
     } else {
       proxOut = null;

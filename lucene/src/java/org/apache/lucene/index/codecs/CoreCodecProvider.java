@@ -17,11 +17,11 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.memory.MemoryCodec;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 
 /**
  * A CodecProvider that registers all core codecs that ship
@@ -42,10 +42,10 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
 
 public class CoreCodecProvider extends CodecProvider {
   public CoreCodecProvider() {
-    register(new StandardCodec());
-    register(new PreFlexCodec());
-    register(new PulsingCodec());
-    register(new SimpleTextCodec());
-    register(new MemoryCodec());
+    register(new StandardPostingsFormat());
+    register(new PreFlexPostingsFormat());
+    register(new PulsingPostingsFormat());
+    register(new SimpleTextPostingsFormat());
+    register(new MemoryPostingsFormat());
   }
 }

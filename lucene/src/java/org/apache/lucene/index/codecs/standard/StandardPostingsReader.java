@@ -55,13 +55,13 @@ public class StandardPostingsReader extends PostingsReaderBase {
   // private String segment;
 
   public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext ioContext, int codecId) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
+    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardPostingsFormat.FREQ_EXTENSION),
                            ioContext);
     // this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
-        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.PROX_EXTENSION),
+        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardPostingsFormat.PROX_EXTENSION),
                                ioContext);
         success = true;
       } finally {
@@ -75,9 +75,9 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   public static void files(Directory dir, SegmentInfo segmentInfo, int codecID, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardCodec.FREQ_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardPostingsFormat.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardCodec.PROX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardPostingsFormat.PROX_EXTENSION));
     }
   }
 

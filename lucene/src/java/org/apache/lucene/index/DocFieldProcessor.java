@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
@@ -326,7 +326,7 @@ final class DocFieldProcessor extends DocConsumer {
       PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(fieldInfo.getCodecId());
       SegmentCodecs codecs = perDocWriteState.segmentCodecs;
       assert codecs.codecs.length > fieldInfo.getCodecId();
-      Codec codec = codecs.codecs[fieldInfo.getCodecId()];
+      PostingsFormat codec = codecs.codecs[fieldInfo.getCodecId()];
       perDocConsumer = codec.docsConsumer(perDocWriteState);
       perDocConsumers.put(Integer.valueOf(fieldInfo.getCodecId()), perDocConsumer);
     }

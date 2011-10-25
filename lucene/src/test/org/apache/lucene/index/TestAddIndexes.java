@@ -30,10 +30,10 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -1039,9 +1039,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public static class MockCodecProvider extends CodecProvider {
     public MockCodecProvider() {
-      StandardCodec standardCodec = new StandardCodec();
-      SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
-      MockSepCodec mockSepCodec = new MockSepCodec();
+      StandardPostingsFormat standardCodec = new StandardPostingsFormat();
+      SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
+      MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
       register(standardCodec);
       register(mockSepCodec);
       register(simpleTextCodec);
@@ -1146,7 +1146,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new StandardCodec());
+      provider.register(new StandardPostingsFormat());
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();
@@ -1161,7 +1161,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(20)));
+      provider.register(new PulsingPostingsFormat(1 + random.nextInt(20)));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(dir, conf);
       try {
@@ -1182,7 +1182,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(20)));
+      provider.register(new PulsingPostingsFormat(1 + random.nextInt(20)));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(dir, conf);
       IndexReader indexReader = IndexReader.open(toAdd);

@@ -95,7 +95,7 @@ public class PreFlexFields extends FieldsProducer {
 
       // make sure that all index files have been read or are kept open
       // so that if an index update removes them we'll still have them
-      freqStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.FREQ_EXTENSION), context);
+      freqStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexPostingsFormat.FREQ_EXTENSION), context);
       boolean anyProx = false;
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed) {
@@ -108,7 +108,7 @@ public class PreFlexFields extends FieldsProducer {
       }
 
       if (anyProx) {
-        proxStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.PROX_EXTENSION), context);
+        proxStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexPostingsFormat.PROX_EXTENSION), context);
       } else {
         proxStream = null;
       }
@@ -136,16 +136,16 @@ public class PreFlexFields extends FieldsProducer {
   }
 
   static void files(Directory dir, SegmentInfo info, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.TERMS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.TERMS_INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.FREQ_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexPostingsFormat.TERMS_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexPostingsFormat.TERMS_INDEX_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexPostingsFormat.FREQ_EXTENSION));
     if (info.getHasProx()) {
       // LUCENE-1739: for certain versions of 2.9-dev,
       // hasProx would be incorrectly computed during
       // indexing as true, and then stored into the segments
       // file, when it should have been false.  So we do the
       // extra check, here:
-      final String prx = IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.PROX_EXTENSION);
+      final String prx = IndexFileNames.segmentFileName(info.name, "", PreFlexPostingsFormat.PROX_EXTENSION);
       if (dir.fileExists(prx)) {
         files.add(prx);
       }

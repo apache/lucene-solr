@@ -17,10 +17,10 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -41,13 +41,13 @@ public class MockCodecProviderFactory extends CodecProviderFactory {
   @Override
   public CodecProvider create() {
     CodecProvider cp = new CodecProvider();
-    cp.register(new StandardCodec());
-    cp.register(new PulsingCodec());
+    cp.register(new StandardPostingsFormat());
+    cp.register(new PulsingPostingsFormat());
     if (codecs != null) {
       for (Object codec : codecs.getAll("name")) {
         if (!cp.isCodecRegistered((String)codec)) {
           try {
-            Class<? extends Codec> clazz = Class.forName((String)codec).asSubclass(Codec.class);
+            Class<? extends PostingsFormat> clazz = Class.forName((String)codec).asSubclass(PostingsFormat.class);
             cp.register(clazz.newInstance());
           } catch (Exception e) {
             throw new RuntimeException(e);

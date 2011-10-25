@@ -24,7 +24,7 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -32,7 +32,7 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
@@ -43,7 +43,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * This codec extends {@link StandardCodec} to work on append-only outputs, such
+ * This codec extends {@link StandardPostingsFormat} to work on append-only outputs, such
  * as plain output streams and append-only filesystems.
  *
  * <p>Note: compound file format feature is not compatible with
@@ -53,10 +53,10 @@ import org.apache.lucene.util.BytesRef;
  * compound file format.</p>
  * @lucene.experimental
  */
-public class AppendingCodec extends Codec {
+public class AppendingPostingsFormat extends PostingsFormat {
   public static String CODEC_NAME = "Appending";
   
-  public AppendingCodec() {
+  public AppendingPostingsFormat() {
     super(CODEC_NAME);
   }
 
@@ -116,7 +116,7 @@ public class AppendingCodec extends Codec {
               state.dir, state.fieldInfos, state.segmentInfo.name,
               docsReader,
               state.context,
-              StandardCodec.TERMS_CACHE_SIZE,
+              StandardPostingsFormat.TERMS_CACHE_SIZE,
               state.codecId);
       success = true;
       return ret;
@@ -142,7 +142,7 @@ public class AppendingCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    StandardCodec.getStandardExtensions(extensions);
+    StandardPostingsFormat.getStandardExtensions(extensions);
     DefaultDocValuesConsumer.getExtensions(extensions);
   }
   

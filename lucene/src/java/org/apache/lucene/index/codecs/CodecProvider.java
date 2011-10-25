@@ -43,14 +43,14 @@ public class CodecProvider {
   private final Map<String, String> perFieldMap = new HashMap<String, String>();
 
   
-  private final HashMap<String, Codec> codecs = new HashMap<String, Codec>();
+  private final HashMap<String, PostingsFormat> codecs = new HashMap<String, PostingsFormat>();
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
 
   public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "Memory"};
 
-  public synchronized void register(Codec codec) {
+  public synchronized void register(PostingsFormat codec) {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
@@ -63,12 +63,12 @@ public class CodecProvider {
   }
   
   /** @lucene.internal */
-  public synchronized void unregister(Codec codec) {
+  public synchronized void unregister(PostingsFormat codec) {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
     if (codecs.containsKey(codec.name)) {
-      Codec c = codecs.get(codec.name);
+      PostingsFormat c = codecs.get(codec.name);
       if (codec == c) {
         codecs.remove(codec.name);
       } else {
@@ -86,8 +86,8 @@ public class CodecProvider {
     return knownExtensions;
   }
 
-  public synchronized Codec lookup(String name) {
-    final Codec codec = codecs.get(name);
+  public synchronized PostingsFormat lookup(String name) {
+    final PostingsFormat codec = codecs.get(name);
     if (codec == null) {
       throw new IllegalArgumentException("required codec '" + name + "' not found; known codecs: " + codecs.keySet());
     }
@@ -134,7 +134,7 @@ public class CodecProvider {
   }
   
   /**
-   * Sets the {@link Codec} for a given field. Not that setting a field's codec is
+   * Sets the {@link PostingsFormat} for a given field. Not that setting a field's codec is
    * write-once. If the field's codec is already set this method will throw an
    * {@link IllegalArgumentException}.
    * 
@@ -154,12 +154,12 @@ public class CodecProvider {
   }
 
   /**
-   * Returns the {@link Codec} name for the given field or the default codec if
+   * Returns the {@link PostingsFormat} name for the given field or the default codec if
    * not set.
    * 
    * @param name
    *          the fields name
-   * @return the {@link Codec} name for the given field or the default codec if
+   * @return the {@link PostingsFormat} name for the given field or the default codec if
    *         not set.
    */
   public synchronized String getFieldCodec(String name) {
@@ -179,16 +179,16 @@ public class CodecProvider {
   }
 
   /**
-   * Returns the default {@link Codec} for this {@link CodecProvider}
+   * Returns the default {@link PostingsFormat} for this {@link CodecProvider}
    * 
-   * @return the default {@link Codec} for this {@link CodecProvider}
+   * @return the default {@link PostingsFormat} for this {@link CodecProvider}
    */
   public synchronized String getDefaultFieldCodec() {
     return defaultFieldCodec;
   }
 
   /**
-   * Sets the default {@link Codec} for this {@link CodecProvider}
+   * Sets the default {@link PostingsFormat} for this {@link CodecProvider}
    * 
    * @param codec
    *          the codecs name

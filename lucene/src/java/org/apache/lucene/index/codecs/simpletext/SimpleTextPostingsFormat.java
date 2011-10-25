@@ -25,7 +25,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -42,9 +42,9 @@ import org.apache.lucene.store.Directory;
  *  any text editor, and even edit it to alter your index.
  *
  *  @lucene.experimental */
-public class SimpleTextCodec extends Codec {
+public class SimpleTextPostingsFormat extends PostingsFormat {
   
-  public SimpleTextCodec() {
+  public SimpleTextPostingsFormat() {
     super("SimpleText");
   }
 

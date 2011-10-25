@@ -25,13 +25,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.memory.MemoryCodec;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -44,8 +44,8 @@ import org.apache.lucene.util._TestUtil;
  * and reproducable.
  */
 public class RandomCodecProvider extends CodecProvider {
-  private List<Codec> knownCodecs = new ArrayList<Codec>();
-  private Map<String,Codec> previousMappings = new HashMap<String,Codec>();
+  private List<PostingsFormat> knownCodecs = new ArrayList<PostingsFormat>();
+  private Map<String,PostingsFormat> previousMappings = new HashMap<String,PostingsFormat>();
   private final int perFieldSeed;
   
   public RandomCodecProvider(Random random, boolean useNoMemoryExpensiveCodec) {
@@ -54,39 +54,39 @@ public class RandomCodecProvider extends CodecProvider {
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    register(new StandardCodec(minItemsPerBlock, maxItemsPerBlock));
-    register(new PreFlexCodec());
+    register(new StandardPostingsFormat(minItemsPerBlock, maxItemsPerBlock));
+    register(new PreFlexPostingsFormat());
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-    register(new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
+    register(new PulsingPostingsFormat( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
     if (!useNoMemoryExpensiveCodec) {
-      register(new SimpleTextCodec());
-      register(new MemoryCodec());
+      register(new SimpleTextPostingsFormat());
+      register(new MemoryPostingsFormat());
     }
     Collections.shuffle(knownCodecs, random);
   }
   
   @Override
-  public synchronized void register(Codec codec) {
+  public synchronized void register(PostingsFormat codec) {
     if (!codec.name.equals("PreFlex"))
       knownCodecs.add(codec);
     super.register(codec);
   }
   
   @Override
-  public synchronized void unregister(Codec codec) {
+  public synchronized void unregister(PostingsFormat codec) {
     knownCodecs.remove(codec);
     super.unregister(codec);
   }
   
   @Override
   public synchronized String getFieldCodec(String name) {
-    Codec codec = previousMappings.get(name);
+    PostingsFormat codec = previousMappings.get(name);
     if (codec == null) {
       codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
-      if (codec instanceof SimpleTextCodec && perFieldSeed % 5 != 0) {
+      if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
         // make simpletext rarer, choose again
         codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
       }

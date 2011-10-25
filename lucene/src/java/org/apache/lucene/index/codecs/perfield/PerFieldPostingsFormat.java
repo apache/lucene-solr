@@ -36,7 +36,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -57,10 +57,10 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.internal
  */
-final class PerFieldCodecWrapper extends Codec {
+final class PerFieldPostingsFormat extends PostingsFormat {
   private final SegmentCodecs segmentCodecs;
 
-  PerFieldCodecWrapper(SegmentCodecs segmentCodecs) {
+  PerFieldPostingsFormat(SegmentCodecs segmentCodecs) {
     super("PerField");
     this.segmentCodecs = segmentCodecs;
   }
@@ -76,7 +76,7 @@ final class PerFieldCodecWrapper extends Codec {
 
     public FieldsWriter(SegmentWriteState state) throws IOException {
       assert segmentCodecs == state.segmentCodecs;
-      final Codec[] codecs = segmentCodecs.codecs;
+      final PostingsFormat[] codecs = segmentCodecs.codecs;
       for (int i = 0; i < codecs.length; i++) {
         boolean success = false;
         try {
@@ -111,14 +111,14 @@ final class PerFieldCodecWrapper extends Codec {
     public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
         IOContext context, int indexDivisor) throws IOException {
 
-      final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
+      final Map<PostingsFormat, FieldsProducer> producers = new HashMap<PostingsFormat, FieldsProducer>();
       boolean success = false;
       try {
         for (FieldInfo fi : fieldInfos) {
           if (fi.isIndexed) { 
             fields.add(fi.name);
             assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
-            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
+            PostingsFormat codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
                                                                              si, fieldInfos, context, indexDivisor, fi.getCodecId())));
@@ -201,7 +201,7 @@ final class PerFieldCodecWrapper extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    for (Codec codec : segmentCodecs.codecs) {
+    for (PostingsFormat codec : segmentCodecs.codecs) {
       codec.getExtensions(extensions);
     }
   }
@@ -222,13 +222,13 @@ final class PerFieldCodecWrapper extends Codec {
 
     public PerDocProducers(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
         IOContext context, int indexDivisor) throws IOException {
-      final Map<Codec, PerDocValues> producers = new HashMap<Codec, PerDocValues>();
+      final Map<PostingsFormat, PerDocValues> producers = new HashMap<PostingsFormat, PerDocValues>();
       boolean success = false;
       try {
         for (FieldInfo fi : fieldInfos) {
           if (fi.hasDocValues()) { 
             assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
-            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
+            PostingsFormat codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.docsProducer(new SegmentReadState(dir,
                 si, fieldInfos, context, indexDivisor, fi.getCodecId())));
@@ -264,7 +264,7 @@ final class PerFieldCodecWrapper extends Codec {
   
   private final class PerDocConsumers extends PerDocConsumer {
     private final PerDocConsumer[] consumers;
-    private final Codec[] codecs;
+    private final PostingsFormat[] codecs;
     private final PerDocWriteState state;
 
     public PerDocConsumers(PerDocWriteState state) throws IOException {
