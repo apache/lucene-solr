@@ -153,8 +153,8 @@
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-tagger-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-wst-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uimaj-core-2.3.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/velocity/lib/velocity-1.6.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/velocity/lib/velocity-tools-2.0-beta3.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/velocity/lib/velocity-1.6.4.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/velocity/lib/velocity-tools-2.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
