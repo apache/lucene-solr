@@ -23,6 +23,14 @@ on how to get started.
 
 ==================  3.5.0  ==================
 
+Upgrading from Solr 3.4
+----------------------
+
+* The VelocityResponseWriter is no longer built into the core.  Its JAR and
+  dependencies now need to be added (via <lib> or solr/home lib inclusion),
+  and it needs to be registered in solrconfig.xml like this:
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
+
 New Features
 ----------------------
 * SOLR-2749: Add boundary scanners for FastVectorHighlighter. <boundaryScanner/>
@@ -110,6 +118,9 @@ Bug Fixes
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
 * SOLR-2792: Allow case insensitive Hunspell stemming (janhoy, rmuir)
+
+* SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
+  remove it as a mandatory core dependency.  (Erik Hatcher)
 
 ==================  3.4.0  ==================
 
