@@ -22,6 +22,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.common.SolrDocumentList;
 
+/**
+ * This class is used by the Velocity response writer to provide a consistent paging tool for use by templates.
+ *
+ * TODO: add more details
+ */
 public class PageTool {
   private long start;
   private int results_per_page = 10;

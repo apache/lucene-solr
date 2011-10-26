@@ -55,6 +55,9 @@ public class JettyWebappTest extends LuceneTestCase
     System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
     String path = ExternalPaths.WEBAPP_HOME;
 
+    // disable VelocityResponseWriter from example configuration
+    System.setProperty("solr.velocity.enabled", "false");
+
     server = new Server(port);
     // insecure: only use for tests!!!!
     server.setSessionIdManager(new HashSessionIdManager(new Random(random.nextLong())));

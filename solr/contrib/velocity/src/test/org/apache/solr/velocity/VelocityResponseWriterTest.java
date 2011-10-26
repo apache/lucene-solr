@@ -17,21 +17,32 @@
 
 package org.apache.solr.velocity;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.StringWriter;
 import java.io.IOException;
 
-public class VelocityResponseWriterTest extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() { return "schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
+  }
 
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+    assertU(commit());
+  }
 
+  @Test
   public void testTemplateName() throws IOException {
     org.apache.solr.response.VelocityResponseWriter vrw = new VelocityResponseWriter();
     SolrQueryRequest req = req("v.template","custom", "v.template.custom","$response.response.response_data");
@@ -41,4 +52,6 @@ public class VelocityResponseWriterTest extends AbstractSolrTestCase {
     vrw.write(buf, req, rsp);
     assertEquals("testing", buf.toString());
   }
+
+  // TODO: add test that works with true Solr requests and wt=velocity to ensure the test tests that it's registered properly, etc
 }

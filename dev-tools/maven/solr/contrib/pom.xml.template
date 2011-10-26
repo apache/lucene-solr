@@ -38,6 +38,7 @@
     <module>extraction</module>
     <module>langid</module>
     <module>uima</module>
+    <module>velocity</module>
   </modules>
   <build>
     <directory>../build/solr-contrib-aggregator</directory>
