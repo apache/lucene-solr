@@ -31,6 +31,9 @@ import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 
+// nocommit: clean all this up, and just make it PerFieldPostingsFormatWrapper
+// also we can't have an immutable per-field map given how solr uses it.
+
 public abstract class PerFieldCodec extends Codec {
   private final PostingsFormat postingsFormat;
 
