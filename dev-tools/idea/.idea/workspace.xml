@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="RunManager" selected="JUnit.lucene">
+    <configuration default="true" type="JUnit" factoryName="JUnit">
+      <option name="VM_PARAMETERS" value="-ea" />
+    </configuration>
     <configuration default="false" name="analysis-extras contrib" type="JUnit" factoryName="JUnit">
       <module name="analysis-extras" />
       <option name="TEST_OBJECT" value="package" />
