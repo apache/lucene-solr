@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.preflex;
+package org.apache.lucene.index.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,7 +23,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.codecs.standard.DefaultSkipListReader;
+import org.apache.lucene.index.codecs.lucene40.DefaultSkipListReader;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 

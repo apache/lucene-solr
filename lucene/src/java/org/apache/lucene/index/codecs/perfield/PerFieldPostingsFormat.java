@@ -49,20 +49,20 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Enables native per field codec support. This class selects the codec used to
- * write a field depending on the provided {@link SegmentCodecs}. For each field
- * seen it resolves the codec based on the {@link FieldInfo#codecId} which is
- * only valid during a segment merge. See {@link SegmentCodecs} javadoc for
+ * Enables per field format support. This class selects the format used to
+ * write a field depending on the provided {@link SegmentFormats}. For each field
+ * seen it resolves the format based on the {@link FieldInfo#formatId} which is
+ * only valid during a segment merge. See {@link SegmentFormats} javadoc for
  * details.
  * 
  * @lucene.internal
  */
 final class PerFieldPostingsFormat extends PostingsFormat {
-  private final SegmentCodecs segmentCodecs;
+  private final SegmentFormats segmentFormats;
 
-  PerFieldPostingsFormat(SegmentCodecs segmentCodecs) {
+  PerFieldPostingsFormat(SegmentFormats segmentFormats) {
     super("PerField");
-    this.segmentCodecs = segmentCodecs;
+    this.segmentFormats = segmentFormats;
   }
 
   @Override
@@ -75,12 +75,12 @@ final class PerFieldPostingsFormat extends PostingsFormat {
     private final ArrayList<FieldsConsumer> consumers = new ArrayList<FieldsConsumer>();
 
     public FieldsWriter(SegmentWriteState state) throws IOException {
-      assert segmentCodecs == state.segmentCodecs;
-      final PostingsFormat[] codecs = segmentCodecs.codecs;
-      for (int i = 0; i < codecs.length; i++) {
+      assert segmentFormats == state.segmentFormats;
+      final PostingsFormat[] formats = segmentFormats.formats;
+      for (int i = 0; i < formats.length; i++) {
         boolean success = false;
         try {
-          consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, i)));
+          consumers.add(formats[i].fieldsConsumer(new SegmentWriteState(state, i)));
           success = true;
         } finally {
           if (!success) {
@@ -92,8 +92,8 @@ final class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      assert field.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
-      final FieldsConsumer fields = consumers.get(field.getCodecId());
+      assert field.getFormatId() != FieldInfo.UNASSIGNED_FORMAT_ID;
+      final FieldsConsumer fields = consumers.get(field.getFormatId());
       return fields.addField(field);
     }
 
@@ -117,13 +117,13 @@ final class PerFieldPostingsFormat extends PostingsFormat {
         for (FieldInfo fi : fieldInfos) {
           if (fi.isIndexed) { 
             fields.add(fi.name);
-            assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
-            PostingsFormat codec = segmentCodecs.codecs[fi.getCodecId()];
-            if (!producers.containsKey(codec)) {
-              producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, context, indexDivisor, fi.getCodecId())));
+            assert fi.getFormatId() != FieldInfo.UNASSIGNED_FORMAT_ID;
+            PostingsFormat format = segmentFormats.formats[fi.getFormatId()];
+            if (!producers.containsKey(format)) {
+              producers.put(format, format.fieldsProducer(new SegmentReadState(dir,
+                                                                             si, fieldInfos, context, indexDivisor, fi.getFormatId())));
             }
-            codecs.put(fi.name, producers.get(codec));
+            codecs.put(fi.name, producers.get(format));
           }
         }
         success = true;
@@ -193,16 +193,16 @@ final class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, int codecId, Set<String> files)
+  public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files)
       throws IOException {
-    // ignore codecid since segmentCodec will assign it per codec
-    segmentCodecs.files(dir, info, files);
+    // ignore formatid since segmentFormat will assign it per codec
+    segmentFormats.files(dir, info, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    for (PostingsFormat codec : segmentCodecs.codecs) {
-      codec.getExtensions(extensions);
+    for (PostingsFormat format : segmentFormats.formats) {
+      format.getExtensions(extensions);
     }
   }
 
@@ -227,11 +227,11 @@ final class PerFieldPostingsFormat extends PostingsFormat {
       try {
         for (FieldInfo fi : fieldInfos) {
           if (fi.hasDocValues()) { 
-            assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
-            PostingsFormat codec = segmentCodecs.codecs[fi.getCodecId()];
+            assert fi.getFormatId() != FieldInfo.UNASSIGNED_FORMAT_ID;
+            PostingsFormat codec = segmentFormats.formats[fi.getFormatId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.docsProducer(new SegmentReadState(dir,
-                si, fieldInfos, context, indexDivisor, fi.getCodecId())));
+                si, fieldInfos, context, indexDivisor, fi.getFormatId())));
             }
             codecs.put(fi.name, producers.get(codec));
           }
@@ -264,14 +264,14 @@ final class PerFieldPostingsFormat extends PostingsFormat {
   
   private final class PerDocConsumers extends PerDocConsumer {
     private final PerDocConsumer[] consumers;
-    private final PostingsFormat[] codecs;
+    private final PostingsFormat[] formats;
     private final PerDocWriteState state;
 
     public PerDocConsumers(PerDocWriteState state) throws IOException {
-      assert segmentCodecs == state.segmentCodecs;
+      assert segmentFormats == state.segmentFormats;
       this.state = state;
-      codecs = segmentCodecs.codecs;
-      consumers = new PerDocConsumer[codecs.length];
+      formats = segmentFormats.formats;
+      consumers = new PerDocConsumer[formats.length];
     }
 
     public void close() throws IOException {
@@ -280,13 +280,13 @@ final class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-      final int codecId = field.getCodecId();
-      assert codecId != FieldInfo.UNASSIGNED_CODEC_ID;
-      PerDocConsumer perDoc = consumers[codecId];
+      final int formatId = field.getFormatId();
+      assert formatId != FieldInfo.UNASSIGNED_FORMAT_ID;
+      PerDocConsumer perDoc = consumers[formatId];
       if (perDoc == null) {
-        perDoc = codecs[codecId].docsConsumer(new PerDocWriteState(state, codecId));
+        perDoc = formats[formatId].docsConsumer(new PerDocWriteState(state, formatId));
         assert perDoc != null;
-        consumers[codecId] = perDoc;
+        consumers[formatId] = perDoc;
       }
       return perDoc.addValuesField(field);
     }

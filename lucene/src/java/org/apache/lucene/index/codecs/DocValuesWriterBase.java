@@ -34,13 +34,13 @@ import org.apache.lucene.util.Counter;
  */
 public abstract class DocValuesWriterBase extends PerDocConsumer {
   private final String segmentName;
-  private final int codecId;
+  private final int formatId;
   private final Counter bytesUsed;
   private final IOContext context;
   
   protected DocValuesWriterBase(PerDocWriteState state) {
     this.segmentName = state.segmentName;
-    this.codecId = state.codecId;
+    this.formatId = state.formatId;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
   }
@@ -54,7 +54,7 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   @Override
   public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
     return Writer.create(field.getDocValues(),
-        docValuesId(segmentName, codecId, field.number), 
+        docValuesId(segmentName, formatId, field.number), 
         getDirectory(), getComparator(), bytesUsed, context);
   }
 

@@ -35,7 +35,7 @@ public class SegmentReadState {
   // that must do so), then it should negate this value to
   // get the app's terms divisor:
   public int termsIndexDivisor;
-  public final int codecId;
+  public final int formatId;
 
   public SegmentReadState(Directory dir, SegmentInfo info,
       FieldInfos fieldInfos, IOContext context, int termsIndexDivisor) {
@@ -47,12 +47,12 @@ public class SegmentReadState {
                           FieldInfos fieldInfos,
                           IOContext context,
                           int termsIndexDivisor,
-                          int codecId) {
+                          int formatId) {
     this.dir = dir;
     this.segmentInfo = info;
     this.fieldInfos = fieldInfos;
     this.context = context;
     this.termsIndexDivisor = termsIndexDivisor;
-    this.codecId = codecId;
+    this.formatId = formatId;
   }
 }

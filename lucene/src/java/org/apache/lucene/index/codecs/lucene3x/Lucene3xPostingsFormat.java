@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.preflex;
+package org.apache.lucene.index.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -40,7 +40,7 @@ import org.apache.lucene.index.codecs.PerDocValues;
  * @lucene.experimental
  */
 @Deprecated
-public class PreFlexPostingsFormat extends PostingsFormat {
+public class Lucene3xPostingsFormat extends PostingsFormat {
 
   /** Extension of terms file */
   public static final String TERMS_EXTENSION = "tis";
@@ -54,7 +54,7 @@ public class PreFlexPostingsFormat extends PostingsFormat {
   /** Extension of prox postings file */
   public static final String PROX_EXTENSION = "prx";
 
-  public PreFlexPostingsFormat() {
+  public Lucene3xPostingsFormat() {
     super("PreFlex");
   }
   
@@ -65,13 +65,13 @@ public class PreFlexPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
+    return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo info, int id, Set<String> files) throws IOException {
     // preflex fields have no codec ID - we ignore it here
-    PreFlexFields.files(dir, info, files);
+    Lucene3xFields.files(dir, info, files);
   }
 
   @Override

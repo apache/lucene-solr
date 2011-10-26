@@ -32,18 +32,18 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * This codec extends {@link StandardPostingsFormat} to work on append-only outputs, such
+ * This codec extends {@link Lucene40PostingsFormat} to work on append-only outputs, such
  * as plain output streams and append-only filesystems.
  *
  * <p>Note: compound file format feature is not compatible with
@@ -63,7 +63,7 @@ public class AppendingPostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state)
           throws IOException {
-    PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
+    PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
     boolean success = false;
     AppendingTermsIndexWriter indexWriter = null;
     try {
@@ -93,7 +93,7 @@ public class AppendingPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
           throws IOException {
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
@@ -103,7 +103,7 @@ public class AppendingPostingsFormat extends PostingsFormat {
               state.segmentInfo.name,
               state.termsIndexDivisor,
               BytesRef.getUTF8SortedAsUnicodeComparator(),
-              state.codecId, state.context);
+              state.formatId, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -116,8 +116,8 @@ public class AppendingPostingsFormat extends PostingsFormat {
               state.dir, state.fieldInfos, state.segmentInfo.name,
               docsReader,
               state.context,
-              StandardPostingsFormat.TERMS_CACHE_SIZE,
-              state.codecId);
+              Lucene40PostingsFormat.TERMS_CACHE_SIZE,
+              state.formatId);
       success = true;
       return ret;
     } finally {
@@ -132,17 +132,17 @@ public class AppendingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files)
+  public void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files)
           throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-    BlockTermsReader.files(dir, segmentInfo, codecId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+    Lucene40PostingsReader.files(dir, segmentInfo, formatId, files);
+    BlockTermsReader.files(dir, segmentInfo, formatId, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, formatId, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    StandardPostingsFormat.getStandardExtensions(extensions);
+    Lucene40PostingsFormat.getStandardExtensions(extensions);
     DefaultDocValuesConsumer.getExtensions(extensions);
   }
   

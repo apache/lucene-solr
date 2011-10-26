@@ -33,7 +33,7 @@ import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -67,7 +67,7 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private PostingsFormat codec;
+  private PostingsFormat format;
   private SegmentWriteState segmentWriteState;
 
   private PayloadProcessorProvider payloadProcessorProvider;
@@ -255,7 +255,7 @@ final class SegmentMerger {
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
-    final SegmentCodecs codecInfo = fieldInfos.buildSegmentCodecs(false);
+    final SegmentFormats codecInfo = fieldInfos.buildSegmentCodecs(false);
 
     int docCount = 0;
 
@@ -494,9 +494,9 @@ final class SegmentMerger {
     }
   }
 
-  SegmentCodecs getSegmentCodecs() {
+  SegmentFormats getSegmentFormats() {
     assert segmentWriteState != null;
-    return segmentWriteState.segmentCodecs;
+    return segmentWriteState.segmentFormats;
   }
 
   private final void mergeTerms() throws CorruptIndexException, IOException {
@@ -567,8 +567,8 @@ final class SegmentMerger {
         mergeState.dirPayloadProcessor[i] = payloadProcessorProvider.getDirProcessor(reader.reader.directory());
       }
     }
-    codec = segmentWriteState.segmentCodecs.codec();
-    final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
+    format = segmentWriteState.segmentFormats.format();
+    final FieldsConsumer consumer = format.fieldsConsumer(segmentWriteState);
     boolean success = false;
     try {
       consumer.merge(mergeState,
@@ -585,7 +585,7 @@ final class SegmentMerger {
   }
 
   private void mergePerDoc() throws IOException {
-      final PerDocConsumer docsConsumer = codec
+      final PerDocConsumer docsConsumer = format
           .docsConsumer(new PerDocWriteState(segmentWriteState));
       // TODO: remove this check when 3.x indexes are no longer supported
       // (3.x indexes don't have docvalues)

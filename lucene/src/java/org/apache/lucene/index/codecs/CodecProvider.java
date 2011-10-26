@@ -17,16 +17,10 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 
 /** Holds a set of codecs, keyed by name.  You subclass
  *  this, instantiate it, and register your codecs, then
@@ -36,46 +30,40 @@ import org.apache.lucene.store.IOContext;
  *
  *  @lucene.experimental */
 
-// TODO: this class should only resolve String names to Codec instances.
-//   Its probably the case for now we will have to leave the infosReader/Writer here,
-//   but the hashmaps/field-oriented stuff must die die die
 public class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
-  // TODO: all this stuff below needs to be private to PerFieldCodec
-  private String defaultFieldCodec = "Standard";
-  private final Map<String, String> perFieldMap = new HashMap<String, String>();
 
-  private final HashMap<String, PostingsFormat> codecs = new HashMap<String, PostingsFormat>();
+  private final HashMap<String, Codec> codecs = new HashMap<String, Codec>();
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "Memory"};
+  public final static String[] CORE_CODECS = new String[] { "PerField", "PreFlex" };
 
-  public synchronized void register(PostingsFormat codec) {
-    if (codec.name == null) {
-      throw new IllegalArgumentException("code.name is null");
+  public synchronized void register(Codec codec) {
+    if (codec.getName() == null) {
+      throw new IllegalArgumentException("codec.getName() is null");
     }
-    if (!codecs.containsKey(codec.name)) {
-      codecs.put(codec.name, codec);
+    if (!codecs.containsKey(codec.getName())) {
+      codecs.put(codec.getName(), codec);
       codec.getExtensions(knownExtensions);
-    } else if (codecs.get(codec.name) != codec) {
-      throw new IllegalArgumentException("codec '" + codec.name + "' is already registered as a different codec instance");
+    } else if (codecs.get(codec.getName()) != codec) {
+      throw new IllegalArgumentException("codec '" + codec.getName() + "' is already registered as a different codec instance");
     }
   }
   
   /** @lucene.internal */
-  public synchronized void unregister(PostingsFormat codec) {
-    if (codec.name == null) {
+  public synchronized void unregister(Codec codec) {
+    if (codec.getName() == null) {
       throw new IllegalArgumentException("code.name is null");
     }
-    if (codecs.containsKey(codec.name)) {
-      PostingsFormat c = codecs.get(codec.name);
+    if (codecs.containsKey(codec.getName())) {
+      Codec c = codecs.get(codec.getName());
       if (codec == c) {
-        codecs.remove(codec.name);
+        codecs.remove(codec.getName());
       } else {
-        throw new IllegalArgumentException("codec '" + codec.name + "' is being impersonated by a different codec instance!!!");
+        throw new IllegalArgumentException("codec '" + codec.getName() + "' is being impersonated by a different codec instance!!!");
       }
     }
   }
@@ -89,8 +77,8 @@ public class CodecProvider {
     return knownExtensions;
   }
 
-  public synchronized PostingsFormat lookup(String name) {
-    final PostingsFormat codec = codecs.get(name);
+  public synchronized Codec lookup(String name) {
+    final Codec codec = codecs.get(name);
     if (codec == null) {
       throw new IllegalArgumentException("required codec '" + name + "' not found; known codecs: " + codecs.keySet());
     }
@@ -114,18 +102,6 @@ public class CodecProvider {
     return infosReader;
   }
   
-  /** expert */
-  // TODO: nuke from here, access from fieldsFormat only!
-  public FieldsReader fieldsReader(Directory directory, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException {
-    return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
-  }
-
-  /** expert */
-  // TODO: nuke from here, access from fieldsFormat only!
-  public FieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    return new DefaultFieldsWriter(directory, segment, context);
-  }
-
   static private CodecProvider defaultCodecs = new CoreCodecProvider();
 
   public static CodecProvider getDefault() {
@@ -136,69 +112,5 @@ public class CodecProvider {
    *  @lucene.internal */
   public static void setDefault(CodecProvider cp) {
     defaultCodecs = cp;
-  }
-  
-  /**
-   * Sets the {@link PostingsFormat} for a given field. Not that setting a field's codec is
-   * write-once. If the field's codec is already set this method will throw an
-   * {@link IllegalArgumentException}.
-   * 
-   * @param field
-   *          the name of the field
-   * @param codec
-   *          the name of the codec
-   * @throws IllegalArgumentException
-   *           if the codec for the given field is already set
-   * 
-   */
-  public synchronized void setFieldCodec(String field, String codec) {
-    if (perFieldMap.containsKey(field))
-      throw new IllegalArgumentException("codec for field: " + field
-          + " already set to " + perFieldMap.get(field));
-    perFieldMap.put(field, codec);
-  }
-
-  /**
-   * Returns the {@link PostingsFormat} name for the given field or the default codec if
-   * not set.
-   * 
-   * @param name
-   *          the fields name
-   * @return the {@link PostingsFormat} name for the given field or the default codec if
-   *         not set.
-   */
-  public synchronized String getFieldCodec(String name) {
-    final String codec;
-    if ((codec = perFieldMap.get(name)) == null) {
-      return defaultFieldCodec;
-    }
-    return codec;
-  }
-
-  /**
-   * Returns <code>true</code> if this provider has a Codec registered for this
-   * field.
-   */
-  public synchronized boolean hasFieldCodec(String name) {
-    return perFieldMap.containsKey(name);
-  }
-
-  /**
-   * Returns the default {@link PostingsFormat} for this {@link CodecProvider}
-   * 
-   * @return the default {@link PostingsFormat} for this {@link CodecProvider}
-   */
-  public synchronized String getDefaultFieldCodec() {
-    return defaultFieldCodec;
-  }
-
-  /**
-   * Sets the default {@link PostingsFormat} for this {@link CodecProvider}
-   * 
-   * @param codec
-   *          the codecs name
-   */
-  public synchronized void setDefaultFieldCodec(String codec) {
-    defaultFieldCodec = codec;
   }
 }

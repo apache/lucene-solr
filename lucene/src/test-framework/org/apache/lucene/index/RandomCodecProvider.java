@@ -27,11 +27,11 @@ import java.util.Random;
 
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
-import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -54,8 +54,8 @@ public class RandomCodecProvider extends CodecProvider {
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    register(new StandardPostingsFormat(minItemsPerBlock, maxItemsPerBlock));
-    register(new PreFlexPostingsFormat());
+    register(new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock));
+    register(new Lucene3xPostingsFormat());
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);

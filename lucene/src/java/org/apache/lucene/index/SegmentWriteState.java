@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
@@ -44,8 +44,8 @@ public class SegmentWriteState {
   // Lazily created:
   public BitVector liveDocs;
 
-  public final SegmentCodecs segmentCodecs;
-  public final int codecId;
+  public final SegmentFormats segmentFormats;
+  public final int formatId;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
    * in RAM.  Smaller values use more memory, but make searching slightly
@@ -57,7 +57,7 @@ public class SegmentWriteState {
   public final IOContext context;
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes, IOContext context) {
+      int numDocs, int termIndexInterval, SegmentFormats segmentFormats, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -65,24 +65,24 @@ public class SegmentWriteState {
     this.fieldInfos = fieldInfos;
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
-    this.segmentCodecs = segmentCodecs;
-    codecId = -1;
+    this.segmentFormats = segmentFormats;
+    formatId = -1;
     this.context = context;
   }
   
   /**
-   * Create a shallow {@link SegmentWriteState} copy final a codec ID
+   * Create a shallow {@link SegmentWriteState} copy final a format ID
    */
-  public SegmentWriteState(SegmentWriteState state, int codecId) {
+  public SegmentWriteState(SegmentWriteState state, int formatId) {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
-    segmentCodecs = state.segmentCodecs;
+    segmentFormats = state.segmentFormats;
     context = state.context;
-    this.codecId = codecId;
+    this.formatId = formatId;
     segDeletes = state.segDeletes;
   }
 }

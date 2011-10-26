@@ -30,10 +30,10 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
-import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -1039,7 +1039,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public static class MockCodecProvider extends CodecProvider {
     public MockCodecProvider() {
-      StandardPostingsFormat standardCodec = new StandardPostingsFormat();
+      Lucene40PostingsFormat standardCodec = new Lucene40PostingsFormat();
       SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
       MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
       register(standardCodec);
@@ -1146,7 +1146,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new StandardPostingsFormat());
+      provider.register(new Lucene40PostingsFormat());
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();

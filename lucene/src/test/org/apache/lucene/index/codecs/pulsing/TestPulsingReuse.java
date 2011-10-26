@@ -48,9 +48,9 @@ import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -149,7 +149,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     
     @Override
     public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
+      PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
 
       PostingsWriterBase pulsingWriterInner = new PulsingPostingsWriter(2, docsWriter);
       PostingsWriterBase pulsingWriter = new PulsingPostingsWriter(1, pulsingWriterInner);
@@ -170,7 +170,7 @@ public class TestPulsingReuse extends LuceneTestCase {
 
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
       PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
       PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
       boolean success = false;
@@ -202,14 +202,14 @@ public class TestPulsingReuse extends LuceneTestCase {
 
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      StandardPostingsReader.files(dir, segmentInfo, id, files);
+      Lucene40PostingsReader.files(dir, segmentInfo, id, files);
       BlockTreeTermsReader.files(dir, segmentInfo, id, files);
       DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
     }
 
     @Override
     public void getExtensions(Set<String> extensions) {
-      StandardPostingsFormat.getStandardExtensions(extensions);
+      Lucene40PostingsFormat.getStandardExtensions(extensions);
       DefaultDocValuesConsumer.getExtensions(extensions);
     }
   }

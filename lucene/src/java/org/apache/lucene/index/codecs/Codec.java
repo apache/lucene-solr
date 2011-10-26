@@ -34,13 +34,13 @@ public abstract class Codec {
     return name;
   }
   
-  public void getExtensions(Set<String> extensions) throws IOException {
+  public void getExtensions(Set<String> extensions) {
     postingsFormat().getExtensions(extensions);
     fieldsFormat().getExtensions(extensions);
   }
 
   /** Encodes/decodes postings and indexdocvalues */
-  public abstract PostingsFormat postingsFormat() throws IOException;
+  public abstract PostingsFormat postingsFormat();
   /** Encodes/decodes stored fields, term vectors, fieldinfos */
-  public abstract FieldsFormat fieldsFormat() throws IOException;
+  public abstract FieldsFormat fieldsFormat();
 }

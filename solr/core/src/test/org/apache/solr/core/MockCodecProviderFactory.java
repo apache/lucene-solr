@@ -19,8 +19,8 @@ package org.apache.solr.core;
 
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
-import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -41,7 +41,7 @@ public class MockCodecProviderFactory extends CodecProviderFactory {
   @Override
   public CodecProvider create() {
     CodecProvider cp = new CodecProvider();
-    cp.register(new StandardPostingsFormat());
+    cp.register(new Lucene40PostingsFormat());
     cp.register(new PulsingPostingsFormat());
     if (codecs != null) {
       for (Object codec : codecs.getAll("name")) {

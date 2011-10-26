@@ -47,8 +47,8 @@ import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -114,7 +114,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      PostingsWriterBase docs = new StandardPostingsWriter(state);
+      PostingsWriterBase docs = new Lucene40PostingsWriter(state);
 
       // TODO: should we make the terms index more easily
       // pluggable?  Ie so that this codec would record which
@@ -151,7 +151,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
       TermsIndexReaderBase indexReader;
 
       boolean success = false;
@@ -200,7 +200,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      StandardPostingsReader.files(dir, segmentInfo, id, files);
+      Lucene40PostingsReader.files(dir, segmentInfo, id, files);
       BlockTermsReader.files(dir, segmentInfo, id, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
       DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);

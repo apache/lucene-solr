@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,8 +38,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
 /** @lucene.experimental */
-public final class StandardPostingsWriter extends PostingsWriterBase {
-  final static String CODEC = "StandardPostingsWriter";
+public final class Lucene40PostingsWriter extends PostingsWriterBase {
+  final static String CODEC = "Lucene40PostingsWriter";
 
   //private static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
   
@@ -81,21 +81,21 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   // private String segment;
 
-  public StandardPostingsWriter(SegmentWriteState state) throws IOException {
+  public Lucene40PostingsWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_SKIP_INTERVAL);
   }
   
-  public StandardPostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
+  public Lucene40PostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
     super();
     this.skipInterval = skipInterval;
     this.skipMinimum = skipInterval; /* set to the same for now */
     // this.segment = state.segmentName;
-    String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardPostingsFormat.FREQ_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(state.segmentName, state.formatId, Lucene40PostingsFormat.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
     if (state.fieldInfos.hasProx()) {
       // At least one field does not omit TF, so create the
       // prox file
-      fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardPostingsFormat.PROX_EXTENSION);
+      fileName = IndexFileNames.segmentFileName(state.segmentName, state.formatId, Lucene40PostingsFormat.PROX_EXTENSION);
       proxOut = state.directory.createOutput(fileName, state.context);
     } else {
       // Every field omits TF so we will write no prox file

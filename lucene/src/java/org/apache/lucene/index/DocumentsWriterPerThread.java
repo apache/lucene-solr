@@ -27,7 +27,7 @@ import java.text.NumberFormat;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -406,8 +406,8 @@ public class DocumentsWriterPerThread {
     return numDocsInRAM;
   }
 
-  SegmentCodecs getCodec() {
-    return flushState.segmentCodecs;
+  SegmentFormats getFormat() {
+    return flushState.segmentFormats;
   }
 
   /** Reset after a flush */
@@ -444,7 +444,7 @@ public class DocumentsWriterPerThread {
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
-        fieldInfos.buildSegmentCodecs(true), pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
+        fieldInfos.buildSegmentFormats(true), pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
@@ -475,12 +475,12 @@ public class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentCodecs, fieldInfos.asReadOnly());
+      final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentFormats, fieldInfos.asReadOnly());
       if (infoStream != null) {
         message("new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.liveDocs.count())) + " deleted docs");
         message("new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
         message("flushedFiles=" + newSegment.files());
-        message("flushed codecs=" + newSegment.getSegmentCodecs());
+        message("flushed codecs=" + newSegment.getSegmentFormats());
       }
       flushedDocCount += flushState.numDocs;
 

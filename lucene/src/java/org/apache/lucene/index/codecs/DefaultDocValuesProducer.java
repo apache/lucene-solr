@@ -46,9 +46,9 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
    */
   public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
     cfs = new CompoundFileDirectory(state.dir, 
-        IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.formatId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
         state.context, false);
-    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.codecId, state.context);
+    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.formatId, state.context);
   }
   
   @Override

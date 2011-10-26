@@ -47,12 +47,12 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
   }
 
   @SuppressWarnings("fallthrough")
-  public static void files(Directory dir, SegmentInfo segmentInfo, int codecId,
+  public static void files(Directory dir, SegmentInfo segmentInfo, int formatId,
       Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.getCodecId() == codecId && fieldInfo.hasDocValues()) {
-        String filename = docValuesId(segmentInfo.name, codecId, fieldInfo.number);
+      if (fieldInfo.getFormatId() == formatId && fieldInfo.hasDocValues()) {
+        String filename = docValuesId(segmentInfo.name, formatId, fieldInfo.number);
         switch (fieldInfo.getDocValues()) {
           case BYTES_FIXED_DEREF:
           case BYTES_VAR_DEREF:

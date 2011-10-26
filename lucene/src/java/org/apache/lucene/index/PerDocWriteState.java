@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Counter;
@@ -35,8 +35,8 @@ public class PerDocWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final Counter bytesUsed;
-  public final SegmentCodecs segmentCodecs;
-  public final int codecId;
+  public final SegmentFormats segmentFormats;
+  public final int formatId;
   public final IOContext context;
 
   public PerDocWriteState(PrintStream infoStream, Directory directory,
@@ -46,8 +46,8 @@ public class PerDocWriteState {
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.segmentCodecs = fieldInfos.buildSegmentCodecs(false);
-    this.codecId = codecId;
+    this.segmentFormats = fieldInfos.buildSegmentCodecs(false);
+    this.formatId = codecId;
     this.bytesUsed = bytesUsed;
     this.context = context;
   }
@@ -55,21 +55,21 @@ public class PerDocWriteState {
   public PerDocWriteState(SegmentWriteState state) {
     infoStream = state.infoStream;
     directory = state.directory;
-    segmentCodecs = state.segmentCodecs;
+    segmentFormats = state.segmentFormats;
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
-    codecId = state.codecId;
+    formatId = state.formatId;
     bytesUsed = Counter.newCounter();
     context = state.context;
   }
 
-  public PerDocWriteState(PerDocWriteState state, int codecId) {
+  public PerDocWriteState(PerDocWriteState state, int formatId) {
     this.infoStream = state.infoStream;
     this.directory = state.directory;
     this.segmentName = state.segmentName;
     this.fieldInfos = state.fieldInfos;
-    this.segmentCodecs = state.segmentCodecs;
-    this.codecId = codecId;
+    this.segmentFormats = state.segmentFormats;
+    this.formatId = formatId;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
   }

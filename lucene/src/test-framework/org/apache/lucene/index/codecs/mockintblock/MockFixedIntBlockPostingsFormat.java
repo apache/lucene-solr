@@ -34,9 +34,9 @@ import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
 import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.index.codecs.sep.SepPostingsReader;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.codecs.standard.StandardPostingsFormat;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -187,7 +187,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.context,
-                                                StandardPostingsFormat.TERMS_CACHE_SIZE,
+                                                Lucene40PostingsFormat.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
       return ret;

@@ -380,7 +380,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       sis.cachedUnmodifiableList = null;
       sis.cachedUnmodifiableSet = null;
       for(final SegmentInfo info : this) {
-        assert info.getSegmentCodecs() != null;
+        assert info.getSegmentFormats() != null;
         // dont directly access segments, use add method!!!
         sis.add((SegmentInfo) info.clone());
       }
@@ -1106,7 +1106,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     if (cloneChildren) {
       final List<SegmentInfo> list = new ArrayList<SegmentInfo>(size());
       for(final SegmentInfo info : this) {
-        assert info.getSegmentCodecs() != null;
+        assert info.getSegmentFormats() != null;
         list.add((SegmentInfo) info.clone());
       }
       return list;

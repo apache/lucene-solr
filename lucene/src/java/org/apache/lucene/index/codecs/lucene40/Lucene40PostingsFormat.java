@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -39,17 +39,17 @@ import org.apache.lucene.store.Directory;
 
 /** Default codec. 
  *  @lucene.experimental */
-public class StandardPostingsFormat extends PostingsFormat {
+public class Lucene40PostingsFormat extends PostingsFormat {
 
   private final int minBlockSize;
   private final int maxBlockSize;
 
-  public StandardPostingsFormat() {
+  public Lucene40PostingsFormat() {
     this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  public StandardPostingsFormat(int minBlockSize, int maxBlockSize) {
-    super("Standard");
+  public Lucene40PostingsFormat(int minBlockSize, int maxBlockSize) {
+    super("Lucene40");
     this.minBlockSize = minBlockSize;
     assert minBlockSize > 1;
     this.maxBlockSize = maxBlockSize;
@@ -57,7 +57,7 @@ public class StandardPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new StandardPostingsWriter(state);
+    PostingsWriterBase docs = new Lucene40PostingsWriter(state);
 
     // TODO: should we make the terms index more easily
     // pluggable?  Ie so that this codec would record which
@@ -79,7 +79,7 @@ public class StandardPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
 
     boolean success = false;
     try {
@@ -89,7 +89,7 @@ public class StandardPostingsFormat extends PostingsFormat {
                                                     state.segmentInfo.name,
                                                     postings,
                                                     state.context,
-                                                    state.codecId,
+                                                    state.formatId,
                                                     state.termsIndexDivisor);
       success = true;
       return ret;
@@ -108,7 +108,7 @@ public class StandardPostingsFormat extends PostingsFormat {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, codecID, files);
+    Lucene40PostingsReader.files(dir, segmentInfo, codecID, files);
     BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, codecID, files);
   }

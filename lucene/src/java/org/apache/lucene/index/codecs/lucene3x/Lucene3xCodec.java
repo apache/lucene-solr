@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,27 +17,30 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.PostingsFormat;
 
 /**
- * A CodecProvider that registers all core codecs that ship
- * with Lucene.  This will not register any user codecs, but
- * you can easily instantiate this class and register them
- * yourself and specify the default codec for new segments:
- * 
- * <pre>
- *   CodecProvider cp = new CoreCodecProvider();
- *   cp.register(new MyFastCodec());
- *   cp.setDefaultCodec("MyFastCodec");
- *   IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
- *   iwc.setCodecProvider(cp);
- * </pre>
+ * Supports the Lucene 3.x index format (readonly)
  */
+public class Lucene3xCodec extends Codec {
+  public Lucene3xCodec() {
+    super("Lucene3x");
+  }
 
-public class CoreCodecProvider extends CodecProvider {
-  public CoreCodecProvider() {
-    register(new Lucene40Codec());
-    register(new Lucene3xCodec());
+  private final PostingsFormat postingsFormat = new Lucene3xPostingsFormat();
+  // TODO: this should really be a different impl
+  private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
+  
+  @Override
+  public PostingsFormat postingsFormat() {
+    return postingsFormat;
+  }
+
+  @Override
+  public FieldsFormat fieldsFormat() {
+    return fieldsFormat;
   }
 }

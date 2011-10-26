@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
-import org.apache.lucene.index.codecs.preflex.PreFlexFields;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xFields;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.util.LuceneTestCase;
@@ -32,7 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
  *
  * @lucene.experimental
  */
-public class PreFlexRWPostingsFormat extends PreFlexPostingsFormat {
+public class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
 
   public PreFlexRWPostingsFormat() {
     // NOTE: we impersonate the PreFlex codec so that it can
@@ -50,7 +50,7 @@ public class PreFlexRWPostingsFormat extends PreFlexPostingsFormat {
     // Whenever IW opens readers, eg for merging, we have to
     // keep terms order in UTF16:
 
-    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor) {
+    return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor) {
       @Override
       protected boolean sortTermsByUnicode() {
         // We carefully peek into stack track above us: if

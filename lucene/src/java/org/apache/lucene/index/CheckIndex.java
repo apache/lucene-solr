@@ -40,7 +40,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.FSDirectory;
@@ -145,7 +145,7 @@ public class CheckIndex {
       public String name;
 
       /** CodecInfo used to read this segment. */
-      public SegmentCodecs codec;
+      public SegmentFormats codec;
 
       /** Document count (does not take deletions into account). */
       public int docCount;
@@ -490,9 +490,9 @@ public class CheckIndex {
       SegmentReader reader = null;
 
       try {
-        final SegmentCodecs codec = info.getSegmentCodecs();
-        msg("    codec=" + codec);
-        segInfoStat.codec = codec;
+        final SegmentFormats fmt = info.getSegmentFormats();
+        msg("    codec=" + fmt);
+        segInfoStat.codec = fmt;
         msg("    compound=" + info.getUseCompoundFile());
         segInfoStat.compound = info.getUseCompoundFile();
         msg("    hasProx=" + info.getHasProx());

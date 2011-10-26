@@ -40,7 +40,8 @@ import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs.SegmentCodecsBuilder;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats.SegmentCodecsBuilder;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats.SegmentFormatsBuilder;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.CompoundFileDirectory;
@@ -2567,7 +2568,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
-                                               globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)), context);
+                                               globalFieldNumberMap.newFieldInfos(SegmentFormatsBuilder.create(codecs)), context);
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -2575,7 +2576,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       final FieldInfos fieldInfos = merger.fieldInfos();
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, merger.getSegmentCodecs(),
+                                         false, merger.getSegmentFormats(),
                                          fieldInfos);
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -3459,7 +3460,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, globalFieldNumberMap.newFieldInfos(SegmentFormatsBuilder.create(codecs)));
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
@@ -3679,10 +3680,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       mergedDocCount = merge.info.docCount = merger.merge();
 
       // Record which codec was used to write the segment
-      merge.info.setSegmentCodecs(merger.getSegmentCodecs());
+      merge.info.setSegmentFormats(merger.getSegmentFormats());
 
       if (infoStream != null) {
-        message("merge segmentCodecs=" + merger.getSegmentCodecs());
+        message("merge segmentCodecs=" + merger.getSegmentFormats());
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
       anyNonBulkMerges |= merger.getAnyNonBulkMerges();

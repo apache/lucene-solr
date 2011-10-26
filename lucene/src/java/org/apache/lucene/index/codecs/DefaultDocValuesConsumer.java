@@ -40,7 +40,7 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
     super(state);
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
     this.directory = new CompoundFileDirectory(state.directory,
-        IndexFileNames.segmentFileName(state.segmentName, state.codecId,
+        IndexFileNames.segmentFileName(state.segmentName, state.formatId,
             IndexFileNames.COMPOUND_FILE_EXTENSION), state.context, true);
   }
   
@@ -58,7 +58,7 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
   public static void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.getCodecId() == codecId && fieldInfo.hasDocValues()) {
+      if (fieldInfo.getFormatId() == codecId && fieldInfo.hasDocValues()) {
         files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION));
         files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
         assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 

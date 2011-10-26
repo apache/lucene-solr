@@ -29,9 +29,9 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
-import org.apache.lucene.index.codecs.preflex.TermInfo;
-import org.apache.lucene.index.codecs.standard.DefaultSkipListWriter;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
+import org.apache.lucene.index.codecs.lucene3x.TermInfo;
+import org.apache.lucene.index.codecs.lucene40.DefaultSkipListWriter;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -50,12 +50,12 @@ class PreFlexFieldsWriter extends FieldsConsumer {
                                    state.fieldInfos,
                                    state.termIndexInterval);
 
-    final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexPostingsFormat.FREQ_EXTENSION);
+    final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(freqFile, state.context);
     totalNumDocs = state.numDocs;
 
     if (state.fieldInfos.hasProx()) {
-      final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexPostingsFormat.PROX_EXTENSION);
+      final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION);
       proxOut = state.directory.createOutput(proxFile, state.context);
     } else {
       proxOut = null;

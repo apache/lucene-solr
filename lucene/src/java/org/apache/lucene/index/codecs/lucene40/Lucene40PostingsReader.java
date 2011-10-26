@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,7 +42,7 @@ import org.apache.lucene.util.CodecUtil;
  *  postings format. 
  *  @lucene.experimental */
 
-public class StandardPostingsReader extends PostingsReaderBase {
+public class Lucene40PostingsReader extends PostingsReaderBase {
 
   private final IndexInput freqIn;
   private final IndexInput proxIn;
@@ -54,14 +54,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   // private String segment;
 
-  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext ioContext, int codecId) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardPostingsFormat.FREQ_EXTENSION),
+  public Lucene40PostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext ioContext, int codecId) throws IOException {
+    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
     // this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
-        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardPostingsFormat.PROX_EXTENSION),
+        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, Lucene40PostingsFormat.PROX_EXTENSION),
                                ioContext);
         success = true;
       } finally {
@@ -75,9 +75,9 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   public static void files(Directory dir, SegmentInfo segmentInfo, int codecID, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardPostingsFormat.FREQ_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, Lucene40PostingsFormat.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardPostingsFormat.PROX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, Lucene40PostingsFormat.PROX_EXTENSION));
     }
   }
 
@@ -85,8 +85,8 @@ public class StandardPostingsReader extends PostingsReaderBase {
   public void init(IndexInput termsIn) throws IOException {
 
     // Make sure we are talking to the matching past writer
-    CodecUtil.checkHeader(termsIn, StandardPostingsWriter.CODEC,
-      StandardPostingsWriter.VERSION_START, StandardPostingsWriter.VERSION_START);
+    CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.CODEC,
+      Lucene40PostingsWriter.VERSION_START, Lucene40PostingsWriter.VERSION_START);
 
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();

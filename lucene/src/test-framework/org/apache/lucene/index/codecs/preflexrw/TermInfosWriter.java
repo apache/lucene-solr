@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.codecs.preflex.PreFlexPostingsFormat;
-import org.apache.lucene.index.codecs.preflex.TermInfo;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
+import org.apache.lucene.index.codecs.lucene3x.TermInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -106,8 +106,8 @@ final class TermInfosWriter implements Closeable {
 
         try {
           directory.deleteFile(IndexFileNames.segmentFileName(segment, "",
-              (isIndex ? PreFlexPostingsFormat.TERMS_INDEX_EXTENSION
-                  : PreFlexPostingsFormat.TERMS_EXTENSION)));
+              (isIndex ? Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION
+                  : Lucene3xPostingsFormat.TERMS_EXTENSION)));
         } catch (IOException ignored) {
         }
       }
@@ -125,8 +125,8 @@ final class TermInfosWriter implements Closeable {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(IndexFileNames.segmentFileName(segment, "",
-        (isIndex ? PreFlexPostingsFormat.TERMS_INDEX_EXTENSION
-            : PreFlexPostingsFormat.TERMS_EXTENSION)), IOContext.DEFAULT);
+        (isIndex ? Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION
+            : Lucene3xPostingsFormat.TERMS_EXTENSION)), IOContext.DEFAULT);
     boolean success = false;
     try {
     output.writeInt(FORMAT_CURRENT);              // write format
@@ -147,8 +147,8 @@ final class TermInfosWriter implements Closeable {
 
         try {
           directory.deleteFile(IndexFileNames.segmentFileName(segment, "",
-              (isIndex ? PreFlexPostingsFormat.TERMS_INDEX_EXTENSION
-                  : PreFlexPostingsFormat.TERMS_EXTENSION)));
+              (isIndex ? Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION
+                  : Lucene3xPostingsFormat.TERMS_EXTENSION)));
         } catch (IOException ignored) {
         }
       }

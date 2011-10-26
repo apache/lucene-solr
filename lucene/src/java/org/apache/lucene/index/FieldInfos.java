@@ -30,8 +30,8 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs;
-import org.apache.lucene.index.codecs.perfield.SegmentCodecs.SegmentCodecsBuilder;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats;
+import org.apache.lucene.index.codecs.perfield.SegmentFormats.SegmentFormatsBuilder;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -152,8 +152,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
      * @return a new {@link FieldInfos} instance with this as the global field
      *         map
      */
-    public FieldInfos newFieldInfos(SegmentCodecsBuilder segmentCodecsBuilder) {
-      return new FieldInfos(this, segmentCodecsBuilder);
+    public FieldInfos newFieldInfos(SegmentFormatsBuilder segmentFormatsBuilder) {
+      return new FieldInfos(this, segmentFormatsBuilder);
     }
 
     /**
@@ -198,7 +198,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final FieldNumberBiMap globalFieldNumbers;
-  private final SegmentCodecsBuilder segmentCodecsBuilder;
+  private final SegmentFormatsBuilder segmentFormatsBuilder;
   
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
@@ -235,11 +235,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * <p>
    * Note: this ctor should not be used during indexing use
    * {@link FieldInfos#FieldInfos(FieldInfos)} or
-   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.codecs.perfield.SegmentCodecs.SegmentCodecsBuilder)}
+   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.codecs.perfield.SegmentFormats.SegmentCodecsBuilder)}
    * instead.
    */
   public FieldInfos() {
-    this(new FieldNumberBiMap(), SegmentCodecsBuilder.create(CodecProvider.getDefault()));
+    this(new FieldNumberBiMap(), SegmentFormatsBuilder.create(CodecProvider.getDefault()));
   }
   
   /**
@@ -249,7 +249,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @see #isReadOnly()
    */
   FieldInfos(FieldInfos other) {
-    this(other.globalFieldNumbers, other.segmentCodecsBuilder);
+    this(other.globalFieldNumbers, other.segmentFormatsBuilder);
   }
   
   /**
@@ -257,9 +257,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
    * @see #isReadOnly()
    */
-  FieldInfos(FieldNumberBiMap globalFieldNumbers, SegmentCodecsBuilder segmentCodecsBuilder) {
+  FieldInfos(FieldNumberBiMap globalFieldNumbers, SegmentFormatsBuilder segmentCodecsBuilder) {
     this.globalFieldNumbers = globalFieldNumbers;
-    this.segmentCodecsBuilder = segmentCodecsBuilder;
+    this.segmentFormatsBuilder = segmentCodecsBuilder;
   }
 
   /**
@@ -309,7 +309,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   @Override
   synchronized public Object clone() {
-    FieldInfos fis = new FieldInfos(globalFieldNumbers, segmentCodecsBuilder);
+    FieldInfos fis = new FieldInfos(globalFieldNumbers, segmentFormatsBuilder);
     fis.format = format;
     fis.hasFreq = hasFreq;
     fis.hasProx = hasProx;
@@ -468,7 +468,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
-    assert segmentCodecsBuilder != null : "SegmentCodecsBuilder is set to null but FieldInfos is not read-only";
+    assert segmentFormatsBuilder != null : "SegmentCodecsBuilder is set to null but FieldInfos is not read-only";
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
       final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
@@ -477,8 +477,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
       fi.setDocValues(docValues);
     }
-    if ((fi.isIndexed || fi.hasDocValues()) && fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
-      segmentCodecsBuilder.tryAddAndSet(fi);
+    if ((fi.isIndexed || fi.hasDocValues()) && fi.getFormatId() == FieldInfo.UNASSIGNED_FORMAT_ID) {
+      segmentFormatsBuilder.tryAddAndSet(fi);
     }
     version++;
     return fi;
@@ -571,19 +571,19 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
   
   /**
-   * Builds the {@link SegmentCodecs} mapping for this {@link FieldInfos} instance.
-   * @param clearBuilder <code>true</code> iff the internal {@link SegmentCodecsBuilder} must be cleared otherwise <code>false</code>
+   * Builds the {@link SegmentFormats} mapping for this {@link FieldInfos} instance.
+   * @param clearBuilder <code>true</code> iff the internal {@link SegmentFormatsBuilder} must be cleared otherwise <code>false</code>
    */
-  public SegmentCodecs buildSegmentCodecs(boolean clearBuilder) {
+  public SegmentFormats buildSegmentFormats(boolean clearBuilder) {
     if (globalFieldNumbers == null) {
-      throw new IllegalStateException("FieldInfos are read-only no SegmentCodecs available");
+      throw new IllegalStateException("FieldInfos are read-only no SegmentFormats available");
     }
-    assert segmentCodecsBuilder != null;
-    final SegmentCodecs segmentCodecs = segmentCodecsBuilder.build();
+    assert segmentFormatsBuilder != null;
+    final SegmentFormats segmentFormats = segmentFormatsBuilder.build();
     if (clearBuilder) {
-      segmentCodecsBuilder.clear();
+      segmentFormatsBuilder.clear();
     }
-    return segmentCodecs;
+    return segmentFormats;
   }
 
   public void write(Directory d, String name) throws IOException {
@@ -628,7 +628,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         bits |= OMIT_POSITIONS;
       output.writeString(fi.name);
       output.writeInt(fi.number);
-      output.writeInt(fi.getCodecId());
+      output.writeInt(fi.getFormatId());
       output.writeByte(bits);
 
       final byte b;
@@ -700,7 +700,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       String name = input.readString();
       // if this is a previous format codec 0 will be preflex!
       final int fieldNumber = format <= FORMAT_FLEX? input.readInt():i;
-      final int codecId = format <= FORMAT_FLEX? input.readInt():0;
+      final int formatId = format <= FORMAT_FLEX? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
@@ -782,7 +782,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         }
       }
       final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
-      addInternal.setCodecId(codecId);
+      addInternal.setFormatId(formatId);
     }
 
     if (input.getFilePointer() != input.length()) {
