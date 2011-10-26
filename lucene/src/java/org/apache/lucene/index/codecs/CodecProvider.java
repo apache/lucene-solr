@@ -36,13 +36,16 @@ import org.apache.lucene.store.IOContext;
  *
  *  @lucene.experimental */
 
+// TODO: this class should only resolve String names to Codec instances.
+//   Its probably the case for now we will have to leave the infosReader/Writer here,
+//   but the hashmaps/field-oriented stuff must die die die
 public class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
+  // TODO: all this stuff below needs to be private to PerFieldCodec
   private String defaultFieldCodec = "Standard";
   private final Map<String, String> perFieldMap = new HashMap<String, String>();
 
-  
   private final HashMap<String, PostingsFormat> codecs = new HashMap<String, PostingsFormat>();
 
   private final Set<String> knownExtensions = new HashSet<String>();
@@ -112,11 +115,13 @@ public class CodecProvider {
   }
   
   /** expert */
+  // TODO: nuke from here, access from fieldsFormat only!
   public FieldsReader fieldsReader(Directory directory, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException {
     return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
   }
 
   /** expert */
+  // TODO: nuke from here, access from fieldsFormat only!
   public FieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     return new DefaultFieldsWriter(directory, segment, context);
   }
