@@ -21,7 +21,7 @@
      this file, see http://wiki.apache.org/solr/SolrConfigXml. 
 -->
 <config>
-  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
   <lib dir="../../contrib/velocity/lib" />
   <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
