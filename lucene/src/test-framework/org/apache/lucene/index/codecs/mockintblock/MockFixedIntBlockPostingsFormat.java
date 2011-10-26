@@ -161,7 +161,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
                                                               state.segmentInfo,
                                                               state.context,
-                                                              new MockIntFactory(blockSize), state.codecId);
+                                                              new MockIntFactory(blockSize), state.formatId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -170,7 +170,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.codecId,
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.formatId,
                                                        IOContext.DEFAULT);
       success = true;
     } finally {
@@ -188,7 +188,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
                                                 postingsReader,
                                                 state.context,
                                                 Lucene40PostingsFormat.TERMS_CACHE_SIZE,
-                                                state.codecId);
+                                                state.formatId);
       success = true;
       return ret;
     } finally {
@@ -203,11 +203,11 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
-    SepPostingsReader.files(segmentInfo, codecId, files);
-    BlockTermsReader.files(dir, segmentInfo, codecId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    SepDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files) throws IOException {
+    SepPostingsReader.files(segmentInfo, formatId, files);
+    BlockTermsReader.files(dir, segmentInfo, formatId, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
+    SepDocValuesConsumer.files(dir, segmentInfo, formatId, files);
   }
 
   @Override

@@ -57,7 +57,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     super.setUp();
     // we generate aweful regexps: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    numIterations = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 10 * RANDOM_MULTIPLIER : atLeast(50);
+    numIterations = CodecProvider.getDefault().getDefaultCodec().getName().equals("Lucene3x") ? 10 * RANDOM_MULTIPLIER : atLeast(50);
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,

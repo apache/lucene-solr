@@ -65,7 +65,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
+    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultCodec().getName().equals("Lucene3x"));
   }
   
   /*
@@ -546,7 +546,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testMultiValuedIndexDocValuesField() throws Exception {
-    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, d);
     Document doc = new Document();
@@ -575,7 +574,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testDifferentTypedDocValuesField() throws Exception {
-    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, d);
     Document doc = new Document();

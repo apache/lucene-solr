@@ -49,7 +49,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
 
   public void testSimple() throws Exception {
     assumeFalse("PreFlex codec cannot work with IndexDocValues!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        "Lucene3x".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);

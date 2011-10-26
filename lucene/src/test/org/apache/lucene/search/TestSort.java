@@ -70,7 +70,7 @@ import org.junit.BeforeClass;
 
 public class TestSort extends LuceneTestCase {
   // true if our codec supports docvalues: true unless codec is preflex (3.x)
-  boolean supportsDocValues = CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex") == false;
+  boolean supportsDocValues = CodecProvider.getDefault().getDefaultCodec().getName().equals("Lucene3x") == false;
   private static int NUM_STRINGS;
   private IndexSearcher full;
   private IndexSearcher searchX;

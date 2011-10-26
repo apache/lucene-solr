@@ -142,10 +142,10 @@ public class MockRandomPostingsFormat extends PostingsFormat {
     final long seed = seedRandom.nextLong();
 
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " codecID=" + state.codecId + " seed=" + seed);
+      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " formatID=" + state.formatId + " seed=" + seed);
     }
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.formatId, SEED_EXT);
     final IndexOutput out = state.directory.createOutput(seedFileName, state.context);
     try {
       out.writeLong(seed);
@@ -276,11 +276,11 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.formatId, SEED_EXT);
     final IndexInput in = state.dir.openInput(seedFileName, state.context);
     final long seed = in.readLong();
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " codecID=" + state.codecId + " seed=" + seed);
+      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.formatId + " seed=" + seed);
     }
     in.close();
 
@@ -298,12 +298,12 @@ public class MockRandomPostingsFormat extends PostingsFormat {
         System.out.println("MockRandomCodec: reading Sep postings");
       }
       postingsReader = new SepPostingsReader(state.dir, state.segmentInfo,
-                                             state.context, new MockIntStreamFactory(random), state.codecId);
+                                             state.context, new MockIntStreamFactory(random), state.formatId);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Standard postings");
       }
-      postingsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      postingsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
     }
 
     if (random.nextBoolean()) {
@@ -329,7 +329,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                           state.segmentInfo.name,
                                           postingsReader,
                                           state.context,
-                                          state.codecId,
+                                          state.formatId,
                                           state.termsIndexDivisor);
         success = true;
       } finally {
@@ -363,7 +363,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                                      state.segmentInfo.name,
                                                      state.termsIndexDivisor,
                                                      BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                     state.codecId, state.context);
+                                                     state.formatId, state.context);
         } else {
           final int n2 = random.nextInt(3);
           if (n2 == 1) {
@@ -378,7 +378,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                                         state.fieldInfos,
                                                         state.segmentInfo.name,
                                                         state.termsIndexDivisor,
-                                                        state.codecId, state.context);
+                                                        state.formatId, state.context);
 
         }
 
@@ -400,7 +400,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                       postingsReader,
                                       state.context,
                                       termsCacheSize,
-                                      state.codecId);
+                                      state.formatId);
         success = true;
       } finally {
         if (!success) {

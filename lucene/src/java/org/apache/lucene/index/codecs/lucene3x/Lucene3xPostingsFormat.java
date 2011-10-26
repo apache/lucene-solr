@@ -55,7 +55,7 @@ public class Lucene3xPostingsFormat extends PostingsFormat {
   public static final String PROX_EXTENSION = "prx";
 
   public Lucene3xPostingsFormat() {
-    super("PreFlex");
+    super("Lucene3x");
   }
   
   @Override

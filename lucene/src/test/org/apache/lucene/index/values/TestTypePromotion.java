@@ -42,8 +42,7 @@ public class TestTypePromotion extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault()
-        .getDefaultFieldCodec().equals("PreFlex"));
+    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultCodec().getName().equals("Lucene3x"));
   }
 
   private static EnumSet<ValueType> INTEGERS = EnumSet.of(ValueType.VAR_INTS,

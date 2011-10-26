@@ -43,7 +43,7 @@ public abstract class CodecProvider {
   private final Set<String> knownExtensions = new HashSet<String>();
 
 
-  public final static String[] CORE_CODECS = new String[] { "PerField", "PreFlex" };
+  public final static String[] CORE_CODECS = new String[] { "Lucene40", "Lucene3x" };
 
   public synchronized void register(Codec codec) {
     if (codec.getName() == null) {

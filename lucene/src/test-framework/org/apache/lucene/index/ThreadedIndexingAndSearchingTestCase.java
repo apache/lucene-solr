@@ -35,7 +35,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.perfield.PerFieldCodec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -432,10 +434,17 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     final long t0 = System.currentTimeMillis();
 
-    final String defaultCodec = CodecProvider.getDefault().getDefaultFieldCodec();
-    if (defaultCodec.equals("SimpleText") || defaultCodec.equals("Memory")) {
-      // no
-      CodecProvider.getDefault().setDefaultFieldCodec("Standard");
+    // nocommit: make some kind of idiom for this?
+    // or can we just use the annotation? 
+    Codec codec = CodecProvider.getDefault().getDefaultCodec();
+    
+    if (codec instanceof PerFieldCodec) {
+      PerFieldCodec perField = (PerFieldCodec) codec;
+      final String defaultFormat = perField.getDefaultPostingsFormat();
+      if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
+        // no
+        CodecProvider.setDefault(_TestUtil.alwaysCodec("Lucene40"));
+      }
     }
 
     final LineFileDocs docs = new LineFileDocs(random);

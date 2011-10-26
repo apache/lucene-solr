@@ -45,7 +45,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("preflex format only supports UTF-8 encoded bytes", "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
   }
 
   public void testFarsiRangeFilterCollating() throws Exception {

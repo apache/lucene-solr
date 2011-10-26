@@ -228,7 +228,7 @@ public final class SegmentInfo implements Cloneable {
     } else {
       // codec ID on FieldInfo is 0 so it will simply use the first codec available
       // TODO what todo if preflex is not available in the provider? register it or fail?
-      segmentFormats = new SegmentFormats(codecs, new PostingsFormat[] { codecs.lookup("PreFlex")});
+      segmentFormats = new SegmentFormats(codecs, new PostingsFormat[] { codecs.lookup("Lucene3x")});
     }
     diagnostics = input.readStringStringMap();
 

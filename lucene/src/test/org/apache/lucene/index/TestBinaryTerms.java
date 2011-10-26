@@ -37,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestBinaryTerms extends LuceneTestCase {
   public void testBinary() throws IOException {
     assumeFalse("PreFlex codec cannot work with binary terms!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        CodecProvider.getDefault().getDefaultCodec().getName().equals("Lucene3x"));
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
