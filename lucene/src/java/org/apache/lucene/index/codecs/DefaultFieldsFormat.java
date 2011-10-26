@@ -20,27 +20,29 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
-/**
- * Encodes/decodes an inverted index segment
- */
-public abstract class Codec {
-  private final String name;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
-  public Codec(String name) {
-    this.name = name;
-  }
-  
-  public String getName() {
-    return name;
-  }
-  
-  public void getExtensions(Set<String> extensions) throws IOException {
-    postingsFormat().getExtensions(extensions);
-    fieldsFormat().getExtensions(extensions);
+/** @lucene.experimental */
+public class DefaultFieldsFormat extends FieldsFormat {
+
+  @Override
+  public FieldsReader fieldsReader(Directory directory, String segment,
+      FieldInfos fn, IOContext context, int docStoreOffset, int size)
+      throws IOException {
+    return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
   }
 
-  /** Encodes/decodes postings and indexdocvalues */
-  public abstract PostingsFormat postingsFormat() throws IOException;
-  /** Encodes/decodes stored fields, term vectors, fieldinfos */
-  public abstract FieldsFormat fieldsFormat() throws IOException;
+  @Override
+  public FieldsWriter fieldsWriter(Directory directory, String segment,
+      IOContext context) throws IOException {
+    return new DefaultFieldsWriter(directory, segment, context);
+  }
+
+  @Override
+  public void getExtensions(Set<String> extensions) {
+    extensions.add(DefaultFieldsWriter.FIELDS_EXTENSION);
+    extensions.add(DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
+  }
 }
