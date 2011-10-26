@@ -32,7 +32,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
     assumeFalse("PreFlex codec does not support docCount statistic!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
+        "Lucene3x".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     int numDocs = atLeast(100);

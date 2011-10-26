@@ -45,7 +45,7 @@ import org.apache.lucene.store.IndexOutput;
  * During indexing {@link FieldInfos} uses {@link SegmentFormatsBuilder} to incrementally
  * build the {@link SegmentFormats} mapping. Once a segment is flushed
  * DocumentsWriter creates a {@link SegmentFormats} instance from
- * {@link FieldInfos#buildSegmentCodecs(boolean)} The {@link FieldInfo#formatId}
+ * {@link FieldInfos#buildSegmentFormats(boolean)} The {@link FieldInfo#formatId}
  * assigned by {@link SegmentFormatsBuilder} refers to the formats ordinal
  * maintained inside {@link SegmentFormats}. This ord is later used to get the
  * right format when the segment is opened in a reader.The {@link PostingsFormat} returned
