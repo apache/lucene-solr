@@ -30,6 +30,10 @@ import java.util.Set;
  *
  *  @lucene.experimental */
 
+// TODO: make more of this abstract or interface.
+// it should really just be more minimal and support lookup()/getDefault
+// CoreCodecProvider or whatever can be more concrete.
+
 public abstract class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
