@@ -673,7 +673,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static String updateJ(String json, SolrParams args) throws Exception {
     SolrCore core = h.getCore();
     DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/udate/json");
+    SolrRequestHandler handler = core.getRequestHandler("/update/json");
     if (handler == null) {
       handler = new JsonUpdateRequestHandler();
       handler.init(null);
