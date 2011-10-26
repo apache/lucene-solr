@@ -30,7 +30,7 @@ import java.util.Set;
  *
  *  @lucene.experimental */
 
-public class CodecProvider {
+public abstract class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
 
@@ -113,4 +113,6 @@ public class CodecProvider {
   public static void setDefault(CodecProvider cp) {
     defaultCodecs = cp;
   }
+  
+  public abstract Codec getDefaultCodec();
 }

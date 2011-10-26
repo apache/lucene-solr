@@ -25,7 +25,7 @@ import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
  * with Lucene.  This will not register any user codecs, but
  * you can easily instantiate this class and register them
  * yourself and specify the default codec for new segments:
- * 
+ * nocommit: fix docs here
  * <pre>
  *   CodecProvider cp = new CoreCodecProvider();
  *   cp.register(new MyFastCodec());
@@ -40,4 +40,10 @@ public class CoreCodecProvider extends CodecProvider {
     register(new Lucene40Codec());
     register(new Lucene3xCodec());
   }
+
+  @Override
+  public Codec getDefaultCodec() {
+    return lookup("Lucene40");
+  }
+  
 }

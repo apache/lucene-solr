@@ -46,7 +46,7 @@ public class PerDocWriteState {
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.segmentFormats = fieldInfos.buildSegmentCodecs(false);
+    this.segmentFormats = fieldInfos.buildSegmentFormats(false);
     this.formatId = codecId;
     this.bytesUsed = bytesUsed;
     this.context = context;

@@ -81,7 +81,8 @@ final class StoredFieldsWriter {
 
   private synchronized void initFieldsWriter(IOContext context) throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = codecProvider.fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
+      // nocommit
+      fieldsWriter = codecProvider.getDefaultCodec().fieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
       lastDocID = 0;
     }
   }

@@ -166,7 +166,8 @@ final class SegmentCoreReaders {
       }
       
       final String storesSegment = si.getDocStoreSegment();
-      fieldsReaderOrig = si.getSegmentFormats().provider.fieldsReader(storeDir, storesSegment, fieldInfos, context,
+      // nocommit, shouldnt even see provider at this level
+      fieldsReaderOrig = si.getSegmentFormats().provider.fieldsFormat().fieldsReader(storeDir, storesSegment, fieldInfos, context,
           si.getDocStoreOffset(), si.docCount);
       
       // Verify two sources of "maxDoc" agree:

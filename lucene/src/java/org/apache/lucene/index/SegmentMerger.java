@@ -255,12 +255,13 @@ final class SegmentMerger {
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
-    final SegmentFormats codecInfo = fieldInfos.buildSegmentCodecs(false);
+    final SegmentFormats codecInfo = fieldInfos.buildSegmentFormats(false);
 
     int docCount = 0;
 
     setMatchingSegmentReaders();
-    final FieldsWriter fieldsWriter = codecInfo.provider.fieldsWriter(directory, segment, context);
+    // nocommit
+    final FieldsWriter fieldsWriter = codecInfo.provider.fieldsFormat().fieldsWriter(directory, segment, context);
     try {
       int idx = 0;
       for (MergeState.IndexReaderAndLiveDocs reader : readers) {
