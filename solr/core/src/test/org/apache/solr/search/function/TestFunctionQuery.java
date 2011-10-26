@@ -413,7 +413,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
    */
   public void testTotalTermFreq() throws Exception {
     assumeFalse("PreFlex codec does not support collection-level term stats", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        "Lucene3x".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
     
     clearIndex();
     
