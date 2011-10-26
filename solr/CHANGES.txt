@@ -56,6 +56,11 @@ Upgrading from Solr 3.5-dev
   
 * FacetComponent no longer catches and embeds exceptions occurred during facet
   processing, it throws HTTP 400 or 500 exceptions instead.
+  
+* The VelocityResponseWriter is no longer built into the core.  Its JAR and
+  dependencies now need to be added (via <lib> or solr/home lib inclusion),
+  and it needs to be registered in solrconfig.xml like this:
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
 Detailed Change List
 ----------------------
@@ -333,6 +338,9 @@ Other Changes
 
 * SOLR-2756: Maven configuration: Excluded transitive stax:stax-api dependency
   from org.codehaus.woodstox:wstx-asl dependency. (David Smiley via Steve Rowe)
+
+* SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
+  remove it as a mandatory core dependency.  (Erik Hatcher)
 
 Documentation
 ----------------------

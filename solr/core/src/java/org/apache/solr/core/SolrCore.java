@@ -1525,7 +1525,6 @@ public final class SolrCore implements SolrInfoMBean {
     m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put("javabin", new BinaryResponseWriter());
-    m.put("velocity", new VelocityResponseWriter());
     m.put("csv", new CSVResponseWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
   }

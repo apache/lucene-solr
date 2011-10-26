@@ -51,11 +51,15 @@
        
               <lib dir="./lib" />
     -->
+
   <!-- A dir option by itself adds any files found in the directory to
        the classpath, this is useful for including all jars in a
        directory.
     -->
   <lib dir="../../contrib/extraction/lib" />
+  <lib dir="../../contrib/clustering/lib/" />
+  <lib dir="../../contrib/velocity/lib" />
+
   <!-- When a regex is specified in addition to a directory, only the
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
@@ -63,11 +67,13 @@
   <lib dir="../../dist/" regex="apache-solr-cell-\d.*\.jar" />
   <lib dir="../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
   <lib dir="../../dist/" regex="apache-solr-langid-\d.*\.jar" />
+  <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
+
   <!-- If a dir option (with or without a regex) is used and nothing
        is found that matches, it will be ignored
     -->
-  <lib dir="../../contrib/clustering/lib/" />
   <lib dir="/total/crap/dir/ignored" /> 
+
   <!-- an exact path can be used to specify a specific file.  This
        will cause a serious error to be logged if it can't be loaded.
     -->
@@ -1574,15 +1580,15 @@
      <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
      <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
      <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
-     <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
      <queryResponseWriter name="csv" class="solr.CSVResponseWriter"/>
     -->
   <!--
      Custom response writers can be declared as needed...
     -->
-  <!--
-     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
-    -->
+    <!-- The solr.velocity.enabled flag is used by Solr's test cases so that this response writer is not
+         loaded (causing an error if contrib/velocity has not been built fully) -->
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" enable="${solr.velocity.enabled:true}"/>
+  
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- 
+     For more details about configurations options that may appear in
+     this file, see http://wiki.apache.org/solr/SolrConfigXml. 
+-->
+<config>
+  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
+
+  <lib dir="../../contrib/velocity/lib" />
+  <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
+  <dataDir>${solr.data.dir:}</dataDir>
+
+
+  <directoryFactory name="DirectoryFactory"
+                    class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
+
+
+  <indexDefaults>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <maxFieldLength>10000</maxFieldLength>
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+    <lockType>native</lockType>
+  </indexDefaults>
+
+  <mainIndex>
+    <useCompoundFile>false</useCompoundFile>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <mergeFactor>10</mergeFactor>
+    <unlockOnStartup>false</unlockOnStartup>
+    <reopenReaders>true</reopenReaders>
+    <deletionPolicy class="solr.SolrDeletionPolicy">
+      <str name="maxCommitsToKeep">1</str>
+      <str name="maxOptimizedCommitsToKeep">0</str>
+    </deletionPolicy>
+     <infoStream file="INFOSTREAM.txt">false</infoStream>
+  </mainIndex>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+  </updateHandler>
+  
+  <query>
+    <maxBooleanClauses>1024</maxBooleanClauses>
+    <filterCache class="solr.FastLRUCache"
+                 size="512"
+                 initialSize="512"
+                 autowarmCount="0"/>
+    <queryResultCache class="solr.LRUCache"
+                     size="512"
+                     initialSize="512"
+                     autowarmCount="0"/>
+    <documentCache class="solr.LRUCache"
+                   size="512"
+                   initialSize="512"
+                   autowarmCount="0"/>
+    <enableLazyFieldLoading>true</enableLazyFieldLoading>
+
+   <queryResultWindowSize>20</queryResultWindowSize>
+   <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+    <listener event="newSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+      </arr>
+    </listener>
+    <listener event="firstSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+        <lst>
+          <str name="q">static firstSearcher warming in solrconfig.xml</str>
+        </lst>
+      </arr>
+    </listener>
+    <useColdSearcher>false</useColdSearcher>
+    <maxWarmingSearchers>2</maxWarmingSearchers>
+
+  </query>
+  <requestDispatcher handleSelect="true" >
+    <requestParsers enableRemoteStreaming="true"
+                    multipartUploadLimitInKB="2048000" />
+    <httpCaching never304="true" />
+  </requestDispatcher>
+
+  <requestHandler name="search" class="solr.SearchHandler" default="true">
+     <lst name="defaults">
+       <str name="echoParams">explicit</str>
+       <int name="rows">10</int>
+     </lst>
+    </requestHandler>
+
+
+  <requestHandler name="/update"
+                  class="solr.XmlUpdateRequestHandler">
+    </requestHandler>
+  <!-- Binary Update Request Handler
+       http://wiki.apache.org/solr/javabin
+    -->
+  <requestHandler name="/update/javabin" 
+                  class="solr.BinaryUpdateRequestHandler" />
+  <requestHandler name="/update/json"
+                  class="solr.JsonUpdateRequestHandler" 
+                  startup="lazy" />
+  <!--
+     <queryResponseWriter name="xml" 
+                          default="true"
+                          class="solr.XMLResponseWriter" />
+     <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
+     <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
+     <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
+     <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
+     <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
+     <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
+     <queryResponseWriter name="csv" class="solr.CSVResponseWriter"/>
+    -->
+
+  <!-- Legacy config for the admin interface -->
+  <admin>
+    <defaultQuery>*:*</defaultQuery>
+  </admin>
+
+</config>
