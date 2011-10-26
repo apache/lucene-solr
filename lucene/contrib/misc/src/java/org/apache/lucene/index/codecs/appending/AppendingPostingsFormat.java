@@ -43,17 +43,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * This codec extends {@link Lucene40PostingsFormat} to work on append-only outputs, such
- * as plain output streams and append-only filesystems.
- *
- * <p>Note: compound file format feature is not compatible with
- * this codec.  You must call both
- * LogMergePolicy.setUseCompoundFile(false) and
- * LogMergePolicy.setUseCompoundDocStore(false) to disable
- * compound file format.</p>
- * @lucene.experimental
+ * Appending postings impl
  */
-public class AppendingPostingsFormat extends PostingsFormat {
+class AppendingPostingsFormat extends PostingsFormat {
   public static String CODEC_NAME = "Appending";
   
   public AppendingPostingsFormat() {
