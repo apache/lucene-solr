@@ -24,7 +24,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.perfield.PerFieldCodec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -154,8 +156,16 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // them, the merged result can easily be larger than the
     // sum because the merged FST may use array encoding for
     // some arcs (which uses more space):
-    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("id").equals("Memory"));
-    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("content").equals("Memory"));
+
+    // nocommit: make some kind of idiom for this?
+    // or can we just use the annotation? 
+    Codec codec = CodecProvider.getDefault().getDefaultCodec();
+    if (codec instanceof PerFieldCodec) {
+      PerFieldCodec perField = (PerFieldCodec) codec;
+      final String idFormat = perField.getPostingsFormat("id");
+      final String contentFormat = perField.getPostingsFormat("content");
+      assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
+    }
 
     int START_COUNT = 57;
     int NUM_DIR = TEST_NIGHTLY ? 50 : 5;

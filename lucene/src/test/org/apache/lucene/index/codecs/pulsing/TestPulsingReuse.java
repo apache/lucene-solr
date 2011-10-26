@@ -170,7 +170,7 @@ public class TestPulsingReuse extends LuceneTestCase {
 
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
       PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
       PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
       boolean success = false;
@@ -179,7 +179,7 @@ public class TestPulsingReuse extends LuceneTestCase {
                                                       state.dir, state.fieldInfos, state.segmentInfo.name,
                                                       pulsingReader,
                                                       state.context,
-                                                      state.codecId,
+                                                      state.formatId,
                                                       state.termsIndexDivisor);
         success = true;
         return ret;

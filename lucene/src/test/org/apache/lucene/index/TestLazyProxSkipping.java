@@ -23,7 +23,9 @@ import java.io.Reader;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.perfield.PerFieldCodec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -131,8 +133,15 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
  
     public void testLazySkipping() throws IOException {
-        assumeFalse("This test cannot run with SimpleText codec", CodecProvider.getDefault().getFieldCodec(this.field).equals("SimpleText"));
-        assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec(this.field).equals("Memory"));
+      // nocommit: make some kind of idiom for this?
+      // or can we just use the annotation? 
+      Codec codec = CodecProvider.getDefault().getDefaultCodec();
+      if (codec instanceof PerFieldCodec) {
+        PerFieldCodec perField = (PerFieldCodec) codec;
+        final String fieldFormat = perField.getPostingsFormat(this.field);
+        assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
+        assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
+      };
         // test whether only the minimum amount of seeks()
         // are performed
         performTest(5);

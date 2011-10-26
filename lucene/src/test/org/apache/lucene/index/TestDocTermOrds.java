@@ -33,6 +33,9 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
@@ -106,9 +109,28 @@ public class TestDocTermOrds extends LuceneTestCase {
     dir.close();
   }
 
-  private static class StandardCodecWithOrds extends PostingsFormat {
-    
+  private static class StandardCodecWithOrds extends Codec {
+    private final PostingsFormat postings = new StandardPostingsFormatWithOrds();
+    private final FieldsFormat fields = new DefaultFieldsFormat();
+
     public StandardCodecWithOrds() {
+      super("StandardOrds");
+    }
+
+    @Override
+    public PostingsFormat postingsFormat() {
+      return postings;
+    }
+
+    @Override
+    public FieldsFormat fieldsFormat() {
+      return fields;
+    }  
+  }
+
+  private static class StandardPostingsFormatWithOrds extends PostingsFormat {
+    
+    public StandardPostingsFormatWithOrds() {
       super("StandardOrds");
     }
 
@@ -151,7 +173,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
       TermsIndexReaderBase indexReader;
 
       boolean success = false;
@@ -161,7 +183,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                                    state.segmentInfo.name,
                                                    state.termsIndexDivisor,
                                                    BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                   state.codecId, state.context);
+                                                   state.formatId, state.context);
         success = true;
       } finally {
         if (!success) {
@@ -178,7 +200,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                                   postings,
                                                   state.context,
                                                   TERMS_CACHE_SIZE,
-                                                  state.codecId);
+                                                  state.formatId);
         success = true;
         return ret;
       } finally {
@@ -252,9 +274,16 @@ public class TestDocTermOrds extends LuceneTestCase {
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
       // Make sure terms index has ords:
-      CoreCodecProvider cp = new CoreCodecProvider();
-      cp.register(new StandardCodecWithOrds());
-      cp.setDefaultFieldCodec("StandardOrds");
+      CoreCodecProvider cp = new CoreCodecProvider() {
+        {
+          register(new StandardCodecWithOrds());
+        }
+
+        @Override
+        public Codec getDefaultCodec() {
+          return lookup("StandardOrds");
+        }
+      };
 
       // So checkIndex on close works
       dir.setCodecProvider(cp);
@@ -355,9 +384,16 @@ public class TestDocTermOrds extends LuceneTestCase {
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
       // Make sure terms index has ords:
-      CoreCodecProvider cp = new CoreCodecProvider();
-      cp.register(new StandardCodecWithOrds());
-      cp.setDefaultFieldCodec("StandardOrds");
+      CoreCodecProvider cp = new CoreCodecProvider() {
+        {
+          register(new StandardCodecWithOrds());
+        }
+
+        @Override
+        public Codec getDefaultCodec() {
+          return lookup("StandardOrds");
+        }
+      };
 
       // So checkIndex on close works
       dir.setCodecProvider(cp);
