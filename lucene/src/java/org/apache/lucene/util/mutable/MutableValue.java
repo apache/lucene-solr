@@ -17,7 +17,7 @@
 package org.apache.lucene.util.mutable;
 
 /** @lucene.internal */
-public abstract class MutableValue implements Comparable {
+public abstract class MutableValue implements Comparable<MutableValue> {
   public boolean exists = true;
 
   public abstract void copy(MutableValue source);
@@ -30,9 +30,9 @@ public abstract class MutableValue implements Comparable {
     return exists;
   }
 
-  public int compareTo(Object other) {
-    Class c1 = this.getClass();
-    Class c2 = other.getClass();
+  public int compareTo(MutableValue other) {
+    Class<? extends MutableValue> c1 = this.getClass();
+    Class<? extends MutableValue> c2 = other.getClass();
     if (c1 != c2) {
       int c = c1.hashCode() - c2.hashCode();
       if (c == 0) {
@@ -45,9 +45,7 @@ public abstract class MutableValue implements Comparable {
 
   @Override
   public boolean equals(Object other) {
-    Class c1 = this.getClass();
-    Class c2 = other.getClass();
-    return (c1 == c2) && this.equalsSameType(other);
+    return (getClass() == other.getClass()) && this.equalsSameType(other);
   }
 
   @Override
