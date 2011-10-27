@@ -103,7 +103,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (solrHome != null) {
       System.setProperty("solr.solr.home", solrHome);
     }
-    System.setProperty("solr.velocity.enabled", "false");
     initCore();
   }
 

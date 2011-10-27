@@ -347,6 +347,9 @@ Other Changes
 
 * SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
   remove it as a mandatory core dependency.  (ehatcher)
+  
+* SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
+  (ehatcher)
 
 Documentation
 ----------------------

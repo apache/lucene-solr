@@ -47,9 +47,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     System.setProperty( "solr.solr.home", solrHome);
     System.setProperty( "solr.data.dir", dataDir.getCanonicalPath() );
 
-    // disable VelocityResponseWriter from example configuration
-    System.setProperty("solr.velocity.enabled", "false");
-
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
     jetty = new JettySolrRunner( context, 0, configFile );

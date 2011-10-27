@@ -55,10 +55,7 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -292,8 +289,8 @@ public final class SolrCore implements SolrInfoMBean {
    * 
    * @see SolrCoreAware
    */
-  public void registerResponseWriter( String name, QueryResponseWriter responseWriter ){
-    responseWriters.put(name, responseWriter);
+  public QueryResponseWriter registerResponseWriter( String name, QueryResponseWriter responseWriter ){
+    return responseWriters.put(name, responseWriter);
   }
   
   public SolrCore reload(SolrResourceLoader resourceLoader) throws IOException,
@@ -476,6 +473,10 @@ public final class SolrCore implements SolrInfoMBean {
   
   private UpdateHandler createUpdateHandler(String className, UpdateHandler updateHandler) {
     return createReloadedUpdateHandler(className, UpdateHandler.class, "Update Handler", updateHandler);
+  }
+
+  private QueryResponseWriter createQueryResponseWriter(String className) {
+    return createInstance(className, QueryResponseWriter.class, "Query Response Writer");
   }
   
   /**
@@ -1532,7 +1533,54 @@ public final class SolrCore implements SolrInfoMBean {
   /** Configure the query response writers. There will always be a default writer; additional
    * writers may also be configured. */
   private void initWriters() {
-    defaultResponseWriter = initPlugins(responseWriters, QueryResponseWriter.class);
+    // use link map so we iterate in the same order
+    Map<PluginInfo,QueryResponseWriter> writers = new LinkedHashMap<PluginInfo,QueryResponseWriter>();
+    for (PluginInfo info : solrConfig.getPluginInfos(QueryResponseWriter.class.getName())) {
+      try {
+        QueryResponseWriter writer;
+        String startup = info.attributes.get("startup") ;
+        if( startup != null ) {
+          if( "lazy".equals(startup) ) {
+            log.info("adding lazy queryResponseWriter: " + info.className);
+            writer = new LazyQueryResponseWriterWrapper(this, info.className, info.initArgs );
+          } else {
+            throw new Exception( "Unknown startup value: '"+startup+"' for: "+info.className );
+          }
+        } else {
+          writer = createQueryResponseWriter(info.className);
+        }
+        writers.put(info,writer);
+        QueryResponseWriter old = registerResponseWriter(info.name, writer);
+        if(old != null) {
+          log.warn("Multiple queryResponseWriter registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
+        }
+        if(info.isDefault()){
+          defaultResponseWriter = writer;
+          if(defaultResponseWriter != null)
+            log.warn("Multiple default queryResponseWriter registered ignoring: " + old.getClass().getName());
+        }
+        log.info("created "+info.name+": " + info.className);
+      } catch (Exception ex) {
+          SolrConfig.severeErrors.add( ex );
+          SolrException e = new SolrException
+            (SolrException.ErrorCode.SERVER_ERROR, "QueryResponseWriter init failure", ex);
+          SolrException.logOnce(log,null,e);
+          throw e;
+      }
+    }
+
+    // we've now registered all handlers, time to init them in the same order
+    for (Map.Entry<PluginInfo,QueryResponseWriter> entry : writers.entrySet()) {
+      PluginInfo info = entry.getKey();
+      QueryResponseWriter writer = entry.getValue();
+      responseWriters.put(info.name, writer);
+      if (writer instanceof PluginInfoInitialized) {
+        ((PluginInfoInitialized) writer).init(info);
+      } else{
+        writer.init(info.initArgs);
+      }
+    }
+
     for (Map.Entry<String, QueryResponseWriter> entry : DEFAULT_RESPONSE_WRITERS.entrySet()) {
       if(responseWriters.get(entry.getKey()) == null) responseWriters.put(entry.getKey(), entry.getValue());
     }
@@ -1784,6 +1832,50 @@ public final class SolrCore implements SolrInfoMBean {
     return codecProvider;
   }
 
+  public final class LazyQueryResponseWriterWrapper implements QueryResponseWriter {
+    private SolrCore _core;
+    private String _className;
+    private NamedList _args;
+    private QueryResponseWriter _writer;
+
+    public LazyQueryResponseWriterWrapper(SolrCore core, String className, NamedList args) {
+      _core = core;
+      _className = className;
+      _args = args;
+      _writer = null;
+    }
+
+    public synchronized QueryResponseWriter getWrappedWriter()
+    {
+      if( _writer == null ) {
+        try {
+          QueryResponseWriter writer = createQueryResponseWriter(_className);
+          writer.init( _args );
+          _writer = writer;
+        }
+        catch( Exception ex ) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "lazy loading error", ex );
+        }
+      }
+      return _writer;
+    }
+
+
+    @Override
+    public void init(NamedList args) {
+      // do nothing
+    }
+
+    @Override
+    public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+      getWrappedWriter().write(writer, request, response);
+    }
+
+    @Override
+    public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+      return getWrappedWriter().getContentType(request, response);
+    }
+  }
 }
 
 
