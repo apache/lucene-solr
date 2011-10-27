@@ -262,6 +262,12 @@ Bug Fixes
 * SOLR-2654: Directorys used by a SolrCore are now closed when they are no longer used.
   (Mark Miller)
   
+* SOLR-2854: Now load URL content stream data (via stream.url) when called for during request handling,
+  rather than loading URL content streams automatically regardless of use.
+  (David Smiley and Ryan McKinley via ehatcher)
+  
+  
+  
 Other Changes
 ----------------------
 
@@ -340,7 +346,7 @@ Other Changes
   from org.codehaus.woodstox:wstx-asl dependency. (David Smiley via Steve Rowe)
 
 * SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
-  remove it as a mandatory core dependency.  (Erik Hatcher)
+  remove it as a mandatory core dependency.  (ehatcher)
 
 Documentation
 ----------------------

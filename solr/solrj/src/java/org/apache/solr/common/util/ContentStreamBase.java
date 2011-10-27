@@ -72,19 +72,18 @@ public abstract class ContentStreamBase implements ContentStream
   public static class URLStream extends ContentStreamBase
   {
     private final URL url;
-    final URLConnection conn;
     
     public URLStream( URL url ) throws IOException {
       this.url = url; 
-      this.conn = this.url.openConnection();
+    }
+
+    public InputStream getStream() throws IOException {
+      URLConnection conn = this.url.openConnection();
       
       contentType = conn.getContentType();
       name = url.toExternalForm();
       size = new Long( conn.getContentLength() );
       sourceInfo = "url";
-    }
-
-    public InputStream getStream() throws IOException {
       return conn.getInputStream();
     }
   }
