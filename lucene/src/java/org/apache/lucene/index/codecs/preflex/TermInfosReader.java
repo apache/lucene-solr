@@ -123,8 +123,7 @@ public final class TermInfosReader {
                                                                                    context), fieldInfos, true);
 
         try {
-          // nocommit don't cast to int..
-          index = new TermInfosReaderIndex(indexEnum, indexDivisor, (int) dir.fileLength(indexFileName), totalIndexInterval);
+          index = new TermInfosReaderIndex(indexEnum, indexDivisor, dir.fileLength(indexFileName), totalIndexInterval);
           indexLength = index.length();
         } finally {
           indexEnum.close();
