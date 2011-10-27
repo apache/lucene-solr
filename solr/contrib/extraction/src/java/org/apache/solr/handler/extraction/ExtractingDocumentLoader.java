@@ -143,10 +143,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     }
     if (parser != null) {
       Metadata metadata = new Metadata();
-      metadata.add(ExtractingMetadataConstants.STREAM_NAME, stream.getName());
-      metadata.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, stream.getSourceInfo());
-      metadata.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(stream.getSize()));
-      metadata.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, stream.getContentType());
 
       // If you specify the resource name (the filename, roughly) with this parameter,
       // then Tika can make use of it in guessing the appropriate MIME type:
@@ -155,12 +151,16 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(Metadata.RESOURCE_NAME_KEY, resourceName);
       }
 
-      SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, schema);
       InputStream inputStream = null;
       try {
         inputStream = stream.getStream();
+        metadata.add(ExtractingMetadataConstants.STREAM_NAME, stream.getName());
+        metadata.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, stream.getSourceInfo());
+        metadata.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(stream.getSize()));
+        metadata.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, stream.getContentType());
         String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
         boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
+        SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, schema);
         ContentHandler parsingHandler = handler;
 
         StringWriter writer = null;
