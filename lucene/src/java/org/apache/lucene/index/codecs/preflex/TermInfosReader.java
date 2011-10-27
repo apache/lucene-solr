@@ -47,9 +47,8 @@ public final class TermInfosReader {
   private final SegmentTermEnum origEnum;
   private final long size;
 
-  private final Term[] indexTerms;
-  private final TermInfo[] indexInfos;
-  private final long[] indexPointers;
+  private final TermInfosReaderIndex index;
+  private final int indexLength;
   
   private final int totalIndexInterval;
 
@@ -118,37 +117,23 @@ public final class TermInfosReader {
       if (indexDivisor != -1) {
         // Load terms index
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
-        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexCodec.TERMS_INDEX_EXTENSION),
-                                                                                  context), fieldInfos, true);
+
+        final String indexFileName = IndexFileNames.segmentFileName(segment, "", PreFlexCodec.TERMS_INDEX_EXTENSION);
+        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(indexFileName,
+                                                                                   context), fieldInfos, true);
 
         try {
-          int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index
-
-          indexTerms = new Term[indexSize];
-          indexInfos = new TermInfo[indexSize];
-          indexPointers = new long[indexSize];
-
-          for (int i=0;indexEnum.next(); i++) {
-            indexTerms[i] = indexEnum.term();
-            assert indexTerms[i] != null;
-            assert indexTerms[i].text() != null;
-            assert indexTerms[i].field() != null;
-            indexInfos[i] = indexEnum.termInfo();
-            indexPointers[i] = indexEnum.indexPointer;
-        
-            for (int j = 1; j < indexDivisor; j++)
-              if (!indexEnum.next())
-                break;
-          }
+          // nocommit don't cast to int..
+          index = new TermInfosReaderIndex(indexEnum, indexDivisor, (int) dir.fileLength(indexFileName), totalIndexInterval);
+          indexLength = index.length();
         } finally {
           indexEnum.close();
         }
       } else {
         // Do not load terms index:
         totalIndexInterval = -1;
-        indexTerms = null;
-        indexInfos = null;
-        indexPointers = null;
+        index = null;
+        indexLength = -1;
       }
       success = true;
     } finally {
@@ -203,31 +188,6 @@ public final class TermInfosReader {
     }
   }
 
-  /** Returns the offset of the greatest index entry which is less than or equal to term.*/
-  private int getIndexOffset(Term term) {
-    int lo = 0;					  // binary search indexTerms[]
-    int hi = indexTerms.length - 1;
-
-    while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
-      assert indexTerms[mid] != null : "indexTerms = " + indexTerms.length + " mid=" + mid;
-      int delta = compareAsUTF16(term, indexTerms[mid]);
-      if (delta < 0)
-	hi = mid - 1;
-      else if (delta > 0)
-	lo = mid + 1;
-      else
-	return mid;
-    }
-    return hi;
-  }
-
-  private void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
-    enumerator.seek(indexPointers[indexOffset],
-                    ((long) indexOffset * totalIndexInterval) - 1,
-                    indexTerms[indexOffset], indexInfos[indexOffset]);
-  }
-
   /** Returns the TermInfo for a Term in the set, or null. */
   TermInfo get(Term term) throws IOException {
     return get(term, false);
@@ -272,8 +232,8 @@ public final class TermInfosReader {
 	&& ((enumerator.prev() != null && compareAsUTF16(term, enumerator.prev())> 0)
 	    || compareAsUTF16(term, enumerator.term()) >= 0)) {
       int enumOffset = (int)(enumerator.position/totalIndexInterval)+1;
-      if (indexTerms.length == enumOffset	  // but before end of block
-          || compareAsUTF16(term, indexTerms[enumOffset]) < 0) {
+      if (indexLength == enumOffset    // but before end of block
+    || index.compareTo(term, enumOffset) < 0) {
        // no need to seek
 
         final TermInfo ti;
@@ -309,10 +269,10 @@ public final class TermInfosReader {
       indexPos = (int) (tiOrd.termOrd / totalIndexInterval);
     } else {
       // Must do binary search:
-      indexPos = getIndexOffset(term);
+      indexPos = index.getIndexOffset(term);
     }
 
-    seekEnum(enumerator, indexPos);
+    index.seekEnum(enumerator, indexPos);
     enumerator.scanTo(term);
     final TermInfo ti;
 
@@ -352,7 +312,7 @@ public final class TermInfosReader {
   }
 
   private void ensureIndexIsRead() {
-    if (indexTerms == null) {
+    if (index == null) {
       throw new IllegalStateException("terms index was not loaded when this reader was created");
     }
   }
@@ -362,10 +322,10 @@ public final class TermInfosReader {
     if (size == 0) return -1;
 
     ensureIndexIsRead();
-    int indexOffset = getIndexOffset(term);
+    int indexOffset = index.getIndexOffset(term);
     
     SegmentTermEnum enumerator = getThreadResources().termEnum;
-    seekEnum(enumerator, indexOffset);
+    index.seekEnum(enumerator, indexOffset);
 
     while(compareAsUTF16(term, enumerator.term()) > 0 && enumerator.next()) {}
 

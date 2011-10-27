@@ -723,6 +723,9 @@ Optimizations
   FilteredQuery/IndexSearcher added by LUCENE-1536 to Lucene 4.0.
   (Uwe Schindler)
 
+* LUCENE-2205: Very substantial (3-5X) RAM reduction required to hold
+  the terms index on opening an IndexReader (Aaron McCurry via Mike McCandless)
+
 Test Cases
 
 * LUCENE-3420: Disable the finalness checks in TokenStream and Analyzer
