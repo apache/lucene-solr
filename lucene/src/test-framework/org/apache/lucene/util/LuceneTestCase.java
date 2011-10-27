@@ -402,7 +402,9 @@ public abstract class LuceneTestCase extends Assert {
     testsFailed = false;
     
     // verify assertions are enabled (do last, for smooth cleanup)
-    assertTrue("assertions are not enabled!", assertionsEnabled());
+    if (!Boolean.parseBoolean(System.getProperty("tests.asserts.gracious", "false"))) {
+      assertTrue("assertions are not enabled!", assertionsEnabled());
+    }
   }
 
   @AfterClass

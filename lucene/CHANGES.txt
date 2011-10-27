@@ -731,7 +731,8 @@ Test Cases
 
 * LUCENE-3506: tests relying on assertions being enabled were no-op because
   they ignored AssertionError. With this fix now entire test framework 
-  (all tests) fail if assertions are disabled. (Doron Cohen)
+  (every test) fails if assertions are disabled, unless 
+  -Dtests.asserts.gracious=true is specified. (Doron Cohen)
   
 ======================= Lucene 3.4.0 =======================
 
