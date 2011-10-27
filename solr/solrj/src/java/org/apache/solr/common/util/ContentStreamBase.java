@@ -75,6 +75,7 @@ public abstract class ContentStreamBase implements ContentStream
     
     public URLStream( URL url ) throws IOException {
       this.url = url; 
+      sourceInfo = "url";
     }
 
     public InputStream getStream() throws IOException {
@@ -83,7 +84,6 @@ public abstract class ContentStreamBase implements ContentStream
       contentType = conn.getContentType();
       name = url.toExternalForm();
       size = new Long( conn.getContentLength() );
-      sourceInfo = "url";
       return conn.getInputStream();
     }
   }
