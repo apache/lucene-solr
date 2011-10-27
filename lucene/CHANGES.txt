@@ -364,11 +364,6 @@ New features
   and FuzzyQuery with finite-state methods. Adds RegexpQuery.
   (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
 
-* LUCENE-1990: Adds internal packed ints implementation, to be used
-  for more efficient storage of int arrays when the values are
-  bounded, for example for storing the terms dict index (Toke
-  Eskildsen via Mike McCandless)
-
 * LUCENE-2321: Cutover to a more RAM efficient packed-ints based
   representation for the in-memory terms dict index.  (Mike
   McCandless)
@@ -614,9 +609,6 @@ Optimizations
   
 Bug fixes
 
-* LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
-  structures larger than 256MB (Toke Eskildsen via Mike McCandless)
-
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
@@ -700,6 +692,9 @@ Bug fixes
   flush, if you didn't, you would get an invalid index.  
   (Mike McCandless, Robert Muir)
 
+* LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
+  structures larger than 256MB (Toke Eskildsen via Mike McCandless)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
@@ -708,6 +703,11 @@ New Features
 * LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a 
   specified ScoreDoc (e.g. last document on the previous page) to support deep
   paging use cases.  (Aaron McCurry, Grant Ingersoll, Robert Muir) 
+
+* LUCENE-1990: Adds internal packed ints implementation, to be used
+  for more efficient storage of int arrays when the values are
+  bounded, for example for storing the terms dict index (Toke
+  Eskildsen via Mike McCandless)
 
 Optimizations
 
