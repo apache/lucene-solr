@@ -280,7 +280,7 @@ public class CommonsHttpSolrServer extends SolrServer
     int tries = _maxRetries + 1;
     try {
       while( tries-- > 0 ) {
-        // Note: since we aren't do intermittent time keeping
+        // Note: since we aren't doing intermittent time keeping
         // ourselves, the potential non-timeout latency could be as
         // much as tries-times (plus scheduling effects) the given
         // timeAllowed.
