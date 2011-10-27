@@ -46,7 +46,7 @@ public final class ByteArrayDataInput extends DataInput {
   public int getPosition() {
     return pos;
   }
-
+  
   public void reset(byte[] bytes, int offset, int len) {
     this.bytes = bytes;
     pos = offset;

@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.CloseableThreadLocal;
 
@@ -37,9 +38,8 @@ final class TermInfosReader implements Closeable {
   private final SegmentTermEnum origEnum;
   private final long size;
 
-  private final Term[] indexTerms;
-  private final TermInfo[] indexInfos;
-  private final long[] indexPointers;
+  private final TermInfosReaderIndex index;
+  private final int indexLength;
   
   private final int totalIndexInterval;
 
@@ -109,34 +109,20 @@ final class TermInfosReader implements Closeable {
       if (indexDivisor != -1) {
         // Load terms index
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
-        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_INDEX_EXTENSION),
+        final String indexFileName = IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_INDEX_EXTENSION);
+        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(indexFileName,
                                                                                   readBufferSize), fieldInfos, true);
-
         try {
-          int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index
-
-          indexTerms = new Term[indexSize];
-          indexInfos = new TermInfo[indexSize];
-          indexPointers = new long[indexSize];
-        
-          for (int i = 0; indexEnum.next(); i++) {
-            indexTerms[i] = indexEnum.term();
-            indexInfos[i] = indexEnum.termInfo();
-            indexPointers[i] = indexEnum.indexPointer;
-        
-            for (int j = 1; j < indexDivisor; j++)
-              if (!indexEnum.next())
-                break;
-          }
+          index = new TermInfosReaderIndex(indexEnum, indexDivisor, (int) dir.fileLength(indexFileName), totalIndexInterval);
+          indexLength = index.length();
         } finally {
           indexEnum.close();
         }
       } else {
         // Do not load terms index:
         totalIndexInterval = -1;
-        indexTerms = null;
-        indexInfos = null;
-        indexPointers = null;
+        index = null;
+        indexLength = -1;
       }
       success = true;
     } finally {
@@ -180,38 +166,14 @@ final class TermInfosReader implements Closeable {
     return resources;
   }
 
-
-  /** Returns the offset of the greatest index entry which is less than or equal to term.*/
-  private final int getIndexOffset(Term term) {
-    int lo = 0;					  // binary search indexTerms[]
-    int hi = indexTerms.length - 1;
-
-    while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
-      int delta = term.compareTo(indexTerms[mid]);
-      if (delta < 0)
-	hi = mid - 1;
-      else if (delta > 0)
-	lo = mid + 1;
-      else
-	return mid;
-    }
-    return hi;
-  }
-
-  private final void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
-    enumerator.seek(indexPointers[indexOffset],
-                   ((long) indexOffset * totalIndexInterval) - 1,
-                   indexTerms[indexOffset], indexInfos[indexOffset]);
-  }
-
   /** Returns the TermInfo for a Term in the set, or null. */
   TermInfo get(Term term) throws IOException {
-    return get(term, false);
+    BytesRef termBytesRef = new BytesRef(term.text);
+    return get(term, false, termBytesRef);
   }
   
   /** Returns the TermInfo for a Term in the set, or null. */
-  private TermInfo get(Term term, boolean mustSeekEnum) throws IOException {
+  private TermInfo get(Term term, boolean mustSeekEnum, BytesRef termBytesRef) throws IOException {
     if (size == 0) return null;
 
     ensureIndexIsRead();
@@ -231,8 +193,8 @@ final class TermInfosReader implements Closeable {
 	&& ((enumerator.prev() != null && term.compareTo(enumerator.prev())> 0)
 	    || term.compareTo(enumerator.term()) >= 0)) {
       int enumOffset = (int)(enumerator.position/totalIndexInterval)+1;
-      if (indexTerms.length == enumOffset	  // but before end of block
-    || term.compareTo(indexTerms[enumOffset]) < 0) {
+      if (indexLength == enumOffset    // but before end of block
+    || index.compareTo(term,termBytesRef,enumOffset) < 0) {
        // no need to seek
 
         final TermInfo ti;
@@ -267,10 +229,10 @@ final class TermInfosReader implements Closeable {
       indexPos = (int) (tiOrd.termOrd / totalIndexInterval);
     } else {
       // Must do binary search:
-      indexPos = getIndexOffset(term);
+      indexPos = index.getIndexOffset(term,termBytesRef);
     }
 
-    seekEnum(enumerator, indexPos);
+    index.seekEnum(enumerator, indexPos);
     enumerator.scanTo(term);
     final TermInfo ti;
     if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
@@ -307,7 +269,7 @@ final class TermInfosReader implements Closeable {
   }
 
   private void ensureIndexIsRead() {
-    if (indexTerms == null) {
+    if (index == null) {
       throw new IllegalStateException("terms index was not loaded when this reader was created");
     }
   }
@@ -317,10 +279,11 @@ final class TermInfosReader implements Closeable {
     if (size == 0) return -1;
 
     ensureIndexIsRead();
-    int indexOffset = getIndexOffset(term);
+    BytesRef termBytesRef = new BytesRef(term.text);
+    int indexOffset = index.getIndexOffset(term,termBytesRef);
     
     SegmentTermEnum enumerator = getThreadResources().termEnum;
-    seekEnum(enumerator, indexOffset);
+    index.seekEnum(enumerator, indexOffset);
 
     while(term.compareTo(enumerator.term()) > 0 && enumerator.next()) {}
 
@@ -337,7 +300,8 @@ final class TermInfosReader implements Closeable {
 
   /** Returns an enumeration of terms starting at or after the named term. */
   public SegmentTermEnum terms(Term term) throws IOException {
-    get(term, true);
+    BytesRef termBytesRef = new BytesRef(term.text);
+    get(term, true, termBytesRef);
     return (SegmentTermEnum)getThreadResources().termEnum.clone();
   }
 }
