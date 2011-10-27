@@ -22,14 +22,11 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 
 /** Codec that reads the pre-flex-indexing postings
  *  format.  It does not provide a writer because newly
@@ -80,15 +77,5 @@ public class Lucene3xPostingsFormat extends PostingsFormat {
     extensions.add(PROX_EXTENSION);
     extensions.add(TERMS_EXTENSION);
     extensions.add(TERMS_INDEX_EXTENSION);
-  }
-
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return null;
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return null;
   }
 }

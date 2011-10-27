@@ -72,7 +72,7 @@ public abstract class DocValuesReaderBase extends PerDocValues {
     try {
 
       for (FieldInfo fieldInfo : fieldInfos) {
-        if (codecId == fieldInfo.getFormatId() && fieldInfo.hasDocValues()) {
+        if (fieldInfo.hasDocValues()) {
           final String field = fieldInfo.name;
           // TODO can we have a compound file per segment and codec for
           // docvalues?

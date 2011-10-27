@@ -51,7 +51,7 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
       Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.getFormatId() == formatId && fieldInfo.hasDocValues()) {
+      if (fieldInfo.hasDocValues()) {
         String filename = docValuesId(segmentInfo.name, formatId, fieldInfo.number);
         switch (fieldInfo.getDocValues()) {
           case BYTES_FIXED_DEREF:

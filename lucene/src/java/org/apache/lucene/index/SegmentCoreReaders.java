@@ -20,11 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -69,7 +69,7 @@ final class SegmentCoreReaders {
     }
     
     segment = si.name;
-    final SegmentFormats segmentFormats = si.getSegmentFormats();
+    final Codec codec = si.getCodec();
     this.context = context;
     this.dir = dir;
     
@@ -86,12 +86,12 @@ final class SegmentCoreReaders {
       fieldInfos = si.getFieldInfos();
       
       this.termsIndexDivisor = termsIndexDivisor;
-      final PostingsFormat format = segmentFormats.format();
+      final PostingsFormat format = codec.postingsFormat();
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, context, termsIndexDivisor);
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;
-      perDocProducer = format.docsProducer(segmentReadState);
+      perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
       success = true;
     } finally {
       if (!success) {
@@ -166,8 +166,7 @@ final class SegmentCoreReaders {
       }
       
       final String storesSegment = si.getDocStoreSegment();
-      // nocommit, shouldnt even see provider at this level
-      fieldsReaderOrig = si.getSegmentFormats().provider.fieldsFormat().fieldsReader(storeDir, storesSegment, fieldInfos, context,
+      fieldsReaderOrig = si.getCodec().fieldsFormat().fieldsReader(storeDir, storesSegment, fieldInfos, context,
           si.getDocStoreOffset(), si.docCount);
       
       // Verify two sources of "maxDoc" agree:

@@ -57,7 +57,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     // Sort by field name
     CollectionUtil.quickSort(allFields);
 
-    final FieldsConsumer consumer = state.segmentFormats.format().fieldsConsumer(state);
+    final FieldsConsumer consumer = state.codec.postingsFormat().fieldsConsumer(state);
 
     boolean success = false;
 

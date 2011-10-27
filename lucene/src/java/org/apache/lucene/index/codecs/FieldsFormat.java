@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -31,4 +32,5 @@ public abstract class FieldsFormat {
   public abstract FieldsReader fieldsReader(Directory directory, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException;
   public abstract FieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
   public abstract void getExtensions(Set<String> extensions);
+  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
 }

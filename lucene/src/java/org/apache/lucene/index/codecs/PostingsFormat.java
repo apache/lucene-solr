@@ -55,10 +55,6 @@ public abstract class PostingsFormat {
    *  returns, it must hold open any files it will need to
    *  use; else, those files may be deleted. */
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
-  
-  public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
-  
-  public abstract PerDocValues docsProducer(SegmentReadState state) throws IOException;
 
   /**
    * Gathers files associated with this segment

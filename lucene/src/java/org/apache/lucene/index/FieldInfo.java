@@ -21,7 +21,6 @@ import org.apache.lucene.index.values.ValueType;
 
 /** @lucene.experimental */
 public final class FieldInfo {
-  public static final int UNASSIGNED_FORMAT_ID = -1;
   public final String name;
   public final int number;
 
@@ -38,7 +37,6 @@ public final class FieldInfo {
   public IndexOptions indexOptions;
 
   public boolean storePayloads; // whether this field stores payloads together with term positions
-  private int formatId = UNASSIGNED_FORMAT_ID; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field
 
   /**
    * Controls how much information is stored in the postings lists.
@@ -77,21 +75,11 @@ public final class FieldInfo {
     }
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !storePayloads;
   }
-
-  public void setFormatId(int formatId) {
-    assert this.formatId == UNASSIGNED_FORMAT_ID : "CodecId can only be set once.";
-    this.formatId = formatId;
-  }
-
-  public int getFormatId() {
-    return formatId;
-  }
   
   @Override
   public Object clone() {
     FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
                          storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
-    clone.formatId = this.formatId;
     return clone;
   }
 

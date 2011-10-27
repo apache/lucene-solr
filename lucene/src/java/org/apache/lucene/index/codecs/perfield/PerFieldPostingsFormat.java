@@ -49,20 +49,19 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Enables per field format support. This class selects the format used to
- * write a field depending on the provided {@link SegmentFormats}. For each field
- * seen it resolves the format based on the {@link FieldInfo#formatId} which is
- * only valid during a segment merge. See {@link SegmentFormats} javadoc for
- * details.
+ * Enables per field format support.
  * 
- * @lucene.internal
+ * @lucene.experimental
  */
-final class PerFieldPostingsFormat extends PostingsFormat {
-  private final SegmentFormats segmentFormats;
+// nocommit:
+// expose hook to lookup postings format by name
+// expose hook to get postingsformat for a field.
+// subclasses can deal with how they implement this (e.g. hashmap with default, solr schema, whatever)
+// this class can write its own private .per file with the mappings
+public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
-  PerFieldPostingsFormat(SegmentFormats segmentFormats) {
-    super("PerField");
-    this.segmentFormats = segmentFormats;
+  public PerFieldPostingsFormat(String name) {
+    super(name);
   }
 
   @Override
@@ -204,92 +203,5 @@ final class PerFieldPostingsFormat extends PostingsFormat {
     for (PostingsFormat format : segmentFormats.formats) {
       format.getExtensions(extensions);
     }
-  }
-
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new PerDocConsumers(state);
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new PerDocProducers(state.dir, state.fieldInfos, state.segmentInfo,
-    state.context, state.termsIndexDivisor);
-  }
-  
-  private final class PerDocProducers extends PerDocValues {
-    private final TreeMap<String, PerDocValues> codecs = new TreeMap<String, PerDocValues>();
-
-    public PerDocProducers(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
-        IOContext context, int indexDivisor) throws IOException {
-      final Map<PostingsFormat, PerDocValues> producers = new HashMap<PostingsFormat, PerDocValues>();
-      boolean success = false;
-      try {
-        for (FieldInfo fi : fieldInfos) {
-          if (fi.hasDocValues()) { 
-            assert fi.getFormatId() != FieldInfo.UNASSIGNED_FORMAT_ID;
-            PostingsFormat codec = segmentFormats.formats[fi.getFormatId()];
-            if (!producers.containsKey(codec)) {
-              producers.put(codec, codec.docsProducer(new SegmentReadState(dir,
-                si, fieldInfos, context, indexDivisor, fi.getFormatId())));
-            }
-            codecs.put(fi.name, producers.get(codec));
-          }
-        }
-        success = true;
-      } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(producers.values());
-        }
-      }
-    }
-    
-    @Override
-    public Collection<String> fields() {
-      return codecs.keySet();
-    }
-    @Override
-    public IndexDocValues docValues(String field) throws IOException {
-      final PerDocValues perDocProducer = codecs.get(field);
-      if (perDocProducer == null) {
-        return null;
-      }
-      return perDocProducer.docValues(field);
-    }
-    
-    public void close() throws IOException {
-      IOUtils.close(codecs.values());
-    }
-  }
-  
-  private final class PerDocConsumers extends PerDocConsumer {
-    private final PerDocConsumer[] consumers;
-    private final PostingsFormat[] formats;
-    private final PerDocWriteState state;
-
-    public PerDocConsumers(PerDocWriteState state) throws IOException {
-      assert segmentFormats == state.segmentFormats;
-      this.state = state;
-      formats = segmentFormats.formats;
-      consumers = new PerDocConsumer[formats.length];
-    }
-
-    public void close() throws IOException {
-      IOUtils.close(consumers);
-    }
-
-    @Override
-    public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-      final int formatId = field.getFormatId();
-      assert formatId != FieldInfo.UNASSIGNED_FORMAT_ID;
-      PerDocConsumer perDoc = consumers[formatId];
-      if (perDoc == null) {
-        perDoc = formats[formatId].docsConsumer(new PerDocWriteState(state, formatId));
-        assert perDoc != null;
-        consumers[formatId] = perDoc;
-      }
-      return perDoc.addValuesField(field);
-    }
-    
   }
 }

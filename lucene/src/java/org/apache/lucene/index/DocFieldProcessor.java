@@ -25,10 +25,9 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
-import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
@@ -321,14 +320,12 @@ final class DocFieldProcessor extends DocConsumer {
       docValuesConsumerAndDocID.docID = docState.docID;
       return docValuesConsumerAndDocID.docValuesConsumer;
     }
-    PerDocConsumer perDocConsumer = perDocConsumers.get(fieldInfo.getFormatId());
+    PerDocConsumer perDocConsumer = perDocConsumers.get(0);
     if (perDocConsumer == null) {
-      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(fieldInfo.getFormatId());
-      SegmentFormats formats = perDocWriteState.segmentFormats;
-      assert formats.formats.length > fieldInfo.getFormatId();
-      PostingsFormat codec = formats.formats[fieldInfo.getFormatId()];
-      perDocConsumer = codec.docsConsumer(perDocWriteState);
-      perDocConsumers.put(Integer.valueOf(fieldInfo.getFormatId()), perDocConsumer);
+      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(0);
+      DocValuesFormat dvFormat = docState.docWriter.codec.docValuesFormat();
+      perDocConsumer = dvFormat.docsConsumer(perDocWriteState);
+      perDocConsumers.put(0, perDocConsumer);
     }
     boolean success = false;
     DocValuesConsumer docValuesConsumer = null;

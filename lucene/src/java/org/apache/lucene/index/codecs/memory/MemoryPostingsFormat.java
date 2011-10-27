@@ -797,22 +797,10 @@ public class MemoryPostingsFormat extends PostingsFormat {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, EXTENSION));
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     extensions.add(EXTENSION);
-    DefaultDocValuesConsumer.getExtensions(extensions);
-  }
-
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state);
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state);
   }
 }

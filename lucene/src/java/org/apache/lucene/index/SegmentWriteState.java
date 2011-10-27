@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 
-import org.apache.lucene.index.codecs.perfield.SegmentFormats;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
@@ -44,7 +44,7 @@ public class SegmentWriteState {
   // Lazily created:
   public BitVector liveDocs;
 
-  public final SegmentFormats segmentFormats;
+  public final Codec codec;
   public final int formatId;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
@@ -57,7 +57,7 @@ public class SegmentWriteState {
   public final IOContext context;
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, SegmentFormats segmentFormats, BufferedDeletes segDeletes, IOContext context) {
+      int numDocs, int termIndexInterval, Codec codec, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -65,7 +65,7 @@ public class SegmentWriteState {
     this.fieldInfos = fieldInfos;
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
-    this.segmentFormats = segmentFormats;
+    this.codec = codec;
     formatId = -1;
     this.context = context;
   }
@@ -80,8 +80,8 @@ public class SegmentWriteState {
     fieldInfos = state.fieldInfos;
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
-    segmentFormats = state.segmentFormats;
     context = state.context;
+    codec = state.codec;
     this.formatId = formatId;
     segDeletes = state.segDeletes;
   }

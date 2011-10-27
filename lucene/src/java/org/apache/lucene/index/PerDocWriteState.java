@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.perfield.SegmentFormats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Counter;
@@ -35,7 +34,6 @@ public class PerDocWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final Counter bytesUsed;
-  public final SegmentFormats segmentFormats;
   public final int formatId;
   public final IOContext context;
 
@@ -46,7 +44,6 @@ public class PerDocWriteState {
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.segmentFormats = fieldInfos.buildSegmentFormats(false);
     this.formatId = codecId;
     this.bytesUsed = bytesUsed;
     this.context = context;
@@ -55,7 +52,6 @@ public class PerDocWriteState {
   public PerDocWriteState(SegmentWriteState state) {
     infoStream = state.infoStream;
     directory = state.directory;
-    segmentFormats = state.segmentFormats;
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
     formatId = state.formatId;
@@ -68,7 +64,6 @@ public class PerDocWriteState {
     this.directory = state.directory;
     this.segmentName = state.segmentName;
     this.fieldInfos = state.fieldInfos;
-    this.segmentFormats = state.segmentFormats;
     this.formatId = formatId;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;

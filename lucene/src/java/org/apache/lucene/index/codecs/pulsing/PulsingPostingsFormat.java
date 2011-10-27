@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs.pulsing;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -29,23 +28,19 @@ import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.store.Directory;
 
-/** This codec "inlines" the postings for terms that have
- *  low docFreq.  It wraps another codec, which is used for
+/** This postings format "inlines" the postings for terms that have
+ *  low docFreq.  It wraps another postings format, which is used for
  *  writing the non-inlined terms.
  *
  *  Currently in only inlines docFreq=1 terms, and
- *  otherwise uses the normal "standard" codec. 
+ *  otherwise uses the normal "Lucene40" format. 
  *  @lucene.experimental */
 
 public class PulsingPostingsFormat extends PostingsFormat {
@@ -134,22 +129,10 @@ public class PulsingPostingsFormat extends PostingsFormat {
   public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
     Lucene40PostingsReader.files(dir, segmentInfo, codecID, files);
     BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecID, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     Lucene40PostingsFormat.getStandardExtensions(extensions);
-    DefaultDocValuesConsumer.getExtensions(extensions);
-  }
-
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state);
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state);
   }
 }

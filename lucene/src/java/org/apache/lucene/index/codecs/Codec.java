@@ -20,6 +20,9 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+
 /**
  * Encodes/decodes an inverted index segment
  */
@@ -36,11 +39,22 @@ public abstract class Codec {
   
   public void getExtensions(Set<String> extensions) {
     postingsFormat().getExtensions(extensions);
-    fieldsFormat().getExtensions(extensions);
+    //TODO: not yet fieldsFormat().getExtensions(extensions);
+    docValuesFormat().getExtensions(extensions);
   }
-
-  /** Encodes/decodes postings and indexdocvalues */
+  
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    postingsFormat().files(dir, info, 0, files);
+    //TODO: not yet fieldsFormat().files(dir, info, files);
+    docValuesFormat().files(dir, info, 0, files);
+  }
+  
+  /** Encodes/decodes postings */
   public abstract PostingsFormat postingsFormat();
+  
+  /** Encodes/decodes docvalues */
+  public abstract DocValuesFormat docValuesFormat();
+  
   /** Encodes/decodes stored fields, term vectors, fieldinfos */
   public abstract FieldsFormat fieldsFormat();
 }

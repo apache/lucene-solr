@@ -55,14 +55,14 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
   }
 
   @SuppressWarnings("fallthrough")
-  public static void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
+  public static void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.getFormatId() == codecId && fieldInfo.hasDocValues()) {
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
+      if (fieldInfo.hasDocValues()) {
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
         return;
       }
     }

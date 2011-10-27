@@ -26,8 +26,7 @@ import java.text.NumberFormat;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.perfield.SegmentFormats;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -153,7 +152,7 @@ public class DocumentsWriterPerThread {
   }
   private final static boolean INFO_VERBOSE = false;
   final DocumentsWriter parent;
-  final CodecProvider codecProvider;
+  final Codec codec;
   final IndexWriter writer;
   final Directory directory;
   final DocState docState;
@@ -184,7 +183,7 @@ public class DocumentsWriterPerThread {
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
     this.infoStream = parent.infoStream;
-    this.codecProvider = this.writer.codecs;
+    this.codec = parent.codec;
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();
@@ -406,8 +405,8 @@ public class DocumentsWriterPerThread {
     return numDocsInRAM;
   }
 
-  SegmentFormats getFormat() {
-    return flushState.segmentFormats;
+  Codec getCodec() {
+    return flushState.codec;
   }
 
   /** Reset after a flush */
@@ -444,7 +443,7 @@ public class DocumentsWriterPerThread {
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
-        fieldInfos.buildSegmentFormats(true), pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
+        codec, pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
@@ -475,12 +474,12 @@ public class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentFormats, fieldInfos.asReadOnly());
+      final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.codec, fieldInfos.asReadOnly());
       if (infoStream != null) {
         message("new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.liveDocs.count())) + " deleted docs");
         message("new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
         message("flushedFiles=" + newSegment.files());
-        message("flushed codecs=" + newSegment.getSegmentFormats());
+        message("flushed codec=" + newSegment.getCodec());
       }
       flushedDocCount += flushState.numDocs;
 
@@ -557,9 +556,9 @@ public class DocumentsWriterPerThread {
     bytesUsed.addAndGet(-(length *(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT)));
   }
 
-  PerDocWriteState newPerDocWriteState(int codecId) {
+  PerDocWriteState newPerDocWriteState(int formatId) {
     assert segment != null;
-    return new PerDocWriteState(infoStream, directory, segment, fieldInfos, bytesUsed, codecId, IOContext.DEFAULT);
+    return new PerDocWriteState(infoStream, directory, segment, fieldInfos, bytesUsed, formatId, IOContext.DEFAULT);
   }
   
   void setInfoStream(PrintStream infoStream) {

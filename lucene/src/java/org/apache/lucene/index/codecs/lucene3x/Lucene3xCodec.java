@@ -17,10 +17,20 @@ package org.apache.lucene.index.codecs.lucene3x;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
+import org.apache.lucene.index.PerDocWriteState;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.store.Directory;
 
 /**
  * Supports the Lucene 3.x index format (readonly)
@@ -31,12 +41,37 @@ public class Lucene3xCodec extends Codec {
   }
 
   private final PostingsFormat postingsFormat = new Lucene3xPostingsFormat();
+  
   // TODO: this should really be a different impl
   private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
+  
+  // 3.x doesn't support docvalues
+  private final DocValuesFormat docValuesFormat = new DocValuesFormat() {
+    @Override
+    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+      return null;
+    }
+
+    @Override
+    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+      return null;
+    }
+
+    @Override
+    public void getExtensions(Set<String> extensions) {}
+
+    @Override
+    public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files) throws IOException {}
+  };
   
   @Override
   public PostingsFormat postingsFormat() {
     return postingsFormat;
+  }
+  
+  @Override
+  public DocValuesFormat docValuesFormat() {
+    return docValuesFormat;
   }
 
   @Override

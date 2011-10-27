@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.store.IOContext;
@@ -35,12 +36,12 @@ final class StoredFieldsWriter {
   int freeCount;
 
   final DocumentsWriterPerThread.DocState docState;
-  final CodecProvider codecProvider;
+  final Codec codec;
 
   public StoredFieldsWriter(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     this.docState = docWriter.docState;
-    this.codecProvider = docWriter.codecProvider;
+    this.codec = docWriter.codec;
   }
 
   private int numStoredFields;
@@ -81,8 +82,7 @@ final class StoredFieldsWriter {
 
   private synchronized void initFieldsWriter(IOContext context) throws IOException {
     if (fieldsWriter == null) {
-      // nocommit
-      fieldsWriter = codecProvider.getDefaultCodec().fieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
+      fieldsWriter = codec.fieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
       lastDocID = 0;
     }
   }
