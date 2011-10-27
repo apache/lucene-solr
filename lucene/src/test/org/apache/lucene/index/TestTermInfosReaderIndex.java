@@ -91,10 +91,10 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     int indexPosition = 3;
     SegmentTermEnum clone = (SegmentTermEnum) termEnum.clone();
     Term term = findTermThatWouldBeAtIndex(clone, indexPosition);
-    clone.close();
     SegmentTermEnum enumerator = clone;
     index.seekEnum(enumerator, indexPosition);
     assertEquals(term, enumerator.term());
+    clone.close();
   }
   
   public void testCompareTo() throws IOException {
