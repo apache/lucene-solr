@@ -129,22 +129,10 @@ class AppendingPostingsFormat extends PostingsFormat {
     Lucene40PostingsReader.files(dir, segmentInfo, formatId, files);
     BlockTermsReader.files(dir, segmentInfo, formatId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, formatId, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     Lucene40PostingsFormat.getStandardExtensions(extensions);
-    DefaultDocValuesConsumer.getExtensions(extensions);
-  }
-  
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state);
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state);
   }
 }

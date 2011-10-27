@@ -34,18 +34,16 @@ import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
-import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
@@ -112,6 +110,7 @@ public class TestDocTermOrds extends LuceneTestCase {
   private static class StandardCodecWithOrds extends Codec {
     private final PostingsFormat postings = new StandardPostingsFormatWithOrds();
     private final FieldsFormat fields = new DefaultFieldsFormat();
+    private final DocValuesFormat docValues = new DefaultDocValuesFormat();
 
     public StandardCodecWithOrds() {
       super("StandardOrds");
@@ -125,7 +124,12 @@ public class TestDocTermOrds extends LuceneTestCase {
     @Override
     public FieldsFormat fieldsFormat() {
       return fields;
-    }  
+    }
+
+    @Override
+    public DocValuesFormat docValuesFormat() {
+      return docValues;
+    }
   }
 
   private static class StandardPostingsFormatWithOrds extends PostingsFormat {
@@ -225,13 +229,11 @@ public class TestDocTermOrds extends LuceneTestCase {
       Lucene40PostingsReader.files(dir, segmentInfo, id, files);
       BlockTermsReader.files(dir, segmentInfo, id, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
-      DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
     }
 
     @Override
     public void getExtensions(Set<String> extensions) {
       getStandardExtensions(extensions);
-      DefaultDocValuesConsumer.getExtensions(extensions);
     }
 
     public static void getStandardExtensions(Set<String> extensions) {
@@ -239,16 +241,6 @@ public class TestDocTermOrds extends LuceneTestCase {
       extensions.add(PROX_EXTENSION);
       BlockTermsReader.getExtensions(extensions);
       FixedGapTermsIndexReader.getIndexExtensions(extensions);
-    }
-    
-    @Override
-    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-      return new DefaultDocValuesConsumer(state);
-    }
-
-    @Override
-    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-      return new DefaultDocValuesProducer(state);
     }
   }
 
