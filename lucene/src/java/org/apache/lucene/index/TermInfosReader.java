@@ -113,7 +113,7 @@ final class TermInfosReader implements Closeable {
         final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(indexFileName,
                                                                                   readBufferSize), fieldInfos, true);
         try {
-          index = new TermInfosReaderIndex(indexEnum, indexDivisor, (int) dir.fileLength(indexFileName), totalIndexInterval);
+          index = new TermInfosReaderIndex(indexEnum, indexDivisor, dir.fileLength(indexFileName), totalIndexInterval);
           indexLength = index.length();
         } finally {
           indexEnum.close();
