@@ -133,6 +133,9 @@ Bug Fixes
 * SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
   remove it as a mandatory core dependency.  (Erik Hatcher)
 
+* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
+  extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
