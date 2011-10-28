@@ -86,7 +86,7 @@ public class Lucene40Codec extends Codec {
    *  
    *  The default implementation always returns "Lucene40"
    */
-  protected String getPostingsFormatForField(FieldInfo field) {
+  public String getPostingsFormatForField(FieldInfo field) {
     return "Lucene40";
   }
   

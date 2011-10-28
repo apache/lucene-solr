@@ -26,8 +26,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
@@ -43,19 +42,42 @@ import org.apache.lucene.util._TestUtil;
  * documents in different orders and the test will still be deterministic
  * and reproducable.
  */
-public class RandomCodecProvider extends CodecProvider {
+public class RandomCodec extends Lucene40Codec {
+  /** name->postingsformat mappings */
+  private Map<String,PostingsFormat> codecNames = new HashMap<String,PostingsFormat>();
+  /** shuffled list of postingsformats to use for new mappings */
   private List<PostingsFormat> knownCodecs = new ArrayList<PostingsFormat>();
+  /** memorized field->postingsformat mappings */
   private Map<String,PostingsFormat> previousMappings = new HashMap<String,PostingsFormat>();
   private final int perFieldSeed;
   
-  public RandomCodecProvider(Random random, boolean useNoMemoryExpensiveCodec) {
+  @Override
+  public PostingsFormat getPostingsFormat(String formatName) {
+    return super.getPostingsFormat(formatName);
+  }
+
+  @Override
+  public synchronized String getPostingsFormatForField(FieldInfo field) {
+    String name = field.name;
+    PostingsFormat codec = previousMappings.get(name);
+    if (codec == null) {
+      codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
+      if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
+        // make simpletext rarer, choose again
+        codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
+      }
+      previousMappings.put(name, codec);
+    }
+    return codec.name;
+  }
+
+  public RandomCodec(Random random, boolean useNoMemoryExpensiveCodec) {
     this.perFieldSeed = random.nextInt();
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
     register(new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock));
-    register(new Lucene3xPostingsFormat());
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
@@ -68,40 +90,17 @@ public class RandomCodecProvider extends CodecProvider {
     Collections.shuffle(knownCodecs, random);
   }
   
-  @Override
   public synchronized void register(PostingsFormat codec) {
-    if (!codec.name.equals("PreFlex"))
-      knownCodecs.add(codec);
-    super.register(codec);
+    codecNames.put(codec.name, codec);
   }
   
-  @Override
+  // TODO: needed anymore? I don't think so
   public synchronized void unregister(PostingsFormat codec) {
     knownCodecs.remove(codec);
-    super.unregister(codec);
-  }
-  
-  @Override
-  public synchronized String getFieldCodec(String name) {
-    PostingsFormat codec = previousMappings.get(name);
-    if (codec == null) {
-      codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
-      if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
-        // make simpletext rarer, choose again
-        codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
-      }
-      previousMappings.put(name, codec);
-    }
-    return codec.name;
-  }
-  
-  @Override
-  public synchronized boolean hasFieldCodec(String name) {
-    return true; // we have a codec for every field
   }
   
   @Override
   public synchronized String toString() {
-    return "RandomCodecProvider: " + previousMappings.toString();
+    return "RandomCodec: " + previousMappings.toString();
   }
 }

@@ -348,7 +348,7 @@ public abstract class LuceneTestCase extends Assert {
         if (random.nextInt(4) == 0) { // preflex-only setup
           codec = installTestCodecs("PreFlex", CodecProvider.getDefault());
         } else { // per-field setup
-          CodecProvider.setDefault(new RandomCodecProvider(random, useNoMemoryExpensiveCodec));
+          CodecProvider.setDefault(new RandomCodec(random, useNoMemoryExpensiveCodec));
           codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
         }
       } else { // ordinary setup
@@ -495,7 +495,7 @@ public abstract class LuceneTestCase extends Assert {
     String codecDescription;
     CodecProvider cp = CodecProvider.getDefault();
 
-    if ("randomPerField".equals(TEST_CODEC) && cp instanceof RandomCodecProvider) {
+    if ("randomPerField".equals(TEST_CODEC) && cp instanceof RandomCodec) {
       codecDescription = cp.toString();
     } else {
       codecDescription = codec.toString();
