@@ -401,6 +401,10 @@ Bug Fixes
 * SOLR-2791: Replication: abortfetch command is broken if replication was started
   by fetchindex command instead of a regular poll (Yury Kats via shalin)
 
+* SOLR-2861: Fix extremely rare race condition on commit that can result
+  in a NPE (yonik)
+
+
  Other Changes
 ----------------------
 

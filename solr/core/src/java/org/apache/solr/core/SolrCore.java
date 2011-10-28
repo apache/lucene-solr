@@ -151,10 +151,12 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   public String getIndexDir() {
-    if (_searcher == null)
-      return dataDir + "index/";
-    SolrIndexSearcher searcher = _searcher.get();
-    return searcher.getIndexDir() == null ? dataDir + "index/" : searcher.getIndexDir();
+    synchronized (searcherLock) {
+      if (_searcher == null)
+        return dataDir + "index/";
+      SolrIndexSearcher searcher = _searcher.get();
+      return searcher.getIndexDir() == null ? dataDir + "index/" : searcher.getIndexDir();
+    }
   }
 
 
@@ -945,7 +947,8 @@ public final class SolrCore implements SolrInfoMBean {
 
   // The current searcher used to service queries.
   // Don't access this directly!!!! use getSearcher() to
-  // get it (and it will increment the ref count at the same time)
+  // get it (and it will increment the ref count at the same time).
+  // This reference is protected by searcherLock.
   private RefCounted<SolrIndexSearcher> _searcher;
 
   // All of the open searchers.  Don't access this directly.
