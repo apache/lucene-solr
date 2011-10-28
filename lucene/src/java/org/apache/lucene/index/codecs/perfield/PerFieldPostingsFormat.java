@@ -48,6 +48,9 @@ import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
 // nocommit: should we allow embedding of PerField in
@@ -143,12 +146,12 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
       // Write _X.per:
       final String mapFileName = IndexFileNames.segmentFileName(segmentWriteState.segmentName, segmentWriteState.formatId, PER_FIELD_EXTENSION);
-      final IndexOutput out = segmentWriteState.directory.createOutput(termsFileName, segmentWriteState.context);
+      final IndexOutput out = segmentWriteState.directory.createOutput(mapFileName, segmentWriteState.context);
       boolean success = false;
       try {
-        codecUtil.writeHeader(out, PER_FIELD_NAME, VERSION_LATEST);
+        CodecUtil.writeHeader(out, PER_FIELD_NAME, VERSION_LATEST);
         out.writeVInt(formats.size());
-        for(Map.Entry<String,FieldsConsumerAndID> ent  : formats.entries()) {
+        for(Map.Entry<String,FieldsConsumerAndID> ent : formats.entrySet()) {
           out.writeVInt(ent.getValue().formatID);
           out.writeString(ent.getKey());
         }
@@ -173,10 +176,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // Read _X.per and init each format:
       boolean success = false;
       try {
-        new VisitPerFieldFile(readState.dir, readState.segmentName) {
+        new VisitPerFieldFile(readState.dir, readState.segmentInfo.name) {
           @Override
           protected void visitOneFormat(String formatName, int formatID, PostingsFormat postingsFormat) throws IOException {
-            formats.put(formatName, postingsFormat.fieldsProducer(new SegmentReadState(segmentReadState, formatID)));
+            formats.put(formatName, postingsFormat.fieldsProducer(new SegmentReadState(readState, formatID)));
           }
         };
         success = true;
@@ -191,12 +194,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       try {
         for (FieldInfo fi : readState.fieldInfos) {
           if (fi.isIndexed) { 
-            fields.add(fi.name);
-            String formatName = getPostingsFormatForField(fi.name);
+            String formatName = getPostingsFormatForField(fi);
             FieldsProducer fieldsProducer = formats.get(formatName);
             // Better be defined, because it was defined
             // during indexing:
-            assert fieldsProduder != null;
+            assert fieldsProducer != null;
             fields.put(fi.name, fieldsProducer);
           }
         }
@@ -217,7 +219,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       private String current;
 
       public FieldsIterator() {
-        it = fields.iterator();
+        it = fields.keySet().iterator();
       }
 
       @Override
@@ -249,8 +251,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public Terms terms(String field) throws IOException {
-      FieldsProducer fields = fields.get(field);
-      return fields == null ? null : fields.terms(field);
+      FieldsProducer fieldsProducer = fields.get(field);
+      return fieldsProducer == null ? null : fieldsProducer.terms(field);
     }
     
     @Override
@@ -265,13 +267,12 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     return new FieldsReader(state);
   }
 
-  private static abstract class VisitPerFieldFile {
-    public VisitPerFieldFile(Directory dir, String segmentName) {
+  private abstract class VisitPerFieldFile {
+    public VisitPerFieldFile(Directory dir, String segmentName) throws IOException {
       // nocommit -- should formatID be a String not int?
       // so we can embed one PFPF in another?  ie just keep
       // appending _N to it...
-      final String mapFileName = IndexFileNames.segmentFileName(segmentName, formatId, PER_FIELD_EXTENSION);
-      files.add(mapFileName);
+      final String mapFileName = IndexFileNames.segmentFileName(segmentName, 0, PER_FIELD_EXTENSION);
       final IndexInput in = dir.openInput(mapFileName, IOContext.READONCE);
       boolean success = false;
       try {
@@ -289,14 +290,14 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeWhileHandlingExcpetion(in);
+          IOUtils.closeWhileHandlingException(in);
         } else {
           IOUtils.close(in);
         }
       }
     }
 
-    protected abstract void visitOneFormat(PostingsFormat format) throws IOException;
+    protected abstract void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException;
   }
 
   @Override
@@ -310,17 +311,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       @Override
       protected void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException {
         format.files(dir, info, formatID, files);
-      }
-    };
-  }
-
-  @Override
-  public void getExtensions(final Directory dir, final SegmentInfo info, final Set<String> extensions) {
-    extensions.add(PER_FIELD_EXTENSION);
-    new VisitPerFieldFile(dir, info.name) {
-      @Override
-      protected void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException {
-        format.getExtension(dir, info, extensions);
       }
     };
   }

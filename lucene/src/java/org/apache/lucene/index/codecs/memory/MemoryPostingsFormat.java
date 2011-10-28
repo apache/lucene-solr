@@ -798,9 +798,4 @@ public class MemoryPostingsFormat extends PostingsFormat {
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, EXTENSION));
   }
-
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    extensions.add(EXTENSION);
-  }
 }

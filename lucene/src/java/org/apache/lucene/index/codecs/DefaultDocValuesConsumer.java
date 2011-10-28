@@ -67,9 +67,4 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
       }
     }
   }
-  
-  public static void getExtensions(Set<String> extensions) {
-    extensions.add(IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-    extensions.add(IndexFileNames.COMPOUND_FILE_EXTENSION);
-  }
 }

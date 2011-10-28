@@ -211,11 +211,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION));
   }
 
-  public static void getExtensions(Collection<String> extensions) {
-    extensions.add(BlockTreeTermsWriter.TERMS_EXTENSION);
-    extensions.add(BlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
-  }
-
   @Override
   public FieldsEnum iterator() {
     return new TermFieldsEnum();

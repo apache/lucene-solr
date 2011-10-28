@@ -122,8 +122,6 @@ final class IndexFileDeleter {
     infoStream.println("IFD [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
   }
 
-  private final FilenameFilter indexFilenameFilter;
-
   // called only from assert
   private boolean locked() {
     return writer == null || Thread.holdsLock(writer);
@@ -154,7 +152,6 @@ final class IndexFileDeleter {
     // First pass: walk the files and initialize our ref
     // counts:
     long currentGen = segmentInfos.getGeneration();
-    indexFilenameFilter = new IndexFileNameFilter(codecs);
 
     CommitPoint currentCommitPoint = null;
     String[] files = null;
@@ -167,7 +164,7 @@ final class IndexFileDeleter {
 
     for (String fileName : files) {
 
-      if ((indexFilenameFilter.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+      if ((IndexFileNameFilter.INSTANCE.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
 
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
@@ -373,7 +370,7 @@ final class IndexFileDeleter {
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
-          indexFilenameFilter.accept(null, fileName) &&
+          IndexFileNameFilter.INSTANCE.accept(null, fileName) &&
           !refCounts.containsKey(fileName) &&
           !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
         // Unreferenced file, so remove it

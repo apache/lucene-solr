@@ -83,9 +83,4 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
       }
     }
   }
-
-  public static void getExtensions(Set<String> extensions) {
-    extensions.add(Writer.DATA_EXTENSION);
-    extensions.add(Writer.INDEX_EXTENSION);
-  }
 }

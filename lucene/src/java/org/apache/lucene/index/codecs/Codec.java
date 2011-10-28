@@ -37,12 +37,6 @@ public abstract class Codec {
     return name;
   }
   
-  public void getExtensions(Set<String> extensions) {
-    postingsFormat().getExtensions(extensions);
-    //TODO: not yet fieldsFormat().getExtensions(extensions);
-    docValuesFormat().getExtensions(extensions);
-  }
-  
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     postingsFormat().files(dir, info, 0, files);
     //TODO: not yet fieldsFormat().files(dir, info, files);

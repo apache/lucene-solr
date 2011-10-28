@@ -498,10 +498,6 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
-    public void getExtensions(Set<String> extensions) {
-    }
-
-    @Override
     public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) {
     }
   }

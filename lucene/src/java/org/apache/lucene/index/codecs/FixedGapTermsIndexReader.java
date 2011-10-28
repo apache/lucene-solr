@@ -391,15 +391,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     files.add(IndexFileNames.segmentFileName(info.name, id, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
-  public static void getIndexExtensions(Collection<String> extensions) {
-    extensions.add(FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
-  }
-
-  @Override
-  public void getExtensions(Collection<String> extensions) {
-    getIndexExtensions(extensions);
-  }
-
   @Override
   public void close() throws IOException {
     if (in != null && !indexLoaded) {

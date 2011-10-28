@@ -65,9 +65,4 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(getPostingsFileName(segmentInfo.name, id));
   }
-
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    extensions.add(POSTINGS_EXTENSION);
-  }
 }

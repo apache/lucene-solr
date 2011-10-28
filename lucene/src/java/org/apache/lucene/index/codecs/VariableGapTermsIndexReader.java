@@ -219,15 +219,6 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     files.add(IndexFileNames.segmentFileName(info.name, id, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
-  public static void getIndexExtensions(Collection<String> extensions) {
-    extensions.add(VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
-  }
-
-  @Override
-  public void getExtensions(Collection<String> extensions) {
-    getIndexExtensions(extensions);
-  }
-
   @Override
   public void close() throws IOException {
     if (in != null && !indexLoaded) {

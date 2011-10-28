@@ -198,10 +198,6 @@ public class BlockTermsReader extends FieldsProducer {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, BlockTermsWriter.TERMS_EXTENSION));
   }
 
-  public static void getExtensions(Collection<String> extensions) {
-    extensions.add(BlockTermsWriter.TERMS_EXTENSION);
-  }
-
   @Override
   public FieldsEnum iterator() {
     return new TermFieldsEnum();

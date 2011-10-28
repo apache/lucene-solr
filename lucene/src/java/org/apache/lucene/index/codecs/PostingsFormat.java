@@ -66,9 +66,6 @@ public abstract class PostingsFormat {
    */
   public abstract void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException;
 
-  /** Records all file extensions this codec uses */
-  public abstract void getExtensions(Set<String> extensions);
-  
   @Override
   public String toString() {
     return name;

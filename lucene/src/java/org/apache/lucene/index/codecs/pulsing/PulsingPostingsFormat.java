@@ -130,9 +130,4 @@ public class PulsingPostingsFormat extends PostingsFormat {
     Lucene40PostingsReader.files(dir, segmentInfo, codecID, files);
     BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
   }
-
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    Lucene40PostingsFormat.getStandardExtensions(extensions);
-  }
 }

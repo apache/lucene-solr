@@ -130,9 +130,4 @@ class AppendingPostingsFormat extends PostingsFormat {
     BlockTermsReader.files(dir, segmentInfo, formatId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
   }
-
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    Lucene40PostingsFormat.getStandardExtensions(extensions);
-  }
 }

@@ -195,10 +195,5 @@ public class TestPulsingReuse extends LuceneTestCase {
       Lucene40PostingsReader.files(dir, segmentInfo, id, files);
       BlockTreeTermsReader.files(dir, segmentInfo, id, files);
     }
-
-    @Override
-    public void getExtensions(Set<String> extensions) {
-      Lucene40PostingsFormat.getStandardExtensions(extensions);
-    }
   }
 }

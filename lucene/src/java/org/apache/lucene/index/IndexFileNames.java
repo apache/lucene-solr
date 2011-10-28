@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.index.codecs.PostingsFormat;  // for javadocs
 
+// nocommit -- can we remove all the static extensions here?
+// these are codec private now
+
 /**
  * This class contains useful constants representing filenames and extensions
  * used by lucene, as well as convenience methods for querying whether a file

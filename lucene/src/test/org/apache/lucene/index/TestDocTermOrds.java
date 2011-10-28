@@ -230,18 +230,6 @@ public class TestDocTermOrds extends LuceneTestCase {
       BlockTermsReader.files(dir, segmentInfo, id, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
     }
-
-    @Override
-    public void getExtensions(Set<String> extensions) {
-      getStandardExtensions(extensions);
-    }
-
-    public static void getStandardExtensions(Set<String> extensions) {
-      extensions.add(FREQ_EXTENSION);
-      extensions.add(PROX_EXTENSION);
-      BlockTermsReader.getExtensions(extensions);
-      FixedGapTermsIndexReader.getIndexExtensions(extensions);
-    }
   }
 
   public void testRandom() throws Exception {

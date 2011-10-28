@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultFieldsFormat;
@@ -62,8 +63,8 @@ public class Lucene40Codec extends Codec {
     postingsFormat = new PerFieldPostingsFormat() {
 
       @Override
-      protected String getPostingsFormatForField(String fieldName) {
-        String format = perFieldMap.get(fieldName);
+      protected String getPostingsFormatForField(FieldInfo field) {
+        String format = perFieldMap.get(field.name);
         if (format == null) {
           format = defaultPostingsFormat;
         }
@@ -71,7 +72,7 @@ public class Lucene40Codec extends Codec {
       }
 
       @Override
-      protected String getPostingsFormat(String formatName) {
+      protected PostingsFormat getPostingsFormat(String formatName) {
         return CORE_FORMATS.get(formatName);
       }
     };

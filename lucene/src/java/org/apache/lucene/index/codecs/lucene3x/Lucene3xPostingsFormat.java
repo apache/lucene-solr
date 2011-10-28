@@ -70,12 +70,4 @@ public class Lucene3xPostingsFormat extends PostingsFormat {
     // preflex fields have no codec ID - we ignore it here
     Lucene3xFields.files(dir, info, files);
   }
-
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    extensions.add(FREQ_EXTENSION);
-    extensions.add(PROX_EXTENSION);
-    extensions.add(TERMS_EXTENSION);
-    extensions.add(TERMS_INDEX_EXTENSION);
-  }
 }

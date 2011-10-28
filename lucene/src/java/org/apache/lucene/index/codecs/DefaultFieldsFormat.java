@@ -42,12 +42,6 @@ public class DefaultFieldsFormat extends FieldsFormat {
   }
 
   @Override
-  public void getExtensions(Set<String> extensions) {
-    extensions.add(DefaultFieldsWriter.FIELDS_EXTENSION);
-    extensions.add(DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
-  }
-
-  @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     // TODO!
   }

@@ -391,12 +391,4 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   public void close() throws IOException {
     IOUtils.close(docOut, skipOut, freqOut, posOut, payloadOut);
   }
-
-  public static void getExtensions(Set<String> extensions) {
-    extensions.add(DOC_EXTENSION);
-    extensions.add(FREQ_EXTENSION);
-    extensions.add(SKIP_EXTENSION);
-    extensions.add(POS_EXTENSION);
-    extensions.add(PAYLOAD_EXTENSION);
-  }
 }

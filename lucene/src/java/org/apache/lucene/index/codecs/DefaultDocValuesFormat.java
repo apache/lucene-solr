@@ -38,11 +38,6 @@ public class DefaultDocValuesFormat extends DocValuesFormat {
   }
 
   @Override
-  public void getExtensions(Set<String> extensions) {
-    DefaultDocValuesConsumer.getExtensions(extensions);
-  }
-
-  @Override
   public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files) throws IOException {
     DefaultDocValuesConsumer.files(dir, info, formatId, files);
   }

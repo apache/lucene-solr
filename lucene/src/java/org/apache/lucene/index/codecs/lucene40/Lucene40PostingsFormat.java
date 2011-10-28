@@ -108,17 +108,6 @@ public class Lucene40PostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void getExtensions(Set<String> extensions) {
-    getStandardExtensions(extensions);
-  }
-
-  public static void getStandardExtensions(Set<String> extensions) {
-    extensions.add(FREQ_EXTENSION);
-    extensions.add(PROX_EXTENSION);
-    BlockTreeTermsReader.getExtensions(extensions);
-  }
-
-  @Override
   public String toString() {
     return name + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }

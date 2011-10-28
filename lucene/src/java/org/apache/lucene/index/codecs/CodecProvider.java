@@ -40,9 +40,6 @@ public abstract class CodecProvider {
 
   private final HashMap<String, Codec> codecs = new HashMap<String, Codec>();
 
-  private final Set<String> knownExtensions = new HashSet<String>();
-
-
   public final static String[] CORE_CODECS = new String[] { "Lucene40", "Lucene3x" };
 
   public synchronized void register(Codec codec) {
@@ -51,7 +48,6 @@ public abstract class CodecProvider {
     }
     if (!codecs.containsKey(codec.getName())) {
       codecs.put(codec.getName(), codec);
-      codec.getExtensions(knownExtensions);
     } else if (codecs.get(codec.getName()) != codec) {
       throw new IllegalArgumentException("codec '" + codec.getName() + "' is already registered as a different codec instance");
     }
@@ -75,10 +71,6 @@ public abstract class CodecProvider {
   /** @lucene.internal */
   public synchronized Set<String> listAll() {
     return codecs.keySet();
-  }
-
-  public Collection<String> getAllExtensions() {
-    return knownExtensions;
   }
 
   public synchronized Codec lookup(String name) {

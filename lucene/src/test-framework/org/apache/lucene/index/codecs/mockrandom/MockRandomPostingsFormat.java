@@ -442,22 +442,6 @@ public class MockRandomPostingsFormat extends PostingsFormat {
     //System.out.println("MockRandom.files return " + files);
   }
 
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    SepPostingsWriter.getExtensions(extensions);
-    BlockTermsReader.getExtensions(extensions);
-    BlockTreeTermsReader.getExtensions(extensions);
-    FixedGapTermsIndexReader.getIndexExtensions(extensions);
-    VariableGapTermsIndexReader.getIndexExtensions(extensions);
-    if (useSepDocValues) {
-      SepDocValuesConsumer.getExtensions(extensions);
-    } else {
-      DefaultDocValuesConsumer.getExtensions(extensions);      
-    }
-    extensions.add(SEED_EXT);
-    //System.out.println("MockRandom.getExtensions return " + extensions);
-  }
-  
   // can we make this more evil?
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {

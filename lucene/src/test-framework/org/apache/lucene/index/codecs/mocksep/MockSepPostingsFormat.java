@@ -143,18 +143,6 @@ public class MockSepPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void getExtensions(Set<String> extensions) {
-    getSepExtensions(extensions);
-  }
-
-  public static void getSepExtensions(Set<String> extensions) {
-    SepPostingsWriter.getExtensions(extensions);
-    BlockTermsReader.getExtensions(extensions);
-    FixedGapTermsIndexReader.getIndexExtensions(extensions);
-    SepDocValuesConsumer.getExtensions(extensions);
-  }
-  
-  @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
     return new SepDocValuesConsumer(state);
   }
