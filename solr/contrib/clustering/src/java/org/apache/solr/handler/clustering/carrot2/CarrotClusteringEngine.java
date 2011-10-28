@@ -112,7 +112,6 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           CarrotParams.LEXICAL_RESOURCES_DIR, CARROT_RESOURCES_PREFIX);
     }
 
-    @Override
     public IResource[] getAll(final String resource) {
       final String resourceName = carrot2ResourcesDir + "/" + resource;
       log.debug("Looking for Solr resource: " + resourceName);
@@ -136,26 +135,22 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       log.info("Loaded Solr resource: " + resourceName);
 
       final IResource foundResource = new IResource() {
-        @Override
         public InputStream open() throws IOException {
           return new ByteArrayInputStream(asBytes);
         }
         
-        @Override
         public int hashCode() {
           // In case multiple resources are found they will be deduped, but we don't use it in Solr,
           // so simply rely on instance equivalence.
           return super.hashCode();
         }
         
-        @Override
         public boolean equals(Object obj) {
           // In case multiple resources are found they will be deduped, but we don't use it in Solr,
           // so simply rely on instance equivalence.
           return super.equals(obj);
         }
 
-        @Override
         public String toString() {
           return "Solr config resource: " + resourceName;
         }
@@ -164,21 +159,18 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       return new IResource[] { foundResource };
     }
 
-    @Override
     public int hashCode() {
       // In case multiple locations are used locators will be deduped, but we don't use it in Solr,
       // so simply rely on instance equivalence.
       return super.hashCode();
     }
 
-    @Override
     public boolean equals(Object obj) {
       // In case multiple locations are used locators will be deduped, but we don't use it in Solr,
       // so simply rely on instance equivalence.
       return super.equals(obj);
     }
 
-    @Override
     public String toString() {
       return "SolrResourceLocator, " 
           + "configDir=" + new File(resourceLoader.getConfigDir()).getAbsolutePath()
