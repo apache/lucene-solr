@@ -351,6 +351,9 @@ Other Changes
 * SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
   (ehatcher)
 
+* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
+  extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
+
 Documentation
 ----------------------
 
@@ -434,6 +437,9 @@ Bug Fixes
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
 * SOLR-2792: Allow case insensitive Hunspell stemming (janhoy, rmuir)
+
+* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
+  extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
 
 ==================  3.4.0  ==================
 
