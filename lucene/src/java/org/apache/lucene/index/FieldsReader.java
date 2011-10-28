@@ -129,7 +129,8 @@ final class FieldsReader implements Cloneable, Closeable {
       fieldInfos = fn;
 
       cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_EXTENSION), readBufferSize);
-      cloneableIndexStream = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION), readBufferSize);
+      final String indexStreamFN = IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION);
+      cloneableIndexStream = d.openInput(indexStreamFN, readBufferSize);
       
       // First version of fdx did not include a format
       // header, but, the first int will always be 0 in that
@@ -141,8 +142,7 @@ final class FieldsReader implements Cloneable, Closeable {
         format = firstInt;
 
       if (format > FieldsWriter.FORMAT_CURRENT)
-        throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                        + FieldsWriter.FORMAT_CURRENT + " or lower");
+        throw new IndexFormatTooNewException(indexStreamFN, format, 0, FieldsWriter.FORMAT_CURRENT);
 
       if (format > FieldsWriter.FORMAT)
         formatSize = 4;

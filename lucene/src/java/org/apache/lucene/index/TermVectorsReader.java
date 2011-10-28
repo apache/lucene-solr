@@ -79,11 +79,13 @@ class TermVectorsReader implements Cloneable, Closeable {
     try {
       String idxName = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION);
       tvx = d.openInput(idxName, readBufferSize);
-      format = checkValidFormat(tvx);
-      tvd = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), readBufferSize);
-      final int tvdFormat = checkValidFormat(tvd);
-      tvf = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION), readBufferSize);
-      final int tvfFormat = checkValidFormat(tvf);
+      format = checkValidFormat(idxName, tvx);
+      String fn = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      tvd = d.openInput(fn, readBufferSize);
+      final int tvdFormat = checkValidFormat(fn, tvd);
+      fn = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      tvf = d.openInput(fn, readBufferSize);
+      final int tvfFormat = checkValidFormat(fn, tvf);
 
       assert format == tvdFormat;
       assert format == tvfFormat;
@@ -192,12 +194,11 @@ class TermVectorsReader implements Cloneable, Closeable {
     }
   }
 
-  private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
+  private int checkValidFormat(String fn, IndexInput in) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
     if (format > FORMAT_CURRENT) {
-      throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                      + FORMAT_CURRENT + " or less");
+      throw new IndexFormatTooNewException(fn, format, 1, FORMAT_CURRENT);
     }
     return format;
   }
