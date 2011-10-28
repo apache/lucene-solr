@@ -143,17 +143,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     
     /**
-     * Returns a new {@link FieldInfos} instance with this as the global field
-     * map
-     * 
-     * @return a new {@link FieldInfos} instance with this as the global field
-     *         map
-     */
-    public FieldInfos newFieldInfos() {
-      return new FieldInfos(this);
-    }
-
-    /**
      * Returns <code>true</code> iff the last committed version differs from the
      * current version, otherwise <code>false</code>
      * 

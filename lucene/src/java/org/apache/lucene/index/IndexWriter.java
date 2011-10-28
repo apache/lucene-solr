@@ -2566,7 +2566,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
-                                               globalFieldNumberMap.newFieldInfos(), codecs, context);
+                                               new FieldInfos(globalFieldNumberMap), codecs, context);
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -3458,7 +3458,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, globalFieldNumberMap.newFieldInfos());
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, new FieldInfos(globalFieldNumberMap));
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
