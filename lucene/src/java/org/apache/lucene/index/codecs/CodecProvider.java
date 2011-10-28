@@ -17,78 +17,16 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-/** Holds a set of codecs, keyed by name.  You subclass
- *  this, instantiate it, and register your codecs, then
- *  pass this instance to IndexReader/IndexWriter (via
- *  package private APIs) to use different codecs when
- *  reading & writing segments. 
+/** Looks up codecs by name, and specifies the default codec
+ *  to use when writing new segments.  You subclass
+ *  this, instantiate it, then pass this instance to 
+ *  IndexReader/IndexWriter (via package private APIs) 
+ *  to use different codecs when reading & writing segments. 
  *
  *  @lucene.experimental */
-
-// TODO: make more of this abstract or interface.
-// it should really just be more minimal and support lookup()/getDefault
-// CoreCodecProvider or whatever can be more concrete.
-
 public abstract class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
-
-  private final HashMap<String, Codec> codecs = new HashMap<String, Codec>();
-
-  public final static String[] CORE_CODECS = new String[] { "Lucene40", "Lucene3x" };
-
-  public synchronized void register(Codec codec) {
-    if (codec.getName() == null) {
-      throw new IllegalArgumentException("codec.getName() is null");
-    }
-    if (!codecs.containsKey(codec.getName())) {
-      codecs.put(codec.getName(), codec);
-    } else if (codecs.get(codec.getName()) != codec) {
-      throw new IllegalArgumentException("codec '" + codec.getName() + "' is already registered as a different codec instance");
-    }
-  }
-  
-  /** @lucene.internal */
-  public synchronized void unregister(Codec codec) {
-    if (codec.getName() == null) {
-      throw new IllegalArgumentException("code.name is null");
-    }
-    if (codecs.containsKey(codec.getName())) {
-      Codec c = codecs.get(codec.getName());
-      if (codec == c) {
-        codecs.remove(codec.getName());
-      } else {
-        throw new IllegalArgumentException("codec '" + codec.getName() + "' is being impersonated by a different codec instance!!!");
-      }
-    }
-  }
-  
-  /** @lucene.internal */
-  public synchronized Set<String> listAll() {
-    return codecs.keySet();
-  }
-
-  public synchronized Codec lookup(String name) {
-    final Codec codec = codecs.get(name);
-    if (codec == null) {
-      throw new IllegalArgumentException("required codec '" + name + "' not found; known codecs: " + codecs.keySet());
-    }
-    return codec;
-  }
-
-  /**
-   * Returns <code>true</code> iff a codec with the given name is registered
-   * @param name codec name
-   * @return <code>true</code> iff a codec with the given name is registered, otherwise <code>false</code>.
-   */
-  public synchronized boolean isCodecRegistered(String name) {
-    return codecs.containsKey(name);
-  }
 
   public SegmentInfosWriter getSegmentInfosWriter() {
     return infosWriter;
@@ -110,5 +48,6 @@ public abstract class CodecProvider {
     defaultCodecs = cp;
   }
   
+  public abstract Codec lookup(String name);
   public abstract Codec getDefaultCodec();
 }

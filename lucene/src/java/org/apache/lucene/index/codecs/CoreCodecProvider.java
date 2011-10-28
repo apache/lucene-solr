@@ -17,6 +17,9 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 
@@ -36,14 +39,22 @@ import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
  */
 
 public class CoreCodecProvider extends CodecProvider {
-  public CoreCodecProvider() {
-    register(new Lucene40Codec());
-    register(new Lucene3xCodec());
-  }
-
   @Override
   public Codec getDefaultCodec() {
     return lookup("Lucene40");
   }
+
+  @Override
+  public Codec lookup(String name) {
+    return CORE_CODECS.get(name);
+  }
   
+  /** Lucene's core codecs
+   *  @lucene.internal
+   */
+  public static final Map<String,Codec> CORE_CODECS = new HashMap<String,Codec>();
+  static {
+    CORE_CODECS.put("Lucene40", new Lucene40Codec());
+    CORE_CODECS.put("Lucene3x", new Lucene3xCodec());
+  }
 }
