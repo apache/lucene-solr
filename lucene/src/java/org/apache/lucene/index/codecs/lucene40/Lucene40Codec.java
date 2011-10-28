@@ -22,22 +22,30 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.index.codecs.perfield.PerFieldCodec;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 
 /**
  * Implements the Lucene 4.0 index format, with configurable per-field postings formats
- * and using {@link DefaultFieldsFormat}
+ * and using {@link DefaultFieldsFormat} for stored fields and {@link
+ * DefaultDocValuesFormat} for doc values.
+ *
  * @lucene.experimental
  */
 // TODO: which postings formats will we actually support for backwards compatibility?
-public class Lucene40Codec extends PerFieldCodec {
+public class Lucene40Codec extends Codec {
   private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
+  private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
+  private final PostingsFormat postingsFormat;
+  private final String defaultPostingsFormat;
 
   public Lucene40Codec() {
     this(Collections.<String,String>emptyMap());
@@ -47,8 +55,26 @@ public class Lucene40Codec extends PerFieldCodec {
     this("Lucene40", perFieldMap);
   }
   
-  public Lucene40Codec(String defaultFormat, Map<String,String> perFieldMap) {
-    super("Lucene40", defaultFormat, perFieldMap);
+ public Lucene40Codec(final String defaultPostingsFormat, final Map<String,String> perFieldMap) {
+    super("Lucene40");
+    this.defaultPostingsFormat = defaultPostingsFormat;
+
+    postingsFormat = new PerFieldPostingsFormat() {
+
+      @Override
+      protected String getPostingsFormatForField(String fieldName) {
+        String format = perFieldMap.get(fieldName);
+        if (format == null) {
+          format = defaultPostingsFormat;
+        }
+        return format;
+      }
+
+      @Override
+      protected String getPostingsFormat(String formatName) {
+        return CORE_FORMATS.get(formatName);
+      }
+    };
   }
   
   @Override
@@ -57,12 +83,13 @@ public class Lucene40Codec extends PerFieldCodec {
   }
 
   @Override
-  public PostingsFormat lookup(String name) {
-    final PostingsFormat codec = CORE_FORMATS.get(name);
-    if (codec == null) {
-      throw new IllegalArgumentException("required format '" + name + "' not found; known formats: " + CORE_FORMATS.keySet());
-    }
-    return codec;
+  public DocValuesFormat docValuesFormat() {
+    return docValuesFormat;
+  }
+
+  @Override
+  public PostingsFormat postingsFormat() {
+    return postingsFormat;
   }
   
   // postings formats

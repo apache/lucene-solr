@@ -17,6 +17,7 @@ package org.apache.lucene.index.codecs.perfield;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,23 +31,31 @@ import java.util.TreeSet;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
+
+// nocommit: should we allow embedding of PerField in
+// another?  it won't work now... because each PerField
+// thinks it's allowed to start assigning formats from
+// 0... if we made formatID a String then it could work
+// (each recursion could add _X to its incoming formatID);
+// why is it an int now...?
 
 /**
  * Enables per field format support.
@@ -60,8 +69,15 @@ import org.apache.lucene.util.IOUtils;
 // this class can write its own private .per file with the mappings
 public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
-  public PerFieldPostingsFormat(String name) {
-    super(name);
+  public static final String PER_FIELD_EXTENSION = "per";
+  public static final String PER_FIELD_NAME = "PerField";
+
+  public static final int VERSION_START = 0;
+  public static final int VERSION_LATEST = VERSION_START;
+
+  public PerFieldPostingsFormat() {
+    // nocommit should we allow caller to pass name in!?
+    super(PER_FIELD_NAME);
   }
 
   @Override
@@ -70,59 +86,118 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     return new FieldsWriter(state);
   }
 
-  private class FieldsWriter extends FieldsConsumer {
-    private final ArrayList<FieldsConsumer> consumers = new ArrayList<FieldsConsumer>();
+  // NOTE: not private to avoid $accessN at runtime!!
+  static class FieldsConsumerAndID implements Closeable {
+    final FieldsConsumer fieldsConsumer;
+    final int formatID;
 
-    public FieldsWriter(SegmentWriteState state) throws IOException {
-      assert segmentFormats == state.segmentFormats;
-      final PostingsFormat[] formats = segmentFormats.formats;
-      for (int i = 0; i < formats.length; i++) {
-        boolean success = false;
-        try {
-          consumers.add(formats[i].fieldsConsumer(new SegmentWriteState(state, i)));
-          success = true;
-        } finally {
-          if (!success) {
-            IOUtils.closeWhileHandlingException(consumers);
-          }
-        }
-      }
-    }
-
-    @Override
-    public TermsConsumer addField(FieldInfo field) throws IOException {
-      assert field.getFormatId() != FieldInfo.UNASSIGNED_FORMAT_ID;
-      final FieldsConsumer fields = consumers.get(field.getFormatId());
-      return fields.addField(field);
+    public FieldsConsumerAndID(FieldsConsumer fieldsConsumer, int formatID) {
+      this.fieldsConsumer = fieldsConsumer;
+      this.formatID = formatID;
     }
 
     @Override
     public void close() throws IOException {
-      IOUtils.close(consumers);
+      fieldsConsumer.close();
+    }
+  };
+    
+  private class FieldsWriter extends FieldsConsumer {
+
+    private final Map<String,FieldsConsumerAndID> formats = new HashMap<String,FieldsConsumerAndID>();
+
+    private final SegmentWriteState segmentWriteState;
+
+    public FieldsWriter(SegmentWriteState state) throws IOException {
+      segmentWriteState = state;
+    }
+
+    // nocommit -- pass formatID down to addField?
+
+    // nocommit -- should PostingsFormat have a name?
+
+    @Override
+    public TermsConsumer addField(FieldInfo field) throws IOException {
+      final String formatName = getPostingsFormatForField(field);
+      FieldsConsumerAndID format = formats.get(formatName);
+      if (format == null) {
+        // First time we are seeing this format -- assign
+        // next id and init it:
+        final int formatID = formats.size();
+        PostingsFormat postingsFormat = getPostingsFormat(formatName);
+        // nocommit: maybe the int formatID should be
+        // separate arg to .fieldsConsumer?  like we do for
+        // .files()
+        format = new FieldsConsumerAndID(postingsFormat.fieldsConsumer(new SegmentWriteState(segmentWriteState, formatID)),
+                                         formatID);
+        formats.put(formatName, format);
+      }
+      return format.fieldsConsumer.addField(field);
+    }
+
+    @Override
+    public void close() throws IOException {
+
+      // Close all subs
+      IOUtils.close(formats.values());
+
+      // Write _X.per:
+      final String mapFileName = IndexFileNames.segmentFileName(segmentWriteState.segmentName, segmentWriteState.formatId, PER_FIELD_EXTENSION);
+      final IndexOutput out = segmentWriteState.directory.createOutput(termsFileName, segmentWriteState.context);
+      boolean success = false;
+      try {
+        codecUtil.writeHeader(out, PER_FIELD_NAME, VERSION_LATEST);
+        out.writeVInt(formats.size());
+        for(Map.Entry<String,FieldsConsumerAndID> ent  : formats.entries()) {
+          out.writeVInt(ent.getValue().formatID);
+          out.writeString(ent.getKey());
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(formats.values());
+        } else {
+          IOUtils.close(out);
+        }
+      }
     }
   }
 
   private class FieldsReader extends FieldsProducer {
 
-    private final Set<String> fields = new TreeSet<String>();
-    private final Map<String, FieldsProducer> codecs = new HashMap<String, FieldsProducer>();
+    private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
+    private final Map<String,FieldsProducer> formats = new HashMap<String,FieldsProducer>();
 
-    public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
-        IOContext context, int indexDivisor) throws IOException {
+    public FieldsReader(final SegmentReadState readState) throws IOException {
 
-      final Map<PostingsFormat, FieldsProducer> producers = new HashMap<PostingsFormat, FieldsProducer>();
+      // Read _X.per and init each format:
       boolean success = false;
       try {
-        for (FieldInfo fi : fieldInfos) {
+        new VisitPerFieldFile(readState.dir, readState.segmentName) {
+          @Override
+          protected void visitOneFormat(String formatName, int formatID, PostingsFormat postingsFormat) throws IOException {
+            formats.put(formatName, postingsFormat.fieldsProducer(new SegmentReadState(segmentReadState, formatID)));
+          }
+        };
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(formats.values());
+        }
+      }
+
+      // Map each field to its producer:
+      success = false;
+      try {
+        for (FieldInfo fi : readState.fieldInfos) {
           if (fi.isIndexed) { 
             fields.add(fi.name);
-            assert fi.getFormatId() != FieldInfo.UNASSIGNED_FORMAT_ID;
-            PostingsFormat format = segmentFormats.formats[fi.getFormatId()];
-            if (!producers.containsKey(format)) {
-              producers.put(format, format.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, context, indexDivisor, fi.getFormatId())));
-            }
-            codecs.put(fi.name, producers.get(format));
+            String formatName = getPostingsFormatForField(fi.name);
+            FieldsProducer fieldsProducer = formats.get(formatName);
+            // Better be defined, because it was defined
+            // during indexing:
+            assert fieldsProduder != null;
+            fields.put(fi.name, fieldsProducer);
           }
         }
         success = true;
@@ -131,7 +206,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           // If we hit exception (eg, IOE because writer was
           // committing, or, for any other reason) we must
           // go back and close all FieldsProducers we opened:
-          IOUtils.closeWhileHandlingException(producers.values());
+          IOUtils.closeWhileHandlingException(formats.values());
         }
       }
     }
@@ -158,7 +233,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
       @Override
       public TermsEnum terms() throws IOException {
-        Terms terms = codecs.get(current).terms(current);
+        final Terms terms = fields.get(current).terms(current);
         if (terms != null) {
           return terms.iterator();
         } else {
@@ -174,34 +249,83 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public Terms terms(String field) throws IOException {
-      FieldsProducer fields = codecs.get(field);
+      FieldsProducer fields = fields.get(field);
       return fields == null ? null : fields.terms(field);
     }
     
     @Override
     public void close() throws IOException {
-      IOUtils.close(codecs.values());
+      IOUtils.close(formats.values());
     }
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
-    return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo,
-        state.context, state.termsIndexDivisor);
+    return new FieldsReader(state);
   }
 
-  @Override
-  public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files)
-      throws IOException {
-    // ignore formatid since segmentFormat will assign it per codec
-    segmentFormats.files(dir, info, files);
-  }
-
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    for (PostingsFormat format : segmentFormats.formats) {
-      format.getExtensions(extensions);
+  private static abstract class VisitPerFieldFile {
+    public VisitPerFieldFile(Directory dir, String segmentName) {
+      // nocommit -- should formatID be a String not int?
+      // so we can embed one PFPF in another?  ie just keep
+      // appending _N to it...
+      final String mapFileName = IndexFileNames.segmentFileName(segmentName, formatId, PER_FIELD_EXTENSION);
+      files.add(mapFileName);
+      final IndexInput in = dir.openInput(mapFileName, IOContext.READONCE);
+      boolean success = false;
+      try {
+        CodecUtil.checkHeader(in, PER_FIELD_NAME, VERSION_START, VERSION_LATEST);
+        final int formatCount = in.readVInt();
+        for(int formatIDX=0;formatIDX<formatCount;formatIDX++) {
+          final int formatID = in.readVInt();
+          final String formatName = in.readString();
+          PostingsFormat postingsFormat = getPostingsFormat(formatName);
+          // Better be defined, because it was defined
+          // during indexing:
+          assert postingsFormat != null;
+          visitOneFormat(formatName, formatID, postingsFormat);
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingExcpetion(in);
+        } else {
+          IOUtils.close(in);
+        }
+      }
     }
+
+    protected abstract void visitOneFormat(PostingsFormat format) throws IOException;
   }
+
+  @Override
+  public void files(final Directory dir, final SegmentInfo info, int formatId, final Set<String> files)
+      throws IOException {
+
+    final String mapFileName = IndexFileNames.segmentFileName(info.name, formatId, PER_FIELD_EXTENSION);
+    files.add(mapFileName);
+
+    new VisitPerFieldFile(dir, info.name) {
+      @Override
+      protected void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException {
+        format.files(dir, info, formatID, files);
+      }
+    };
+  }
+
+  @Override
+  public void getExtensions(final Directory dir, final SegmentInfo info, final Set<String> extensions) {
+    extensions.add(PER_FIELD_EXTENSION);
+    new VisitPerFieldFile(dir, info.name) {
+      @Override
+      protected void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException {
+        format.getExtension(dir, info, extensions);
+      }
+    };
+  }
+
+  protected abstract String getPostingsFormatForField(FieldInfo field);
+
+  protected abstract PostingsFormat getPostingsFormat(String formatName);
 }

@@ -55,4 +55,14 @@ public class SegmentReadState {
     this.termsIndexDivisor = termsIndexDivisor;
     this.formatId = formatId;
   }
+
+  public SegmentReadState(SegmentReadState other,
+                          int newFormatID) {
+    this.dir = other.dir;
+    this.segmentInfo = other.segmentInfo;
+    this.fieldInfos = other.fieldInfos;
+    this.context = other.context;
+    this.termsIndexDivisor = other.termsIndexDivisor;
+    this.formatId = newFormatID;
+  }
 }
