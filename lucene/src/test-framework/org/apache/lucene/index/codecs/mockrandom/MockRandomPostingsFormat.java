@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -35,14 +34,10 @@ import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
@@ -60,8 +55,6 @@ import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriter;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
-import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
-import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.index.codecs.sep.SepPostingsReader;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
 import org.apache.lucene.store.Directory;
@@ -77,13 +70,11 @@ import org.apache.lucene.util._TestUtil;
  */
 
 public class MockRandomPostingsFormat extends PostingsFormat {
-  private final boolean useSepDocValues;
   private final Random seedRandom;
   private final String SEED_EXT = "sd";
   
   public MockRandomPostingsFormat(Random random) {
     super("MockRandom");
-    this.useSepDocValues = random.nextBoolean();
     this.seedRandom = new Random(random.nextLong());
   }
 
@@ -426,11 +417,6 @@ public class MockRandomPostingsFormat extends PostingsFormat {
     BlockTreeTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    if (useSepDocValues) {
-      SepDocValuesConsumer.files(dir, segmentInfo, codecId, files);
-    } else {
-      DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
-    }
     // hackish!
     Iterator<String> it = files.iterator();
     while(it.hasNext()) {
@@ -440,24 +426,5 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       }
     }
     //System.out.println("MockRandom.files return " + files);
-  }
-
-  // can we make this more evil?
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    if (useSepDocValues) {
-      return new SepDocValuesConsumer(state);
-    } else {
-      return new DefaultDocValuesConsumer(state);
-    }
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    if (useSepDocValues) {
-      return new SepDocValuesProducer(state);
-    } else {
-      return new DefaultDocValuesProducer(state);
-    }
   }
 }

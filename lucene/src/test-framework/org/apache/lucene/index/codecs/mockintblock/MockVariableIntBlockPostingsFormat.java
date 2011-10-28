@@ -230,16 +230,5 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
     SepPostingsReader.files(segmentInfo, formatId, files);
     BlockTermsReader.files(dir, segmentInfo, formatId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
-    SepDocValuesConsumer.files(dir, segmentInfo, formatId, files);
-  }
-
-  @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new SepDocValuesConsumer(state);
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new SepDocValuesProducer(state);
   }
 }

@@ -17,8 +17,6 @@ package org.apache.lucene.index.codecs.lucene40;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,41 +39,23 @@ import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
  *
  * @lucene.experimental
  */
-// TODO: which postings formats will we actually support for backwards compatibility?
 public class Lucene40Codec extends Codec {
   private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
-  private final PostingsFormat postingsFormat;
-  private final String defaultPostingsFormat;
+  private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
+    @Override
+    protected String getPostingsFormatForField(FieldInfo field) {
+      return Lucene40Codec.this.getPostingsFormatForField(field);
+    }
+
+    @Override
+    protected PostingsFormat getPostingsFormat(String formatName) {
+      return Lucene40Codec.this.getPostingsFormat(formatName);
+    }
+  };
 
   public Lucene40Codec() {
-    this(Collections.<String,String>emptyMap());
-  }
-  
-  public Lucene40Codec(Map<String,String> perFieldMap) {
-    this("Lucene40", perFieldMap);
-  }
-  
- public Lucene40Codec(final String defaultPostingsFormat, final Map<String,String> perFieldMap) {
     super("Lucene40");
-    this.defaultPostingsFormat = defaultPostingsFormat;
-
-    postingsFormat = new PerFieldPostingsFormat() {
-
-      @Override
-      protected String getPostingsFormatForField(FieldInfo field) {
-        String format = perFieldMap.get(field.name);
-        if (format == null) {
-          format = defaultPostingsFormat;
-        }
-        return format;
-      }
-
-      @Override
-      protected PostingsFormat getPostingsFormat(String formatName) {
-        return CORE_FORMATS.get(formatName);
-      }
-    };
   }
   
   @Override
@@ -93,8 +73,27 @@ public class Lucene40Codec extends Codec {
     return postingsFormat;
   }
   
-  // postings formats
-  private static final Map<String,PostingsFormat> CORE_FORMATS = new HashMap<String,PostingsFormat>();
+  /** Looks up a postings format by name, by default. 
+   * 
+   * The default looks up from {@link #CORE_FORMATS}.
+   */
+  public PostingsFormat getPostingsFormat(String formatName) {
+    return CORE_FORMATS.get(formatName);
+  }
+  
+  /** Returns the postings format that should be used for writing 
+   *  new segments of <code>field</code>.
+   *  
+   *  The default implementation always returns "Lucene40"
+   */
+  protected String getPostingsFormatForField(FieldInfo field) {
+    return "Lucene40";
+  }
+  
+  /** Lucene's core postings formats.
+   *  @lucene.internal
+   */
+  public static final Map<String,PostingsFormat> CORE_FORMATS = new HashMap<String,PostingsFormat>();
   static {
     CORE_FORMATS.put("Lucene40", new Lucene40PostingsFormat());
     CORE_FORMATS.put("Pulsing", new PulsingPostingsFormat());
