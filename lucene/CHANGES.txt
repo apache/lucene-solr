@@ -695,6 +695,10 @@ Bug fixes
 * LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
   structures larger than 256MB (Toke Eskildsen via Mike McCandless)
 
+* LUCENE-3540: LUCENE-3255 dropped support for pre-1.9 indexes, but the
+  error message in IndexFormatTooOldException was incorrect. (Uwe Schindler,
+  Mike McCandless)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
