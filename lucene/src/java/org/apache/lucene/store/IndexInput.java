@@ -26,8 +26,6 @@ import java.io.Closeable;
  */
 public abstract class IndexInput extends DataInput implements Cloneable,Closeable {
 
-  protected byte[] copyBuf = null;
-
   /**
    * Expert
    * 
@@ -86,9 +84,7 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   public void copyBytes(IndexOutput out, long numBytes) throws IOException {
     assert numBytes >= 0: "numBytes=" + numBytes;
 
-    if (copyBuf == null) {
-      copyBuf = new byte[BufferedIndexInput.BUFFER_SIZE];
-    }
+    byte copyBuf[] = new byte[BufferedIndexInput.BUFFER_SIZE];
 
     while (numBytes > 0) {
       final int toCopy = (int) (numBytes > copyBuf.length ? copyBuf.length : numBytes);
