@@ -131,9 +131,14 @@ public class CreateIndexTask extends PerfTask {
       }
     }
 
-    final String defaultCodec = config.get("default.codec", null);
+    final String defaultCodec = config.get("default.codecProvider", null);
     if (defaultCodec != null) {
-      CodecProvider.getDefault().setDefaultFieldCodec(defaultCodec);
+      try {
+        Class<? extends CodecProvider> clazz = Class.forName(defaultCodec).asSubclass(CodecProvider.class);
+        CodecProvider.setDefault(clazz.newInstance());
+      } catch (Exception e) {
+        throw new RuntimeException("Couldn't instantiate CodecProvider: " + defaultCodec, e);
+      }
     }
 
     final String mergePolicy = config.get("merge.policy",
