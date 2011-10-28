@@ -647,6 +647,10 @@ Changes in backwards compatibility policy
   (instead of the old reader) if there are no changes in the index, to
   prevent the common pitfall of accidentally closing the old reader.
 
+* LUCENE-3541: Remove IndexInput's protected copyBuf. If you want to
+  keep a buffer in your IndexInput, do this yourself in your implementation, 
+  and be sure to do the right thing on clone()!  (Robert Muir)
+
 Changes in runtime behavior
 
 * LUCENE-3520: IndexReader.openIfChanged, when passed a near-real-time
@@ -698,6 +702,10 @@ Bug fixes
 * LUCENE-3540: LUCENE-3255 dropped support for pre-1.9 indexes, but the
   error message in IndexFormatTooOldException was incorrect. (Uwe Schindler,
   Mike McCandless)
+
+* LUCENE-3541: IndexInput's default copyBytes() implementation was not safe 
+  across multiple threads, because all clones shared the same buffer.
+  (Robert Muir)
 
 New Features
 
