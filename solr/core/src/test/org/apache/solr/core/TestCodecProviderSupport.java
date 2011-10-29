@@ -20,7 +20,7 @@ package org.apache.solr.core;
 import java.util.Map;
 
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
@@ -32,40 +32,38 @@ public class TestCodecProviderSupport extends SolrTestCaseJ4 {
     initCore("solrconfig_codec.xml", "schema_codec.xml");
   }
 
-  public void testCodecs() {
+  public void testPostingsFormats() {
     CodecProvider codecProvider = h.getCore().getCodecProvider();
     Map<String, SchemaField> fields = h.getCore().getSchema().getFields();
     SchemaField schemaField = fields.get("string_pulsing_f");
-    assertEquals("Pulsing", codecProvider.getFieldCodec(schemaField.getName()));
+    PerFieldPostingsFormat format = (PerFieldPostingsFormat) codecProvider.getDefaultCodec().postingsFormat();
+    assertEquals("Pulsing", format.getPostingsFormatForField(schemaField.getName()));
     schemaField = fields.get("string_simpletext_f");
     assertEquals("SimpleText",
-        codecProvider.getFieldCodec(schemaField.getName()));
+        format.getPostingsFormatForField(schemaField.getName()));
     schemaField = fields.get("string_standard_f");
-    assertEquals("Standard", codecProvider.getFieldCodec(schemaField.getName()));
+    assertEquals("Lucene40", format.getPostingsFormatForField(schemaField.getName()));
     schemaField = fields.get("string_f");
-    assertEquals("Pulsing", codecProvider.getFieldCodec(schemaField.getName()));
-
-    assertTrue(codecProvider.hasFieldCodec("string_simpletext_f"));
-    assertTrue(codecProvider.hasFieldCodec("string_standard_f"));
-    assertTrue(codecProvider.hasFieldCodec("string_f"));
+    assertEquals("Pulsing", format.getPostingsFormatForField(schemaField.getName()));
   }
 
   public void testDynamicFields() {
     CodecProvider codecProvider = h.getCore().getCodecProvider();
+    PerFieldPostingsFormat format = (PerFieldPostingsFormat) codecProvider.getDefaultCodec().postingsFormat();
 
-    assertTrue(codecProvider.hasFieldCodec("bar_simple"));
-    assertTrue(codecProvider.hasFieldCodec("bar_pulsing"));
-    assertTrue(codecProvider.hasFieldCodec("bar_standard"));
-
-    assertEquals("SimpleText", codecProvider.getFieldCodec("foo_simple"));
-    assertEquals("Pulsing", codecProvider.getFieldCodec("foo_pulsing"));
-    assertEquals("Standard", codecProvider.getFieldCodec("foo_standard"));
+    assertEquals("SimpleText", format.getPostingsFormatForField("foo_simple"));
+    assertEquals("SimpleText", format.getPostingsFormatForField("bar_simple"));
+    assertEquals("Pulsing", format.getPostingsFormatForField("foo_pulsing"));
+    assertEquals("Pulsing", format.getPostingsFormatForField("bar_pulsing"));
+    assertEquals("Lucene40", format.getPostingsFormatForField("foo_standard"));
+    assertEquals("Lucene40", format.getPostingsFormatForField("bar_standard"));
   }
 
   public void testUnknownField() {
     CodecProvider codecProvider = h.getCore().getCodecProvider();
+    PerFieldPostingsFormat format = (PerFieldPostingsFormat) codecProvider.getDefaultCodec().postingsFormat();
     try {
-      codecProvider.getFieldCodec("notexisting");
+      format.getPostingsFormatForField("notexisting");
       fail("field is not existing");
     } catch (IllegalArgumentException e) {
       //

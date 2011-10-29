@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
@@ -40,10 +39,10 @@ public class DefaultCodecProviderFactory extends CodecProviderFactory {
       public Codec getDefaultCodec() {
         return new Lucene40Codec() {
           @Override
-          public String getPostingsFormatForField(FieldInfo field) {
-            final SchemaField fieldOrNull = schema.getFieldOrNull(field.name);
+          public String getPostingsFormatForField(String field) {
+            final SchemaField fieldOrNull = schema.getFieldOrNull(field);
             if (fieldOrNull == null) {
-              throw new IllegalArgumentException("no such field " + field.name);
+              throw new IllegalArgumentException("no such field " + field);
             }
             String postingsFormatName = fieldOrNull.getType().getPostingsFormat();
             if (postingsFormatName != null) {

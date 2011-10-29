@@ -57,8 +57,7 @@ public class RandomCodec extends Lucene40Codec {
   }
 
   @Override
-  public synchronized String getPostingsFormatForField(FieldInfo field) {
-    String name = field.name;
+  public synchronized String getPostingsFormatForField(String name) {
     PostingsFormat codec = previousMappings.get(name);
     if (codec == null) {
       codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());

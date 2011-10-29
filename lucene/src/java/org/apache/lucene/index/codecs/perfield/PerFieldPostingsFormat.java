@@ -19,33 +19,24 @@ package org.apache.lucene.index.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -121,7 +112,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final String formatName = getPostingsFormatForField(field);
+      final String formatName = getPostingsFormatForField(field.name);
       FieldsConsumerAndID format = formats.get(formatName);
       if (format == null) {
         // First time we are seeing this format -- assign
@@ -194,7 +185,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       try {
         for (FieldInfo fi : readState.fieldInfos) {
           if (fi.isIndexed) { 
-            String formatName = getPostingsFormatForField(fi);
+            String formatName = getPostingsFormatForField(fi.name);
             FieldsProducer fieldsProducer = formats.get(formatName);
             // Better be defined, because it was defined
             // during indexing:
@@ -315,7 +306,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     };
   }
 
-  protected abstract String getPostingsFormatForField(FieldInfo field);
+  // nocommit: do we really need to pass fieldInfo here?
+  // sucks for 'outsiders' (like tests!) that want to peep at what format
+  // is being used for a field... changed to a String for now.. but lets revisit
+  public abstract String getPostingsFormatForField(String field);
 
-  protected abstract PostingsFormat getPostingsFormat(String formatName);
+  public abstract PostingsFormat getPostingsFormat(String formatName);
 }
