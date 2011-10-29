@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     CodecProvider provider = CodecProvider.getDefault();
     //provider.register(new MemoryCodec());
     if ( (!"Lucene3x".equals(provider.getDefaultCodec().getName())) && random.nextBoolean()) {
-      provider.setFieldCodec("docid", "Memory");
+      CodecProvider.setDefault(_TestUtil.alwaysFormat(new MemoryPostingsFormat()));
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(provider));
