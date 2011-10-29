@@ -37,7 +37,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public class DefaultDocValuesProducer extends DocValuesReaderBase {
-  protected final TreeMap<String, IndexDocValues> docValues;
+  protected final TreeMap<String,IndexDocValues> docValues;
   private final Directory cfs;
 
   /**
@@ -52,7 +52,7 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
       docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.formatId, state.context);
     } else {
       cfs = null;
-      docValues = null;
+      docValues = new TreeMap<String,IndexDocValues>();
     }
   }
   
