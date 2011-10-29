@@ -45,10 +45,15 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
    * {@link IndexDocValues} instances for this segment and codec.
    */
   public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
-    cfs = new CompoundFileDirectory(state.dir, 
-        IndexFileNames.segmentFileName(state.segmentInfo.name, state.formatId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
-        state.context, false);
-    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.formatId, state.context);
+    if (state.fieldInfos.anyDocValuesFields()) {
+      cfs = new CompoundFileDirectory(state.dir, 
+                                      IndexFileNames.segmentFileName(state.segmentInfo.name, state.formatId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
+                                      state.context, false);
+      docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.formatId, state.context);
+    } else {
+      cfs = null;
+      docValues = null;
+    }
   }
   
   @Override
@@ -58,8 +63,12 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
 
   @Override
   protected void closeInternal(Collection<? extends Closeable> closeables) throws IOException {
-    final ArrayList<Closeable> list = new ArrayList<Closeable>(closeables);
-    list.add(cfs);
-    IOUtils.close(list);
+    if (cfs != null) {
+      final ArrayList<Closeable> list = new ArrayList<Closeable>(closeables);
+      list.add(cfs);
+      IOUtils.close(list);
+    } else {
+      IOUtils.close(closeables);
+    }
   }
 }

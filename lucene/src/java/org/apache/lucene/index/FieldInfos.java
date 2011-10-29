@@ -773,5 +773,14 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     return roFis;
   }
-  
+
+  public boolean anyDocValuesFields() {
+    for (FieldInfo fi : fieldInfos) {
+      if (fi.hasDocValues()) { 
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

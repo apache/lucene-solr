@@ -66,7 +66,7 @@ public class SegmentWriteState {
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
     this.codec = codec;
-    formatId = -1;
+    formatId = 0;
     this.context = context;
   }
   

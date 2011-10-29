@@ -39,7 +39,7 @@ public class SegmentReadState {
 
   public SegmentReadState(Directory dir, SegmentInfo info,
       FieldInfos fieldInfos, IOContext context, int termsIndexDivisor) {
-    this(dir, info, fieldInfos,  context, termsIndexDivisor, -1);
+    this(dir, info, fieldInfos,  context, termsIndexDivisor, 0);
   }
   
   public SegmentReadState(Directory dir,
