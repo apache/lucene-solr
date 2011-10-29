@@ -32,7 +32,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.perfield.PerFieldCodec;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -997,18 +996,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setReaderTermsIndexDivisor(-1);
     
-    // nocommit: make some kind of idiom for this?
-    // or can we just use the annotation? 
-    Codec codec = CodecProvider.getDefault().getDefaultCodec();
-    
     // Don't proceed if picked Codec is in the list of illegal ones.
-    if (codec instanceof PerFieldCodec) {
-      PerFieldCodec perField = (PerFieldCodec) codec;
-      final String format = perField.getPostingsFormat("f");
-      assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
-          (format.equals("SimpleText") || format.equals("Memory")));
-    }
-
+    final String format = _TestUtil.getPostingsFormat("f");
+    assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
+        (format.equals("SimpleText") || format.equals("Memory")));
 
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, conf);

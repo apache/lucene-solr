@@ -34,6 +34,7 @@ import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultFieldsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
@@ -105,31 +106,6 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     r.close();
     dir.close();
-  }
-
-  private static class StandardCodecWithOrds extends Codec {
-    private final PostingsFormat postings = new StandardPostingsFormatWithOrds();
-    private final FieldsFormat fields = new DefaultFieldsFormat();
-    private final DocValuesFormat docValues = new DefaultDocValuesFormat();
-
-    public StandardCodecWithOrds() {
-      super("StandardOrds");
-    }
-
-    @Override
-    public PostingsFormat postingsFormat() {
-      return postings;
-    }
-
-    @Override
-    public FieldsFormat fieldsFormat() {
-      return fields;
-    }
-
-    @Override
-    public DocValuesFormat docValuesFormat() {
-      return docValues;
-    }
   }
 
   private static class StandardPostingsFormatWithOrds extends PostingsFormat {
@@ -254,17 +230,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
       // Make sure terms index has ords:
-      CoreCodecProvider cp = new CoreCodecProvider() {
-        {
-          register(new StandardCodecWithOrds());
-        }
-
-        @Override
-        public Codec getDefaultCodec() {
-          return lookup("StandardOrds");
-        }
-      };
-
+      CodecProvider cp = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
       // So checkIndex on close works
       dir.setCodecProvider(cp);
       conf.setCodecProvider(cp);
@@ -363,18 +329,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
-      // Make sure terms index has ords:
-      CoreCodecProvider cp = new CoreCodecProvider() {
-        {
-          register(new StandardCodecWithOrds());
-        }
-
-        @Override
-        public Codec getDefaultCodec() {
-          return lookup("StandardOrds");
-        }
-      };
-
+      CodecProvider cp = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
       // So checkIndex on close works
       dir.setCodecProvider(cp);
       conf.setCodecProvider(cp);

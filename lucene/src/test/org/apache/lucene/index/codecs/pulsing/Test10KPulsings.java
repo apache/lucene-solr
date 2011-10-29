@@ -51,7 +51,7 @@ import org.junit.Ignore;
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingPostingsFormat(1));
+    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(1));
     
     File f = _TestUtil.getTempDir("10kpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
@@ -101,7 +101,7 @@ public class Test10KPulsings extends LuceneTestCase {
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingPostingsFormat(1));
+    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(1));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);

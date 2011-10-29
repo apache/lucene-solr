@@ -48,6 +48,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
@@ -354,8 +355,6 @@ public class _TestUtil {
     return new String(buffer, 0, i);
   }
 
-  // TODO: do we really want an alwaysPostingsFormat?
-  
   public static CodecProvider alwaysCodec(final Codec c) {
     return new CoreCodecProvider() {
       @Override
@@ -365,7 +364,7 @@ public class _TestUtil {
         if (name.equals(c.getName())) {
           return c;
         } else {
-          return CodecProvider.getDefault().lookup(name);
+          return super.lookup(name);
         }
       }
 
@@ -381,6 +380,43 @@ public class _TestUtil {
    *  codec. */
   public static CodecProvider alwaysCodec(final String codec) {
     return alwaysCodec(CodecProvider.getDefault().lookup(codec));
+  }
+  
+  /** Return a CodecProvider that can read any of the
+   *  default codecs and formats, but always writes in the specified
+   *  format. */
+  public static CodecProvider alwaysFormat(final PostingsFormat format) {
+    final Codec codec = new Lucene40Codec() {
+      @Override
+      public PostingsFormat getPostingsFormat(String formatName) {
+        if (formatName == format.name) {
+          return format;
+        } else {
+          return super.getPostingsFormat(formatName);
+        }
+      }
+
+      @Override
+      public String getPostingsFormatForField(String field) {
+        return format.name;
+      }
+    };
+
+    return new CoreCodecProvider() {
+      @Override
+      public Codec getDefaultCodec() {
+        return codec;
+      }
+
+      @Override
+      public Codec lookup(String name) {
+        if (name == codec.getName()) {
+          return codec;
+        } else {
+          return super.lookup(name);
+        }
+      }
+    };
   }
   
   public static String getPostingsFormat(String field) {

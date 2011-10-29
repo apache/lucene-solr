@@ -40,9 +40,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.perfield.PerFieldCodec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -1015,17 +1013,10 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    // nocommit: make some kind of idiom for this?
-    // this test already sets the annotation? is this even needed?! 
-    Codec codec = CodecProvider.getDefault().getDefaultCodec();
-    
-    if (codec instanceof PerFieldCodec) {
-      PerFieldCodec perField = (PerFieldCodec) codec;
-      final String defaultFormat = perField.getDefaultPostingsFormat();
-      if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
-        // no
-        CodecProvider.setDefault(_TestUtil.alwaysCodec("Lucene40"));
-      }
+    final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
+    if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
+      // no
+      CodecProvider.setDefault(_TestUtil.alwaysCodec("Lucene40"));
     }
 
     final LineFileDocs docs = new LineFileDocs(random);
