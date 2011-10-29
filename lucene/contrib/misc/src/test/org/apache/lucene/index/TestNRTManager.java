@@ -27,6 +27,7 @@ import org.apache.lucene.search.SearcherWarmer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 
 @UseNoMemoryExpensiveCodec
 public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
