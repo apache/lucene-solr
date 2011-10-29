@@ -223,7 +223,11 @@ public final class SegmentInfo implements Cloneable {
 
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
     if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-      codec = codecs.lookup(input.readString());
+      String codecName = input.readString();
+      codec = codecs.lookup(codecName);
+      if (codec == null) {
+        throw new IllegalArgumentException("Required codec '" + codec + "' not found!");
+      }
     } else {
       // TODO what todo if preflex is not available in the provider? register it or fail?
       codec = codecs.lookup("Lucene3x");
