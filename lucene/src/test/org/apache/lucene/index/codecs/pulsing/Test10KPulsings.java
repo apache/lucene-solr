@@ -34,8 +34,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -51,7 +52,7 @@ import org.junit.Ignore;
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(1));
+    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
     
     File f = _TestUtil.getTempDir("10kpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
@@ -102,7 +103,7 @@ public class Test10KPulsings extends LuceneTestCase {
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
     int freqCutoff = _TestUtil.nextInt(random, 1, 10);
-    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(freqCutoff));
+    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), freqCutoff));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
