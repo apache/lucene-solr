@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
@@ -46,6 +47,7 @@ import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsForm
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.search.BooleanQuery;
@@ -225,18 +227,6 @@ public abstract class LuceneTestCase extends Assert {
   protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
   private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "MockRandom"};
-
-  private static void swapCodec(PostingsFormat c, CodecProvider cp) {
-    PostingsFormat prior = null;
-    try {
-      prior = cp.lookup(c.name);
-    } catch (IllegalArgumentException iae) {
-    }
-    if (prior != null) {
-      cp.unregister(prior);
-    }
-    cp.register(c);
-  }
 
   // returns current default codec
   static PostingsFormat installTestCodecs(String codec, CodecProvider cp) {
@@ -640,13 +630,16 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (useNoMemoryExpensiveCodec) {
-      final String defCodec = CodecProvider.getDefault().getDefaultFieldCodec();
-      // Stupid: assumeFalse in setUp() does not print any information, because
-      // TestWatchman does not watch test during setUp() - getName() is also not defined...
-      // => print info directly and use assume without message:
-      if ("SimpleText".equals(defCodec) || "Memory".equals(defCodec)) {
-        System.err.println("NOTE: A test method in " + getClass().getSimpleName() + " was ignored, as it uses too much memory with " + defCodec + ".");
-        Assume.assumeTrue(false);
+      PostingsFormat p = CodecProvider.getDefault().getDefaultCodec().postingsFormat();
+      if (p instanceof PerFieldPostingsFormat) {
+        String defCodec = ((PerFieldPostingsFormat)p).getPostingsFormatForField("thisCodeMakesAbsolutelyNoSenseCanWeDeleteIt");
+        // Stupid: assumeFalse in setUp() does not print any information, because
+        // TestWatchman does not watch test during setUp() - getName() is also not defined...
+        // => print info directly and use assume without message:
+        if ("SimpleText".equals(defCodec) || "Memory".equals(defCodec)) {
+          System.err.println("NOTE: A test method in " + getClass().getSimpleName() + " was ignored, as it uses too much memory with " + defCodec + ".");
+          Assume.assumeTrue(false);
+        }
       }
     }
   }
