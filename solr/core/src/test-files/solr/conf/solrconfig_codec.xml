@@ -21,10 +21,10 @@
   
   <mainIndex>
     <codecProviderFactory class="org.apache.solr.core.MockCodecProviderFactory">
-      <str name="defaultCodec">Pulsing</str>
-      <lst name="codecs">
-        <str name="codec">org.apache.lucene.index.codecs.simpletext.SimpleTextCodec</str>
-        <str name="codec">org.apache.lucene.index.codecs.preflex.PreFlexCodec</str>
+      <str name="defaultPostingsFormat">Pulsing</str>
+      <lst name="postingsFormats">
+        <str name="format">org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat</str>
+        <str name="format">org.apache.lucene.index.codecs.memory.MemoryPostingsFormat</str>
       </lst>
     </codecProviderFactory>
   </mainIndex>

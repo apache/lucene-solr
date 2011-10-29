@@ -17,47 +17,80 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 
 /**
  * CodecProviderFactory for testing, it inits a CP with Standard and Pulsing,
  * and also adds any codecs specified by classname in solrconfig.
  */
 public class MockCodecProviderFactory extends CodecProviderFactory {
-  private String defaultCodec;
-  private NamedList codecs;
+  private String defaultFormat;
+  private NamedList formats;
 
   @Override
   public void init(NamedList args) {
     super.init(args);
-    defaultCodec = (String) args.get("defaultCodec");
-    codecs = (NamedList) args.get("codecs");
+    defaultFormat = (String) args.get("defaultPostingsFormat");
+    formats = (NamedList) args.get("postingsFormats");
   }
 
   @Override
-  public CodecProvider create() {
-    CodecProvider cp = new CodecProvider();
-    cp.register(new Lucene40PostingsFormat());
-    cp.register(new PulsingPostingsFormat());
-    if (codecs != null) {
-      for (Object codec : codecs.getAll("name")) {
-        if (!cp.isCodecRegistered((String)codec)) {
+  public CodecProvider create(final IndexSchema schema) {
+    final Map<String,PostingsFormat> map = new HashMap<String,PostingsFormat>();
+    // add standard and pulsing
+    PostingsFormat p = new Lucene40PostingsFormat();
+    map.put(p.name, p);
+    p = new PulsingPostingsFormat();
+    map.put(p.name, p);
+    
+    if (formats != null) {
+      for (Object format : formats.getAll("name")) {
           try {
-            Class<? extends PostingsFormat> clazz = Class.forName((String)codec).asSubclass(PostingsFormat.class);
-            cp.register(clazz.newInstance());
+            Class<? extends PostingsFormat> clazz = Class.forName((String)format).asSubclass(PostingsFormat.class);
+            PostingsFormat fmt = clazz.newInstance();
+            map.put(fmt.name, fmt);
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-        }
       }
     }
-    if (defaultCodec != null) {
-      cp.setDefaultFieldCodec(defaultCodec);
-    }
-    return cp;
+    
+    final String defaultFormat = this.defaultFormat;
+    return new CoreCodecProvider() {
+      @Override
+      public Codec getDefaultCodec() {
+        return new Lucene40Codec() {
+          @Override
+          public String getPostingsFormatForField(String field) {
+            final SchemaField fieldOrNull = schema.getFieldOrNull(field);
+            if (fieldOrNull == null) {
+              throw new IllegalArgumentException("no such field " + field);
+            }
+            String postingsFormatName = fieldOrNull.getType().getPostingsFormat();
+            if (postingsFormatName != null) {
+              return postingsFormatName;
+            }
+            return defaultFormat;
+          }
+
+          @Override
+          public PostingsFormat getPostingsFormat(String formatName) {
+            return map.get(formatName);
+          }
+        };
+      }
+    };
   }
 }
