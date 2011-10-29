@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +30,11 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -981,7 +984,7 @@ public class TestAddIndexes extends LuceneTestCase {
     // two auxiliary directories
     Directory aux = newDirectory();
     Directory aux2 = newDirectory();
-    CodecProvider provider = new MockCodecProvider();
+    CodecProvider provider = _TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat());
     IndexWriter writer = null;
 
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -1037,16 +1040,33 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  public static class MockCodecProvider extends CodecProvider {
-    public MockCodecProvider() {
-      Lucene40PostingsFormat standardCodec = new Lucene40PostingsFormat();
-      SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
-      MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
-      register(standardCodec);
-      register(mockSepCodec);
-      register(simpleTextCodec);
-      setFieldCodec("id", simpleTextCodec.name);
-      setFieldCodec("content", mockSepCodec.name);
+  // nocommit factor to helper class in _TestUtil (this is
+  // copied from TestExternalCodecs)
+  private static class CustomPerFieldPostingsFormat extends PerFieldPostingsFormat {
+    private final PostingsFormat simpleTextFormat = new SimpleTextPostingsFormat();
+    private final PostingsFormat defaultFormat = new Lucene40PostingsFormat();
+    private final PostingsFormat mockSepFormat = new MockSepPostingsFormat();
+
+    @Override
+    public String getPostingsFormatForField(String field) {
+      if (field.equals("id")) {
+        return "simple text";
+      } else if (field.equals("content")) {
+        return "mock sep";
+      } else {
+        return "lucene 40";
+      }
+    }
+
+    @Override
+    public PostingsFormat getPostingsFormat(String formatName) {
+      if (formatName.equals("simple text")) {
+        return simpleTextFormat;
+      } else if (formatName.equals("mock sep")) {
+        return mockSepFormat;
+      } else {
+        return defaultFormat;
+      }
     }
   }
 
@@ -1145,9 +1165,7 @@ public class TestAddIndexes extends LuceneTestCase {
     {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      CodecProvider provider = new CodecProvider();
-      provider.register(new Lucene40PostingsFormat());
-      conf.setCodecProvider(provider);
+      conf.setCodecProvider(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();
       FieldType customType = new FieldType();
@@ -1156,13 +1174,12 @@ public class TestAddIndexes extends LuceneTestCase {
       w.addDocument(doc);
       w.close();
     }
+
     {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingPostingsFormat(1 + random.nextInt(20)));
-      conf.setCodecProvider(provider);
+      conf.setCodecProvider(_TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);
@@ -1181,9 +1198,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingPostingsFormat(1 + random.nextInt(20)));
-      conf.setCodecProvider(provider);
+      conf.setCodecProvider(_TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       IndexReader indexReader = IndexReader.open(toAdd);
       try {

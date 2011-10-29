@@ -340,7 +340,7 @@ public class TestCodecs extends LuceneTestCase {
     final Directory dir = newDirectory();
     final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
       new MockAnalyzer(random));
-    config.setCodecProvider(new MockSepCodecs());
+    config.setCodecProvider(_TestUtil.alwaysFormat(new MockSepPostingsFormat()));
     final IndexWriter writer = new IndexWriter(dir, config);
 
     try {
@@ -393,15 +393,6 @@ public class TestCodecs extends LuceneTestCase {
       searcher.close();
       reader.close();
     }
-  }
-
-  public static class MockSepCodecs extends CodecProvider {
-
-    protected MockSepCodecs() {
-      this.register(new MockSepPostingsFormat());
-      this.setDefaultFieldCodec("MockSep");
-    }
-    
   }
 
   private class Verify extends Thread {

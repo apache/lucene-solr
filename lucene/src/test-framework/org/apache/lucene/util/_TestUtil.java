@@ -385,6 +385,7 @@ public class _TestUtil {
   /** Return a CodecProvider that can read any of the
    *  default codecs and formats, but always writes in the specified
    *  format. */
+  // nocommit rename to .alwaysPostingsFormat?
   public static CodecProvider alwaysFormat(final PostingsFormat format) {
     final Codec codec = new Lucene40Codec() {
       @Override

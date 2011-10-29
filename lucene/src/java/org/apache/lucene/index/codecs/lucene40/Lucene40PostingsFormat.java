@@ -34,6 +34,11 @@ import org.apache.lucene.store.Directory;
 
 /** Default codec. 
  *  @lucene.experimental */
+
+// nocommit -- this class should be "generic" instance of a
+// wrapper class that just takes the
+// Lucene40PostingsBaseFormat and wraps BlockTree terms dict
+// around it?
 public class Lucene40PostingsFormat extends PostingsFormat {
 
   private final int minBlockSize;
