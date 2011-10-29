@@ -775,7 +775,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
 
   public boolean anyDocValuesFields() {
-    for (FieldInfo fi : fieldInfos) {
+    for (FieldInfo fi : this) {
       if (fi.hasDocValues()) { 
         return true;
       }
