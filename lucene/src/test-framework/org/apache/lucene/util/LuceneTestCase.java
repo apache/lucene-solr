@@ -40,8 +40,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
@@ -137,8 +139,10 @@ public abstract class LuceneTestCase extends Assert {
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
   // tests)
+  /** Gets the postingsFormat to run tests with. */
+  public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsFormat", "random");
   /** Gets the codec to run tests with. */
-  public static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
+  public static final String TEST_CODEC = System.getProperty("tests.codec", "random");
   /** Gets the codecprovider to run tests with */
   public static final String TEST_CODECPROVIDER = System.getProperty("tests.codecprovider", "random");
   /** Gets the locale to run tests with */
@@ -210,10 +214,6 @@ public abstract class LuceneTestCase extends Assert {
   }
   private List<UncaughtExceptionEntry> uncaughtExceptions = Collections.synchronizedList(new ArrayList<UncaughtExceptionEntry>());
 
-  // saves default codec: we do this statically as many build indexes in @beforeClass
-  private static String savedDefaultCodec;
-  // default codec: not set when we use a per-field provider.
-  private static PostingsFormat codec;
   // default codec provider
   private static CodecProvider savedCodecProvider;
   
@@ -225,84 +225,6 @@ public abstract class LuceneTestCase extends Assert {
   private static TimeZone savedTimeZone;
 
   protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
-
-  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "MockRandom"};
-
-  // returns current default codec
-  static PostingsFormat installTestCodecs(String codec, CodecProvider cp) {
-    savedDefaultCodec = cp.getDefaultFieldCodec();
-
-    final boolean codecHasParam;
-    int codecParam = 0;
-    if (codec.equals("randomPerField")) {
-      // lie
-      codec = "Standard";
-      codecHasParam = false;
-    } else if (codec.equals("random")) {
-      codec = pickRandomCodec(random);
-      codecHasParam = false;
-    } else {
-      Matcher m = codecWithParam.matcher(codec);
-      if (m.matches()) {
-        // codec has a fixed param
-        codecHasParam = true;
-        codec = m.group(1);
-        codecParam = Integer.parseInt(m.group(2));
-      } else {
-        codecHasParam = false;
-      }
-    }
-
-    cp.setDefaultFieldCodec(codec);
-
-    if (codec.equals("PreFlex")) {
-      // If we're running w/ PreFlex codec we must swap in the
-      // test-only PreFlexRW codec (since core PreFlex can
-      // only read segments):
-      swapCodec(new PreFlexRWPostingsFormat(), cp);
-    }
-
-    swapCodec(new MockSepPostingsFormat(), cp);
-    // TODO: make it possible to specify min/max iterms per
-    // block via CL:
-    int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
-    int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    swapCodec(new PulsingPostingsFormat(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock), cp);
-    swapCodec(new MockFixedIntBlockPostingsFormat(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
-    // baseBlockSize cannot be over 127:
-    swapCodec(new MockVariableIntBlockPostingsFormat(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
-    swapCodec(new MockRandomPostingsFormat(random), cp);
-
-    return cp.lookup(codec);
-  }
-  
-  // returns current PreFlex codec
-  static void removeTestCodecs(PostingsFormat codec, CodecProvider cp) {
-    if (codec.name.equals("PreFlex")) {
-      final PostingsFormat preFlex = cp.lookup("PreFlex");
-      if (preFlex != null) {
-        cp.unregister(preFlex);
-      }
-      cp.register(new Lucene3xPostingsFormat());
-    }
-    cp.unregister(cp.lookup("MockSep"));
-    cp.unregister(cp.lookup("MockFixedIntBlock"));
-    cp.unregister(cp.lookup("MockVariableIntBlock"));
-    cp.unregister(cp.lookup("MockRandom"));
-    swapCodec(new PulsingPostingsFormat(), cp);
-    cp.setDefaultFieldCodec(savedDefaultCodec);
-  }
-
-  // randomly picks from core and test codecs
-  static String pickRandomCodec(Random rnd) {
-    int idx = rnd.nextInt(CodecProvider.CORE_CODECS.length +
-                          TEST_CODECS.length);
-    if (idx < CodecProvider.CORE_CODECS.length) {
-      return CodecProvider.CORE_CODECS[idx];
-    } else {
-      return TEST_CODECS[idx - CodecProvider.CORE_CODECS.length];
-    }
-  }
 
   /** @deprecated (4.0) until we fix no-fork problems in solr tests */
   @Deprecated
@@ -333,39 +255,49 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     savedCodecProvider = CodecProvider.getDefault();
+    final CodecProvider cp;
     if ("random".equals(TEST_CODECPROVIDER)) {
-      if ("randomPerField".equals(TEST_CODEC)) {
-        if (random.nextInt(4) == 0) { // preflex-only setup
-          codec = installTestCodecs("PreFlex", CodecProvider.getDefault());
-        } else { // per-field setup
-          CodecProvider.setDefault(new RandomCodec(random, useNoMemoryExpensiveCodec));
-          codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
-        }
-      } else { // ordinary setup
-        codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
+      if ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0) { // preflex-only setup
+        cp = new CoreCodecProvider() {
+          final Codec preflexRW = new Lucene3xCodec();
+          @Override
+          public Codec getDefaultCodec() {
+            return preflexRW;
+          }
+
+          @Override
+          public Codec lookup(String name) {
+            if ("Lucene3x".equals(name)) // impersonation!
+              return preflexRW;
+            else
+              return super.lookup(name);
+          }
+        };
+      } else { // per-field setup, or specified postingsformat
+        final Codec randomPerField = new RandomCodec(random, useNoMemoryExpensiveCodec, TEST_POSTINGSFORMAT);
+        cp = new CoreCodecProvider() {
+
+          @Override
+          public Codec lookup(String name) {
+            if ("Lucene40".equals(name)) // impersonation!
+              return randomPerField;
+            else
+              return super.lookup(name);
+          }
+        };
       }
     } else {
       // someone specified their own codecprovider by class
       try {
         Class<? extends CodecProvider> cpClazz = Class.forName(TEST_CODECPROVIDER).asSubclass(CodecProvider.class);
-        CodecProvider cp = cpClazz.newInstance();
-        String codecName;
-        if (TEST_CODEC.startsWith("random")) { // TODO: somehow do random per-field?!
-          Set<String> codecSet = cp.listAll();
-          String availableCodecs[] = codecSet.toArray(new String[codecSet.size()]);
-          codecName = availableCodecs[random.nextInt(availableCodecs.length)];
-        } else {
-          codecName = TEST_CODEC;
-        }
-        
-        codec = cp.lookup(codecName);
-        cp.setDefaultFieldCodec(codecName);
-        CodecProvider.setDefault(cp);
+        cp = cpClazz.newInstance();
       } catch (Exception e) {
         System.err.println("Could not instantiate CodecProvider: " + TEST_CODECPROVIDER);
         throw new RuntimeException(e);
       }
     }
+
+    CodecProvider.setDefault(cp);
     
     savedLocale = Locale.getDefault();
     
@@ -415,7 +347,8 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     
-    String codecDescription = uninstallCodecsAfterClass();
+    String codecDescription = CodecProvider.getDefault().toString();
+    CodecProvider.setDefault(savedCodecProvider);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
     System.clearProperty("solr.solr.home");
@@ -478,24 +411,6 @@ public abstract class LuceneTestCase extends Assert {
         + "threads=" + Thread.activeCount() + ","
         + "free=" + Runtime.getRuntime().freeMemory() + ","
         + "total=" + Runtime.getRuntime().totalMemory());
-  }
-  
-  /** uninstalls test codecs, returns description of the codec used for debugging */
-  private static String uninstallCodecsAfterClass() {
-    String codecDescription;
-    CodecProvider cp = CodecProvider.getDefault();
-
-    if ("randomPerField".equals(TEST_CODEC) && cp instanceof RandomCodec) {
-      codecDescription = cp.toString();
-    } else {
-      codecDescription = codec.toString();
-    }
-
-    if ("random".equals(TEST_CODECPROVIDER) && CodecProvider.getDefault() == savedCodecProvider)
-      removeTestCodecs(codec, CodecProvider.getDefault());
-    CodecProvider.setDefault(savedCodecProvider);
-
-    return codecDescription;
   }
   
   /** check that directories and their resources were closed */
@@ -630,16 +545,13 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (useNoMemoryExpensiveCodec) {
-      PostingsFormat p = CodecProvider.getDefault().getDefaultCodec().postingsFormat();
-      if (p instanceof PerFieldPostingsFormat) {
-        String defCodec = ((PerFieldPostingsFormat)p).getPostingsFormatForField("thisCodeMakesAbsolutelyNoSenseCanWeDeleteIt");
-        // Stupid: assumeFalse in setUp() does not print any information, because
-        // TestWatchman does not watch test during setUp() - getName() is also not defined...
-        // => print info directly and use assume without message:
-        if ("SimpleText".equals(defCodec) || "Memory".equals(defCodec)) {
-          System.err.println("NOTE: A test method in " + getClass().getSimpleName() + " was ignored, as it uses too much memory with " + defCodec + ".");
-          Assume.assumeTrue(false);
-        }
+      String defFormat = _TestUtil.getPostingsFormat("thisCodeMakesAbsolutelyNoSenseCanWeDeleteIt");
+      // Stupid: assumeFalse in setUp() does not print any information, because
+      // TestWatchman does not watch test during setUp() - getName() is also not defined...
+      // => print info directly and use assume without message:
+      if ("SimpleText".equals(defFormat) || "Memory".equals(defFormat)) {
+        System.err.println("NOTE: A test method in " + getClass().getSimpleName() + " was ignored, as it uses too much memory with " + defFormat + ".");
+        Assume.assumeTrue(false);
       }
     }
   }

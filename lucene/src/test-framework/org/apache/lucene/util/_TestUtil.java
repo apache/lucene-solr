@@ -48,6 +48,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -380,6 +381,15 @@ public class _TestUtil {
    *  codec. */
   public static CodecProvider alwaysCodec(final String codec) {
     return alwaysCodec(CodecProvider.getDefault().lookup(codec));
+  }
+  
+  public static String getPostingsFormat(String field) {
+    PostingsFormat p = CodecProvider.getDefault().getDefaultCodec().postingsFormat();
+    if (p instanceof PerFieldPostingsFormat) {
+      return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field);
+    } else {
+      return p.name;
+    }
   }
 
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {

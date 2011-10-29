@@ -29,6 +29,10 @@ import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
+import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
+import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.util._TestUtil;
@@ -44,12 +48,13 @@ import org.apache.lucene.util._TestUtil;
  */
 public class RandomCodec extends Lucene40Codec {
   /** name->postingsformat mappings */
-  private Map<String,PostingsFormat> codecNames = new HashMap<String,PostingsFormat>();
+  private Map<String,PostingsFormat> formatNames = new HashMap<String,PostingsFormat>();
   /** shuffled list of postingsformats to use for new mappings */
-  private List<PostingsFormat> knownCodecs = new ArrayList<PostingsFormat>();
+  private List<PostingsFormat> knownFormats = new ArrayList<PostingsFormat>();
   /** memorized field->postingsformat mappings */
   private Map<String,PostingsFormat> previousMappings = new HashMap<String,PostingsFormat>();
   private final int perFieldSeed;
+  private final String configuration;
   
   @Override
   public PostingsFormat getPostingsFormat(String formatName) {
@@ -58,19 +63,24 @@ public class RandomCodec extends Lucene40Codec {
 
   @Override
   public synchronized String getPostingsFormatForField(String name) {
-    PostingsFormat codec = previousMappings.get(name);
-    if (codec == null) {
-      codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
-      if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
-        // make simpletext rarer, choose again
-        codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
+    if ("random".equals(configuration)) {
+      PostingsFormat codec = previousMappings.get(name);
+      if (codec == null) {
+        codec = knownFormats.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownFormats.size());
+        if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
+          // make simpletext rarer, choose again
+          codec = knownFormats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownFormats.size());
+        }
+        previousMappings.put(name, codec);
       }
-      previousMappings.put(name, codec);
+      return codec.name;
+    } else {
+      return configuration;
     }
-    return codec.name;
   }
 
-  public RandomCodec(Random random, boolean useNoMemoryExpensiveCodec) {
+  public RandomCodec(Random random, boolean useNoMemoryExpensiveCodec, String configuration) {
+    this.configuration = configuration;
     this.perFieldSeed = random.nextInt();
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
@@ -82,20 +92,25 @@ public class RandomCodec extends Lucene40Codec {
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
     register(new PulsingPostingsFormat( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
+    register(new MockSepPostingsFormat());
+    register(new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)));
+    register(new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)));
+    register(new MockRandomPostingsFormat(random));
     if (!useNoMemoryExpensiveCodec) {
       register(new SimpleTextPostingsFormat());
       register(new MemoryPostingsFormat());
     }
-    Collections.shuffle(knownCodecs, random);
+    Collections.shuffle(knownFormats, random);
   }
   
-  public synchronized void register(PostingsFormat codec) {
-    codecNames.put(codec.name, codec);
+  public synchronized void register(PostingsFormat format) {
+    formatNames.put(format.name, format);
+    knownFormats.add(format);
   }
   
   // TODO: needed anymore? I don't think so
-  public synchronized void unregister(PostingsFormat codec) {
-    knownCodecs.remove(codec);
+  public synchronized void unregister(PostingsFormat format) {
+    knownFormats.remove(format);
   }
   
   @Override
