@@ -150,7 +150,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeWhileHandlingException(formats.values());
+          IOUtils.closeWhileHandlingException(out);
         } else {
           IOUtils.close(out);
         }
