@@ -57,12 +57,12 @@ public class SegmentReadState {
   }
 
   public SegmentReadState(SegmentReadState other,
-                          int newFormatID) {
+                          int newFormatId) {
     this.dir = other.dir;
     this.segmentInfo = other.segmentInfo;
     this.fieldInfos = other.fieldInfos;
     this.context = other.context;
     this.termsIndexDivisor = other.termsIndexDivisor;
-    this.formatId = newFormatID;
+    this.formatId = newFormatId;
   }
 }

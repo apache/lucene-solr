@@ -17,16 +17,21 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
+import java.io.*;
+import java.util.*;
+
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.*;
+import org.apache.lucene.index.codecs.*;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.index.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.index.codecs.*;
-import org.apache.lucene.store.*;
-import java.util.*;
-import java.io.*;
 
 /* Intentionally outside of oal.index to verify fully
    external codecs work fine */
@@ -70,11 +75,12 @@ public class TestExternalCodecs extends LuceneTestCase {
   // TODO
   //   - good improvement would be to write through to disk,
   //     and then load into ram from disk
-  public static class RAMOnlyCodec extends PostingsFormat {
-    
-    public RAMOnlyCodec() {
-      super("RamOnly");
+  public static class RAMOnlyPostingsFormat extends PostingsFormat {
+
+    public RAMOnlyPostingsFormat() {
+      super("RAMOnlyPostingsFormat");
     }
+    
     // Postings state:
     static class RAMPostings extends FieldsProducer {
       final Map<String,RAMField> fieldToTerms = new TreeMap<String,RAMField>();
@@ -127,7 +133,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
       @Override
       public TermsEnum iterator() {
-        return new RAMTermsEnum(RAMOnlyCodec.RAMField.this);
+        return new RAMTermsEnum(RAMOnlyPostingsFormat.RAMField.this);
       }
 
       @Override
@@ -502,13 +508,39 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
   }
 
+  private static class CustomPerFieldPostingsFormat extends PerFieldPostingsFormat {
+    private final PostingsFormat ramFormat = new RAMOnlyPostingsFormat();
+    private final PostingsFormat defaultFormat = new Lucene40PostingsFormat();
+    private final PostingsFormat pulsingFormat = new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1);
+
+    @Override
+    public String getPostingsFormatForField(String field) {
+      if (field.equals("field2") || field.equals("id")) {
+        return "Pulsing";
+      } else if (field.equals("field1")) {
+        return "Default";
+      } else {
+        return "RAM";
+      }
+    }
+
+    @Override
+    public PostingsFormat getPostingsFormat(String formatName) {
+      if (formatName.equals("Pulsing")) {
+        return pulsingFormat;
+      } else if (formatName.equals("Default")) {
+        return defaultFormat;
+      } else {
+        assertEquals("RAM", formatName);
+        return ramFormat;
+      }
+    }
+  }
+
   // tests storing "id" and "field2" fields as pulsing codec,
   // whose term sort is backwards unicode code point, and
   // storing "field1" as a custom entirely-in-RAM codec
   public void testPerFieldCodec() throws Exception {
-    CodecProvider provider = new CoreCodecProvider();
-    provider.register(new RAMOnlyCodec());
-    provider.setDefaultFieldCodec("RamOnly");
     
     final int NUM_DOCS = atLeast(173);
     MockDirectoryWrapper dir = newDirectory();
@@ -516,7 +548,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setCodecProvider(provider).
+        setCodecProvider(_TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat())).
             setMergePolicy(newLogMergePolicy(3))
     );
     w.setInfoStream(VERBOSE ? System.out : null);
@@ -525,11 +557,9 @@ public class TestExternalCodecs extends LuceneTestCase {
     doc.add(newField("field1", "this field uses the standard codec as the test", TextField.TYPE_UNSTORED));
     // uses pulsing codec:
     Field field2 = newField("field2", "this field uses the pulsing codec as the test", TextField.TYPE_UNSTORED);
-    provider.setFieldCodec(field2.name(), "Pulsing");
     doc.add(field2);
     
     Field idField = newField("id", "", StringField.TYPE_UNSTORED);
-    provider.setFieldCodec(idField.name(), "Pulsing");
 
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {

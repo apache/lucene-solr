@@ -48,7 +48,8 @@ public class CoreCodecProvider extends CodecProvider {
   public Codec lookup(String name) {
     return CORE_CODECS.get(name);
   }
-  
+
+  // nocommit should we make this an unmodifiable map?
   /** Lucene's core codecs
    *  @lucene.internal
    */

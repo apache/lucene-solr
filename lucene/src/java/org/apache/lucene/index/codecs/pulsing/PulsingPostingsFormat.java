@@ -27,12 +27,10 @@ import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.index.codecs.PostingsBaseFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.store.Directory;
 
 /** This postings format "inlines" the postings for terms that have
@@ -48,23 +46,21 @@ public class PulsingPostingsFormat extends PostingsFormat {
   private final int freqCutoff;
   private final int minBlockSize;
   private final int maxBlockSize;
+  private final PostingsBaseFormat wrappedPostingsBaseFormat;
 
-  public PulsingPostingsFormat() {
-    this(1);
-  }
-  
-  public PulsingPostingsFormat(int freqCutoff) {
-    this(freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+  public PulsingPostingsFormat(PostingsBaseFormat wrappedPostingsBaseFormat, int freqCutoff) {
+    this(wrappedPostingsBaseFormat, freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
   /** Terms with freq <= freqCutoff are inlined into terms
    *  dict. */
-  public PulsingPostingsFormat(int freqCutoff, int minBlockSize, int maxBlockSize) {
+  public PulsingPostingsFormat(PostingsBaseFormat wrappedPostingsBaseFormat, int freqCutoff, int minBlockSize, int maxBlockSize) {
     super("Pulsing");
     this.freqCutoff = freqCutoff;
     this.minBlockSize = minBlockSize;
     assert minBlockSize > 1;
     this.maxBlockSize = maxBlockSize;
+    this.wrappedPostingsBaseFormat = wrappedPostingsBaseFormat;
   }
 
   @Override
@@ -74,10 +70,7 @@ public class PulsingPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    // We wrap StandardPostingsWriter, but any PostingsWriterBase
-    // will work:
-
-    PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
+    PostingsWriterBase docsWriter = wrappedPostingsBaseFormat.postingsWriterBase(state);
 
     // Terms that have <= freqCutoff number of docs are
     // "pulsed" (inlined):
@@ -99,9 +92,7 @@ public class PulsingPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    // We wrap StandardPostingsReader, but any StandardPostingsReader
-    // will work:
-    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+    PostingsReaderBase docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
     PostingsReaderBase pulsingReader = new PulsingPostingsReader(docsReader);
 
     boolean success = false;
@@ -127,7 +118,7 @@ public class PulsingPostingsFormat extends PostingsFormat {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, codecID, files);
+    wrappedPostingsBaseFormat.files(dir, segmentInfo, codecID, files);
     BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
   }
 }

@@ -27,6 +27,7 @@ import org.apache.lucene.index.FieldInfo;
  * @lucene.experimental
  */
 
+// nocommit better name?
 public abstract class PostingsWriterBase extends PostingsConsumer implements Closeable {
 
   public abstract void start(IndexOutput termsOut) throws IOException;

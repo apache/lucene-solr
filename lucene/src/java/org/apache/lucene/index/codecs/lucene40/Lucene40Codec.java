@@ -38,6 +38,8 @@ import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
  *
  * @lucene.experimental
  */
+// nocommit maybe rename to Lucene4XCodec?  This is supposed
+// to "last" through all 4.x releases...?  or maybe not?
 public class Lucene40Codec extends Codec {
   private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
@@ -95,7 +97,7 @@ public class Lucene40Codec extends Codec {
   public static final Map<String,PostingsFormat> CORE_FORMATS = new HashMap<String,PostingsFormat>();
   static {
     CORE_FORMATS.put("Lucene40", new Lucene40PostingsFormat());
-    CORE_FORMATS.put("Pulsing", new PulsingPostingsFormat());
+    CORE_FORMATS.put("Pulsing", new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
     CORE_FORMATS.put("SimpleText", new SimpleTextPostingsFormat());
     CORE_FORMATS.put("Memory", new MemoryPostingsFormat());
   }

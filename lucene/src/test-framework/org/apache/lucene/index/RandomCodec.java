@@ -27,6 +27,7 @@ import java.util.Random;
 
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
@@ -91,7 +92,7 @@ public class RandomCodec extends Lucene40Codec {
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-    register(new PulsingPostingsFormat( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
+    register(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
     register(new MockSepPostingsFormat());
     register(new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)));
     register(new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)));

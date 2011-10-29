@@ -36,6 +36,7 @@ import org.apache.lucene.util.Bits;
  *  time. 
  *  @lucene.experimental */
 
+// nocommit better name?
 public abstract class PostingsReaderBase implements Closeable {
 
   public abstract void init(IndexInput termsIn) throws IOException;
