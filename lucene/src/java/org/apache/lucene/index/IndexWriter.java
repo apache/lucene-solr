@@ -802,7 +802,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       infoStream.println("IW " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
   }
 
-  CodecProvider codecs;
+  private final CodecProvider codecs; // for reading
+  final Codec defaultCodec; // for writing new segments
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
@@ -906,7 +907,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap(directory);
-      Codec defaultCodec = codecs.getDefaultCodec();
+      defaultCodec = codecs.getDefaultCodec();
       if (defaultCodec == null) {
         throw new IllegalArgumentException("CodecProvider returns null for getDefaultCodec()");
       }
@@ -2571,7 +2572,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
-                                               new FieldInfos(globalFieldNumberMap), codecs, context);
+                                               new FieldInfos(globalFieldNumberMap), defaultCodec, context);
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -3637,7 +3638,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     IOContext context = new IOContext(merge.getMergeInfo());
 
     SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
-                                             payloadProcessorProvider, merge.info.getFieldInfos(), codecs, context);
+                                             payloadProcessorProvider, merge.info.getFieldInfos(), defaultCodec, context);
 
     if (infoStream != null) {
       message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getFieldInfos().hasVectors());

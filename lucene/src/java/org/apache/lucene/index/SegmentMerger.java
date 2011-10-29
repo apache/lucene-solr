@@ -28,8 +28,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
@@ -68,7 +66,6 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private final CodecProvider codecs;
   private Codec codec;
   private SegmentWriteState segmentWriteState;
 
@@ -76,7 +73,7 @@ final class SegmentMerger {
   
   private IOContext context;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, CodecProvider codecs, IOContext context) {
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
@@ -92,7 +89,7 @@ final class SegmentMerger {
       };
     }
     this.termIndexInterval = termIndexInterval;
-    this.codecs = codecs;
+    this.codec = codec;
     this.context = context;
   }
 
@@ -258,7 +255,6 @@ final class SegmentMerger {
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
-    codec = codecs.getDefaultCodec();
 
     int docCount = 0;
 

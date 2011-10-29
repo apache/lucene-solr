@@ -75,7 +75,7 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
 
   public void testMerge() throws IOException {
-    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), CodecProvider.getDefault(), newIOContext(random));
+    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), CodecProvider.getDefault().getDefaultCodec(), newIOContext(random));
     merger.add(reader1);
     merger.add(reader2);
     int docsMerged = merger.merge();
@@ -146,7 +146,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     w.close();
     
     // Assert that SM fails if .del exists
-    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null, CodecProvider.getDefault(), newIOContext(random));
+    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null, CodecProvider.getDefault().getDefaultCodec(), newIOContext(random));
     try {
       sm.createCompoundFile("b1", w.segmentInfos.info(0), newIOContext(random));
       fail("should not have been able to create a .cfs with .del and .s* files");
