@@ -141,9 +141,7 @@ public abstract class LuceneTestCase extends Assert {
   // each test case (non-J4 tests) and each test class (J4
   // tests)
   /** Gets the postingsFormat to run tests with. */
-  public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsFormat", "random");
-  /** Gets the codec to run tests with. */
-  public static final String TEST_CODEC = System.getProperty("tests.codec", "random");
+  public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
   /** Gets the codecprovider to run tests with */
   public static final String TEST_CODECPROVIDER = System.getProperty("tests.codecprovider", "random");
   /** Gets the locale to run tests with */
@@ -258,7 +256,8 @@ public abstract class LuceneTestCase extends Assert {
     savedCodecProvider = CodecProvider.getDefault();
     final CodecProvider cp;
     if ("random".equals(TEST_CODECPROVIDER)) {
-      if ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0) { // preflex-only setup
+      // TODO: kinda jaky that Lucene3x will eventually be a real codec, deal with this later.
+      if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
         cp = new CoreCodecProvider() {
           final Codec preflexRW = new PreFlexRWCodec();
           @Override
@@ -1281,7 +1280,7 @@ public abstract class LuceneTestCase extends Assert {
   // extra params that were overridden needed to reproduce the command
   private static String reproduceWithExtraParams() {
     StringBuilder sb = new StringBuilder();
-    if (!TEST_CODEC.equals("randomPerField")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
+    if (!TEST_POSTINGSFORMAT.equals("random")) sb.append(" -Dtests.postingsformat=").append(TEST_POSTINGSFORMAT);
     if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);

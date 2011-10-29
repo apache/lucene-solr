@@ -83,7 +83,7 @@
     </or>
   </condition>
   <property name="tests.multiplier" value="1" />
-  <property name="tests.codec" value="randomPerField" />
+  <property name="tests.postingsformat" value="random" />
   <property name="tests.codecprovider" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
@@ -547,7 +547,7 @@
 	      <!-- allow tests to control debug prints -->
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
               <!-- set the codec tests should run with -->
-	      <sysproperty key="tests.codec" value="${tests.codec}"/>
+	      <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
               <!-- set the codec provider tests should run with -->
 	      <sysproperty key="tests.codecprovider" value="${tests.codecprovider}"/>
               <!-- set the locale tests should run with -->
