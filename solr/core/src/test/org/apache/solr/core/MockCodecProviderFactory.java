@@ -25,6 +25,7 @@ import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.solr.common.util.NamedList;
@@ -52,7 +53,7 @@ public class MockCodecProviderFactory extends CodecProviderFactory {
     // add standard and pulsing
     PostingsFormat p = new Lucene40PostingsFormat();
     map.put(p.name, p);
-    p = new PulsingPostingsFormat();
+    p = new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1);
     map.put(p.name, p);
     
     if (formats != null) {
