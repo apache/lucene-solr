@@ -17,38 +17,18 @@ package org.apache.lucene.index.codecs.preflexrw;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
-import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
 
 /**
  * Writes 3.x-like indexes (not perfect emulation yet) for testing only!
  * @lucene.experimental
  */
-public class PreFlexRWCodec extends Codec {
+public class PreFlexRWCodec extends Lucene3xCodec {
   private final PostingsFormat postings = new PreFlexRWPostingsFormat();
-  // TODO: we should emulate 3.x here as well
-  private final FieldsFormat fields = new DefaultFieldsFormat();
-  
-  // TODO: really this should take a Version param, and emulate that version of lucene exactly...
-  public PreFlexRWCodec() {
-    super("Lucene3x"); // impersonate
-  }
 
   @Override
   public PostingsFormat postingsFormat() {
     return postings;
-  }
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return null; // unsupported
-  }
-
-  @Override
-  public FieldsFormat fieldsFormat() {
-    return fields;
   }
 }
