@@ -41,6 +41,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -1016,7 +1017,7 @@ public class TestFSTs extends LuceneTestCase {
     final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
     if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
       // no
-      CodecProvider.setDefault(_TestUtil.alwaysCodec("Lucene40"));
+      CodecProvider.setDefault(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
     }
 
     final LineFileDocs docs = new LineFileDocs(random);

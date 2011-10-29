@@ -374,13 +374,6 @@ public class _TestUtil {
       }
     };
   }
-
-  /** Return a CodecProvider that can read any of the
-   *  default codecs, but always writes in the specified
-   *  codec. */
-  public static CodecProvider alwaysCodec(final String codec) {
-    return alwaysCodec(CodecProvider.getDefault().lookup(codec));
-  }
   
   /** Return a CodecProvider that can read any of the
    *  default codecs and formats, but always writes in the specified
