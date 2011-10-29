@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs.perfield;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,16 +25,21 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
 import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
-import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -48,7 +53,7 @@ import org.junit.Test;
  * 
  *
  */
-public class TestPerFieldCodecSupport extends LuceneTestCase {
+public class TestPerFieldPostingsFormat extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
       throws IOException {
@@ -88,7 +93,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   }
 
   /*
-   * Test is hetrogenous index segements are merge sucessfully
+   * Test that heterogeneous index segments are merge successfully
    */
   @Test
   public void testMergeUnusedPerFieldCodec() throws IOException {
@@ -115,6 +120,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   /*
    * Test that heterogeneous index segments are merged sucessfully
    */
+  // TODO: not sure this test is that great, we should probably peek inside PerFieldPostingsFormat or something?!
   @Test
   public void testChangeCodecAndMerge() throws IOException {
     Directory dir = newDirectory();
@@ -140,8 +146,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
 
     assertQuery(new Term("content", "ccc"), dir, 10, provider);
     assertQuery(new Term("content", "aaa"), dir, 10, provider);
+    Lucene40Codec codec = (Lucene40Codec)provider.getDefaultCodec();
     assertCodecPerField(_TestUtil.checkIndex(dir, provider), "content",
-        provider.lookup("MockSep"));
+        codec.getPostingsFormat("MockSep"));
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND).setCodecProvider(provider);
@@ -158,8 +165,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     }
     addDocs2(writer, 10);
     writer.commit();
-    PostingsFormat origContentCodec = provider.lookup("MockSep");
-    PostingsFormat newContentCodec = provider.lookup("Standard");
+    codec = (Lucene40Codec)provider.getDefaultCodec();
+    PostingsFormat origContentCodec = codec.getPostingsFormat("MockSep");
+    PostingsFormat newContentCodec = codec.getPostingsFormat("Lucene40");
     assertHybridCodecPerField(_TestUtil.checkIndex(dir, provider), "content",
         origContentCodec, origContentCodec, newContentCodec);
     assertEquals(30, writer.maxDoc());
@@ -195,15 +203,15 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   public void assertCodecPerFieldOptimized(Status checkIndex, String field,
       PostingsFormat codec) {
     assertEquals(1, checkIndex.segmentInfos.size());
-    final CodecProvider provider = checkIndex.segmentInfos.get(0).codec.provider;
-    assertEquals(codec, provider.lookup(provider.getFieldCodec(field)));
+    final Lucene40Codec codecInfo = (Lucene40Codec) checkIndex.segmentInfos.get(0).codec;
+    assertEquals(codec.name, codecInfo.getPostingsFormatForField(field));
 
   }
 
   public void assertCodecPerField(Status checkIndex, String field, PostingsFormat codec) {
     for (SegmentInfoStatus info : checkIndex.segmentInfos) {
-      final CodecProvider provider = info.codec.provider;
-      assertEquals(codec, provider.lookup(provider.getFieldCodec(field)));
+      final Lucene40Codec codecInfo = (Lucene40Codec) info.codec;
+      assertEquals(codec.name, codecInfo.getPostingsFormatForField(field));
     }
   }
 
@@ -212,13 +220,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     List<SegmentInfoStatus> segmentInfos = checkIndex.segmentInfos;
     assertEquals(segmentInfos.size(), codec.length);
     for (int i = 0; i < codec.length; i++) {
-      SegmentFormats codecInfo = segmentInfos.get(i).codec;
-      FieldInfos fieldInfos = new FieldInfos(checkIndex.dir, IndexFileNames
-          .segmentFileName(segmentInfos.get(i).name, "",
-              IndexFileNames.FIELD_INFOS_EXTENSION));
-      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-      assertEquals("faild for segment index: " + i, codec[i],
-          codecInfo.codecs[fieldInfo.getCodecId()]);
+      Lucene40Codec codecInfo = (Lucene40Codec) segmentInfos.get(i).codec;
+      assertEquals("failed for segment index: " + i, codec[i].name,
+          codecInfo.getPostingsFormatForField(field));
     }
   }
 
@@ -227,8 +231,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
-    IndexReader reader = IndexReader.open(dir, null, true,
-        IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, codecs);
+    IndexReader reader = IndexReader.open(dir, null, true, 1, codecs);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
@@ -238,32 +241,81 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   }
 
   public static class MockCodecProvider extends CodecProvider {
+    final PostingsFormat lucene40 = new Lucene40PostingsFormat();
+    final PostingsFormat simpleText = new SimpleTextPostingsFormat();
+    final PostingsFormat mockSep = new MockSepPostingsFormat();
+    
+    final Codec codec = new Lucene40Codec() {
+      @Override
+      public PostingsFormat getPostingsFormat(String formatName) {
+        if (formatName.equals(lucene40.name)) {
+          return lucene40;
+        } else if (formatName.equals(simpleText.name)) {
+          return simpleText;
+        } else if (formatName.equals(mockSep.name)) {
+          return mockSep;
+        } else {
+          throw new IllegalArgumentException("unknown postings format: " + formatName);
+        }
+      }
 
-    public MockCodecProvider() {
-      Lucene40PostingsFormat standardCodec = new Lucene40PostingsFormat();
-      setDefaultFieldCodec(standardCodec.name);
-      SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
-      MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
-      register(standardCodec);
-      register(mockSepCodec);
-      register(simpleTextCodec);
-      setFieldCodec("id", simpleTextCodec.name);
-      setFieldCodec("content", mockSepCodec.name);
+      @Override
+      public String getPostingsFormatForField(String field) {
+        if (field.equals("id")) {
+          return simpleText.name;
+        } else if (field.equals("content")) {
+          return mockSep.name;
+        } else {
+          return lucene40.name;
+        }
+      }   
+    };
+    
+    @Override
+    public Codec lookup(String name) {
+      return codec;
+    }
+
+    @Override
+    public Codec getDefaultCodec() {
+      return codec;
     }
   }
 
   public static class MockCodecProvider2 extends CodecProvider {
+    final PostingsFormat lucene40 = new Lucene40PostingsFormat();
+    final PostingsFormat simpleText = new SimpleTextPostingsFormat();
+    
+    final Codec codec = new Lucene40Codec() {
+      @Override
+      public PostingsFormat getPostingsFormat(String formatName) {
+        if (formatName.equals(lucene40.name)) {
+          return lucene40;
+        } else if (formatName.equals(simpleText.name)) {
+          return simpleText;
+        } else {
+          throw new IllegalArgumentException("unknown postings format: " + formatName);
+        }
+      }
 
-    public MockCodecProvider2() {
-      Lucene40PostingsFormat standardCodec = new Lucene40PostingsFormat();
-      setDefaultFieldCodec(standardCodec.name);
-      SimpleTextPostingsFormat simpleTextCodec = new SimpleTextPostingsFormat();
-      MockSepPostingsFormat mockSepCodec = new MockSepPostingsFormat();
-      register(standardCodec);
-      register(mockSepCodec);
-      register(simpleTextCodec);
-      setFieldCodec("id", simpleTextCodec.name);
-      setFieldCodec("content", standardCodec.name);
+      @Override
+      public String getPostingsFormatForField(String field) {
+        if (field.equals("id")) {
+          return simpleText.name;
+        } else {
+          return lucene40.name;
+        }
+      }   
+    };
+    
+    @Override
+    public Codec lookup(String name) {
+      return codec;
+    }
+
+    @Override
+    public Codec getDefaultCodec() {
+      return codec;
     }
   }
 
@@ -276,23 +328,10 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     final int docsPerRound = 97;
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
-      CodecProvider provider = new CodecProvider();
-      PostingsFormat[] codecs = new PostingsFormat[] { new Lucene40PostingsFormat(),
-          new SimpleTextPostingsFormat(), new MockSepPostingsFormat(),
-          new PulsingPostingsFormat(1 + random.nextInt(20)),
-          new MockVariableIntBlockPostingsFormat(1 + random.nextInt(10)),
-          new MockFixedIntBlockPostingsFormat(1 + random.nextInt(10)) };
-      for (PostingsFormat codec : codecs) {
-        provider.register(codec);
-      }
       int num = _TestUtil.nextInt(random, 30, 60);
-      for (int j = 0; j < num; j++) {
-        provider.setFieldCodec("" + j, codecs[random.nextInt(codecs.length)].name);
-      }
       IndexWriterConfig config = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer(random));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
-      config.setCodecProvider(provider);
       IndexWriter writer = newWriter(dir, config);
       for (int j = 0; j < docsPerRound; j++) {
         final Document doc = new Document();
