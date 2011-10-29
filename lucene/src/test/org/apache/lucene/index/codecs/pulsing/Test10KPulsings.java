@@ -101,7 +101,8 @@ public class Test10KPulsings extends LuceneTestCase {
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(1));
+    int freqCutoff = _TestUtil.nextInt(random, 1, 10);
+    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(freqCutoff));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
@@ -123,10 +124,7 @@ public class Test10KPulsings extends LuceneTestCase {
     
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
 
-    PostingsFormat codec = cp.lookup(cp.getFieldCodec("field"));
-    assertTrue(codec instanceof PulsingPostingsFormat);
-    PulsingPostingsFormat pulsing = (PulsingPostingsFormat) codec;
-    final int freq = pulsing.getFreqCutoff() + 1;
+    final int freq = freqCutoff + 1;
     
     for (int i = 0; i < 10050; i++) {
       StringBuilder sb = new StringBuilder();
