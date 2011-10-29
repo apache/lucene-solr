@@ -347,7 +347,7 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     
-    String codecDescription = CodecProvider.getDefault().toString();
+    String codecDescription = CodecProvider.getDefault().getDefaultCodec().toString();
     CodecProvider.setDefault(savedCodecProvider);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);

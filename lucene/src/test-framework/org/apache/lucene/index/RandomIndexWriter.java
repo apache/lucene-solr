@@ -171,7 +171,7 @@ public class RandomIndexWriter implements Closeable {
     ValueType[] values = ValueType.values();
     ValueType type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("PreFlex".equals(codecProvider.getDefaultCodec().getName()) || doc.getField(name) != null)
+    if ("Lucene3x".equals(codecProvider.getDefaultCodec().getName()) || doc.getField(name) != null)
         return;
     IndexDocValuesField docValuesField = new IndexDocValuesField(name);
     switch (type) {
@@ -367,7 +367,7 @@ public class RandomIndexWriter implements Closeable {
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
-    if (!applyDeletions || !w.codecs.getDefaultCodec().getName().equals("PreFlex") && r.nextBoolean()) {
+    if (!applyDeletions || !w.codecs.getDefaultCodec().getName().equals("Lucene3x") && r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
