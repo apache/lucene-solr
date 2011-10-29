@@ -50,6 +50,7 @@ import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsF
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.search.BooleanQuery;
@@ -259,7 +260,7 @@ public abstract class LuceneTestCase extends Assert {
     if ("random".equals(TEST_CODECPROVIDER)) {
       if ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0) { // preflex-only setup
         cp = new CoreCodecProvider() {
-          final Codec preflexRW = new Lucene3xCodec();
+          final Codec preflexRW = new PreFlexRWCodec();
           @Override
           public Codec getDefaultCodec() {
             return preflexRW;
