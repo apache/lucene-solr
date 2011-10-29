@@ -39,6 +39,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -905,7 +906,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap(directory);
-      docWriter = new DocumentsWriter(codecs.getDefaultCodec(), config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
+      Codec defaultCodec = codecs.getDefaultCodec();
+      if (defaultCodec == null) {
+        throw new IllegalArgumentException("CodecProvider returns null for getDefaultCodec()");
+      }
+      docWriter = new DocumentsWriter(defaultCodec, config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
