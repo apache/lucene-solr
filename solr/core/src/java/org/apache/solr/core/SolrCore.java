@@ -20,9 +20,7 @@ package org.apache.solr.core;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
@@ -638,22 +636,14 @@ public final class SolrCore implements SolrInfoMBean {
 
   private CodecProvider initCodecProvider(SolrConfig solrConfig, final IndexSchema schema) {
     final PluginInfo info = solrConfig.getPluginInfo(CodecProviderFactory.class.getName());
+    final CodecProviderFactory factory;
     if (info != null) {
-      // TODO: should we make a "SolrCodecProvider" class that ensures all custom subclasses are schema-aware?
-      // This would parallel how SimilarityProvider works.
-      CodecProviderFactory factory = (CodecProviderFactory) schema.getResourceLoader().newInstance(info.className);
-      factory.init(info.initArgs);
-      return factory.create();
+      factory = (CodecProviderFactory) schema.getResourceLoader().newInstance(info.className);
     } else {
-      // make sure we use the default if nothing is configured
-      final Codec schemaCodec = new SchemaCodec(schema);
-      return new CoreCodecProvider() {
-        @Override
-        public Codec getDefaultCodec() {
-          return schemaCodec;
-        }
-      };
+      factory = new DefaultCodecProviderFactory();
     }
+    factory.init(info.initArgs);
+    return factory.create(schema);
   }
 
   /**

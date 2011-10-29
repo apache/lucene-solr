@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -28,5 +29,5 @@ public abstract class CodecProviderFactory implements NamedListInitializedPlugin
   public void init(NamedList args) {  
   }
   
-  public abstract CodecProvider create();
+  public abstract CodecProvider create(IndexSchema schema);
 }

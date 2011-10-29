@@ -62,37 +62,6 @@ public class TestCodecProviderSupport extends SolrTestCaseJ4 {
     assertEquals("Standard", codecProvider.getFieldCodec("foo_standard"));
   }
 
-  public void testUnmodifiable() {
-    CodecProvider codecProvider = h.getCore().getCodecProvider();
-    try {
-      codecProvider.setDefaultFieldCodec("foo");
-      fail("should be unmodifiable");
-    } catch (UnsupportedOperationException e) {
-      //
-    }
-
-    try {
-      codecProvider.setFieldCodec("foo", "bar");
-      fail("should be unmodifiable");
-    } catch (UnsupportedOperationException e) {
-      //
-    }
-
-    try {
-      codecProvider.register(new Lucene40PostingsFormat());
-      fail("should be unmodifiable");
-    } catch (UnsupportedOperationException e) {
-      //
-    }
-
-    try {
-      codecProvider.unregister(new Lucene40PostingsFormat());
-      fail("should be unmodifiable");
-    } catch (UnsupportedOperationException e) {
-      //
-    }
-  }
-
   public void testUnknownField() {
     CodecProvider codecProvider = h.getCore().getCodecProvider();
     try {
