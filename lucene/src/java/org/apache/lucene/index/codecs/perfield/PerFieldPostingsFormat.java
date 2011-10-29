@@ -119,6 +119,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         // next id and init it:
         final int formatID = formats.size();
         PostingsFormat postingsFormat = getPostingsFormat(formatName);
+        assert postingsFormat != null: "formatName=" + formatName + " returned null PostingsFormat impl; this=" + PerFieldPostingsFormat.this;
         // nocommit: maybe the int formatID should be
         // separate arg to .fieldsConsumer?  like we do for
         // .files()

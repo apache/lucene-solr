@@ -68,6 +68,6 @@ public abstract class PostingsFormat {
 
   @Override
   public String toString() {
-    return name;
+    return "PostingsFormat(name=" + name + ")";
   }
 }

@@ -59,7 +59,9 @@ public class RandomCodec extends Lucene40Codec {
   
   @Override
   public PostingsFormat getPostingsFormat(String formatName) {
-    return super.getPostingsFormat(formatName);
+    // nocommit is this ok?
+    // return super.getPostingsFormat(formatName);
+    return formatNames.get(formatName);
   }
 
   @Override
