@@ -639,10 +639,10 @@ public final class SolrCore implements SolrInfoMBean {
     final CodecProviderFactory factory;
     if (info != null) {
       factory = (CodecProviderFactory) schema.getResourceLoader().newInstance(info.className);
+      factory.init(info.initArgs);
     } else {
       factory = new DefaultCodecProviderFactory();
     }
-    factory.init(info.initArgs);
     return factory.create(schema);
   }
 
