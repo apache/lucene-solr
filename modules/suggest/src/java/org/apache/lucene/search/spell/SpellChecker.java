@@ -36,6 +36,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -114,6 +115,7 @@ public class SpellChecker implements java.io.Closeable {
 
   private StringDistance sd;
   private Comparator<SuggestWord> comparator;
+  private final CodecProvider codecProvider;
 
   /**
    * Use the given directory as a spell checker index. The directory
@@ -148,6 +150,20 @@ public class SpellChecker implements java.io.Closeable {
    * @throws IOException if there is a problem opening the index
    */
   public SpellChecker(Directory spellIndex, StringDistance sd, Comparator<SuggestWord> comparator) throws IOException {
+    this(spellIndex, sd, comparator, CodecProvider.getDefault());
+  }
+  
+  /**
+   * Use the given directory as a spell checker index with the given {@link org.apache.lucene.search.spell.StringDistance} measure
+   * and the given {@link java.util.Comparator} for sorting the results.
+   * @param spellIndex The spelling index
+   * @param sd The distance
+   * @param comparator The comparator
+   * @param codecProvider CodecProvider
+   * @throws IOException if there is a problem opening the index
+   */
+  public SpellChecker(Directory spellIndex, StringDistance sd, Comparator<SuggestWord> comparator, CodecProvider codecProvider) throws IOException {
+    this.codecProvider = codecProvider;
     setSpellIndex(spellIndex);
     setStringDistance(sd);
     this.comparator = comparator;
@@ -167,10 +183,10 @@ public class SpellChecker implements java.io.Closeable {
     // modifications to the directory should be synchronized 
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
-      if (!IndexReader.indexExists(spellIndexDir)) {
+      if (!IndexReader.indexExists(spellIndexDir, codecProvider)) {
           IndexWriter writer = new IndexWriter(spellIndexDir,
             new IndexWriterConfig(Version.LUCENE_CURRENT,
-                null));
+                null).setCodecProvider(codecProvider));
           writer.close();
       }
       swapSearcher(spellIndexDir);
@@ -453,7 +469,7 @@ public class SpellChecker implements java.io.Closeable {
       final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           Version.LUCENE_CURRENT,
           null)
-          .setOpenMode(OpenMode.CREATE));
+          .setOpenMode(OpenMode.CREATE).setCodecProvider(codecProvider));
       writer.close();
       swapSearcher(dir);
     }
@@ -489,7 +505,9 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, null).setRAMBufferSizeMB(ramMB));
+      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, null)
+      .setRAMBufferSizeMB(ramMB)
+      .setCodecProvider(codecProvider));
       ((TieredMergePolicy) writer.getConfig().getMergePolicy()).setMaxMergeAtOnce(mergeFactor);
       IndexSearcher indexSearcher = obtainSearcher();
       final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
@@ -689,7 +707,7 @@ public class SpellChecker implements java.io.Closeable {
    */
   // for testing purposes
   IndexSearcher createSearcher(final Directory dir) throws IOException{
-    return new IndexSearcher(dir, true);
+    return new IndexSearcher(dir, true, codecProvider);
   }
   
   /**
