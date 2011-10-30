@@ -21,9 +21,12 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.Caverphone;
+import org.apache.commons.codec.language.ColognePhonetic;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
@@ -59,16 +62,18 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
 {
   public static final String ENCODER = "encoder";
   public static final String INJECT = "inject"; // boolean
+  private static final String PACKAGE_CONTAINIG_ENCODERS = "org.apache.commons.codec.language.";
   
-  private static final Map<String, Class<? extends Encoder>> registry;
-  static {
-    registry = new HashMap<String, Class<? extends Encoder>>();
-    registry.put( "DoubleMetaphone".toUpperCase(Locale.ENGLISH), DoubleMetaphone.class );
-    registry.put( "Metaphone".toUpperCase(Locale.ENGLISH),       Metaphone.class );
-    registry.put( "Soundex".toUpperCase(Locale.ENGLISH),         Soundex.class );
-    registry.put( "RefinedSoundex".toUpperCase(Locale.ENGLISH),  RefinedSoundex.class );
-    registry.put( "Caverphone".toUpperCase(Locale.ENGLISH),      Caverphone.class );
-  }
+  private static final Map<String, Class<? extends Encoder>> registry = new HashMap<String, Class<? extends Encoder>>()
+  {{
+    put( "DoubleMetaphone".toUpperCase(Locale.ENGLISH), DoubleMetaphone.class );
+    put( "Metaphone".toUpperCase(Locale.ENGLISH),       Metaphone.class );
+    put( "Soundex".toUpperCase(Locale.ENGLISH),         Soundex.class );
+    put( "RefinedSoundex".toUpperCase(Locale.ENGLISH),  RefinedSoundex.class );
+    put( "Caverphone".toUpperCase(Locale.ENGLISH),      Caverphone.class );
+    put( "ColognePhonetic".toUpperCase(Locale.ENGLISH), ColognePhonetic.class );
+  }};
+  private static final Lock lock = new ReentrantLock();
   
   protected boolean inject = true;
   protected String name = null;
@@ -87,7 +92,12 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     }
     Class<? extends Encoder> clazz = registry.get(name.toUpperCase(Locale.ENGLISH));
     if( clazz == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Unknown encoder: "+name +" ["+registry.keySet()+"]" );
+      lock.lock();
+      try {
+        clazz = resolveEncoder(name);
+      } finally {
+        lock.unlock();
+      }
     }
     
     try {
@@ -105,6 +115,30 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     }
   }
   
+  private Class<? extends Encoder> resolveEncoder(String name) {
+    Class<? extends Encoder> clazz = null;
+    try {
+      clazz = lookupEncoder(PACKAGE_CONTAINIG_ENCODERS+name);
+    } catch (ClassNotFoundException e) {
+      try {
+        clazz = lookupEncoder(name);
+      } catch (ClassNotFoundException cnfe) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Unknown encoder: "+name +" ["+registry.keySet()+"]" );
+      }
+    }
+    catch (ClassCastException e) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Not an encoder: "+name +" ["+registry.keySet()+"]" );
+    }
+    return clazz;
+  }
+  
+  private Class<? extends Encoder> lookupEncoder(String name)
+      throws ClassNotFoundException {
+    Class<? extends Encoder> clazz = Class.forName(name).asSubclass(Encoder.class);
+    registry.put( name.toUpperCase(Locale.ENGLISH), clazz );
+    return clazz;
+  }
+
   public PhoneticFilter create(TokenStream input) {
     return new PhoneticFilter(input,encoder,inject);
   }

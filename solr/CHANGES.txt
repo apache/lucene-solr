@@ -380,6 +380,9 @@ New Features
 
 * SOLR-2818: Added before/after count response parsing support for range facets in
   SolrJ. (Bernhard Frauendienst via Martijn van Groningen)  
+  
+* SOLR-2276: Add support for cologne phonetic to PhoneticFilterFactory. 
+  (Marc Pompl via rmuir)
 
 Bug Fixes
 ----------------------
