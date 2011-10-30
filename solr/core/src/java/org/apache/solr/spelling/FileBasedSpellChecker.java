@@ -93,7 +93,8 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
             new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
-                setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                setOpenMode(IndexWriterConfig.OpenMode.CREATE).
+                setCodecProvider(core.getCodecProvider())
         );
 
         List<String> lines = core.getResourceLoader().getLines(sourceLocation, characterEncoding);
