@@ -62,7 +62,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
 {
   public static final String ENCODER = "encoder";
   public static final String INJECT = "inject"; // boolean
-  private static final String PACKAGE_CONTAINIG_ENCODERS = "org.apache.commons.codec.language.";
+  private static final String PACKAGE_CONTAINING_ENCODERS = "org.apache.commons.codec.language.";
   
   private static final Map<String, Class<? extends Encoder>> registry = new HashMap<String, Class<? extends Encoder>>()
   {{
@@ -118,7 +118,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
   private Class<? extends Encoder> resolveEncoder(String name) {
     Class<? extends Encoder> clazz = null;
     try {
-      clazz = lookupEncoder(PACKAGE_CONTAINIG_ENCODERS+name);
+      clazz = lookupEncoder(PACKAGE_CONTAINING_ENCODERS+name);
     } catch (ClassNotFoundException e) {
       try {
         clazz = lookupEncoder(name);
