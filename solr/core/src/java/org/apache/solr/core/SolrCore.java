@@ -347,7 +347,6 @@ public final class SolrCore implements SolrInfoMBean {
       indexReaderFactory = new StandardIndexReaderFactory();
     } 
     this.indexReaderFactory = indexReaderFactory;
-    this.indexReaderFactory.setCodecProvider(codecProvider);
   }
   
   // protect via synchronized(SolrCore.class)

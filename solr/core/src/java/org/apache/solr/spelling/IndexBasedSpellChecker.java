@@ -17,6 +17,7 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 
@@ -55,15 +56,15 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
-    initSourceReader();
+    initSourceReader(core.getCodecProvider());
     return name;
   }
 
-  private void initSourceReader() {
+  private void initSourceReader(CodecProvider codecProvider) {
     if (sourceLocation != null) {
       try {
         FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation));
-        this.reader = IndexReader.open(luceneIndexDir);
+        this.reader = IndexReader.open(luceneIndexDir, true, codecProvider);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -108,7 +109,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     super.reload(core, searcher);
     //reload the source
-    initSourceReader();
+    initSourceReader(core.getCodecProvider());
   }
 
   public float getThreshold() {

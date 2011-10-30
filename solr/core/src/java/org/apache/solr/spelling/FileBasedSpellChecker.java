@@ -106,7 +106,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
         writer.optimize();
         writer.close();
 
-        dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir),
+        dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir, true, core.getCodecProvider()),
                 WORD_FIELD_NAME, 0.0f);
       } else {
         // check if character encoding is defined
