@@ -190,6 +190,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
             FieldsProducer fieldsProducer = formats.get(formatName);
             // Better be defined, because it was defined
             // during indexing:
+            // nocommit: real exception?
             assert fieldsProducer != null : formatName + " not defined";
             fields.put(fi.name, fieldsProducer);
           }
@@ -276,7 +277,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           PostingsFormat postingsFormat = getPostingsFormat(formatName);
           // Better be defined, because it was defined
           // during indexing:
-          assert postingsFormat != null;
+          // nocommit: real exception?
+          assert postingsFormat != null : formatName + " not defined";
           visitOneFormat(formatName, formatID, postingsFormat);
         }
         success = true;
