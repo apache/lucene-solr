@@ -34,6 +34,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -1290,7 +1291,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         IndexReader reader = IndexReader.open(dir);
         assertTrue(reader.numDocs() > 0);
         reader.close();
-        SegmentInfos sis = new SegmentInfos();
+        SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
         sis.read(dir);
         for (SegmentInfo segmentInfo : sis) {
           assertFalse(segmentInfo.getHasVectors());

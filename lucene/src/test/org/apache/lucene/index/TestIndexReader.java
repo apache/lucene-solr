@@ -78,7 +78,7 @@ public class TestIndexReader extends LuceneTestCase
       IndexCommit c = r.getIndexCommit();
       r.close();
       
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(d);
       IndexReader r2 = IndexReader.open(d, false);
       assertEquals(c.getUserData(), commitUserData);
@@ -947,8 +947,8 @@ public class TestIndexReader extends LuceneTestCase
         addDocumentWithFields(writer);
       writer.close();
 
-      SegmentInfos sis = new SegmentInfos();
-      sis.read(d, CodecProvider.getDefault());
+      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
+      sis.read(d);
       IndexReader r = IndexReader.open(d, false);
       IndexCommit c = r.getIndexCommit();
 

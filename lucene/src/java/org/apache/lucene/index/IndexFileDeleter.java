@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -179,7 +178,7 @@ final class IndexFileDeleter {
           }
           SegmentInfos sis = new SegmentInfos(codecs);
           try {
-            sis.read(directory, fileName, codecs);
+            sis.read(directory, fileName);
           } catch (FileNotFoundException e) {
             // LUCENE-948: on NFS (and maybe others), if
             // you have writers switching back and forth
@@ -252,7 +251,7 @@ final class IndexFileDeleter {
       // try now to explicitly open this commit point:
       SegmentInfos sis = new SegmentInfos(codecs);
       try {
-        sis.read(directory, currentSegmentsFile, codecs);
+        sis.read(directory, currentSegmentsFile);
       } catch (IOException e) {
         throw new CorruptIndexException("failed to locate current segments_N file");
       }

@@ -346,7 +346,7 @@ public class CheckIndex {
     Status result = new Status();
     result.dir = dir;
     try {
-      sis.read(dir, codecs);
+      sis.read(dir);
     } catch (Throwable t) {
       msg("ERROR: could not read any segments file in directory");
       result.missingSegments = true;

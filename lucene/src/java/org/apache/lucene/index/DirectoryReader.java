@@ -78,15 +78,14 @@ class DirectoryReader extends IndexReader implements Cloneable {
 //  }
   
   static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
-                          final int termInfosIndexDivisor, CodecProvider codecs) throws CorruptIndexException, IOException {
-    final CodecProvider codecProvider = codecs == null ? CodecProvider.getDefault()
-        : codecs;
+                          final int termInfosIndexDivisor, final CodecProvider codecs) throws CorruptIndexException, IOException {
+    assert codecs != null;
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-        SegmentInfos infos = new SegmentInfos(codecProvider);
-        infos.read(directory, segmentFileName, codecProvider);
-        return new DirectoryReader(directory, infos, deletionPolicy, readOnly, termInfosIndexDivisor, codecProvider);
+        SegmentInfos infos = new SegmentInfos(codecs);
+        infos.read(directory, segmentFileName);
+        return new DirectoryReader(directory, infos, deletionPolicy, readOnly, termInfosIndexDivisor, codecs);
       }
     }.run(commit);
   }
@@ -103,11 +102,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.segmentInfos = sis;
     this.deletionPolicy = deletionPolicy;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
-    if (codecs == null) {
-      this.codecs = CodecProvider.getDefault();
-    } else {
-      this.codecs = codecs;
-    }
+    this.codecs = codecs;
+    assert codecs != null;
     readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     applyAllDeletes = false;
 
@@ -147,11 +143,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.applyAllDeletes = applyAllDeletes;       // saved for reopen
 
     this.termInfosIndexDivisor = writer.getConfig().getReaderTermsIndexDivisor();
-    if (codecs == null) {
-      this.codecs = CodecProvider.getDefault();
-    } else {
-      this.codecs = codecs;
-    }
+    this.codecs = codecs;
+    assert codecs != null;
     readerFinishedListeners = writer.getReaderFinishedListeners();
 
     // IndexWriter synchronizes externally before calling
@@ -209,12 +202,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.readerFinishedListeners = readerFinishedListeners;
     applyAllDeletes = false;
 
-    if (codecs == null) {
-      this.codecs = CodecProvider.getDefault();
-    } else {
-      this.codecs = codecs;
-    }
-    
+    assert codecs != null;
+    this.codecs = codecs; 
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -499,7 +488,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         final SegmentInfos infos = new SegmentInfos(codecs);
-        infos.read(directory, segmentFileName, codecs);
+        infos.read(directory, segmentFileName);
         return doOpenIfChanged(infos, false, openReadOnly);
       }
     }.run(commit);
@@ -935,7 +924,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     List<IndexCommit> commits = new ArrayList<IndexCommit>();
 
     SegmentInfos latest = new SegmentInfos(codecs);
-    latest.read(dir, codecs);
+    latest.read(dir);
     final long currentGen = latest.getGeneration();
 
     commits.add(new ReaderCommit(latest, dir));
@@ -952,7 +941,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
         try {
           // IOException allowed to throw there, in case
           // segments_N is corrupt
-          sis.read(dir, fileName, codecs);
+          sis.read(dir, fileName);
         } catch (FileNotFoundException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth

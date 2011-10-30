@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.lucene.index.codecs.CodecProvider;
+
 /**
  * Merge policy that tries to balance not doing large
  * segment merges with not accumulating too many segments in
@@ -252,7 +254,8 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     if(numLargeSegs < numSegs) {
       // hack to create a shallow sub-range as SegmentInfos instance,
       // it does not clone all metadata, but LogMerge does not need it
-      final SegmentInfos smallSegments = new SegmentInfos();
+      // nocommit
+      final SegmentInfos smallSegments = new SegmentInfos(CodecProvider.getDefault());
       smallSegments.rollbackSegmentInfos(infos.asList().subList(numLargeSegs, numSegs));
       spec = super.findMergesToExpungeDeletes(smallSegments);
     }
@@ -319,7 +322,8 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     } else {
       // hack to create a shallow sub-range as SegmentInfos instance,
       // it does not clone all metadata, but LogMerge does not need it
-      final SegmentInfos smallSegments = new SegmentInfos();
+      // nocommit
+      final SegmentInfos smallSegments = new SegmentInfos(CodecProvider.getDefault());
       smallSegments.rollbackSegmentInfos(infos.asList().subList(numLargeSegs, numSegs));
       MergeSpecification spec = super.findMerges(smallSegments);
       

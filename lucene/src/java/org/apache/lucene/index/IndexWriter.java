@@ -871,7 +871,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // searching.  In this case we write the next
         // segments_N file with no segments:
         try {
-          segmentInfos.read(directory, codecs);
+          segmentInfos.read(directory);
           segmentInfos.clear();
         } catch (IOException e) {
           // Likely this means it's a fresh directory
@@ -882,7 +882,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         changeCount++;
         segmentInfos.changed();
       } else {
-        segmentInfos.read(directory, codecs);
+        segmentInfos.read(directory);
 
         IndexCommit commit = conf.getIndexCommit();
         if (commit != null) {
@@ -894,7 +894,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (commit.getDirectory() != directory)
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
           SegmentInfos oldInfos = new SegmentInfos(codecs);
-          oldInfos.read(directory, commit.getSegmentsFileName(), codecs);
+          oldInfos.read(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changeCount++;
           segmentInfos.changed();
@@ -2482,7 +2482,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           message("addIndexes: process directory " + dir);
         }
         SegmentInfos sis = new SegmentInfos(codecs); // read infos from dir
-        sis.read(dir, codecs);
+        sis.read(dir);
         final Set<String> dsFilesCopied = new HashSet<String>();
         final Map<String, String> dsNames = new HashMap<String, String>();
         for (SegmentInfo info : sis) {

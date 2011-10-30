@@ -312,7 +312,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR, CodecProvider.getDefault());
   }
 
   /** Returns an IndexReader reading the index in the given
@@ -326,7 +326,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, CodecProvider.getDefault());
   }
 
   /**
@@ -363,7 +363,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, CodecProvider.getDefault());
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -381,7 +381,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, CodecProvider.getDefault());
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -409,7 +409,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor, null);
+    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor, CodecProvider.getDefault());
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -429,7 +429,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, CodecProvider.getDefault());
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -462,7 +462,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor, null);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor, CodecProvider.getDefault());
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -530,9 +530,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor,
       CodecProvider codecs) throws CorruptIndexException, IOException {
-    if (codecs == null) {
-      codecs = CodecProvider.getDefault();
-    }
+    assert codecs != null;
     return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor, codecs);
   }
 
@@ -953,12 +951,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    try {
-      new SegmentInfos().read(directory);
-      return true;
-    } catch (IOException ioe) {
-      return false;
-    }
+    return indexExists(directory, CodecProvider.getDefault());
   }
 
   /**
@@ -970,7 +963,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public static boolean indexExists(Directory directory, CodecProvider codecProvider) throws IOException {
     try {
-      new SegmentInfos().read(directory, codecProvider);
+      new SegmentInfos(codecProvider).read(directory);
       return true;
     } catch (IOException ioe) {
       return false;

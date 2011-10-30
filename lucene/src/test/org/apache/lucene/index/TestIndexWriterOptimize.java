@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -48,7 +49,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
         writer.addDocument(doc);
       writer.close();
 
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
       final int segCount = sis.size();
 
@@ -59,7 +60,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
       writer.optimize(3);
       writer.close();
 
-      sis = new SegmentInfos();
+      sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
       final int optSegCount = sis.size();
 
@@ -92,7 +93,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
       writer.waitForMerges();
       writer.commit();
 
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
 
       final int segCount = sis.size();
@@ -101,7 +102,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
       writer.commit();
       writer.waitForMerges();
 
-      sis = new SegmentInfos();
+      sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
       final int optSegCount = sis.size();
 
@@ -201,7 +202,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
         assertTrue(!reader.isOptimized());
         reader.close();
 
-        SegmentInfos infos = new SegmentInfos();
+        SegmentInfos infos = new SegmentInfos(CodecProvider.getDefault());
         infos.read(dir);
         assertEquals(2, infos.size());
       }

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -57,7 +58,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     }
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     double min = sis.info(0).sizeInBytes(true);
 
@@ -71,7 +72,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
-    sis = new SegmentInfos();
+    sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(3, sis.size());
   }
@@ -104,7 +105,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(3, sis.size());
   }
@@ -131,7 +132,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(2, sis.size());
   }
@@ -158,7 +159,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(2, sis.size());
   }
@@ -185,7 +186,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(1, sis.size());
   }
@@ -211,7 +212,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(3, sis.size());
   }
@@ -238,7 +239,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(4, sis.size());
   }
@@ -271,7 +272,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     // Should only be 4 segments in the index, because of the merge factor and
     // max merge docs settings.
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(4, sis.size());
   }
@@ -303,7 +304,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.close();
     
     // Verify that the last segment does not have deletions.
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(3, sis.size());
     assertFalse(sis.info(2).hasDeletions());
@@ -329,7 +330,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.close();
     
     // Verify that the last segment does not have deletions.
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(1, sis.size());
   }
@@ -359,7 +360,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.close();
     
     // Verify that the last segment does not have deletions.
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     assertEquals(1, sis.size());
     assertTrue(sis.info(0).hasDeletions());

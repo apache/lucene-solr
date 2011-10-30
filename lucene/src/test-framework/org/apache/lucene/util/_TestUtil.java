@@ -46,6 +46,10 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
+import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
@@ -359,6 +363,7 @@ public class _TestUtil {
     return new CoreCodecProvider() {
       @Override
       public Codec lookup(String name) {
+        //System.out.println(name);
         // can't do this until we fix PreFlexRW to not
         //impersonate PreFlex:
         if (name.equals(c.getName())) {
@@ -380,10 +385,11 @@ public class _TestUtil {
    *  format. */
   // nocommit rename to .alwaysPostingsFormat?
   public static CodecProvider alwaysFormat(final PostingsFormat format) {
-    final Codec codec = new Lucene40Codec() {
+    return alwaysCodec(new Lucene40Codec() {
+
       @Override
       public PostingsFormat getPostingsFormat(String formatName) {
-        if (formatName == format.name) {
+        if (formatName.equals(format.name)) {
           return format;
         } else {
           return super.getPostingsFormat(formatName);
@@ -394,23 +400,8 @@ public class _TestUtil {
       public String getPostingsFormatForField(String field) {
         return format.name;
       }
-    };
-
-    return new CoreCodecProvider() {
-      @Override
-      public Codec getDefaultCodec() {
-        return codec;
-      }
-
-      @Override
-      public Codec lookup(String name) {
-        if (name == codec.getName()) {
-          return codec;
-        } else {
-          return super.lookup(name);
-        }
-      }
-    };
+      
+    });
   }
   
   public static String getPostingsFormat(String field) {

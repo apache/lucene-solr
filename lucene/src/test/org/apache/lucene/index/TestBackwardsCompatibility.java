@@ -35,6 +35,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -725,7 +726,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
-    final SegmentInfos infos = new SegmentInfos();
+    final SegmentInfos infos = new SegmentInfos(CodecProvider.getDefault());
     infos.read(dir);
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
@@ -737,7 +738,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   private int getNumberOfSegments(Directory dir) throws IOException {
-    final SegmentInfos infos = new SegmentInfos();
+    final SegmentInfos infos = new SegmentInfos(CodecProvider.getDefault());
     infos.read(dir);
     return infos.size();
   }

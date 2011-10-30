@@ -190,7 +190,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
             FieldsProducer fieldsProducer = formats.get(formatName);
             // Better be defined, because it was defined
             // during indexing:
-            assert fieldsProducer != null;
+            assert fieldsProducer != null : formatName + " not defined";
             fields.put(fi.name, fieldsProducer);
           }
         }

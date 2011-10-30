@@ -84,7 +84,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
   
-  private CodecProvider codecs;
+  private final CodecProvider codecs;
 
   private int format;
   
@@ -100,10 +100,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream = null;
-  
-  public SegmentInfos() {
-    this(CodecProvider.getDefault());
-  }
   
   public SegmentInfos(CodecProvider codecs) {
     this.codecs = codecs;
@@ -241,9 +237,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final void read(Directory directory, String segmentFileName, 
-                         CodecProvider codecs) throws CorruptIndexException, IOException {
-    this.codecs = codecs;
+  public final void read(Directory directory, String segmentFileName) throws CorruptIndexException, IOException {
     boolean success = false;
 
     // Clear any previous segments:
@@ -267,25 +261,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
   }
 
-  /**
-   * This version of read uses the retry logic (for lock-less
-   * commits) to find the right segments file to load.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
   public final void read(Directory directory) throws CorruptIndexException, IOException {
-    read(directory, CodecProvider.getDefault());
-  }
-  
-  public final void read(Directory directory, final CodecProvider codecs) throws CorruptIndexException, IOException {
     generation = lastGeneration = -1;
-    this.codecs = codecs;
 
     new FindSegmentsFile(directory) {
 
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-        read(directory, segmentFileName, codecs);
+        read(directory, segmentFileName);
         return null;
       }
     }.run();
@@ -418,7 +401,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     // yet commit), then the reader will still see itself as
     // current:
     SegmentInfos sis = new SegmentInfos(codecs);
-    sis.read(directory, codecs);
+    sis.read(directory);
     return sis.version;
   }
 
@@ -430,7 +413,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   public static Map<String,String> readCurrentUserData(Directory directory, CodecProvider codecs)
     throws CorruptIndexException, IOException {
     SegmentInfos sis = new SegmentInfos(codecs);
-    sis.read(directory, codecs);
+    sis.read(directory);
     return sis.getUserData();
   }
 

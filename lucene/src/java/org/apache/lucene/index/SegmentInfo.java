@@ -226,7 +226,7 @@ public final class SegmentInfo implements Cloneable {
       String codecName = input.readString();
       codec = codecs.lookup(codecName);
       if (codec == null) {
-        throw new IllegalArgumentException("Required codec '" + codec + "' not found!");
+        throw new IllegalArgumentException("Required codec '" + codecName + "' not found!");
       }
     } else {
       // TODO what todo if preflex is not available in the provider? register it or fail?

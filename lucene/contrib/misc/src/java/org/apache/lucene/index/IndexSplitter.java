@@ -106,7 +106,7 @@ public class IndexSplitter {
     this.codecs = codecs;
     fsDir = FSDirectory.open(dir);
     infos = new SegmentInfos(codecs);
-    infos.read(fsDir, codecs);
+    infos.read(fsDir);
   }
 
   public void listSegments() throws IOException {

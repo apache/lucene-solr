@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -46,7 +47,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     DocHelper.setupDoc(doc2);
     DocHelper.writeDoc(random, dir, doc1);
     DocHelper.writeDoc(random, dir, doc2);
-    sis = new SegmentInfos();
+    sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
   }
   

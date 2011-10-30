@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
       writer.close();
 
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
       assertEquals(2, sis.size());
 
@@ -79,7 +80,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       writer.optimize();
       writer.close();
 
-      sis = new SegmentInfos();
+      sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
       assertEquals(1, sis.size());
 
@@ -124,7 +125,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     writer.addIndexes(dir2);
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir1);
     assertEquals(2, sis.size());
 
@@ -143,7 +144,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    sis = new SegmentInfos();
+    sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir1);
     assertEquals(1, sis.size());
 
@@ -172,7 +173,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         d.add(new Field("f2", "d1 second field", TextField.TYPE_STORED));
         writer.addDocument(d);
         writer.close();
-        SegmentInfos sis = new SegmentInfos();
+        SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
         sis.read(dir);
         assertEquals(1, sis.size());
         FieldInfos fis1 = sis.info(0).getFieldInfos();
@@ -192,7 +193,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.close();
-        SegmentInfos sis = new SegmentInfos();
+        SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
         sis.read(dir);
         assertEquals(2, sis.size());
         FieldInfos fis1 = sis.info(0).getFieldInfos();
@@ -217,7 +218,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
-        SegmentInfos sis = new SegmentInfos();
+        SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
         sis.read(dir);
         assertEquals(3, sis.size());
         FieldInfos fis1 = sis.info(0).getFieldInfos();
@@ -255,7 +256,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
 
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
       sis.read(dir);
       assertEquals(1, sis.size());
       FieldInfos fis1 = sis.info(0).getFieldInfos();
@@ -296,7 +297,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
     sis.read(dir);
     for (SegmentInfo si : sis) {
       FieldInfos fis = si.getFieldInfos();
