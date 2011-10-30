@@ -328,6 +328,21 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
     return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, CodecProvider.getDefault());
   }
+  
+  /** Returns an IndexReader reading the index in the given
+   *  Directory.  You should pass readOnly=true, since it
+   *  gives much better concurrent performance, unless you
+   *  intend to do write operations (delete documents or
+   *  change norms) with the reader.
+   * @param directory the index directory
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @param codecProvider {@link CodecProvider} to use for reading the index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, boolean readOnly, CodecProvider codecProvider) throws CorruptIndexException, IOException {
+    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, codecProvider);
+  }
 
   /**
    * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
