@@ -123,7 +123,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     try {
       initIndex();
-      spellChecker = new SpellChecker(index, sd, comp);
+      spellChecker = new SpellChecker(index, sd, comp, core.getCodecProvider());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
