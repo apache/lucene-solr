@@ -10,6 +10,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.Test;
@@ -130,11 +131,11 @@ public class TestIndexClose extends LuceneTestCase {
         return new InstrumentedIndexReader(super.openReader()); 
       }
       @Override
-      protected void openLuceneIndex (Directory directory, OpenMode openMode)
+      protected void openLuceneIndex (Directory directory, OpenMode openMode, CodecProvider codecProvider)
       throws CorruptIndexException, LockObtainFailedException, IOException {
         indexWriter = new InstrumentedIndexWriter(directory,
             newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
-                .setOpenMode(openMode));
+                .setOpenMode(openMode).setCodecProvider(codecProvider));
       }
 
     }
@@ -144,8 +145,8 @@ public class TestIndexClose extends LuceneTestCase {
         super(dir);
       }  
       @Override
-      protected IndexReader openIndexReader(Directory dir) throws CorruptIndexException, IOException {
-        return new InstrumentedIndexReader(IndexReader.open(dir,true)); 
+      protected IndexReader openIndexReader(Directory dir, CodecProvider codecProvider) throws CorruptIndexException, IOException {
+        return new InstrumentedIndexReader(IndexReader.open(dir,true,codecProvider)); 
       }
 
     }

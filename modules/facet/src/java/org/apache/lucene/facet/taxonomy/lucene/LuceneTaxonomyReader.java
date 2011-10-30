@@ -16,6 +16,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -111,9 +112,24 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * @throws CorruptIndexException if the Taxonomy is corrupted.
    * @throws IOException if another error occurred.
    */
-  public LuceneTaxonomyReader(Directory directory)
+  public LuceneTaxonomyReader(Directory directory) throws CorruptIndexException, IOException {
+    this(directory, CodecProvider.getDefault());
+  }
+
+  /**
+   * Open for reading a taxonomy stored in a given {@link Directory}.
+   * @param directory
+   *    The {@link Directory} in which to the taxonomy lives. Note that
+   *    the taxonomy is read directly to that directory (not from a
+   *    subdirectory of it).
+   * @param codecProvider
+   *    The {@link CodecProvider} used to decode the index.
+   * @throws CorruptIndexException if the Taxonomy is corrupted.
+   * @throws IOException if another error occurred.
+   */
+  public LuceneTaxonomyReader(Directory directory, CodecProvider codecProvider)
   throws CorruptIndexException, IOException {
-    this.indexReader = openIndexReader(directory);
+    this.indexReader = openIndexReader(directory, codecProvider);
 
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
@@ -125,8 +141,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     parentArray.refresh(indexReader);
   }
 
-  protected IndexReader openIndexReader(Directory directory) throws CorruptIndexException, IOException {
-    return IndexReader.open(directory);
+  protected IndexReader openIndexReader(Directory directory, CodecProvider codecProvider) throws CorruptIndexException, IOException {
+    return IndexReader.open(directory, true, codecProvider);
   }
 
   /**

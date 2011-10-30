@@ -30,6 +30,7 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -171,12 +172,48 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * @throws IOException
    *     if another error occurred.
    */
+  public LuceneTaxonomyWriter(Directory directory, OpenMode openMode, TaxonomyWriterCache cache)
+      throws CorruptIndexException, LockObtainFailedException, IOException {
+    this(directory, openMode, cache, CodecProvider.getDefault());
+  }
+  
+  /**
+   * Construct a Taxonomy writer.
+   * 
+   * @param directory
+   *    The {@link Directory} in which to store the taxonomy. Note that
+   *    the taxonomy is written directly to that directory (not to a
+   *    subdirectory of it).
+   * @param openMode
+   *    Specifies how to open a taxonomy for writing: <code>APPEND</code>
+   *    means open an existing index for append (failing if the index does
+   *    not yet exist). <code>CREATE</code> means create a new index (first
+   *    deleting the old one if it already existed).
+   *    <code>APPEND_OR_CREATE</code> appends to an existing index if there
+   *    is one, otherwise it creates a new index.
+   * @param cache
+   *    A {@link TaxonomyWriterCache} implementation which determines
+   *    the in-memory caching policy. See for example
+   *    {@link LruTaxonomyWriterCache} and {@link Cl2oTaxonomyWriterCache}.
+   *    If null or missing, {@link #defaultTaxonomyWriterCache()} is used.
+   * @param codecProvider
+   *    {@link CodecProvider} used to encode the index.
+   * @throws CorruptIndexException
+   *     if the taxonomy is corrupted.
+   * @throws LockObtainFailedException
+   *     if the taxonomy is locked by another writer. If it is known
+   *     that no other concurrent writer is active, the lock might
+   *     have been left around by an old dead process, and should be
+   *     removed using {@link #unlock(Directory)}.
+   * @throws IOException
+   *     if another error occurred.
+   */
   public LuceneTaxonomyWriter(Directory directory, OpenMode openMode,
-                              TaxonomyWriterCache cache)
+                              TaxonomyWriterCache cache, CodecProvider codecProvider)
   throws CorruptIndexException, LockObtainFailedException,
   IOException {
 
-    openLuceneIndex(directory, openMode);
+    openLuceneIndex(directory, openMode, codecProvider);
     reader = null;
 
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
@@ -223,15 +260,16 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * @param directory the {@link Directory} on top of wich an
    *        {@link IndexWriter} should be opened.
    * @param openMode see {@link OpenMode}
+   * @param codecProvider CodecProvider used for encoding the index.
    */
-  protected void openLuceneIndex (Directory directory, OpenMode openMode) 
+  protected void openLuceneIndex (Directory directory, OpenMode openMode, CodecProvider codecProvider) 
   throws CorruptIndexException, LockObtainFailedException, IOException {
     // Make sure we use a MergePolicy which merges segments in-order and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy
     // index).
     IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30,
         new KeywordAnalyzer()).setOpenMode(openMode).setMergePolicy(
-        new LogByteSizeMergePolicy());
+        new LogByteSizeMergePolicy()).setCodecProvider(codecProvider);
     indexWriter = new IndexWriter(directory, config);
   }
 
