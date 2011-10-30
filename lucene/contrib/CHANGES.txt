@@ -139,6 +139,9 @@ Bug Fixes
  * LUCENE-3508: Decompounders based on CompoundWordTokenFilterBase can now be
    used with custom attributes. All those attributes are preserved and set on all
    added decompounded tokens.  (Spyros Kapnissis, Uwe Schindler)
+   
+ * LUCENE-3542: Group expanded query terms to preserve parent boolean operator
+   in StandartQueryParser. (Simon Willnauer) 
 
 API Changes
  

@@ -203,12 +203,8 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             children.add(new FieldQueryNode(field, term, -1, -1));
 
           }
-          if (positionCount == 1)
-            return new GroupQueryNode(
-              new StandardBooleanQueryNode(children, true));
-          else
-            return new StandardBooleanQueryNode(children, false);
-
+          return new GroupQueryNode(
+            new StandardBooleanQueryNode(children, positionCount==1));
         } else {
           // phrase query:
           MultiPhraseQueryNode mpq = new MultiPhraseQueryNode();
