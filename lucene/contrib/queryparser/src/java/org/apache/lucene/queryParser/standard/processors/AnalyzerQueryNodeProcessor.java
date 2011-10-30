@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
@@ -203,12 +204,8 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             children.add(new FieldQueryNode(field, term, -1, -1));
 
           }
-          if (positionCount == 1)
-            return new GroupQueryNode(
-              new StandardBooleanQueryNode(children, true));
-          else
-            return new StandardBooleanQueryNode(children, false);
-
+          return new GroupQueryNode(
+              new StandardBooleanQueryNode(children, positionCount==1));
         } else {
           // phrase query:
           MultiPhraseQueryNode mpq = new MultiPhraseQueryNode();

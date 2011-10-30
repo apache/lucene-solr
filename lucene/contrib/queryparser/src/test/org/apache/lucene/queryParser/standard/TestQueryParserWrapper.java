@@ -579,7 +579,7 @@ public class TestQueryParserWrapper extends LuceneTestCase {
 
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
-        "term phrase1 phrase2 term");
+        "term (phrase1 phrase2) term");
 
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
         "+term -(phrase1 phrase2) term");
