@@ -51,6 +51,10 @@ New Features
     
  * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
    from the term dictionary using levenshtein automata.  (Robert Muir)
+
+ * LUCENE-3527: Add LuceneLevenshteinDistance, which computes string distance in a compatible
+   way as DirectSpellChecker. This can be used to merge top-N results from more than one
+   SpellChecker.  (James Dyer via Robert Muir)
   
 API Changes
 

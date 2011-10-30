@@ -29,7 +29,36 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDirectSpellChecker extends LuceneTestCase {
+  
+  public void testInternalLevenshteinDistance() throws Exception {
+    DirectSpellChecker spellchecker = new DirectSpellChecker();
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new MockAnalyzer(random, MockTokenizer.KEYWORD, true));
 
+    String[] termsToAdd = { "metanoia", "metanoian", "metanoiai", "metanoias", "metanoi𐑍" };
+    for (int i = 0; i < termsToAdd.length; i++) {
+      Document doc = new Document();
+      doc.add(newField("repentance", termsToAdd[i], TextField.TYPE_UNSTORED));
+      writer.addDocument(doc);
+    }
+
+    IndexReader ir = writer.getReader();
+    String misspelled = "metanoix";
+    SuggestWord[] similar = spellchecker.suggestSimilar(new Term("repentance", misspelled), 4, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    assertTrue(similar.length == 4);
+    
+    StringDistance sd = spellchecker.getDistance();
+    assertTrue(sd instanceof LuceneLevenshteinDistance);
+    for(SuggestWord word : similar) {
+      assertTrue(word.score==sd.getDistance(word.string, misspelled));
+      assertTrue(word.score==sd.getDistance(misspelled, word.string));
+    }
+    
+    ir.close();
+    writer.close();
+    dir.close();
+  }
   public void testSimpleExamples() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     spellChecker.setMinQueryLength(0);
