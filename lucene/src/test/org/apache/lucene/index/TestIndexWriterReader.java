@@ -31,7 +31,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -991,7 +990,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
     // they're picked.
     assumeFalse("PreFlex codec does not support ReaderTermsIndexDivisor!", 
-        "Lucene3x".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
+        "Lucene3x".equals(Codec.getDefault().getName()));
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setReaderTermsIndexDivisor(-1);

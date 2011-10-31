@@ -36,6 +36,8 @@ import org.apache.lucene.util.Bits;
 /* Intentionally outside of oal.index to verify fully
    external codecs work fine */
 
+// nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+// automagically
 public class TestExternalCodecs extends LuceneTestCase {
 
   // For fun, test that we can override how terms are
@@ -548,7 +550,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-        setCodecProvider(_TestUtil.onlyFormat(new CustomPerFieldPostingsFormat())).
+        setCodec(_TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat())).
             setMergePolicy(newLogMergePolicy(3))
     );
     w.setInfoStream(VERBOSE ? System.out : null);

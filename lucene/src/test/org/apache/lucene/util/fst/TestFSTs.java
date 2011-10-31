@@ -40,7 +40,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -1014,10 +1014,11 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
+    // nocommit: is this necessary? we use the annotation...
     final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
     if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
       // no
-      CodecProvider.setDefault(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
+      Codec.setDefault(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
     }
 
     final LineFileDocs docs = new LineFileDocs(random);

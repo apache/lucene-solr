@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -47,7 +46,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     DocHelper.setupDoc(doc2);
     DocHelper.writeDoc(random, dir, doc1);
     DocHelper.writeDoc(random, dir, doc2);
-    sis = new SegmentInfos(CodecProvider.getDefault());
+    sis = new SegmentInfos();
     sis.read(dir);
   }
   
@@ -109,7 +108,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     if (reader instanceof MultiReader)
       // MultiReader does not "own" the directory so it does
       // not write the changes to sis on commit:
-      sis.commit(dir);
+      sis.commit(dir, sis.codecFormat());
 
     sis.read(dir);
     reader = openReader();
@@ -122,7 +121,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     if (reader instanceof MultiReader)
       // MultiReader does not "own" the directory so it does
       // not write the changes to sis on commit:
-      sis.commit(dir);
+      sis.commit(dir, sis.codecFormat());
     sis.read(dir);
     reader = openReader();
     assertEquals( 1, reader.numDocs() );

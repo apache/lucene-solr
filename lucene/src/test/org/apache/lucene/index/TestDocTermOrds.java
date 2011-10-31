@@ -34,13 +34,7 @@ import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
-import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
@@ -64,6 +58,8 @@ import org.apache.lucene.util._TestUtil;
 //   - test w/ cutoff
 //   - crank docs way up so we get some merging sometimes
 
+//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+//automagically
 public class TestDocTermOrds extends LuceneTestCase {
 
   public void testSimple() throws Exception {
@@ -230,10 +226,8 @@ public class TestDocTermOrds extends LuceneTestCase {
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
       // Make sure terms index has ords:
-      CodecProvider cp = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
-      // So checkIndex on close works
-      dir.setCodecProvider(cp);
-      conf.setCodecProvider(cp);
+      Codec codec = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
+      conf.setCodec(codec);
     }
     
     final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);
@@ -329,10 +323,8 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
-      CodecProvider cp = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
-      // So checkIndex on close works
-      dir.setCodecProvider(cp);
-      conf.setCodecProvider(cp);
+      Codec codec = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
+      conf.setCodec(codec);
     }
     
     final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);

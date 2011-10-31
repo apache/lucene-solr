@@ -33,7 +33,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -357,7 +356,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
           new LogByteSizeMergePolicy()));
       w.optimize();
       w.close();
-      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
+      SegmentInfos sis = new SegmentInfos();
       sis.read(base);
       SegmentInfo segmentInfo = sis.info(sis.size() - 1);// last segment must
                                                         // have all fields with
@@ -383,7 +382,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       _TestUtil
           .unzip(getDataFile("index." + oldNames[i] + ".zip"), oldIndxeDir);
       dir = newFSDirectory(oldIndxeDir);
-      SegmentInfos infos = new SegmentInfos(CodecProvider.getDefault());
+      SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
       SortedMap<Integer, String> sortedMap = new TreeMap<Integer, String>();
 
@@ -433,7 +432,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       writer.close();
 
       // we don't merge here since we use NoMergePolicy
-      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
+      SegmentInfos sis = new SegmentInfos();
       sis.read(base);
       // check that the latest global field numbers are consistent and carried
       // over from the 4.0 index

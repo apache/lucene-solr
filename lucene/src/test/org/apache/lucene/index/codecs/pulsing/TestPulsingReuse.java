@@ -37,7 +37,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsFormat;
@@ -54,14 +54,16 @@ import org.apache.lucene.util._TestUtil;
 /**
  * Tests that pulsing codec reuses its enums and wrapped enums
  */
+//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+//automagically
 public class TestPulsingReuse extends LuceneTestCase {
   // TODO: this is a basic test. this thing is complicated, add more
   public void testSophisticatedReuse() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
+    Codec cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g h i i j j k", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
@@ -96,11 +98,11 @@ public class TestPulsingReuse extends LuceneTestCase {
   /** tests reuse with Pulsing1(Pulsing2(Standard)) */
   public void testNestedPulsing() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysFormat(new NestedPulsing());
+    Codec cp = _TestUtil.alwaysFormat(new NestedPulsing());
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // will do this ourselves, custom codec
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g g h i i j j k l l m m m", TextField.TYPE_UNSTORED));
     // note: the reuse is imperfect, here we would have 4 enums (lost reuse when we get an enum for 'm')
@@ -133,7 +135,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     
     ir.close();
     CheckIndex ci = new CheckIndex(dir);
-    ci.checkIndex(null, cp);
+    ci.checkIndex(null);
     dir.close();
   }
   

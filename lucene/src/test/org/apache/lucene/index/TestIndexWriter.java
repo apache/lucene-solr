@@ -41,7 +41,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -144,7 +143,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
       String[] startFiles = dir.listAll();
-      SegmentInfos infos = new SegmentInfos(CodecProvider.getDefault());
+      SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
       new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))).rollback();
       String[] endFiles = dir.listAll();
@@ -606,7 +605,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.addDocument(doc);
       writer.flush(false, true);
       writer.close();
-      SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
+      SegmentInfos sis = new SegmentInfos();
       sis.read(dir);
       // Since we flushed w/o allowing merging we should now
       // have 10 segments

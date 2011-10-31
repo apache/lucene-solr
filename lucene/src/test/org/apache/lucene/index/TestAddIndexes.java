@@ -29,7 +29,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
@@ -46,6 +46,8 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+//automagically
 public class TestAddIndexes extends LuceneTestCase {
   
   public void testSimpleCase() throws IOException {
@@ -984,24 +986,23 @@ public class TestAddIndexes extends LuceneTestCase {
     // two auxiliary directories
     Directory aux = newDirectory();
     Directory aux2 = newDirectory();
-    CodecProvider provider = _TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat());
+    Codec codec = _TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat());
     IndexWriter writer = null;
 
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodecProvider(
-        provider));
+        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(codec));
     // add 100 documents
     addDocs3(writer, 100);
     assertEquals(100, writer.maxDoc());
     writer.commit();
     writer.close();
-    _TestUtil.checkIndex(dir, provider);
+    _TestUtil.checkIndex(dir);
 
     writer = newWriter(
         aux,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.CREATE).
-            setCodecProvider(provider).
+            setCodec(codec).
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(false))
     );
@@ -1015,7 +1016,7 @@ public class TestAddIndexes extends LuceneTestCase {
         aux2,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.CREATE).
-            setCodecProvider(provider)
+            setCodec(codec)
     );
     // add 40 documents in compound files
     addDocs2(writer, 50);
@@ -1028,7 +1029,7 @@ public class TestAddIndexes extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.APPEND).
-            setCodecProvider(provider)
+            setCodec(codec)
     );
     assertEquals(100, writer.maxDoc());
     writer.addIndexes(aux, aux2);
@@ -1165,7 +1166,7 @@ public class TestAddIndexes extends LuceneTestCase {
     {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      conf.setCodecProvider(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
+      conf.setCodec(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();
       FieldType customType = new FieldType();
@@ -1179,7 +1180,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      conf.setCodecProvider(_TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20))));
+      conf.setCodec(_TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);
@@ -1198,7 +1199,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      conf.setCodecProvider(_TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20))));
+      conf.setCodec(_TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1 + random.nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       IndexReader indexReader = IndexReader.open(toAdd);
       try {

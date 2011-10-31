@@ -36,7 +36,6 @@ import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
@@ -53,6 +52,8 @@ import org.junit.Test;
  * 
  *
  */
+//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+//automagically
 public class TestPerFieldPostingsFormat extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
@@ -98,10 +99,8 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
   @Test
   public void testMergeUnusedPerFieldCodec() throws IOException {
     Directory dir = newDirectory();
-    CodecProvider provider = new MockCodecProvider();
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodecProvider(
-        provider);
+        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
     IndexWriter writer = newWriter(dir, iwconf);
     addDocs(writer, 10);
     writer.commit();
@@ -110,7 +109,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     assertEquals(30, writer.maxDoc());
-    _TestUtil.checkIndex(dir, provider);
+    _TestUtil.checkIndex(dir);
     writer.optimize();
     assertEquals(30, writer.maxDoc());
     writer.close();
@@ -124,19 +123,18 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
   @Test
   public void testChangeCodecAndMerge() throws IOException {
     Directory dir = newDirectory();
-    CodecProvider provider = new MockCodecProvider();
     if (VERBOSE) {
       System.out.println("TEST: make new index");
     }
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-             new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodecProvider(provider);
+             new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
 
     addDocs(writer, 10);
     writer.commit();
-    assertQuery(new Term("content", "aaa"), dir, 10, provider);
+    assertQuery(new Term("content", "aaa"), dir, 10);
     if (VERBOSE) {
       System.out.println("TEST: addDocs3");
     }
@@ -144,20 +142,19 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     writer.commit();
     writer.close();
 
-    assertQuery(new Term("content", "ccc"), dir, 10, provider);
-    assertQuery(new Term("content", "aaa"), dir, 10, provider);
-    Lucene40Codec codec = (Lucene40Codec)provider.getDefaultCodec();
-    assertCodecPerField(_TestUtil.checkIndex(dir, provider), "content",
+    assertQuery(new Term("content", "ccc"), dir, 10);
+    assertQuery(new Term("content", "aaa"), dir, 10);
+    Lucene40Codec codec = (Lucene40Codec)iwconf.getCodec();
+    assertCodecPerField(_TestUtil.checkIndex(dir), "content",
         codec.getPostingsFormat("MockSep"));
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-        .setOpenMode(OpenMode.APPEND).setCodecProvider(provider);
+        .setOpenMode(OpenMode.APPEND).setCodec(codec);
     //((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
-    provider = new MockCodecProvider2(); // uses standard for field content
-    iwconf.setCodecProvider(provider);
+    iwconf.setCodec(new MockCodec2()); // uses standard for field content
     writer = newWriter(dir, iwconf);
     // swap in new codec for currently written segments
     if (VERBOSE) {
@@ -165,24 +162,24 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     }
     addDocs2(writer, 10);
     writer.commit();
-    codec = (Lucene40Codec)provider.getDefaultCodec();
+    codec = (Lucene40Codec)iwconf.getCodec();
     PostingsFormat origContentCodec = codec.getPostingsFormat("MockSep");
     PostingsFormat newContentCodec = codec.getPostingsFormat("Lucene40");
-    assertHybridCodecPerField(_TestUtil.checkIndex(dir, provider), "content",
+    assertHybridCodecPerField(_TestUtil.checkIndex(dir), "content",
         origContentCodec, origContentCodec, newContentCodec);
     assertEquals(30, writer.maxDoc());
-    assertQuery(new Term("content", "bbb"), dir, 10, provider);
-    assertQuery(new Term("content", "ccc"), dir, 10, provider);   ////
-    assertQuery(new Term("content", "aaa"), dir, 10, provider);
+    assertQuery(new Term("content", "bbb"), dir, 10);
+    assertQuery(new Term("content", "ccc"), dir, 10);   ////
+    assertQuery(new Term("content", "aaa"), dir, 10);
 
     if (VERBOSE) {
       System.out.println("TEST: add more docs w/ new codec");
     }
     addDocs2(writer, 10);
     writer.commit();
-    assertQuery(new Term("content", "ccc"), dir, 10, provider);
-    assertQuery(new Term("content", "bbb"), dir, 20, provider);
-    assertQuery(new Term("content", "aaa"), dir, 10, provider);
+    assertQuery(new Term("content", "ccc"), dir, 10);
+    assertQuery(new Term("content", "bbb"), dir, 20);
+    assertQuery(new Term("content", "aaa"), dir, 10);
     assertEquals(40, writer.maxDoc());
 
     if (VERBOSE) {
@@ -191,11 +188,11 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     writer.optimize();
     assertEquals(40, writer.maxDoc());
     writer.close();
-    assertCodecPerFieldOptimized(_TestUtil.checkIndex(dir, provider),
+    assertCodecPerFieldOptimized(_TestUtil.checkIndex(dir),
         "content", newContentCodec);
-    assertQuery(new Term("content", "ccc"), dir, 10, provider);
-    assertQuery(new Term("content", "bbb"), dir, 20, provider);
-    assertQuery(new Term("content", "aaa"), dir, 10, provider);
+    assertQuery(new Term("content", "ccc"), dir, 10);
+    assertQuery(new Term("content", "bbb"), dir, 20);
+    assertQuery(new Term("content", "aaa"), dir, 10);
 
     dir.close();
   }
@@ -226,12 +223,12 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     }
   }
 
-  public void assertQuery(Term t, Directory dir, int num, CodecProvider codecs)
+  public void assertQuery(Term t, Directory dir, int num)
       throws CorruptIndexException, IOException {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
-    IndexReader reader = IndexReader.open(dir, null, true, 1, codecs);
+    IndexReader reader = IndexReader.open(dir, null, true, 1);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
@@ -240,82 +237,58 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
 
   }
 
-  public static class MockCodecProvider extends CodecProvider {
+  public static class MockCodec extends Lucene40Codec {
     final PostingsFormat lucene40 = new Lucene40PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     final PostingsFormat mockSep = new MockSepPostingsFormat();
     
-    final Codec codec = new Lucene40Codec() {
-      @Override
-      public PostingsFormat getPostingsFormat(String formatName) {
-        if (formatName.equals(lucene40.name)) {
-          return lucene40;
-        } else if (formatName.equals(simpleText.name)) {
-          return simpleText;
-        } else if (formatName.equals(mockSep.name)) {
-          return mockSep;
-        } else {
-          throw new IllegalArgumentException("unknown postings format: " + formatName);
-        }
-      }
-
-      @Override
-      public String getPostingsFormatForField(String field) {
-        if (field.equals("id")) {
-          return simpleText.name;
-        } else if (field.equals("content")) {
-          return mockSep.name;
-        } else {
-          return lucene40.name;
-        }
-      }   
-    };
-    
     @Override
-    public Codec lookup(String name) {
-      return codec;
+    public PostingsFormat getPostingsFormat(String formatName) {
+      if (formatName.equals(lucene40.name)) {
+        return lucene40;
+      } else if (formatName.equals(simpleText.name)) {
+        return simpleText;
+      } else if (formatName.equals(mockSep.name)) {
+        return mockSep;
+      } else {
+        throw new IllegalArgumentException("unknown postings format: " + formatName);
+      }
     }
 
     @Override
-    public Codec getDefaultCodec() {
-      return codec;
+    public String getPostingsFormatForField(String field) {
+      if (field.equals("id")) {
+        return simpleText.name;
+      } else if (field.equals("content")) {
+        return mockSep.name;
+      } else {
+        return lucene40.name;
+      }
     }
   }
 
-  public static class MockCodecProvider2 extends CodecProvider {
+  public static class MockCodec2 extends Lucene40Codec {
     final PostingsFormat lucene40 = new Lucene40PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     
-    final Codec codec = new Lucene40Codec() {
-      @Override
-      public PostingsFormat getPostingsFormat(String formatName) {
-        if (formatName.equals(lucene40.name)) {
-          return lucene40;
-        } else if (formatName.equals(simpleText.name)) {
-          return simpleText;
-        } else {
-          throw new IllegalArgumentException("unknown postings format: " + formatName);
-        }
-      }
-
-      @Override
-      public String getPostingsFormatForField(String field) {
-        if (field.equals("id")) {
-          return simpleText.name;
-        } else {
-          return lucene40.name;
-        }
-      }   
-    };
-    
     @Override
-    public Codec lookup(String name) {
-      return codec;
+    public PostingsFormat getPostingsFormat(String formatName) {
+      if (formatName.equals(lucene40.name)) {
+        return lucene40;
+      } else if (formatName.equals(simpleText.name)) {
+        return simpleText;
+      } else {
+        throw new IllegalArgumentException("unknown postings format: " + formatName);
+      }
     }
 
     @Override
-    public Codec getDefaultCodec() {
-      return codec;
+    public String getPostingsFormatForField(String field) {
+      if (field.equals("id")) {
+        return simpleText.name;
+      } else {
+        return lucene40.name;
+      }
     }
   }
 

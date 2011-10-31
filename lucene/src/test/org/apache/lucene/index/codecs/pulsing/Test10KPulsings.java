@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -49,16 +49,18 @@ import org.junit.Ignore;
  * 
  * @lucene.experimental
  */
+//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+//automagically
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
+    Codec cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
     
     File f = _TestUtil.getTempDir("10kpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
     
     Document document = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);
@@ -103,13 +105,13 @@ public class Test10KPulsings extends LuceneTestCase {
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
     int freqCutoff = _TestUtil.nextInt(random, 1, 10);
-    CodecProvider cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), freqCutoff));
+    Codec cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), freqCutoff));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
     
     Document document = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);

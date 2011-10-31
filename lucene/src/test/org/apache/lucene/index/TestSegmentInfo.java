@@ -4,7 +4,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -37,7 +36,7 @@ public class TestSegmentInfo extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
     
-    SegmentInfos sis = new SegmentInfos(CodecProvider.getDefault());
+    SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
     SegmentInfo si = sis.info(0);
     long sizeInBytesNoStore = si.sizeInBytes(false);

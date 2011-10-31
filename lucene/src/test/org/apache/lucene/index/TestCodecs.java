@@ -27,7 +27,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
@@ -66,6 +65,9 @@ import org.junit.BeforeClass;
 //     goes to 1 before next one known to exist
 //   - skipTo(term)
 //   - skipTo(doc)
+
+//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
+//automagically
 public class TestCodecs extends LuceneTestCase {
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
@@ -257,7 +259,7 @@ public class TestCodecs extends LuceneTestCase {
     final Directory dir = newDirectory();
     FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, true);
-    Codec codec = CodecProvider.getDefault().getDefaultCodec();
+    Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);
 
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
@@ -310,7 +312,7 @@ public class TestCodecs extends LuceneTestCase {
 
     FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, false);
-    Codec codec = CodecProvider.getDefault().getDefaultCodec();
+    Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);
 
     if (VERBOSE) {
@@ -340,7 +342,7 @@ public class TestCodecs extends LuceneTestCase {
     final Directory dir = newDirectory();
     final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
       new MockAnalyzer(random));
-    config.setCodecProvider(_TestUtil.alwaysFormat(new MockSepPostingsFormat()));
+    config.setCodec(_TestUtil.alwaysFormat(new MockSepPostingsFormat()));
     final IndexWriter writer = new IndexWriter(dir, config);
 
     try {
@@ -608,7 +610,7 @@ public class TestCodecs extends LuceneTestCase {
   private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields, boolean allowPreFlex) throws Throwable {
 
     final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
-    final Codec codec = CodecProvider.getDefault().getDefaultCodec();
+    final Codec codec = Codec.getDefault();
     final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random));
 
     final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
