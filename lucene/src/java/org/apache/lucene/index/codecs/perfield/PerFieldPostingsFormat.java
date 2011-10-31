@@ -112,27 +112,31 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final String formatName = getPostingsFormatForField(field.name);
-      FieldsConsumerAndID format = formats.get(formatName);
-      if (format == null) {
+      final PostingsFormat format = getPostingsFormatForField(field.name);
+      // nocommit: is this crap safe?
+      // because Pulsing(1) versus Pulsing(2) have the same name.
+      // shouldnt the formats just be identityhashmap(postingsformat,fieldsconsumerandId) ?!
+      // this is just a rote refactor of what we had before...
+      final String formatName = format.name;
+      FieldsConsumerAndID consumerAndId = formats.get(formatName);
+      if (consumerAndId == null) {
         // First time we are seeing this format -- assign
         // next id and init it:
         final int formatID = formats.size();
-        PostingsFormat postingsFormat = getPostingsFormat(formatName);
-        if (postingsFormat instanceof PerFieldPostingsFormat) {
+        if (format instanceof PerFieldPostingsFormat) {
           // nocommit -- if we cutover to String formatID
           // we can fix this?
           throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself");
         }
-        assert postingsFormat != null: "formatName=" + formatName + " returned null PostingsFormat impl; this=" + PerFieldPostingsFormat.this;
+        assert format != null: "formatName=" + formatName + " returned null PostingsFormat impl; this=" + PerFieldPostingsFormat.this;
         // nocommit: maybe the int formatID should be
         // separate arg to .fieldsConsumer?  like we do for
         // .files()
-        format = new FieldsConsumerAndID(postingsFormat.fieldsConsumer(new SegmentWriteState(segmentWriteState, formatID)),
+        consumerAndId = new FieldsConsumerAndID(format.fieldsConsumer(new SegmentWriteState(segmentWriteState, formatID)),
                                          formatID);
-        formats.put(formatName, format);
+        formats.put(formatName, consumerAndId);
       }
-      return format.fieldsConsumer.addField(field);
+      return consumerAndId.fieldsConsumer.addField(field);
     }
 
     @Override
@@ -190,8 +194,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       success = false;
       try {
         for (FieldInfo fi : readState.fieldInfos) {
-          if (fi.isIndexed) { 
-            String formatName = getPostingsFormatForField(fi.name);
+          if (fi.isIndexed) {
+            PostingsFormat format = getPostingsFormatForField(fi.name);
+            String formatName = format.name;
             FieldsProducer fieldsProducer = formats.get(formatName);
             // Better be defined, because it was defined
             // during indexing:
@@ -279,7 +284,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         for(int formatIDX=0;formatIDX<formatCount;formatIDX++) {
           final int formatID = in.readVInt();
           final String formatName = in.readString();
-          PostingsFormat postingsFormat = getPostingsFormat(formatName);
+          PostingsFormat postingsFormat = PostingsFormat.forName(formatName);
           if (postingsFormat instanceof PerFieldPostingsFormat) {
             // nocommit -- if we cutover to String formatID
             // we can fix this?
@@ -323,7 +328,5 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   // nocommit: do we really need to pass fieldInfo here?
   // sucks for 'outsiders' (like tests!) that want to peep at what format
   // is being used for a field... changed to a String for now.. but lets revisit
-  public abstract String getPostingsFormatForField(String field);
-
-  public abstract PostingsFormat getPostingsFormat(String formatName);
+  public abstract PostingsFormat getPostingsFormatForField(String field);
 }

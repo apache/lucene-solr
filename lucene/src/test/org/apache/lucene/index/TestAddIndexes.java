@@ -1049,21 +1049,10 @@ public class TestAddIndexes extends LuceneTestCase {
     private final PostingsFormat mockSepFormat = new MockSepPostingsFormat();
 
     @Override
-    public String getPostingsFormatForField(String field) {
+    public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
-        return "simple text";
-      } else if (field.equals("content")) {
-        return "mock sep";
-      } else {
-        return "lucene 40";
-      }
-    }
-
-    @Override
-    public PostingsFormat getPostingsFormat(String formatName) {
-      if (formatName.equals("simple text")) {
         return simpleTextFormat;
-      } else if (formatName.equals("mock sep")) {
+      } else if (field.equals("content")) {
         return mockSepFormat;
       } else {
         return defaultFormat;

@@ -146,7 +146,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     assertQuery(new Term("content", "aaa"), dir, 10);
     Lucene40Codec codec = (Lucene40Codec)iwconf.getCodec();
     assertCodecPerField(_TestUtil.checkIndex(dir), "content",
-        codec.getPostingsFormat("MockSep"));
+        PostingsFormat.forName("MockSep"));
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND).setCodec(codec);
@@ -163,8 +163,8 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     codec = (Lucene40Codec)iwconf.getCodec();
-    PostingsFormat origContentCodec = codec.getPostingsFormat("MockSep");
-    PostingsFormat newContentCodec = codec.getPostingsFormat("Lucene40");
+    PostingsFormat origContentCodec = PostingsFormat.forName("MockSep");
+    PostingsFormat newContentCodec = PostingsFormat.forName("Lucene40");
     assertHybridCodecPerField(_TestUtil.checkIndex(dir), "content",
         origContentCodec, origContentCodec, newContentCodec);
     assertEquals(30, writer.maxDoc());
@@ -243,26 +243,13 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     final PostingsFormat mockSep = new MockSepPostingsFormat();
     
     @Override
-    public PostingsFormat getPostingsFormat(String formatName) {
-      if (formatName.equals(lucene40.name)) {
-        return lucene40;
-      } else if (formatName.equals(simpleText.name)) {
+    public PostingsFormat getPostingsFormatForField(String field) {
+      if (field.equals("id")) {
         return simpleText;
-      } else if (formatName.equals(mockSep.name)) {
+      } else if (field.equals("content")) {
         return mockSep;
       } else {
-        throw new IllegalArgumentException("unknown postings format: " + formatName);
-      }
-    }
-
-    @Override
-    public String getPostingsFormatForField(String field) {
-      if (field.equals("id")) {
-        return simpleText.name;
-      } else if (field.equals("content")) {
-        return mockSep.name;
-      } else {
-        return lucene40.name;
+        return lucene40;
       }
     }
   }
@@ -272,22 +259,11 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     
     @Override
-    public PostingsFormat getPostingsFormat(String formatName) {
-      if (formatName.equals(lucene40.name)) {
-        return lucene40;
-      } else if (formatName.equals(simpleText.name)) {
+    public PostingsFormat getPostingsFormatForField(String field) {
+      if (field.equals("id")) {
         return simpleText;
       } else {
-        throw new IllegalArgumentException("unknown postings format: " + formatName);
-      }
-    }
-
-    @Override
-    public String getPostingsFormatForField(String field) {
-      if (field.equals("id")) {
-        return simpleText.name;
-      } else {
-        return lucene40.name;
+        return lucene40;
       }
     }
   }

@@ -18,12 +18,18 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.store.Directory;
 
 /** @lucene.experimental */
@@ -39,17 +45,6 @@ public abstract class PostingsFormat {
 
   /** Writes a new segment */
   public abstract FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
-
-  public static void debug(String s, String desc) {
-    if (desc != null) {
-      System.out.println(Thread.currentThread().getName()+ " [" + desc + "]:" + s);
-    } else {
-      System.out.println(Thread.currentThread().getName() + ": " + s);
-    }
-  }
-  public static void debug(String s) {
-    debug(s, null);
-  }
 
   /** Reads a segment.  NOTE: by the time this call
    *  returns, it must hold open any files it will need to
@@ -69,5 +64,21 @@ public abstract class PostingsFormat {
   @Override
   public String toString() {
     return "PostingsFormat(name=" + name + ")";
+  }
+  
+  public static PostingsFormat forName(String name) {
+    // TODO: Uwe fix me!
+    return CORE_FORMATS.get(name);
+  }
+  /** Lucene's core postings formats.
+   *  @lucene.internal
+   */
+  @Deprecated
+  public static final Map<String,PostingsFormat> CORE_FORMATS = new HashMap<String,PostingsFormat>();
+  static {
+    CORE_FORMATS.put("Lucene40", new Lucene40PostingsFormat());
+    CORE_FORMATS.put("Pulsing", new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
+    CORE_FORMATS.put("SimpleText", new SimpleTextPostingsFormat());
+    CORE_FORMATS.put("Memory", new MemoryPostingsFormat());
   }
 }

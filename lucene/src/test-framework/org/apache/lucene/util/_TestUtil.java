@@ -353,21 +353,10 @@ public class _TestUtil {
   // nocommit rename to .alwaysPostingsFormat?
   public static Codec alwaysFormat(final PostingsFormat format) {
     return new Lucene40Codec() {
-
       @Override
-      public PostingsFormat getPostingsFormat(String formatName) {
-        if (formatName.equals(format.name)) {
-          return format;
-        } else {
-          return super.getPostingsFormat(formatName);
-        }
+      public PostingsFormat getPostingsFormatForField(String field) {
+        return format;
       }
-
-      @Override
-      public String getPostingsFormatForField(String field) {
-        return format.name;
-      }
-      
     };
   }
 
@@ -375,7 +364,7 @@ public class _TestUtil {
   public static String getPostingsFormat(String field) {
     PostingsFormat p = Codec.getDefault().postingsFormat();
     if (p instanceof PerFieldPostingsFormat) {
-      return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field);
+      return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field).name;
     } else {
       return p.name;
     }

@@ -516,24 +516,12 @@ public class TestExternalCodecs extends LuceneTestCase {
     private final PostingsFormat pulsingFormat = new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1);
 
     @Override
-    public String getPostingsFormatForField(String field) {
+    public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("field2") || field.equals("id")) {
-        return "Pulsing";
-      } else if (field.equals("field1")) {
-        return "Default";
-      } else {
-        return "RAM";
-      }
-    }
-
-    @Override
-    public PostingsFormat getPostingsFormat(String formatName) {
-      if (formatName.equals("Pulsing")) {
         return pulsingFormat;
-      } else if (formatName.equals("Default")) {
+      } else if (field.equals("field1")) {
         return defaultFormat;
       } else {
-        assertEquals("RAM", formatName);
         return ramFormat;
       }
     }

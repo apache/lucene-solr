@@ -56,16 +56,9 @@ public class RandomCodec extends Lucene40Codec {
   private Map<String,PostingsFormat> previousMappings = new HashMap<String,PostingsFormat>();
   private final int perFieldSeed;
   private final String configuration;
-  
-  @Override
-  public PostingsFormat getPostingsFormat(String formatName) {
-    // nocommit is this ok?
-    // return super.getPostingsFormat(formatName);
-    return formatNames.get(formatName);
-  }
 
   @Override
-  public synchronized String getPostingsFormatForField(String name) {
+  public synchronized PostingsFormat getPostingsFormatForField(String name) {
     if ("random".equals(configuration)) {
       PostingsFormat codec = previousMappings.get(name);
       if (codec == null) {
@@ -76,9 +69,10 @@ public class RandomCodec extends Lucene40Codec {
         }
         previousMappings.put(name, codec);
       }
-      return codec.name;
+      return codec;
     } else {
-      return configuration;
+      // nocommit: kinda stupid, this is just for random seeds to be the same... clean this up
+      return PostingsFormat.forName(configuration);
     }
   }
 
