@@ -40,11 +40,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
@@ -142,8 +141,6 @@ public abstract class LuceneTestCase extends Assert {
   // tests)
   /** Gets the postingsFormat to run tests with. */
   public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
-  /** Gets the codecprovider to run tests with */
-  public static final String TEST_CODECPROVIDER = System.getProperty("tests.codecprovider", "random");
   /** Gets the locale to run tests with */
   public static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
@@ -213,8 +210,8 @@ public abstract class LuceneTestCase extends Assert {
   }
   private List<UncaughtExceptionEntry> uncaughtExceptions = Collections.synchronizedList(new ArrayList<UncaughtExceptionEntry>());
 
-  // default codec provider
-  private static CodecProvider savedCodecProvider;
+  // default codec
+  private static Codec savedCodec;
   
   private static SimilarityProvider similarityProvider;
 
@@ -253,8 +250,14 @@ public abstract class LuceneTestCase extends Assert {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
     
-    savedCodecProvider = CodecProvider.getDefault();
-    final CodecProvider cp;
+    savedCodec = Codec.getDefault();
+    final Codec codec;
+    if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
+      codec = new PreFlexRWCodec();
+    } else {
+      codec = new Lucene40Codec();
+    }
+    /* nocommit: we should randomize via the provider interface!! (via all codecs available in classpath)
     if ("random".equals(TEST_CODECPROVIDER)) {
       // TODO: kinda jaky that Lucene3x will eventually be a real codec, deal with this later.
       if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
@@ -286,18 +289,10 @@ public abstract class LuceneTestCase extends Assert {
           }
         };
       }
-    } else {
-      // someone specified their own codecprovider by class
-      try {
-        Class<? extends CodecProvider> cpClazz = Class.forName(TEST_CODECPROVIDER).asSubclass(CodecProvider.class);
-        cp = cpClazz.newInstance();
-      } catch (Exception e) {
-        System.err.println("Could not instantiate CodecProvider: " + TEST_CODECPROVIDER);
-        throw new RuntimeException(e);
-      }
     }
+    */
 
-    CodecProvider.setDefault(cp);
+    Codec.setDefault(codec);
     
     savedLocale = Locale.getDefault();
     
@@ -347,8 +342,8 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     
-    String codecDescription = CodecProvider.getDefault().getDefaultCodec().toString();
-    CodecProvider.setDefault(savedCodecProvider);
+    String codecDescription = Codec.getDefault().toString();
+    Codec.setDefault(savedCodec);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
     System.clearProperty("solr.solr.home");

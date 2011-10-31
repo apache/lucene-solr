@@ -17,25 +17,20 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-
 /**
- * Specifies an API for classes that can read {@link SegmentInfos} information.
  * @lucene.experimental
  */
-public abstract class SegmentInfosReader {
+public class DefaultSegmentInfosFormat extends SegmentInfosFormat {
+  private static final SegmentInfosReader reader = new DefaultSegmentInfosReader();
+  private static final SegmentInfosWriter writer = new DefaultSegmentInfosWriter();
+  
+  @Override
+  public SegmentInfosReader getSegmentInfosReader() {
+    return reader;
+  }
 
-  /**
-   * Read {@link SegmentInfos} data from a directory.
-   * @param directory directory to read from
-   * @param segmentsFileName name of the "segments_N" file
-   * @param codecs current codecs
-   * @param infos empty instance to be populated with data
-   * @throws IOException
-   */
-  public abstract void read(Directory directory, String segmentsFileName, SegmentInfos infos, IOContext context) throws IOException;
+  @Override
+  public SegmentInfosWriter getSegmentInfosWriter() {
+    return writer;
+  }
 }

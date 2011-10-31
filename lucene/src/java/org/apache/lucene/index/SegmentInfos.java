@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
@@ -83,8 +83,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
                                    // there was an IOException that had interrupted a commit
 
   public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
-  
-  private final CodecProvider codecs;
 
   private int format;
   
@@ -95,16 +93,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   private transient List<SegmentInfo> cachedUnmodifiableList;
   private transient Set<SegmentInfo> cachedUnmodifiableSet;  
   
+  private Codec codecFormat;
+  
   /**
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream = null;
   
-  public SegmentInfos(CodecProvider codecs) {
-    this.codecs = codecs;
-  }
-
   public void setFormat(int format) {
     this.format = format;
   }
@@ -248,8 +244,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     lastGeneration = generation;
 
     try {
-      SegmentInfosReader infosReader = codecs.getSegmentInfosReader();
-      infosReader.read(directory, segmentFileName, codecs, this, IOContext.READ);
+      // nocommit: read preamble here then forward to codec
+      codecFormat = Codec.forName("Lucene40");
+      SegmentInfosReader infosReader = codecFormat.segmentInfosFormat().getSegmentInfosReader();
+      infosReader.read(directory, segmentFileName, this, IOContext.READ);
       success = true;
     }
     finally {
@@ -280,7 +278,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   // before finishCommit is called
   IndexOutput pendingSegnOutput;
 
-  private void write(Directory directory) throws IOException {
+  private void write(Directory directory, Codec codec) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
     final String globalFieldMapFile;
@@ -305,7 +303,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     boolean success = false;
 
     try {
-      SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
+      SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
       segnOutput = infosWriter.writeInfos(directory, segmentFileName, this, IOContext.DEFAULT);
       infosWriter.prepareCommit(segnOutput);
       pendingSegnOutput = segnOutput;
@@ -392,7 +390,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static long readCurrentVersion(Directory directory, final CodecProvider codecs)
+  public static long readCurrentVersion(Directory directory)
     throws CorruptIndexException, IOException {
 
     // Fully read the segments file: this ensures that it's
@@ -400,7 +398,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     // IndexWriter.prepareCommit has been called (but not
     // yet commit), then the reader will still see itself as
     // current:
-    SegmentInfos sis = new SegmentInfos(codecs);
+    SegmentInfos sis = new SegmentInfos();
     sis.read(directory);
     return sis.version;
   }
@@ -410,9 +408,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static Map<String,String> readCurrentUserData(Directory directory, CodecProvider codecs)
+  public static Map<String,String> readCurrentUserData(Directory directory)
     throws CorruptIndexException, IOException {
-    SegmentInfos sis = new SegmentInfos(codecs);
+    SegmentInfos sis = new SegmentInfos();
     sis.read(directory);
     return sis.getUserData();
   }
@@ -791,10 +789,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  final void prepareCommit(Directory dir) throws IOException {
+  final void prepareCommit(Directory dir, Codec codec) throws IOException {
     if (pendingSegnOutput != null)
       throw new IllegalStateException("prepareCommit was already called");
-    write(dir);
+    write(dir, codec);
   }
   
   private final long writeGlobalFieldMap(FieldNumberBiMap map, Directory dir, String name) throws IOException {
@@ -865,12 +863,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     return files;
   }
 
-  final void finishCommit(Directory dir) throws IOException {
+  final void finishCommit(Directory dir, Codec codec) throws IOException {
     if (pendingSegnOutput == null)
       throw new IllegalStateException("prepareCommit was not called");
     boolean success = false;
     try {
-      SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
+      SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
       infosWriter.finishCommit(pendingSegnOutput);
       pendingSegnOutput = null;
       success = true;
@@ -941,9 +939,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  final void commit(Directory dir) throws IOException {
-    prepareCommit(dir);
-    finishCommit(dir);
+  // nocommit: move this prepare+finish into SIwriter so codec controls the logic?
+  final void commit(Directory dir, Codec codec) throws IOException {
+    prepareCommit(dir, codec);
+    finishCommit(dir, codec);
   }
 
   public String toString(Directory directory) {
@@ -1101,6 +1100,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   void rollbackSegmentInfos(List<SegmentInfo> infos) {
     this.clear();
     this.addAll(infos);
+  }
+  
+  /**
+   * Returns the codec used to decode this SegmentInfos from disk 
+   * @lucene.internal
+   */
+  Codec codecFormat() {
+    return codecFormat;
   }
   
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */

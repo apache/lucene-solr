@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
@@ -486,14 +485,8 @@ public class MockDirectoryWrapper extends Directory {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
       } 
-      if (codecProvider != null) {
-        if (IndexReader.indexExists(this, codecProvider)) {
-          _TestUtil.checkIndex(this, codecProvider);
-        }
-      } else {
-        if (IndexReader.indexExists(this)) {
-          _TestUtil.checkIndex(this);
-        }
+      if (IndexReader.indexExists(this)) {
+        _TestUtil.checkIndex(this);
       }
     }
     delegate.close();
@@ -522,13 +515,6 @@ public class MockDirectoryWrapper extends Directory {
   
   public synchronized void removeIndexInput(IndexInput in, String name) {
     removeOpenFile(in, name);
-  }
-  
-  private CodecProvider codecProvider;
-
-  // We pass this CodecProvider to checkIndex when dir is closed...
-  public void setCodecProvider(CodecProvider cp) {
-    codecProvider = cp;
   }
 
   boolean open = true;

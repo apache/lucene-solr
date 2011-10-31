@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -53,7 +53,7 @@ public class RandomIndexWriter implements Closeable {
   private final int fixedBytesLength;
   private final long docValuesFieldPrefix;
   private volatile boolean doDocValues;
-  private CodecProvider codecProvider;
+  private final Codec codec; // sugar
 
   // Randomly calls Thread.yield so we mixup thread scheduling
   private static final class MockIndexWriter extends IndexWriter {
@@ -96,9 +96,10 @@ public class RandomIndexWriter implements Closeable {
     this.r = r;
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
+    codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
-      System.out.println("codec default=" + w.getConfig().getCodecProvider().getDefaultCodec().getName());
+      System.out.println("codec default=" + codec.getName());
       w.setInfoStream(System.out);
     }
     /* TODO: find some what to make that random...
@@ -109,7 +110,6 @@ public class RandomIndexWriter implements Closeable {
      */
     fixedBytesLength = 37; 
     docValuesFieldPrefix = r.nextLong();
-    codecProvider =  w.getConfig().getCodecProvider();
     switchDoDocValues();
   } 
 
@@ -171,7 +171,7 @@ public class RandomIndexWriter implements Closeable {
     ValueType[] values = ValueType.values();
     ValueType type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("Lucene3x".equals(codecProvider.getDefaultCodec().getName()) || doc.getField(name) != null)
+    if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null)
         return;
     IndexDocValuesField docValuesField = new IndexDocValuesField(name);
     switch (type) {
@@ -367,7 +367,7 @@ public class RandomIndexWriter implements Closeable {
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
-    if (!applyDeletions || !w.defaultCodec.getName().equals("Lucene3x") && r.nextBoolean()) {
+    if (!applyDeletions || !codec.getName().equals("Lucene3x") && r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
@@ -382,7 +382,7 @@ public class RandomIndexWriter implements Closeable {
       w.commit();
       switchDoDocValues();
       if (r.nextBoolean()) {
-        return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10), w.getConfig().getCodecProvider());
+        return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10));
       } else {
         return w.getReader(applyDeletions);
       }

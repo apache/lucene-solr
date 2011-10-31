@@ -26,7 +26,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import java.io.File;
 import java.io.IOException;
@@ -323,10 +322,6 @@ public class CheckIndex {
   public Status checkIndex() throws IOException {
     return checkIndex(null);
   }
-
-  public Status checkIndex(List<String> onlySegments) throws IOException {
-    return checkIndex(onlySegments, CodecProvider.getDefault());
-  }
   
   /** Returns a {@link Status} instance detailing
    *  the state of the index.
@@ -340,9 +335,9 @@ public class CheckIndex {
    *  <p><b>WARNING</b>: make sure
    *  you only call this when the index is not opened by any
    *  writer. */
-  public Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
+  public Status checkIndex(List<String> onlySegments) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
-    SegmentInfos sis = new SegmentInfos(codecs);
+    SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
     result.dir = dir;
     try {
@@ -378,6 +373,7 @@ public class CheckIndex {
 
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getCurrentSegmentFileName();
+    // nocommit: abstraction violation.
     IndexInput input = null;
     try {
       input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
@@ -1183,11 +1179,11 @@ public class CheckIndex {
    *
    * <p><b>WARNING</b>: Make sure you only call this when the
    *  index is not opened  by any writer. */
-  public void fixIndex(Status result) throws IOException {
+  public void fixIndex(Status result, Codec codec) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
-    result.newSegments.commit(result.dir);
+    result.newSegments.commit(result.dir, codec);
   }
 
   private static boolean assertsOn;
@@ -1330,7 +1326,8 @@ public class CheckIndex {
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        checker.fixIndex(result);
+        // nocommit: do we need a commandline flag here, e.g. checkindex on AppendingCodec)
+        checker.fixIndex(result, Codec.getDefault());
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
       }

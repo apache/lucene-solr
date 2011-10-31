@@ -45,13 +45,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CoreCodecProvider;
-import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
-import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.search.FieldDoc;
@@ -152,17 +146,10 @@ public class _TestUtil {
    *  issues are hit, a RuntimeException is thrown; else,
    *  true is returned. */
   public static CheckIndex.Status checkIndex(Directory dir) throws IOException {
-    return checkIndex(dir, CodecProvider.getDefault());
-  }
-  
-  /** This runs the CheckIndex tool on the index in.  If any
-   *  issues are hit, a RuntimeException is thrown; else,
-   *  true is returned. */
-  public static CheckIndex.Status checkIndex(Directory dir, CodecProvider codecs) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos), false);
-    CheckIndex.Status indexStatus = checker.checkIndex(null, codecs);
+    CheckIndex.Status indexStatus = checker.checkIndex(null);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());
@@ -359,33 +346,13 @@ public class _TestUtil {
     return new String(buffer, 0, i);
   }
 
-  public static CodecProvider alwaysCodec(final Codec c) {
-    return new CoreCodecProvider() {
-      @Override
-      public Codec lookup(String name) {
-        //System.out.println(name);
-        // can't do this until we fix PreFlexRW to not
-        //impersonate PreFlex:
-        if (name.equals(c.getName())) {
-          return c;
-        } else {
-          return super.lookup(name);
-        }
-      }
-
-      @Override
-      public Codec getDefaultCodec() {
-        return c;
-      }
-    };
-  }
   
   /** Return a CodecProvider that can read any of the
    *  default codecs and formats, but always writes in the specified
    *  format. */
   // nocommit rename to .alwaysPostingsFormat?
-  public static CodecProvider alwaysFormat(final PostingsFormat format) {
-    return alwaysCodec(new Lucene40Codec() {
+  public static Codec alwaysFormat(final PostingsFormat format) {
+    return new Lucene40Codec() {
 
       @Override
       public PostingsFormat getPostingsFormat(String formatName) {
@@ -401,38 +368,12 @@ public class _TestUtil {
         return format.name;
       }
       
-    });
-  }
-
-  /** Returns a CodecProvider that can only read and write
-   *  the provided PostingsFormat, and uses default format
-   *  for DocValues and Fields. */
-  public static CodecProvider onlyFormat(final PostingsFormat postingsFormat) {
-
-    final Codec onlyCodec = new Codec("Only") {
-      private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
-      private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
-
-      @Override
-      public PostingsFormat postingsFormat() {
-        return postingsFormat;
-      }
-
-      @Override
-      public DocValuesFormat docValuesFormat() {
-        return docValuesFormat;
-      }                
-
-      @Override
-      public FieldsFormat fieldsFormat() {
-        return fieldsFormat;
-      }                
     };
-    return alwaysCodec(onlyCodec);
   }
-  
+
+  // nocommit, stupid
   public static String getPostingsFormat(String field) {
-    PostingsFormat p = CodecProvider.getDefault().getDefaultCodec().postingsFormat();
+    PostingsFormat p = Codec.getDefault().postingsFormat();
     if (p instanceof PerFieldPostingsFormat) {
       return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field);
     } else {

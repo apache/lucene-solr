@@ -38,8 +38,7 @@ import org.apache.lucene.store.IndexInput;
 public class DefaultSegmentInfosReader extends SegmentInfosReader {
 
   @Override
-  public void read(Directory directory, String segmentsFileName, CodecProvider codecs,
-          SegmentInfos infos, IOContext context) throws IOException {
+  public void read(Directory directory, String segmentsFileName, SegmentInfos infos, IOContext context) throws IOException {
     IndexInput input = null;
     try {
       input = openInput(directory, segmentsFileName, context);
@@ -60,7 +59,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
         infos.setGlobalFieldMapVersion(input.readLong());
       }
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-        SegmentInfo si = new SegmentInfo(directory, format, input, codecs);
+        SegmentInfo si = new SegmentInfo(directory, format, input);
         if (si.getVersion() == null) {
           // Could be a 3.0 - try to open the doc stores - if it fails, it's a
           // 2.x segment, and an IndexFormatTooOldException will be thrown,

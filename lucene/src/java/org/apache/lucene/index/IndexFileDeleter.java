@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.CollectionUtil;
@@ -135,7 +134,7 @@ final class IndexFileDeleter {
    * @throws IOException if there is a low-level IO error
    */
   public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
-                          PrintStream infoStream, CodecProvider codecs, IndexWriter writer) throws CorruptIndexException, IOException {
+                          PrintStream infoStream, IndexWriter writer) throws CorruptIndexException, IOException {
     this.infoStream = infoStream;
     this.writer = writer;
 
@@ -176,7 +175,7 @@ final class IndexFileDeleter {
           if (infoStream != null) {
             message("init: load commit \"" + fileName + "\"");
           }
-          SegmentInfos sis = new SegmentInfos(codecs);
+          SegmentInfos sis = new SegmentInfos();
           try {
             sis.read(directory, fileName);
           } catch (FileNotFoundException e) {
@@ -249,7 +248,7 @@ final class IndexFileDeleter {
       // listing was stale (eg when index accessed via NFS
       // client with stale directory listing cache).  So we
       // try now to explicitly open this commit point:
-      SegmentInfos sis = new SegmentInfos(codecs);
+      SegmentInfos sis = new SegmentInfos();
       try {
         sis.read(directory, currentSegmentsFile);
       } catch (IOException e) {
