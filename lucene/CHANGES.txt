@@ -748,7 +748,11 @@ Test Cases
   they ignored AssertionError. With this fix now entire test framework 
   (every test) fails if assertions are disabled, unless 
   -Dtests.asserts.gracious=true is specified. (Doron Cohen)
-  
+
+Build
+
+* SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
+
 ======================= Lucene 3.4.0 =======================
 
 Bug fixes

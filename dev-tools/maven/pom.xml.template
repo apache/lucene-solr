@@ -356,11 +356,6 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-xercesImpl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>servlet-api</artifactId>
         <version>2.4</version>
@@ -625,7 +620,7 @@
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
-                  <groupId>org.apache.lucene</groupId>
+                  <groupId>${project.groupId}</groupId>
                   <artifactId>lucene-xercesImpl</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>

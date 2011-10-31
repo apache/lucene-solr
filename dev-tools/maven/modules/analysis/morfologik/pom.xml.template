@@ -58,11 +58,6 @@
       <groupId>org.carrot2</groupId>
       <artifactId>morfologik-polish</artifactId>
     </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>

@@ -444,6 +444,8 @@ Bug Fixes
 * SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
   extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
 
+* SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
