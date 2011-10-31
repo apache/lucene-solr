@@ -57,12 +57,12 @@ public abstract class Codec {
   public abstract FieldsFormat fieldsFormat();
   
   // nocommit: make abstract
-  public final SegmentInfosFormat segmentInfosFormat() {
+  public SegmentInfosFormat segmentInfosFormat() {
     return siFormat;
   }
   
   // nocommit
-  private static final SegmentInfosFormat siFormat = new DefaultSegmentInfosFormat();
+  private final SegmentInfosFormat siFormat = new DefaultSegmentInfosFormat();
   
   /** looks up a codec by name */
   public static Codec forName(String name) {

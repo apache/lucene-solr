@@ -20,7 +20,7 @@ package org.apache.lucene.collation;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
 
 import java.text.Collator;
@@ -47,7 +47,7 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(CodecProvider.getDefault().getDefaultCodec().getName()));
+    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(Codec.getDefault().getName()));
   }
 
   public void testFarsiRangeFilterCollating() throws Exception {

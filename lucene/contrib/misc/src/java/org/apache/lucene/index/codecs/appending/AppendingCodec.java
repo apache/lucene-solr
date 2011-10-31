@@ -23,10 +23,10 @@ import org.apache.lucene.index.codecs.DefaultFieldsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.SegmentInfosFormat;
 
 /**
- * This codec extends {@link Lucene40PostingsFormat} to work on append-only outputs, such
+ * This codec extends {@link Lucene40Codec} to work on append-only outputs, such
  * as plain output streams and append-only filesystems.
  *
  * <p>Note: compound file format feature is not compatible with
@@ -42,9 +42,10 @@ public class AppendingCodec extends Codec {
   }
 
   private final PostingsFormat postings = new AppendingPostingsFormat();
+  private final SegmentInfosFormat infos = new AppendingSegmentInfosFormat();
   private final FieldsFormat fields = new DefaultFieldsFormat();
   private final DocValuesFormat docValues = new DefaultDocValuesFormat();
-
+  
   @Override
   public PostingsFormat postingsFormat() {
     return postings;
@@ -58,5 +59,10 @@ public class AppendingCodec extends Codec {
   @Override
   public DocValuesFormat docValuesFormat() {
     return docValues;
+  }
+
+  @Override
+  public SegmentInfosFormat segmentInfosFormat() {
+    return infos;
   }
 }

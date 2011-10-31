@@ -33,7 +33,7 @@ import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
 
@@ -131,11 +131,11 @@ public class CreateIndexTask extends PerfTask {
       }
     }
 
-    final String defaultCodec = config.get("default.codecProvider", null);
+    final String defaultCodec = config.get("default.codec", null);
     if (defaultCodec != null) {
       try {
-        Class<? extends CodecProvider> clazz = Class.forName(defaultCodec).asSubclass(CodecProvider.class);
-        CodecProvider.setDefault(clazz.newInstance());
+        Class<? extends Codec> clazz = Class.forName(defaultCodec).asSubclass(Codec.class);
+        Codec.setDefault(clazz.newInstance());
       } catch (Exception e) {
         throw new RuntimeException("Couldn't instantiate CodecProvider: " + defaultCodec, e);
       }

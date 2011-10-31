@@ -34,14 +34,4 @@ package org.apache.lucene.index.codecs;
 public abstract class SegmentInfosFormat {
   public abstract SegmentInfosReader getSegmentInfosReader();
   public abstract SegmentInfosWriter getSegmentInfosWriter();
-  
-  public static SegmentInfosFormat getDefault() {
-    return defaultFormat;
-  }
-  
-  public static void setDefault(SegmentInfosFormat format) {
-    defaultFormat = format;
-  }
-  
-  private static SegmentInfosFormat defaultFormat = new DefaultSegmentInfosFormat();
 }

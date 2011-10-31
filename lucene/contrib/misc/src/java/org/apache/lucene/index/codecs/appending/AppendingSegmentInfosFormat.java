@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.appending;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,13 +17,14 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-/**
- * @lucene.experimental
- */
-public class DefaultSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new DefaultSegmentInfosReader();
-  private final SegmentInfosWriter writer = new DefaultSegmentInfosWriter();
-  
+import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.SegmentInfosReader;
+import org.apache.lucene.index.codecs.SegmentInfosWriter;
+
+public class AppendingSegmentInfosFormat extends SegmentInfosFormat {
+  private final SegmentInfosReader reader = new AppendingSegmentInfosReader();
+  private final SegmentInfosWriter writer = new AppendingSegmentInfosWriter();
+
   @Override
   public SegmentInfosReader getSegmentInfosReader() {
     return reader;

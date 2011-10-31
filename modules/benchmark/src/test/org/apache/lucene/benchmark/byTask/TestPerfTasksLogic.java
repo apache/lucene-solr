@@ -52,7 +52,6 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -857,7 +856,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     ir.close();
 
     // Make sure we have 3 segments:
-    SegmentInfos infos = new SegmentInfos(CodecProvider.getDefault());
+    SegmentInfos infos = new SegmentInfos();
     infos.read(benchmark.getRunData().getDirectory());
     assertEquals(3, infos.size());
   }
