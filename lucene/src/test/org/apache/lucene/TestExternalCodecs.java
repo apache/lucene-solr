@@ -548,7 +548,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-        setCodecProvider(_TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat())).
+        setCodecProvider(_TestUtil.onlyFormat(new CustomPerFieldPostingsFormat())).
             setMergePolicy(newLogMergePolicy(3))
     );
     w.setInfoStream(VERBOSE ? System.out : null);

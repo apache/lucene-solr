@@ -403,6 +403,33 @@ public class _TestUtil {
       
     });
   }
+
+  /** Returns a CodecProvider that can only read and write
+   *  the provided PostingsFormat, and uses default format
+   *  for DocValues and Fields. */
+  public static CodecProvider onlyFormat(final PostingsFormat postingsFormat) {
+
+    final Codec onlyCodec = new Codec("Only") {
+      private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
+      private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
+
+      @Override
+      public PostingsFormat postingsFormat() {
+        return postingsFormat;
+      }
+
+      @Override
+      public DocValuesFormat docValuesFormat() {
+        return docValuesFormat;
+      }                
+
+      @Override
+      public FieldsFormat fieldsFormat() {
+        return fieldsFormat;
+      }                
+    };
+    return alwaysCodec(onlyCodec);
+  }
   
   public static String getPostingsFormat(String field) {
     PostingsFormat p = CodecProvider.getDefault().getDefaultCodec().postingsFormat();

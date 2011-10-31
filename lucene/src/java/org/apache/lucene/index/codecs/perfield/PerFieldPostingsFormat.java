@@ -119,6 +119,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         // next id and init it:
         final int formatID = formats.size();
         PostingsFormat postingsFormat = getPostingsFormat(formatName);
+        if (postingsFormat instanceof PerFieldPostingsFormat) {
+          // nocommit -- if we cutover to String formatID
+          // we can fix this?
+          throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself");
+        }
         assert postingsFormat != null: "formatName=" + formatName + " returned null PostingsFormat impl; this=" + PerFieldPostingsFormat.this;
         // nocommit: maybe the int formatID should be
         // separate arg to .fieldsConsumer?  like we do for
@@ -275,6 +280,12 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           final int formatID = in.readVInt();
           final String formatName = in.readString();
           PostingsFormat postingsFormat = getPostingsFormat(formatName);
+          if (postingsFormat instanceof PerFieldPostingsFormat) {
+            // nocommit -- if we cutover to String formatID
+            // we can fix this?
+            throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself");
+          }
+
           // Better be defined, because it was defined
           // during indexing:
           // nocommit: real exception?
