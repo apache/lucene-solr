@@ -41,6 +41,9 @@ import org.apache.lucene.store.Directory;
  *  otherwise uses the normal "Lucene40" format. 
  *  @lucene.experimental */
 
+// nocommit: this should be abstract, and we should have concrete PulsingStandard 
+// this way its written into the index (the format name) what the wrapped format is.
+// otherwise, pulsing will not be able to be read!@
 public class PulsingPostingsFormat extends PostingsFormat {
 
   private final int freqCutoff;
