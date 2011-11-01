@@ -706,6 +706,9 @@ Bug fixes
 * LUCENE-3541: IndexInput's default copyBytes() implementation was not safe 
   across multiple threads, because all clones shared the same buffer.
   (Robert Muir)
+  
+* LUCENE-3548: Fix CharsRef#append to extend length of the existing char[]
+  and presever existing chars. (Simon Willnauer) 
 
 New Features
 
