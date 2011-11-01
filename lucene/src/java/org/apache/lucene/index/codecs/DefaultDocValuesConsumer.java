@@ -34,24 +34,31 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 public class DefaultDocValuesConsumer extends DocValuesWriterBase {
-  private final Directory directory;
+  private final Directory mainDirectory;
+  private Directory directory;
   
   public DefaultDocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
+    mainDirectory = state.directory;
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
-    this.directory = new CompoundFileDirectory(state.directory,
-        IndexFileNames.segmentFileName(state.segmentName, state.formatId,
-            IndexFileNames.COMPOUND_FILE_EXTENSION), state.context, true);
   }
   
   @Override
-  protected Directory getDirectory() {
+  protected Directory getDirectory() throws IOException {
+    // lazy init
+    if (directory == null) {
+      directory = new CompoundFileDirectory(mainDirectory,
+                                            IndexFileNames.segmentFileName(segmentName, formatId,
+                                                                           IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
+    }
     return directory;
   }
 
   @Override
   public void close() throws IOException {
-    this.directory.close();
+    if (directory != null) {
+      directory.close();
+    }
   }
 
   @SuppressWarnings("fallthrough")

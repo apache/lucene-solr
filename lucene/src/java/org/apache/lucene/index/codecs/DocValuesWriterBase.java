@@ -33,10 +33,10 @@ import org.apache.lucene.util.Counter;
  * @lucene.experimental
  */
 public abstract class DocValuesWriterBase extends PerDocConsumer {
-  private final String segmentName;
-  private final int formatId;
+  protected final String segmentName;
+  protected final int formatId;
   private final Counter bytesUsed;
-  private final IOContext context;
+  protected final IOContext context;
   
   protected DocValuesWriterBase(PerDocWriteState state) {
     this.segmentName = state.segmentName;
@@ -45,7 +45,7 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
     this.context = state.context;
   }
 
-  protected abstract Directory getDirectory();
+  protected abstract Directory getDirectory() throws IOException;
   
   @Override
   public void close() throws IOException {   
