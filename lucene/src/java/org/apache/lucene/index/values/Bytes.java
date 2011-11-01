@@ -334,17 +334,17 @@ public final class Bytes {
       IndexInput indexIn = null;
       boolean success = false;
       try {
-      dataIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.DATA_EXTENSION), context);
-      version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
-      if (doIndex) {
-        indexIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.INDEX_EXTENSION), context);
-        final int version2 = CodecUtil.checkHeader(indexIn, codecName,
-            maxVersion, maxVersion);
-        assert version == version2;
-      }
-      success = true;
+        dataIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+                                                              Writer.DATA_EXTENSION), context);
+        version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
+        if (doIndex) {
+          indexIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+                                                                 Writer.INDEX_EXTENSION), context);
+          final int version2 = CodecUtil.checkHeader(indexIn, codecName,
+                                                     maxVersion, maxVersion);
+          assert version == version2;
+        }
+        success = true;
       } finally {
         if (!success) {
           IOUtils.closeWhileHandlingException(dataIn, indexIn);
