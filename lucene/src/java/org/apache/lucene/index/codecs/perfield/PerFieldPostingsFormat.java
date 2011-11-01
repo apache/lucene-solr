@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.perfield;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -56,11 +57,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  */
-// nocommit:
-// expose hook to lookup postings format by name
-// expose hook to get postingsformat for a field.
-// subclasses can deal with how they implement this (e.g. hashmap with default, solr schema, whatever)
-// this class can write its own private .per file with the mappings
+
 public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   public static final String PER_FIELD_EXTENSION = "per";
@@ -98,7 +95,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     
   private class FieldsWriter extends FieldsConsumer {
 
-    private final Map<String,FieldsConsumerAndID> formats = new HashMap<String,FieldsConsumerAndID>();
+    private final Map<PostingsFormat,FieldsConsumerAndID> formats = new IdentityHashMap<PostingsFormat,FieldsConsumerAndID>();
+
+    /** Records all fields we wrote. */
+    private final Map<String,PostingsFormat> fieldToFormat = new HashMap<String,PostingsFormat>();
 
     private final SegmentWriteState segmentWriteState;
 
@@ -112,30 +112,23 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final PostingsFormat format = getPostingsFormatForField(field.name);
-      // nocommit: is this crap safe?
-      // because Pulsing(1) versus Pulsing(2) have the same name.
-      // shouldnt the formats just be identityhashmap(postingsformat,fieldsconsumerandId) ?!
-      // this is just a rote refactor of what we had before...
-      final String formatName = format.name;
-      FieldsConsumerAndID consumerAndId = formats.get(formatName);
+      final PostingsFormat format = checkGetPostingsFormat(field.name);
+      assert !fieldToFormat.containsKey(field.name);
+      fieldToFormat.put(field.name, format);
+
+      FieldsConsumerAndID consumerAndId = formats.get(format);
       if (consumerAndId == null) {
-        // First time we are seeing this format -- assign
+        // First time we are seeing this format; assign
         // next id and init it:
         final int formatID = formats.size();
-        if (format instanceof PerFieldPostingsFormat) {
-          // nocommit -- if we cutover to String formatID
-          // we can fix this?
-          throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself");
-        }
-        assert format != null: "formatName=" + formatName + " returned null PostingsFormat impl; this=" + PerFieldPostingsFormat.this;
         // nocommit: maybe the int formatID should be
         // separate arg to .fieldsConsumer?  like we do for
         // .files()
         consumerAndId = new FieldsConsumerAndID(format.fieldsConsumer(new SegmentWriteState(segmentWriteState, formatID)),
                                          formatID);
-        formats.put(formatName, consumerAndId);
+        formats.put(format, consumerAndId);
       }
+
       return consumerAndId.fieldsConsumer.addField(field);
     }
 
@@ -145,17 +138,33 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // Close all subs
       IOUtils.close(formats.values());
 
-      // Write _X.per:
+      // Write _X.per: maps field name -> format name and
+      // format name -> format id
       final String mapFileName = IndexFileNames.segmentFileName(segmentWriteState.segmentName, segmentWriteState.formatId, PER_FIELD_EXTENSION);
       final IndexOutput out = segmentWriteState.directory.createOutput(mapFileName, segmentWriteState.context);
       boolean success = false;
       try {
         CodecUtil.writeHeader(out, PER_FIELD_NAME, VERSION_LATEST);
+
+        // format name -> int id
         out.writeVInt(formats.size());
-        for(Map.Entry<String,FieldsConsumerAndID> ent : formats.entrySet()) {
+        for(Map.Entry<PostingsFormat,FieldsConsumerAndID> ent : formats.entrySet()) {
           out.writeVInt(ent.getValue().formatID);
-          out.writeString(ent.getKey());
+          //System.out.println("per: write format " + ent.getKey() + " -> id=" + ent.getValue().formatID);
+          // nocommit -- what if Pulsing(1) and Pulsing(2)
+          // are used and then the name is the same....?
+          // should Pulsing name itself Pulsing1/2?
+          // Pulsing1/2(wrappedName)!?
+          out.writeString(ent.getKey().name);
         }
+
+        // field name -> format name
+        out.writeVInt(fieldToFormat.size());
+        for(Map.Entry<String,PostingsFormat> ent : fieldToFormat.entrySet()) {
+          out.writeString(ent.getKey());
+          out.writeString(ent.getValue().name);
+        }
+
         success = true;
       } finally {
         if (!success) {
@@ -170,7 +179,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   private class FieldsReader extends FieldsProducer {
 
     private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
-    private final Map<String,FieldsProducer> formats = new HashMap<String,FieldsProducer>();
+    private final Map<PostingsFormat,FieldsProducer> formats = new IdentityHashMap<PostingsFormat,FieldsProducer>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -179,8 +188,14 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       try {
         new VisitPerFieldFile(readState.dir, readState.segmentInfo.name) {
           @Override
-          protected void visitOneFormat(String formatName, int formatID, PostingsFormat postingsFormat) throws IOException {
-            formats.put(formatName, postingsFormat.fieldsProducer(new SegmentReadState(readState, formatID)));
+          protected void visitOneFormat(int formatID, PostingsFormat postingsFormat) throws IOException {
+            formats.put(postingsFormat, postingsFormat.fieldsProducer(new SegmentReadState(readState, formatID)));
+          }
+
+          @Override
+          protected void visitOneField(String fieldName, PostingsFormat postingsFormat) throws IOException {
+            assert formats.containsKey(postingsFormat);
+            fields.put(fieldName, formats.get(postingsFormat));
           }
         };
         success = true;
@@ -191,18 +206,19 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       // Map each field to its producer:
+      /*
       success = false;
       try {
         for (FieldInfo fi : readState.fieldInfos) {
           if (fi.isIndexed) {
-            PostingsFormat format = getPostingsFormatForField(fi.name);
-            String formatName = format.name;
-            FieldsProducer fieldsProducer = formats.get(formatName);
+            final FieldsProducer fieldsProducer = fields.get(format);
             // Better be defined, because it was defined
             // during indexing:
-            // nocommit: real exception?
-            assert fieldsProducer != null : formatName + " not defined";
-            fields.put(fi.name, fieldsProducer);
+            if (fieldsProducer == null) {
+              // nocommit -- how to clean this up!
+              throw new IllegalStateException("format name=\"" + format.name + "\" was not found");
+              
+            }
           }
         }
         success = true;
@@ -214,8 +230,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           IOUtils.closeWhileHandlingException(formats.values());
         }
       }
+      */
     }
-    
 
     private final class FieldsIterator extends FieldsEnum {
       private final Iterator<String> it;
@@ -264,6 +280,19 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
   }
 
+  PostingsFormat checkGetPostingsFormat(String fieldName) {
+    final PostingsFormat format = getPostingsFormatForField(fieldName);
+    if (format == null) {
+      throw new IllegalStateException("invalid null PostingsFormat for field=\"" + fieldName + "\"");
+    }
+    if (format instanceof PerFieldPostingsFormat) {
+      // nocommit -- cutover to String formatID (infinite
+      // precision float, ie just append _X to it) to fix this!
+      throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself (field \"" + fieldName + "\" returned PerFieldPostingsFormat)");
+    }
+    return format;
+  }
+
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
@@ -280,11 +309,17 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       boolean success = false;
       try {
         CodecUtil.checkHeader(in, PER_FIELD_NAME, VERSION_START, VERSION_LATEST);
+
+        // Read format name -> format id
         final int formatCount = in.readVInt();
         for(int formatIDX=0;formatIDX<formatCount;formatIDX++) {
           final int formatID = in.readVInt();
           final String formatName = in.readString();
           PostingsFormat postingsFormat = PostingsFormat.forName(formatName);
+          //System.out.println("do lookup " + formatName + " -> " + postingsFormat);
+          if (postingsFormat == null) {
+            throw new IllegalStateException("unable to lookup PostingsFormat for name=\"" + formatName + "\": got null");
+          }
           if (postingsFormat instanceof PerFieldPostingsFormat) {
             // nocommit -- if we cutover to String formatID
             // we can fix this?
@@ -293,10 +328,17 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
           // Better be defined, because it was defined
           // during indexing:
-          // nocommit: real exception?
-          assert postingsFormat != null : formatName + " not defined";
-          visitOneFormat(formatName, formatID, postingsFormat);
+          visitOneFormat(formatID, postingsFormat);
         }
+
+        // Read field name -> format name
+        final int fieldCount = in.readVInt();
+        for(int fieldIDX=0;fieldIDX<fieldCount;fieldIDX++) {
+          final String fieldName = in.readString();
+          final String formatName = in.readString();
+          visitOneField(fieldName, PostingsFormat.forName(formatName));
+        }
+
         success = true;
       } finally {
         if (!success) {
@@ -307,7 +349,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
     }
 
-    protected abstract void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException;
+    // This is called first, for all formats:
+    protected abstract void visitOneFormat(int formatID, PostingsFormat format) throws IOException;
+
+    // ... then this is called, for all fields:
+    protected abstract void visitOneField(String fieldName, PostingsFormat format) throws IOException;
   }
 
   @Override
@@ -319,14 +365,23 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     new VisitPerFieldFile(dir, info.name) {
       @Override
-      protected void visitOneFormat(String formatName, int formatID, PostingsFormat format) throws IOException {
+      protected void visitOneFormat(int formatID, PostingsFormat format) throws IOException {
         format.files(dir, info, formatID, files);
+      }
+
+      @Override
+      protected void visitOneField(String field, PostingsFormat format) {
       }
     };
   }
 
   // nocommit: do we really need to pass fieldInfo here?
   // sucks for 'outsiders' (like tests!) that want to peep at what format
-  // is being used for a field... changed to a String for now.. but lets revisit
+  // is being used for a field... changed to a String for
+  // now.. but lets revisit
+
+  // NOTE: only called during writing; for reading we read
+  // all we need from the index (ie we save the field ->
+  // format mapping)
   public abstract PostingsFormat getPostingsFormatForField(String field);
 }
