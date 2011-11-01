@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs.perfield;
  */
 
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -363,16 +364,23 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     final String mapFileName = IndexFileNames.segmentFileName(info.name, formatId, PER_FIELD_EXTENSION);
     files.add(mapFileName);
 
-    new VisitPerFieldFile(dir, info.name) {
-      @Override
-      protected void visitOneFormat(int formatID, PostingsFormat format) throws IOException {
-        format.files(dir, info, formatID, files);
-      }
+    try {
+      new VisitPerFieldFile(dir, info.name) {
+        @Override
+          protected void visitOneFormat(int formatID, PostingsFormat format) throws IOException {
+          format.files(dir, info, formatID, files);
+        }
 
-      @Override
-      protected void visitOneField(String field, PostingsFormat format) {
-      }
-    };
+        @Override
+          protected void visitOneField(String field, PostingsFormat format) {
+        }
+      };
+    } catch (FileNotFoundException fnfe) {
+      // nocommit this is shady:
+      // Don't add any files (if the _X.per file has been
+      // deleted then no files for this segment are
+      // "available").
+    }
   }
 
   // nocommit: do we really need to pass fieldInfo here?
