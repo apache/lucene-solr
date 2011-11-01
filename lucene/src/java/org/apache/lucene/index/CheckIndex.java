@@ -1233,6 +1233,7 @@ public class CheckIndex {
   public static void main(String[] args) throws IOException, InterruptedException {
 
     boolean doFix = false;
+    Codec codec = Codec.getDefault(); // only used when fixing
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
@@ -1241,6 +1242,13 @@ public class CheckIndex {
       if (args[i].equals("-fix")) {
         doFix = true;
         i++;
+      } else if (args[i].equals("-codec")) {
+        if (i == args.length-1) {
+          System.out.println("ERROR: missing name for -codec option");
+          System.exit(1);
+        }
+        codec = Codec.forName(args[i+1]);
+        i+=2;
       } else if (args[i].equals("-verbose")) {
         verbose = true;
         i++;
@@ -1266,6 +1274,7 @@ public class CheckIndex {
       System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -codec X: when fixing, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
@@ -1326,8 +1335,7 @@ public class CheckIndex {
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        // nocommit: do we need a commandline flag here, e.g. checkindex on AppendingCodec)
-        checker.fixIndex(result, Codec.getDefault());
+        checker.fixIndex(result, codec);
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
       }
