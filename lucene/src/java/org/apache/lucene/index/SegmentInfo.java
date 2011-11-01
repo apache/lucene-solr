@@ -220,16 +220,10 @@ public final class SegmentInfo implements Cloneable {
 
     hasProx = input.readByte();
 
-    // nocommit: who should handle the case of codec not found?
-    // Codec.forName() itself throw an exception? or callers check for null?
     
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
     if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-      String codecName = input.readString();
-      codec = Codec.forName(codecName);
-      if (codec == null) {
-        throw new IllegalArgumentException("Required codec '" + codecName + "' not found!");
-      }
+      codec = Codec.forName(input.readString());
     } else {
       // TODO what todo if preflex is not available in the provider? register it or fail?
       codec = Codec.forName("Lucene3x");
