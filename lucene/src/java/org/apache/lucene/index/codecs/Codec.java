@@ -18,13 +18,10 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.spi.CodecLoader;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -66,15 +63,7 @@ public abstract class Codec {
   
   /** looks up a codec by name */
   public static Codec forName(String name) {
-    // TODO: Uwe fix this crap, this is just a stub!
-    return CORE_CODECS.get(name);
-  }
-  
-  @Deprecated
-  private static final Map<String,Codec> CORE_CODECS = new HashMap<String,Codec>();
-  static {
-    CORE_CODECS.put("Lucene40", new Lucene40Codec());
-    CORE_CODECS.put("Lucene3x", new Lucene3xCodec());
+    return CodecLoader.lookupCodec(name);
   }
   
   private static Codec defaultCodec = Codec.forName("Lucene40");
