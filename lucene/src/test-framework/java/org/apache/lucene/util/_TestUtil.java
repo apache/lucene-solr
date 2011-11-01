@@ -364,9 +364,9 @@ public class _TestUtil {
   public static String getPostingsFormat(String field) {
     PostingsFormat p = Codec.getDefault().postingsFormat();
     if (p instanceof PerFieldPostingsFormat) {
-      return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field).name;
+      return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field).getName();
     } else {
-      return p.name;
+      return p.getName();
     }
   }
 

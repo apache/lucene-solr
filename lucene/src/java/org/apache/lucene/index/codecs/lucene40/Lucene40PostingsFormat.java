@@ -114,6 +114,6 @@ public class Lucene40PostingsFormat extends PostingsFormat {
 
   @Override
   public String toString() {
-    return name + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
+    return getName() + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 }

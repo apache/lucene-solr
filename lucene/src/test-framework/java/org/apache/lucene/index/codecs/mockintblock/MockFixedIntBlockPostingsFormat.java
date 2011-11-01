@@ -73,7 +73,7 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
 
   @Override
   public String toString() {
-    return name + "(blockSize=" + blockSize + ")";
+    return getName() + "(blockSize=" + blockSize + ")";
   }
 
   // only for testing

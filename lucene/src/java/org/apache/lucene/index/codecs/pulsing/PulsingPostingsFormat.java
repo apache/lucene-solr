@@ -63,7 +63,7 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
 
   @Override
   public String toString() {
-    return name + "(freqCutoff=" + freqCutoff + " minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
+    return getName() + "(freqCutoff=" + freqCutoff + " minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 
   @Override

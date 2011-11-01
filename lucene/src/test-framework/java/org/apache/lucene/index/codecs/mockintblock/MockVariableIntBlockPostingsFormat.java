@@ -76,7 +76,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
 
   @Override
   public String toString() {
-    return name + "(baseBlockSize="+ baseBlockSize + ")";
+    return getName() + "(baseBlockSize="+ baseBlockSize + ")";
   }
 
   public static class MockIntFactory extends IntStreamFactory {

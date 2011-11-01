@@ -156,14 +156,14 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           // are used and then the name is the same....?
           // should Pulsing name itself Pulsing1/2?
           // Pulsing1/2(wrappedName)!?
-          out.writeString(ent.getKey().name);
+          out.writeString(ent.getKey().getName());
         }
 
         // field name -> format name
         out.writeVInt(fieldToFormat.size());
         for(Map.Entry<String,PostingsFormat> ent : fieldToFormat.entrySet()) {
           out.writeString(ent.getKey());
-          out.writeString(ent.getValue().name);
+          out.writeString(ent.getValue().getName());
         }
 
         success = true;

@@ -102,7 +102,7 @@ public class RandomCodec extends Lucene40Codec {
   }
   
   public synchronized void register(PostingsFormat format) {
-    formatNames.put(format.name, format);
+    formatNames.put(format.getName(), format);
     knownFormats.add(format);
   }
   

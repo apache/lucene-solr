@@ -34,11 +34,10 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
     new NamedSPILoader<PostingsFormat>(PostingsFormat.class);
 
   public static final PostingsFormat[] EMPTY = new PostingsFormat[0];
-  /** Unique name that's used to retrieve this codec when
+  /** Unique name that's used to retrieve this format when
    *  reading the index.
-   * nocommit: Make private
    */
-  public final String name;
+  private final String name;
   
   protected PostingsFormat(String name) {
     this.name = name;
@@ -72,12 +71,12 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
     return "PostingsFormat(name=" + name + ")";
   }
   
-  /** looks up a codec by name */
+  /** looks up a format by name */
   public static PostingsFormat forName(String name) {
     return loader.lookup(name);
   }
   
-  /** returns a list of all available codec names */
+  /** returns a list of all available format names */
   public static Set<String> availablePostingsFormats() {
     return loader.availableServices();
   }
