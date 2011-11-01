@@ -17,10 +17,8 @@ package org.apache.lucene.index.codecs.pulsing;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,20 +29,9 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.BlockTreeTermsReader;
-import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
+import org.apache.lucene.index.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -97,7 +84,7 @@ public class TestPulsingReuse extends LuceneTestCase {
   /** tests reuse with Pulsing1(Pulsing2(Standard)) */
   public void testNestedPulsing() throws Exception {
     // we always run this test with pulsing codec.
-    Codec cp = _TestUtil.alwaysFormat(new NestedPulsing());
+    Codec cp = _TestUtil.alwaysFormat(new NestedPulsingPostingsFormat());
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // will do this ourselves, custom codec
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
@@ -136,60 +123,5 @@ public class TestPulsingReuse extends LuceneTestCase {
     CheckIndex ci = new CheckIndex(dir);
     ci.checkIndex(null);
     dir.close();
-  }
-  
-  static class NestedPulsing extends PostingsFormat {
-    public NestedPulsing() {
-      super("NestedPulsing");
-    }
-    
-    @Override
-    public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
-
-      PostingsWriterBase pulsingWriterInner = new PulsingPostingsWriter(2, docsWriter);
-      PostingsWriterBase pulsingWriter = new PulsingPostingsWriter(1, pulsingWriterInner);
-      
-      // Terms dict
-      boolean success = false;
-      try {
-        FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, 
-            BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          pulsingWriter.close();
-        }
-      }
-    }
-
-    @Override
-    public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
-      PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
-      PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
-      boolean success = false;
-      try {
-        FieldsProducer ret = new BlockTreeTermsReader(
-                                                      state.dir, state.fieldInfos, state.segmentInfo.name,
-                                                      pulsingReader,
-                                                      state.context,
-                                                      state.formatId,
-                                                      state.termsIndexDivisor);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          pulsingReader.close();
-        }
-      }
-    }
-
-    @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      Lucene40PostingsReader.files(dir, segmentInfo, id, files);
-      BlockTreeTermsReader.files(dir, segmentInfo, id, files);
-    }
   }
 }
