@@ -471,8 +471,13 @@
   </path>
   
   <target name="compile-test-framework" depends="compile-core">
-  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
+  	<compile-test-macro srcdir="${tests-framework.src.dir}/java" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test-framework.classpath"/>
+            <!-- Copy the resources folder (if existent) -->
+        <copy todir="${build.dir}/classes/test-framework" includeEmptyDirs="false">
+          <globmapper from="resources/*" to="*" handledirsep="yes"/>
+          <fileset dir="${tests-framework.src.dir}" includes="resources/**"/>
+       </copy>
   </target>
 
   <target name="compile-tools">

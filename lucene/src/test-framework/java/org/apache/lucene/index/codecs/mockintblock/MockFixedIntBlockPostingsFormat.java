@@ -57,6 +57,7 @@ import org.apache.lucene.util.IOUtils;
  * used here just writes each block as a series of vInt.
  */
 
+// nocommit: does this write blocksize into the postings? it needs to!
 public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
 
   private final int blockSize;

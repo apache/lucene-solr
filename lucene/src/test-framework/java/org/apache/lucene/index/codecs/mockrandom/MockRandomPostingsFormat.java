@@ -73,6 +73,11 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   private final Random seedRandom;
   private final String SEED_EXT = "sd";
   
+  public MockRandomPostingsFormat() {
+    // just for reading, we are gonna setSeed from the .seed file... right?
+    this(new Random());
+  }
+  
   public MockRandomPostingsFormat(Random random) {
     super("MockRandom");
     this.seedRandom = new Random(random.nextLong());
