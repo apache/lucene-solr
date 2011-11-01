@@ -104,106 +104,6 @@ public class TestDocTermOrds extends LuceneTestCase {
     dir.close();
   }
 
-  private static class StandardPostingsFormatWithOrds extends PostingsFormat {
-    
-    public StandardPostingsFormatWithOrds() {
-      super("StandardOrds");
-    }
-
-    @Override
-    public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      PostingsWriterBase docs = new Lucene40PostingsWriter(state);
-
-      // TODO: should we make the terms index more easily
-      // pluggable?  Ie so that this codec would record which
-      // index impl was used, and switch on loading?
-      // Or... you must make a new Codec for this?
-      TermsIndexWriterBase indexWriter;
-      boolean success = false;
-      try {
-        indexWriter = new FixedGapTermsIndexWriter(state);
-        success = true;
-      } finally {
-        if (!success) {
-          docs.close();
-        }
-      }
-
-      success = false;
-      try {
-        FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, docs);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          try {
-            docs.close();
-          } finally {
-            indexWriter.close();
-          }
-        }
-      }
-    }
-
-    public final static int TERMS_CACHE_SIZE = 1024;
-
-    @Override
-    public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
-      TermsIndexReaderBase indexReader;
-
-      boolean success = false;
-      try {
-        indexReader = new FixedGapTermsIndexReader(state.dir,
-                                                   state.fieldInfos,
-                                                   state.segmentInfo.name,
-                                                   state.termsIndexDivisor,
-                                                   BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                   state.formatId, state.context);
-        success = true;
-      } finally {
-        if (!success) {
-          postings.close();
-        }
-      }
-
-      success = false;
-      try {
-        FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                  state.dir,
-                                                  state.fieldInfos,
-                                                  state.segmentInfo.name,
-                                                  postings,
-                                                  state.context,
-                                                  TERMS_CACHE_SIZE,
-                                                  state.formatId);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          try {
-            postings.close();
-          } finally {
-            indexReader.close();
-          }
-        }
-      }
-    }
-
-    /** Extension of freq postings file */
-    static final String FREQ_EXTENSION = "frq";
-
-    /** Extension of prox postings file */
-    static final String PROX_EXTENSION = "prx";
-
-    @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      Lucene40PostingsReader.files(dir, segmentInfo, id, files);
-      BlockTermsReader.files(dir, segmentInfo, id, files);
-      FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
-    }
-  }
-
   public void testRandom() throws Exception {
     MockDirectoryWrapper dir = newDirectory();
 
@@ -226,7 +126,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
       // Make sure terms index has ords:
-      Codec codec = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
+      Codec codec = _TestUtil.alwaysFormat(PostingsFormat.forName("Lucene40WithOrds"));
       conf.setCodec(codec);
     }
     
@@ -323,7 +223,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
-      Codec codec = _TestUtil.alwaysFormat(new StandardPostingsFormatWithOrds());
+      Codec codec = _TestUtil.alwaysFormat(PostingsFormat.forName("Lucene40WithOrds"));
       conf.setCodec(codec);
     }
     
