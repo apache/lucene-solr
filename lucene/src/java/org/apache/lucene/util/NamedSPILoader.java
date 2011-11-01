@@ -47,7 +47,8 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
       }
     }
     this.services = Collections.unmodifiableMap(services);
-    System.out.println("Loaded SPIs of type "+clazz.getName()+": "+services);
+    // nocommit: lets let LTC do this in VERBOSE mode? it could print this out in beforeClass or something
+    //System.out.println("Loaded SPIs of type "+clazz.getName()+": "+services);
   }
   
   public S lookup(String name) {
