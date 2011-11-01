@@ -1042,12 +1042,10 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  // nocommit factor to helper class in _TestUtil (this is
-  // copied from TestExternalCodecs)
   private static class CustomPerFieldPostingsFormat extends PerFieldPostingsFormat {
-    private final PostingsFormat simpleTextFormat = new SimpleTextPostingsFormat();
-    private final PostingsFormat defaultFormat = new Lucene40PostingsFormat();
-    private final PostingsFormat mockSepFormat = new MockSepPostingsFormat();
+    private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
+    private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene40");
+    private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {

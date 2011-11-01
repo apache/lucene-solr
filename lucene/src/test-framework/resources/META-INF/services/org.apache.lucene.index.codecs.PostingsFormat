@@ -18,3 +18,4 @@ org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat
 org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat
 org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat
 org.apache.lucene.index.codecs.nestedpulsing.NestedPulsingPostingsFormat
+org.apache.lucene.index.codecs.ramonly.RAMOnlyPostingsFormat
