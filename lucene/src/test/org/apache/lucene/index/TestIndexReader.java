@@ -88,6 +88,7 @@ public class TestIndexReader extends LuceneTestCase
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random)).setOpenMode(
               OpenMode.APPEND).setMaxBufferedDocs(2));
+      writer.setInfoStream(VERBOSE ? System.out : null);
       for(int i=0;i<7;i++)
         addDocumentWithFields(writer);
       writer.close();
