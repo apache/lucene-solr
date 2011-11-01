@@ -373,7 +373,7 @@ public class CheckIndex {
 
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getCurrentSegmentFileName();
-    // nocommit: abstraction violation.
+    // note: we only read the format byte (required preamble) here!
     IndexInput input = null;
     try {
       input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
