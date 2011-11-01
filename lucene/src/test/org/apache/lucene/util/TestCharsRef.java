@@ -38,4 +38,33 @@ public class TestCharsRef extends LuceneTestCase {
       assertEquals(utf8[i].utf8ToString(), utf16[i].toString());
     }
   }
+  
+  public void testAppend() {
+    CharsRef ref = new CharsRef();
+    StringBuilder builder = new StringBuilder();
+    int numStrings = atLeast(10);
+    for (int i = 0; i < numStrings; i++) {
+      char[] charArray = _TestUtil.randomRealisticUnicodeString(random, 1, 100).toCharArray();
+      int offset = random.nextInt(charArray.length);
+      int length = charArray.length - offset;
+      builder.append(charArray, offset, length);
+      ref.append(charArray, offset, length);  
+    }
+    
+    assertEquals(builder.toString(), ref.toString());
+  }
+  
+  public void testCopy() {
+    int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      CharsRef ref = new CharsRef();
+      char[] charArray = _TestUtil.randomRealisticUnicodeString(random, 1, 100).toCharArray();
+      int offset = random.nextInt(charArray.length);
+      int length = charArray.length - offset;
+      String str = new String(charArray, offset, length);
+      ref.copy(charArray, offset, length);
+      assertEquals(str, ref.toString());  
+    }
+    
+  }
 }
