@@ -109,7 +109,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
             numDocs > oldNumDocs);
   }
 
-  @Test @Ignore("fix me")
+  @Test @Ignore("timing problem? https://issues.apache.org/jira/browse/SOLR-2715")
   public void testJmxOnCoreReload() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
     MBeanServer mbeanServer = servers.get(0);
