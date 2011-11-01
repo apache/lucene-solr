@@ -57,10 +57,7 @@ public final class CodecLoader {
     if (codecCache == null) {
       final Set<String> s = new LinkedHashSet<String>();
       for (CodecProvider cp : loader) {
-        // don't use addAll, as we only want the first name of each duplicate!
-        for (String name : cp.availableCodecs()) {
-          if (!s.contains(name)) s.add(name);
-        }
+        s.addAll(cp.availableCodecs());
       }
       codecCache = Collections.unmodifiableSet(s);
     }
@@ -80,10 +77,7 @@ public final class CodecLoader {
     if (pfCache == null) {
       final Set<String> s = new LinkedHashSet<String>();
       for (CodecProvider cp : loader) {
-        // don't use addAll, as we only want the first name of each duplicate!
-        for (String name : cp.availablePostingsFormats()) {
-          if (!s.contains(name)) s.add(name);
-        }
+        s.addAll(cp.availablePostingsFormats());
       }
       pfCache = Collections.unmodifiableSet(s);
     }
