@@ -31,10 +31,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
-import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
@@ -52,8 +49,9 @@ import org.junit.Test;
  * 
  *
  */
-//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-//automagically
+//TODO: would be better in this test to pull termsenums and instanceof or something?
+// this way we can verify PFPF is doing the right thing.
+// for now we do termqueries.
 public class TestPerFieldPostingsFormat extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
@@ -145,8 +143,6 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "aaa"), dir, 10);
     Lucene40Codec codec = (Lucene40Codec)iwconf.getCodec();
-    assertCodecPerField(_TestUtil.checkIndex(dir), "content",
-        PostingsFormat.forName("MockSep"));
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND).setCodec(codec);
@@ -165,8 +161,6 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     codec = (Lucene40Codec)iwconf.getCodec();
     PostingsFormat origContentCodec = PostingsFormat.forName("MockSep");
     PostingsFormat newContentCodec = PostingsFormat.forName("Lucene40");
-    assertHybridCodecPerField(_TestUtil.checkIndex(dir), "content",
-        origContentCodec, origContentCodec, newContentCodec);
     assertEquals(30, writer.maxDoc());
     assertQuery(new Term("content", "bbb"), dir, 10);
     assertQuery(new Term("content", "ccc"), dir, 10);   ////
@@ -188,39 +182,11 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     writer.optimize();
     assertEquals(40, writer.maxDoc());
     writer.close();
-    assertCodecPerFieldOptimized(_TestUtil.checkIndex(dir),
-        "content", newContentCodec);
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "bbb"), dir, 20);
     assertQuery(new Term("content", "aaa"), dir, 10);
 
     dir.close();
-  }
-
-  public void assertCodecPerFieldOptimized(Status checkIndex, String field,
-      PostingsFormat codec) {
-    assertEquals(1, checkIndex.segmentInfos.size());
-    final Lucene40Codec codecInfo = (Lucene40Codec) checkIndex.segmentInfos.get(0).codec;
-    assertEquals(codec.name, codecInfo.getPostingsFormatForField(field));
-
-  }
-
-  public void assertCodecPerField(Status checkIndex, String field, PostingsFormat codec) {
-    for (SegmentInfoStatus info : checkIndex.segmentInfos) {
-      final Lucene40Codec codecInfo = (Lucene40Codec) info.codec;
-      assertEquals(codec.name, codecInfo.getPostingsFormatForField(field));
-    }
-  }
-
-  public void assertHybridCodecPerField(Status checkIndex, String field,
-      PostingsFormat... codec) throws IOException {
-    List<SegmentInfoStatus> segmentInfos = checkIndex.segmentInfos;
-    assertEquals(segmentInfos.size(), codec.length);
-    for (int i = 0; i < codec.length; i++) {
-      Lucene40Codec codecInfo = (Lucene40Codec) segmentInfos.get(i).codec;
-      assertEquals("failed for segment index: " + i, codec[i].name,
-          codecInfo.getPostingsFormatForField(field));
-    }
   }
 
   public void assertQuery(Term t, Directory dir, int num)
