@@ -250,6 +250,19 @@ public abstract class LuceneTestCase extends Assert {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
     
+    // if verbose: print some debugging stuff about which codecs are loaded
+    if (VERBOSE) {
+      Set<String> codecs = Codec.availableCodecs();
+      for (String codec : codecs) {
+        System.out.println("Loaded codec: '" + codec + "': " + Codec.forName(codec).getClass().getName());
+      }
+      
+      Set<String> postingsFormats = PostingsFormat.availablePostingsFormats();
+      for (String postingsFormat : postingsFormats) {
+        System.out.println("Loaded postingsFormat: '" + postingsFormat + "': " + PostingsFormat.forName(postingsFormat).getClass().getName());
+      }
+    }
+
     savedCodec = Codec.getDefault();
     final Codec codec;
     if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
