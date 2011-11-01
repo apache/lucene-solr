@@ -47,8 +47,6 @@ public class IndexFileNameFilter implements FilenameFilter {
   // nocommit: untested!!
   private final Pattern luceneFilePattern = Pattern.compile("^_[a-z0-9]+(_[a-z0-9]+)?\\.[a-z0-9]+$");
 
-  // nocommit: hmm fails to detect N.fnx (no leading _)
-
   /* (non-Javadoc)
    * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
    */

@@ -189,7 +189,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
      * since this file might belong to more than one segment (global map) and
      * could otherwise easily be confused with a per-segment file.
      */
-    return IndexFileNames.segmentFileName(""+ version, "", IndexFileNames.GLOBAL_FIELD_NUM_MAP_EXTENSION);
+    return IndexFileNames.segmentFileName("_"+ version, "", IndexFileNames.GLOBAL_FIELD_NUM_MAP_EXTENSION);
   }
 
   /**

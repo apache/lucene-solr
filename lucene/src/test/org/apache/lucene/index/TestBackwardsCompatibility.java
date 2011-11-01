@@ -568,7 +568,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                "_0_1.s" + contentFieldIndex,
                                "segments_2",
                                "segments.gen",
-                               "1.fnx"};
+                               "_1.fnx"};
 
       String[] actual = dir.listAll();
       Arrays.sort(expected);
