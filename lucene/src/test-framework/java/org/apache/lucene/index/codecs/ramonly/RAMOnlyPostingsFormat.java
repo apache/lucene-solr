@@ -96,7 +96,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     };
 
   public RAMOnlyPostingsFormat() {
-    super("RAMOnlyPostingsFormat");
+    super("RAMOnly");
   }
     
   // Postings state:

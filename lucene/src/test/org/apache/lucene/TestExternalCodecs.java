@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.*;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
@@ -37,7 +38,8 @@ import org.apache.lucene.util.Bits;
 // automagically
 public class TestExternalCodecs extends LuceneTestCase {
 
-  public static final class CustomPerFieldPostingsFormat extends PerFieldPostingsFormat {
+  private static final class CustomPerFieldCodec extends Lucene40Codec {
+    
     private final PostingsFormat ramFormat = PostingsFormat.forName("RAMOnly");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene40");
     private final PostingsFormat pulsingFormat = PostingsFormat.forName("Pulsing40");
@@ -65,7 +67,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-        setCodec(_TestUtil.alwaysFormat(new CustomPerFieldPostingsFormat())).
+        setCodec(new CustomPerFieldCodec()).
             setMergePolicy(newLogMergePolicy(3))
     );
     w.setInfoStream(VERBOSE ? System.out : null);
