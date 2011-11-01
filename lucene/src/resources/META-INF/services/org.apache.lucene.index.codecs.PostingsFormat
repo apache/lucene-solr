@@ -14,6 +14,6 @@
 #  limitations under the License.
 
 org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat
-org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat
+org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat
 org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat
 org.apache.lucene.index.codecs.memory.MemoryPostingsFormat

@@ -27,6 +27,7 @@ import org.apache.lucene.index.codecs.*;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
@@ -513,7 +514,7 @@ public class TestExternalCodecs extends LuceneTestCase {
   private static class CustomPerFieldPostingsFormat extends PerFieldPostingsFormat {
     private final PostingsFormat ramFormat = new RAMOnlyPostingsFormat();
     private final PostingsFormat defaultFormat = new Lucene40PostingsFormat();
-    private final PostingsFormat pulsingFormat = new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1);
+    private final PostingsFormat pulsingFormat = new Pulsing40PostingsFormat(1);
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {

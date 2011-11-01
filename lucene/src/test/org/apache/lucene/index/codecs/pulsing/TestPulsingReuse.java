@@ -43,7 +43,6 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.store.Directory;
@@ -60,7 +59,7 @@ public class TestPulsingReuse extends LuceneTestCase {
   // TODO: this is a basic test. this thing is complicated, add more
   public void testSophisticatedReuse() throws Exception {
     // we always run this test with pulsing codec.
-    Codec cp = _TestUtil.alwaysFormat(new PulsingPostingsFormat(new Lucene40PostingsBaseFormat(), 1));
+    Codec cp = _TestUtil.alwaysFormat(new Pulsing40PostingsFormat(1));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
