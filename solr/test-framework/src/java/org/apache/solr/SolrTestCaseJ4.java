@@ -41,7 +41,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
-import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -65,7 +64,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
     startTrackingSearchers();
-    startTrackingWriters();
     ignoreException("ignore_exception");
   }
 
@@ -74,7 +72,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     deleteCore();
     resetExceptionIgnores();
     endTrackingSearchers();
-    endTrackingWriters();
   }
 
   @Override
@@ -130,28 +127,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      }
   }
   
-  static long numWriterOpens;
-  static long numWriterCloses;
-  public static void startTrackingWriters() {
-    numOpens = SolrIndexWriter.numOpens.get();
-    numCloses = SolrIndexWriter.numCloses.get();
-  }
-
-  public static void endTrackingWriters() {
-     long endNumOpens = SolrIndexWriter.numOpens.get();
-     long endNumCloses = SolrIndexWriter.numCloses.get();
-     
-     SolrIndexWriter.numOpens.getAndSet(0);
-     SolrIndexWriter.numCloses.getAndSet(0);
-
-     if (endNumOpens-numOpens != endNumCloses-numCloses) {
-       String msg = "ERROR: SolrIndexWriter opens=" + (endNumOpens-numWriterOpens) + " closes=" + (endNumCloses-numWriterCloses);
-       log.error(msg);
-       testsFailed = true;
-       fail(msg);
-     }
-  }
-
   /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
     if (SolrException.ignorePatterns == null)
