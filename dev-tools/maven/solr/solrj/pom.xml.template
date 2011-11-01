@@ -44,9 +44,11 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
     </dependency>
+    <!-- Technically, this is optional in SolrJ; but it's fast. SOLR-2852 -->
     <dependency>
       <groupId>org.codehaus.woodstox</groupId>
       <artifactId>wstx-asl</artifactId>
+      <scope>runtime</scope>
       <exclusions>
         <exclusion>
           <groupId>stax</groupId>
@@ -56,8 +58,8 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency> 
+      <artifactId>jcl-over-slf4j</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>

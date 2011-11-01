@@ -36,6 +36,7 @@
     <build-directory>../build/solr-test-framework</build-directory>
   </properties>
   <dependencies>
+    <!-- These dependencies are compile scope because this is a test framework. -->
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>solr-core</artifactId>
