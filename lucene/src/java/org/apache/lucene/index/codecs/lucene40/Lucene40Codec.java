@@ -20,9 +20,11 @@ package org.apache.lucene.index.codecs.lucene40;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -37,6 +39,7 @@ import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 public class Lucene40Codec extends Codec {
   private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
+  private final SegmentInfosFormat infosFormat = new DefaultSegmentInfosFormat();
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
@@ -63,6 +66,11 @@ public class Lucene40Codec extends Codec {
     return postingsFormat;
   }
   
+  @Override
+  public SegmentInfosFormat segmentInfosFormat() {
+    return infosFormat;
+  }
+
   /** Returns the postings format that should be used for writing 
    *  new segments of <code>field</code>.
    *  

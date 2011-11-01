@@ -58,13 +58,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Encodes/decodes stored fields, term vectors, fieldinfos */
   public abstract FieldsFormat fieldsFormat();
   
-  // nocommit: make abstract
-  public SegmentInfosFormat segmentInfosFormat() {
-    return siFormat;
-  }
-  
-  // nocommit
-  private final SegmentInfosFormat siFormat = new DefaultSegmentInfosFormat();
+  public abstract SegmentInfosFormat segmentInfosFormat();
   
   /** looks up a codec by name */
   public static Codec forName(String name) {
@@ -78,7 +72,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   private static Codec defaultCodec = Codec.forName("Lucene40");
   
-  // nocommit: should we remove these? 
+  // TODO: should we use this, or maybe a system property is better?
   public static Codec getDefault() {
     return defaultCodec;
   }
