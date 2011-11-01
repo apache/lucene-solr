@@ -65,6 +65,10 @@ import org.apache.lucene.util.IOUtils;
 public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
   private final int baseBlockSize;
   
+  public MockVariableIntBlockPostingsFormat() {
+    this(1);
+  }
+
   public MockVariableIntBlockPostingsFormat(int baseBlockSize) {
     super("MockVariableIntBlock");
     this.baseBlockSize = baseBlockSize;

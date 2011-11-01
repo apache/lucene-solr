@@ -72,6 +72,5 @@ public class Lucene40Codec extends Codec {
     return defaultFormat;
   }
   
-  // TODO: PostingsFormat.forName("Lucene40") does not work because of Chicken-and-Egg problem:
-  private final PostingsFormat defaultFormat = new Lucene40PostingsFormat();
+  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene40");
 }

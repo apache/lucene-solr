@@ -31,6 +31,7 @@ import org.apache.lucene.index.codecs.PostingsBaseFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.store.Directory;
 
 /** This postings format "inlines" the postings for terms that have
@@ -50,6 +51,11 @@ public class PulsingPostingsFormat extends PostingsFormat {
   private final int minBlockSize;
   private final int maxBlockSize;
   private final PostingsBaseFormat wrappedPostingsBaseFormat;
+  
+  // nocommit: maybe create subclass with Lucene40 postings, e.g. Lucene40PulsingPostingsFormat -- se above comment
+  public PulsingPostingsFormat() {
+    this(new Lucene40PostingsBaseFormat(), 1);
+  }
 
   public PulsingPostingsFormat(PostingsBaseFormat wrappedPostingsBaseFormat, int freqCutoff) {
     this(wrappedPostingsBaseFormat, freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);

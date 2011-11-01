@@ -23,21 +23,32 @@ import java.util.Set;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.spi.CodecLoader;
+import org.apache.lucene.util.NamedSPILoader;
 
 import org.apache.lucene.store.Directory;
 
 /** @lucene.experimental */
-public abstract class PostingsFormat {
+public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
+
+  private static final NamedSPILoader<PostingsFormat> loader =
+    new NamedSPILoader<PostingsFormat>(PostingsFormat.class);
+
   public static final PostingsFormat[] EMPTY = new PostingsFormat[0];
   /** Unique name that's used to retrieve this codec when
-   *  reading the index */
+   *  reading the index.
+   * nocommit: Make private
+   */
   public final String name;
   
   protected PostingsFormat(String name) {
     this.name = name;
   }
 
+  @Override
+  public String getName() {
+    return name;
+  }
+  
   /** Writes a new segment */
   public abstract FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
 
@@ -61,7 +72,14 @@ public abstract class PostingsFormat {
     return "PostingsFormat(name=" + name + ")";
   }
   
+  /** looks up a codec by name */
   public static PostingsFormat forName(String name) {
-    return CodecLoader.lookupPostingsFormat(name);
+    return loader.lookup(name);
   }
+  
+  /** returns a list of all available codec names */
+  public static Set<String> availablePostingsFormats() {
+    return loader.availableServices();
+  }
+  
 }

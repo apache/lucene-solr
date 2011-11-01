@@ -21,19 +21,24 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.spi.CodecLoader;
+import org.apache.lucene.util.NamedSPILoader;
 import org.apache.lucene.store.Directory;
 
 /**
  * Encodes/decodes an inverted index segment
  */
-public abstract class Codec {
+public abstract class Codec implements NamedSPILoader.NamedSPI {
+
+  private static final NamedSPILoader<Codec> loader =
+    new NamedSPILoader<Codec>(Codec.class);
+
   private final String name;
 
   public Codec(String name) {
     this.name = name;
   }
   
+  @Override
   public String getName() {
     return name;
   }
@@ -63,7 +68,12 @@ public abstract class Codec {
   
   /** looks up a codec by name */
   public static Codec forName(String name) {
-    return CodecLoader.lookupCodec(name);
+    return loader.lookup(name);
+  }
+  
+  /** returns a list of all available codec names */
+  public static Set<String> availableCodecs() {
+    return loader.availableServices();
   }
   
   private static Codec defaultCodec = Codec.forName("Lucene40");

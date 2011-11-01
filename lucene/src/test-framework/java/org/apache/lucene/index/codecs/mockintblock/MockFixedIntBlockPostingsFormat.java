@@ -62,6 +62,10 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
 
   private final int blockSize;
 
+  public MockFixedIntBlockPostingsFormat() {
+    this(1);
+  }
+
   public MockFixedIntBlockPostingsFormat(int blockSize) {
     super("MockFixedIntBlock");
     this.blockSize = blockSize;
