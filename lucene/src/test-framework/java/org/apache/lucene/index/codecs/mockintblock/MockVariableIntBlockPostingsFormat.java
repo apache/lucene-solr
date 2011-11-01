@@ -61,7 +61,6 @@ import org.apache.lucene.util.IOUtils;
  * int is <= 3, else 2*baseBlockSize.
  */
 
-//nocommit: does this write blocksize into the postings? it needs to!
 public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
   private final int baseBlockSize;
   
