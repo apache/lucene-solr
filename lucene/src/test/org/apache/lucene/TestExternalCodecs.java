@@ -34,8 +34,6 @@ import org.apache.lucene.util.Bits;
 /* Intentionally outside of oal.index to verify fully
    external codecs work fine */
 
-// nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-// automagically
 public class TestExternalCodecs extends LuceneTestCase {
 
   private static final class CustomPerFieldCodec extends Lucene40Codec {

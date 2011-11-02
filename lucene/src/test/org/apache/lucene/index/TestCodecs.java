@@ -66,8 +66,6 @@ import org.junit.BeforeClass;
 //   - skipTo(term)
 //   - skipTo(doc)
 
-//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-//automagically
 public class TestCodecs extends LuceneTestCase {
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 

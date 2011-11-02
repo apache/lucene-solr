@@ -49,8 +49,6 @@ import org.junit.Ignore;
  * 
  * @lucene.experimental
  */
-//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-//automagically
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.

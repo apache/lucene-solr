@@ -55,8 +55,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-//automagically
 public class TestAddIndexes extends LuceneTestCase {
   
   public void testSimpleCase() throws IOException {

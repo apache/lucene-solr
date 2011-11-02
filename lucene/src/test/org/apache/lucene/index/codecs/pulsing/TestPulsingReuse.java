@@ -40,8 +40,6 @@ import org.apache.lucene.util._TestUtil;
 /**
  * Tests that pulsing codec reuses its enums and wrapped enums
  */
-//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-//automagically
 public class TestPulsingReuse extends LuceneTestCase {
   // TODO: this is a basic test. this thing is complicated, add more
   public void testSophisticatedReuse() throws Exception {

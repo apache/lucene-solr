@@ -58,8 +58,6 @@ import org.apache.lucene.util._TestUtil;
 //   - test w/ cutoff
 //   - crank docs way up so we get some merging sometimes
 
-//nocommit: add any custom codecs here to test-framework so they can be 'loaded'
-//automagically
 public class TestDocTermOrds extends LuceneTestCase {
 
   public void testSimple() throws Exception {

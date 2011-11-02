@@ -1014,7 +1014,7 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    // nocommit: is this necessary? we use the annotation...
+    // TODO: is this necessary? we use the annotation...
     final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
     if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
       // no
