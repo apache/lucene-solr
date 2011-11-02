@@ -34,7 +34,14 @@ import org.apache.lucene.store.IOContext;
  */
 public class DefaultSegmentInfosReader extends SegmentInfosReader {
 
-  // nocommit: shove all backwards code to preflex!
+  // TODO: shove all backwards code to preflex!
+  // this is a little tricky, because of IR.commit(), two options:
+  // 1. PreFlex writes 4.x SIS format, but reads both 3.x and 4.x
+  //    (and maybe RW always only writes the 3.x one? for that to work well,
+  //     we have to move .fnx file to codec too, not too bad but more work).
+  //     or we just have crappier RW testing like today.
+  // 2. PreFlex writes 3.x SIS format, and only reads 3.x
+  //    (in this case we have to move .fnx file to codec as well)
   @Override
   public void read(Directory directory, String segmentsFileName, ChecksumIndexInput input, SegmentInfos infos, IOContext context) throws IOException { 
     infos.version = input.readLong(); // read version
