@@ -42,7 +42,7 @@ public abstract class SegmentInfosWriter {
    * phase commit" operations as described above.
    * @throws IOException
    */
-  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, SegmentInfos infos, IOContext context) throws IOException;
+  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, String codecID, SegmentInfos infos, IOContext context) throws IOException;
   
   /**
    * First phase of the two-phase commit - ensure that all output can be

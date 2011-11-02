@@ -36,6 +36,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -243,14 +244,40 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     lastGeneration = generation;
 
+    // nocommit: scary to have default impl reopen the file... but to make it a bit more flexible,
+    // maybe we could use a plain indexinput here... could default impl rewind/wrap with checksumII,
+    // and any checksumming is then up to implementation?
+    ChecksumIndexInput input = null;
     try {
-      // nocommit: read preamble here then forward to codec
-      codecFormat = Codec.forName("Lucene40");
+      input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
+      final int format = input.readInt();
+      setFormat(format);
+    
+      // check that it is a format we can understand
+      if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(segmentFileName, format,
+          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+      if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(segmentFileName, format,
+          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+
+      if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+        codecFormat = Codec.forName(input.readString());
+      } else {
+        codecFormat = Codec.forName("Lucene3x");
+      }
       SegmentInfosReader infosReader = codecFormat.segmentInfosFormat().getSegmentInfosReader();
-      infosReader.read(directory, segmentFileName, this, IOContext.READ);
+      infosReader.read(directory, segmentFileName, input, this, IOContext.READ);
+      final long checksumNow = input.getChecksum();
+      final long checksumThen = input.readLong();
+      if (checksumNow != checksumThen)
+        throw new CorruptIndexException("checksum mismatch in segments file");
       success = true;
     }
     finally {
+      if (input != null) {
+        input.close();
+      }
       if (!success) {
         // Clear any segment infos we had loaded so we
         // have a clean slate on retry:
@@ -304,7 +331,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     try {
       SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
-      segnOutput = infosWriter.writeInfos(directory, segmentFileName, this, IOContext.DEFAULT);
+      segnOutput = infosWriter.writeInfos(directory, segmentFileName, codec.getName(), this, IOContext.DEFAULT);
       infosWriter.prepareCommit(segnOutput);
       pendingSegnOutput = segnOutput;
       success = true;

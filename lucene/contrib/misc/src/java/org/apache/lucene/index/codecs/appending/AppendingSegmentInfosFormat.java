@@ -17,18 +17,11 @@ package org.apache.lucene.index.codecs.appending;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.SegmentInfosFormat;
-import org.apache.lucene.index.codecs.SegmentInfosReader;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 
-public class AppendingSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new AppendingSegmentInfosReader();
+public class AppendingSegmentInfosFormat extends DefaultSegmentInfosFormat {
   private final SegmentInfosWriter writer = new AppendingSegmentInfosWriter();
-
-  @Override
-  public SegmentInfosReader getSegmentInfosReader() {
-    return reader;
-  }
 
   @Override
   public SegmentInfosWriter getSegmentInfosWriter() {
