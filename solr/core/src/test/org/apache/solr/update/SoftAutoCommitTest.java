@@ -104,9 +104,8 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     // toss in another doc, shouldn't affect first hard commit time we poll
     assertU(adoc("id", "530", "subject", "just for noise/activity"));
 
-    // wait for the hard commit, shouldn't need any fudge given 
-    // other actions already taken
-    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
+    // wait for the hard commit
+    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
     monitor.assertSaneOffers();
     
@@ -226,9 +225,8 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     // toss in another doc, shouldn't affect first hard commit time we poll
     assertU(adoc("id", "550", "subject", "just for noise/activity"));
 
-    // wait for the hard commit, shouldn't need any fudge given 
-    // other actions already taken
-    hard529 = monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
+    // wait for the hard commit
+    hard529 = monitor.hard.poll(hardCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
     monitor.assertSaneOffers();
     
