@@ -11,7 +11,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 
-import org.apache.lucene.DocumentBuilder;
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -66,7 +65,7 @@ public class SimpleIndexer {
 
       // we do not alter indexing parameters!  
       // a category document builder will add the categories to a document once build() is called
-      DocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(taxo).setCategoryPaths(facetList);
+      CategoryDocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(taxo).setCategoryPaths(facetList);
 
       // create a plain Lucene document and add some regular Lucene fields to it 
       Document doc = new Document();

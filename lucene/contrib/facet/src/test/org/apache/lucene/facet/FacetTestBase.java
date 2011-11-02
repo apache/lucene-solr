@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.DocumentBuilder.DocumentBuilderException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -189,7 +188,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * <p>Subclasses can override this to test different scenarios
    */
   protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo, FacetIndexingParams iParams)
-      throws IOException, DocumentBuilderException, CorruptIndexException {
+      throws IOException, CorruptIndexException {
     // add test documents 
     int numDocsToIndex = numDocsToIndex();
     for (int doc=0; doc<numDocsToIndex; doc++) {
