@@ -170,6 +170,9 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static final int RANDOM_MULTIPLIER = Integer.parseInt(System.getProperty("tests.multiplier", "1"));
 
+  /** @lucene.internal */
+  public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
+
   private int savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
@@ -263,10 +266,12 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
+    PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
     final Codec codec;
     if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
       codec = new PreFlexRWCodec();
+      PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     } else {
       codec = new Lucene40Codec();
     }

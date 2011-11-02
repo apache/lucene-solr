@@ -19,6 +19,7 @@ package org.apache.lucene.index.codecs.preflexrw;
 
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Writes 3.x-like indexes (not perfect emulation yet) for testing only!
@@ -29,6 +30,10 @@ public class PreFlexRWCodec extends Lucene3xCodec {
 
   @Override
   public PostingsFormat postingsFormat() {
-    return postings;
+    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      return postings;
+    } else {
+      return super.postingsFormat();
+    }
   }
 }
