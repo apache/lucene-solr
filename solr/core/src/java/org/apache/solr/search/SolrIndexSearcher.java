@@ -184,7 +184,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   @Override
   public String toString() {
-    return name;
+    return name + "{" + reader + "}";
   }
 
   public SolrCore getCore() {

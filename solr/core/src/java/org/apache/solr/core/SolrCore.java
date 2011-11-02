@@ -51,6 +51,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -818,6 +819,21 @@ public final class SolrCore implements SolrInfoMBean {
      closeHooks.add( hook );
    }
 
+  /** @lucene.internal
+   *  Debugging aid only.  No non-test code should be released with uncommented verbose() calls.  */
+  public static boolean VERBOSE = Boolean.parseBoolean(System.getProperty("tests.verbose","false"));
+  public static void verbose(Object... args) {
+    if (!VERBOSE) return;
+    StringBuilder sb = new StringBuilder("VERBOSE:");
+    sb.append(Thread.currentThread().getName());
+    sb.append(':');
+    for (Object o : args) {
+      sb.append(' ');
+      sb.append(o==null ? "(null)" : o.toString());
+    }
+    System.out.println(sb.toString());
+  }
+
 
   ////////////////////////////////////////////////////////////////////////////////
   // Request Handler
@@ -1109,18 +1125,20 @@ public final class SolrCore implements SolrInfoMBean {
       
       if (newestSearcher != null && solrConfig.reopenReaders
           && indexDirFile.equals(newIndexDirFile)) {
-        
+
         if (updateHandlerReopens) {
           
           tmp = getUpdateHandler().reopenSearcher(newestSearcher.get());
-          
         } else {
           
           IndexReader currentReader = newestSearcher.get().getIndexReader();
           IndexReader newReader;
           
+          // verbose("start reopen without writer, reader=", currentReader);
           newReader = IndexReader.openIfChanged(currentReader);
-          
+          // verbose("reopen result", newReader);
+
+
           if (newReader == null) {
             currentReader.incRef();
             newReader = currentReader;
@@ -1129,8 +1147,11 @@ public final class SolrCore implements SolrInfoMBean {
           tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true, true, directoryFactory);
         }
 
+
       } else {
+        // verbose("non-reopen START:");
         tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().mainIndexConfig, "main", true, true, directoryFactory);
+        // verbose("non-reopen DONE: searcher=",tmp);
       }
     } catch (Throwable th) {
       synchronized(searcherLock) {
@@ -1163,6 +1184,7 @@ public final class SolrCore implements SolrInfoMBean {
       boolean alreadyRegistered = false;
       synchronized (searcherLock) {
         _searchers.add(newSearchHolder);
+        // verbose("added searcher ",newSearchHolder.get()," to _searchers");
 
         if (_searcher == null) {
           // if there isn't a current searcher then we may
