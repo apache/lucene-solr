@@ -75,7 +75,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
   public void testPrevTermAtEnd() throws IOException
   {
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(_TestUtil.alwaysFormat(new Lucene40PostingsFormat())));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir, false));

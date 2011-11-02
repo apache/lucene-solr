@@ -80,4 +80,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   public static void setDefault(Codec codec) {
     defaultCodec = codec;
   }
+
+  @Override
+  public String toString() {
+    return name;
+  }
 }

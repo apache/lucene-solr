@@ -244,7 +244,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     lastGeneration = generation;
 
-    // nocommit: scary to have default impl reopen the file... but to make it a bit more flexible,
+    // TODO: scary to have default impl reopen the file... but to make it a bit more flexible,
     // maybe we could use a plain indexinput here... could default impl rewind/wrap with checksumII,
     // and any checksumming is then up to implementation?
     ChecksumIndexInput input = null;
@@ -966,7 +966,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  // nocommit: move this prepare+finish into SIwriter so codec controls the logic?
   final void commit(Directory dir, Codec codec) throws IOException {
     prepareCommit(dir, codec);
     finishCommit(dir, codec);

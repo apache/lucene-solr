@@ -40,8 +40,9 @@ import org.apache.lucene.store.Directory;
  * Pulsing(1, Pulsing(2, Lucene40))
  * @lucene.experimental
  */
-// nocommit if we create PulsingPostingsBaseFormat then we
-// can simplify this?
+// TODO: if we create PulsingPostingsBaseFormat then we
+// can simplify this? note: I don't like the *BaseFormat
+// hierarchy, maybe we can clean that up...
 public class NestedPulsingPostingsFormat extends PostingsFormat {
   public NestedPulsingPostingsFormat() {
     super("NestedPulsing");

@@ -1232,7 +1232,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1609: don't load terms index
   public void testNoTermsIndex() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(_TestUtil.alwaysFormat(new Lucene40PostingsFormat())));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     Document doc = new Document();
     doc.add(newField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", TextField.TYPE_UNSTORED));
     doc.add(newField("number", "0 1 2 3 4 5 6 7 8 9", TextField.TYPE_UNSTORED));
@@ -1252,7 +1252,7 @@ public class TestIndexReader extends LuceneTestCase
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setCodec(_TestUtil.alwaysFormat(new Lucene40PostingsFormat())).
+            setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())).
             setMergePolicy(newLogMergePolicy(10))
     );
     writer.addDocument(doc);

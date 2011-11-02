@@ -27,15 +27,15 @@ import java.util.Random;
 
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.lucene40ords.Lucene40WithOrds;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.index.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
-import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.util._TestUtil;
 
@@ -49,70 +49,53 @@ import org.apache.lucene.util._TestUtil;
  * and reproducable.
  */
 public class RandomCodec extends Lucene40Codec {
-  /** name->postingsformat mappings */
-  private Map<String,PostingsFormat> formatNames = new HashMap<String,PostingsFormat>();
   /** shuffled list of postingsformats to use for new mappings */
-  private List<PostingsFormat> knownFormats = new ArrayList<PostingsFormat>();
+  private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
   /** memorized field->postingsformat mappings */
   private Map<String,PostingsFormat> previousMappings = new HashMap<String,PostingsFormat>();
   private final int perFieldSeed;
-  private final String configuration;
 
   @Override
-  public synchronized PostingsFormat getPostingsFormatForField(String name) {
-    if ("random".equals(configuration)) {
-      PostingsFormat codec = previousMappings.get(name);
-      if (codec == null) {
-        codec = knownFormats.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownFormats.size());
-        if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
-          // make simpletext rarer, choose again
-          codec = knownFormats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownFormats.size());
-        }
-        previousMappings.put(name, codec);
+  public PostingsFormat getPostingsFormatForField(String name) {
+    PostingsFormat codec = previousMappings.get(name);
+    if (codec == null) {
+      codec = formats.get(Math.abs(perFieldSeed ^ name.hashCode()) % formats.size());
+      if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
+        // make simpletext rarer, choose again
+        codec = formats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % formats.size());
       }
-      return codec;
-    } else {
-      // nocommit: kinda stupid, this is just for random seeds to be the same... clean this up
-      return PostingsFormat.forName(configuration);
+      previousMappings.put(name, codec);
     }
+    return codec;
   }
 
-  public RandomCodec(Random random, boolean useNoMemoryExpensiveCodec, String configuration) {
-    this.configuration = configuration;
+  public RandomCodec(Random random, boolean useNoMemoryExpensiveCodec) {
     this.perFieldSeed = random.nextInt();
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    register(new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock));
+    formats.add(new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock));
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-    register(new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
-    register(new MockSepPostingsFormat());
-    register(new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)));
-    register(new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)));
-    register(new MockRandomPostingsFormat(random));
+    formats.add(new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
+    formats.add(new MockSepPostingsFormat());
+    formats.add(new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)));
+    formats.add(new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)));
+    formats.add(new MockRandomPostingsFormat(random));
+    formats.add(new NestedPulsingPostingsFormat());
+    formats.add(new Lucene40WithOrds());
     if (!useNoMemoryExpensiveCodec) {
-      register(new SimpleTextPostingsFormat());
-      register(new MemoryPostingsFormat());
+      formats.add(new SimpleTextPostingsFormat());
+      formats.add(new MemoryPostingsFormat());
     }
-    Collections.shuffle(knownFormats, random);
-  }
-  
-  public synchronized void register(PostingsFormat format) {
-    formatNames.put(format.getName(), format);
-    knownFormats.add(format);
-  }
-  
-  // TODO: needed anymore? I don't think so
-  public synchronized void unregister(PostingsFormat format) {
-    knownFormats.remove(format);
+    Collections.shuffle(formats, random);
   }
   
   @Override
-  public synchronized String toString() {
-    return "RandomCodec: " + previousMappings.toString();
+  public String toString() {
+    return super.toString() + ": " + previousMappings.toString();
   }
 }

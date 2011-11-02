@@ -38,7 +38,7 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     //provider.register(new MemoryCodec());
     if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random.nextBoolean()) {
-      Codec.setDefault(_TestUtil.alwaysFormat(new MemoryPostingsFormat()));
+      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));

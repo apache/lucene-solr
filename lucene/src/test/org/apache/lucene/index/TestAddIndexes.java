@@ -1209,7 +1209,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      conf.setCodec(_TestUtil.alwaysFormat(new Pulsing40PostingsFormat(1 + random.nextInt(20))));
+      conf.setCodec(_TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1 + random.nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);

@@ -342,7 +342,7 @@ public class TestCodecs extends LuceneTestCase {
     final Directory dir = newDirectory();
     final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
       new MockAnalyzer(random));
-    config.setCodec(_TestUtil.alwaysFormat(new MockSepPostingsFormat()));
+    config.setCodec(_TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat()));
     final IndexWriter writer = new IndexWriter(dir, config);
 
     try {

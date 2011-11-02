@@ -108,7 +108,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Directory ramdir = newDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
-                                         new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(_TestUtil.alwaysFormat(new Lucene40PostingsFormat())));
+                                         new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     Document doc = new Document();
     Field field1 = newField("foo", fooField.toString(), TextField.TYPE_UNSTORED);
     Field field2 = newField("term", termField.toString(), TextField.TYPE_UNSTORED);

@@ -272,43 +272,23 @@ public abstract class LuceneTestCase extends Assert {
     if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
       codec = new PreFlexRWCodec();
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+    } else if ("random".equals(TEST_POSTINGSFORMAT)) {
+      codec = new RandomCodec(random, useNoMemoryExpensiveCodec);
     } else {
-      codec = new Lucene40Codec();
-    }
-    /* nocommit: we should randomize via the provider interface!! (via all codecs available in classpath)
-    if ("random".equals(TEST_CODECPROVIDER)) {
-      // TODO: kinda jaky that Lucene3x will eventually be a real codec, deal with this later.
-      if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
-        cp = new CoreCodecProvider() {
-          final Codec preflexRW = new PreFlexRWCodec();
-          @Override
-          public Codec getDefaultCodec() {
-            return preflexRW;
-          }
+      codec = new Lucene40Codec() {
+        private final PostingsFormat format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
+        
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return format;
+        }
 
-          @Override
-          public Codec lookup(String name) {
-            if ("Lucene3x".equals(name)) // impersonation!
-              return preflexRW;
-            else
-              return super.lookup(name);
-          }
-        };
-      } else { // per-field setup, or specified postingsformat
-        final Codec randomPerField = new RandomCodec(random, useNoMemoryExpensiveCodec, TEST_POSTINGSFORMAT);
-        cp = new CoreCodecProvider() {
-
-          @Override
-          public Codec lookup(String name) {
-            if ("Lucene40".equals(name)) // impersonation!
-              return randomPerField;
-            else
-              return super.lookup(name);
-          }
-        };
-      }
+        @Override
+        public String toString() {
+          return super.toString() + ": " + format.toString();
+        }
+      };
     }
-    */
 
     Codec.setDefault(codec);
     

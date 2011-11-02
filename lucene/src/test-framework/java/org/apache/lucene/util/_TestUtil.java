@@ -350,8 +350,7 @@ public class _TestUtil {
   /** Return a CodecProvider that can read any of the
    *  default codecs and formats, but always writes in the specified
    *  format. */
-  // nocommit rename to .alwaysPostingsFormat?
-  public static Codec alwaysFormat(final PostingsFormat format) {
+  public static Codec alwaysPostingsFormat(final PostingsFormat format) {
     return new Lucene40Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
@@ -360,7 +359,8 @@ public class _TestUtil {
     };
   }
 
-  // nocommit, stupid
+  // TODO: generalize all 'test-checks-for-crazy-codecs' to
+  // annotations (LUCENE-3489)
   public static String getPostingsFormat(String field) {
     PostingsFormat p = Codec.getDefault().postingsFormat();
     if (p instanceof PerFieldPostingsFormat) {

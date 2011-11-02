@@ -1018,7 +1018,7 @@ public class TestFSTs extends LuceneTestCase {
     final String defaultFormat = _TestUtil.getPostingsFormat("abracadabra");
     if (defaultFormat.equals("SimpleText") || defaultFormat.equals("Memory")) {
       // no
-      Codec.setDefault(_TestUtil.alwaysFormat(new Lucene40PostingsFormat()));
+      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
     }
 
     final LineFileDocs docs = new LineFileDocs(random);
