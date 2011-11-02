@@ -34,17 +34,17 @@ public class PerDocWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final Counter bytesUsed;
-  public final int formatId;
+  public final String segmentSuffix;
   public final IOContext context;
 
   public PerDocWriteState(PrintStream infoStream, Directory directory,
       String segmentName, FieldInfos fieldInfos, Counter bytesUsed,
-      int codecId, IOContext context) {
+      String segmentSuffix, IOContext context) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.formatId = codecId;
+    this.segmentSuffix = segmentSuffix;
     this.bytesUsed = bytesUsed;
     this.context = context;
   }
@@ -54,17 +54,17 @@ public class PerDocWriteState {
     directory = state.directory;
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
-    formatId = state.formatId;
+    segmentSuffix = state.segmentSuffix;
     bytesUsed = Counter.newCounter();
     context = state.context;
   }
 
-  public PerDocWriteState(PerDocWriteState state, int formatId) {
+  public PerDocWriteState(PerDocWriteState state, String segmentSuffix) {
     this.infoStream = state.infoStream;
     this.directory = state.directory;
     this.segmentName = state.segmentName;
     this.fieldInfos = state.fieldInfos;
-    this.formatId = formatId;
+    this.segmentSuffix = segmentSuffix;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
   }

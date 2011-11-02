@@ -89,7 +89,7 @@ public class Lucene40WithOrds extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
@@ -99,7 +99,7 @@ public class Lucene40WithOrds extends PostingsFormat {
                                                  state.segmentInfo.name,
                                                  state.termsIndexDivisor,
                                                  BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                 state.formatId, state.context);
+                                                 state.segmentSuffix, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -116,7 +116,7 @@ public class Lucene40WithOrds extends PostingsFormat {
                                                 postings,
                                                 state.context,
                                                 TERMS_CACHE_SIZE,
-                                                state.formatId);
+                                                state.segmentSuffix);
       success = true;
       return ret;
     } finally {
@@ -137,9 +137,9 @@ public class Lucene40WithOrds extends PostingsFormat {
   static final String PROX_EXTENSION = "prx";
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, id, files);
-    BlockTermsReader.files(dir, segmentInfo, id, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

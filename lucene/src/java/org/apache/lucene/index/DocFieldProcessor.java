@@ -323,7 +323,7 @@ final class DocFieldProcessor extends DocConsumer {
 
     PerDocConsumer perDocConsumer = perDocConsumers.get(0);
     if (perDocConsumer == null) {
-      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(0);
+      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState("");
       DocValuesFormat dvFormat = docState.docWriter.codec.docValuesFormat();
       perDocConsumer = dvFormat.docsConsumer(perDocWriteState);
       perDocConsumers.put(0, perDocConsumer);

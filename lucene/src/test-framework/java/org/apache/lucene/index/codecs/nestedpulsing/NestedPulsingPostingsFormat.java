@@ -71,7 +71,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
     PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
     PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
     boolean success = false;
@@ -80,7 +80,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
                                                     state.dir, state.fieldInfos, state.segmentInfo.name,
                                                     pulsingReader,
                                                     state.context,
-                                                    state.formatId,
+                                                    state.segmentSuffix,
                                                     state.termsIndexDivisor);
       success = true;
       return ret;
@@ -92,8 +92,8 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, id, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, id, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

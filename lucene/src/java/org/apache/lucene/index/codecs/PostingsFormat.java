@@ -64,7 +64,7 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
    * @param id the codec id within this segment
    * @param files the of files to add the codec files to.
    */
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException;
+  public abstract void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
 
   @Override
   public String toString() {

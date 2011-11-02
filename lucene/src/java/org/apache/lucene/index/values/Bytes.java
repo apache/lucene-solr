@@ -494,8 +494,7 @@ public final class Bytes {
     
     protected void releaseResources() {
       hash.close();
-      bytesUsed
-      .addAndGet((-docToEntry.length) * RamUsageEstimator.NUM_BYTES_INT);
+      bytesUsed.addAndGet((-docToEntry.length) * RamUsageEstimator.NUM_BYTES_INT);
       docToEntry = null;
     }
     

@@ -20,16 +20,12 @@ package org.apache.lucene.index.codecs.lucene40;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsBaseFormat;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.store.Directory;
 
 /** 
@@ -47,7 +43,7 @@ public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
   @Override
   public PostingsReaderBase postingsReaderBase(SegmentReadState state) throws IOException {
-    return new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+    return new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
   }
 
   @Override
@@ -56,7 +52,7 @@ public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
   }
   
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int formatID, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, formatID, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

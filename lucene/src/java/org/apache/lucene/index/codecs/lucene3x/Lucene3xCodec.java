@@ -65,7 +65,7 @@ public class Lucene3xCodec extends Codec {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files) throws IOException {}
+    public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {}
   };
   
   @Override

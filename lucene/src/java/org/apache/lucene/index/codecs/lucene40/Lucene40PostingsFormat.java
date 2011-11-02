@@ -79,7 +79,7 @@ public class Lucene40PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
 
     boolean success = false;
     try {
@@ -89,7 +89,7 @@ public class Lucene40PostingsFormat extends PostingsFormat {
                                                     state.segmentInfo.name,
                                                     postings,
                                                     state.context,
-                                                    state.formatId,
+                                                    state.segmentSuffix,
                                                     state.termsIndexDivisor);
       success = true;
       return ret;
@@ -107,9 +107,9 @@ public class Lucene40PostingsFormat extends PostingsFormat {
   static final String PROX_EXTENSION = "prx";
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, codecID, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 
   @Override

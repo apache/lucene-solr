@@ -65,6 +65,8 @@ public class RandomCodec extends Lucene40Codec {
         codec = formats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % formats.size());
       }
       previousMappings.put(name, codec);
+      // Safety:
+      assert previousMappings.size() < 10000;
     }
     return codec;
   }

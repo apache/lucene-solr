@@ -81,11 +81,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   // NOTE: not private to avoid $accessN at runtime!!
   static class FieldsConsumerAndID implements Closeable {
     final FieldsConsumer fieldsConsumer;
-    final int formatID;
+    final String segmentSuffix;
 
-    public FieldsConsumerAndID(FieldsConsumer fieldsConsumer, int formatID) {
+    public FieldsConsumerAndID(FieldsConsumer fieldsConsumer, String segmentSuffix) {
       this.fieldsConsumer = fieldsConsumer;
-      this.formatID = formatID;
+      this.segmentSuffix = segmentSuffix;
     }
 
     @Override
@@ -121,12 +121,13 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       if (consumerAndId == null) {
         // First time we are seeing this format; assign
         // next id and init it:
-        final int formatID = formats.size();
+        // nocommit how to nest properly?
+        final String segmentSuffix = ""+formats.size();
         // nocommit: maybe the int formatID should be
         // separate arg to .fieldsConsumer?  like we do for
         // .files()
-        consumerAndId = new FieldsConsumerAndID(format.fieldsConsumer(new SegmentWriteState(segmentWriteState, formatID)),
-                                         formatID);
+        consumerAndId = new FieldsConsumerAndID(format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix)),
+                                                segmentSuffix);
         formats.put(format, consumerAndId);
       }
 
@@ -141,7 +142,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
       // Write _X.per: maps field name -> format name and
       // format name -> format id
-      final String mapFileName = IndexFileNames.segmentFileName(segmentWriteState.segmentName, segmentWriteState.formatId, PER_FIELD_EXTENSION);
+      final String mapFileName = IndexFileNames.segmentFileName(segmentWriteState.segmentName, segmentWriteState.segmentSuffix, PER_FIELD_EXTENSION);
       final IndexOutput out = segmentWriteState.directory.createOutput(mapFileName, segmentWriteState.context);
       boolean success = false;
       try {
@@ -150,8 +151,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         // format name -> int id
         out.writeVInt(formats.size());
         for(Map.Entry<PostingsFormat,FieldsConsumerAndID> ent : formats.entrySet()) {
-          out.writeVInt(ent.getValue().formatID);
-          //System.out.println("per: write format " + ent.getKey() + " -> id=" + ent.getValue().formatID);
+          out.writeString(ent.getValue().segmentSuffix);
+          //System.out.println("per: write format " + ent.getKey() + " -> id=" + ent.getValue().segmentSuffix);
           // nocommit -- what if Pulsing(1) and Pulsing(2)
           // are used and then the name is the same....?
           // should Pulsing name itself Pulsing1/2?
@@ -189,8 +190,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       try {
         new VisitPerFieldFile(readState.dir, readState.segmentInfo.name) {
           @Override
-          protected void visitOneFormat(int formatID, PostingsFormat postingsFormat) throws IOException {
-            formats.put(postingsFormat, postingsFormat.fieldsProducer(new SegmentReadState(readState, formatID)));
+          protected void visitOneFormat(String segmentSuffix, PostingsFormat postingsFormat) throws IOException {
+            formats.put(postingsFormat, postingsFormat.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
           }
 
           @Override
@@ -305,7 +306,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // nocommit -- should formatID be a String not int?
       // so we can embed one PFPF in another?  ie just keep
       // appending _N to it...
-      final String mapFileName = IndexFileNames.segmentFileName(segmentName, 0, PER_FIELD_EXTENSION);
+      // nocommit don't hardwire ""?  need the "outer" segmentSuffix?
+      final String mapFileName = IndexFileNames.segmentFileName(segmentName, "", PER_FIELD_EXTENSION);
       final IndexInput in = dir.openInput(mapFileName, IOContext.READONCE);
       boolean success = false;
       try {
@@ -314,7 +316,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         // Read format name -> format id
         final int formatCount = in.readVInt();
         for(int formatIDX=0;formatIDX<formatCount;formatIDX++) {
-          final int formatID = in.readVInt();
+          final String segmentSuffix = in.readString();
           final String formatName = in.readString();
           PostingsFormat postingsFormat = PostingsFormat.forName(formatName);
           //System.out.println("do lookup " + formatName + " -> " + postingsFormat);
@@ -329,7 +331,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
           // Better be defined, because it was defined
           // during indexing:
-          visitOneFormat(formatID, postingsFormat);
+          visitOneFormat(segmentSuffix, postingsFormat);
         }
 
         // Read field name -> format name
@@ -351,24 +353,24 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     // This is called first, for all formats:
-    protected abstract void visitOneFormat(int formatID, PostingsFormat format) throws IOException;
+    protected abstract void visitOneFormat(String segmentSuffix, PostingsFormat format) throws IOException;
 
     // ... then this is called, for all fields:
     protected abstract void visitOneField(String fieldName, PostingsFormat format) throws IOException;
   }
 
   @Override
-  public void files(final Directory dir, final SegmentInfo info, int formatId, final Set<String> files)
+  public void files(final Directory dir, final SegmentInfo info, String segmentSuffix, final Set<String> files)
       throws IOException {
 
-    final String mapFileName = IndexFileNames.segmentFileName(info.name, formatId, PER_FIELD_EXTENSION);
+    final String mapFileName = IndexFileNames.segmentFileName(info.name, segmentSuffix, PER_FIELD_EXTENSION);
     files.add(mapFileName);
 
     try {
       new VisitPerFieldFile(dir, info.name) {
         @Override
-          protected void visitOneFormat(int formatID, PostingsFormat format) throws IOException {
-          format.files(dir, info, formatID, files);
+        protected void visitOneFormat(String segmentSuffix, PostingsFormat format) throws IOException {
+          format.files(dir, info, segmentSuffix, files);
         }
 
         @Override

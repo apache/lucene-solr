@@ -637,9 +637,9 @@ public class TestCompoundFile extends LuceneTestCase
     CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random), true);
     int size = 5 + random.nextInt(128);
     for (int j = 0; j < 2; j++) {
-      IndexOutput os = csw.createOutput("seg" + j + "_foo.txt", newIOContext(random));
+      IndexOutput os = csw.createOutput("seg_" + j + "_foo.txt", newIOContext(random));
       for (int i = 0; i < size; i++) {
-        os.writeInt(i);
+        os.writeInt(i*j);
       }
       os.close();
       String[] listAll = newDir.listAll();
@@ -654,10 +654,10 @@ public class TestCompoundFile extends LuceneTestCase
     csw.close();
     CompoundFileDirectory csr = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random), false);
     for (int j = 0; j < 2; j++) {
-      IndexInput openInput = csr.openInput("seg" + j + "_foo.txt", newIOContext(random));
+      IndexInput openInput = csr.openInput("seg_" + j + "_foo.txt", newIOContext(random));
       assertEquals(size * 4, openInput.length());
       for (int i = 0; i < size; i++) {
-        assertEquals(i, openInput.readInt());
+        assertEquals(i*j, openInput.readInt());
       }
 
       openInput.close();

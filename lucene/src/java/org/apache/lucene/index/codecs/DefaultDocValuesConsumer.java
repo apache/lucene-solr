@@ -25,7 +25,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.DocValuesWriterBase;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
@@ -48,7 +47,7 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
     // lazy init
     if (directory == null) {
       directory = new CompoundFileDirectory(mainDirectory,
-                                            IndexFileNames.segmentFileName(segmentName, formatId,
+                                            IndexFileNames.segmentFileName(segmentName, "dv",
                                                                            IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
     }
     return directory;
@@ -61,15 +60,14 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
     }
   }
 
-  @SuppressWarnings("fallthrough")
-  public static void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files) throws IOException {
+  public static void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, formatId, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION)); 
         return;
       }
     }

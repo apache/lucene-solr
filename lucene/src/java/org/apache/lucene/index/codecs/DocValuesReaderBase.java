@@ -65,7 +65,7 @@ public abstract class DocValuesReaderBase extends PerDocValues {
 
   // Only opens files... doesn't actually load any values
   protected TreeMap<String, IndexDocValues> load(FieldInfos fieldInfos,
-      String segment, int docCount, Directory dir, int codecId, IOContext context)
+      String segment, int docCount, Directory dir, IOContext context)
       throws IOException {
     TreeMap<String, IndexDocValues> values = new TreeMap<String, IndexDocValues>();
     boolean success = false;
@@ -77,7 +77,7 @@ public abstract class DocValuesReaderBase extends PerDocValues {
           // TODO can we have a compound file per segment and codec for
           // docvalues?
           final String id = DefaultDocValuesConsumer.docValuesId(segment,
-              codecId, fieldInfo.number);
+              fieldInfo.number);
           values.put(field,
               loadDocValues(docCount, dir, id, fieldInfo.getDocValues(), context));
         }

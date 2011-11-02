@@ -38,7 +38,7 @@ public class DefaultDocValuesFormat extends DocValuesFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files) throws IOException {
-    DefaultDocValuesConsumer.files(dir, info, formatId, files);
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    DefaultDocValuesConsumer.files(dir, info, files);
   }
 }

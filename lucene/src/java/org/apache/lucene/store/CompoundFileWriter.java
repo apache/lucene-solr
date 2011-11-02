@@ -22,9 +22,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -219,8 +221,12 @@ final class CompoundFileWriter implements Closeable{
       IndexOutput entryOut) throws IOException {
     entryOut.writeInt(ENTRY_FORMAT_CURRENT);
     entryOut.writeVInt(entries.size());
+    final Set<String> seenIDs = new HashSet<String>();
     for (FileEntry fe : entries) {
-      entryOut.writeString(IndexFileNames.stripSegmentName(fe.file));
+      final String id = IndexFileNames.stripSegmentName(fe.file);
+      assert !seenIDs.contains(id): "file=\"" + fe.file + "\" maps to id=\"" + id + "\", which was written more than once";
+      seenIDs.add(id);
+      entryOut.writeString(id);
       entryOut.writeLong(fe.offset);
       entryOut.writeLong(fe.length);
     }
@@ -284,7 +290,7 @@ final class CompoundFileWriter implements Closeable{
     }
   }
 
-  long fileLenght(String name) throws IOException {
+  long fileLength(String name) throws IOException {
     FileEntry fileEntry = entries.get(name);
     if (fileEntry == null) {
       throw new FileNotFoundException(name + " does not exist");

@@ -26,7 +26,6 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.DocValuesReaderBase;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -47,9 +46,9 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
   public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
     if (state.fieldInfos.anyDocValuesFields()) {
       cfs = new CompoundFileDirectory(state.dir, 
-                                      IndexFileNames.segmentFileName(state.segmentInfo.name, state.formatId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
+                                      IndexFileNames.segmentFileName(state.segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION), 
                                       state.context, false);
-      docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.formatId, state.context);
+      docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
     } else {
       cfs = null;
       docValues = new TreeMap<String,IndexDocValues>();

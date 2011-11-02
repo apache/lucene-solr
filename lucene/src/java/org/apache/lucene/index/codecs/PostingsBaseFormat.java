@@ -48,5 +48,5 @@ public abstract class PostingsBaseFormat {
 
   public abstract PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException;
 
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException;
+  public abstract void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
 }

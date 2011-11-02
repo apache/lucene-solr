@@ -48,7 +48,7 @@ public class MockSepDocValuesFormat extends DocValuesFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, int formatId, Set<String> files) throws IOException {
-    SepDocValuesConsumer.files(dir, info, formatId, files);
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    SepDocValuesConsumer.files(dir, info, files);
   }
 }

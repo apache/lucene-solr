@@ -138,10 +138,10 @@ public class MockRandomPostingsFormat extends PostingsFormat {
     final long seed = seedRandom.nextLong();
 
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " formatID=" + state.formatId + " seed=" + seed);
+      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " formatID=" + state.segmentSuffix + " seed=" + seed);
     }
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.formatId, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, SEED_EXT);
     final IndexOutput out = state.directory.createOutput(seedFileName, state.context);
     try {
       out.writeLong(seed);
@@ -272,11 +272,11 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.formatId, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
     final IndexInput in = state.dir.openInput(seedFileName, state.context);
     final long seed = in.readLong();
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.formatId + " seed=" + seed);
+      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
     }
     in.close();
 
@@ -294,12 +294,12 @@ public class MockRandomPostingsFormat extends PostingsFormat {
         System.out.println("MockRandomCodec: reading Sep postings");
       }
       postingsReader = new SepPostingsReader(state.dir, state.segmentInfo,
-                                             state.context, new MockIntStreamFactory(random), state.formatId);
+                                             state.context, new MockIntStreamFactory(random), state.segmentSuffix);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Standard postings");
       }
-      postingsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+      postingsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
     }
 
     if (random.nextBoolean()) {
@@ -325,7 +325,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                           state.segmentInfo.name,
                                           postingsReader,
                                           state.context,
-                                          state.formatId,
+                                          state.segmentSuffix,
                                           state.termsIndexDivisor);
         success = true;
       } finally {
@@ -359,7 +359,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                                      state.segmentInfo.name,
                                                      state.termsIndexDivisor,
                                                      BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                     state.formatId, state.context);
+                                                     state.segmentSuffix, state.context);
         } else {
           final int n2 = random.nextInt(3);
           if (n2 == 1) {
@@ -374,7 +374,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                                         state.fieldInfos,
                                                         state.segmentInfo.name,
                                                         state.termsIndexDivisor,
-                                                        state.formatId, state.context);
+                                                        state.segmentSuffix, state.context);
 
         }
 
@@ -396,7 +396,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
                                       postingsReader,
                                       state.context,
                                       termsCacheSize,
-                                      state.formatId);
+                                      state.segmentSuffix);
         success = true;
       } finally {
         if (!success) {
@@ -413,15 +413,15 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
-    final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecId, SEED_EXT);    
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SEED_EXT);    
     files.add(seedFileName);
-    SepPostingsReader.files(segmentInfo, codecId, files);
-    Lucene40PostingsReader.files(dir, segmentInfo, codecId, files);
-    BlockTermsReader.files(dir, segmentInfo, codecId, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, codecId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    SepPostingsReader.files(segmentInfo, segmentSuffix, files);
+    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
+    VariableGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
     // hackish!
     Iterator<String> it = files.iterator();
     while(it.hasNext()) {

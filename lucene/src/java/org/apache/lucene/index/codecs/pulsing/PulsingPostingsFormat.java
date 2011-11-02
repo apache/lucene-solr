@@ -99,7 +99,7 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
                                                     state.dir, state.fieldInfos, state.segmentInfo.name,
                                                     pulsingReader,
                                                     state.context,
-                                                    state.formatId,
+                                                    state.segmentSuffix,
                                                     state.termsIndexDivisor);
       success = true;
       return ret;
@@ -115,8 +115,8 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
-    wrappedPostingsBaseFormat.files(dir, segmentInfo, codecID, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    wrappedPostingsBaseFormat.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

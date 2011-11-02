@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs.mockintblock;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
@@ -30,8 +29,6 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
-import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
-import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.index.codecs.sep.SepPostingsReader;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
 import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
@@ -39,8 +36,6 @@ import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
@@ -188,7 +183,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
                                                               state.segmentInfo,
                                                               state.context,
-                                                              new MockIntFactory(baseBlockSize), state.formatId);
+                                                              new MockIntFactory(baseBlockSize), state.segmentSuffix);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -198,7 +193,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       state.formatId, state.context);
+                                                       state.segmentSuffix, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -215,7 +210,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
                                                 postingsReader,
                                                 state.context,
                                                 Lucene40PostingsFormat.TERMS_CACHE_SIZE,
-                                                state.formatId);
+                                                state.segmentSuffix);
       success = true;
       return ret;
     } finally {
@@ -230,9 +225,9 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files) throws IOException {
-    SepPostingsReader.files(segmentInfo, formatId, files);
-    BlockTermsReader.files(dir, segmentInfo, formatId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    SepPostingsReader.files(segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

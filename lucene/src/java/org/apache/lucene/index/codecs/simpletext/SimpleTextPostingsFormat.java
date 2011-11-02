@@ -43,7 +43,6 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
     super("SimpleText");
   }
 
-
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new SimpleTextFieldsWriter(state);
@@ -57,12 +56,12 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
   /** Extension of freq postings file */
   static final String POSTINGS_EXTENSION = "pst";
 
-  static String getPostingsFileName(String segment, int id) {
-    return IndexFileNames.segmentFileName(segment, id, POSTINGS_EXTENSION);
+  static String getPostingsFileName(String segment, String segmentSuffix) {
+    return IndexFileNames.segmentFileName(segment, segmentSuffix, POSTINGS_EXTENSION);
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    files.add(getPostingsFileName(segmentInfo.name, id));
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    files.add(getPostingsFileName(segmentInfo.name, segmentSuffix));
   }
 }

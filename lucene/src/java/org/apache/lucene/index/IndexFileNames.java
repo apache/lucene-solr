@@ -190,20 +190,20 @@ public final class IndexFileNames {
    * <b>NOTE:</b> .&lt;ext&gt; is added to the result file name only if
    * <code>ext</code> is not empty.
    * <p>
-   * <b>NOTE:</b> _&lt;name&gt; is added to the result file name only if
-   * <code>name</code> is not empty.
+   * <b>NOTE:</b> _&lt;segmentSuffix&gt; is added to the result file name only if
+   * it's not the empty string
    * <p>
    * <b>NOTE:</b> all custom files should be named using this method, or
    * otherwise some structures may fail to handle them properly (such as if they
    * are added to compound files).
    */
-  public static String segmentFileName(String segmentName, String name, String ext) {
-    if (ext.length() > 0 || name.length() > 0) {
+  public static String segmentFileName(String segmentName, String segmentSuffix, String ext) {
+    if (ext.length() > 0 || segmentSuffix.length() > 0) {
       assert !ext.startsWith(".");
-      StringBuilder sb = new StringBuilder(segmentName.length() + 2 + name.length() + ext.length());
+      StringBuilder sb = new StringBuilder(segmentName.length() + 2 + segmentSuffix.length() + ext.length());
       sb.append(segmentName);
-      if (name.length() > 0) {
-        sb.append('_').append(name);
+      if (segmentSuffix.length() > 0) {
+        sb.append('_').append(segmentSuffix);
       }
       if (ext.length() > 0) {
         sb.append('.').append(ext);
@@ -212,11 +212,6 @@ public final class IndexFileNames {
     } else {
       return segmentName;
     }
-  }
-
-  /** Sugar for passing "" + name instead */
-  public static String segmentFileName(String segmentName, int name, String ext) {
-    return segmentFileName(segmentName, ""+name, ext);
   }
 
   /**
@@ -241,6 +236,10 @@ public final class IndexFileNames {
   public static String stripSegmentName(String filename) {
     // If it is a .del file, there's an '_' after the first character
     int idx = filename.indexOf('_', 1);
+    if (idx == -1) {
+      // nocommit messy -- for doc value filenames
+      idx = filename.indexOf('-', 1);
+    }
     if (idx == -1) {
       // If it's not, strip everything that's before the '.'
       idx = filename.indexOf('.');

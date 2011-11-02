@@ -45,7 +45,7 @@ public class SegmentWriteState {
   public BitVector liveDocs;
 
   public final Codec codec;
-  public final int formatId;
+  public final String segmentSuffix;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
    * in RAM.  Smaller values use more memory, but make searching slightly
@@ -66,14 +66,14 @@ public class SegmentWriteState {
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
     this.codec = codec;
-    formatId = 0;
+    segmentSuffix = "";
     this.context = context;
   }
   
   /**
    * Create a shallow {@link SegmentWriteState} copy final a format ID
    */
-  public SegmentWriteState(SegmentWriteState state, int formatId) {
+  public SegmentWriteState(SegmentWriteState state, String segmentSuffix) {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentName = state.segmentName;
@@ -82,7 +82,7 @@ public class SegmentWriteState {
     termIndexInterval = state.termIndexInterval;
     context = state.context;
     codec = state.codec;
-    this.formatId = formatId;
+    this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
   }
 }

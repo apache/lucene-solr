@@ -28,5 +28,5 @@ import org.apache.lucene.store.Directory;
 public abstract class DocValuesFormat {
   public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
   public abstract PerDocValues docsProducer(SegmentReadState state) throws IOException;
-  public abstract void files(Directory dir, SegmentInfo info, int formatId, Set<String> files) throws IOException;
+  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
 }

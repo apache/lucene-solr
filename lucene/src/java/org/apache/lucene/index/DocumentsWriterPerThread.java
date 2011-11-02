@@ -556,9 +556,9 @@ public class DocumentsWriterPerThread {
     bytesUsed.addAndGet(-(length *(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT)));
   }
 
-  PerDocWriteState newPerDocWriteState(int formatId) {
+  PerDocWriteState newPerDocWriteState(String segmentSuffix) {
     assert segment != null;
-    return new PerDocWriteState(infoStream, directory, segment, fieldInfos, bytesUsed, formatId, IOContext.DEFAULT);
+    return new PerDocWriteState(infoStream, directory, segment, fieldInfos, bytesUsed, segmentSuffix, IOContext.DEFAULT);
   }
   
   void setInfoStream(PrintStream infoStream) {

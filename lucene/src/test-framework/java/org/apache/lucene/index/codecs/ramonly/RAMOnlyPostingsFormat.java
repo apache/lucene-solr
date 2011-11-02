@@ -517,7 +517,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     // nocommit -- ok to do this up front instead of
     // on close....?  should be ok?
     // Write our ID:
-    final String idFileName = IndexFileNames.segmentFileName(writeState.segmentName, writeState.formatId, ID_EXTENSION);
+    final String idFileName = IndexFileNames.segmentFileName(writeState.segmentName, writeState.segmentSuffix, ID_EXTENSION);
     IndexOutput out = writeState.directory.createOutput(idFileName, writeState.context);
     boolean success = false;
     try {
@@ -546,7 +546,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     throws IOException {
 
     // Load our ID:
-    final String idFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.formatId, ID_EXTENSION);
+    final String idFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, ID_EXTENSION);
     IndexInput in = readState.dir.openInput(idFileName, readState.context);
     boolean success = false;
     final int id;
@@ -568,8 +568,8 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files) {
-    final String idFileName = IndexFileNames.segmentFileName(segmentInfo.name, formatId, ID_EXTENSION);
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) {
+    final String idFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, ID_EXTENSION);
     files.add(idFileName);
   }
 }

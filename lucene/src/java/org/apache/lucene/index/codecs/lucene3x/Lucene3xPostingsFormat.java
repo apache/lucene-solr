@@ -66,8 +66,8 @@ public class Lucene3xPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, int id, Set<String> files) throws IOException {
-    // preflex fields have no codec ID - we ignore it here
+  public void files(Directory dir, SegmentInfo info, String segmentSuffix, Set<String> files) throws IOException {
+    // preflex fields have no segmentSuffix - we ignore it here
     Lucene3xFields.files(dir, info, files);
   }
 }

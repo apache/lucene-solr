@@ -20,18 +20,13 @@ package org.apache.lucene.index.codecs.appending;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
@@ -85,7 +80,7 @@ class AppendingPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
           throws IOException {
-    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.formatId);
+    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
@@ -95,7 +90,7 @@ class AppendingPostingsFormat extends PostingsFormat {
               state.segmentInfo.name,
               state.termsIndexDivisor,
               BytesRef.getUTF8SortedAsUnicodeComparator(),
-              state.formatId, state.context);
+              state.segmentSuffix, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -109,7 +104,7 @@ class AppendingPostingsFormat extends PostingsFormat {
               docsReader,
               state.context,
               Lucene40PostingsFormat.TERMS_CACHE_SIZE,
-              state.formatId);
+              state.segmentSuffix);
       success = true;
       return ret;
     } finally {
@@ -124,10 +119,10 @@ class AppendingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int formatId, Set<String> files)
+  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files)
           throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, formatId, files);
-    BlockTermsReader.files(dir, segmentInfo, formatId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, formatId, files);
+    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

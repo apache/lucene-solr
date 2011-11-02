@@ -34,9 +34,9 @@ public class AppendingTermsDictReader extends BlockTermsReader {
   public AppendingTermsDictReader(TermsIndexReaderBase indexReader,
           Directory dir, FieldInfos fieldInfos, String segment,
           PostingsReaderBase postingsReader, IOContext context,
-          int termsCacheSize, int formatId) throws IOException {
+          int termsCacheSize, String segmentSuffix) throws IOException {
     super(indexReader, dir, fieldInfos, segment, postingsReader, context,
-          termsCacheSize, formatId);
+          termsCacheSize, segmentSuffix);
   }
   
   @Override
