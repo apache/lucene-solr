@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -62,6 +61,6 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * @return An IndexReader instance
    * @throws IOException
    */
-  public abstract IndexReader newReader(Directory indexDir, boolean readOnly, CodecProvider codecProvider)
+  public abstract IndexReader newReader(Directory indexDir, boolean readOnly)
       throws IOException;
 }

@@ -17,7 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -25,9 +25,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 /**
  * Factory for plugging in a custom {@link CodecProvider}
  */
-public abstract class CodecProviderFactory implements NamedListInitializedPlugin {
+public abstract class CodecFactory implements NamedListInitializedPlugin {
   public void init(NamedList args) {  
   }
   
-  public abstract CodecProvider create(IndexSchema schema);
+  public abstract Codec create(IndexSchema Schema);
 }

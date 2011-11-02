@@ -17,9 +17,11 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
+import org.apache.lucene.util.Version;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -56,15 +58,15 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
-    initSourceReader(core.getCodecProvider());
+    initSourceReader();
     return name;
   }
 
-  private void initSourceReader(CodecProvider codecProvider) {
+  private void initSourceReader() {
     if (sourceLocation != null) {
       try {
         FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation));
-        this.reader = IndexReader.open(luceneIndexDir, true, codecProvider);
+        this.reader = IndexReader.open(luceneIndexDir, true);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -86,8 +88,19 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
       // Create the dictionary
       dictionary = new HighFrequencyDictionary(reader, field,
           threshold);
+      // TODO: maybe whether or not to clear the index should be configurable?
+      // an incremental update is faster (just adds new terms), but if you 'expunged'
+      // old terms I think they might hang around.
       spellChecker.clearIndex();
-      spellChecker.indexDictionary(dictionary);
+      // TODO: you should be able to specify the IWC params?
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_CURRENT, null);
+      
+      // TODO: if we enable this, codec gets angry since field won't exist in the schema
+      // config.setCodec(core.getCodec());
+      ((TieredMergePolicy)config.getMergePolicy()).setMaxMergeAtOnce(300);
+      // TODO: does Solr really want to continue passing 'optimize=true' to the spellchecker here?
+      // (its been doing this behind the scenes all along, but its wasteful.
+      spellChecker.indexDictionary(dictionary, config, true);
 
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -109,7 +122,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     super.reload(core, searcher);
     //reload the source
-    initSourceReader(core.getCodecProvider());
+    initSourceReader();
   }
 
   public float getThreshold() {

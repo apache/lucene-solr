@@ -106,7 +106,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean readOnly, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
-    this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType), readOnly, core.getCodecProvider()), true, enableCache, false, directoryFactory);
+    this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType), readOnly), true, enableCache, false, directoryFactory);
   }
 
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) {

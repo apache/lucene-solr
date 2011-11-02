@@ -29,6 +29,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -62,7 +63,14 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     try {
       loadExternalFileDictionary(core);
       spellChecker.clearIndex();
-      spellChecker.indexDictionary(dictionary);
+      // TODO: you should be able to specify the IWC params?
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_CURRENT, null);
+      // TODO: if we enable this, codec gets angry since field won't exist in the schema
+      // config.setCodec(core.getCodec());
+      ((TieredMergePolicy)config.getMergePolicy()).setMaxMergeAtOnce(300);
+      // TODO: does Solr really want to continue passing 'optimize=true' to the spellchecker here?
+      // (its been doing this behind the scenes all along, but its wasteful.
+      spellChecker.indexDictionary(dictionary, config, true);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -93,8 +101,9 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
             new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
-                setOpenMode(IndexWriterConfig.OpenMode.CREATE).
-                setCodecProvider(core.getCodecProvider())
+                setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                // TODO: if we enable this, codec gets angry since field won't exist in the schema
+                // .setCodec(core.getCodec())
         );
 
         List<String> lines = core.getResourceLoader().getLines(sourceLocation, characterEncoding);
@@ -107,7 +116,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
         writer.optimize();
         writer.close();
 
-        dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir, true, core.getCodecProvider()),
+        dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir, true),
                 WORD_FIELD_NAME, 0.0f);
       } else {
         // check if character encoding is defined

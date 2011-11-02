@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -34,8 +33,8 @@ public class StandardIndexReaderFactory extends IndexReaderFactory {
    * @see org.apache.solr.core.IndexReaderFactory#newReader(org.apache.lucene.store.Directory, boolean)
    */
   @Override
-  public IndexReader newReader(Directory indexDir, boolean readOnly, CodecProvider codecProvider)
+  public IndexReader newReader(Directory indexDir, boolean readOnly)
       throws IOException {
-    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor, codecProvider);
+    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor);
   }
 }

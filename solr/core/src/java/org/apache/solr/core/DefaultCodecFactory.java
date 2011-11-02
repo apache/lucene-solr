@@ -18,39 +18,41 @@ package org.apache.solr.core;
  */
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.CoreCodecProvider;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * Default CodecProviderFactory implementation, extends Lucene's 
+ * Default CodecFactory implementation, extends Lucene's 
  * and returns postings format implementations according to the 
  * schema configuration.
  * @lucene.experimental
  */
-public class DefaultCodecProviderFactory extends CodecProviderFactory {
+public class DefaultCodecFactory extends CodecFactory {
+
+  // TODO: we need to change how solr does this?
+  // rather than a string like "Pulsing" you need to be able to pass parameters
+  // and everything to a field in the schema, e.g. we should provide factories for 
+  // the Lucene's core formats (Memory, Pulsing, ...) and such.
+  //
+  // So I think a FieldType should return PostingsFormat, not a String.
+  // how it constructs this from the XML... i don't care.
 
   @Override
-  public CodecProvider create(final IndexSchema schema) {
-    return new CoreCodecProvider() {
+  public Codec create(final IndexSchema schema) {
+    return new Lucene40Codec() {
       @Override
-      public Codec getDefaultCodec() {
-        return new Lucene40Codec() {
-          @Override
-          public String getPostingsFormatForField(String field) {
-            final SchemaField fieldOrNull = schema.getFieldOrNull(field);
-            if (fieldOrNull == null) {
-              throw new IllegalArgumentException("no such field " + field);
-            }
-            String postingsFormatName = fieldOrNull.getType().getPostingsFormat();
-            if (postingsFormatName != null) {
-              return postingsFormatName;
-            }
-            return super.getPostingsFormatForField(field);
-          }
-        };
+      public PostingsFormat getPostingsFormatForField(String field) {
+        final SchemaField fieldOrNull = schema.getFieldOrNull(field);
+        if (fieldOrNull == null) {
+          throw new IllegalArgumentException("no such field " + field);
+        }
+        String postingsFormatName = fieldOrNull.getType().getPostingsFormat();
+        if (postingsFormatName != null) {
+          return PostingsFormat.forName(postingsFormatName);
+        }
+        return super.getPostingsFormatForField(field);
       }
     };
   }

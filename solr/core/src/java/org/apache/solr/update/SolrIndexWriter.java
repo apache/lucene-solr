@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
@@ -52,12 +52,12 @@ public class SolrIndexWriter extends IndexWriter {
   private PrintStream infoStream;
   private DirectoryFactory directoryFactory;
 
-  public SolrIndexWriter(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, CodecProvider codecProvider, boolean forceNewDirectory) throws IOException {
+  public SolrIndexWriter(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
     super(
         directoryFactory.get(path, config.lockType, forceNewDirectory),
         config.toIndexWriterConfig(schema).
             setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-            setIndexDeletionPolicy(delPolicy).setCodecProvider(codecProvider)
+            setIndexDeletionPolicy(delPolicy).setCodec(codec)
     );
     log.debug("Opened Writer " + name);
     this.name = name;
