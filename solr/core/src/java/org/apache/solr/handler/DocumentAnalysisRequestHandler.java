@@ -345,19 +345,17 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    */
   private ContentStream extractSingleContentStream(SolrQueryRequest req) {
     Iterable<ContentStream> streams = req.getContentStreams();
+    String exceptionMsg = "DocumentAnalysisRequestHandler expects a single content stream with documents to analyze";
     if (streams == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "DocumentAnlysisRequestHandler expects a single content stream with documents to analyze");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMsg);
     }
     Iterator<ContentStream> iter = streams.iterator();
     if (!iter.hasNext()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "DocumentAnlysisRequestHandler expects a single content stream with documents to analyze");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMsg);
     }
     ContentStream stream = iter.next();
     if (iter.hasNext()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "DocumentAnlysisRequestHandler expects a single content stream with documents to analyze");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMsg);
     }
     return stream;
   }

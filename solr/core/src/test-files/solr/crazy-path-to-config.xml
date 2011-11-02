@@ -67,7 +67,7 @@
   
   
   <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
-  <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter"/>
+  <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter" startup="lazy"/>
   <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter"/>
 
 

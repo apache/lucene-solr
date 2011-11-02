@@ -16,10 +16,12 @@ package org.apache.lucene.index;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.TermQuery;
@@ -141,6 +143,32 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         assertFalse(queue.anyChanges());
       }
     }
+  }
+  
+  public void testPartiallyAppliedGlobalSlice() throws SecurityException,
+      NoSuchFieldException, IllegalArgumentException, IllegalAccessException,
+      InterruptedException {
+    final DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
+    Field field = DocumentsWriterDeleteQueue.class
+        .getDeclaredField("globalBufferLock");
+    field.setAccessible(true);
+    ReentrantLock lock = (ReentrantLock) field.get(queue);
+    lock.lock();
+    Thread t = new Thread() {
+      public void run() {
+        queue.addDelete(new Term("foo", "bar"));
+      }
+    };
+    t.start();
+    t.join();
+    lock.unlock();
+    assertTrue("changes in del queue but not in slice yet", queue.anyChanges());
+    queue.tryApplyGlobalSlice();
+    assertTrue("changes in global buffer", queue.anyChanges());
+    FrozenBufferedDeletes freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
+    assertTrue(freezeGlobalBuffer.any());
+    assertEquals(1, freezeGlobalBuffer.termCount);
+    assertFalse("all changes applied", queue.anyChanges());
   }
 
   public void testStressDeleteQueue() throws InterruptedException {

@@ -17,8 +17,7 @@ package org.apache.solr.handler.clustering.carrot2;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
@@ -67,13 +67,14 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Closeables;
 
 /**
  * Search results clustering engine based on Carrot2 clustering algorithms.
  * <p/>
  * Output from this class is subject to change.
  *
- * @link http://project.carrot2.org
+ * @see "http://project.carrot2.org"
  */
 public class CarrotClusteringEngine extends SearchClusteringEngine {
 	private transient static Logger log = LoggerFactory
@@ -101,6 +102,90 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
    */
   private Controller controller = ControllerFactory.createPooling();
   private Class<? extends IClusteringAlgorithm> clusteringAlgorithmClass;
+  
+  private static class SolrResourceLocator implements IResourceLocator {
+    private final SolrResourceLoader resourceLoader;
+    private final String carrot2ResourcesDir;
+
+    public SolrResourceLocator(SolrCore core, SolrParams initParams) {
+      resourceLoader = core.getResourceLoader();
+      carrot2ResourcesDir = initParams.get(
+          CarrotParams.LEXICAL_RESOURCES_DIR, CARROT_RESOURCES_PREFIX);
+    }
+
+    @Override
+    public IResource[] getAll(final String resource) {
+      final String resourceName = carrot2ResourcesDir + "/" + resource;
+      log.debug("Looking for Solr resource: " + resourceName);
+
+      InputStream resourceStream = null;
+      final byte [] asBytes;
+      try {
+        resourceStream = resourceLoader.openResource(resourceName);
+        asBytes = IOUtils.toByteArray(resourceStream);
+      } catch (RuntimeException e) {
+        log.debug("Resource not found in Solr's config: " + resourceName
+            + ". Using the default " + resource + " from Carrot JAR.");          
+        return new IResource[] {};
+      } catch (IOException e) {
+        log.warn("Could not read Solr resource " + resourceName);
+        return new IResource[] {};
+      } finally {
+        if (resourceStream != null) Closeables.closeQuietly(resourceStream);
+      }
+
+      log.info("Loaded Solr resource: " + resourceName);
+
+      final IResource foundResource = new IResource() {
+        @Override
+        public InputStream open() throws IOException {
+          return new ByteArrayInputStream(asBytes);
+        }
+        
+        @Override
+        public int hashCode() {
+          // In case multiple resources are found they will be deduped, but we don't use it in Solr,
+          // so simply rely on instance equivalence.
+          return super.hashCode();
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+          // In case multiple resources are found they will be deduped, but we don't use it in Solr,
+          // so simply rely on instance equivalence.
+          return super.equals(obj);
+        }
+
+        @Override
+        public String toString() {
+          return "Solr config resource: " + resourceName;
+        }
+      };
+
+      return new IResource[] { foundResource };
+    }
+
+    @Override
+    public int hashCode() {
+      // In case multiple locations are used locators will be deduped, but we don't use it in Solr,
+      // so simply rely on instance equivalence.
+      return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      // In case multiple locations are used locators will be deduped, but we don't use it in Solr,
+      // so simply rely on instance equivalence.
+      return super.equals(obj);
+    }
+
+    @Override
+    public String toString() {
+      return "SolrResourceLocator, " 
+          + "configDir=" + new File(resourceLoader.getConfigDir()).getAbsolutePath()
+          + ", Carrot2 relative lexicalResourcesDir=";
+    }
+  }
 
   @Override
   @Deprecated
@@ -168,38 +253,10 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
     // Customize Carrot2's resource lookup to first look for resources
     // using Solr's resource loader. If that fails, try loading from the classpath.
-    DefaultLexicalDataFactoryDescriptor.attributeBuilder(initAttributes)
-        .resourceLookup(new ResourceLookup(new IResourceLocator() {
-          @Override
-          public IResource[] getAll(final String resource) {
-            final SolrResourceLoader resourceLoader = core.getResourceLoader();
-            final String carrot2ResourcesDir = initParams.get(
-                CarrotParams.LEXICAL_RESOURCES_DIR, CARROT_RESOURCES_PREFIX);
-            try {
-              log.debug("Looking for " + resource + " in "
-                  + carrot2ResourcesDir);
-              final InputStream resourceStream = resourceLoader
-                  .openResource(carrot2ResourcesDir + "/" + resource);
-
-              log.info(resource + " loaded from " + carrot2ResourcesDir);
-              final IResource foundResource = new IResource() {
-                @Override
-                public InputStream open() throws IOException {
-                  return resourceStream;
-                }
-              };
-              return new IResource[] { foundResource };
-            } catch (RuntimeException e) {
-              // No way to distinguish if the resource was found but failed
-              // to load or wasn't found at all, so we simply fall back
-              // to Carrot2 defaults here by returning an empty locations array.
-              log.debug(resource + " not found in " + carrot2ResourcesDir
-                  + ". Using the default " + resource + " from Carrot JAR.");
-              return new IResource[] {};
-            }
-          }
-        },
-
+    DefaultLexicalDataFactoryDescriptor.attributeBuilder(initAttributes).resourceLookup(
+      new ResourceLookup(
+        // Solr-specific resource loading.
+        new SolrResourceLocator(core, initParams),
         // Using the class loader directly because this time we want to omit the prefix
         new ClassLoaderLocator(core.getResourceLoader().getClassLoader())));
 

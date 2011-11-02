@@ -582,6 +582,7 @@ final class DocumentsWriter {
         }
         applyFlushTickets();
       }
+      assert !flushingDeleteQueue.anyChanges();
     } finally {
       assert flushingDeleteQueue == currentFullFlushDelQueue;
     }

@@ -32,7 +32,31 @@ import org.apache.lucene.analysis.Tokenizer;
  */
 public class TestPhoneticFilterFactory extends BaseTokenTestCase {
   
+  private static final int REPEATS = 100000;
+
+  /**
+   * Case: default
+   */
   public void testFactory()
+  {
+    Map<String,String> args = new HashMap<String, String>();
+    
+    PhoneticFilterFactory ff = new PhoneticFilterFactory();
+    
+    args.put( PhoneticFilterFactory.ENCODER, "Metaphone" );
+    ff.init( args );
+    assertTrue( ff.encoder instanceof Metaphone );
+    assertTrue( ff.inject ); // default
+
+    args.put( PhoneticFilterFactory.INJECT, "false" );
+    ff.init( args );
+    assertFalse( ff.inject );
+  }
+  
+  /**
+   * Case: Failures and Exceptions
+   */
+  public void testFactoryCaseFailure()
   {
     Map<String,String> args = new HashMap<String, String>();
     
@@ -48,15 +72,27 @@ public class TestPhoneticFilterFactory extends BaseTokenTestCase {
       fail( "unknown encoder parameter" );
     }
     catch( Exception ex ) {}
+    args.put( PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.NonExistence" );
+    try {
+      ff.init( args );
+      fail( "unknown encoder parameter" );
+    }
+    catch( Exception ex ) {}
+  }
+  
+  /**
+   * Case: Reflection
+   */
+  public void testFactoryCaseReflection()
+  {
+    Map<String,String> args = new HashMap<String, String>();
     
-    args.put( PhoneticFilterFactory.ENCODER, "Metaphone" );
+    PhoneticFilterFactory ff = new PhoneticFilterFactory();
+
+    args.put( PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.Metaphone" );
     ff.init( args );
     assertTrue( ff.encoder instanceof Metaphone );
     assertTrue( ff.inject ); // default
-
-    args.put( PhoneticFilterFactory.INJECT, "false" );
-    ff.init( args );
-    assertFalse( ff.inject );
   }
   
   public void testAlgorithms() throws Exception {
@@ -85,6 +121,12 @@ public class TestPhoneticFilterFactory extends BaseTokenTestCase {
           "TTA1111111", "Datha", "KLN1111111", "Carlene" });
     assertAlgorithm("Caverphone", "false", "Darda Karleen Datha Carlene",
         new String[] { "TTA1111111", "KLN1111111", "TTA1111111", "KLN1111111" });
+    
+    assertAlgorithm("ColognePhonetic", "true", "Meier Schmitt Meir Schmidt",
+        new String[] { "67", "Meier", "862", "Schmitt", 
+          "67", "Meir", "862", "Schmidt" });
+    assertAlgorithm("ColognePhonetic", "false", "Meier Schmitt Meir Schmidt",
+        new String[] { "67", "862", "67", "862" });
   }
   
   static void assertAlgorithm(String algName, String inject, String input,
@@ -98,4 +140,25 @@ public class TestPhoneticFilterFactory extends BaseTokenTestCase {
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, expected);
   }
+  
+  public void testSpeed() throws Exception {
+	  checkSpeedEncoding("Metaphone", "easgasg", "ESKS");
+	  checkSpeedEncoding("DoubleMetaphone", "easgasg", "ASKS");
+	  checkSpeedEncoding("Soundex", "easgasg", "E220");
+	  checkSpeedEncoding("RefinedSoundex", "easgasg", "E034034");
+	  checkSpeedEncoding("Caverphone", "Carlene", "KLN1111111");
+	  checkSpeedEncoding("ColognePhonetic", "Schmitt", "862");
+  }
+  
+  private void checkSpeedEncoding(String encoder, String toBeEncoded, String estimated) throws Exception {
+	  long start = System.currentTimeMillis();
+	  for ( int i=0; i<REPEATS; i++) {
+		    assertAlgorithm(encoder, "false", toBeEncoded,
+		            new String[] { estimated });
+	  }
+	  long duration = System.currentTimeMillis()-start;
+	  if (VERBOSE)
+	    System.out.println(encoder + " encodings per msec: "+(REPEATS/duration));
+  }
+  
 }

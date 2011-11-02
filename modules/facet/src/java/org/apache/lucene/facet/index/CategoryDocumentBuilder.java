@@ -13,7 +13,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 
-import org.apache.lucene.DocumentBuilder;
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
 import org.apache.lucene.facet.index.attributes.CategoryAttributesIterable;
 import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
@@ -64,7 +63,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
  * 
  * @lucene.experimental
  */
-public class CategoryDocumentBuilder implements DocumentBuilder {
+public class CategoryDocumentBuilder {
 
   /**
    * A {@link TaxonomyWriter} for adding categories and retrieving their
@@ -288,9 +287,7 @@ public class CategoryDocumentBuilder implements DocumentBuilder {
     return new CategoryTokenizer(categoryStream, indexingParams);
   }
 
-  /**
-   * Adds the fields created in one of the "set" methods to the document
-   */
+  /** Adds the fields created in one of the "set" methods to the document */
   public Document build(Document doc) {
     for (Field f : fieldList) {
       doc.add(f);

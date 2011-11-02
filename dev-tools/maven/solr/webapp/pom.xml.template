@@ -40,68 +40,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>solr-core</artifactId>
       <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-chain</groupId>
-          <artifactId>commons-chain</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-digester</groupId>
-          <artifactId>commons-digester</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-validator</groupId>
-          <artifactId>commons-validator</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jakarta-regexp</groupId>
-          <artifactId>jakarta-regexp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>dom4j</groupId>
-          <artifactId>dom4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.activation</groupId>
-          <artifactId>activation</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.mail</groupId>
-          <artifactId>mail</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jline</groupId>
-          <artifactId>jline</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.struts</groupId>
-          <artifactId>struts-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.struts</groupId>
-          <artifactId>struts-taglib</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.struts</groupId>
-          <artifactId>struts-tiles</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>oro</groupId>
-          <artifactId>oro</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>sslext</groupId>
-          <artifactId>sslext</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>xml-apis</groupId>
-          <artifactId>xml-apis</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -109,22 +47,14 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.woodstox</groupId>
-      <artifactId>wstx-asl</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>stax</groupId>
-          <artifactId>stax-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
   <build>

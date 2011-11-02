@@ -63,9 +63,7 @@ public class CachingWrapperFilter extends Filter {
     }
   }
 
-  /**
-   * New deletes are ignored by default, which gives higher
-   * cache hit rate on reopened readers.
+  /** Wraps another filter's result and caches it.
    * @param filter Filter to cache results of
    */
   public CachingWrapperFilter(Filter filter) {

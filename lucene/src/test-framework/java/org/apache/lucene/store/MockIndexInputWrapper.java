@@ -30,6 +30,7 @@ public class MockIndexInputWrapper extends IndexInput {
   final String name;
   private IndexInput delegate;
   private boolean isClone;
+  private boolean closed;
 
   /** Construct an empty output buffer. */
   public MockIndexInputWrapper(MockDirectoryWrapper dir, String name, IndexInput delegate) {
@@ -45,6 +46,7 @@ public class MockIndexInputWrapper extends IndexInput {
       // after fixing TestTransactions
       // dir.maybeThrowDeterministicException();
     } finally {
+      closed = true;
       delegate.close();
       // Pending resolution on LUCENE-686 we may want to
       // remove the conditional check so we also track that
@@ -54,9 +56,16 @@ public class MockIndexInputWrapper extends IndexInput {
       }
     }
   }
+  
+  private void ensureOpen() {
+    if (closed) {
+      throw new RuntimeException("Abusing closed IndexInput!");
+    }
+  }
 
   @Override
   public Object clone() {
+    ensureOpen();
     dir.inputCloneCount.incrementAndGet();
     IndexInput iiclone = (IndexInput) delegate.clone();
     MockIndexInputWrapper clone = new MockIndexInputWrapper(dir, name, iiclone);
@@ -80,72 +89,86 @@ public class MockIndexInputWrapper extends IndexInput {
 
   @Override
   public long getFilePointer() {
+    ensureOpen();
     return delegate.getFilePointer();
   }
 
   @Override
   public void seek(long pos) throws IOException {
+    ensureOpen();
     delegate.seek(pos);
   }
 
   @Override
   public long length() {
+    ensureOpen();
     return delegate.length();
   }
 
   @Override
   public byte readByte() throws IOException {
+    ensureOpen();
     return delegate.readByte();
   }
 
   @Override
   public void readBytes(byte[] b, int offset, int len) throws IOException {
+    ensureOpen();
     delegate.readBytes(b, offset, len);
   }
 
   @Override
   public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+    ensureOpen();
     delegate.copyBytes(out, numBytes);
   }
 
   @Override
   public void readBytes(byte[] b, int offset, int len, boolean useBuffer)
       throws IOException {
+    ensureOpen();
     delegate.readBytes(b, offset, len, useBuffer);
   }
 
   @Override
   public short readShort() throws IOException {
+    ensureOpen();
     return delegate.readShort();
   }
 
   @Override
   public int readInt() throws IOException {
+    ensureOpen();
     return delegate.readInt();
   }
 
   @Override
   public long readLong() throws IOException {
+    ensureOpen();
     return delegate.readLong();
   }
 
   @Override
   public String readString() throws IOException {
+    ensureOpen();
     return delegate.readString();
   }
 
   @Override
   public Map<String,String> readStringStringMap() throws IOException {
+    ensureOpen();
     return delegate.readStringStringMap();
   }
 
   @Override
   public int readVInt() throws IOException {
+    ensureOpen();
     return delegate.readVInt();
   }
 
   @Override
   public long readVLong() throws IOException {
+    ensureOpen();
     return delegate.readVLong();
   }
 

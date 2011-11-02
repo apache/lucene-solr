@@ -37,9 +37,7 @@ public class CachingSpanFilter extends SpanFilter {
    */
   private final CachingWrapperFilter.FilterCache<SpanFilterResult> cache;
 
-  /**
-   * New deletions always result in a cache miss, by default
-   * ({@link CachingWrapperFilter.DeletesMode#RECACHE}.
+  /** Wraps another SpanFilter's result and caches it.
    * @param filter Filter to cache results of
    */
   public CachingSpanFilter(SpanFilter filter) {

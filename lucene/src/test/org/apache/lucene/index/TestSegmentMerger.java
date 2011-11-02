@@ -147,12 +147,14 @@ public class TestSegmentMerger extends LuceneTestCase {
     
     // Assert that SM fails if .del exists
     SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null, Codec.getDefault(), newIOContext(random));
+    boolean doFail = false;
     try {
       sm.createCompoundFile("b1", w.segmentInfos.info(0), newIOContext(random));
-      fail("should not have been able to create a .cfs with .del and .s* files");
+      doFail = true; // should never get here
     } catch (AssertionError e) {
       // expected
     }
+    assertFalse("should not have been able to create a .cfs with .del and .s* files", doFail);
     
     // Create an index w/ .s*
     w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
@@ -165,12 +167,15 @@ public class TestSegmentMerger extends LuceneTestCase {
     r.close();
     
     // Assert that SM fails if .s* exists
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
     try {
-      sm.createCompoundFile("b2", w.segmentInfos.info(0), newIOContext(random));
-      fail("should not have been able to create a .cfs with .del and .s* files");
+      sm.createCompoundFile("b2", sis.info(0), newIOContext(random));
+      doFail = true; // should never get here
     } catch (AssertionError e) {
       // expected
     }
+    assertFalse("should not have been able to create a .cfs with .del and .s* files", doFail);
 
     dir.close();
   }

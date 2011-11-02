@@ -146,7 +146,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   public int nextSetBit(int index) {
     assert index >= 0 && index < numBits;
     int i = index >> 6;
-    int subIndex = index & 0x3f;      // index within the word
+    final int subIndex = index & 0x3f;      // index within the word
     long word = bits[i] >> subIndex;  // skip all the bits to the right of index
 
     if (word!=0) {
@@ -163,6 +163,9 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     return -1;
   }
 
+  /** Returns the index of the last set bit before or on the index specified.
+   *  -1 is returned if there are no more set bits.
+   */
   public int prevSetBit(int index) {
     assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
     int i = index >> 6;
