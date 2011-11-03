@@ -8,8 +8,8 @@ import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
 
 /**
@@ -37,8 +37,8 @@ public class FacetSearchParamsTest extends LuceneTestCase {
     assertEquals("unexpected default facet indexing params class", DefaultFacetIndexingParams.class.getName(), fsp.getFacetIndexingParams().getClass().getName());
     assertEquals("no facet requests should be added by default", 0, fsp.getFacetRequests().size());
     Directory dir = newDirectory();
-    new LuceneTaxonomyWriter(dir).close();
-    TaxonomyReader tr = new LuceneTaxonomyReader(dir);
+    new DirectoryTaxonomyWriter(dir).close();
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dir);
     assertEquals("unexpected partition offset for 0 categories", 1, PartitionsUtils.partitionOffset(fsp, 1, tr));
     assertEquals("unexpected partition size for 0 categories", 1, PartitionsUtils.partitionSize(fsp,tr));
     tr.close();
@@ -56,11 +56,11 @@ public class FacetSearchParamsTest extends LuceneTestCase {
   public void testPartitionSizeWithCategories() throws Exception {
     FacetSearchParams fsp = new FacetSearchParams();
     Directory dir = newDirectory();
-    TaxonomyWriter tw = new LuceneTaxonomyWriter(dir);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dir);
     tw.addCategory(new CategoryPath("a"));
     tw.commit();
     tw.close();
-    TaxonomyReader tr = new LuceneTaxonomyReader(dir);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dir);
     assertEquals("unexpected partition offset for 1 categories", 2, PartitionsUtils.partitionOffset(fsp, 1, tr));
     assertEquals("unexpected partition size for 1 categories", 2, PartitionsUtils.partitionSize(fsp,tr));
     tr.close();

@@ -13,6 +13,8 @@ Changes in backwards compatibility policy
  * LUCENE-3508: Changed some method signatures in decompounding TokenFilters
    to make them no longer use the Token class.  (Uwe Schindler)
 
+ * LUCENE-3552: Renamed LuceneTaxonomyReader/Writer to DirectoryTR/TW (Shai Erera)
+
 New Features
 
  * LUCENE-1824: Add BoundaryScanner interface and its implementation classes,

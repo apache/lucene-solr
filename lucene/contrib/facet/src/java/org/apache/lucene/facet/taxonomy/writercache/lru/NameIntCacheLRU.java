@@ -119,7 +119,7 @@ class NameIntCacheLRU {
    * If cache is full remove least recently used entries from cache.
    * Return true if anything was removed, false otherwise.
    * 
-   * See comment in {@link LuceneTaxonomyWriter#addToCache(String, Integer)}
+   * See comment in {@link DirectoryTaxonomyWriter#addToCache(String, Integer)}
    * for an explanation why we clean 2/3rds of the cache, and not just one
    * entry.
    */ 

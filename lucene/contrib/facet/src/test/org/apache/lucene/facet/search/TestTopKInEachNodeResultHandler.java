@@ -36,8 +36,8 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
 
 /**
@@ -87,7 +87,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       RandomIndexWriter iw = new RandomIndexWriter(random, iDir,
           newIndexWriterConfig(TEST_VERSION_CURRENT,
               new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-      TaxonomyWriter tw = new LuceneTaxonomyWriter(tDir);
+      TaxonomyWriter tw = new DirectoryTaxonomyWriter(tDir);
       prvt_add(iParams, iw, tw, "a", "b");
       prvt_add(iParams, iw, tw, "a", "b", "1");
       prvt_add(iParams, iw, tw, "a", "b", "1");
@@ -111,7 +111,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       tw.close();
 
       IndexSearcher is = newSearcher(ir);
-      LuceneTaxonomyReader tr = new LuceneTaxonomyReader(tDir);
+      DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(tDir);
 
       // Get all of the documents and run the query, then do different
       // facet counts and compare to control

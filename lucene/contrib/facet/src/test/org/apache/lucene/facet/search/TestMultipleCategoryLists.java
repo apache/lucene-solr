@@ -35,8 +35,8 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -64,7 +64,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
 
     /**
      * Configure with no custom counting lists
@@ -77,7 +77,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new LuceneTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -106,7 +106,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[0][1],
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
@@ -118,7 +118,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new LuceneTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -147,7 +147,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[0][1],
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
@@ -161,7 +161,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new LuceneTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -198,7 +198,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
     iParams.addCategoryListParams(new CategoryPath("Band"),
@@ -211,7 +211,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new LuceneTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
@@ -239,7 +239,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
-    TaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[0][1],
+    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
 
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
@@ -256,7 +256,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     tw.commit();
 
     // prepare index reader and taxonomy.
-    TaxonomyReader tr = new LuceneTaxonomyReader(dirs[0][1]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0][1]);
 
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);

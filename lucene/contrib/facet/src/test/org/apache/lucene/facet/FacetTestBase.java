@@ -41,8 +41,8 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -135,7 +135,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     }
     
     RandomIndexWriter iw = new RandomIndexWriter(random, indexDir, getIndexWriterConfig(getAnalyzer()));
-    TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir, OpenMode.CREATE);
+    TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
     
     populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
     
@@ -146,7 +146,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     iw.close();
     
     // prepare for searching
-    taxoReader = new LuceneTaxonomyReader(taxoDir);
+    taxoReader = new DirectoryTaxonomyReader(taxoDir);
     indexReader = IndexReader.open(indexDir);
     searcher = newSearcher(indexReader);
   }

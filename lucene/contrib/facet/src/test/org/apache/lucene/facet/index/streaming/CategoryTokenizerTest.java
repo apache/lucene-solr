@@ -17,7 +17,7 @@ import org.apache.lucene.facet.index.streaming.CategoryAttributesStream;
 import org.apache.lucene.facet.index.streaming.CategoryTokenizer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,7 +47,7 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
   @Test
   public void testTokensDefaultParams() throws IOException {
     Directory directory = newDirectory();
-    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
     DefaultFacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
     CategoryTokenizer tokenizer = new CategoryTokenizer(
@@ -86,7 +86,7 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
   @Test
   public void testLongCategoryPath() throws IOException {
     Directory directory = newDirectory();
-    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
 
     List<CategoryPath> longCategory = new ArrayList<CategoryPath>();

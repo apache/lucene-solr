@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;

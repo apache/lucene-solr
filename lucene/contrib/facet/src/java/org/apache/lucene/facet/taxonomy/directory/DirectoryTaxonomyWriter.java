@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -60,29 +60,24 @@ import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
  */
 
 /**
- * {@link TaxonomyWriter} which uses a Lucene index to store the taxonomy
+ * {@link TaxonomyWriter} which uses a {@link Directory} to store the taxonomy
  * information on disk, and keeps an additional in-memory cache of some or all
  * categories.
- * <P>
- * By using a Lucene index to store the information on disk, rather than some
- * specialized file format, we get for "free" Lucene's correctness (especially
- * regarding multi-process concurrency), and the ability to write to any
- * implementation of Directory (and not just the file system).
- * <P>
- * In addition to the permanently-stored Lucene index, efficiency dictates that
- * we also keep an in-memory cache of <B>recently seen</B> or <B>all</B>
- * categories, so that we do not need to go back to disk for every category
- * addition to see which ordinal this category already has, if any. A
- * {@link TaxonomyWriterCache} object determines the specific caching algorithm
- * used.
+ * <p>
+ * In addition to the permanently-stored information in the {@link Directory},
+ * efficiency dictates that we also keep an in-memory cache of <B>recently
+ * seen</B> or <B>all</B> categories, so that we do not need to go back to disk
+ * for every category addition to see which ordinal this category already has,
+ * if any. A {@link TaxonomyWriterCache} object determines the specific caching
+ * algorithm used.
  * <p>
  * This class offers some hooks for extending classes to control the
- * {@link IndexWriter} instance that is used. See {@link #openLuceneIndex} and
- * {@link #closeLuceneIndex()} .
+ * {@link IndexWriter} instance that is used. See {@link #openIndexWriter} and
+ * {@link #closeIndexWriter()} .
  * 
  * @lucene.experimental
  */
-public class LuceneTaxonomyWriter implements TaxonomyWriter {
+public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   protected IndexWriter indexWriter;
   private int nextID;
@@ -167,12 +162,12 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * @throws IOException
    *     if another error occurred.
    */
-  public LuceneTaxonomyWriter(Directory directory, OpenMode openMode,
+  public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode,
                               TaxonomyWriterCache cache)
   throws CorruptIndexException, LockObtainFailedException,
   IOException {
 
-    openLuceneIndex(directory, openMode);
+    openIndexWriter(directory, openMode);
     reader = null;
 
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream);
@@ -214,14 +209,16 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * etc.<br>
    * <b>NOTE:</b> the instance this method returns will be closed upon calling
    * to {@link #close()}. If you wish to do something different, you should
-   * override {@link #closeLuceneIndex()}.
+   * override {@link #closeIndexWriter()}.
    * 
-   * @param directory the {@link Directory} on top of wich an
-   *        {@link IndexWriter} should be opened.
-   * @param openMode see {@link OpenMode}
+   * @param directory
+   *          the {@link Directory} on top of which an {@link IndexWriter}
+   *          should be opened.
+   * @param openMode
+   *          see {@link OpenMode}
    */
-  protected void openLuceneIndex (Directory directory, OpenMode openMode) 
-  throws CorruptIndexException, LockObtainFailedException, IOException {
+  protected void openIndexWriter(Directory directory, OpenMode openMode)
+      throws IOException {
     // Make sure we use a MergePolicy which merges segments in-order and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy
     // index).
@@ -246,7 +243,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * Creates a new instance with a default cached as defined by
    * {@link #defaultTaxonomyWriterCache()}.
    */
-  public LuceneTaxonomyWriter(Directory directory, OpenMode openMode)
+  public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode)
   throws CorruptIndexException, LockObtainFailedException, IOException {
     this(directory, openMode, defaultTaxonomyWriterCache());
   }
@@ -265,7 +262,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
 
   // convenience constructors:
 
-  public LuceneTaxonomyWriter(Directory d)
+  public DirectoryTaxonomyWriter(Directory d)
   throws CorruptIndexException, LockObtainFailedException,
   IOException {
     this(d, OpenMode.CREATE_OR_APPEND);
@@ -277,7 +274,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * {@link Directory}.
    */
   public synchronized void close() throws CorruptIndexException, IOException {
-    closeLuceneIndex();
+    closeIndexWriter();
     closeResources();
   }
 
@@ -312,9 +309,9 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
 
   /**
    * A hook for extending classes to control closing the {@link IndexWriter}
-   * returned by {@link #openLuceneIndex}.
+   * returned by {@link #openIndexWriter}.
    */
-  protected void closeLuceneIndex() throws CorruptIndexException, IOException {
+  protected void closeIndexWriter() throws CorruptIndexException, IOException {
     if (indexWriter != null) {
       indexWriter.close();
       indexWriter = null;
@@ -557,8 +554,8 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
 
   private synchronized void refreshReader() throws IOException {
     if (reader != null) {
-      IndexReader r2 = reader.reopen();
-      if (reader != r2) {
+      IndexReader r2 = IndexReader.openIfChanged(reader);
+      if (r2 != null) {
         reader.close();
         reader = r2;
       }
@@ -578,7 +575,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
 
   /**
    * Like commit(), but also store properties with the index. These properties
-   * are retrievable by {@link LuceneTaxonomyReader#getCommitUserData}.
+   * are retrievable by {@link DirectoryTaxonomyReader#getCommitUserData}.
    * See {@link TaxonomyWriter#commit(Map)}. 
    */
   public synchronized void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
@@ -998,4 +995,9 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
     return null;
   }
 
+  public void rollback() throws IOException {
+    indexWriter.rollback();
+    refreshReader();
+  }
+  
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
 /**
@@ -30,7 +30,7 @@ import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
  * limitations under the License.
  */
 
-public class TestLuceneTaxonomyWriter extends LuceneTestCase {
+public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
   // always returns true in put(), to indicate some cache entries were cleared.
@@ -52,7 +52,7 @@ public class TestLuceneTaxonomyWriter extends LuceneTestCase {
     // Verifies that nothing is committed to the underlying Directory, if
     // commit() wasn't called.
     Directory dir = newDirectory();
-    LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
     assertFalse(IndexReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
     ltw.addCategory(new CategoryPath("a"));
@@ -68,7 +68,7 @@ public class TestLuceneTaxonomyWriter extends LuceneTestCase {
   public void testCommitUserData() throws Exception {
     // Verifies that committed data is retrievable
     Directory dir = newDirectory();
-    LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
+    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
     assertFalse(IndexReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
     ltw.addCategory(new CategoryPath("a"));

@@ -9,7 +9,7 @@ import org.apache.lucene.facet.index.categorypolicy.NonTopLevelPathPolicy;
 import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -54,7 +54,7 @@ public class PathPolicyTest extends LuceneTestCase {
   public void testNonTopLevelPathPolicy() throws Exception {
     Directory dir = newDirectory();
     TaxonomyWriter taxonomy = null;
-    taxonomy = new LuceneTaxonomyWriter(dir);
+    taxonomy = new DirectoryTaxonomyWriter(dir);
 
     CategoryPath[] topLevelPaths = new CategoryPath[10];
     String[] topLevelStrings = new String[10];

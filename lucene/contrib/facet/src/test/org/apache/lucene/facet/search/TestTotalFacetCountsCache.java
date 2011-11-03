@@ -34,8 +34,8 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SlowRAMDirectory;
 import org.apache.lucene.util._TestUtil;
@@ -67,12 +67,12 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
    */
   private static class TFCThread extends Thread {
     private final IndexReader r;
-    private final LuceneTaxonomyReader tr;
+    private final DirectoryTaxonomyReader tr;
     private final FacetIndexingParams iParams;
     
     TotalFacetCounts tfc;
 
-    public TFCThread(IndexReader r, LuceneTaxonomyReader tr, FacetIndexingParams iParams) {
+    public TFCThread(IndexReader r, DirectoryTaxonomyReader tr, FacetIndexingParams iParams) {
       this.r = r;
       this.tr = tr;
       this.iParams = iParams;
@@ -156,7 +156,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     
     // Open the slow readers
     IndexReader slowIndexReader = IndexReader.open(indexDir);
-    TaxonomyReader slowTaxoReader = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader slowTaxoReader = new DirectoryTaxonomyReader(taxoDir);
 
     // Class to perform search and return results as threads
     class Multi extends Thread {
@@ -420,7 +420,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // Write index using 'normal' directories
     IndexWriter w = new IndexWriter(indexDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-    LuceneTaxonomyWriter tw = new LuceneTaxonomyWriter(taxoDir);
+    DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
     // Add documents and facets
     for (int i = 0; i < 1000; i++) {
@@ -433,7 +433,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     taxoDir.setSleepMillis(1);
 
     IndexReader r = IndexReader.open(indexDir);
-    LuceneTaxonomyReader tr = new LuceneTaxonomyReader(taxoDir);
+    DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
 
     // Create and start threads. Thread1 should lock the cache and calculate
     // the TFC array. The second thread should block until the first is

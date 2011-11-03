@@ -15,7 +15,7 @@ import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -53,7 +53,7 @@ public class SimpleIndexer {
     IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(ExampleUtils.EXAMPLE_VER, SimpleUtils.analyzer));
 
     // create and open a taxonomy writer
-    TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir, OpenMode.CREATE);
+    TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
     // loop over  sample documents 
     int nDocsAdded = 0;

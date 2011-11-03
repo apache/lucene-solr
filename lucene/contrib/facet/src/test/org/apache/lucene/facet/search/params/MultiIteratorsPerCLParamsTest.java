@@ -32,8 +32,8 @@ import org.apache.lucene.facet.search.results.IntermediateFacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
 
 /**
@@ -93,7 +93,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     Directory taxoDir = newDirectory();
     populateIndex(iParams, indexDir, taxoDir);
 
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     IndexReader reader = IndexReader.open(indexDir);
 
     CategoryListCache clCache = null;
@@ -168,7 +168,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
       Directory taxoDir) throws Exception {
     RandomIndexWriter writer = new RandomIndexWriter(random, indexDir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
-    TaxonomyWriter taxoWriter = new LuceneTaxonomyWriter(taxoDir);
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
     for (CategoryPath[] categories : perDocCategories) {
       writer.addDocument(new CategoryDocumentBuilder(taxoWriter, iParams)
