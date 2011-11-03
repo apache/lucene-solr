@@ -23,8 +23,8 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -68,7 +68,7 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
 
   private void verifyResults(Directory dir, Directory taxDir) throws IOException {
     IndexReader reader1 = IndexReader.open(dir);
-    LuceneTaxonomyReader taxReader = new LuceneTaxonomyReader(taxDir);
+    DirectoryTaxonomyReader taxReader = new DirectoryTaxonomyReader(taxDir);
     IndexSearcher searcher = newSearcher(reader1);
     FacetSearchParams fsp = new FacetSearchParams();
     fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("tag"), NUM_DOCS));
@@ -94,7 +94,7 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
         new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     
-    LuceneTaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(taxDir);
+    DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxDir);
     for (int i = 1; i <= NUM_DOCS; i++) {
       Document doc = new Document();
       List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>(i + 1);

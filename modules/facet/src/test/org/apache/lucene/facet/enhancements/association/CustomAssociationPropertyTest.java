@@ -16,8 +16,8 @@ import org.apache.lucene.facet.index.CategoryContainer;
 import org.apache.lucene.facet.index.attributes.CategoryAttributeImpl;
 import org.apache.lucene.facet.index.attributes.CategoryProperty;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -59,7 +59,7 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     
     RandomIndexWriter w = new RandomIndexWriter(random, iDir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
-    LuceneTaxonomyWriter taxoW = new LuceneTaxonomyWriter(tDir);
+    DirectoryTaxonomyWriter taxoW = new DirectoryTaxonomyWriter(tDir);
     
     CategoryContainer cc = new CategoryContainer();
     EnhancementsDocumentBuilder builder = new EnhancementsDocumentBuilder(taxoW, iParams);
@@ -75,7 +75,7 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     
-    LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(tDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(tDir);
     String field = iParams.getCategoryListParams(new CategoryPath("0")).getTerm().field();
     AssociationsPayloadIterator api = new AssociationsPayloadIterator(reader, field);
 

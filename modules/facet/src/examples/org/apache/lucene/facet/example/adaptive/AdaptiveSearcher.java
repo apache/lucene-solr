@@ -20,7 +20,7 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -55,7 +55,7 @@ public class AdaptiveSearcher {
    */
   public static List<FacetResult> searchWithFacets (Directory indexDir, Directory taxoDir) throws Exception {
     // prepare index reader and taxonomy.
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     IndexReader indexReader = IndexReader.open(indexDir);
     
     // prepare searcher to search against

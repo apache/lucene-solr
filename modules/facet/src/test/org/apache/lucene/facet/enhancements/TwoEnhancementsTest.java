@@ -21,7 +21,7 @@ import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -58,7 +58,7 @@ public class TwoEnhancementsTest extends LuceneTestCase {
 
     RandomIndexWriter indexWriter = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-    TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir);
+    TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir);
 
     // a category document builder will add the categories to a document
     // once build() is called
@@ -103,7 +103,7 @@ public class TwoEnhancementsTest extends LuceneTestCase {
 
     RandomIndexWriter indexWriter = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-    TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir);
+    TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir);
 
     // a category document builder will add the categories to a document
     // once build() is called

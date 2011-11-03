@@ -164,7 +164,7 @@ public class FSUpdateLog extends UpdateLog {
       long pos = tlog.write(cmd);
       LogPtr ptr = new LogPtr(pos);
       map.put(cmd.getIndexedId(), ptr);
-      // System.out.println("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      // SolrCore.verbose("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
 
@@ -177,7 +177,7 @@ public class FSUpdateLog extends UpdateLog {
       long pos = tlog.writeDelete(cmd);
       LogPtr ptr = new LogPtr(pos);
       map.put(br, ptr);
-      // System.out.println("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      // SolrCore.verbose("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
 
@@ -191,7 +191,7 @@ public class FSUpdateLog extends UpdateLog {
       // optimistic concurrency? Maybe we shouldn't support deleteByQuery w/ optimistic concurrency
       long pos = tlog.writeDeleteByQuery(cmd);
       LogPtr ptr = new LogPtr(pos);
-      // System.out.println("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      // SolrCore.verbose("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
 
@@ -251,7 +251,7 @@ public class FSUpdateLog extends UpdateLog {
       // But we do know that any updates already added will definitely
       // show up in the latest reader after the commit succeeds.
       map = new HashMap<BytesRef, LogPtr>();
-      // System.out.println("TLOG: preSoftCommit: prevMap="+ System.identityHashCode(prevMap) + " new map=" + System.identityHashCode(map));
+      // SolrCore.verbose("TLOG: preSoftCommit: prevMap="+ System.identityHashCode(prevMap) + " new map=" + System.identityHashCode(map));
     }
   }
 
@@ -264,7 +264,7 @@ public class FSUpdateLog extends UpdateLog {
       // If this DUH2 synchronization were to be removed, preSoftCommit should
       // record what old maps were created and only remove those.
       clearOldMaps();
-      // System.out.println("TLOG: postSoftCommit: disposing of prevMap="+ System.identityHashCode(prevMap));
+      // SolrCore.verbose("TLOG: postSoftCommit: disposing of prevMap="+ System.identityHashCode(prevMap));
     }
   }
 
@@ -276,18 +276,18 @@ public class FSUpdateLog extends UpdateLog {
     synchronized (this) {
       entry = map.get(indexedId);
       lookupLog = tlog;  // something found in "map" will always be in "tlog"
-      // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in map " +  System.identityHashCode(map) + " got " + entry + " lookupLog=" + lookupLog);
+      // SolrCore.verbose("TLOG: lookup: for id " + indexedId.utf8ToString() + " in map " +  System.identityHashCode(map) + " got " + entry + " lookupLog=" + lookupLog);
       if (entry == null && prevMap != null) {
         entry = prevMap.get(indexedId);
         // something found in prevMap will always be found in preMapLog (which could be tlog or prevTlog)
         lookupLog = prevMapLog;
-        // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+        // SolrCore.verbose("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
       }
       if (entry == null && prevMap2 != null) {
         entry = prevMap2.get(indexedId);
         // something found in prevMap2 will always be found in preMapLog2 (which could be tlog or prevTlog)
         lookupLog = prevMapLog2;
-        // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap2 " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+        // SolrCore.verbose("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap2 " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
       }
 
       if (entry == null) {
@@ -431,6 +431,7 @@ class TransactionLog {
       this.tlogFile = tlogFile;
       raf = new RandomAccessFile(this.tlogFile, "rw");
       start = raf.length();
+      // System.out.println("###start= "+start);
       channel = raf.getChannel();
       os = Channels.newOutputStream(channel);
       fos = FastOutputStream.wrap(os);
@@ -481,12 +482,22 @@ class TransactionLog {
           pos = start + fos.size();
         }
 
+        /***
+        System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+         if (pos != fos.size()) {
+          throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+        }
+         ***/
+
         codec.init(fos);
         codec.writeTag(JavaBinCodec.ARR, 3);
         codec.writeInt(UpdateLog.ADD);  // should just take one byte
         codec.writeLong(0);  // the version... should also just be one byte if 0
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
         // fos.flushBuffer();  // flush later
+
+
+
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -546,6 +557,12 @@ class TransactionLog {
       synchronized (fos) {
         // TODO: optimize this by keeping track of what we have flushed up to
         fos.flushBuffer();
+        /***
+         System.out.println("###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
+        if (fos.size() != raf.length() || pos >= fos.size() ) {
+          throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
+        }
+        ***/
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);

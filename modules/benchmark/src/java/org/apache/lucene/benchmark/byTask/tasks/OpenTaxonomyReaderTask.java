@@ -20,7 +20,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import java.io.IOException;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
  * Open a taxonomy index reader.
@@ -35,7 +35,7 @@ public class OpenTaxonomyReaderTask extends PerfTask {
   @Override
   public int doLogic() throws IOException {
     PerfRunData runData = getRunData();
-    LuceneTaxonomyReader taxoReader = new LuceneTaxonomyReader(runData.getTaxonomyDir());
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(runData.getTaxonomyDir());
     runData.setTaxonomyReader(taxoReader);
     // We transfer reference to the run data
     taxoReader.decRef();

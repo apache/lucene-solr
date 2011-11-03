@@ -54,7 +54,6 @@ public class SolrIndexConfig {
     mergeFactor = -1;
     ramBufferSizeMB = 16;
     writeLockTimeout = -1;
-    commitLockTimeout = -1;
     lockType = null;
     termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
@@ -72,7 +71,6 @@ public class SolrIndexConfig {
   public final double ramBufferSizeMB;
 
   public final int writeLockTimeout;
-  public final int commitLockTimeout;
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
   public final PluginInfo mergeSchedulerInfo;
@@ -96,7 +94,6 @@ public class SolrIndexConfig {
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
 
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
-    commitLockTimeout=solrConfig.getInt(prefix+"/commitLockTimeout", def.commitLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
 
     String str =  solrConfig.get(prefix+"/mergeScheduler/text()",null);

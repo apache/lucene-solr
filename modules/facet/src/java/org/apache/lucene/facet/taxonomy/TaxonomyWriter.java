@@ -2,9 +2,8 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Map;
 
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.util.TwoPhaseCommit;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -52,7 +51,7 @@ import org.apache.lucene.index.IndexWriter;
  * 
  * @lucene.experimental
  */
-public interface TaxonomyWriter extends Closeable {
+public interface TaxonomyWriter extends Closeable, TwoPhaseCommit {
   
   /**
    * addCategory() adds a category with a given path name to the taxonomy,
@@ -65,32 +64,6 @@ public interface TaxonomyWriter extends Closeable {
    * any of its descendants. 
    */ 
   public int addCategory(CategoryPath categoryPath) throws IOException;
-  
-  /**
-   * Calling commit() ensures that all the categories written so far are
-   * visible to a reader that is opened (or reopened) after that call.
-   * When the index is closed(), commit() is also implicitly done. 
-   */
-  public void commit() throws IOException;
-
-  /**
-   * Like commit(), but also store properties with the index. These properties
-   * are retrievable by {@link TaxonomyReader#getCommitUserData}.
-   * See {@link IndexWriter#commit(Map)}. 
-   */
-  public void commit(Map<String,String> commitUserData) throws IOException;
-  
-  /**
-   * prepare most of the work needed for a two-phase commit.
-   * See {@link IndexWriter#prepareCommit}.
-   */
-  public void prepareCommit() throws IOException;
-  
-  /**
-   * Like above, and also prepares to store user data with the index.
-   * See {@link IndexWriter#prepareCommit(Map)}
-   */
-  public void prepareCommit(Map<String,String> commitUserData) throws IOException;
   
   /**
    * getParent() returns the ordinal of the parent category of the category
@@ -108,8 +81,8 @@ public interface TaxonomyWriter extends Closeable {
    * ordinal), an ArrayIndexOutOfBoundsException is thrown. However, it is
    * expected that getParent will only be called for ordinals which are
    * already known to be in the taxonomy.
-   * <P>
    * TODO (Facet): instead of a getParent(ordinal) method, consider having a
+   * <P>
    * getCategory(categorypath, prefixlen) which is similar to addCategory
    * except it doesn't add new categories; This method can be used to get
    * the ordinals of all prefixes of the given category, and it can use

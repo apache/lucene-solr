@@ -10,7 +10,7 @@ import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -48,7 +48,7 @@ public class OrdinalPolicyTest extends LuceneTestCase {
   public void testNonTopLevelOrdinalPolicy() throws Exception {
     Directory dir = newDirectory();
     TaxonomyWriter taxonomy = null;
-    taxonomy = new LuceneTaxonomyWriter(dir);
+    taxonomy = new DirectoryTaxonomyWriter(dir);
 
     int[] topLevelOrdinals = new int[10];
     String[] topLevelStrings = new String[10];

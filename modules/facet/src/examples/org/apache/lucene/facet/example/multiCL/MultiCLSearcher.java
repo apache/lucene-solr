@@ -20,7 +20,7 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -64,7 +64,7 @@ public class MultiCLSearcher {
     
     // prepare index reader and taxonomy.
     IndexReader indexReader = IndexReader.open(indexDir);
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     // Get results
     List<FacetResult> results = searchWithFacets(indexReader, taxo, iParams);

@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.File;
 
@@ -10,11 +10,11 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.DiskOrdinalMap;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.MemoryOrdinalMap;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.OrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,16 +38,16 @@ public class TestAddTaxonomies extends LuceneTestCase {
   @Test
   public void test1() throws Exception {
     Directory dir1 = newDirectory();
-    LuceneTaxonomyWriter tw1 = new LuceneTaxonomyWriter(dir1);
+    DirectoryTaxonomyWriter tw1 = new DirectoryTaxonomyWriter(dir1);
     tw1.addCategory(new CategoryPath("Author", "Mark Twain"));
     tw1.addCategory(new CategoryPath("Animals", "Dog"));
     Directory dir2 = newDirectory();
-    LuceneTaxonomyWriter tw2 = new LuceneTaxonomyWriter(dir2);
+    DirectoryTaxonomyWriter tw2 = new DirectoryTaxonomyWriter(dir2);
     tw2.addCategory(new CategoryPath("Author", "Rob Pike"));
     tw2.addCategory(new CategoryPath("Aardvarks", "Bob"));
     tw2.close();
     Directory dir3 = newDirectory();
-    LuceneTaxonomyWriter tw3 = new LuceneTaxonomyWriter(dir3);
+    DirectoryTaxonomyWriter tw3 = new DirectoryTaxonomyWriter(dir3);
     tw3.addCategory(new CategoryPath("Author", "Zebra Smith"));
     tw3.addCategory(new CategoryPath("Aardvarks", "Bob"));
     tw3.addCategory(new CategoryPath("Aardvarks", "Aaron"));
@@ -60,7 +60,7 @@ public class TestAddTaxonomies extends LuceneTestCase {
     tw1.addTaxonomies(new Directory[] { dir2, dir3 }, maps);
     tw1.close();
 
-    TaxonomyReader tr = new LuceneTaxonomyReader(dir1);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dir1);
 
     // Test that the merged taxonomy now contains what we expect:
     // First all the categories of the original taxonomy, in their original order:
@@ -132,8 +132,8 @@ public class TestAddTaxonomies extends LuceneTestCase {
     for (int i=0; i<ntaxonomies; i++) {
       dirs[i] = newDirectory();
       copydirs[i] = newDirectory();
-      LuceneTaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[i]);
-      LuceneTaxonomyWriter copytw = new LuceneTaxonomyWriter(copydirs[i]);
+      DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[i]);
+      DirectoryTaxonomyWriter copytw = new DirectoryTaxonomyWriter(copydirs[i]);
       for (int j=0; j<ncats; j++) {
         String cat = Integer.toString(random.nextInt(range));
         tw.addCategory(new CategoryPath("a",cat));
@@ -144,7 +144,7 @@ public class TestAddTaxonomies extends LuceneTestCase {
       copytw.close();
     }
 
-    LuceneTaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[0]);
+    DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0]);
     Directory otherdirs[] = new Directory[ntaxonomies-1];
     System.arraycopy(dirs, 1, otherdirs, 0, ntaxonomies-1);
 
@@ -168,8 +168,8 @@ public class TestAddTaxonomies extends LuceneTestCase {
     // Check that all original categories in the main taxonomy remain in
     // unchanged, and the rest of the taxonomies are completely unchanged.
     for (int i=0; i<ntaxonomies; i++) {
-      TaxonomyReader tr = new LuceneTaxonomyReader(dirs[i]);
-      TaxonomyReader copytr = new LuceneTaxonomyReader(copydirs[i]);
+      TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[i]);
+      TaxonomyReader copytr = new DirectoryTaxonomyReader(copydirs[i]);
       if (i==0) {
         assertTrue(tr.getSize() >= copytr.getSize());
       } else {
@@ -188,8 +188,8 @@ public class TestAddTaxonomies extends LuceneTestCase {
     // Check that all the new categories in the main taxonomy are in
     // lexicographic order. This isn't a requirement of our API, but happens
     // this way in our current implementation.
-    TaxonomyReader tr = new LuceneTaxonomyReader(dirs[0]);
-    TaxonomyReader copytr = new LuceneTaxonomyReader(copydirs[0]);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dirs[0]);
+    TaxonomyReader copytr = new DirectoryTaxonomyReader(copydirs[0]);
     if (tr.getSize() > copytr.getSize()) {
       String prev = tr.getPath(copytr.getSize()).toString();
       for (int j=copytr.getSize()+1; j<tr.getSize(); j++) {
@@ -204,9 +204,9 @@ public class TestAddTaxonomies extends LuceneTestCase {
 
     // Check that all the categories from other taxonomies exist in the new
     // taxonomy.
-    TaxonomyReader main = new LuceneTaxonomyReader(dirs[0]);
+    TaxonomyReader main = new DirectoryTaxonomyReader(dirs[0]);
     for (int i=1; i<ntaxonomies; i++) {
-      TaxonomyReader other = new LuceneTaxonomyReader(dirs[i]);
+      TaxonomyReader other = new DirectoryTaxonomyReader(dirs[i]);
       for (int j=0; j<other.getSize(); j++) {
         int otherord = main.getOrdinal(other.getPath(j));
         assertTrue(otherord != TaxonomyReader.INVALID_ORDINAL);
@@ -218,7 +218,7 @@ public class TestAddTaxonomies extends LuceneTestCase {
     // one of the added taxonomies.
     TaxonomyReader[] others = new TaxonomyReader[ntaxonomies-1]; 
     for (int i=1; i<ntaxonomies; i++) {
-      others[i-1] = new LuceneTaxonomyReader(dirs[i]);
+      others[i-1] = new DirectoryTaxonomyReader(dirs[i]);
     }
     for (int j=oldsize; j<main.getSize(); j++) {
       boolean found=false;
