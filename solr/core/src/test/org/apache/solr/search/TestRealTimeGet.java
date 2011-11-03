@@ -28,6 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -134,8 +135,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   ***/
 
 
-  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
-  Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
+  final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<Integer,DocInfo>();
+  Map<Integer,DocInfo> committedModel = new HashMap<Integer,DocInfo>();
   long snapshotCount;
   long committedModelClock;
   volatile int lastId;
@@ -150,10 +151,25 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     syncArr = new Object[ndocs];
 
     for (int i=0; i<ndocs; i++) {
-      model.put(i, -1L);
+      model.put(i, new DocInfo(0, -1L));
       syncArr[i] = new Object();
     }
     committedModel.putAll(model);
+  }
+
+
+  static class DocInfo {
+    long version;
+    long val;
+
+    public DocInfo(long version, long val) {
+      this.version = version;
+      this.val = val;
+    }
+
+    public String toString() {
+      return "{version="+version+",val="+val+"\"";
+    }
   }
 
   @Test
@@ -209,11 +225,11 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
             if (oper < commitPercent) {
               if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                Map<Integer,Long> newCommittedModel;
+                Map<Integer,DocInfo> newCommittedModel;
                 long version;
 
                 synchronized(TestRealTimeGet.this) {
-                  newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                  newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
                   version = snapshotCount++;
                   verbose("took snapshot version=",version);
                 }
@@ -256,8 +272,11 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
             // We can't concurrently update the same document and retain our invariants of increasing values
             // since we can't guarantee what order the updates will be executed.
+            // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
             synchronized (sync) {
-              Long val = model.get(id);
+              DocInfo info = model.get(id);
+
+              long val = info.val;
               long nextVal = Math.abs(val)+1;
 
               if (oper < commitPercent + deletePercent) {
@@ -265,8 +284,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   verbose("deleting id",id,"val=",nextVal);
                 }
 
-                assertU("<delete><id>" + id + "</id></delete>");
-                model.put(id, -nextVal);
+                // assertU("<delete><id>" + id + "</id></delete>");
+                Long version = deleteAndGetVersion(Integer.toString(id));
+
+                model.put(id, new DocInfo(version, -nextVal));
                 if (VERBOSE) {
                   verbose("deleting id", id, "val=",nextVal,"DONE");
                 }
@@ -276,7 +297,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 }
 
                 assertU("<delete><query>id:" + id + "</query></delete>");
-                model.put(id, -nextVal);
+                model.put(id, new DocInfo(-1L, -nextVal));
                 if (VERBOSE) {
                   verbose("deleteByQuery id",id, "val=",nextVal,"DONE");
                 }
@@ -285,15 +306,16 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   verbose("adding id", id, "val=", nextVal);
                 }
 
-                assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-                model.put(id, nextVal);
+                // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
+                Long version = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal)));
+                model.put(id, new DocInfo(version, nextVal));
 
                 if (VERBOSE) {
                   verbose("adding id", id, "val=", nextVal,"DONE");
                 }
 
               }
-            }
+            }   // end sync
 
             if (!before) {
               lastId = id;
@@ -326,13 +348,13 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               // so when querying, we should first check the model, and then the index
 
               boolean realTime = rand.nextInt(100) < percentRealtimeQuery;
-              long val;
+              DocInfo info;
 
               if (realTime) {
-                val = model.get(id);
+                info = model.get(id);
               } else {
                 synchronized(TestRealTimeGet.this) {
-                  val = committedModel.get(id);
+                  info = committedModel.get(id);
                 }
               }
 
@@ -354,9 +376,11 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               } else {
                 assertEquals(1, doclist.size());
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
-                if (foundVal < Math.abs(val)) {
-                  verbose("ERROR, id", id, "foundVal=",foundVal,"model val=",val,"realTime=",realTime);
-                  assertTrue(foundVal >= Math.abs(val));
+                long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
+                if (foundVal < Math.abs(info.val)
+                    || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
+                  verbose("ERROR, id=", id, "found=",response,"model",info);
+                  assertTrue(false);
                 }
               }
             }
@@ -382,6 +406,23 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     }
 
   }
+
+
+
+  private Long addAndGetVersion(SolrInputDocument sdoc) throws Exception {
+    String response = updateJ(jsonAdd(sdoc), null);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    return (Long) ((List)rsp.get("adds")).get(1);
+  }
+
+  private Long deleteAndGetVersion(String id) throws Exception {
+    String response = updateJ("{\"delete\":{\"id\":\""+id+"\"}}", null);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    return (Long) ((List)rsp.get("deletes")).get(1);
+  }
+
+
+
 
 
 
@@ -469,7 +510,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
               if (oper < commitPercent) {
                 if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                  Map<Integer,Long> newCommittedModel;
+                  Map<Integer,DocInfo> newCommittedModel;
                   long version;
                   IndexReader oldReader;
 
@@ -486,7 +527,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   if (reopenLock != null) reopenLock.lock();
 
                   synchronized(TestRealTimeGet.this) {
-                    newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
                     version = snapshotCount++;
                     oldReader = reader;
                     oldReader.incRef();  // increment the reference since we will use this for reopening
@@ -563,7 +604,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               // We can't concurrently update the same document and retain our invariants of increasing values
               // since we can't guarantee what order the updates will be executed.
               synchronized (sync) {
-                Long val = model.get(id);
+                DocInfo info = model.get(id);
+                long val = info.val;
                 long nextVal = Math.abs(val)+1;
 
                 if (oper < commitPercent + deletePercent) {
@@ -578,7 +620,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                   verbose("deleting id",id,"val=",nextVal);
                   writer.deleteDocuments(new Term("id",Integer.toString(id)));
-                  model.put(id, -nextVal);
+                  model.put(id, new DocInfo(0,-nextVal));
                   verbose("deleting id",id,"val=",nextVal,"DONE");
 
                 } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
@@ -595,7 +637,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                   verbose("deleteByQuery",id,"val=",nextVal);
                   writer.deleteDocuments(new TermQuery(new Term("id", Integer.toString(id))));
-                  model.put(id, -nextVal);
+                  model.put(id, new DocInfo(0,-nextVal));
                   verbose("deleteByQuery",id,"val=",nextVal,"DONE");
                 } else {
                   // model.put(id, nextVal);   // uncomment this and this test should fail.
@@ -613,7 +655,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                     verbose("deleting tombstone for id",id,"DONE");
                   }
 
-                  model.put(id, nextVal);
+                  model.put(id, new DocInfo(0,nextVal));
                   verbose("adding id",id,"val=",nextVal,"DONE");
                 }
               }
@@ -646,12 +688,11 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               // when indexing, we update the index, then the model
               // so when querying, we should first check the model, and then the index
 
-              long val;
-
+              DocInfo info;
               synchronized(TestRealTimeGet.this) {
-                val = committedModel.get(id);
+                info = committedModel.get(id);
               }
-
+              long val = info.val;
 
               IndexReader r;
               synchronized(TestRealTimeGet.this) {
