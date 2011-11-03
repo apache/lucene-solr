@@ -446,6 +446,8 @@ Bug Fixes
 
 * SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
+* SOLR-2591: Remove commitLockTimeout option from solrconfig.xml (Luca Cavanna via Martijn van Groningen)
+
 ==================  3.4.0  ==================
 
 Upgrading from Solr 3.3
