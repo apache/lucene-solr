@@ -38,7 +38,6 @@
     <ramBufferSizeMB>32</ramBufferSizeMB>
     <maxFieldLength>10000</maxFieldLength>
     <writeLockTimeout>1000</writeLockTimeout>
-    <commitLockTimeout>10000</commitLockTimeout>
     <lockType>native</lockType>
   </indexDefaults>
 
