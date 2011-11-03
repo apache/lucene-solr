@@ -23,7 +23,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
- * Factory for plugging in a custom {@link CodecProvider}
+ * Factory for plugging in a custom {@link Codec}
  */
 public abstract class CodecFactory implements NamedListInitializedPlugin {
   public void init(NamedList args) {  

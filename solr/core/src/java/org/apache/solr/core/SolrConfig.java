@@ -198,7 +198,7 @@ public class SolrConfig extends Config {
 
      loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
      loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
-     loadPluginInfo(CodecFactory.class,"mainIndex/codecProviderFactory",false, false);
+     loadPluginInfo(CodecFactory.class,"mainIndex/codecFactory",false, false);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
      loadPluginInfo(UpdateLog.class,"updateHandler/updateLog",false, false);

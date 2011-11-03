@@ -137,7 +137,7 @@ public class CreateIndexTask extends PerfTask {
         Class<? extends Codec> clazz = Class.forName(defaultCodec).asSubclass(Codec.class);
         Codec.setDefault(clazz.newInstance());
       } catch (Exception e) {
-        throw new RuntimeException("Couldn't instantiate CodecProvider: " + defaultCodec, e);
+        throw new RuntimeException("Couldn't instantiate Codec: " + defaultCodec, e);
       }
     }
 

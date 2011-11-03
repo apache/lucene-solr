@@ -40,9 +40,9 @@ import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.util._TestUtil;
 
 /**
- * CodecProvider that assigns per-field random codecs.
+ * Codec that assigns per-field random postings formats.
  * <p>
- * The same field/codec assignment will happen regardless of order,
+ * The same field/format assignment will happen regardless of order,
  * a hash is computed up front that determines the mapping.
  * This means fields can be put into things like HashSets and added to
  * documents in different orders and the test will still be deterministic

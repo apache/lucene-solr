@@ -61,7 +61,7 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
    * 
    * @param dir the {@link Directory} this segment was written to
    * @param segmentInfo the {@link SegmentInfo} for this segment 
-   * @param id the codec id within this segment
+   * @param segmentSuffix the format's suffix within this segment
    * @param files the of files to add the codec files to.
    */
   public abstract void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;

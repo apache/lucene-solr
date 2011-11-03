@@ -987,7 +987,7 @@ public class TestAddIndexes extends LuceneTestCase {
     }
   }
 
-  public void testSimpleCaseCustomCodecProvider() throws IOException {
+  public void testSimpleCaseCustomCodec() throws IOException {
     // main directory
     Directory dir = newDirectory();
     // two auxiliary directories

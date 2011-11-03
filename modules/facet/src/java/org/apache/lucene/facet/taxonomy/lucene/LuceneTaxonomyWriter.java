@@ -224,7 +224,6 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
    * @param directory the {@link Directory} on top of wich an
    *        {@link IndexWriter} should be opened.
    * @param openMode see {@link OpenMode}
-   * @param codecProvider CodecProvider used for encoding the index.
    */
   protected void openLuceneIndex (Directory directory, OpenMode openMode) 
   throws CorruptIndexException, LockObtainFailedException, IOException {

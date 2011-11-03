@@ -358,11 +358,7 @@ public class TestTermsEnum extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
     /*
-    CoreCodecProvider cp = new CoreCodecProvider();    
-    cp.unregister(cp.lookup("Standard"));
-    cp.register(new StandardCodec(minTermsInBlock, maxTermsInBlock));
-    cp.setDefaultFieldCodec("Standard");
-    iwc.setCodecProvider(cp);
+    iwc.setCodec(new StandardCodec(minTermsInBlock, maxTermsInBlock));
     */
 
     final RandomIndexWriter w = new RandomIndexWriter(random, d, iwc);

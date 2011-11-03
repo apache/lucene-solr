@@ -347,7 +347,7 @@ public class _TestUtil {
   }
 
   
-  /** Return a CodecProvider that can read any of the
+  /** Return a Codec that can read any of the
    *  default codecs and formats, but always writes in the specified
    *  format. */
   public static Codec alwaysPostingsFormat(final PostingsFormat format) {

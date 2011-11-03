@@ -90,7 +90,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMaxBufferedDocs");
     getters.add("getIndexingChain");
     getters.add("getMergedSegmentWarmer");
-    getters.add("getCodecProvider");
     getters.add("getMergePolicy");
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");

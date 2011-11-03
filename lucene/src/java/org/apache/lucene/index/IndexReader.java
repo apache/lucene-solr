@@ -698,7 +698,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * this index.
    * 
    * @param directory where the index resides.
-   * @param codecs the {@link CodecProvider} provider holding all {@link PostingsFormat}s required to open the index
    * @return commit userData.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error

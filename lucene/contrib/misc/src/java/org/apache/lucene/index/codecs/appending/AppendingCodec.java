@@ -24,6 +24,7 @@ import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 
 /**
  * This codec extends {@link Lucene40Codec} to work on append-only outputs, such
