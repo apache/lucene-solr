@@ -36,6 +36,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.Directory;
@@ -52,7 +53,7 @@ public class TestAppendingCodec extends LuceneTestCase {
   static class AppendingCodecProvider extends CodecProvider {
     Codec appending = new AppendingCodec();
     SegmentInfosWriter infosWriter = new AppendingSegmentInfosWriter();
-    SegmentInfosReader infosReader = new AppendingSegmentInfosReader();
+    SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
     public AppendingCodecProvider() {
       setDefaultFieldCodec(appending.name);
     }
