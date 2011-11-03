@@ -130,8 +130,8 @@ public class TestIndexClose extends LuceneTestCase {
         return new InstrumentedIndexReader(super.openReader()); 
       }
       @Override
-      protected void openIndexWriter (Directory directory, OpenMode openMode) throws IOException {
-        indexWriter = new InstrumentedIndexWriter(directory,
+      protected IndexWriter openIndexWriter (Directory directory, OpenMode openMode) throws IOException {
+        return new InstrumentedIndexWriter(directory,
             newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
                 .setOpenMode(openMode));
       }
