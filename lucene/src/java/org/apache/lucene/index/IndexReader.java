@@ -668,18 +668,42 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return newReader;
   }
 
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader)
+   */
   protected IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
   
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, boolean)
+   */
   protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
 
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, IndexCommit)
+   */
   protected IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen(IndexCommit).");
   }
 
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, IndexWriter, boolean)
+   */
   protected IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
     return writer.getReader(applyAllDeletes);
   }
