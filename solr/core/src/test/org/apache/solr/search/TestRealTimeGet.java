@@ -59,10 +59,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertJQ(req("q","id:1")
         ,"/response/numFound==0"
     );
-    assertJQ(req("qt","/get","id","1")
+    assertJQ(req("qt","/get", "id","1", "fl","id")
         ,"=={'doc':{'id':'1'}}"
     );
-    assertJQ(req("qt","/get","ids","1")
+    assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
         "  'response':{'numFound':1,'start':0,'docs':[" +
         "      {" +
@@ -75,10 +75,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
     );
-    assertJQ(req("qt","/get","id","1")
+    assertJQ(req("qt","/get","id","1", "fl","id")
         ,"=={'doc':{'id':'1'}}"
     );
-    assertJQ(req("qt","/get","ids","1")
+    assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
         "  'response':{'numFound':1,'start':0,'docs':[" +
         "      {" +
@@ -99,7 +99,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     );
 
   }
-
 
   /***
   @Test
