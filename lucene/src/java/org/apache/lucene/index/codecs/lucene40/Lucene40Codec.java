@@ -34,8 +34,9 @@ import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
  *
  * @lucene.experimental
  */
-// nocommit maybe rename to Lucene4XCodec?  This is supposed
-// to "last" through all 4.x releases...?  or maybe not?
+// NOTE: if we make largish changes in a minor release, easier to just make Lucene42Codec or whatever
+// if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
+// (it writes a minor version, etc).
 public class Lucene40Codec extends Codec {
   private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
