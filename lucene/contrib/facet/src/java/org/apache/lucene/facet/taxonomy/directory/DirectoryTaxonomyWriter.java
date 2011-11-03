@@ -72,14 +72,13 @@ import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
  * algorithm used.
  * <p>
  * This class offers some hooks for extending classes to control the
- * {@link IndexWriter} instance that is used. See {@link #openIndexWriter} and
- * {@link #closeIndexWriter()} .
+ * {@link IndexWriter} instance that is used. See {@link #openIndexWriter}.
  * 
  * @lucene.experimental
  */
 public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
-  protected IndexWriter indexWriter;
+  private IndexWriter indexWriter;
   private int nextID;
   private char delimiter = Consts.DEFAULT_DELIMITER;
   private SinglePositionTokenStream parentStream = new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
@@ -167,7 +166,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   throws CorruptIndexException, LockObtainFailedException,
   IOException {
 
-    openIndexWriter(directory, openMode);
+    indexWriter = openIndexWriter(directory, openMode);
     reader = null;
 
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream);
@@ -208,8 +207,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * {@link org.apache.lucene.index.IndexDeletionPolicy}, different RAM size
    * etc.<br>
    * <b>NOTE:</b> the instance this method returns will be closed upon calling
-   * to {@link #close()}. If you wish to do something different, you should
-   * override {@link #closeIndexWriter()}.
+   * to {@link #close()}.
    * 
    * @param directory
    *          the {@link Directory} on top of which an {@link IndexWriter}
@@ -217,7 +215,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @param openMode
    *          see {@link OpenMode}
    */
-  protected void openIndexWriter(Directory directory, OpenMode openMode)
+  protected IndexWriter openIndexWriter(Directory directory, OpenMode openMode)
       throws IOException {
     // Make sure we use a MergePolicy which merges segments in-order and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy
@@ -225,7 +223,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30,
         new KeywordAnalyzer()).setOpenMode(openMode).setMergePolicy(
         new LogByteSizeMergePolicy());
-    indexWriter = new IndexWriter(directory, config);
+    return new IndexWriter(directory, config);
   }
 
   // Currently overridden by a unit test that verifies that every index we open
@@ -274,7 +272,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * {@link Directory}.
    */
   public synchronized void close() throws CorruptIndexException, IOException {
-    closeIndexWriter();
+    if (indexWriter != null) {
+      indexWriter.close();
+      indexWriter = null;
+    }
+
     closeResources();
   }
 
@@ -304,17 +306,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (cache != null) {
       cache.close();
       cache = null;
-    }
-  }
-
-  /**
-   * A hook for extending classes to control closing the {@link IndexWriter}
-   * returned by {@link #openIndexWriter}.
-   */
-  protected void closeIndexWriter() throws CorruptIndexException, IOException {
-    if (indexWriter != null) {
-      indexWriter.close();
-      indexWriter = null;
     }
   }
 
