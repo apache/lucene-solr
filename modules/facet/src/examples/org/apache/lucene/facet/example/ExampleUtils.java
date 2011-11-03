@@ -27,7 +27,7 @@ public class ExampleUtils {
   public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
 
   /** The Lucene {@link Version} used by the example code. */
-  public static final Version EXAMPLE_VER = Version.LUCENE_31;
+  public static final Version EXAMPLE_VER = Version.LUCENE_40;
   
   public static void log(Object msg) {
     if (VERBOSE) {

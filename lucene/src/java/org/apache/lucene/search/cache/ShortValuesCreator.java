@@ -119,7 +119,7 @@ public class ShortValuesCreator extends CachedArrayCreator<ShortValues>
           if (term == null) {
             break;
           }
-          final Short termval = parser.parseShort(term);
+          final short termval = parser.parseShort(term);
           docs = termsEnum.docs(null, docs);
           while (true) {
             final int docID = docs.nextDoc();

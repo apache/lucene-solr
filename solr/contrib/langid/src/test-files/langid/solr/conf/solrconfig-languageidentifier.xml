@@ -62,7 +62,24 @@
   </requestHandler>  
 
   <updateRequestProcessorChain name="lang_id">
-		<processor class="org.apache.solr.update.processor.LanguageIdentifierUpdateProcessorFactory">
+		<processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
+	    <!-- Can take defaults, invariants and appends just like req handlers-->
+	    <lst name="defaults">
+	      <bool name="langid">true</bool>
+	      <str name="langid.fl">name,subject</str>
+	      <bool name="langid.map">true</bool>
+	      <str name="langid.langField">language_s</str>
+	      <str name="langid.langsField">language_sm</str>
+	      <str name="langid.map.lcmap">th:thai</str>
+	      <float name="threshold">0.5</float>
+	      <str name="langid.fallback">fallback</str>
+	    </lst>
+		</processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+  
+    <updateRequestProcessorChain name="lang_id_alt">
+		<processor class="org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory">
 	    <!-- Can take defaults, invariants and appends just like req handlers-->
 	    <lst name="defaults">
 	      <bool name="langid">true</bool>

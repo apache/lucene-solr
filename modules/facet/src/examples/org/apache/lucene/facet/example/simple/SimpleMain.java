@@ -10,7 +10,7 @@ import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -56,7 +56,7 @@ public class SimpleMain {
     SimpleIndexer.index(indexDir, taxoDir);
 
     // open readers
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     IndexReader indexReader = IndexReader.open(indexDir, true);
 
     ExampleUtils.log("search the sample documents...");
@@ -81,7 +81,7 @@ public class SimpleMain {
     SimpleIndexer.index(indexDir, taxoDir);
 
     // open readers
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     IndexReader indexReader = IndexReader.open(indexDir, true);
 
     ExampleUtils.log("search the sample documents...");

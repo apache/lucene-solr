@@ -55,6 +55,22 @@ extends Query {
     this.query = query;
     this.filter = filter;
   }
+  
+  /**
+   * Expert: decides if a filter should be executed as "random-access" or not.
+   * random-access means the filter "filters" in a similar way as deleted docs are filtered
+   * in lucene. This is faster when the filter accepts many documents.
+   * However, when the filter is very sparse, it can be faster to execute the query+filter
+   * as a conjunction in some cases.
+   * 
+   * The default implementation returns true if the first document accepted by the
+   * filter is < 100.
+   * 
+   * @lucene.internal
+   */
+  protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
+    return firstFilterDoc < 100;
+  }
 
   /**
    * Returns a Weight that applies the filter to the enclosed query's Weight.
@@ -65,6 +81,13 @@ extends Query {
     final Weight weight = query.createWeight (searcher);
     return new Weight() {
       
+      @Override
+      public boolean scoresDocsOutOfOrder() {
+        // TODO: Support out-of-order scoring!
+        // For now we return false here, as we always get the scorer in order
+        return false;
+      }
+
       @Override
       public float getValueForNormalization() throws IOException { 
         return weight.getValueForNormalization() * getBoost() * getBoost(); // boost sub-weight
@@ -79,7 +102,7 @@ extends Query {
       public Explanation explain (AtomicReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
-        DocIdSet docIdSet = f.getDocIdSet(ir);
+        DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader.getLiveDocs());
         DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
         if (docIdSetIterator == null) {
           docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
@@ -100,60 +123,108 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-          boolean topScorer, Bits acceptDocs)
-          throws IOException {
-        // we will advance() the subscorer
-        final Scorer scorer = weight.scorer(context, true, false, acceptDocs);
-        if (scorer == null) {
+      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Bits acceptDocs) throws IOException {
+        assert filter != null;
+
+        final DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
+        if (filterDocIdSet == null) {
+          // this means the filter does not accept any documents.
           return null;
         }
-        DocIdSet docIdSet = filter.getDocIdSet(context);
-        if (docIdSet == null) {
-          return null;
-        }
-        final DocIdSetIterator docIdSetIterator = docIdSet.iterator();
-        if (docIdSetIterator == null) {
+        
+        final DocIdSetIterator filterIter = filterDocIdSet.iterator();
+        if (filterIter == null) {
+          // this means the filter does not accept any documents.
           return null;
         }
 
-        return new Scorer(this) {
+        final int firstFilterDoc = filterIter.nextDoc();
+        if (firstFilterDoc == DocIdSetIterator.NO_MORE_DOCS) {
+          return null;
+        }
+        
+        final Bits filterAcceptDocs = filterDocIdSet.bits();
+        final boolean useRandomAccess = (filterAcceptDocs != null && FilteredQuery.this.useRandomAccess(filterAcceptDocs, firstFilterDoc));
 
-          private int doc = -1;
-          
-          private int advanceToCommon(int scorerDoc, int disiDoc) throws IOException {
-            while (scorerDoc != disiDoc) {
-              if (scorerDoc < disiDoc) {
-                scorerDoc = scorer.advance(disiDoc);
-              } else {
-                disiDoc = docIdSetIterator.advance(scorerDoc);
+        if (useRandomAccess) {
+          // if we are using random access, we return the inner scorer, just with other acceptDocs
+          // TODO, replace this by when BooleanWeight is fixed to be consistent with its scorer implementations:
+          // return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
+          return weight.scorer(context, true, topScorer, filterAcceptDocs);
+        } else {
+          assert firstFilterDoc > -1;
+          // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
+          // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
+          final Scorer scorer = weight.scorer(context, true, false, null);
+          return (scorer == null) ? null : new Scorer(this) {
+            private int scorerDoc = -1, filterDoc = firstFilterDoc;
+            
+            // optimization: we are topScorer and collect directly using short-circuited algo
+            @Override
+            public void score(Collector collector) throws IOException {
+              int filterDoc = firstFilterDoc;
+              int scorerDoc = scorer.advance(filterDoc);
+              // the normalization trick already applies the boost of this query,
+              // so we can use the wrapped scorer directly:
+              collector.setScorer(scorer);
+              for (;;) {
+                if (scorerDoc == filterDoc) {
+                  // Check if scorer has exhausted, only before collecting.
+                  if (scorerDoc == DocIdSetIterator.NO_MORE_DOCS) {
+                    break;
+                  }
+                  collector.collect(scorerDoc);
+                  filterDoc = filterIter.nextDoc();
+                  scorerDoc = scorer.advance(filterDoc);
+                } else if (scorerDoc > filterDoc) {
+                  filterDoc = filterIter.advance(scorerDoc);
+                } else {
+                  scorerDoc = scorer.advance(filterDoc);
+                }
               }
             }
-            return scorerDoc;
-          }
+            
+            private int advanceToNextCommonDoc() throws IOException {
+              for (;;) {
+                if (scorerDoc < filterDoc) {
+                  scorerDoc = scorer.advance(filterDoc);
+                } else if (scorerDoc == filterDoc) {
+                  return scorerDoc;
+                } else {
+                  filterDoc = filterIter.advance(scorerDoc);
+                }
+              }
+            }
 
-          @Override
-          public int nextDoc() throws IOException {
-            int scorerDoc, disiDoc;
-            return doc = (disiDoc = docIdSetIterator.nextDoc()) != NO_MORE_DOCS
-                && (scorerDoc = scorer.nextDoc()) != NO_MORE_DOCS
-                && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
-          }
-          
-          @Override
-          public int docID() { return doc; }
-          
-          @Override
-          public int advance(int target) throws IOException {
-            int disiDoc, scorerDoc;
-            return doc = (disiDoc = docIdSetIterator.advance(target)) != NO_MORE_DOCS
-                && (scorerDoc = scorer.advance(disiDoc)) != NO_MORE_DOCS 
-                && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
-          }
+            @Override
+            public int nextDoc() throws IOException {
+              // don't go to next doc on first call
+              // (because filterIter is already on first doc):
+              if (scorerDoc != -1) {
+                filterDoc = filterIter.nextDoc();
+              }
+              return advanceToNextCommonDoc();
+            }
+            
+            @Override
+            public int advance(int target) throws IOException {
+              if (target > filterDoc) {
+                filterDoc = filterIter.advance(target);
+              }
+              return advanceToNextCommonDoc();
+            }
 
-          @Override
-          public float score() throws IOException { return scorer.score(); }
-        };
+            @Override
+            public int docID() {
+              return scorerDoc;
+            }
+            
+            @Override
+            public float score() throws IOException {
+              return scorer.score();
+            }
+          };
+        }
       }
     };
   }

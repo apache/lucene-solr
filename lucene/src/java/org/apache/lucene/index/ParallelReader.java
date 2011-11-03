@@ -569,7 +569,9 @@ public class ParallelReader extends IndexReader {
 
     void addField(String field, IndexReader r) throws IOException {
       PerDocValues perDocs = MultiPerDocValues.getPerDocs(r);
-      fields.put(field, perDocs.docValues(field));
+      if (perDocs != null) {
+        fields.put(field, perDocs.docValues(field));
+      }
     }
 
     @Override

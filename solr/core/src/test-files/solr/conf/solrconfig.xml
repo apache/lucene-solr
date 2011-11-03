@@ -312,6 +312,8 @@
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
   	<bool name="httpCaching">false</bool>
   </requestHandler>
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler" />
+
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->

@@ -17,54 +17,13 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 
+/**
+ * validate that assertions are enabled during tests
+ */
 public class TestAssertions extends LuceneTestCase {
-
-  public void testBasics() {
-    try {
-      assert Boolean.FALSE.booleanValue();
-      fail("assertions are not enabled!");
-    } catch (AssertionError e) {
-      assert Boolean.TRUE.booleanValue();
-    }
-  }
-  
-  static class TestAnalyzer1 extends Analyzer {
-
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-      return null;
-    }
-  }
-
-  static final class TestAnalyzer2 extends Analyzer {
-
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-      return null;
-    }
-  }
-
-  static class TestAnalyzer3 extends Analyzer {
-
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-      return null;
-    }
-  }
-
-  static class TestAnalyzer4 extends Analyzer {
-
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-      return null;
-    }
-  }
 
   static class TestTokenStream1 extends TokenStream {
     @Override
@@ -82,31 +41,15 @@ public class TestAssertions extends LuceneTestCase {
   }
 
   public void testTokenStreams() {
-    new TestAnalyzer1();
-    
-    new TestAnalyzer2();
-    
-    try {
-      new TestAnalyzer3();
-      fail("TestAnalyzer3 should fail assertion");
-    } catch (AssertionError e) {
-    }
-    
-    try {
-      new TestAnalyzer4();
-      fail("TestAnalyzer4 should fail assertion");
-    } catch (AssertionError e) {
-    }
-    
     new TestTokenStream1();
-    
     new TestTokenStream2();
-    
+    boolean doFail = false;
     try {
       new TestTokenStream3();
-      fail("TestTokenStream3 should fail assertion");
+      doFail = true;
     } catch (AssertionError e) {
+      // expected
     }
+    assertFalse("TestTokenStream3 should fail assertion", doFail);
   }
-
 }

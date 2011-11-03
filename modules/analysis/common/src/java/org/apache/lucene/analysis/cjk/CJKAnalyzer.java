@@ -37,7 +37,7 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   /**
    * File containing default CJK stopwords.
    * <p/>
-   * Currently it concains some common English words that are not usually
+   * Currently it contains some common English words that are not usually
    * useful for searching and some double-byte interpunctions.
    */
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";

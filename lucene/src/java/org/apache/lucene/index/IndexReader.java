@@ -561,10 +561,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * with the old reader uses "copy on write" semantics to
    * ensure the changes are not seen by other readers.
    *
-   * <p><b>NOTE</b>: If the provided reader is a near real-time
-   * reader, this method will return another near-real-time
-   * reader.
-   * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @return null if there are no changes; else, a new
@@ -672,18 +668,42 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return newReader;
   }
 
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader)
+   */
   protected IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
   
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, boolean)
+   */
   protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
 
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, IndexCommit)
+   */
   protected IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen(IndexCommit).");
   }
 
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, IndexWriter, boolean)
+   */
   protected IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
     return writer.getReader(applyAllDeletes);
   }
@@ -870,7 +890,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * (ie, obtained by a call to {@link
    * IndexWriter#getReader}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method checks if
-   * either a new commmit has occurred, or any new
+   * either a new commit has occurred, or any new
    * uncommitted changes have taken place via the writer.
    * Note that even if the writer has only performed
    * merging, this method will still return false.</p>
@@ -1593,26 +1613,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns the number of unique terms (across all fields)
    *  in this reader.
    *
-   *  @throws UnsupportedOperationException if this count
+   *  @return number of unique terms or -1 if this count
    *  cannot be easily determined (eg Multi*Readers).
    *  Instead, you should call {@link
    *  #getSequentialSubReaders} and ask each sub reader for
    *  its unique term count. */
   public long getUniqueTermCount() throws IOException {
-    long numTerms = 0;
     final Fields fields = fields();
     if (fields == null) {
       return 0;
     }
-    FieldsEnum it = fields.iterator();
-    while(true) {
-      String field = it.next();
-      if (field == null) {
-        break;
-      }
-      numTerms += fields.terms(field).getUniqueTermCount();
-    }
-    return numTerms;
+    return fields.getUniqueTermCount();
   }
 
   /** For IndexReader implementations that use

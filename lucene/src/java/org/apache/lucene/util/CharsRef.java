@@ -189,18 +189,22 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
    * Copies the given array into this CharsRef starting at offset 0
    */
   public void copy(char[] otherChars, int otherOffset, int otherLength) {
+    grow(otherLength);
+    System.arraycopy(otherChars, otherOffset, this.chars, 0,
+        otherLength);
     this.offset = 0;
-    append(otherChars, otherOffset, otherLength);
+    this.length = otherLength;
   }
 
   /**
-   * Appends the given array to this CharsRef starting at the current offset
+   * Appends the given array to this CharsRef
    */
   public void append(char[] otherChars, int otherOffset, int otherLength) {
-    grow(this.offset + otherLength);
-    System.arraycopy(otherChars, otherOffset, this.chars, this.offset,
+    final int newLength = length + otherLength;
+    grow(this.offset + newLength);
+    System.arraycopy(otherChars, otherOffset, this.chars, this.offset+length,
         otherLength);
-    this.length = otherLength;
+    this.length += otherLength;
   }
 
   @Override

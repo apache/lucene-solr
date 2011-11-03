@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -157,7 +158,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
           updateTerm = cmd.updateTerm;
         }
 
-        writer.updateDocument(updateTerm, cmd.getLuceneDocument());
+        Document luceneDocument = cmd.getLuceneDocument();
+        // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
+        writer.updateDocument(updateTerm, luceneDocument);
+        // SolrCore.verbose("updateDocument",updateTerm,"DONE");
+
         if(del) { // ensure id remains unique
           BooleanQuery bq = new BooleanQuery();
           bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
@@ -195,7 +200,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    solrCoreState.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
+    IndexWriter writer = solrCoreState.getIndexWriter(core);
+    Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
+
+    // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
+    writer.deleteDocuments(deleteTerm);
+    // SolrCore.verbose("deleteDocuments",deleteTerm,"DONE");
 
     ulog.delete(cmd);
  
@@ -312,7 +322,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
           ulog.preCommit(cmd);
         }
 
+        // SolrCore.verbose("writer.commit() start writer=",writer);
         writer.commit();
+        // SolrCore.verbose("writer.commit() end");
         numDocsPending.set(0);
         callPostCommitCallbacks();
       } else {
@@ -385,8 +397,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     IndexReader currentReader = previousSearcher.getIndexReader();
     IndexReader newReader;
 
-    newReader = IndexReader.openIfChanged(currentReader, solrCoreState.getIndexWriter(core), true);
-  
+    IndexWriter writer = solrCoreState.getIndexWriter(core);
+    // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
+    newReader = IndexReader.openIfChanged(currentReader, writer, true);
+    // SolrCore.verbose("reopen result", newReader);
     
     if (newReader == null) {
       currentReader.incRef();

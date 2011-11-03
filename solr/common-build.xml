@@ -145,6 +145,8 @@
       <arg value="-c" />
       <arg value="${common-solr.dir}/contrib/uima/lib" />
       <arg value="-c" />
+      <arg value="${common-solr.dir}/contrib/velocity/lib" />
+      <arg value="-c" />
       <arg value="${common-solr.dir}/example/example-DIH/solr/db/lib" />
       <arg value="-c" />
       <arg value="${common-solr.dir}/example/example-DIH/solr/mail/lib" />

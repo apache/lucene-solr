@@ -41,10 +41,10 @@ import org.apache.lucene.util.Version;
  * a Lucene index. It is highly recommended to use a dedicated directory (and on
  * stable storage as well) for persisting the snapshots' information, and not
  * reuse the content index directory, or otherwise conflicts and index
- * corruptions will occur.
+ * corruption will occur.
  * <p>
  * <b>NOTE:</b> you should call {@link #close()} when you're done using this
- * class for safetyness (it will close the {@link IndexWriter} instance used).
+ * class for safety (it will close the {@link IndexWriter} instance used).
  */
 public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
 

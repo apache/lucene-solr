@@ -27,12 +27,19 @@ import java.io.IOException;
  */
 
 public final class MultiDocsEnum extends DocsEnum {
+  private final MultiTermsEnum parent;
+  final DocsEnum[] subDocsEnum;
   private EnumWithSlice[] subs;
   int numSubs;
   int upto;
   DocsEnum current;
   int currentBase;
   int doc = -1;
+
+  public MultiDocsEnum(MultiTermsEnum parent, int subReaderCount) {
+    this.parent = parent;
+    subDocsEnum = new DocsEnum[subReaderCount];
+  }
 
   MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
     this.numSubs = numSubs;
@@ -46,6 +53,10 @@ public final class MultiDocsEnum extends DocsEnum {
     upto = -1;
     current = null;
     return this;
+  }
+
+  public boolean canReuse(MultiTermsEnum parent) {
+    return this.parent == parent;
   }
 
   public int getNumSubs() {

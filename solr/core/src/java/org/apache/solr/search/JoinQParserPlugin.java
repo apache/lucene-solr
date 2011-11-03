@@ -219,7 +219,7 @@ class JoinQuery extends Query {
         filter = resultSet.getTopFilter();
       }
 
-      DocIdSet readerSet = filter.getDocIdSet(context);
+      DocIdSet readerSet = filter.getDocIdSet(context, null);  // this set only includes live docs
       if (readerSet == null) readerSet=DocIdSet.EMPTY_DOCIDSET;
       return new JoinScorer(this, readerSet.iterator(), getBoost());
     }

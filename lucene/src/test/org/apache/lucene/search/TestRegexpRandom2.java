@@ -55,16 +55,18 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   protected IndexSearcher searcher2;
   private IndexReader reader;
   private Directory dir;
-  
+  protected String fieldName;
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
+    fieldName = random.nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
-    Field field = newField("field", "", StringField.TYPE_UNSTORED);
+    Field field = newField(fieldName, "", StringField.TYPE_UNSTORED);
     doc.add(field);
     List<String> terms = new ArrayList<String>();
     int num = atLeast(200);
@@ -141,7 +143,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   public void testRegexps() throws Exception {
     // we generate aweful regexps: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
+    int num = CodecProvider.getDefault().getFieldCodec(fieldName).equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       if (VERBOSE) {
@@ -155,8 +157,8 @@ public class TestRegexpRandom2 extends LuceneTestCase {
    * simple regexpquery implementation.
    */
   protected void assertSame(String regexp) throws IOException {   
-    RegexpQuery smart = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
-    DumbRegexpQuery dumb = new DumbRegexpQuery(new Term("field", regexp), RegExp.NONE);
+    RegexpQuery smart = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
+    DumbRegexpQuery dumb = new DumbRegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
    
     TopDocs smartDocs = searcher1.search(smart, 25);
     TopDocs dumbDocs = searcher2.search(dumb, 25);

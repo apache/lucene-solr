@@ -29,10 +29,10 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
  *
- * BooleanScorer uses a ~16k array to score windows of
- * docs. So it scores docs 0-16k first, then docs 16-32k,
+ * BooleanScorer uses an array to score windows of
+ * 2K docs. So it scores docs 0-2K first, then docs 2K-4K,
  * etc. For each window it iterates through all query terms
- * and accumulates a score in table[doc%16k]. It also stores
+ * and accumulates a score in table[doc%2K]. It also stores
  * in the table a bitmask representing which terms
  * contributed to the score. Non-zero scores are chained in
  * a linked list. At the end of scoring each window it then
@@ -75,9 +75,7 @@ final class BooleanScorer extends Scorer {
     public void collect(final int doc) throws IOException {
       final BucketTable table = bucketTable;
       final int i = doc & BucketTable.MASK;
-      Bucket bucket = table.buckets[i];
-      if (bucket == null)
-        table.buckets[i] = bucket = new Bucket();
+      final Bucket bucket = table.buckets[i];
       
       if (bucket.doc != doc) {                    // invalid bucket
         bucket.doc = doc;                         // set doc
@@ -143,6 +141,9 @@ final class BooleanScorer extends Scorer {
   static final class Bucket {
     int doc = -1;            // tells if bucket is valid
     float score;             // incremental score
+    // TODO: break out bool anyProhibited, int
+    // numRequiredMatched; then we can remove 32 limit on
+    // required clauses
     int bits;                // used for bool constraints
     int coord;               // count of terms in score
     Bucket next;             // next valid bucket
@@ -156,7 +157,13 @@ final class BooleanScorer extends Scorer {
     final Bucket[] buckets = new Bucket[SIZE];
     Bucket first = null;                          // head of valid list
   
-    public BucketTable() {}
+    public BucketTable() {
+      // Pre-fill to save the lazy init when collecting
+      // each sub:
+      for(int idx=0;idx<SIZE;idx++) {
+        buckets[idx] = new Bucket();
+      }
+    }
 
     public Collector newCollector(int mask) {
       return new BooleanScorerCollector(mask, this);
@@ -169,7 +176,7 @@ final class BooleanScorer extends Scorer {
     public Scorer scorer;
     // TODO: re-enable this if BQ ever sends us required clauses
     //public boolean required = false;
-    public boolean prohibited = false;
+    public boolean prohibited;
     public Collector collector;
     public SubScorer next;
 
@@ -193,12 +200,13 @@ final class BooleanScorer extends Scorer {
   private final float[] coordFactors;
   // TODO: re-enable this if BQ ever sends us required clauses
   //private int requiredMask = 0;
-  private int prohibitedMask = 0;
-  private int nextMask = 1;
   private final int minNrShouldMatch;
   private int end;
   private Bucket current;
   private int doc = -1;
+
+  // Any time a prohibited clause matches we set bit 0:
+  private static final int PROHIBITED_MASK = 1;
   
   BooleanScorer(BooleanWeight weight, boolean disableCoord, int minNrShouldMatch,
       List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
@@ -215,11 +223,8 @@ final class BooleanScorer extends Scorer {
     
     if (prohibitedScorers != null && prohibitedScorers.size() > 0) {
       for (Scorer scorer : prohibitedScorers) {
-        int mask = nextMask;
-        nextMask = nextMask << 1;
-        prohibitedMask |= mask;                     // update prohibited mask
         if (scorer.nextDoc() != NO_MORE_DOCS) {
-          scorers = new SubScorer(scorer, false, true, bucketTable.newCollector(mask), scorers);
+          scorers = new SubScorer(scorer, false, true, bucketTable.newCollector(PROHIBITED_MASK), scorers);
         }
       }
     }
@@ -233,9 +238,12 @@ final class BooleanScorer extends Scorer {
   // firstDocID is ignored since nextDoc() initializes 'current'
   @Override
   public boolean score(Collector collector, int max, int firstDocID) throws IOException {
+    // Make sure it's only BooleanScorer that calls us:
+    assert firstDocID == -1;
     boolean more;
     Bucket tmp;
     BucketScorer bs = new BucketScorer(weight);
+
     // The internal loop will set the score and doc before calling collect.
     collector.setScorer(bs);
     do {
@@ -244,12 +252,13 @@ final class BooleanScorer extends Scorer {
       while (current != null) {         // more queued 
 
         // check prohibited & required
-        if ((current.bits & prohibitedMask) == 0) {
+        if ((current.bits & PROHIBITED_MASK) == 0) {
 
-            // TODO: re-enable this if BQ ever sends us required
-            // clauses
-            //&& (current.bits & requiredMask) == requiredMask) {
+          // TODO: re-enable this if BQ ever sends us required
+          // clauses
+          //&& (current.bits & requiredMask) == requiredMask) {
           
+          // TODO: can we remove this?  
           if (current.doc >= max){
             tmp = current;
             current = current.next;
@@ -298,48 +307,22 @@ final class BooleanScorer extends Scorer {
 
   @Override
   public int docID() {
-    return doc;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public int nextDoc() throws IOException {
-    boolean more;
-    do {
-      while (bucketTable.first != null) {         // more queued
-        current = bucketTable.first;
-        bucketTable.first = current.next;         // pop the queue
-
-        // check prohibited & required, and minNrShouldMatch
-        if ((current.bits & prohibitedMask) == 0 &&
-            current.coord >= minNrShouldMatch) {
-          // TODO: re-enable this if BQ ever sends us required clauses
-          // (current.bits & requiredMask) == requiredMask &&
-          return doc = current.doc;
-        }
-      }
-
-      // refill the queue
-      more = false;
-      end += BucketTable.SIZE;
-      for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-        int subScorerDocID = sub.scorer.docID();
-        if (subScorerDocID != NO_MORE_DOCS) {
-          more |= sub.scorer.score(sub.collector, end, subScorerDocID);
-        }
-      }
-    } while (bucketTable.first != null || more);
-
-    return doc = NO_MORE_DOCS;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public float score() {
-    return current.score * coordFactors[current.coord];
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void score(Collector collector) throws IOException {
-    score(collector, Integer.MAX_VALUE, nextDoc());
+    score(collector, Integer.MAX_VALUE, -1);
   }
   
   @Override

@@ -17,6 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -102,6 +104,70 @@ public class TestCopyBytes extends LuceneTestCase {
       dir.deleteFile("test2");
       
       dir.close();
+    }
+  }
+  
+  // LUCENE-3541
+  public void testCopyBytesWithThreads() throws Exception {
+    int datalen = _TestUtil.nextInt(random, 101, 10000);
+    byte data[] = new byte[datalen];
+    random.nextBytes(data);
+    
+    Directory d = newDirectory();
+    IndexOutput output = d.createOutput("data", IOContext.DEFAULT);
+    output.writeBytes(data, 0, datalen);
+    output.close();
+    
+    IndexInput input = d.openInput("data", IOContext.DEFAULT);
+    IndexOutput outputHeader = d.createOutput("header", IOContext.DEFAULT);
+    // copy our 100-byte header
+    input.copyBytes(outputHeader, 100);
+    outputHeader.close();
+    
+    // now make N copies of the remaining bytes
+    CopyThread copies[] = new CopyThread[10];
+    for (int i = 0; i < copies.length; i++) {
+      copies[i] = new CopyThread((IndexInput) input.clone(), d.createOutput("copy" + i, IOContext.DEFAULT));
+    }
+    
+    for (int i = 0; i < copies.length; i++) {
+      copies[i].start();
+    }
+    
+    for (int i = 0; i < copies.length; i++) {
+      copies[i].join();
+    }
+    
+    for (int i = 0; i < copies.length; i++) {
+      IndexInput copiedData = d.openInput("copy" + i, IOContext.DEFAULT);
+      byte[] dataCopy = new byte[datalen];
+      System.arraycopy(data, 0, dataCopy, 0, 100); // copy the header for easy testing
+      copiedData.readBytes(dataCopy, 100, datalen-100);
+      assertArrayEquals(data, dataCopy);
+      copiedData.close();
+    }
+    input.close();
+    d.close();
+    
+  }
+  
+  static class CopyThread extends Thread {
+    final IndexInput src;
+    final IndexOutput dst;
+    
+    CopyThread(IndexInput src, IndexOutput dst) {
+      this.src = src;
+      this.dst = dst;
+    }
+
+    @Override
+    public void run() {
+      try {
+        src.copyBytes(dst, src.length()-100);
+        dst.close();
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
     }
   }
 }

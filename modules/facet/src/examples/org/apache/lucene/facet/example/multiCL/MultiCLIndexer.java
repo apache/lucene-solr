@@ -14,7 +14,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-import org.apache.lucene.DocumentBuilder;
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.example.simple.SimpleUtils;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
@@ -22,7 +21,7 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -141,7 +140,7 @@ public class MultiCLIndexer {
     IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(
         ExampleUtils.EXAMPLE_VER, SimpleUtils.analyzer).setOpenMode(OpenMode.CREATE));
     // create and open a taxonomy writer
-    LuceneTaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir, OpenMode.CREATE);
+    DirectoryTaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
     index(iw, taxo, iParams, docTitles, docTexts, cPaths);
   }
   
@@ -154,7 +153,7 @@ public class MultiCLIndexer {
    *             on error (no detailed exception handling here for sample
    *             simplicity
    */
-  public static void index(IndexWriter iw, LuceneTaxonomyWriter taxo,
+  public static void index(IndexWriter iw, DirectoryTaxonomyWriter taxo,
       FacetIndexingParams iParams, String[] docTitles,
       String[] docTexts, CategoryPath[][] cPaths) throws Exception {
 
@@ -167,7 +166,7 @@ public class MultiCLIndexer {
       // we do not alter indexing parameters!
       // a category document builder will add the categories to a document
       // once build() is called
-      DocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(
+      CategoryDocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(
           taxo, iParams).setCategoryPaths(facetList);
 
       // create a plain Lucene document and add some regular Lucene fields

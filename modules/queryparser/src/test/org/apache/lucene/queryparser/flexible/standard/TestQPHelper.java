@@ -359,8 +359,16 @@ public class TestQPHelper extends LuceneTestCase {
     BooleanQuery expected = new BooleanQuery();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    
     assertEquals(expected, getQuery("中国", analyzer));
+    
+    expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
+    BooleanQuery inner = new BooleanQuery();
+    inner.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    inner.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    expected.add(inner, BooleanClause.Occur.MUST);
+    assertEquals(expected, getQuery("中 AND 中国", new SimpleCJKAnalyzer()));
+
   }
   
   public void testCJKBoostedTerm() throws Exception {
@@ -609,7 +617,7 @@ public class TestQPHelper extends LuceneTestCase {
 
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
-        "term phrase1 phrase2 term");
+        "term (phrase1 phrase2) term");
 
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
         "+term -(phrase1 phrase2) term");

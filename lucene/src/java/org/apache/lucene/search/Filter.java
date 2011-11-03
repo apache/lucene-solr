@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.Bits;
 
 /** 
  *  Abstract base class for restricting which documents may
@@ -44,14 +44,16 @@ public abstract class Filter {
    *         represent the whole underlying index i.e. if the index has more than
    *         one segment the given reader only represents a single segment.
    *         The provided context is always an atomic context, so you can call 
-   *         {@link IndexReader#fields()} or {@link IndexReader#getLiveDocs()}
+   *         {@link IndexReader#fields()}
    *         on the context's reader, for example.
+   *
+   * @param acceptDocs
+   *          Bits that represent the allowable docs to match (typically deleted docs
+   *          but possibly filtering other documents)
    *          
    * @return a DocIdSet that provides the documents which should be permitted or
    *         prohibited in search results. <b>NOTE:</b> null can be returned if
    *         no documents will be accepted by this Filter.
-   * 
-   * @see DocIdBitSet
    */
-  public abstract DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException;
+  public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 }

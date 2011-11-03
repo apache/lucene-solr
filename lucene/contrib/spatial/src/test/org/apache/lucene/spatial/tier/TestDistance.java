@@ -105,7 +105,7 @@ public class TestDistance extends LuceneTestCase {
 
     AtomicReaderContext[] leaves = ReaderUtil.leaves(r.getTopReaderContext());
     for (int i = 0; i < leaves.length; i++) {
-      f.getDocIdSet(leaves[i]);
+      f.getDocIdSet(leaves[i], leaves[i].reader.getLiveDocs());
     }
     r.close();
   }

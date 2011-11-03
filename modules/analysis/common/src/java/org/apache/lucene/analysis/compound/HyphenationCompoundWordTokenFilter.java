@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.compound;
 import java.io.File;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.hyphenation.Hyphenation;
@@ -34,64 +33,25 @@ import org.xml.sax.InputSource;
  * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
  * "Donaudampfschiff" even when you only enter "schiff". It uses a hyphenation
  * grammar and a word dictionary to achieve this.
- * </p>
+ * <p>
+ * You must specify the required {@link Version} compatibility when creating
+ * CompoundWordTokenFilterBase:
+ * <ul>
+ * <li>As of 3.1, CompoundWordTokenFilterBase correctly handles Unicode 4.0
+ * supplementary characters in strings and char arrays provided as compound word
+ * dictionaries.
+ * </ul>
+ * <p>If you pass in a {@link org.apache.lucene.analysis.util.CharArraySet} as dictionary,
+ * it should be case-insensitive unless it contains only lowercased entries and you
+ * have {@link org.apache.lucene.analysis.core.LowerCaseFilter} before this filter in your analysis chain.
+ * For optional performance (as this filter does lots of lookups to the dictionary,
+ * you should use the latter analysis chain/CharArraySet). Be aware: If you supply arbitrary
+ * {@link Set Sets} to the ctors, they will be automatically
+ * transformed to case-insensitive!
  */
 public class HyphenationCompoundWordTokenFilter extends
     CompoundWordTokenFilterBase {
   private HyphenationTree hyphenator;
-  
-  /**
-   * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
-   *  
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the
-   *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase#version"
-   *          >CompoundWordTokenFilterBase</a> for details.
-   * @param input
-   *          the {@link TokenStream} to process
-   * @param hyphenator
-   *          the hyphenation pattern tree to use for hyphenation
-   * @param dictionary
-   *          the word dictionary to match against
-   * @param minWordSize
-   *          only words longer than this get processed
-   * @param minSubwordSize
-   *          only subwords longer than this get to the output stream
-   * @param maxSubwordSize
-   *          only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch
-   *          Add only the longest matching subword to the stream
-   */
-  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, String[] dictionary, int minWordSize,
-      int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
-        onlyLongestMatch);
-
-    this.hyphenator = hyphenator;
-  }
-
-  /**
-   * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
-   *  
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the
-   *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase#version"
-   *          >CompoundWordTokenFilterBase</a> for details.
-   * @param input
-   *          the {@link TokenStream} to process
-   * @param hyphenator
-   *          the hyphenation pattern tree to use for hyphenation
-   * @param dictionary
-   *          the word dictionary to match against
-   */
-  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, String[] dictionary) {
-    this(matchVersion, input, hyphenator, makeDictionary(dictionary), DEFAULT_MIN_WORD_SIZE,
-        DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false);
-  }
 
   /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance. 
@@ -106,10 +66,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param hyphenator
    *          the hyphenation pattern tree to use for hyphenation
    * @param dictionary
-   *          the word dictionary to match against. If this is a
-   *          {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it
-   *          must have set ignoreCase=false and only contain lower case
-   *          strings.
+   *          the word dictionary to match against.
    */
   public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
       HyphenationTree hyphenator, Set<?> dictionary) {
@@ -130,10 +87,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param hyphenator
    *          the hyphenation pattern tree to use for hyphenation
    * @param dictionary
-   *          the word dictionary to match against. If this is a
-   *          {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it
-   *          must have set ignoreCase=false and only contain lower case
-   *          strings.
+   *          the word dictionary to match against.
    * @param minWordSize
    *          only words longer than this get processed
    * @param minSubwordSize
@@ -218,22 +172,20 @@ public class HyphenationCompoundWordTokenFilter extends
   }
 
   @Override
-  protected void decomposeInternal(final Token token) {
+  protected void decompose() {
     // get the hyphenation points
-    Hyphenation hyphens = hyphenator.hyphenate(token.buffer(), 0, token
-        .length(), 1, 1);
+    Hyphenation hyphens = hyphenator.hyphenate(termAtt.buffer(), 0, termAtt.length(), 1, 1);
     // No hyphen points found -> exit
     if (hyphens == null) {
       return;
     }
 
     final int[] hyp = hyphens.getHyphenationPoints();
-    char[] lowerCaseTermBuffer=makeLowerCaseCopy(token.buffer());
 
     for (int i = 0; i < hyp.length; ++i) {
       int remaining = hyp.length - i;
       int start = hyp[i];
-      Token longestMatchToken = null;
+      CompoundToken longestMatchToken = null;
       for (int j = 1; j < remaining; j++) {
         int partLength = hyp[i + j] - start;
 
@@ -250,34 +202,33 @@ public class HyphenationCompoundWordTokenFilter extends
         }
 
         // check the dictionary
-        if (dictionary == null || dictionary.contains(lowerCaseTermBuffer, start, partLength)) {
+        if (dictionary == null || dictionary.contains(termAtt.buffer(), start, partLength)) {
           if (this.onlyLongestMatch) {
             if (longestMatchToken != null) {
-              if (longestMatchToken.length() < partLength) {
-                longestMatchToken = createToken(start, partLength, token);
+              if (longestMatchToken.txt.length() < partLength) {
+                longestMatchToken = new CompoundToken(start, partLength);
               }
             } else {
-              longestMatchToken = createToken(start, partLength, token);
+              longestMatchToken = new CompoundToken(start, partLength);
             }
           } else {
-            tokens.add(createToken(start, partLength, token));
+            tokens.add(new CompoundToken(start, partLength));
           }
-        } else if (dictionary.contains(lowerCaseTermBuffer, start,
-            partLength - 1)) {
+        } else if (dictionary.contains(termAtt.buffer(), start, partLength - 1)) {
           // check the dictionary again with a word that is one character
           // shorter
           // to avoid problems with genitive 's characters and other binding
           // characters
           if (this.onlyLongestMatch) {
             if (longestMatchToken != null) {
-              if (longestMatchToken.length() < partLength - 1) {
-                longestMatchToken = createToken(start, partLength - 1, token);
+              if (longestMatchToken.txt.length() < partLength - 1) {
+                longestMatchToken = new CompoundToken(start, partLength - 1);
               }
             } else {
-              longestMatchToken = createToken(start, partLength - 1, token);
+              longestMatchToken = new CompoundToken(start, partLength - 1);
             }
           } else {
-            tokens.add(createToken(start, partLength - 1, token));
+            tokens.add(new CompoundToken(start, partLength - 1));
           }
         }
       }

@@ -27,17 +27,6 @@ import org.apache.lucene.store.IndexOutput;
 public class AppendingSegmentInfosWriter extends DefaultSegmentInfosWriter {
 
   @Override
-  protected IndexOutput createOutput(Directory dir, String segmentsFileName, IOContext context)
-          throws IOException {
-    return dir.createOutput(segmentsFileName, context);
-  }
-
-  @Override
-  public void finishCommit(IndexOutput out) throws IOException {
-    out.close();
-  }
-
-  @Override
   public void prepareCommit(IndexOutput segmentOutput) throws IOException {
     // noop
   }

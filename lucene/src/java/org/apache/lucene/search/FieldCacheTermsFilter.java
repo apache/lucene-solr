@@ -23,6 +23,7 @@ import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -116,68 +117,22 @@ public class FieldCacheTermsFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-    return new FieldCacheTermsFilterDocIdSet(getFieldCache().getTermsIndex(context.reader, field));
-  }
-
-  protected class FieldCacheTermsFilterDocIdSet extends DocIdSet {
-    private FieldCache.DocTermsIndex fcsi;
-
-    private FixedBitSet bits;
-
-    public FieldCacheTermsFilterDocIdSet(FieldCache.DocTermsIndex fcsi) {
-      this.fcsi = fcsi;
-      bits = new FixedBitSet(this.fcsi.numOrd());
-      final BytesRef spare = new BytesRef();
-      for (int i=0;i<terms.length;i++) {
-        int termNumber = this.fcsi.binarySearchLookup(terms[i], spare);
-        if (termNumber > 0) {
-          bits.set(termNumber);
-        }
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    final FieldCache.DocTermsIndex fcsi = getFieldCache().getTermsIndex(context.reader, field);
+    final FixedBitSet bits = new FixedBitSet(fcsi.numOrd());
+    final BytesRef spare = new BytesRef();
+    for (int i=0;i<terms.length;i++) {
+      int termNumber = fcsi.binarySearchLookup(terms[i], spare);
+      if (termNumber > 0) {
+        bits.set(termNumber);
       }
     }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      return new FieldCacheTermsFilterDocIdSetIterator();
-    }
-
-    /** This DocIdSet implementation is cacheable. */
-    @Override
-    public boolean isCacheable() {
-      return true;
-    }
-
-    protected class FieldCacheTermsFilterDocIdSetIterator extends DocIdSetIterator {
-      private int doc = -1;
-
+    final int maxDoc = context.reader.maxDoc();
+    return new FieldCacheRangeFilter.FieldCacheDocIdSet(maxDoc, acceptDocs) {
       @Override
-      public int docID() {
-        return doc;
+      boolean matchDoc(int doc) {
+        return bits.get(fcsi.getOrd(doc));
       }
-
-      @Override
-      public int nextDoc() {
-        try {
-          while (!bits.get(fcsi.getOrd(++doc))) {}
-        } catch (ArrayIndexOutOfBoundsException e) {
-          doc = NO_MORE_DOCS;
-        }
-        return doc;
-      }
-
-      @Override
-      public int advance(int target) {
-        try {
-          doc = target;
-          while (!bits.get(fcsi.getOrd(doc))) {
-            doc++;
-          }
-        } catch (ArrayIndexOutOfBoundsException e) {
-          doc = NO_MORE_DOCS;
-        }
-        return doc;
-      }
-    }
+    };
   }
 }

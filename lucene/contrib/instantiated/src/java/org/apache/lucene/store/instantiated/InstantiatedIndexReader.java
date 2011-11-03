@@ -408,6 +408,11 @@ public class InstantiatedIndexReader extends IndexReader {
           }
 
           @Override
+          public long getUniqueTermCount() throws IOException {
+            return -1;
+          }
+
+          @Override
           public Comparator<BytesRef> getComparator() {
             return BytesRef.getUTF8SortedAsUnicodeComparator();
           }

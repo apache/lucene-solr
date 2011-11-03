@@ -29,6 +29,8 @@ import java.io.IOException;
  */
 
 public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final MultiTermsEnum parent;
+  final DocsAndPositionsEnum[] subDocsAndPositionsEnum;
   private EnumWithSlice[] subs;
   int numSubs;
   int upto;
@@ -36,7 +38,16 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   int currentBase;
   int doc = -1;
 
-  MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
+  public MultiDocsAndPositionsEnum(MultiTermsEnum parent, int subReaderCount) {
+    this.parent = parent;
+    subDocsAndPositionsEnum = new DocsAndPositionsEnum[subReaderCount];
+  }
+
+  public boolean canReuse(MultiTermsEnum parent) {
+    return this.parent == parent;
+  }
+
+  public MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
     this.numSubs = numSubs;
     this.subs = new EnumWithSlice[subs.length];
     for(int i=0;i<subs.length;i++) {

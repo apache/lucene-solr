@@ -18,16 +18,19 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.store.Directory;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBooleanScorer extends LuceneTestCase
@@ -93,13 +96,88 @@ public class TestBooleanScorer extends LuceneTestCase
     }};
     
     BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);
-    
-    assertEquals("should have received 3000", 3000, bs.nextDoc());
-    assertEquals("should have received NO_MORE_DOCS", DocIdSetIterator.NO_MORE_DOCS, bs.nextDoc());
+
+    final List<Integer> hits = new ArrayList<Integer>();
+    bs.score(new Collector() {
+      int docBase;
+      @Override
+      public void setScorer(Scorer scorer) {
+      }
+      
+      @Override
+      public void collect(int doc) throws IOException {
+        hits.add(docBase+doc);
+      }
+      
+      @Override
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
+      }
+      
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
+      });
+
+    assertEquals("should have only 1 hit", 1, hits.size());
+    assertEquals("hit should have been docID=3000", 3000, hits.get(0).intValue());
     searcher.close();
     ir.close();
     directory.close();
-    
   }
 
+  public void testMoreThan32ProhibitedClauses() throws Exception {
+    final Directory d = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, d);
+    Document doc = new Document();
+    doc.add(new TextField("field", "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33"));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new TextField("field", "33"));
+    w.addDocument(doc);
+    final IndexReader r = w.getReader();
+    w.close();
+    final IndexSearcher s = newSearcher(r);
+
+    final BooleanQuery q = new BooleanQuery();
+    for(int term=0;term<33;term++) {
+      q.add(new BooleanClause(new TermQuery(new Term("field", ""+term)),
+                              BooleanClause.Occur.MUST_NOT));
+    }
+    q.add(new BooleanClause(new TermQuery(new Term("field", "33")),
+                            BooleanClause.Occur.SHOULD));
+                            
+    final int[] count = new int[1];
+    s.search(q, new Collector() {
+      private Scorer scorer;
+    
+      @Override
+      public void setScorer(Scorer scorer) {
+        // Make sure we got BooleanScorer:
+        this.scorer = scorer;
+        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$BucketScorer", scorer.getClass().getName());
+      }
+      
+      @Override
+      public void collect(int doc) throws IOException {
+        count[0]++;
+      }
+      
+      @Override
+      public void setNextReader(AtomicReaderContext context) {
+      }
+      
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
+    });
+
+    assertEquals(1, count[0]);
+    
+    s.close();
+    r.close();
+    d.close();
+  }
 }

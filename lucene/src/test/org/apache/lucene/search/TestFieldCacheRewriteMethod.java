@@ -30,10 +30,10 @@ public class TestFieldCacheRewriteMethod extends TestRegexpRandom2 {
   /** Test fieldcache rewrite against filter rewrite */
   @Override
   protected void assertSame(String regexp) throws IOException {   
-    RegexpQuery fieldCache = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
+    RegexpQuery fieldCache = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
     fieldCache.setRewriteMethod(new FieldCacheRewriteMethod());
     
-    RegexpQuery filter = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
+    RegexpQuery filter = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
     filter.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     
     TopDocs fieldCacheDocs = searcher1.search(fieldCache, 25);

@@ -163,7 +163,7 @@ public class BlockJoinQuery extends Query {
         return null;
       }
 
-      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext);
+      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, readerContext.reader.getLiveDocs());
       // TODO: once we do random-access filters we can
       // generalize this:
       if (parents == null) {

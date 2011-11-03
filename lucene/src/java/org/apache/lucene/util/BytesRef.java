@@ -79,7 +79,7 @@ public final class BytesRef implements Comparable<BytesRef> {
 
   /**
    * @param text Initialize the byte[] from the UTF8 bytes
-   * for the provided Sring.  This must be well-formed
+   * for the provided String.  This must be well-formed
    * unicode text, with no unpaired surrogates or U+FFFF.
    */
   public BytesRef(CharSequence text) {

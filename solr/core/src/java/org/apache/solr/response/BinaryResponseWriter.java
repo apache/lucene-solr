@@ -87,7 +87,18 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         writeResults(ctx, codec);
         return null; // null means we completely handled it
       }
-
+      if( o instanceof IndexableField ) {
+        if(schema == null) schema = solrQueryRequest.getSchema(); 
+        
+        IndexableField f = (IndexableField)o;
+        SchemaField sf = schema.getFieldOrNull(f.name());
+        try {
+          o = getValue(sf, f);
+        } 
+        catch (Exception e) {
+          LOG.warn("Error reading a field : " + o, e);
+        }
+      }
       if (o instanceof SolrDocument) {
         // Remove any fields that were not requested.
         // This typically happens when distributed search adds 
@@ -163,36 +174,19 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         String fieldName = f.name();
         if( !returnFields.wantsField(fieldName) ) 
           continue;
+        
         SchemaField sf = schema.getFieldOrNull(fieldName);
-        FieldType ft = null;
-        if(sf != null) ft =sf.getType();
-        Object val;
-        if (ft == null) {  // handle fields not in the schema
-          BytesRef bytesRef = f.binaryValue();
-          if (bytesRef != null) {
-            if (bytesRef.offset == 0 && bytesRef.length == bytesRef.bytes.length) {
-              val = bytesRef.bytes;
-            } else {
-              final byte[] bytes = new byte[bytesRef.length];
-              val = bytes;
-              System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
-            }
-          } else val = f.stringValue();
-        } else {
-          try {
-            if (useFieldObjects && KNOWN_TYPES.contains(ft.getClass())) {
-              val = ft.toObject(f);
-            } else {
-              val = ft.toExternal(f);
-            }
-          } catch (Exception e) {
-            // There is a chance of the underlying field not really matching the
-            // actual field type . So ,it can throw exception
-            LOG.warn("Error reading a field from document : " + solrDoc, e);
-            //if it happens log it and continue
-            continue;
-          }
+        Object val = null;
+        try {
+          val = getValue(sf,f);
+        } catch (Exception e) {
+          // There is a chance of the underlying field not really matching the
+          // actual field type . So ,it can throw exception
+          LOG.warn("Error reading a field from document : " + solrDoc, e);
+          //if it happens log it and continue
+          continue;
         }
+          
         if(sf != null && sf.multiValued() && !solrDoc.containsKey(fieldName)){
           ArrayList l = new ArrayList();
           l.add(val);
@@ -203,7 +197,30 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       return solrDoc;
     }
-
+    
+    public Object getValue(SchemaField sf, IndexableField f) throws Exception {
+      FieldType ft = null;
+      if(sf != null) ft =sf.getType();
+      
+      if (ft == null) {  // handle fields not in the schema
+        BytesRef bytesRef = f.binaryValue();
+        if (bytesRef != null) {
+          if (bytesRef.offset == 0 && bytesRef.length == bytesRef.bytes.length) {
+            return bytesRef.bytes;
+          } else {
+            final byte[] bytes = new byte[bytesRef.length];
+            System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
+            return bytes;
+          }
+        } else return f.stringValue();
+      } else {
+        if (useFieldObjects && KNOWN_TYPES.contains(ft.getClass())) {
+          return ft.toObject(f);
+        } else {
+          return ft.toExternal(f);
+        }
+      }
+    }
   }
 
 

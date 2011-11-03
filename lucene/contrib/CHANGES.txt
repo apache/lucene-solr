@@ -51,6 +51,10 @@ New Features
     
  * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
    from the term dictionary using levenshtein automata.  (Robert Muir)
+
+ * LUCENE-3527: Add LuceneLevenshteinDistance, which computes string distance in a compatible
+   way as DirectSpellChecker. This can be used to merge top-N results from more than one
+   SpellChecker.  (James Dyer via Robert Muir)
   
 API Changes
 
@@ -81,6 +85,9 @@ Changes in backwards compatibility policy
 
  * LUCENE-3446: Removed BooleanFilter.finalResult() due to change to
    FixedBitSet.  (Uwe Schindler)
+
+ * LUCENE-3508: Changed some method signatures in decompounding TokenFilters
+   to make them no longer use the Token class.  (Uwe Schindler)
 
 New Features
 
@@ -121,10 +128,28 @@ Bug Fixes
  * LUCENE-3495: Fix BlockJoinQuery to properly implement getBoost()/setBoost().
    (Robert Muir)
 
+ * LUCENE-3519: BlockJoinCollector always returned null when you tried
+   to retrieve top groups for any BlockJoinQuery after the first (Mark
+   Harwood, Mike McCandless)
+
+ * LUCENE-3301: Added a workaround for buggy BreakIterator implementations in
+   Java that crash on certain inputs containing supplementary characters.
+   (Robert Muir)
+
+ * LUCENE-3508: Decompounders based on CompoundWordTokenFilterBase can now be
+   used with custom attributes. All those attributes are preserved and set on all
+   added decompounded tokens.  (Spyros Kapnissis, Uwe Schindler)
+   
+ * LUCENE-3542: Group expanded query terms to preserve parent boolean operator
+   in StandartQueryParser. (Simon Willnauer) 
+
 API Changes
  
  * LUCENE-3436: Add SuggestMode to the spellchecker, so you can specify the strategy
    for suggesting related terms.  (James Dyer via Robert Muir)
+
+ * LUCENE-3513: Add SimpleFragListBuilder constructor with margin parameter.
+   (Kelsey Francis via Koji Sekiguchi)
 
 ======================= Lucene 3.4.0 ================
 

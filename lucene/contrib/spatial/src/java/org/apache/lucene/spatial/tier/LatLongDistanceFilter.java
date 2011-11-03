@@ -24,6 +24,7 @@ import org.apache.lucene.search.FilteredDocIdSet;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.spatial.DistanceUtils;
 
 
@@ -60,7 +61,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
   }
   
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
 
     final double[] latIndex = FieldCache.DEFAULT.getDoubles(context.reader, latField);
     final double[] lngIndex = FieldCache.DEFAULT.getDoubles(context.reader, lngField);
@@ -68,7 +69,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
     final int docBase = nextDocBase;
     nextDocBase += context.reader.maxDoc();
 
-    return new FilteredDocIdSet(startingFilter.getDocIdSet(context)) {
+    return new FilteredDocIdSet(startingFilter.getDocIdSet(context, acceptDocs)) {
       @Override
       protected boolean match(int doc) {
         double x = latIndex[doc];

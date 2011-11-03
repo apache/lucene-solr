@@ -31,7 +31,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   public void testTooSmallFragSize() throws Exception {
     try{
       SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-      sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b c d" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE - 1 );
+      sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b c d" ), sflb.minFragCharSize - 1 );
       fail( "IllegalArgumentException must be thrown" );
     }
     catch ( IllegalArgumentException expected ) {
@@ -40,7 +40,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   
   public void testSmallerFragSizeThanTermQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "abcdefghijklmnopqrs")), "abcdefghijklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "abcdefghijklmnopqrs")), "abcdefghijklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,19)", ffl.getFragInfos().get( 0 ).toString() );
   }
@@ -52,7 +52,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     phraseQuery.add(new Term(F, "abcdefgh"));
     phraseQuery.add(new Term(F, "jklmnopqrs"));
 
-    FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "abcdefgh   jklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "abcdefgh   jklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
     if (VERBOSE) System.out.println( ffl.getFragInfos().get( 0 ).toString() );
     assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(0,21)", ffl.getFragInfos().get( 0 ).toString() );

@@ -216,7 +216,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
       SimpleTextDocsEnum docsEnum;
-      if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(in)) {
+      if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
         docsEnum = (SimpleTextDocsEnum) reuse;
       } else {
         docsEnum = new SimpleTextDocsEnum();
@@ -231,7 +231,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       }
 
       SimpleTextDocsAndPositionsEnum docsAndPositionsEnum;
-      if (reuse != null && reuse instanceof SimpleTextDocsAndPositionsEnum && ((SimpleTextDocsAndPositionsEnum) reuse).canReuse(in)) {
+      if (reuse != null && reuse instanceof SimpleTextDocsAndPositionsEnum && ((SimpleTextDocsAndPositionsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
         docsAndPositionsEnum = (SimpleTextDocsAndPositionsEnum) reuse;
       } else {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
@@ -249,7 +249,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final IndexInput inStart;
     private final IndexInput in;
     private boolean omitTF;
-    private int docID;
+    private int docID = -1;
     private int tf;
     private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
@@ -268,6 +268,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       this.liveDocs = liveDocs;
       in.seek(fp);
       this.omitTF = omitTF;
+      docID = -1;
       if (omitTF) {
         tf = 1;
       }

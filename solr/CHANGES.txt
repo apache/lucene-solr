@@ -56,6 +56,11 @@ Upgrading from Solr 3.5-dev
   
 * FacetComponent no longer catches and embeds exceptions occurred during facet
   processing, it throws HTTP 400 or 500 exceptions instead.
+  
+* The VelocityResponseWriter is no longer built into the core.  Its JAR and
+  dependencies now need to be added (via <lib> or solr/home lib inclusion),
+  and it needs to be registered in solrconfig.xml like this:
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
 Detailed Change List
 ----------------------
@@ -86,7 +91,7 @@ New Features
   DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
   levenshtein automata.  (James Dyer, rmuir)
    
-* SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
+* SOLR-1873: SolrCloud - added shared/central config and core/shard management via zookeeper,
   built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
@@ -257,6 +262,12 @@ Bug Fixes
 * SOLR-2654: Directorys used by a SolrCore are now closed when they are no longer used.
   (Mark Miller)
   
+* SOLR-2854: Now load URL content stream data (via stream.url) when called for during request handling,
+  rather than loading URL content streams automatically regardless of use.
+  (David Smiley and Ryan McKinley via ehatcher)
+  
+  
+  
 Other Changes
 ----------------------
 
@@ -334,6 +345,15 @@ Other Changes
 * SOLR-2756: Maven configuration: Excluded transitive stax:stax-api dependency
   from org.codehaus.woodstox:wstx-asl dependency. (David Smiley via Steve Rowe)
 
+* SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
+  remove it as a mandatory core dependency.  (ehatcher)
+  
+* SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
+  (ehatcher)
+
+* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
+  extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
+
 Documentation
 ----------------------
 
@@ -355,10 +375,14 @@ New Features
   for 99 languages (janhoy, cmale)
 
 * SOLR-1979: New contrib "langid". Adds language identification capabilities as an 
-  Update Processor, using Tika's LanguageIdentifier (janhoy, Tommaso Teofili, gsingers)
+  Update Processor, using Tika's LanguageIdentifier or Cybozu language-detection
+  library (janhoy, Tommaso Teofili, gsingers)
 
 * SOLR-2818: Added before/after count response parsing support for range facets in
   SolrJ. (Bernhard Frauendienst via Martijn van Groningen)  
+  
+* SOLR-2276: Add support for cologne phonetic to PhoneticFilterFactory. 
+  (Marc Pompl via rmuir)
 
 Bug Fixes
 ----------------------
@@ -382,6 +406,10 @@ Bug Fixes
 
 * SOLR-2791: Replication: abortfetch command is broken if replication was started
   by fetchindex command instead of a regular poll (Yury Kats via shalin)
+
+* SOLR-2861: Fix extremely rare race condition on commit that can result
+  in a NPE (yonik)
+
 
  Other Changes
 ----------------------
@@ -412,6 +440,11 @@ Bug Fixes
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
 
 * SOLR-2792: Allow case insensitive Hunspell stemming (janhoy, rmuir)
+
+* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
+  extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
+
+* SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
 ==================  3.4.0  ==================
 

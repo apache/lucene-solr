@@ -177,7 +177,7 @@ final class RequestHandlers {
       }
     }
 
-    // we've now registered all handlers, time ot init them in the same order
+    // we've now registered all handlers, time to init them in the same order
     for (Map.Entry<PluginInfo,SolrRequestHandler> entry : handlers.entrySet()) {
       PluginInfo info = entry.getKey();
       SolrRequestHandler requestHandler = entry.getValue();

@@ -427,8 +427,8 @@ public class TestDocSet extends LuceneTestCase {
 
     // first test in-sequence sub readers
     for (AtomicReaderContext readerContext : ReaderUtil.leaves(topLevelContext)) {
-      da = fa.getDocIdSet(readerContext);
-      db = fb.getDocIdSet(readerContext);
+      da = fa.getDocIdSet(readerContext, null);
+      db = fb.getDocIdSet(readerContext, null);
       doTestIteratorEqual(da, db);
     }  
 
@@ -437,8 +437,8 @@ public class TestDocSet extends LuceneTestCase {
     // now test out-of-sequence sub readers
     for (int i=0; i<nReaders; i++) {
       AtomicReaderContext readerContext = leaves[rand.nextInt(nReaders)];
-      da = fa.getDocIdSet(readerContext);
-      db = fb.getDocIdSet(readerContext);
+      da = fa.getDocIdSet(readerContext, null);
+      db = fb.getDocIdSet(readerContext, null);
       doTestIteratorEqual(da, db);
     }
   }

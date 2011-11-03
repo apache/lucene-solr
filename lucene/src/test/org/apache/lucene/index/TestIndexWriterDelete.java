@@ -23,14 +23,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -896,6 +897,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   }
   
   public void testIndexingThenDeleting() throws Exception {
+    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("field").equals("Memory"));
+    assumeFalse("This test cannot run with SimpleText codec", CodecProvider.getDefault().getFieldCodec("field").equals("SimpleText"));
     final Random r = random;
     Directory dir = newDirectory();
     // note this test explicitly disables payloads

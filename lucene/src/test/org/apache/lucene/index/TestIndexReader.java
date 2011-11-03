@@ -1201,7 +1201,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1586: getUniqueTermCount
   public void testUniqueTermCount() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(newField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", TextField.TYPE_UNSTORED));
     doc.add(newField("number", "0 1 2 3 4 5 6 7 8 9", TextField.TYPE_UNSTORED));
@@ -1217,12 +1217,8 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader r2 = IndexReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    try {
-      r2.getUniqueTermCount();
-      fail("expected exception");
-    } catch (UnsupportedOperationException uoe) {
-      // expected
-    }
+    assertEquals(-1, r2.getUniqueTermCount());
+
     IndexReader[] subs = r2.getSequentialSubReaders();
     for(int i=0;i<subs.length;i++) {
       assertEquals(36, subs[i].getUniqueTermCount());

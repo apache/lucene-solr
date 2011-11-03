@@ -31,8 +31,8 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -69,7 +69,7 @@ public class FacetTestUtils {
       IndexTaxonomyReaderPair pair = new IndexTaxonomyReaderPair();
       pair.indexReader = IndexReader.open(dirs[i][0]);
       pair.indexSearcher = new IndexSearcher(pair.indexReader);
-      pair.taxReader = new LuceneTaxonomyReader(dirs[i][1]);
+      pair.taxReader = new DirectoryTaxonomyReader(dirs[i][1]);
       pairs[i] = pair;
     }
     return pairs;
@@ -83,7 +83,7 @@ public class FacetTestUtils {
       pair.indexWriter = new IndexWriter(dirs[i][0], new IndexWriterConfig(
           LuceneTestCase.TEST_VERSION_CURRENT, new StandardAnalyzer(
               LuceneTestCase.TEST_VERSION_CURRENT)));
-      pair.taxWriter = new LuceneTaxonomyWriter(dirs[i][1]);
+      pair.taxWriter = new DirectoryTaxonomyWriter(dirs[i][1]);
       pair.indexWriter.commit();
       pair.taxWriter.commit();
       pairs[i] = pair;

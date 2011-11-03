@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -30,6 +31,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 
 public class TermsFilterTest extends LuceneTestCase {
 
@@ -68,22 +70,57 @@ public class TermsFilterTest extends LuceneTestCase {
 
     TermsFilter tf = new TermsFilter();
     tf.addTerm(new Term(fieldName, "19"));
-    FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context);
+    FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
     assertEquals("Must match nothing", 0, bits.cardinality());
 
     tf.addTerm(new Term(fieldName, "20"));
-    bits = (FixedBitSet) tf.getDocIdSet(context);
+    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
     assertEquals("Must match 1", 1, bits.cardinality());
 
     tf.addTerm(new Term(fieldName, "10"));
-    bits = (FixedBitSet) tf.getDocIdSet(context);
+    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
     assertEquals("Must match 2", 2, bits.cardinality());
 
     tf.addTerm(new Term(fieldName, "00"));
-    bits = (FixedBitSet) tf.getDocIdSet(context);
+    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
     assertEquals("Must match 2", 2, bits.cardinality());
 
     reader.close();
     rd.close();
   }
+  
+  public void testMissingField() throws Exception {
+    String fieldName = "field1";
+    Directory rd1 = newDirectory();
+    RandomIndexWriter w1 = new RandomIndexWriter(random, rd1);
+    Document doc = new Document();
+    doc.add(newField(fieldName, "content1", StringField.TYPE_STORED));
+    w1.addDocument(doc);
+    IndexReader reader1 = w1.getReader();
+    w1.close();
+    
+    fieldName = "field2";
+    Directory rd2 = newDirectory();
+    RandomIndexWriter w2 = new RandomIndexWriter(random, rd2);
+    doc = new Document();
+    doc.add(newField(fieldName, "content2", StringField.TYPE_STORED));
+    w2.addDocument(doc);
+    IndexReader reader2 = w2.getReader();
+    w2.close();
+    
+    TermsFilter tf = new TermsFilter();
+    tf.addTerm(new Term(fieldName, "content1"));
+    
+    MultiReader multi = new MultiReader(reader1, reader2);
+    for (IndexReader.AtomicReaderContext context : ReaderUtil.leaves(multi.getTopReaderContext())) {
+      FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
+      assertTrue("Must be >= 0", bits.cardinality() >= 0);      
+    }
+    multi.close();
+    reader1.close();
+    reader2.close();
+    rd1.close();
+    rd2.close();
+  }
+
 }

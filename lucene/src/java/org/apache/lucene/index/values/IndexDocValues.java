@@ -278,7 +278,7 @@ public abstract class IndexDocValues implements Closeable {
       return binarySearch(value, spare, 0, getValueCount() - 1);
     }    
 
-    protected int binarySearch(BytesRef b, BytesRef bytesRef, int low,
+    private int binarySearch(BytesRef b, BytesRef bytesRef, int low,
         int high) {
       int mid = 0;
       while (low <= high) {

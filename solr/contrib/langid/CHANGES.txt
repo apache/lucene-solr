@@ -13,3 +13,6 @@ Initial release.  See README.txt.
 
 * SOLR-1979: New contrib "langid". Adds language identification capabilities as an 
   Update Processor, using Tika's LanguageIdentifier (janhoy, Tommaso Teofili, gsingers)
+
+* SOLR-2839: Add alternative implementation supporting 53 languages, 
+  based on http://code.google.com/p/language-detection/ (rmuir)

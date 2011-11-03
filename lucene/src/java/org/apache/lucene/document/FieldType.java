@@ -55,7 +55,7 @@ public class FieldType implements IndexableFieldType {
 
   /**
    * Prevents future changes. Note, it is recommended that this is called once
-   * the FieldTypes's properties have been set, to prevent unintential state
+   * the FieldTypes's properties have been set, to prevent unintentional state
    * changes.
    */
   public void freeze() {

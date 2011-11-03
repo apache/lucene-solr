@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
@@ -52,16 +53,16 @@ public class SpanQueryFilter extends SpanFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-    SpanFilterResult result = bitSpans(context);
+  public final DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    SpanFilterResult result = bitSpans(context, acceptDocs);
     return result.getDocIdSet();
   }
 
   @Override
-  public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
+  public SpanFilterResult bitSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException {
 
     final FixedBitSet bits = new FixedBitSet(context.reader.maxDoc());
-    Spans spans = query.getSpans(context, context.reader.getLiveDocs());
+    Spans spans = query.getSpans(context, acceptDocs);
     List<SpanFilterResult.PositionInfo> tmp = new ArrayList<SpanFilterResult.PositionInfo>(20);
     int currentDoc = -1;
     SpanFilterResult.PositionInfo currentInfo = null;

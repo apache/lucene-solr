@@ -184,6 +184,17 @@ Changes in backwards compatibility policy
   with the old tokenStream() method removed.  Consequently it is now mandatory
   for all Analyzers to support reusability. (Chris Male)
 
+* LUCENE-3473: IndexReader.getUniqueTermCount() no longer throws UOE when
+  it cannot be easily determined (e.g. Multi*Readers). Instead, it returns
+  -1 to be consistent with this behavior across other index statistics.
+  (Robert Muir)
+
+* LUCENE-1536: The abstract FilteredDocIdSet.match() method is no longer
+  allowed to throw IOException. This change was required to make it conform
+  to the Bits interface. This method should never do I/O for performance reasons.
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
+  
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -333,6 +344,15 @@ API Changes
   case, and fixed places in Lucene to use seekExact when possible.
   (Mike McCandless)
 
+* LUCENE-1536: Filter.getDocIdSet() now takes an acceptDocs Bits interface (like
+  Scorer) limiting the documents that can appear in the returned DocIdSet.
+  Filters are now required to respect these acceptDocs, otherwise deleted documents
+  may get returned by searches. Most filters will pass these Bits down to DocsEnum,
+  but those, e.g. working on FieldCache, may need to use BitsFilteredDocIdSet.wrap()
+  to exclude them.
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -343,11 +363,6 @@ New features
   matches terms against a finite-state machine. Implement WildcardQuery
   and FuzzyQuery with finite-state methods. Adds RegexpQuery.
   (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
-
-* LUCENE-1990: Adds internal packed ints implementation, to be used
-  for more efficient storage of int arrays when the values are
-  bounded, for example for storing the terms dict index (Toke
-  Eskildsen via Mike McCandless)
 
 * LUCENE-2321: Cutover to a more RAM efficient packed-ints based
   representation for the in-memory terms dict index.  (Mike
@@ -553,6 +568,19 @@ New features
   resident and disk resident IndexDocValues are now exposed via the Source
   interface. ValuesEnum has been removed in favour of Source. (Simon Willnauer)
 
+* LUCENE-1536: Filters can now be applied down-low, if their DocIdSet implements
+  a new bits() method, returning all documents in a random access way. If the
+  DocIdSet is not too sparse, it will be passed as acceptDocs down to the Scorer
+  as replacement for IndexReader's live docs.
+  In addition, FilteredQuery backs now IndexSearcher's filtering search methods.
+  Using FilteredQuery you can chain Filters in a very performant way
+  [new FilteredQuery(new FilteredQuery(query, filter1), filter2)], which was not
+  possible with IndexSearcher's methods. FilteredQuery also allows to override
+  the heuristics used to decide if filtering should be done random access or
+  using a conjunction on DocIdSet's iterator().
+  (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
+  Jason Rutherglen, Paul Elschot)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -581,9 +609,6 @@ Optimizations
   
 Bug fixes
 
-* LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
-  structures larger than 256MB (Toke Eskildsen via Mike McCandless)
-
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
@@ -595,6 +620,11 @@ Bug fixes
 * LUCENE-3348: Fix thread safety hazards in IndexWriter that could
   rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
   Simon Willnauer, Mike McCandless)
+
+* LUCENE-3515: Fix terrible merge performance versus 3.x, especially
+  when the directory isn't MMapDirectory, due to failing to reuse
+  DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
+  Robert Muir, Simon Willnauer, Mike McCandless)
 
 ======================= Lucene 3.5.0 =======================
 
@@ -616,6 +646,17 @@ Changes in backwards compatibility policy
   IndexReader.openIfChanged (a static method), and now returns null
   (instead of the old reader) if there are no changes in the index, to
   prevent the common pitfall of accidentally closing the old reader.
+
+* LUCENE-3541: Remove IndexInput's protected copyBuf. If you want to
+  keep a buffer in your IndexInput, do this yourself in your implementation, 
+  and be sure to do the right thing on clone()!  (Robert Muir)
+
+Changes in runtime behavior
+
+* LUCENE-3520: IndexReader.openIfChanged, when passed a near-real-time
+  reader, will now return null if there are no changes.  The API has
+  always reserved the right to do this; it's just that in the past for
+  near-real-time readers it never did. (Mike McCandless)
 
 Bug fixes
 
@@ -650,6 +691,25 @@ Bug fixes
   for a document depending if you used nextDoc() versus advance().
   (Mike McCandless, Robert Muir)
 
+* LUCENE-3529: Properly support indexing an empty field with empty term text.
+  Previously, if you had assertions enabled you would receive an error during
+  flush, if you didn't, you would get an invalid index.  
+  (Mike McCandless, Robert Muir)
+
+* LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
+  structures larger than 256MB (Toke Eskildsen via Mike McCandless)
+
+* LUCENE-3540: LUCENE-3255 dropped support for pre-1.9 indexes, but the
+  error message in IndexFormatTooOldException was incorrect. (Uwe Schindler,
+  Mike McCandless)
+
+* LUCENE-3541: IndexInput's default copyBytes() implementation was not safe 
+  across multiple threads, because all clones shared the same buffer.
+  (Robert Muir)
+  
+* LUCENE-3548: Fix CharsRef#append to extend length of the existing char[]
+  and presever existing chars. (Simon Willnauer) 
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
@@ -658,6 +718,11 @@ New Features
 * LUCENE-2215: Added IndexSearcher.searchAfter which returns results after a 
   specified ScoreDoc (e.g. last document on the previous page) to support deep
   paging use cases.  (Aaron McCurry, Grant Ingersoll, Robert Muir) 
+
+* LUCENE-1990: Adds internal packed ints implementation, to be used
+  for more efficient storage of int arrays when the values are
+  bounded, for example for storing the terms dict index (Toke
+  Eskildsen via Mike McCandless)
 
 Optimizations
 
@@ -668,11 +733,28 @@ Optimizations
 * LUCENE-3494: Optimize FilteredQuery to remove a multiply in score()
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-3534: Remove filter logic from IndexSearcher and delegate to
+  FilteredQuery's Scorer. This is a partial backport of a cleanup in
+  FilteredQuery/IndexSearcher added by LUCENE-1536 to Lucene 4.0.
+  (Uwe Schindler)
+
+* LUCENE-2205: Very substantial (3-5X) RAM reduction required to hold
+  the terms index on opening an IndexReader (Aaron McCurry via Mike McCandless)
+
 Test Cases
 
 * LUCENE-3420: Disable the finalness checks in TokenStream and Analyzer
   for implementing subclasses in different packages, where assertions are not
   enabled. (Uwe Schindler)
+
+* LUCENE-3506: tests relying on assertions being enabled were no-op because
+  they ignored AssertionError. With this fix now entire test framework 
+  (every test) fails if assertions are disabled, unless 
+  -Dtests.asserts.gracious=true is specified. (Doron Cohen)
+
+Build
+
+* SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
 ======================= Lucene 3.4.0 =======================
 

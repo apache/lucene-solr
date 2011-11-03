@@ -73,7 +73,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   
   /** This method is implemented for each data type */
   @Override
-  public abstract DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException;
+  public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 
   /**
    * Creates a string range filter using {@link FieldCache#getTermsIndex}. This works with all
@@ -83,7 +83,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<String> newStringRange(String field, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<String>(field, null, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
         final BytesRef spare = new BytesRef();
         final int lowerPoint = fcsi.binarySearchLookup(lowerVal == null ? null : new BytesRef(lowerVal), spare);
@@ -122,9 +122,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         assert inclusiveLowerPoint > 0 && inclusiveUpperPoint > 0;
         
-        // for this DocIdSet, we can ignore deleted docs
-        // because deleted docs have an order of 0 (null entry in StringIndex)
-        return new FieldCacheDocIdSet(context.reader, true) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           final boolean matchDoc(int doc) {
             final int docOrd = fcsi.getOrd(doc);
@@ -152,7 +150,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<Byte> newByteRange(String field, FieldCache.ByteParser parser, Byte lowerVal, Byte upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Byte>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final byte inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           final byte i = lowerVal.byteValue();
@@ -175,8 +173,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final byte[] values = FieldCache.DEFAULT.getBytes(context.reader, field, (FieldCache.ByteParser) parser);
-        // we only respect deleted docs if the range contains 0
-        return new FieldCacheDocIdSet(context.reader, !(inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -203,7 +200,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<Short> newShortRange(String field, FieldCache.ShortParser parser, Short lowerVal, Short upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Short>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final short inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           short i = lowerVal.shortValue();
@@ -226,8 +223,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final short[] values = FieldCache.DEFAULT.getShorts(context.reader, field, (FieldCache.ShortParser) parser);
-        // ignore deleted docs if range doesn't contain 0
-        return new FieldCacheDocIdSet(context.reader, !(inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -254,7 +250,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<Integer> newIntRange(String field, FieldCache.IntParser parser, Integer lowerVal, Integer upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Integer>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final int inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           int i = lowerVal.intValue();
@@ -277,8 +273,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final int[] values = FieldCache.DEFAULT.getInts(context.reader, field, (FieldCache.IntParser) parser);
-        // ignore deleted docs if range doesn't contain 0
-        return new FieldCacheDocIdSet(context.reader, !(inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -305,7 +300,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<Long> newLongRange(String field, FieldCache.LongParser parser, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Long>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final long inclusiveLowerPoint, inclusiveUpperPoint;
         if (lowerVal != null) {
           long i = lowerVal.longValue();
@@ -328,8 +323,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final long[] values = FieldCache.DEFAULT.getLongs(context.reader, field, (FieldCache.LongParser) parser);
-        // ignore deleted docs if range doesn't contain 0
-        return new FieldCacheDocIdSet(context.reader, !(inclusiveLowerPoint <= 0L && inclusiveUpperPoint >= 0L)) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -356,7 +350,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<Float> newFloatRange(String field, FieldCache.FloatParser parser, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Float>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
         // using NumericUtils to easier find the next bigger/lower value
         final float inclusiveLowerPoint, inclusiveUpperPoint;
@@ -383,8 +377,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final float[] values = FieldCache.DEFAULT.getFloats(context.reader, field, (FieldCache.FloatParser) parser);
-        // ignore deleted docs if range doesn't contain 0
-        return new FieldCacheDocIdSet(context.reader, !(inclusiveLowerPoint <= 0.0f && inclusiveUpperPoint >= 0.0f)) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -411,7 +404,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public static FieldCacheRangeFilter<Double> newDoubleRange(String field, FieldCache.DoubleParser parser, Double lowerVal, Double upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Double>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
         // using NumericUtils to easier find the next bigger/lower value
         final double inclusiveLowerPoint, inclusiveUpperPoint;
@@ -439,7 +432,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         final double[] values = FieldCache.DEFAULT.getDoubles(context.reader, field, (FieldCache.DoubleParser) parser);
         // ignore deleted docs if range doesn't contain 0
-        return new FieldCacheDocIdSet(context.reader, !(inclusiveLowerPoint <= 0.0 && inclusiveUpperPoint >= 0.0)) {
+        return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -506,12 +499,12 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   public FieldCache.Parser getParser() { return parser; }
   
   static abstract class FieldCacheDocIdSet extends DocIdSet {
-    private final IndexReader reader;
-    private final boolean canIgnoreDeletedDocs;
+    private final int maxDoc;
+    private final Bits acceptDocs;
 
-    FieldCacheDocIdSet(IndexReader reader, boolean canIgnoreDeletedDocs) {
-      this.reader = reader;
-      this.canIgnoreDeletedDocs = canIgnoreDeletedDocs;
+    FieldCacheDocIdSet(int maxDoc, Bits acceptDocs) {
+      this.maxDoc = maxDoc;
+      this.acceptDocs = acceptDocs;
     }
 
     /**
@@ -530,11 +523,29 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
     }
 
     @Override
+    public Bits bits() {
+      return (acceptDocs == null) ? new Bits() {
+        public boolean get(int docid) {
+          return FieldCacheDocIdSet.this.matchDoc(docid);
+        }
+
+        public int length() {
+          return FieldCacheDocIdSet.this.maxDoc;
+        }
+      } : new Bits() {
+        public boolean get(int docid) {
+          return acceptDocs.get(docid) && FieldCacheDocIdSet.this.matchDoc(docid);
+        }
+
+        public int length() {
+          return FieldCacheDocIdSet.this.maxDoc;
+        }
+      };
+    }
+
+    @Override
     public DocIdSetIterator iterator() throws IOException {
-
-      final Bits liveDocs = canIgnoreDeletedDocs ? null : reader.getLiveDocs();
-
-      if (liveDocs == null) {
+      if (acceptDocs == null) {
         // Specialization optimization disregard deletions
         return new DocIdSetIterator() {
           private int doc = -1;
@@ -569,12 +580,10 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           }
         };
       } else {
-        // Must consult deletions
-
-        final int maxDoc = reader.maxDoc();
+        // Must consult acceptDocs
 
         // a DocIdSetIterator generating docIds by
-        // incrementing a variable & checking liveDocs -
+        // incrementing a variable & checking acceptDocs -
         return new DocIdSetIterator() {
           private int doc = -1;
           @Override
@@ -589,14 +598,14 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
               if (doc >= maxDoc) {
                 return doc = NO_MORE_DOCS;
               }
-            } while (!liveDocs.get(doc) || !matchDoc(doc));
+            } while (!acceptDocs.get(doc) || !matchDoc(doc));
             return doc;
           }
         
           @Override
           public int advance(int target) {
             for(doc=target;doc<maxDoc;doc++) {
-              if (liveDocs.get(doc) && matchDoc(doc)) {
+              if (acceptDocs.get(doc) && matchDoc(doc)) {
                 return doc;
               }
             }

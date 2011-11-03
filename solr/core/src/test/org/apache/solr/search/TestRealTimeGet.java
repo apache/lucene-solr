@@ -17,21 +17,31 @@
 package org.apache.solr.search;
 
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Ignore;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static  org.apache.solr.core.SolrCore.verbose;
 
 public class TestRealTimeGet extends SolrTestCaseJ4 {
 
@@ -49,10 +59,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertJQ(req("q","id:1")
         ,"/response/numFound==0"
     );
-    assertJQ(req("qt","/get", "id","1", "fl","id")
+    assertJQ(req("qt","/get","id","1")
         ,"=={'doc':{'id':'1'}}"
     );
-    assertJQ(req("qt","/get","ids","1", "fl","id")
+    assertJQ(req("qt","/get","ids","1")
         ,"=={" +
         "  'response':{'numFound':1,'start':0,'docs':[" +
         "      {" +
@@ -65,10 +75,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
     );
-    assertJQ(req("qt","/get","id","1", "fl","id")
+    assertJQ(req("qt","/get","id","1")
         ,"=={'doc':{'id':'1'}}"
     );
-    assertJQ(req("qt","/get","ids","1", "fl","id")
+    assertJQ(req("qt","/get","ids","1")
         ,"=={" +
         "  'response':{'numFound':1,'start':0,'docs':[" +
         "      {" +
@@ -125,34 +135,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   ***/
 
 
-  public static void verbose(Object... args) {
-    if (!VERBOSE) return;
-    StringBuilder sb = new StringBuilder("TEST:");
-    sb.append(Thread.currentThread().getName());
-    sb.append(':');
-    for (Object o : args) {
-      sb.append(' ');
-      sb.append(o.toString());
-    }
-    System.out.println(sb.toString());
-  }
-
-  static class DocInfo {
-    long version;
-    long val;
-
-    public DocInfo(long version, long val) {
-      this.version = version;
-      this.val = val;
-    }
-
-    public String toString() {
-      return "{version="+version+",val="+val+"\"";
-    }
-  }
-
-  final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<Integer,DocInfo>();
-  Map<Integer,DocInfo> committedModel = new HashMap<Integer,DocInfo>();
+  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
+  Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
   long snapshotCount;
   long committedModelClock;
   volatile int lastId;
@@ -167,20 +151,21 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     syncArr = new Object[ndocs];
 
     for (int i=0; i<ndocs; i++) {
-      model.put(i, new DocInfo(0, -1L));
+      model.put(i, -1L);
       syncArr[i] = new Object();
     }
     committedModel.putAll(model);
   }
-
 
   @Test
   public void testStressGetRealtime() throws Exception {
     clearIndex();
     assertU(commit());
 
+    // req().getCore().getUpdateHandler().getIndexWriterProvider().getIndexWriter(req().getCore()).setInfoStream(System.out);
+
     final int commitPercent = 5 + random.nextInt(20);
-    final int softCommitPercent = 30+random.nextInt(60); // what percent of the commits are soft
+    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random.nextInt(25);
     final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
     final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
@@ -190,9 +175,21 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         // query variables
     final int percentRealtimeQuery = 60;
+    // final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
     int nReadThreads = 5 + random.nextInt(25);
 
+
+    verbose("commitPercent=", commitPercent);
+    verbose("softCommitPercent=",softCommitPercent);
+    verbose("deletePercent=",deletePercent);
+    verbose("deleteByQueryPercent=", deleteByQueryPercent);
+    verbose("ndocs=", ndocs);
+    verbose("nWriteThreads=", nWriteThreads);
+    verbose("nReadThreads=", nReadThreads);
+    verbose("percentRealtimeQuery=", percentRealtimeQuery);
+    verbose("maxConcurrentCommits=", maxConcurrentCommits);
+    verbose("operations=", operations);
 
 
     initModel(ndocs);
@@ -213,12 +210,13 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
             if (oper < commitPercent) {
               if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                Map<Integer,DocInfo> newCommittedModel;
+                Map<Integer,Long> newCommittedModel;
                 long version;
 
                 synchronized(TestRealTimeGet.this) {
-                  newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                  newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
                   version = snapshotCount++;
+                  verbose("took snapshot version=",version);
                 }
 
                 if (rand.nextInt(100) < softCommitPercent) {
@@ -226,9 +224,9 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   assertU(h.commit("softCommit","true"));
                   verbose("softCommit end");
                 } else {
-                  verbose("commit start");
+                  verbose("hardCommit start");
                   assertU(commit());
-                  verbose("commit end");
+                  verbose("hardCommit end");
                 }
 
                 synchronized(TestRealTimeGet.this) {
@@ -259,11 +257,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
             // We can't concurrently update the same document and retain our invariants of increasing values
             // since we can't guarantee what order the updates will be executed.
-            // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
-           synchronized (sync) {
-              DocInfo info = model.get(id);
-
-              long val = info.val;
+            synchronized (sync) {
+              Long val = model.get(id);
               long nextVal = Math.abs(val)+1;
 
               if (oper < commitPercent + deletePercent) {
@@ -271,11 +266,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   verbose("deleting id",id,"val=",nextVal);
                 }
 
-                // assertU("<delete><id>" + id + "</id></delete>");
-                Long version = deleteAndGetVersion(Integer.toString(id));
-
-                model.put(id, new DocInfo(version, -nextVal));
-
+                assertU("<delete><id>" + id + "</id></delete>");
+                model.put(id, -nextVal);
                 if (VERBOSE) {
                   verbose("deleting id", id, "val=",nextVal,"DONE");
                 }
@@ -285,7 +277,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 }
 
                 assertU("<delete><query>id:" + id + "</query></delete>");
-                model.put(id, new DocInfo(-1L, -nextVal));
+                model.put(id, -nextVal);
                 if (VERBOSE) {
                   verbose("deleteByQuery id",id, "val=",nextVal,"DONE");
                 }
@@ -294,16 +286,15 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   verbose("adding id", id, "val=", nextVal);
                 }
 
-                // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-                Long version = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal)));
-                model.put(id, new DocInfo(version, nextVal));
+                assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
+                model.put(id, nextVal);
 
                 if (VERBOSE) {
                   verbose("adding id", id, "val=", nextVal,"DONE");
                 }
 
               }
-            }   // end sync
+            }
 
             if (!before) {
               lastId = id;
@@ -336,13 +327,13 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               // so when querying, we should first check the model, and then the index
 
               boolean realTime = rand.nextInt(100) < percentRealtimeQuery;
-              DocInfo info;
+              long val;
 
               if (realTime) {
-                info = model.get(id);
+                val = model.get(id);
               } else {
                 synchronized(TestRealTimeGet.this) {
-                  info = committedModel.get(id);
+                  val = committedModel.get(id);
                 }
               }
 
@@ -364,11 +355,9 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               } else {
                 assertEquals(1, doclist.size());
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
-                long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
-                if (foundVal < Math.abs(info.val)
-                    || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
-                  verbose("ERROR, id=", id, "found=",response,"model",info);
-                  assertTrue(false);
+                if (foundVal < Math.abs(val)) {
+                  verbose("ERROR, id", id, "foundVal=",foundVal,"model val=",val,"realTime=",realTime);
+                  assertTrue(foundVal >= Math.abs(val));
                 }
               }
             }
@@ -397,13 +386,13 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
 
 
+
+  // The purpose of this test is to roughly model how solr uses lucene
+  IndexReader reader;
   @Test
-  public void testStressGetRealtimeVersions() throws Exception {
-    clearIndex();
-    assertU(commit());
-
+  public void testStressLuceneNRT() throws Exception {
     final int commitPercent = 5 + random.nextInt(20);
-    final int softCommitPercent = 30+random.nextInt(60); // what percent of the commits are soft
+    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random.nextInt(25);
     final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
     final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
@@ -411,18 +400,63 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
-        // query variables
-    final int percentRealtimeQuery = 60;
-    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(10000);  // number of query operations to perform in total - crank up if
     int nReadThreads = 5 + random.nextInt(25);
+    final boolean tombstones = random.nextBoolean();
+    final boolean syncCommits = random.nextBoolean();
 
-
+    verbose("commitPercent=", commitPercent);
+    verbose("softCommitPercent=",softCommitPercent);
+    verbose("deletePercent=",deletePercent);
+    verbose("deleteByQueryPercent=", deleteByQueryPercent);
+    verbose("ndocs=", ndocs);
+    verbose("nWriteThreads=", nWriteThreads);
+    verbose("nReadThreads=", nReadThreads);
+    verbose("maxConcurrentCommits=", maxConcurrentCommits);
+    verbose("operations=", operations);
+    verbose("tombstones=", tombstones);
+    verbose("syncCommits=", syncCommits);
 
     initModel(ndocs);
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
     List<Thread> threads = new ArrayList<Thread>();
+
+
+    final FieldType idFt = new FieldType();
+    idFt.setIndexed(true);
+    idFt.setStored(true);
+    idFt.setOmitNorms(true);
+    idFt.setTokenized(false);
+    idFt.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
+
+    final FieldType ft2 = new FieldType();
+    ft2.setIndexed(false);
+    ft2.setStored(true);
+
+
+    // model how solr does locking - only allow one thread to do a hard commit at once, and only one thread to do a soft commit, but
+    // a hard commit in progress does not stop a soft commit.
+    final Lock hardCommitLock = syncCommits ? new ReentrantLock() : null;
+    final Lock reopenLock = syncCommits ? new ReentrantLock() : null;
+
+
+    // RAMDirectory dir = new RAMDirectory();
+    // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_40, new WhitespaceAnalyzer(Version.LUCENE_40)));
+
+    Directory dir = newDirectory();
+
+    final RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    writer.setDoRandomOptimizeAssert(false);
+    writer.w.setInfoStream(VERBOSE ? System.out : null);
+    writer.w.setInfoStream(null);
+
+    // writer.commit();
+    // reader = IndexReader.open(dir);
+    // make this reader an NRT reader from the start to avoid the first non-writer openIfChanged
+    // to only opening at the last commit point.
+    reader = IndexReader.open(writer.w, true);
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
@@ -431,127 +465,167 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
         @Override
         public void run() {
           try {
-          while (operations.get() > 0) {
-            int oper = rand.nextInt(100);
+            while (operations.get() > 0) {
+              int oper = rand.nextInt(100);
 
-            if (oper < commitPercent) {
-              if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                Map<Integer,DocInfo> newCommittedModel;
-                long version;
+              if (oper < commitPercent) {
+                if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
+                  Map<Integer,Long> newCommittedModel;
+                  long version;
+                  IndexReader oldReader;
 
-                synchronized(TestRealTimeGet.this) {
-                  newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
-                  version = snapshotCount++;
-                }
+                  boolean softCommit = rand.nextInt(100) < softCommitPercent;
 
-                if (rand.nextInt(100) < softCommitPercent) {
-                  verbose("softCommit start");
-                  assertU(h.commit("softCommit","true"));
-                  verbose("softCommit end");
-                } else {
-                  verbose("commit start");
-                  assertU(commit());
-                  verbose("commit end");
-                }
+                  if (!softCommit) {
+                    // only allow one hard commit to proceed at once
+                    if (hardCommitLock != null) hardCommitLock.lock();
+                    verbose("hardCommit start");
 
-                synchronized(TestRealTimeGet.this) {
-                  // install this model snapshot only if it's newer than the current one
-                  if (version >= committedModelClock) {
-                    if (VERBOSE) {
-                      verbose("installing new committedModel version="+committedModelClock);
+                    writer.commit();
+                  }
+
+                  if (reopenLock != null) reopenLock.lock();
+
+                  synchronized(TestRealTimeGet.this) {
+                    newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                    version = snapshotCount++;
+                    oldReader = reader;
+                    oldReader.incRef();  // increment the reference since we will use this for reopening
+                  }
+
+                  if (!softCommit) {
+                    // must commit after taking a snapshot of the model
+                    // writer.commit();
+                  }
+
+                  verbose("reopen start using", oldReader);
+
+                  IndexReader newReader;
+                  if (softCommit) {
+                    newReader = IndexReader.openIfChanged(oldReader, writer.w, true);
+                  } else {
+                    // will only open to last commit
+                   newReader = IndexReader.openIfChanged(oldReader);
+                  }
+
+
+                  if (newReader == null) {
+                    oldReader.incRef();
+                    newReader = oldReader;
+                  }
+                  oldReader.decRef();
+
+                  verbose("reopen result", newReader);
+
+                  synchronized(TestRealTimeGet.this) {
+                    assert newReader.getRefCount() > 0;
+                    assert reader.getRefCount() > 0;
+
+                    // install the new reader if it's newest (and check the current version since another reader may have already been installed)
+                    if (newReader.getVersion() > reader.getVersion()) {
+                      reader.decRef();
+                      reader = newReader;
+
+                      // install this snapshot only if it's newer than the current one
+                      if (version >= committedModelClock) {
+                        committedModel = newCommittedModel;
+                        committedModelClock = version;
+                      }
+
+                    } else {
+                      // close if unused
+                      newReader.decRef();
                     }
-                    committedModel = newCommittedModel;
-                    committedModelClock = version;
+
                   }
+
+                  if (reopenLock != null) reopenLock.unlock();
+
+                  if (!softCommit) {
+                    if (hardCommitLock != null) hardCommitLock.unlock();
+                  }
+
                 }
+                numCommitting.decrementAndGet();
+                continue;
               }
-              numCommitting.decrementAndGet();
-              continue;
-            }
 
 
-            int id = rand.nextInt(ndocs);
-            Object sync = syncArr[id];
+              int id = rand.nextInt(ndocs);
+              Object sync = syncArr[id];
 
-            // set the lastId before we actually change it sometimes to try and
-            // uncover more race conditions between writing and reading
-            boolean before = rand.nextBoolean();
-            if (before) {
-              lastId = id;
-            }
+              // set the lastId before we actually change it sometimes to try and
+              // uncover more race conditions between writing and reading
+              boolean before = rand.nextBoolean();
+              if (before) {
+                lastId = id;
+              }
 
-            // We can't concurrently update the same document and retain our invariants of increasing values
-            // since we can't guarantee what order the updates will be executed.
-            // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
-           // synchronized (sync) {
-              DocInfo info = model.get(id);
+              // We can't concurrently update the same document and retain our invariants of increasing values
+              // since we can't guarantee what order the updates will be executed.
+              synchronized (sync) {
+                Long val = model.get(id);
+                long nextVal = Math.abs(val)+1;
 
-              long val = info.val;
-              long nextVal = Math.abs(val)+1;
+                if (oper < commitPercent + deletePercent) {
+                  // add tombstone first
+                  if (tombstones) {
+                    Document d = new Document();
+                    d.add(new Field("id","-"+Integer.toString(id), idFt));
+                    d.add(new Field(field, Long.toString(nextVal), ft2));
+                    verbose("adding tombstone for id",id,"val=",nextVal);
+                    writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
+                  }
 
-              if (oper < commitPercent + deletePercent) {
-                if (VERBOSE) {
                   verbose("deleting id",id,"val=",nextVal);
-                }
+                  writer.deleteDocuments(new Term("id",Integer.toString(id)));
+                  model.put(id, -nextVal);
+                  verbose("deleting id",id,"val=",nextVal,"DONE");
 
-                // assertU("<delete><id>" + id + "</id></delete>");
-                Long version = deleteAndGetVersion(Integer.toString(id));
-                assertTrue(version < 0);
+                } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+                  //assertU("<delete><query>id:" + id + "</query></delete>");
 
-                // only update model if the version is newer
-                synchronized (model) {
-                  DocInfo currInfo = model.get(id);
-                  if (Math.abs(version) > Math.abs(currInfo.version)) {
-                    model.put(id, new DocInfo(version, -nextVal));
+                  // add tombstone first
+                  if (tombstones) {
+                    Document d = new Document();
+                    d.add(new Field("id","-"+Integer.toString(id), idFt));
+                    d.add(new Field(field, Long.toString(nextVal), ft2));
+                    verbose("adding tombstone for id",id,"val=",nextVal);
+                    writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                   }
-                }
 
-                if (VERBOSE) {
-                  verbose("deleting id", id, "val=",nextVal,"DONE");
-                }
-              } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
-                if (VERBOSE) {
-                  verbose("deleteByQuery id ",id, "val=",nextVal);
-                }
+                  verbose("deleteByQuery",id,"val=",nextVal);
+                  writer.deleteDocuments(new TermQuery(new Term("id", Integer.toString(id))));
+                  model.put(id, -nextVal);
+                  verbose("deleteByQuery",id,"val=",nextVal,"DONE");
+                } else {
+                  // model.put(id, nextVal);   // uncomment this and this test should fail.
 
-                assertU("<delete><query>id:" + id + "</query></delete>");
-                model.put(id, new DocInfo(-1L, -nextVal));
-                if (VERBOSE) {
-                  verbose("deleteByQuery id",id, "val=",nextVal,"DONE");
-                }
-              } else {
-                if (VERBOSE) {
-                  verbose("adding id", id, "val=", nextVal);
-                }
-
-                // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-                Long version = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal)));
-                assertTrue(version > 0);
-
-                // only update model if the version is newer
-                synchronized (model) {
-                  DocInfo currInfo = model.get(id);
-                  if (version > currInfo.version) {
-                    model.put(id, new DocInfo(version, nextVal));
+                  // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
+                  Document d = new Document();
+                  d.add(new Field("id",Integer.toString(id), idFt));
+                  d.add(new Field(field, Long.toString(nextVal), ft2));
+                  verbose("adding id",id,"val=",nextVal);
+                  writer.updateDocument(new Term("id", Integer.toString(id)), d);
+                  if (tombstones) {
+                    // remove tombstone after new addition (this should be optional?)
+                    verbose("deleting tombstone for id",id);
+                    writer.deleteDocuments(new Term("id","-"+Integer.toString(id)));
+                    verbose("deleting tombstone for id",id,"DONE");
                   }
-                }
 
-                if (VERBOSE) {
-                  verbose("adding id", id, "val=", nextVal,"DONE");
+                  model.put(id, nextVal);
+                  verbose("adding id",id,"val=",nextVal,"DONE");
                 }
-
               }
-            // }   // end sync
 
-            if (!before) {
-              lastId = id;
+              if (!before) {
+                lastId = id;
+              }
             }
+          } catch (Exception  ex) {
+            throw new RuntimeException(ex);
           }
-        } catch (Throwable e) {
-          operations.set(-1L);
-          SolrException.log(log, e);
-          fail(e.getMessage());
-        }
         }
       };
 
@@ -573,48 +647,57 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               // when indexing, we update the index, then the model
               // so when querying, we should first check the model, and then the index
 
-              boolean realTime = rand.nextInt(100) < percentRealtimeQuery;
-              DocInfo info;
+              long val;
 
-              if (realTime) {
-                info = model.get(id);
-              } else {
-                synchronized(TestRealTimeGet.this) {
-                  info = committedModel.get(id);
+              synchronized(TestRealTimeGet.this) {
+                val = committedModel.get(id);
+              }
+
+
+              IndexReader r;
+              synchronized(TestRealTimeGet.this) {
+                r = reader;
+                r.incRef();
+              }
+
+              int docid = getFirstMatch(r, new Term("id",Integer.toString(id)));
+
+              if (docid < 0 && tombstones) {
+                // if we couldn't find the doc, look for it's tombstone
+                docid = getFirstMatch(r, new Term("id","-"+Integer.toString(id)));
+                if (docid < 0) {
+                  if (val == -1L) {
+                    // expected... no doc was added yet
+                    r.decRef();
+                    continue;
+                  }
+                  verbose("ERROR: Couldn't find a doc  or tombstone for id", id, "using reader",r,"expected value",val);
+                  fail("No documents or tombstones found for id " + id + ", expected at least " + val);
                 }
               }
 
-              if (VERBOSE) {
-                verbose("querying id", id);
-              }
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
+              if (docid < 0 && !tombstones) {
+                // nothing to do - we can't tell anything from a deleted doc without tombstones
               } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
+                if (docid < 0) {
+                  verbose("ERROR: Couldn't find a doc for id", id, "using reader",r);
+                }
+                assertTrue(docid >= 0);   // we should have found the document, or it's tombstone
+                Document doc = r.document(docid);
+                long foundVal = Long.parseLong(doc.get(field));
+                if (foundVal < Math.abs(val)) {
+                  verbose("ERROR: id",id,"model_val=",val," foundVal=",foundVal,"reader=",reader);
+                }
+                assertTrue(foundVal >= Math.abs(val));
               }
 
-              String response = h.query(sreq);
-              Map rsp = (Map)ObjectBuilder.fromJSON(response);
-              List doclist = (List)(((Map)rsp.get("response")).get("docs"));
-              if (doclist.size() == 0) {
-                // there's no info we can get back with a delete, so not much we can check without further synchronization
-              } else {
-                assertEquals(1, doclist.size());
-                long foundVal = (Long)(((Map)doclist.get(0)).get(field));
-                long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
-                if (foundVer < Math.abs(info.version)
-                    || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
-                  verbose("ERROR, id=", id, "found=",response,"model",info);
-                  assertTrue(false);
-                }
-              }
+              r.decRef();
             }
           }
           catch (Throwable e) {
             operations.set(-1L);
-            SolrException.log(log, e);
-            fail(e.getMessage());
+            SolrException.log(log,e);
+            fail(e.toString());
           }
         }
       };
@@ -631,20 +714,26 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
       thread.join();
     }
 
+    writer.close();
+    reader.close();
+    dir.close();
   }
 
 
-  private Long addAndGetVersion(SolrInputDocument sdoc) throws Exception {
-    String response = updateJ(jsonAdd(sdoc), null);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    return (Long) ((List)rsp.get("adds")).get(1);
+  public int getFirstMatch(IndexReader r, Term t) throws IOException {
+    Fields fields = MultiFields.getFields(r);
+    if (fields == null) return -1;
+    Terms terms = fields.terms(t.field());
+    if (terms == null) return -1;
+    BytesRef termBytes = t.bytes();
+    DocsEnum docs = terms.docs(MultiFields.getLiveDocs(r), termBytes, null);
+    if (docs == null) return -1;
+    int id = docs.nextDoc();
+    if (id != DocIdSetIterator.NO_MORE_DOCS) {
+      int next = docs.nextDoc();
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, next);
+    }
+    return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }
-
-  private Long deleteAndGetVersion(String id) throws Exception {
-    String response = updateJ("{\"delete\":{\"id\":\""+id+"\"}}", null);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    return (Long) ((List)rsp.get("deletes")).get(1);
-  }
-
 
 }

@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -74,6 +75,8 @@ public class MockDirectoryWrapper extends Directory {
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = Throttling.SOMETIMES;
 
+  final AtomicInteger inputCloneCount = new AtomicInteger();
+
   // use this for tracking files for crash.
   // additionally: provides debugging information in case you leave one open
   private Map<Closeable,Exception> openFileHandles = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
@@ -115,6 +118,10 @@ public class MockDirectoryWrapper extends Directory {
       throw new RuntimeException(e);
     }
     init();
+  }
+
+  public int getInputCloneCount() {
+    return inputCloneCount.get();
   }
 
   public void setTrackDiskUsage(boolean v) {

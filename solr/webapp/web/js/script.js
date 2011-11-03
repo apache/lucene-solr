@@ -1091,7 +1091,7 @@ var sammy = $.sammy
         // #/:core/replication
         this.get
         (
-            /^#\/([\w\d]+)\/(replication)$/,
+            /^#\/([\w\d-]+)\/(replication)$/,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -2041,7 +2041,7 @@ var sammy = $.sammy
         // #/:core/schema-browser
         this.get
         (
-            /^#\/([\w\d]+)\/(schema-browser)$/,
+            /^#\/([\w\d-]+)\/(schema-browser)$/,
             function( context )
             {
                 var callback = function( schema_browser_data, data_element )
@@ -2066,7 +2066,7 @@ var sammy = $.sammy
         // #/:core/schema-browser/field|dynamic-field|type/$field
         this.get
         (
-            /^#\/([\w\d]+)\/(schema-browser)(\/(field|dynamic-field|type)\/(.+))$/,
+            /^#\/([\w\d-]+)\/(schema-browser)(\/(field|dynamic-field|type)\/(.+))$/,
             function( context )
             {
                 var callback = function( schema_browser_data, data_element )
@@ -2581,7 +2581,7 @@ var sammy = $.sammy
         // #/:core/dataimport
         this.get
         (
-            /^#\/([\w\d]+)\/(dataimport)$/,
+            /^#\/([\w\d-]+)\/(dataimport)$/,
             function( context )
             {
                 sammy.trigger
@@ -2609,7 +2609,7 @@ var sammy = $.sammy
         // #/:core/dataimport
         this.get
         (
-            /^#\/([\w\d]+)\/(dataimport)\//,
+            /^#\/([\w\d-]+)\/(dataimport)\//,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -3104,7 +3104,7 @@ var sammy = $.sammy
         // #/:core/plugins/$type
         this.get
         (
-            /^#\/([\w\d]+)\/(plugins)\/(\w+)$/,
+            /^#\/([\w\d-]+)\/(plugins)\/(\w+)$/,
             function( context )
             {
                 var content_element = $( '#content' );
@@ -3234,7 +3234,7 @@ var sammy = $.sammy
         // #/:core/plugins
         this.get
         (
-            /^#\/([\w\d]+)\/(plugins)$/,
+            /^#\/([\w\d-]+)\/(plugins)$/,
             function( context )
             {
                 delete app.plugin_data;
@@ -3256,7 +3256,7 @@ var sammy = $.sammy
         // #/:core/query
         this.get
         (
-            /^#\/([\w\d]+)\/(query)$/,
+            /^#\/([\w\d-]+)\/(query)$/,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -3398,7 +3398,7 @@ var sammy = $.sammy
         // #/:core/analysis
         this.get
         (
-            /^#\/([\w\d]+)\/(analysis)$/,
+            /^#\/([\w\d-]+)\/(analysis)$/,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -3784,7 +3784,7 @@ var sammy = $.sammy
         // #/:core/schema, #/:core/config
         this.get
         (
-            /^#\/([\w\d]+)\/(schema|config)$/,
+            /^#\/([\w\d-]+)\/(schema|config)$/,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -3822,7 +3822,7 @@ var sammy = $.sammy
         // #/:core
         this.get
         (
-            /^#\/([\w\d]+)$/,
+            /^#\/([\w\d-]+)$/,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );

@@ -400,6 +400,11 @@ public abstract class LuceneTestCase extends Assert {
     TimeZone.setDefault(timeZone);
     similarityProvider = new RandomSimilarityProvider(random);
     testsFailed = false;
+    
+    // verify assertions are enabled (do last, for smooth cleanup)
+    if (!Boolean.parseBoolean(System.getProperty("tests.asserts.gracious", "false"))) {
+      assertTrue("assertions are not enabled!", assertionsEnabled());
+    }
   }
 
   @AfterClass
@@ -1300,7 +1305,7 @@ public abstract class LuceneTestCase extends Assert {
       if (maybeWrap && rarely()) {
         r = new SlowMultiReaderWrapper(r);
       }
-      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(r) : new AssertingIndexSearcher(r.getTopReaderContext());
+      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getTopReaderContext());
       ret.setSimilarityProvider(similarityProvider);
       return ret;
     } else {
@@ -1312,13 +1317,13 @@ public abstract class LuceneTestCase extends Assert {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
       }
       IndexSearcher ret = random.nextBoolean() ? 
-        new AssertingIndexSearcher(r, ex) {
+        new AssertingIndexSearcher(random, r, ex) {
           @Override
           public void close() throws IOException {
             super.close();
             shutdownExecutorService(ex);
           }
-        } : new AssertingIndexSearcher(r.getTopReaderContext(), ex) {
+        } : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex) {
           @Override
           public void close() throws IOException {
             super.close();
@@ -1442,4 +1447,15 @@ public abstract class LuceneTestCase extends Assert {
 
   @Ignore("just a hack")
   public final void alwaysIgnoredTestMethod() {}
+  
+  /** check if assertions are enabled */
+  private static boolean assertionsEnabled() {
+    try {
+      assert Boolean.FALSE.booleanValue();
+      return false; // should never get here
+    } catch (AssertionError e) {
+      return true;
+    }
+  }
+  
 }

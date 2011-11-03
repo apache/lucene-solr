@@ -726,6 +726,9 @@ public class CheckIndex {
           }
 
           final int docFreq = terms.docFreq();
+          if (docFreq <= 0) {
+            throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
+          }
           status.totFreq += docFreq;
           sumDocFreq += docFreq;
 
@@ -823,6 +826,9 @@ public class CheckIndex {
             throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
           }
           if (hasTotalTermFreq) {
+            if (totalTermFreq2 <= 0) {
+              throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
+            }
             sumTotalTermFreq += totalTermFreq;
             if (totalTermFreq != totalTermFreq2) {
               throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
@@ -939,20 +945,20 @@ public class CheckIndex {
 
             is.search(new TermQuery(new Term(field, lastTerm)), 1);
           }
-
-          // Test seeking by ord
-          if (hasOrd && status.termCount-termCountStart > 0) {
-            long termCount;
-            try {
-              termCount = fields.terms(field).getUniqueTermCount();
-            } catch (UnsupportedOperationException uoe) {
-              termCount = -1;
-            }
-
+          
+          // check unique term count
+          long termCount = -1;
+          
+          if (status.termCount-termCountStart > 0) {
+            termCount = fields.terms(field).getUniqueTermCount();
+            
             if (termCount != -1 && termCount != status.termCount - termCountStart) {
               throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
             }
-
+          }
+          
+          // Test seeking by ord
+          if (hasOrd && status.termCount-termCountStart > 0) {
             int seekCount = (int) Math.min(10000L, termCount);
             if (seekCount > 0) {
               BytesRef[] seekTerms = new BytesRef[seekCount];
@@ -993,6 +999,21 @@ public class CheckIndex {
             }
           }
         }
+      }
+
+      // for most implementations, this is boring (just the sum across all fields)
+      // but codecs that don't work per-field like preflex actually implement this,
+      // but don't implement it on Terms, so the check isn't redundant.
+      long uniqueTermCountAllFields = reader.getUniqueTermCount();
+      
+      // this means something is seriously screwed, e.g. we are somehow getting enclosed in PFCW!!!!!!
+      
+      if (uniqueTermCountAllFields == -1) {
+        throw new RuntimeException("invalid termCount: -1");
+     }
+
+      if (status.termCount != uniqueTermCountAllFields) {
+        throw new RuntimeException("termCount mismatch " + uniqueTermCountAllFields + " vs " + (status.termCount));
       }
 
       msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");

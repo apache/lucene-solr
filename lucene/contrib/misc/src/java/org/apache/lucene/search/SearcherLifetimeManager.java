@@ -173,8 +173,8 @@ public class SearcherLifetimeManager implements Closeable {
         // incRef done by SearcherTracker ctor:
         tracker.close();
       }
-    } else {
-      assert tracker.searcher == searcher;
+    } else if (tracker.searcher != searcher) {
+      throw new IllegalArgumentException("the provided searcher has the same underlying reader version yet the searcher instance differs from before (new=" + searcher + " vs old=" + tracker.searcher);
     }
 
     return version;

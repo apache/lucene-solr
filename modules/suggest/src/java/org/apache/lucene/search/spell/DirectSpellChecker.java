@@ -70,10 +70,7 @@ public class DirectSpellChecker {
    *         shortest of the two terms instead of the longest.
    *  </ul>
    */
-  public static final StringDistance INTERNAL_LEVENSHTEIN = new StringDistance() {
-    public float getDistance(String s1, String s2) {
-      throw new UnsupportedOperationException("Not for external use.");
-    }};
+  public static final StringDistance INTERNAL_LEVENSHTEIN = new LuceneLevenshteinDistance();
 
   /** maximum edit distance for candidate terms */
   private int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;

@@ -67,6 +67,21 @@ customization is required.
     <section id="news">
       <title>News</title>
 
+        <section><title>26 October 2011 - Java 7u1 fixes index corruption and crash bugs in Apache Lucene Core and Apache Solr</title>
+          <p>Oracle released <a href="http://www.oracle.com/technetwork/java/javase/7u1-relnotes-507962.html">Java 7u1</a> on October 19.
+          According to the release notes and tests done by the Lucene committers, all bugs reported on July 28 are fixed in this release,
+          so code using Porter stemmer no longer crashes with <code>SIGSEGV</code>. We were not able to experience any index corruption anymore,
+          so it is safe to use Java 7u1 with Lucene Core and Solr.</p>
+          <p>On the same day, Oracle released <a href="http://www.oracle.com/technetwork/java/javase/6u29-relnotes-507960.html">Java 6u29</a>
+          fixing the same problems occurring with Java 6, if the JVM switches <code>-XX:+AggressiveOpts</code>
+          or <code>-XX:+OptimizeStringConcat</code> were used. Of course, you should <strong>not</strong> use experimental JVM options like
+          <code>-XX:+AggressiveOpts</code> in production environments! We recommend everybody to upgrade to this latest version 6u29.</p>
+          <p>In case you upgrade to Java 7, remember that you may have to reindex, as the unicode
+          version shipped with Java 7 changed and tokenization behaves differently
+          (e.g. lowercasing). For more information, read <code>JRE_VERSION_MIGRATION.txt</code>
+          in your distribution package!</p>
+        </section>
+
       <section>
 	<title>14 September 2011 - Solr 3.4.0 Released</title>
 	<p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.4.0</a>!
@@ -125,7 +140,7 @@ customization is required.
       </section>
 
 <section><title>28 July 2011 - WARNING: Index corruption and crashes in Apache Lucene Core / Apache Solr with Java 7</title>
-  <p>Oracle released <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Java 7</a> today.
+  <p>Oracle released <a href="http://www.oracle.com/technetwork/java/javase/jdk7-relnotes-429209.html">Java 7</a> today.
   Unfortunately it contains hotspot compiler optimizations, which miscompile some loops.
   This can affect code of several Apache projects. Sometimes JVMs only crash, but in several cases,
   results calculated can be incorrect, leading to bugs in applications

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Extend SolrJettyTestBase because the SOLR-2535 bug only manifested itself when
- * the {@link SolrDispatchFilter} is used, which isn't for embedded Solr use.
+ * the {@link org.apache.solr.servlet.SolrDispatchFilter} is used, which isn't for embedded Solr use.
  */
 public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 

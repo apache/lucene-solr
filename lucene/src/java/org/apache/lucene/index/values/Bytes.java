@@ -107,7 +107,7 @@ public final class Bytes {
    * @param bytesUsed
    *          an {@link AtomicLong} instance to track the used bytes within the
    *          {@link Writer}. A call to {@link Writer#finish(int)} will release
-   *          all internally used resources and frees the memeory tracking
+   *          all internally used resources and frees the memory tracking
    *          reference.
    * @param context 
    * @return a new {@link Writer} instance
@@ -334,17 +334,17 @@ public final class Bytes {
       IndexInput indexIn = null;
       boolean success = false;
       try {
-      dataIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.DATA_EXTENSION), context);
-      version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
-      if (doIndex) {
-        indexIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.INDEX_EXTENSION), context);
-        final int version2 = CodecUtil.checkHeader(indexIn, codecName,
-            maxVersion, maxVersion);
-        assert version == version2;
-      }
-      success = true;
+        dataIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+                                                              Writer.DATA_EXTENSION), context);
+        version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
+        if (doIndex) {
+          indexIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+                                                                 Writer.INDEX_EXTENSION), context);
+          final int version2 = CodecUtil.checkHeader(indexIn, codecName,
+                                                     maxVersion, maxVersion);
+          assert version == version2;
+        }
+        success = true;
       } finally {
         if (!success) {
           IOUtils.closeWhileHandlingException(dataIn, indexIn);
@@ -393,6 +393,7 @@ public final class Bytes {
     protected int lastDocId = -1;
     protected int[] docToEntry;
     protected final BytesRefHash hash;
+    protected long maxBytes = 0;
     
     protected DerefBytesWriterBase(Directory dir, String id, String codecName,
         int codecVersion, Counter bytesUsed, IOContext context)
@@ -433,7 +434,10 @@ public final class Bytes {
       int ord = hash.add(bytes);
       if (ord < 0) {
         ord = (-ord) - 1;
+      } else {
+        maxBytes += bytes.length;
       }
+      
       
       docToEntry[docID] = ord;
       lastDocId = docID;
@@ -554,6 +558,8 @@ public final class Bytes {
     private final PagedBytes pagedBytes;
     
     protected final PackedInts.Reader docToOrdIndex;
+    protected final PackedInts.Reader ordToOffsetIndex;
+
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
     protected final BytesRef defaultValue = new BytesRef();
@@ -561,12 +567,12 @@ public final class Bytes {
     protected final PagedBytes.Reader data;
 
     protected BytesSortedSourceBase(IndexInput datIn, IndexInput idxIn,
-        Comparator<BytesRef> comp, long bytesToRead, ValueType type) throws IOException {
-      this(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), bytesToRead, type);
+        Comparator<BytesRef> comp, long bytesToRead, ValueType type, boolean hasOffsets) throws IOException {
+      this(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), bytesToRead, type, hasOffsets);
     }
     
     protected BytesSortedSourceBase(IndexInput datIn, IndexInput idxIn,
-        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead,ValueType type)
+        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead, ValueType type, boolean hasOffsets)
         throws IOException {
       super(type, comp);
       assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "
@@ -576,24 +582,19 @@ public final class Bytes {
       this.pagedBytes.copy(datIn, bytesToRead);
       data = pagedBytes.freeze(true);
       this.idxIn = idxIn;
+      ordToOffsetIndex = hasOffsets ? PackedInts.getReader(idxIn) : null; 
       docToOrdIndex = PackedInts.getReader(idxIn);
 
     }
     
     @Override
     public int ord(int docID) {
+      assert docToOrdIndex.get(docID) < getValueCount();
       return (int) docToOrdIndex.get(docID);
     }
 
     protected void closeIndexInput() throws IOException {
       IOUtils.close(datIn, idxIn);
-    }
-    
-    /**
-     * Returns the largest doc id + 1 in this doc values source
-     */
-    public int maxDoc() {
-      return docToOrdIndex.size();
     }
   }
 }

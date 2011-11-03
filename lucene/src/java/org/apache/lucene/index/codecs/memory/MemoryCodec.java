@@ -75,7 +75,7 @@ import org.apache.lucene.util.fst.FST;
  * queries that rely on advance will (AND BooleanQuery,
  * PhraseQuery) will be relatively slow!
  *
- * <p><b>NOTE</b>: this codec cannot adress more than ~2.1 GB
+ * <p><b>NOTE</b>: this codec cannot address more than ~2.1 GB
  * of postings, because the underlying FST uses an int
  * to address the underlying byte[].
  *
@@ -684,11 +684,13 @@ public class MemoryCodec extends Codec {
     private final long sumTotalTermFreq;
     private final long sumDocFreq;
     private final int docCount;
+    private final int termCount;
     private FST<BytesRef> fst;
     private final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
     private final FieldInfo field;
 
-    public TermsReader(FieldInfos fieldInfos, IndexInput in) throws IOException {
+    public TermsReader(FieldInfos fieldInfos, IndexInput in, int termCount) throws IOException {
+      this.termCount = termCount;
       final int fieldNumber = in.readVInt();
       field = fieldInfos.fieldInfo(fieldNumber);
       if (field.indexOptions != IndexOptions.DOCS_ONLY) {
@@ -718,6 +720,11 @@ public class MemoryCodec extends Codec {
     }
 
     @Override
+    public long getUniqueTermCount() throws IOException {
+      return termCount;
+    }
+
+    @Override
     public TermsEnum iterator() {
       return new FSTTermsEnum(field, fst);
     }
@@ -741,7 +748,7 @@ public class MemoryCodec extends Codec {
         if (termCount == 0) {
           break;
         }
-        final TermsReader termsReader = new TermsReader(state.fieldInfos, in);
+        final TermsReader termsReader = new TermsReader(state.fieldInfos, in, termCount);
         fields.put(termsReader.field.name, termsReader);
       }
     } finally {

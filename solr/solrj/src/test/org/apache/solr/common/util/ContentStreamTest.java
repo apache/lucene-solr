@@ -88,10 +88,9 @@ public class ContentStreamTest extends LuceneTestCase
     
     
     ContentStreamBase stream = new ContentStreamBase.URLStream( url );
+    in = stream.getStream();  // getStream is needed before getSize is valid
     assertEquals( content.length, stream.getSize().intValue() );
     
-    // Test the stream
-    in = stream.getStream();
     try {
       assertTrue( IOUtils.contentEquals( 
           new ByteArrayInputStream(content), in ) );

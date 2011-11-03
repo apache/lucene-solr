@@ -257,7 +257,7 @@ class PerSegmentSingleValuedFaceting {
         // count collection array only needs to be as big as the number of terms we are
         // going to collect counts for.
         final int[] counts = this.counts = new int[nTerms];
-        DocIdSet idSet = baseSet.getDocIdSet(context);
+        DocIdSet idSet = baseSet.getDocIdSet(context, null);  // this set only includes live docs
         DocIdSetIterator iter = idSet.iterator();
 
 

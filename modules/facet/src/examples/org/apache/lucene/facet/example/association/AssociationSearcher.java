@@ -11,7 +11,7 @@ import org.apache.lucene.facet.search.params.association.AssociationIntSumFacetR
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -43,7 +43,7 @@ public class AssociationSearcher {
       Directory taxoDir) throws Exception {
     // prepare index reader 
     IndexReader indexReader = IndexReader.open(indexDir);
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     AssociationIntSumFacetRequest facetRequest = new AssociationIntSumFacetRequest(
         new CategoryPath("tags"), 10);
@@ -63,7 +63,7 @@ public class AssociationSearcher {
       Directory taxoDir) throws Exception {
     // prepare index reader 
     IndexReader indexReader = IndexReader.open(indexDir);
-    TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     AssociationFloatSumFacetRequest facetRequest = new AssociationFloatSumFacetRequest(
         new CategoryPath("genre"), 10);

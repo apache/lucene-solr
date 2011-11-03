@@ -19,9 +19,11 @@ package org.apache.lucene.queries;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 
@@ -97,21 +99,22 @@ public class ChainedFilter extends Filter {
    * {@link Filter#getDocIdSet}.
    */
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     int[] index = new int[1]; // use array as reference to modifiable int;
     index[0] = 0;             // an object attribute would not be thread safe.
     if (logic != -1) {
-      return getDocIdSet(context, logic, index);
+      return BitsFilteredDocIdSet.wrap(getDocIdSet(context, logic, index), acceptDocs);
     } else if (logicArray != null) {
-      return getDocIdSet(context, logicArray, index);
+      return BitsFilteredDocIdSet.wrap(getDocIdSet(context, logicArray, index), acceptDocs);
     }
-
-    return getDocIdSet(context, DEFAULT, index);
+    
+    return BitsFilteredDocIdSet.wrap(getDocIdSet(context, DEFAULT, index), acceptDocs);
   }
 
   private DocIdSetIterator getDISI(Filter filter, AtomicReaderContext context)
       throws IOException {
-    DocIdSet docIdSet = filter.getDocIdSet(context);
+    // we dont pass acceptDocs, we will filter at the end using an additional filter
+    DocIdSet docIdSet = filter.getDocIdSet(context, null);
     if (docIdSet == null) {
       return DocIdSet.EMPTY_DOCIDSET.iterator();
     } else {
@@ -156,7 +159,8 @@ public class ChainedFilter extends Filter {
       throws IOException {
     OpenBitSetDISI result = initialResult(context, logic, index);
     for (; index[0] < chain.length; index[0]++) {
-      doChain(result, logic, chain[index[0]].getDocIdSet(context));
+      // we dont pass acceptDocs, we will filter at the end using an additional filter
+      doChain(result, logic, chain[index[0]].getDocIdSet(context, null));
     }
     return result;
   }
@@ -176,7 +180,8 @@ public class ChainedFilter extends Filter {
 
     OpenBitSetDISI result = initialResult(context, logic[0], index);
     for (; index[0] < chain.length; index[0]++) {
-      doChain(result, logic[index[0]], chain[index[0]].getDocIdSet(context));
+      // we dont pass acceptDocs, we will filter at the end using an additional filter
+      doChain(result, logic[index[0]], chain[index[0]].getDocIdSet(context, null));
     }
     return result;
   }

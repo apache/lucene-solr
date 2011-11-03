@@ -169,7 +169,13 @@ final class DocumentsWriterDeleteQueue {
   boolean anyChanges() {
     globalBufferLock.lock();
     try {
-      return !globalSlice.isEmpty() || globalBufferedDeletes.any();
+      /*
+       * check if all items in the global slice were applied 
+       * and if the global slice is up-to-date
+       * and if globalBufferedDeletes has changes
+       */
+      return globalBufferedDeletes.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail
+          || tail.next != null;
     } finally {
       globalBufferLock.unlock();
     }

@@ -203,9 +203,15 @@ public class SpoofIndexSearcher extends IndexSearcher {
     
     // ------------------------ Not implemented methods ------------------------
 
+    
     @Override
     public TermsEnum iterator() throws IOException {
       return null;
+    }
+
+    @Override
+    public long getUniqueTermCount() throws IOException {
+      return -1;
     }
 
     @Override
