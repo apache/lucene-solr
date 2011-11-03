@@ -31,7 +31,10 @@ import org.apache.lucene.store.Directory;
  *
  * @lucene.experimental */
 
-// nocommit: better name?
+// TODO: find a better name; this defines the API that the
+// terms dict impls use to talk to a postings impl.
+// TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
+
 // can we clean this up and do this some other way? 
 // refactor some of these classes and use covariant return?
 public abstract class PostingsBaseFormat {

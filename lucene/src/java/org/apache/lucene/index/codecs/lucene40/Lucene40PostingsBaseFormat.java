@@ -34,9 +34,9 @@ import org.apache.lucene.store.Directory;
  *
  * @lucene.experimental */
 
+// TODO: should these also be named / looked up via SPI?
 public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
-  // nocommit static INSTANCE?
   public Lucene40PostingsBaseFormat() {
     super("Lucene40");
   }

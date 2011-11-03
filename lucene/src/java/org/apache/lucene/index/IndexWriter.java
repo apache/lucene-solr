@@ -2147,6 +2147,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public synchronized void deleteAll() throws IOException {
     ensureOpen();
+    boolean success = false;
     try {
 
       // Abort any running merges
@@ -2168,10 +2169,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Mark that the index has changed
       ++changeCount;
       segmentInfos.changed();
+      success = true;
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteAll");
     } finally {
-      if (infoStream != null) {
+      if (!success && infoStream != null) {
         message("hit exception during deleteAll");
       }
     }

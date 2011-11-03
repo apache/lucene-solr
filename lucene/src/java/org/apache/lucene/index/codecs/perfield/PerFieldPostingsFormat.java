@@ -325,10 +325,12 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         }
       };
     } catch (FileNotFoundException fnfe) {
-      // nocommit this is shady:
-      // Don't add any files (if the _X.per file has been
-      // deleted then no files for this segment are
-      // "available").
+      // TODO: this is somewhat shady... if we can't open
+      // the .per file then most likely someone is calling
+      // .files() after this segment was deleted, so, they
+      // wouldn't be able to do anything with the files even
+      // if we could return them, so we don't add any files
+      // in this case.
     }
   }
 
