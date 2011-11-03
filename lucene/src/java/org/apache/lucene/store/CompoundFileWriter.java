@@ -87,6 +87,7 @@ final class CompoundFileWriter implements Closeable{
 
   private final Directory directory;
   private final Map<String, FileEntry> entries = new HashMap<String, FileEntry>();
+  private final Set<String> seenIDs = new HashSet<String>();
   // all entries that are written to a sep. file but not yet moved into CFS
   private final Queue<FileEntry> pendingEntries = new LinkedList<FileEntry>();
   private boolean closed = false;
@@ -221,12 +222,8 @@ final class CompoundFileWriter implements Closeable{
       IndexOutput entryOut) throws IOException {
     entryOut.writeInt(ENTRY_FORMAT_CURRENT);
     entryOut.writeVInt(entries.size());
-    final Set<String> seenIDs = new HashSet<String>();
     for (FileEntry fe : entries) {
-      final String id = IndexFileNames.stripSegmentName(fe.file);
-      assert !seenIDs.contains(id): "file=\"" + fe.file + "\" maps to id=\"" + id + "\", which was written more than once";
-      seenIDs.add(id);
-      entryOut.writeString(id);
+      entryOut.writeString(IndexFileNames.stripSegmentName(fe.file));
       entryOut.writeLong(fe.offset);
       entryOut.writeLong(fe.length);
     }
@@ -244,6 +241,9 @@ final class CompoundFileWriter implements Closeable{
       final FileEntry entry = new FileEntry();
       entry.file = name;
       entries.put(name, entry);
+      final String id = IndexFileNames.stripSegmentName(name);
+      assert !seenIDs.contains(id): "file=\"" + name + "\" maps to id=\"" + id + "\", which was already written";
+      seenIDs.add(id);
       final DirectCFSIndexOutput out;
       if (outputTaken.compareAndSet(false, true)) {
         out = new DirectCFSIndexOutput(dataOut, entry, false);

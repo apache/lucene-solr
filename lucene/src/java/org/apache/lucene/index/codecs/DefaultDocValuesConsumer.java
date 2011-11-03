@@ -35,6 +35,8 @@ import org.apache.lucene.store.Directory;
 public class DefaultDocValuesConsumer extends DocValuesWriterBase {
   private final Directory mainDirectory;
   private Directory directory;
+
+  final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
   
   public DefaultDocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
@@ -47,7 +49,7 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
     // lazy init
     if (directory == null) {
       directory = new CompoundFileDirectory(mainDirectory,
-                                            IndexFileNames.segmentFileName(segmentName, "dv",
+                                            IndexFileNames.segmentFileName(segmentName, DOC_VALUES_SEGMENT_SUFFIX,
                                                                            IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
     }
     return directory;
@@ -64,11 +66,11 @@ public class DefaultDocValuesConsumer extends DocValuesWriterBase {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION)); 
-        return;
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
+        break;
       }
     }
   }

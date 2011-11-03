@@ -46,7 +46,8 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
   public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
     if (state.fieldInfos.anyDocValuesFields()) {
       cfs = new CompoundFileDirectory(state.dir, 
-                                      IndexFileNames.segmentFileName(state.segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION), 
+                                      IndexFileNames.segmentFileName(state.segmentInfo.name,
+                                                                     DefaultDocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION), 
                                       state.context, false);
       docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
     } else {

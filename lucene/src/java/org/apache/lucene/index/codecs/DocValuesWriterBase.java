@@ -59,7 +59,7 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   }
 
   public static String docValuesId(String segmentsName, int fieldId) {
-    return segmentsName + "-" + fieldId;
+    return segmentsName + "_" + fieldId;
   }
   
   

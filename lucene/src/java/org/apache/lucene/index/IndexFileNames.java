@@ -237,10 +237,6 @@ public final class IndexFileNames {
     // If it is a .del file, there's an '_' after the first character
     int idx = filename.indexOf('_', 1);
     if (idx == -1) {
-      // nocommit messy -- for doc value filenames
-      idx = filename.indexOf('-', 1);
-    }
-    if (idx == -1) {
       // If it's not, strip everything that's before the '.'
       idx = filename.indexOf('.');
     }
