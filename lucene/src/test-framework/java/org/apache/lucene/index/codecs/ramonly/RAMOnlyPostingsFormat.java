@@ -514,7 +514,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
   public FieldsConsumer fieldsConsumer(SegmentWriteState writeState) throws IOException {
     final int id = nextID.getAndIncrement();
 
-    // nocommit -- ok to do this up front instead of
+    // TODO -- ok to do this up front instead of
     // on close....?  should be ok?
     // Write our ID:
     final String idFileName = IndexFileNames.segmentFileName(writeState.segmentName, writeState.segmentSuffix, ID_EXTENSION);
