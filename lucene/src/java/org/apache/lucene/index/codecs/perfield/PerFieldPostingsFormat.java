@@ -46,13 +46,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
-// nocommit: should we allow embedding of PerField in
-// another?  it won't work now... because each PerField
-// thinks it's allowed to start assigning formats from
-// 0... if we made formatID a String then it could work
-// (each recursion could add _X to its incoming formatID);
-// why is it an int now...?
-
 /**
  * Enables per field format support.
  * 
@@ -62,13 +55,12 @@ import org.apache.lucene.util.IOUtils;
 public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   public static final String PER_FIELD_EXTENSION = "per";
-  public static final String PER_FIELD_NAME = "PerField";
+  public static final String PER_FIELD_NAME = "PerField40";
 
   public static final int VERSION_START = 0;
   public static final int VERSION_LATEST = VERSION_START;
 
   public PerFieldPostingsFormat() {
-    // nocommit should we allow caller to pass name in!?
     super(PER_FIELD_NAME);
   }
 
@@ -107,13 +99,13 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       segmentWriteState = state;
     }
 
-    // nocommit -- pass formatID down to addField?
-
-    // nocommit -- should PostingsFormat have a name?
-
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final PostingsFormat format = checkGetPostingsFormat(field.name);
+      final PostingsFormat format = getPostingsFormatForField(field.name);
+      if (format == null) {
+        throw new IllegalStateException("invalid null PostingsFormat for field=\"" + field.name + "\"");
+      }
+
       assert !fieldToFormat.containsKey(field.name);
       fieldToFormat.put(field.name, format);
 
@@ -121,11 +113,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       if (consumerAndId == null) {
         // First time we are seeing this format; assign
         // next id and init it:
-        // nocommit how to nest properly?
-        final String segmentSuffix = ""+formats.size();
-        // nocommit: maybe the int formatID should be
-        // separate arg to .fieldsConsumer?  like we do for
-        // .files()
+        final String segmentSuffix = getFullSegmentSuffix(field.name,
+                                                          segmentWriteState.segmentSuffix,
+                                                          ""+formats.size());
         consumerAndId = new FieldsConsumerAndID(format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix)),
                                                 segmentSuffix);
         formats.put(format, consumerAndId);
@@ -152,11 +142,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
         out.writeVInt(formats.size());
         for(Map.Entry<PostingsFormat,FieldsConsumerAndID> ent : formats.entrySet()) {
           out.writeString(ent.getValue().segmentSuffix);
-          //System.out.println("per: write format " + ent.getKey() + " -> id=" + ent.getValue().segmentSuffix);
-          // nocommit -- what if Pulsing(1) and Pulsing(2)
-          // are used and then the name is the same....?
-          // should Pulsing name itself Pulsing1/2?
-          // Pulsing1/2(wrappedName)!?
           out.writeString(ent.getKey().getName());
         }
 
@@ -178,6 +163,17 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
   }
 
+  static String getFullSegmentSuffix(String fieldName, String outerSegmentSuffix, String segmentSuffix) {
+    if (outerSegmentSuffix.length() == 0) {
+      return segmentSuffix;
+    } else {
+      // TODO: support embedding; I think it should work but
+      // we need a test confirm to confirm
+      // return outerSegmentSuffix + "_" + segmentSuffix;
+      throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself (field \"" + fieldName + "\" returned PerFieldPostingsFormat)");
+    }
+  }
+
   private class FieldsReader extends FieldsProducer {
 
     private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
@@ -188,7 +184,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // Read _X.per and init each format:
       boolean success = false;
       try {
-        new VisitPerFieldFile(readState.dir, readState.segmentInfo.name) {
+        new VisitPerFieldFile(readState.dir, readState.segmentInfo.name, readState.segmentSuffix) {
           @Override
           protected void visitOneFormat(String segmentSuffix, PostingsFormat postingsFormat) throws IOException {
             formats.put(postingsFormat, postingsFormat.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
@@ -206,33 +202,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           IOUtils.closeWhileHandlingException(formats.values());
         }
       }
-
-      // Map each field to its producer:
-      /*
-      success = false;
-      try {
-        for (FieldInfo fi : readState.fieldInfos) {
-          if (fi.isIndexed) {
-            final FieldsProducer fieldsProducer = fields.get(format);
-            // Better be defined, because it was defined
-            // during indexing:
-            if (fieldsProducer == null) {
-              // nocommit -- how to clean this up!
-              throw new IllegalStateException("format name=\"" + format.name + "\" was not found");
-              
-            }
-          }
-        }
-        success = true;
-      } finally {
-        if (!success) {
-          // If we hit exception (eg, IOE because writer was
-          // committing, or, for any other reason) we must
-          // go back and close all FieldsProducers we opened:
-          IOUtils.closeWhileHandlingException(formats.values());
-        }
-      }
-      */
     }
 
     private final class FieldsIterator extends FieldsEnum {
@@ -282,19 +251,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
   }
 
-  PostingsFormat checkGetPostingsFormat(String fieldName) {
-    final PostingsFormat format = getPostingsFormatForField(fieldName);
-    if (format == null) {
-      throw new IllegalStateException("invalid null PostingsFormat for field=\"" + fieldName + "\"");
-    }
-    if (format instanceof PerFieldPostingsFormat) {
-      // nocommit -- cutover to String formatID (infinite
-      // precision float, ie just append _X to it) to fix this!
-      throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself (field \"" + fieldName + "\" returned PerFieldPostingsFormat)");
-    }
-    return format;
-  }
-
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
@@ -302,12 +258,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   private abstract class VisitPerFieldFile {
-    public VisitPerFieldFile(Directory dir, String segmentName) throws IOException {
-      // nocommit -- should formatID be a String not int?
-      // so we can embed one PFPF in another?  ie just keep
-      // appending _N to it...
-      // nocommit don't hardwire ""?  need the "outer" segmentSuffix?
-      final String mapFileName = IndexFileNames.segmentFileName(segmentName, "", PER_FIELD_EXTENSION);
+    public VisitPerFieldFile(Directory dir, String segmentName, String outerSegmentSuffix) throws IOException {
+      final String mapFileName = IndexFileNames.segmentFileName(segmentName, outerSegmentSuffix, PER_FIELD_EXTENSION);
       final IndexInput in = dir.openInput(mapFileName, IOContext.READONCE);
       boolean success = false;
       try {
@@ -322,11 +274,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           //System.out.println("do lookup " + formatName + " -> " + postingsFormat);
           if (postingsFormat == null) {
             throw new IllegalStateException("unable to lookup PostingsFormat for name=\"" + formatName + "\": got null");
-          }
-          if (postingsFormat instanceof PerFieldPostingsFormat) {
-            // nocommit -- if we cutover to String formatID
-            // we can fix this?
-            throw new IllegalStateException("cannot embed PerFieldPostingsFormat inside itself");
           }
 
           // Better be defined, because it was defined
@@ -367,7 +314,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     files.add(mapFileName);
 
     try {
-      new VisitPerFieldFile(dir, info.name) {
+      new VisitPerFieldFile(dir, info.name, segmentSuffix) {
         @Override
         protected void visitOneFormat(String segmentSuffix, PostingsFormat format) throws IOException {
           format.files(dir, info, segmentSuffix, files);
@@ -384,11 +331,6 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // "available").
     }
   }
-
-  // nocommit: do we really need to pass fieldInfo here?
-  // sucks for 'outsiders' (like tests!) that want to peep at what format
-  // is being used for a field... changed to a String for
-  // now.. but lets revisit
 
   // NOTE: only called during writing; for reading we read
   // all we need from the index (ie we save the field ->
