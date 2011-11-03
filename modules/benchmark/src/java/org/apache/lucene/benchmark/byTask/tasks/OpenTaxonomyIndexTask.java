@@ -18,7 +18,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+
 import java.io.IOException;
 
 
@@ -35,7 +36,7 @@ public class OpenTaxonomyIndexTask extends PerfTask {
   @Override
   public int doLogic() throws IOException {
     PerfRunData runData = getRunData();
-    runData.setTaxonomyWriter(new LuceneTaxonomyWriter(runData.getTaxonomyDir()));
+    runData.setTaxonomyWriter(new DirectoryTaxonomyWriter(runData.getTaxonomyDir()));
     return 1;
   }
 

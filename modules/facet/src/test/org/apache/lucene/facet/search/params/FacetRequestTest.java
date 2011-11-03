@@ -9,7 +9,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -58,8 +58,8 @@ public class FacetRequestTest extends LuceneTestCase {
     // create empty indexes, so that LTR ctor won't complain about a missing index.
     new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
     new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
-    TaxonomyReader tr1 = new LuceneTaxonomyReader(dir1);
-    TaxonomyReader tr2 = new LuceneTaxonomyReader(dir2);
+    TaxonomyReader tr1 = new DirectoryTaxonomyReader(dir1);
+    TaxonomyReader tr2 = new DirectoryTaxonomyReader(dir2);
     FacetResultsHandler frh1 = fr.createFacetResultsHandler(tr1);
     FacetResultsHandler frh2 = fr.createFacetResultsHandler(tr2);
     assertTrue("should not return the same FacetResultHandler instance for different TaxonomyReader instances", frh1 != frh2);
@@ -77,7 +77,7 @@ public class FacetRequestTest extends LuceneTestCase {
     Directory dir = newDirectory();
     // create empty indexes, so that LTR ctor won't complain about a missing index.
     new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
-    TaxonomyReader tr = new LuceneTaxonomyReader(dir);
+    TaxonomyReader tr = new DirectoryTaxonomyReader(dir);
     FacetResultsHandler frh = fr.createFacetResultsHandler(tr);
     fr.setDepth(10);
     assertEquals(FacetRequest.DEFAULT_DEPTH, frh.getFacetRequest().getDepth());

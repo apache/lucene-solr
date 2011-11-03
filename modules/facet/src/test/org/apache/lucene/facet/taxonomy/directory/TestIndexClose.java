@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -18,8 +18,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -51,7 +51,7 @@ public class TestIndexClose extends LuceneTestCase {
   public void testLeaks() throws Exception {
     LeakChecker checker = new LeakChecker();
     Directory dir = newDirectory();
-    LuceneTaxonomyWriter tw = checker.openWriter(dir);
+    DirectoryTaxonomyWriter tw = checker.openWriter(dir);
     tw.close();
     assertEquals(0, checker.nopen());
 
@@ -60,7 +60,7 @@ public class TestIndexClose extends LuceneTestCase {
     tw.close();
     assertEquals(0, checker.nopen());
 
-    LuceneTaxonomyReader tr = checker.openReader(dir);
+    DirectoryTaxonomyReader tr = checker.openReader(dir);
     tr.getPath(1);
     tr.refresh();
     tr.close();
@@ -100,11 +100,11 @@ public class TestIndexClose extends LuceneTestCase {
 
     LeakChecker() { }
     
-    public LuceneTaxonomyWriter openWriter(Directory dir) throws CorruptIndexException, LockObtainFailedException, IOException {
+    public DirectoryTaxonomyWriter openWriter(Directory dir) throws CorruptIndexException, LockObtainFailedException, IOException {
       return new InstrumentedTaxonomyWriter(dir);
     }
 
-    public LuceneTaxonomyReader openReader(Directory dir) throws CorruptIndexException, LockObtainFailedException, IOException {
+    public DirectoryTaxonomyReader openReader(Directory dir) throws CorruptIndexException, LockObtainFailedException, IOException {
       return new InstrumentedTaxonomyReader(dir);
     }
 
@@ -121,7 +121,7 @@ public class TestIndexClose extends LuceneTestCase {
       return ret;
     }
 
-    private class InstrumentedTaxonomyWriter extends LuceneTaxonomyWriter {
+    private class InstrumentedTaxonomyWriter extends DirectoryTaxonomyWriter {
       public InstrumentedTaxonomyWriter(Directory dir) throws CorruptIndexException, LockObtainFailedException, IOException {
         super(dir);
       }    
@@ -130,8 +130,7 @@ public class TestIndexClose extends LuceneTestCase {
         return new InstrumentedIndexReader(super.openReader()); 
       }
       @Override
-      protected void openLuceneIndex (Directory directory, OpenMode openMode)
-      throws CorruptIndexException, LockObtainFailedException, IOException {
+      protected void openIndexWriter (Directory directory, OpenMode openMode) throws IOException {
         indexWriter = new InstrumentedIndexWriter(directory,
             newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
                 .setOpenMode(openMode));
@@ -139,7 +138,7 @@ public class TestIndexClose extends LuceneTestCase {
 
     }
 
-    private class InstrumentedTaxonomyReader extends LuceneTaxonomyReader {
+    private class InstrumentedTaxonomyReader extends DirectoryTaxonomyReader {
       public InstrumentedTaxonomyReader(Directory dir) throws CorruptIndexException, LockObtainFailedException, IOException {
         super(dir);
       }  

@@ -1,6 +1,8 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -23,16 +25,16 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestLuceneTaxonomyReader extends LuceneTestCase {
+public class TestDirectoryTaxonomyReader extends LuceneTestCase {
 
   @Test
   public void testCloseAfterIncRef() throws Exception {
     Directory dir = newDirectory();
-    LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir);
+    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir);
     ltw.addCategory(new CategoryPath("a"));
     ltw.close();
     
-    LuceneTaxonomyReader ltr = new LuceneTaxonomyReader(dir);
+    DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
     ltr.incRef();
     ltr.close();
     
@@ -46,11 +48,11 @@ public class TestLuceneTaxonomyReader extends LuceneTestCase {
   @Test
   public void testCloseTwice() throws Exception {
     Directory dir = newDirectory();
-    LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir);
+    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir);
     ltw.addCategory(new CategoryPath("a"));
     ltw.close();
     
-    LuceneTaxonomyReader ltr = new LuceneTaxonomyReader(dir);
+    DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
     ltr.close();
     ltr.close(); // no exception should be thrown
     
@@ -60,11 +62,11 @@ public class TestLuceneTaxonomyReader extends LuceneTestCase {
   @Test
   public void testAlreadyClosed() throws Exception {
     Directory dir = newDirectory();
-    LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir);
+    DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir);
     ltw.addCategory(new CategoryPath("a"));
     ltw.close();
     
-    LuceneTaxonomyReader ltr = new LuceneTaxonomyReader(dir);
+    DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
     ltr.close();
     try {
       ltr.getSize();

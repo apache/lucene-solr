@@ -19,7 +19,7 @@ import org.apache.lucene.facet.index.streaming.CategoryAttributesStream;
 import org.apache.lucene.facet.index.streaming.CategoryListTokenizer;
 import org.apache.lucene.facet.index.streaming.CategoryParentsStream;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -50,7 +50,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   @Test
   public void testStreamDefaultParams() throws IOException {
     Directory directory = newDirectory();
-    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
     CategoryParentsStream stream = new CategoryParentsStream(
         new CategoryAttributesStream(categoryContainer),
@@ -77,7 +77,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   @Test
   public void testStreamNonTopLevelParams() throws IOException {
     Directory directory = newDirectory();
-    final TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
+    final TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
     FacetIndexingParams indexingParams = new DefaultFacetIndexingParams() {
       @Override
@@ -118,7 +118,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   @Test
   public void testNoRetainableAttributes() throws IOException, FacetException {
     Directory directory = newDirectory();
-    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(directory);
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(directory);
 
     new CategoryParentsStream(new CategoryAttributesStream(categoryContainer),
         taxonomyWriter, new DefaultFacetIndexingParams());
@@ -152,7 +152,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   @Test
   public void testRetainableAttributes() throws IOException, FacetException {
     Directory directory = newDirectory();
-    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
 
     FacetIndexingParams indexingParams = new DefaultFacetIndexingParams();

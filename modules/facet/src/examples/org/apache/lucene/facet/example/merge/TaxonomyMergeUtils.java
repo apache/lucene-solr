@@ -11,10 +11,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.index.FacetsPayloadProcessorProvider;
 import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.DiskOrdinalMap;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.MemoryOrdinalMap;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.OrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -40,19 +40,19 @@ public class TaxonomyMergeUtils {
 
   /**
    * Merges the given taxonomy and index directories. Note that this method
-   * opens {@link LuceneTaxonomyWriter} and {@link IndexWriter} on the
+   * opens {@link DirectoryTaxonomyWriter} and {@link IndexWriter} on the
    * respective destination indexes. Therefore if you have a writer open on any
    * of them, it should be closed, or you should use
-   * {@link #merge(Directory, Directory, IndexWriter, LuceneTaxonomyWriter)}
+   * {@link #merge(Directory, Directory, IndexWriter, DirectoryTaxonomyWriter)}
    * instead.
    * 
-   * @see #merge(Directory, Directory, IndexWriter, LuceneTaxonomyWriter)
+   * @see #merge(Directory, Directory, IndexWriter, DirectoryTaxonomyWriter)
    */
   public static void merge(Directory srcIndexDir, Directory srcTaxDir,
                             Directory destIndexDir, Directory destTaxDir) throws IOException {
     IndexWriter destIndexWriter = new IndexWriter(destIndexDir,
         new IndexWriterConfig(ExampleUtils.EXAMPLE_VER, null));
-    LuceneTaxonomyWriter destTaxWriter = new LuceneTaxonomyWriter(destTaxDir);
+    DirectoryTaxonomyWriter destTaxWriter = new DirectoryTaxonomyWriter(destTaxDir);
     merge(srcIndexDir, srcTaxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter);
     destTaxWriter.close();
     destIndexWriter.close();
@@ -62,14 +62,14 @@ public class TaxonomyMergeUtils {
    * Merges the given taxonomy and index directories and commits the changes to
    * the given writers. This method uses {@link MemoryOrdinalMap} to store the
    * mapped ordinals. If you cannot afford the memory, you can use
-   * {@link #merge(Directory, Directory, LuceneTaxonomyWriter.OrdinalMap, IndexWriter, LuceneTaxonomyWriter)}
+   * {@link #merge(Directory, Directory, DirectoryTaxonomyWriter.OrdinalMap, IndexWriter, DirectoryTaxonomyWriter)}
    * by passing {@link DiskOrdinalMap}.
    * 
-   * @see #merge(Directory, Directory, LuceneTaxonomyWriter.OrdinalMap, IndexWriter, LuceneTaxonomyWriter)
+   * @see #merge(Directory, Directory, DirectoryTaxonomyWriter.OrdinalMap, IndexWriter, DirectoryTaxonomyWriter)
    */
   public static void merge(Directory srcIndexDir, Directory srcTaxDir,
                             IndexWriter destIndexWriter, 
-                            LuceneTaxonomyWriter destTaxWriter) throws IOException {
+                            DirectoryTaxonomyWriter destTaxWriter) throws IOException {
     merge(srcIndexDir, srcTaxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter);
   }
   
@@ -79,7 +79,7 @@ public class TaxonomyMergeUtils {
    */
   public static void merge(Directory srcIndexDir, Directory srcTaxDir,
                             OrdinalMap map, IndexWriter destIndexWriter,
-                            LuceneTaxonomyWriter destTaxWriter) throws IOException {
+                            DirectoryTaxonomyWriter destTaxWriter) throws IOException {
     // merge the taxonomies
     destTaxWriter.addTaxonomies(new Directory[] { srcTaxDir }, new OrdinalMap[] { map });
 

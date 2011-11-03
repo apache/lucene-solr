@@ -28,8 +28,8 @@ import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -53,7 +53,7 @@ public class DrillDownTest extends LuceneTestCase {
   private FacetSearchParams defaultParams = new FacetSearchParams();
   private FacetSearchParams nonDefaultParams;
   private static IndexReader reader;
-  private static LuceneTaxonomyReader taxo;
+  private static DirectoryTaxonomyReader taxo;
   private static Directory dir;
   private static Directory taxoDir;
   
@@ -74,7 +74,7 @@ public class DrillDownTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     
     taxoDir = newDirectory();
-    TaxonomyWriter taxoWriter = new LuceneTaxonomyWriter(taxoDir);
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     
     for (int i = 0; i < 100; i++) {
       ArrayList<CategoryPath> paths = new ArrayList<CategoryPath>();
@@ -100,7 +100,7 @@ public class DrillDownTest extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
     
-    taxo = new LuceneTaxonomyReader(taxoDir);
+    taxo = new DirectoryTaxonomyReader(taxoDir);
   }
   
   @Test
@@ -149,6 +149,8 @@ public class DrillDownTest extends LuceneTestCase {
     Query q4 = DrillDown.query(defaultParams, fooQuery, new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
+    
+    searcher.close();
   }
   
   @Test
@@ -170,6 +172,8 @@ public class DrillDownTest extends LuceneTestCase {
     Query q4 = DrillDown.query(fooQuery, new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
+    
+    searcher.close();
   }
   
   @AfterClass

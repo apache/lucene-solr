@@ -13,7 +13,7 @@ import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter.OrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.apache.lucene.util.encoding.IntEncoder;

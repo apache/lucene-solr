@@ -29,8 +29,8 @@ import org.apache.lucene.facet.search.params.association.AssociationIntSumFacetR
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -69,7 +69,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     
-    TaxonomyWriter taxoWriter = new LuceneTaxonomyWriter(taxoDir);
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     
     EnhancementsDocumentBuilder builder = new EnhancementsDocumentBuilder(
         taxoWriter, new DefaultEnhancementsIndexingParams(
@@ -106,7 +106,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
   
   @Test
   public void testIntSumAssociation() throws Exception {
-    LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams();
@@ -132,7 +132,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
   
   @Test
   public void testFloatSumAssociation() throws Exception {
-    LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams();
@@ -161,7 +161,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     // Same category list cannot be aggregated by two different aggregators. If
     // you want to do that, you need to separate the categories into two
     // category list (you'll still have one association list).
-    LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams();

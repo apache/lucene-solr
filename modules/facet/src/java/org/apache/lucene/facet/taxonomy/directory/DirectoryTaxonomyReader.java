@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.taxonomy.lucene;
+package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.lucene.Consts.LoadFullPathOnly;
+import org.apache.lucene.facet.taxonomy.directory.Consts.LoadFullPathOnly;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -40,24 +40,21 @@ import org.apache.lucene.util.collections.LRUHashMap;
  * limitations under the License.
  */
 
-/** 
- * LuceneTaxonomyReader is a {@link TaxonomyReader} which retrieves stored
- * taxonomy information from a separate Lucene index. By using a Lucene index,
- * rather than some specialized file format, we get for "free" its correctness
- * (especially regarding concurrency), and the ability to save it on any
- * implementation of Directory (and not just the file system).
+/**
+ * A {@link TaxonomyReader} which retrieves stored taxonomy information from a
+ * {@link Directory}.
  * <P>
  * Reading from the on-disk index on every method call is too slow, so this
- * implementation employs caching: Some methods cache recent requests and
- * their results, while other methods prefetch all the data into memory
- * and then provide answers directly from in-memory tables. See the
- * documentation of individual methods for comments on their performance.
+ * implementation employs caching: Some methods cache recent requests and their
+ * results, while other methods prefetch all the data into memory and then
+ * provide answers directly from in-memory tables. See the documentation of
+ * individual methods for comments on their performance.
  * 
  * @lucene.experimental
  */
-public class LuceneTaxonomyReader implements TaxonomyReader {
+public class DirectoryTaxonomyReader implements TaxonomyReader {
 
-  private static final Logger logger = Logger.getLogger(LuceneTaxonomyReader.class.getName());
+  private static final Logger logger = Logger.getLogger(DirectoryTaxonomyReader.class.getName());
   
   private IndexReader indexReader;
 
@@ -111,8 +108,7 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
    * @throws CorruptIndexException if the Taxonomy is corrupted.
    * @throws IOException if another error occurred.
    */
-  public LuceneTaxonomyReader(Directory directory)
-  throws CorruptIndexException, IOException {
+  public DirectoryTaxonomyReader(Directory directory) throws IOException {
     this.indexReader = openIndexReader(directory);
 
     // These are the default cache sizes; they can be configured after

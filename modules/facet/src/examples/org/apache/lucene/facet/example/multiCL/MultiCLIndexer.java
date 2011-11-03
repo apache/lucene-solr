@@ -21,7 +21,7 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -140,7 +140,7 @@ public class MultiCLIndexer {
     IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(
         ExampleUtils.EXAMPLE_VER, SimpleUtils.analyzer).setOpenMode(OpenMode.CREATE));
     // create and open a taxonomy writer
-    LuceneTaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir, OpenMode.CREATE);
+    DirectoryTaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
     index(iw, taxo, iParams, docTitles, docTexts, cPaths);
   }
   
@@ -153,7 +153,7 @@ public class MultiCLIndexer {
    *             on error (no detailed exception handling here for sample
    *             simplicity
    */
-  public static void index(IndexWriter iw, LuceneTaxonomyWriter taxo,
+  public static void index(IndexWriter iw, DirectoryTaxonomyWriter taxo,
       FacetIndexingParams iParams, String[] docTitles,
       String[] docTexts, CategoryPath[][] cPaths) throws Exception {
 
