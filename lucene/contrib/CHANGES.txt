@@ -88,6 +88,14 @@ Changes in backwards compatibility policy
 
  * LUCENE-3508: Changed some method signatures in decompounding TokenFilters
    to make them no longer use the Token class.  (Uwe Schindler)
+   
+ * LUCENE-3557: The various SpellChecker.indexDictionary methods were removed,
+   and consolidated to one:
+
+   indexDictionary(Dictionary dict, IndexWriterConfig config, boolean optimize)
+   
+   Previously, there was no way to specify an IndexWriterConfig, and some
+   of these methods would sneakily pass 'true' to optimize.  (Robert Muir)
 
 New Features
 

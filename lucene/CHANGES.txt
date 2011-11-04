@@ -194,6 +194,10 @@ Changes in backwards compatibility policy
   to the Bits interface. This method should never do I/O for performance reasons.
   (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
   Jason Rutherglen, Paul Elschot)
+
+* LUCENE-3559: The methods "docFreq" and "maxDoc" on IndexSearcher were removed,
+  as these are no longer used by the scoring system. See MIGRATE.txt for more
+  details.  (Robert Muir)
   
 Changes in Runtime Behavior
 

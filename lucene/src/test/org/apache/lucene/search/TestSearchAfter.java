@@ -73,8 +73,9 @@ public class TestSearchAfter extends LuceneTestCase {
   }
   
   void assertQuery(Query query, Filter filter) throws Exception {
-    TopDocs all = searcher.search(query, filter, searcher.maxDoc());
-    int pageSize = _TestUtil.nextInt(random, 1, searcher.maxDoc()*2);
+    int maxDoc = searcher.getIndexReader().maxDoc();
+    TopDocs all = searcher.search(query, filter, maxDoc);
+    int pageSize = _TestUtil.nextInt(random, 1, maxDoc*2);
     int pageStart = 0;
     ScoreDoc lastBottom = null;
     while (pageStart < all.totalHits) {

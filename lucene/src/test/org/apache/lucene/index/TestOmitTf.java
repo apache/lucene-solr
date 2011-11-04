@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -50,7 +49,7 @@ public class TestOmitTf extends LuceneTestCase {
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-        @Override public Explanation idfExplain(TermContext[] terms, IndexSearcher searcher) throws IOException {
+        @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
           return new Explanation(1.0f, "Inexplicable");
         }
         @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }

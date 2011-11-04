@@ -148,7 +148,7 @@ public class DocFreqValueSource extends ValueSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes));
+    int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
     return new ConstIntDocValues(docfreq, this);
   }
 

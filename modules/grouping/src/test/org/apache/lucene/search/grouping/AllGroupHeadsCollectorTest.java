@@ -106,9 +106,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc.add(newField("id", "7", StringField.TYPE_STORED));
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexReader reader = w.getReader();
+    IndexSearcher indexSearcher = new IndexSearcher(reader);
     w.close();
-    int maxDoc = indexSearcher.maxDoc();
+    int maxDoc = reader.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id", SortField.Type.INT, true));
     AbstractAllGroupHeadsCollector c1 = createRandomCollector(groupField, sortWithinGroup);

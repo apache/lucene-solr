@@ -35,14 +35,18 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements search over a single IndexReader.
@@ -209,36 +213,6 @@ public class IndexSearcher implements Closeable {
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
     return reader;
-  }
-
-  /** Expert: Returns one greater than the largest possible document number.
-   * 
-   * @see org.apache.lucene.index.IndexReader#maxDoc()
-   */
-  public int maxDoc() {
-    return reader.maxDoc();
-  }
-
-  /** Returns total docFreq for this term. */
-  public int docFreq(final Term term) throws IOException {
-    if (executor == null) {
-      return reader.docFreq(term);
-    } else {
-      final ExecutionHelper<Integer> runner = new ExecutionHelper<Integer>(executor);
-      for(int i = 0; i < leafContexts.length; i++) {
-        final IndexReader leaf = leafContexts[i].reader;
-        runner.submit(new Callable<Integer>() {
-            public Integer call() throws IOException {
-              return Integer.valueOf(leaf.docFreq(term));
-            }
-          });
-      }
-      int docFreq = 0;
-      for (Integer num : runner) {
-        docFreq += num.intValue();
-      }
-      return docFreq;
-    }
   }
 
   /* Sugar for <code>.getIndexReader().document(docID)</code> */
@@ -859,5 +833,35 @@ public class IndexSearcher implements Closeable {
   @Override
   public String toString() {
     return "IndexSearcher(" + reader + "; executor=" + executor + ")";
+  }
+  
+  /**
+   * Returns {@link TermStatistics} for a term
+   * @lucene.experimental
+   */
+  public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+    return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+  };
+  
+  /**
+   * Returns {@link CollectionStatistics} for a field
+   * @lucene.experimental
+   */
+  public CollectionStatistics collectionStatistics(String field) throws IOException {
+    final int docCount;
+    final long sumTotalTermFreq;
+    final long sumDocFreq;
+    
+    Terms terms = MultiFields.getTerms(reader, field);
+    if (terms == null) {
+      docCount = 0;
+      sumTotalTermFreq = 0;
+      sumDocFreq = 0;
+    } else {
+      docCount = terms.getDocCount();
+      sumTotalTermFreq = terms.getSumTotalTermFreq();
+      sumDocFreq = terms.getSumDocFreq();
+    }
+    return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
 }

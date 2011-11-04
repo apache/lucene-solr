@@ -109,7 +109,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       // Get all of the documents and run the query, then do different
       // facet counts and compare to control
       Query q = new TermQuery(new Term("content", "alpha"));
-      ScoredDocIdCollector scoredDoc = ScoredDocIdCollector.create(is.maxDoc(), true);
+      ScoredDocIdCollector scoredDoc = ScoredDocIdCollector.create(ir.maxDoc(), true);
 
       // Collector collector = new MultiCollector(scoredDoc);
       is.search(q, scoredDoc);

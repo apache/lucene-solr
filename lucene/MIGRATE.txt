@@ -395,6 +395,16 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 
   The scorePayload method now takes a BytesRef. It is never null.
 
+* LUCENE-3559: The methods "docFreq" and "maxDoc" on IndexSearcher were removed,
+  as these are no longer used by the scoring system.
+
+  If you were using these casually in your code for reasons unrelated to scoring,
+  call them on the IndexSearcher's reader instead: getIndexReader().
+
+  If you were subclassing IndexSearcher and overriding these methods to alter
+  scoring, override IndexSearcher's termStatistics() and collectionStatistics()
+  methods instead.
+
 * LUCENE-3283: Lucene's core o.a.l.queryParser QueryParsers have been consolidated into module/queryparser,
   where other QueryParsers from the codebase will also be placed.  The following classes were moved:
   - o.a.l.queryParser.CharStream -> o.a.l.queryparser.classic.CharStream

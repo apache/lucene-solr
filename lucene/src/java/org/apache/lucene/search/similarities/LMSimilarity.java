@@ -17,11 +17,9 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.TermContext;
+import org.apache.lucene.search.TermStatistics;
 
 /**
  * Abstract superclass for language modeling Similarities. The following inner
@@ -62,8 +60,8 @@ public abstract class LMSimilarity extends SimilarityBase {
    * usual statistics.
    */
   @Override
-  protected void fillBasicStats(BasicStats stats, IndexSearcher searcher, String fieldName, TermContext termContext) throws IOException {
-    super.fillBasicStats(stats, searcher, fieldName, termContext);
+  protected void fillBasicStats(BasicStats stats, CollectionStatistics collectionStats, TermStatistics termStats) {
+    super.fillBasicStats(stats, collectionStats, termStats);
     LMStats lmStats = (LMStats) stats;
     lmStats.setCollectionProbability(collectionModel.computeProbability(stats));
   }

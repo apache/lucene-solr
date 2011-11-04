@@ -190,9 +190,13 @@ public class PhraseQuery extends Query {
       this.similarity = searcher.getSimilarityProvider().get(field);
       final ReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
-      for (int i = 0; i < terms.size(); i++)
-        states[i] = TermContext.build(context, terms.get(i), true);
-      stats = similarity.computeStats(searcher, field, getBoost(), states);
+      TermStatistics termStats[] = new TermStatistics[terms.size()];
+      for (int i = 0; i < terms.size(); i++) {
+        final Term term = terms.get(i);
+        states[i] = TermContext.build(context, term, true);
+        termStats[i] = searcher.termStatistics(term, states[i]);
+      }
+      stats = similarity.computeStats(searcher.collectionStatistics(field), getBoost(), termStats);
     }
 
     @Override

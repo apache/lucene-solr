@@ -46,8 +46,8 @@ public class IDFValueSource extends DocFreqValueSource {
     if (!(sim instanceof TFIDFSimilarity)) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
-    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes));
-    float idf = ((TFIDFSimilarity)sim).idf(docfreq, searcher.maxDoc());
+    int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
+    float idf = ((TFIDFSimilarity)sim).idf(docfreq, searcher.getIndexReader().maxDoc());
     return new ConstDoubleDocValues(idf, this);
   }
 }

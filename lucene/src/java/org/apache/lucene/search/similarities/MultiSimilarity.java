@@ -21,10 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
 
 /**
  * Implements the CombSUM method for combining evidence from multiple
@@ -45,10 +45,10 @@ public class MultiSimilarity extends Similarity {
   }
 
   @Override
-  public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termContexts) throws IOException {
+  public Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
     Stats subStats[] = new Stats[sims.length];
     for (int i = 0; i < subStats.length; i++) {
-      subStats[i] = sims[i].computeStats(searcher, fieldName, queryBoost, termContexts);
+      subStats[i] = sims[i].computeStats(collectionStats, queryBoost, termStats);
     }
     return new MultiStats(subStats);
   }

@@ -42,7 +42,7 @@ public class MaxDocValueSource extends ValueSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    return new ConstIntDocValues(searcher.maxDoc(), this);
+    return new ConstIntDocValues(searcher.getIndexReader().maxDoc(), this);
   }
 
   @Override

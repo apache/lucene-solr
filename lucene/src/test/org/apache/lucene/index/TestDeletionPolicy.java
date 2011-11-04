@@ -717,7 +717,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
               expectedCount -= 17;
             }
           }
-          assertEquals("maxDoc=" + searcher.maxDoc() + " numDocs=" + searcher.getIndexReader().numDocs(), expectedCount, hits.length);
+          assertEquals("maxDoc=" + searcher.getIndexReader().maxDoc() + " numDocs=" + searcher.getIndexReader().numDocs(), expectedCount, hits.length);
           searcher.close();
           reader.close();
           if (i == N) {

@@ -161,8 +161,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termContexts) throws IOException {
-      return sim.computeStats(searcher, fieldName, queryBoost, termContexts);
+    public Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+      return sim.computeStats(collectionStats, queryBoost, termStats);
     }
 
     @Override
