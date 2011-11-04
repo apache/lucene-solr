@@ -177,7 +177,9 @@ public class NIOFSDirectory extends FSDirectory {
         outOfMemoryError.initCause(e);
         throw outOfMemoryError;
       } catch (IOException ioe) {
-        throw new IOException(ioe.getMessage() + ": " + this, ioe);
+        IOException newIOE = new IOException(ioe.getMessage() + ": " + this);
+        newIOE.initCause(ioe);
+        throw newIOE;
       }
     }
   }
