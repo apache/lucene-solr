@@ -383,7 +383,7 @@ final class FieldInfos {
         if (format <= FORMAT_OMIT_POSITIONS) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
         } else {
-          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format);
+          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format + " (resource: " + input + ")");
         }
       } else {
         indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -400,7 +400,7 @@ final class FieldInfos {
     }
 
     if (input.getFilePointer() != input.length()) {
-      throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length());
+      throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
     }    
   }
 

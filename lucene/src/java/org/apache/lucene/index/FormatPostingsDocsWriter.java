@@ -81,7 +81,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
     final int delta = docID - lastDocID;
 
     if (docID < 0 || (df > 0 && delta <= 0))
-      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )");
+      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " ) (out: " + out + ")");
 
     if ((++df % skipInterval) == 0) {
       // TODO: abstraction violation

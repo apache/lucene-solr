@@ -142,7 +142,7 @@ final class FieldsReader implements Cloneable, Closeable {
         format = firstInt;
 
       if (format > FieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(indexStreamFN, format, 0, FieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooNewException(cloneableIndexStream, format, 0, FieldsWriter.FORMAT_CURRENT);
 
       if (format > FieldsWriter.FORMAT)
         formatSize = 4;

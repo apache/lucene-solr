@@ -272,11 +272,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       int format = input.readInt();
       // check that it is a format we can understand
       if (format > FORMAT_MINIMUM) {
-        throw new IndexFormatTooOldException(segmentFileName, format,
+        throw new IndexFormatTooOldException(input, format,
           FORMAT_MINIMUM, FORMAT_MAXIMUM);
       }
       if (format < FORMAT_MAXIMUM) {
-        throw new IndexFormatTooNewException(segmentFileName, format,
+        throw new IndexFormatTooNewException(input, format,
           FORMAT_MINIMUM, FORMAT_MAXIMUM);
       }
       version = input.readLong(); // read version
@@ -332,7 +332,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         final long checksumNow = input.getChecksum();
         final long checksumThen = input.readLong();
         if (checksumNow != checksumThen)
-          throw new CorruptIndexException("checksum mismatch in segments file");
+          throw new CorruptIndexException("checksum mismatch in segments file (resource: " + input + ")");
       }
       success = true;
     }

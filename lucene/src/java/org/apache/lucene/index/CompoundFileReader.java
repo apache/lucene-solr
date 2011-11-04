@@ -17,15 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.BufferedIndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
-
-import java.util.HashMap;
+import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
+
+import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Lock;
 
 /**
  * Class for accessing a compound stream.
@@ -72,7 +73,7 @@ class CompoundFileReader extends Directory {
       if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
         if (firstInt < CompoundFileWriter.FORMAT_CURRENT) {
           throw new CorruptIndexException("Incompatible format version: "
-              + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT);
+              + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT + " (resource: " + stream + ")");
         }
         // It's a post-3.1 index, read the count.
         count = stream.readVInt();
@@ -268,7 +269,7 @@ class CompoundFileReader extends Directory {
     protected void readInternal(byte[] b, int offset, int len) throws IOException {
       long start = getFilePointer();
       if(start + len > length)
-        throw new IOException("read past EOF");
+        throw new EOFException("read past EOF (resource: " + base + ")");
       base.seek(fileOffset + start);
       base.readBytes(b, offset, len, false);
     }
@@ -301,7 +302,7 @@ class CompoundFileReader extends Directory {
       if (numBytes > 0) {
         long start = getFilePointer();
         if (start + numBytes > length) {
-          throw new IOException("read past EOF");
+          throw new EOFException("read past EOF (resource: " + base + ")");
         }
         base.seek(fileOffset + start);
         base.copyBytes(out, numBytes);

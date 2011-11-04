@@ -53,7 +53,8 @@ public class SimpleFSDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    return new SimpleFSIndexInput(new File(directory, name), bufferSize, getReadChunkSize());
+    final File path = new File(directory, name);
+    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", path, bufferSize, getReadChunkSize());
   }
 
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
@@ -84,9 +85,15 @@ public class SimpleFSDirectory extends FSDirectory {
     boolean isClone;
     //  LUCENE-1566 - maximum read length on a 32bit JVM to prevent incorrect OOM 
     protected final int chunkSize;
-    
+
+    /** @deprecated please pass resourceDesc */
+    @Deprecated
     public SimpleFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
-      super(bufferSize);
+      this("anonymous SimpleFSIndexInput", path, bufferSize, chunkSize);
+    }
+
+    public SimpleFSIndexInput(String resourceDesc, File path, int bufferSize, int chunkSize) throws IOException {
+      super(resourceDesc, bufferSize);
       file = new Descriptor(path, "r");
       this.chunkSize = chunkSize;
     }
@@ -128,6 +135,8 @@ public class SimpleFSDirectory extends FSDirectory {
               + "with a value smaller than the current chunk size (" + chunkSize + ")");
           outOfMemoryError.initCause(e);
           throw outOfMemoryError;
+        } catch (IOException ioe) {
+          throw new IOException(ioe.getMessage() + ": " + this, ioe);
         }
       }
     }

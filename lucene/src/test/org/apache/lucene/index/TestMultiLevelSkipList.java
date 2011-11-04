@@ -129,6 +129,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     private IndexInput input;
 
     CountingStream(IndexInput input) {
+      super("CountingStream(" + input + ")");
       this.input = input;
     }
 

@@ -451,6 +451,7 @@ public class TestFieldsReader extends LuceneTestCase {
     static boolean doFail;
     int count;
     private FaultyIndexInput(IndexInput delegate) {
+      super("FaultyIndexInput(" + delegate + ")", BufferedIndexInput.BUFFER_SIZE);
       this.delegate = delegate;
     }
     private void simOutage() throws IOException {

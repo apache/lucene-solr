@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * the License.
  */
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -88,7 +89,7 @@ public class NIOFSDirectory extends FSDirectory {
     final FileChannel channel;
 
     public NIOFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
-      super(path, bufferSize, chunkSize);
+      super("NIOFSIndexInput(path=\"" + path + "\")", path, bufferSize, chunkSize);
       channel = file.getChannel();
     }
 
@@ -160,7 +161,7 @@ public class NIOFSDirectory extends FSDirectory {
           bb.limit(limit);
           int i = channel.read(bb, pos);
           if (i == -1) {
-            throw new IOException("read past EOF");
+            throw new EOFException("read past EOF (resource: " + this + ")");
           }
           pos += i;
           readOffset += i;
@@ -175,6 +176,8 @@ public class NIOFSDirectory extends FSDirectory {
               + "with a value smaller than the current chunk size (" + chunkSize + ")");
         outOfMemoryError.initCause(e);
         throw outOfMemoryError;
+      } catch (IOException ioe) {
+        throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }
     }
   }

@@ -213,7 +213,7 @@ public class MMapDirectory extends FSDirectory {
     File f = new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
-      return new MMapIndexInput(raf, chunkSizePower);
+      return new MMapIndexInput("MMapIndexInput(path=\"" + f + "\")", raf, chunkSizePower);
     } finally {
       raf.close();
     }
@@ -235,7 +235,8 @@ public class MMapDirectory extends FSDirectory {
   
     private boolean isClone = false;
     
-    MMapIndexInput(RandomAccessFile raf, int chunkSizePower) throws IOException {
+    MMapIndexInput(String resourceDescription, RandomAccessFile raf, int chunkSizePower) throws IOException {
+      super(resourceDescription);
       this.length = raf.length();
       this.chunkSizePower = chunkSizePower;
       this.chunkSize = 1L << chunkSizePower;
@@ -274,8 +275,9 @@ public class MMapDirectory extends FSDirectory {
       } catch (BufferUnderflowException e) {
         do {
           curBufIndex++;
-          if (curBufIndex >= buffers.length)
-            throw new IOException("read past EOF");
+          if (curBufIndex >= buffers.length) {
+            throw new IOException("read past EOF: " + this);
+          }
           curBuf = buffers[curBufIndex];
           curBuf.position(0);
         } while (!curBuf.hasRemaining());
@@ -294,8 +296,9 @@ public class MMapDirectory extends FSDirectory {
           len -= curAvail;
           offset += curAvail;
           curBufIndex++;
-          if (curBufIndex >= buffers.length)
-            throw new IOException("read past EOF");
+          if (curBufIndex >= buffers.length) {
+            throw new IOException("read past EOF: " + this);
+          }
           curBuf = buffers[curBufIndex];
           curBuf.position(0);
           curAvail = curBuf.remaining();
@@ -338,13 +341,15 @@ public class MMapDirectory extends FSDirectory {
         this.curBufIndex = bi;
         this.curBuf = b;
       } catch (ArrayIndexOutOfBoundsException aioobe) {
-        if (pos < 0L)
-          throw new IllegalArgumentException("Seeking to negative position");
+        if (pos < 0L) {
+          throw new IllegalArgumentException("Seeking to negative position: " + this);
+        }
         throw new IOException("seek past EOF");
       } catch (IllegalArgumentException iae) {
-        if (pos < 0L)
-          throw new IllegalArgumentException("Seeking to negative position");
-        throw new IOException("seek past EOF");
+        if (pos < 0L) {
+          throw new IllegalArgumentException("Seeking to negative position: " + this);
+        }
+        throw new IOException("seek past EOF: " + this);
       }
     }
   
@@ -355,8 +360,9 @@ public class MMapDirectory extends FSDirectory {
   
     @Override
     public Object clone() {
-      if (buffers == null)
-        throw new AlreadyClosedException("MMapIndexInput already closed");
+      if (buffers == null) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
+      }
       final MMapIndexInput clone = (MMapIndexInput)super.clone();
       clone.isClone = true;
       clone.buffers = new ByteBuffer[buffers.length];
@@ -368,7 +374,7 @@ public class MMapDirectory extends FSDirectory {
       try {
         clone.seek(getFilePointer());
       } catch(IOException ioe) {
-        throw new RuntimeException("Should never happen", ioe);
+        throw new RuntimeException("Should never happen: " + this, ioe);
       }
       return clone;
     }

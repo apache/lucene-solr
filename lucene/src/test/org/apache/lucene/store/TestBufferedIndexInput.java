@@ -91,7 +91,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     writeBytes(tmpInputFile, TEST_FILE_LENGTH);
 
     // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
+    runReadBytesAndClose(new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + tmpInputFile + "\")", tmpInputFile,
                                                 inputBufferSize, 10), inputBufferSize, random);
 
     // run test with chunk size of 10 bytes
@@ -210,6 +210,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       private long pos;
       private long len;
       public MyBufferedIndexInput(long len){
+        super("MyBufferedIndexInput(len=" + len + ")", BufferedIndexInput.BUFFER_SIZE);
         this.len = len;
         this.pos = 0;
       }

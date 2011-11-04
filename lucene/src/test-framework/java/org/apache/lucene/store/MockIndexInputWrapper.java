@@ -34,6 +34,7 @@ public class MockIndexInputWrapper extends IndexInput {
 
   /** Construct an empty output buffer. */
   public MockIndexInputWrapper(MockDirectoryWrapper dir, String name, IndexInput delegate) {
+    super("MockIndexInputWrapper(name=" + name + " delegate=" + delegate + ")");
     this.name = name;
     this.dir = dir;
     this.delegate = delegate;

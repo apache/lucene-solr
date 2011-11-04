@@ -40,10 +40,26 @@ public abstract class BufferedIndexInput extends IndexInput {
     return buffer[bufferPosition++];
   }
 
-  public BufferedIndexInput() {}
+  /** @deprecated please pass resourceDesc */
+  @Deprecated
+  public BufferedIndexInput() {
+    this("anonymous BuffereIndexInput");
+  }
+
+  public BufferedIndexInput(String resourceDesc) {
+    this(resourceDesc, BUFFER_SIZE);
+  }
+
+  /** Inits BufferedIndexInput with a specific bufferSize
+   *  @deprecated please pass resourceDesc */
+  @Deprecated
+  public BufferedIndexInput(int bufferSize) {
+    this("anonymous BuffereIndexInput", bufferSize);
+  }
 
   /** Inits BufferedIndexInput with a specific bufferSize */
-  public BufferedIndexInput(int bufferSize) {
+  public BufferedIndexInput(String resourceDesc, int bufferSize) {
+    super(resourceDesc);
     checkBufferSize(bufferSize);
     this.bufferSize = bufferSize;
   }

@@ -198,7 +198,7 @@ class TermVectorsReader implements Cloneable, Closeable {
   {
     int format = in.readInt();
     if (format > FORMAT_CURRENT) {
-      throw new IndexFormatTooNewException(fn, format, 1, FORMAT_CURRENT);
+      throw new IndexFormatTooNewException(in, format, 1, FORMAT_CURRENT);
     }
     return format;
   }
