@@ -17,6 +17,7 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -85,7 +86,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
       dictionary = new HighFrequencyDictionary(reader, field,
           threshold);
       spellChecker.clearIndex();
-      spellChecker.indexDictionary(dictionary);
+      spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
 
     } catch (IOException e) {
       throw new RuntimeException(e);

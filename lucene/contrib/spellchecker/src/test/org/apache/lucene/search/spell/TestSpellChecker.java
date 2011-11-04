@@ -331,7 +331,7 @@ public class TestSpellChecker extends LuceneTestCase {
 
   private void addwords(IndexReader r, SpellChecker sc, String field) throws IOException {
     long time = System.currentTimeMillis();
-    sc.indexDictionary(new LuceneDictionary(r, field));
+    sc.indexDictionary(new LuceneDictionary(r, field), newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
     time = System.currentTimeMillis() - time;
     //System.out.println("time to build " + field + ": " + time);
   }
@@ -379,7 +379,7 @@ public class TestSpellChecker extends LuceneTestCase {
     }
     
     try {
-      spellChecker.indexDictionary(new LuceneDictionary(r, field));
+      spellChecker.indexDictionary(new LuceneDictionary(r, field), newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
       fail("spellchecker was already closed");
     } catch (AlreadyClosedException e) {
       // expected

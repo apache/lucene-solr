@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spell.Dictionary;
@@ -400,7 +401,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase implements So
 
     Dictionary dictionary = getDictionary(req);
     spellChecker.clearIndex();
-    spellChecker.indexDictionary(dictionary);
+    spellChecker.indexDictionary(dictionary, new IndexWriterConfig(req.getCore().getSolrConfig().luceneMatchVersion, null), false);
     reopen();
   }
   
