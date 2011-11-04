@@ -215,36 +215,6 @@ public class IndexSearcher implements Closeable {
     return reader;
   }
 
-  /** Expert: Returns one greater than the largest possible document number.
-   * 
-   * @see org.apache.lucene.index.IndexReader#maxDoc()
-   */
-  public int maxDoc() {
-    return reader.maxDoc();
-  }
-
-  /** Returns total docFreq for this term. */
-  public int docFreq(final Term term) throws IOException {
-    if (executor == null) {
-      return reader.docFreq(term);
-    } else {
-      final ExecutionHelper<Integer> runner = new ExecutionHelper<Integer>(executor);
-      for(int i = 0; i < leafContexts.length; i++) {
-        final IndexReader leaf = leafContexts[i].reader;
-        runner.submit(new Callable<Integer>() {
-            public Integer call() throws IOException {
-              return Integer.valueOf(leaf.docFreq(term));
-            }
-          });
-      }
-      int docFreq = 0;
-      for (Integer num : runner) {
-        docFreq += num.intValue();
-      }
-      return docFreq;
-    }
-  }
-
   /* Sugar for <code>.getIndexReader().document(docID)</code> */
   public Document doc(int docID) throws CorruptIndexException, IOException {
     return reader.document(docID);

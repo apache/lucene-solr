@@ -571,11 +571,11 @@ public abstract class TFIDFSimilarity extends Similarity {
    * idf(docFreq, searcher.maxDoc());
    * </pre>
    * 
-   * Note that {@link IndexSearcher#maxDoc()} is used instead of
+   * Note that {@link CollectionStatistics#maxDoc()} is used instead of
    * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
-   * {@link IndexSearcher#docFreq(Term)} is used, and when the latter 
-   * is inaccurate, so is {@link IndexSearcher#maxDoc()}, and in the same direction.
-   * In addition, {@link IndexSearcher#maxDoc()} is more efficient to compute
+   * {@link TermStatistics#docFreq()} is used, and when the latter 
+   * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
+   * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
    *   
    * @param collectionStats collection-level statistics
    * @param termStats term-level statistics for the term

@@ -470,7 +470,9 @@ public class SpellChecker implements java.io.Closeable {
     // obtainSearcher calls ensureOpen
     final IndexSearcher indexSearcher = obtainSearcher();
     try{
-      return indexSearcher.docFreq(new Term(F_WORD, word)) > 0;
+      // TODO: we should use ReaderUtil+seekExact, we dont care about the docFreq
+      // this is just an existence check
+      return indexSearcher.getIndexReader().docFreq(new Term(F_WORD, word)) > 0;
     } finally {
       releaseSearcher(indexSearcher);
     }
@@ -494,8 +496,9 @@ public class SpellChecker implements java.io.Closeable {
       IndexSearcher indexSearcher = obtainSearcher();
       final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
 
-      if (searcher.maxDoc() > 0) {
-        new ReaderUtil.Gather(searcher.getIndexReader()) {
+      final IndexReader reader = searcher.getIndexReader();
+      if (reader.maxDoc() > 0) {
+        new ReaderUtil.Gather(reader) {
           @Override
           protected void add(int base, IndexReader r) throws IOException {
             Terms terms = r.terms(F_WORD);

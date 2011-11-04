@@ -61,7 +61,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         // Get all of the documents and run the query, then do different
         // facet counts and compare to control
         Query q = new TermQuery(new Term(CONTENT_FIELD, BETA)); // 90% of the docs
-        ScoredDocIdCollector docCollector = ScoredDocIdCollector.create(searcher.maxDoc(), false);
+        ScoredDocIdCollector docCollector = ScoredDocIdCollector.create(indexReader.maxDoc(), false);
         
         FacetSearchParams expectedSearchParams = searchParamsWithRequests(K, partitionSize); 
         FacetsCollector fc = new FacetsCollector(expectedSearchParams, indexReader, taxoReader);

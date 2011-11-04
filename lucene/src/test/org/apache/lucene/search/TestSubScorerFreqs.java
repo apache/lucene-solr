@@ -134,7 +134,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10,
         true));
     s.search(q, null, c);
-    final int maxDocs = s.maxDoc();
+    final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());
     for (int i = 0; i < maxDocs; i++) {
       Map<Query, Float> doc0 = c.docCounts.get(i);
@@ -171,7 +171,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
           10, true), occur);
       s.search(query, null, c);
-      final int maxDocs = s.maxDoc();
+      final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
       boolean includeOptional = occur.contains(Occur.SHOULD.toString());
       for (int i = 0; i < maxDocs; i++) {
@@ -201,7 +201,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10,
         true));
     s.search(q, null, c);
-    final int maxDocs = s.maxDoc();
+    final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());
     for (int i = 0; i < maxDocs; i++) {
       Map<Query, Float> doc0 = c.docCounts.get(i);
