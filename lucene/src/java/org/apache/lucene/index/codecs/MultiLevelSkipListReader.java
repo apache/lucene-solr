@@ -255,6 +255,7 @@ public abstract class MultiLevelSkipListReader {
     private int pos;
     
     SkipBuffer(IndexInput input, int length) throws IOException {
+      super("SkipBuffer on " + input);
       data = new byte[length];
       pointer = input.getFilePointer();
       input.readBytes(data, 0, length);

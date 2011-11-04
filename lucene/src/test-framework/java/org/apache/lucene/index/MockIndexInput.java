@@ -25,6 +25,7 @@ public class MockIndexInput extends BufferedIndexInput {
     private long length;
 
     public MockIndexInput(byte[] bytes) {
+        super("MockIndexInput", BufferedIndexInput.BUFFER_SIZE);
         buffer = bytes;
         length = bytes.length;
     }

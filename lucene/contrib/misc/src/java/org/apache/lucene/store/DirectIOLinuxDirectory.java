@@ -245,6 +245,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
 
     public DirectIOLinuxIndexInput(File path, int bufferSize) throws IOException {
       // TODO make use of IOContext
+      super("DirectIOLinuxIndexInput(path=\"" + path.getPath() + "\")");
       FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), true);
       fis = new FileInputStream(fd);
       channel = fis.getChannel();
@@ -259,6 +260,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
 
     // for clone
     public DirectIOLinuxIndexInput(DirectIOLinuxIndexInput other) throws IOException {
+      super(other.toString());
       this.fis = null;
       channel = other.channel;
       this.bufferSize = other.bufferSize;
@@ -308,7 +310,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
       try {
         return channel.size();
       } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
+        throw new RuntimeException("IOException during length(): " + this, ioe);
       }
     }
 
@@ -331,9 +333,14 @@ public class DirectIOLinuxDirectory extends FSDirectory {
       bufferPos = 0;
       assert (filePos & ALIGN_NOT_MASK) == filePos : "filePos=" + filePos + " anded=" + (filePos & ALIGN_NOT_MASK);
       //System.out.println("X refill filePos=" + filePos);
-      int n = channel.read(buffer, filePos);
+      int n;
+      try {
+        n = channel.read(buffer, filePos);
+      } catch (IOException ioe) {
+        throw new IOException(ioe.getMessage() + ": " + this, ioe);
+      }
       if (n < 0) {
-        throw new IOException("eof");
+        throw new IOException("eof: " + this);
       }
       buffer.rewind();
     }
@@ -365,7 +372,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
       try {
         return new DirectIOLinuxIndexInput(this);
       } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
+        throw new RuntimeException("IOException during clone: " + this, ioe);
       }
     }
   }

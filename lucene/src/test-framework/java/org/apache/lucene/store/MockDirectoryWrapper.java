@@ -673,9 +673,9 @@ public class MockDirectoryWrapper extends Directory {
       }
 
       @Override
-      public IndexInput openSlice(long offset, long length) throws IOException {
+      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
         maybeYield();
-        IndexInput ii = new MockIndexInputWrapper(MockDirectoryWrapper.this, name, delegateHandle.openSlice(offset, length));
+        IndexInput ii = new MockIndexInputWrapper(MockDirectoryWrapper.this, name, delegateHandle.openSlice(sliceDescription, offset, length));
         addFileHandle(ii, name, Handle.Input);
         return ii;
       }

@@ -26,6 +26,18 @@ import java.io.IOException;
  */
 public abstract class IndexInput extends DataInput implements Cloneable,Closeable {
 
+  private final String resourceDescription;
+
+  /** resourceDescription should be a non-null, opaque string
+   *  describing this resource; it's returned from
+   *  {@link #toString}. */
+  protected IndexInput(String resourceDescription) {
+    if (resourceDescription == null) {
+      throw new IllegalArgumentException("resourceDescription must not be null");
+    }
+    this.resourceDescription = resourceDescription;
+  }
+
   /** Closes the stream to further operations. */
   public abstract void close() throws IOException;
 
@@ -66,5 +78,9 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
       numBytes -= toCopy;
     }
   }
-  
+
+  @Override
+  public String toString() {
+    return resourceDescription;
+  }
 }

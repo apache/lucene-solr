@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
@@ -56,7 +55,7 @@ class PrefixCodedTerms implements Iterable<Term> {
 
     PrefixCodedTermsIterator() {
       try {
-        input = new RAMInputStream(buffer);
+        input = new RAMInputStream("PrefixCodedTermsIterator", buffer);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

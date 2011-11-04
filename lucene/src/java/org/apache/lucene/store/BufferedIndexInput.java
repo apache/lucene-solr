@@ -51,14 +51,17 @@ public abstract class BufferedIndexInput extends IndexInput {
     return buffer[bufferPosition++];
   }
 
-  public BufferedIndexInput() {}
-  
-  public BufferedIndexInput(IOContext context) {
-    this(bufferSize(context));
+  public BufferedIndexInput(String resourceDesc) {
+    this(resourceDesc, BUFFER_SIZE);
+  }
+
+  public BufferedIndexInput(String resourceDesc, IOContext context) {
+    this(resourceDesc, bufferSize(context));
   }
 
   /** Inits BufferedIndexInput with a specific bufferSize */
-  public BufferedIndexInput(int bufferSize) {
+  public BufferedIndexInput(String resourceDesc, int bufferSize) {
+    super(resourceDesc);
     checkBufferSize(bufferSize);
     this.bufferSize = bufferSize;
   }

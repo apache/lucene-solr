@@ -189,6 +189,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
           
           
           SeeksCountingStream(IndexInput input) {
+              super("SeekCountingStream(" + input + ")");
               this.input = input;
           }      
                 

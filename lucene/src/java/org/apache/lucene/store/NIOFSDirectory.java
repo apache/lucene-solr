@@ -83,8 +83,8 @@ public class NIOFSDirectory extends FSDirectory {
   public IndexInputSlicer createSlicer(final String name,
       final IOContext context) throws IOException {
     ensureOpen();
-    final File file = new File(getDirectory(), name);
-    final Descriptor descriptor = new Descriptor(file, "r");
+    final File path = new File(getDirectory(), name);
+    final Descriptor descriptor = new Descriptor(path, "r");
     return new Directory.IndexInputSlicer() {
 
       @Override
@@ -93,14 +93,14 @@ public class NIOFSDirectory extends FSDirectory {
       }
 
       @Override
-      public IndexInput openSlice(long offset, long length) throws IOException {
-        return new NIOFSIndexInput(descriptor, descriptor.getChannel(), offset,
+      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
+        return new NIOFSIndexInput(sliceDescription, path, descriptor, descriptor.getChannel(), offset,
             length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
       }
 
       @Override
       public IndexInput openFullSlice() throws IOException {
-        return openSlice(0, descriptor.length);
+        return openSlice("full-slice", 0, descriptor.length);
       }
     };
   }
@@ -115,12 +115,12 @@ public class NIOFSDirectory extends FSDirectory {
     final FileChannel channel;
 
     public NIOFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
-      super(path, context, chunkSize);
+      super("NIOFSIndexInput(path=\"" + path + "\")", path, context, chunkSize);
       channel = file.getChannel();
     }
     
-    public NIOFSIndexInput(Descriptor file, FileChannel fc, long off, long length, int bufferSize, int chunkSize) throws IOException {
-      super(file, off, length, bufferSize, chunkSize);
+    public NIOFSIndexInput(String sliceDescription, File path, Descriptor file, FileChannel fc, long off, long length, int bufferSize, int chunkSize) throws IOException {
+      super("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + off + ":" + (off+length) + ")", file, off, length, bufferSize, chunkSize);
       channel = fc;
       isClone = true;
     }
@@ -181,7 +181,7 @@ public class NIOFSDirectory extends FSDirectory {
       long pos = getFilePointer() + off;
       
       if (pos + len > end) {
-        throw new IOException("read past EOF");
+        throw new IOException("read past EOF: " + this);
       }
 
       try {
@@ -209,6 +209,8 @@ public class NIOFSDirectory extends FSDirectory {
               + "with a value smaller than the current chunk size (" + chunkSize + ")");
         outOfMemoryError.initCause(e);
         throw outOfMemoryError;
+      } catch (IOException ioe) {
+        throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }
     }
   }

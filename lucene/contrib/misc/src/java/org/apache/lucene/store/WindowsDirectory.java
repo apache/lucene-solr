@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.EOFException;
 
 import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.NativeFSLockFactory; // javadoc
@@ -80,7 +81,7 @@ public class WindowsDirectory extends FSDirectory {
     boolean isOpen;
     
     public WindowsIndexInput(File file, int bufferSize) throws IOException {
-      super(bufferSize);
+      super("WindowsIndexInput(path=\"" + file.getPath() + "\")", bufferSize);
       fd = WindowsDirectory.open(file.getPath());
       length = WindowsDirectory.length(fd);
       isOpen = true;
@@ -88,8 +89,16 @@ public class WindowsDirectory extends FSDirectory {
     
     @Override
     protected void readInternal(byte[] b, int offset, int length) throws IOException {
-      if (WindowsDirectory.read(fd, b, offset, length, getFilePointer()) != length)
-        throw new IOException("Read past EOF");
+      int bytesRead;
+      try {
+        bytesRead = WindowsDirectory.read(fd, b, offset, length, getFilePointer());
+      } catch (IOException ioe) {
+        throw new IOException(ioe.getMessage() + ": " + this, ioe);
+      }
+
+      if (bytesRead != length) {
+        throw new EOFException("Read past EOF: " + this);
+      }
     }
 
     @Override
