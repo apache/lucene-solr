@@ -469,7 +469,7 @@
   </path>
   
   <target name="compile-test-framework" depends="compile-core">
-  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
+  	<compile-test-macro srcdir="${tests-framework.src.dir}/java" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test-framework.classpath"/>
   </target>
 
