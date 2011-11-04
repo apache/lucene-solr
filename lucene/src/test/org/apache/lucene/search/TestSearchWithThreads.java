@@ -27,8 +27,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.apache.lucene.util.LuceneTestCase;
 
+@UseNoMemoryExpensiveCodec
 public class TestSearchWithThreads extends LuceneTestCase {
   
   final int NUM_DOCS = atLeast(10000);
