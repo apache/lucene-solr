@@ -62,7 +62,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     try {
       loadExternalFileDictionary(core);
       spellChecker.clearIndex();
-      spellChecker.indexDictionary(dictionary);
+      spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

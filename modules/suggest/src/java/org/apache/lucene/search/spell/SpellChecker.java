@@ -31,7 +31,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Terms;
@@ -481,18 +480,16 @@ public class SpellChecker implements java.io.Closeable {
   /**
    * Indexes the data from the given {@link Dictionary}.
    * @param dict Dictionary to index
-   * @param mergeFactor mergeFactor to use when indexing
-   * @param ramMB the max amount or memory in MB to use
+   * @param config {@link IndexWriterConfig} to use
    * @param optimize whether or not the spellcheck index should be optimized
    * @throws AlreadyClosedException if the Spellchecker is already closed
    * @throws IOException
    */
-  public final void indexDictionary(Dictionary dict, int mergeFactor, int ramMB, boolean optimize) throws IOException {
+  public final void indexDictionary(Dictionary dict, IndexWriterConfig config, boolean optimize) throws IOException {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, null).setRAMBufferSizeMB(ramMB));
-      ((TieredMergePolicy) writer.getConfig().getMergePolicy()).setMaxMergeAtOnce(mergeFactor);
+      final IndexWriter writer = new IndexWriter(dir, config);
       IndexSearcher indexSearcher = obtainSearcher();
       final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
 
@@ -543,30 +540,13 @@ public class SpellChecker implements java.io.Closeable {
       if (optimize)
         writer.optimize();
       writer.close();
+      // TODO: this isn't that great, maybe in the future SpellChecker should take
+      // IWC in its ctor / keep its writer open?
+      
       // also re-open the spell index to see our own changes when the next suggestion
       // is fetched:
       swapSearcher(dir);
     }
-  }
-
-  /**
-   * Indexes the data from the given {@link Dictionary}.
-   * @param dict the dictionary to index
-   * @param mergeFactor mergeFactor to use when indexing
-   * @param ramMB the max amount or memory in MB to use
-   * @throws IOException
-   */
-  public final void indexDictionary(Dictionary dict, int mergeFactor, int ramMB) throws IOException {
-    indexDictionary(dict, mergeFactor, ramMB, true);
-  }
-  
-  /**
-   * Indexes the data from the given {@link Dictionary}.
-   * @param dict the dictionary to index
-   * @throws IOException
-   */
-  public final void indexDictionary(Dictionary dict) throws IOException {
-    indexDictionary(dict, 300, (int)IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
   }
 
   private static int getMin(int l) {
