@@ -2354,6 +2354,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return newSegment;
   }
   
+  synchronized void publishFrozenDeletes(FrozenBufferedDeletes packet) throws IOException {
+    assert packet != null && packet.any();
+    synchronized (bufferedDeletesStream) {
+      bufferedDeletesStream.push(packet);
+    }
+  }
+  
   /**
    * Atomically adds the segment private delete packet and publishes the flushed
    * segments SegmentInfo to the index writer. NOTE: use
@@ -2984,14 +2991,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       final boolean anySegmentFlushed;
       
       synchronized (fullFlushLock) {
+    	boolean flushSuccess = false;
         try {
           anySegmentFlushed = docWriter.flushAllThreads();
-          success = true;
+          flushSuccess = true;
         } finally {
-          docWriter.finishFullFlush(success);
+          docWriter.finishFullFlush(flushSuccess);
         }
       }
-      success = false;
       synchronized(this) {
         maybeApplyDeletes(applyAllDeletes);
         doAfterFlush();
@@ -4074,6 +4081,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
     //System.out.println("IW.nrtIsCurrent " + (infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any()));
     ensureOpen();
+    if (infoStream != null) {
+      message("nrtIsCurrent: infoVersion matches: " + (infos.version == segmentInfos.version) + " DW changes: " + docWriter.anyChanges() + " BD changes: "+bufferedDeletesStream.any());
+
+    }
     return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any();
   }
 

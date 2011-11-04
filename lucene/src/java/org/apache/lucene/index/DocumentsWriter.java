@@ -117,7 +117,14 @@ final class DocumentsWriter {
 
   // TODO: cut over to BytesRefHash in BufferedDeletes
   volatile DocumentsWriterDeleteQueue deleteQueue = new DocumentsWriterDeleteQueue();
-  private final Queue<FlushTicket> ticketQueue = new LinkedList<DocumentsWriter.FlushTicket>();
+  private final TicketQueue ticketQueue = new TicketQueue();
+  /*
+   * we preserve changes during a full flush since IW might not checkout before
+   * we release all changes. NRT Readers otherwise suddenly return true from
+   * isCurrent while there are actually changes currently committed. See also
+   * #anyChanges() & #flushAllThreads
+   */
+  private volatile boolean pendingChangesInCurrentFullFlush;
 
   private Collection<String> abortedFiles;               // List of files that were written before last abort()
 
@@ -170,6 +177,7 @@ final class DocumentsWriter {
   private void applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
     if (deleteQueue != null && !flushControl.isFullFlush()) {
       synchronized (ticketQueue) {
+        ticketQueue.incTicketCount();// first inc the ticket count - freeze opens a window for #anyChanges to fail
         // Freeze and insert the delete flush ticket in the queue
         ticketQueue.add(new FlushTicket(deleteQueue.freezeGlobalBuffer(null), false));
         applyFlushTickets();
@@ -256,9 +264,22 @@ final class DocumentsWriter {
   }
 
   boolean anyChanges() {
-    return numDocsInRAM.get() != 0 || anyDeletions();
+    if (infoStream != null) {
+      message("docWriter: anyChanges? numDocsInRam=" + numDocsInRAM.get()
+          + " deletes=" + anyDeletions() + " hasTickets:"
+          + ticketQueue.hasTickets() + " pendingChangesInFullFlush: "
+          + pendingChangesInCurrentFullFlush);
+    }
+    /*
+     * changes are either in a DWPT or in the deleteQueue.
+     * yet if we currently flush deletes and / or dwpt there
+     * could be a window where all changes are in the ticket queue
+     * before they are published to the IW. ie we need to check if the 
+     * ticket queue has any tickets.
+     */
+    return numDocsInRAM.get() != 0 || anyDeletions() || ticketQueue.hasTickets() || pendingChangesInCurrentFullFlush;
   }
-
+  
   public int getBufferedDeleteTermsSize() {
     return deleteQueue.getBufferedDeleteTermsSize();
   }
@@ -283,7 +304,7 @@ final class DocumentsWriter {
     if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
       // Help out flushing any queued DWPTs so we can un-stall:
       if (infoStream != null) {
-        message("DocumentsWriter has queued dwpt; will hijack this thread to flush pending segment(s)");
+        message("docWriter: DocumentsWriter has queued dwpt; will hijack this thread to flush pending segment(s)");
       }
       do {
         // Try pick up pending threads here if possible
@@ -417,7 +438,7 @@ final class DocumentsWriter {
           synchronized (ticketQueue) {
             // Each flush is assigned a ticket in the order they acquire the ticketQueue lock
             ticket =  new FlushTicket(flushingDWPT.prepareFlush(), true);
-            ticketQueue.add(ticket);
+            ticketQueue.incrementAndAdd(ticket);
           }
   
           // flush concurrently without locking
@@ -474,8 +495,11 @@ final class DocumentsWriter {
         // Keep publishing eligible flushed segments:
         final FlushTicket head = ticketQueue.peek();
         if (head != null && head.canPublish()) {
-          ticketQueue.poll();
-          finishFlush(head.segment, head.frozenDeletes);
+          try {
+            finishFlush(head.segment, head.frozenDeletes);
+          } finally {
+            ticketQueue.poll();
+          }
         } else {
           break;
         }
@@ -489,7 +513,7 @@ final class DocumentsWriter {
     if (newSegment == null) {
       assert bufferedDeletes != null;
       if (bufferedDeletes != null && bufferedDeletes.any()) {
-        indexWriter.bufferedDeletesStream.push(bufferedDeletes);
+        indexWriter.publishFrozenDeletes(bufferedDeletes);
         if (infoStream != null) {
           message("flush: push buffered deletes: " + bufferedDeletes);
         }
@@ -535,6 +559,7 @@ final class DocumentsWriter {
   
   // for asserts
   private volatile DocumentsWriterDeleteQueue currentFullFlushDelQueue = null;
+
   // for asserts
   private synchronized boolean setFlushingDeleteQueue(DocumentsWriterDeleteQueue session) {
     currentFullFlushDelQueue = session;
@@ -554,6 +579,7 @@ final class DocumentsWriter {
     }
     
     synchronized (this) {
+      pendingChangesInCurrentFullFlush = anyChanges();
       flushingDeleteQueue = deleteQueue;
       /* Cutover to a new delete queue.  This must be synced on the flush control
        * otherwise a new DWPT could sneak into the loop with an already flushing
@@ -573,11 +599,12 @@ final class DocumentsWriter {
       }
       // If a concurrent flush is still in flight wait for it
       flushControl.waitForFlush();  
-      if (!anythingFlushed) { // apply deletes if we did not flush any document
+      if (!anythingFlushed && flushingDeleteQueue.anyChanges()) { // apply deletes if we did not flush any document
         if (infoStream != null) {
          message(Thread.currentThread().getName() + ": flush naked frozen global deletes");
         }
         synchronized (ticketQueue) {
+          ticketQueue.incTicketCount(); // first inc the ticket count - freeze opens a window for #anyChanges to fail
           ticketQueue.add(new FlushTicket(flushingDeleteQueue.freezeGlobalBuffer(null), false));
         }
         applyFlushTickets();
@@ -590,16 +617,21 @@ final class DocumentsWriter {
   }
   
   final void finishFullFlush(boolean success) {
-    if (infoStream != null) {
-      message(Thread.currentThread().getName() + " finishFullFlush success=" + success);
+    try {
+      if (infoStream != null) {
+        message(Thread.currentThread().getName() + " finishFullFlush success=" + success);
+      }
+      assert setFlushingDeleteQueue(null);
+      if (success) {
+        // Release the flush lock
+        flushControl.finishFullFlush();
+      } else {
+        flushControl.abortFullFlushes();
+      }
+    } finally {
+      pendingChangesInCurrentFullFlush = false;
     }
-    assert setFlushingDeleteQueue(null);
-    if (success) {
-      // Release the flush lock
-      flushControl.finishFullFlush();
-    } else {
-      flushControl.abortFullFlushes();
-    }
+    
   }
 
   static final class FlushTicket {
@@ -615,6 +647,46 @@ final class DocumentsWriter {
     
     boolean canPublish() {
       return (!isSegmentFlush || segment != null);  
+    }
+  }
+  
+  static final class TicketQueue {
+    private final Queue<FlushTicket> queue = new LinkedList<FlushTicket>();
+    final AtomicInteger ticketCount = new AtomicInteger();
+    
+    void incTicketCount() {
+      ticketCount.incrementAndGet();
+    }
+    
+    public boolean hasTickets() {
+      assert ticketCount.get() >= 0;
+      return ticketCount.get() != 0;
+    }
+
+    void incrementAndAdd(FlushTicket ticket) {
+      incTicketCount();
+      add(ticket);
+    }
+    
+    void add(FlushTicket ticket) {
+      queue.add(ticket);
+    }
+    
+    FlushTicket peek() {
+      return queue.peek();
+    }
+    
+    FlushTicket poll() {
+      try {
+        return queue.poll();
+      } finally {
+        ticketCount.decrementAndGet();
+      }
+    }
+    
+    void clear() {
+      queue.clear();
+      ticketCount.set(0);
     }
   }
   
