@@ -93,7 +93,9 @@ public class WindowsDirectory extends FSDirectory {
       try {
         bytesRead = WindowsDirectory.read(fd, b, offset, length, getFilePointer());
       } catch (IOException ioe) {
-        throw new IOException(ioe.getMessage() + ": " + this, ioe);
+        IOException newIOE = new IOException(ioe.getMessage() + ": " + this);
+        newIOE.initCause(ioe);
+        throw newIOE;
       }
 
       if (bytesRead != length) {

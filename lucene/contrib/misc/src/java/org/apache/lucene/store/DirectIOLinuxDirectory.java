@@ -330,7 +330,9 @@ public class DirectIOLinuxDirectory extends FSDirectory {
       try {
         n = channel.read(buffer, filePos);
       } catch (IOException ioe) {
-        throw new IOException(ioe.getMessage() + ": " + this, ioe);
+        IOException newIOE = new IOException(ioe.getMessage() + ": " + this);
+        newIOE.initCause(ioe);
+        throw newIOE;
       }
       if (n < 0) {
         throw new IOException("eof: " + this);
