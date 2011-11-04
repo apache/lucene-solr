@@ -20,50 +20,43 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.HashSet;
-import org.apache.lucene.index.codecs.CodecProvider;
+import java.util.regex.Pattern;
 
 /**
- * Filename filter that accept filenames and extensions only
- * created by Lucene.
+ * Filename filter that attempts to accept only filenames
+ * created by Lucene.  Note that this is a "best effort"
+ * process.  If a file is used in a Lucene index, it will
+ * always match the file; but if a file is not used in a
+ * Lucene index but is named in a similar way to Lucene's
+ * files then this filter may accept the file.
+ *
+ * <p>This does not accept <code>*-write.lock</code> files.
  *
  * @lucene.internal
  */
 
 public class IndexFileNameFilter implements FilenameFilter {
 
-  private final HashSet<String> extensions;
-
-  public IndexFileNameFilter(CodecProvider codecs) {
-    extensions = new HashSet<String>();
-    for (String ext : IndexFileNames.INDEX_EXTENSIONS) {
-      extensions.add(ext);
-    }
-    if (codecs != null) {
-      for(String ext : codecs.getAllExtensions()) {
-        extensions.add(ext);
-      }
-    }
+  public static final FilenameFilter INSTANCE = new IndexFileNameFilter();
+  
+  private IndexFileNameFilter() {
   }
+
+  // Approximate match for files that seem to be Lucene
+  // index files.  This can easily over-match, ie if some
+  // app names a file _foo_bar.go:
+  private final Pattern luceneFilePattern = Pattern.compile("^_[a-z0-9]+(_[a-z0-9]+)?\\.[a-z0-9]+$");
 
   /* (non-Javadoc)
    * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
    */
   public boolean accept(File dir, String name) {
-    int i = name.lastIndexOf('.');
-    if (i != -1) {
-      String extension = name.substring(1+i);
-      if (extensions.contains(extension)) {
-        return true;
-      } else if (extension.startsWith("f") &&
-                 extension.matches("f\\d+")) {
-        return true;
-      } else if (extension.startsWith("s") &&
-                 extension.matches("s\\d+")) {
-        return true;
-      }
+    if (name.lastIndexOf('.') != -1) {
+      // Has an extension
+      return luceneFilePattern.matcher(name).matches();
     } else {
-      if (name.startsWith(IndexFileNames.SEGMENTS)) return true;
+      // No extension -- only segments_N file;
+      return name.startsWith(IndexFileNames.SEGMENTS);
     }
-    return false;
   }
 }

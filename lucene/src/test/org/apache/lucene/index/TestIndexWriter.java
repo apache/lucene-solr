@@ -52,12 +52,17 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1935,6 +1940,24 @@ public class TestIndexWriter extends LuceneTestCase {
     long version3 = r.getVersion();
     r.close();
     assert(version3 > version2);
+    d.close();
+  }
+
+  public void testWhetherDeleteAllDeletesWriteLock() throws Exception {
+    Directory d = newFSDirectory(_TestUtil.getTempDir("TestIndexWriter.testWhetherDeleteAllDeletesWriteLock"));
+    // Must use SimpleFSLockFactory... NativeFSLockFactory
+    // somehow "knows" a lock is held against write.lock
+    // even if you remove that file:
+    d.setLockFactory(new SimpleFSLockFactory());
+    RandomIndexWriter w1 = new RandomIndexWriter(random, d);
+    w1.deleteAll();
+    try {
+      new RandomIndexWriter(random, d);
+      fail("should not be able to create another writer");
+    } catch (LockObtainFailedException lofe) {
+      // expected
+    }
+    w1.close();
     d.close();
   }
 }

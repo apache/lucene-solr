@@ -34,41 +34,37 @@ public class PerDocWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final Counter bytesUsed;
-  public final SegmentCodecs segmentCodecs;
-  public final int codecId;
+  public final String segmentSuffix;
   public final IOContext context;
 
-  PerDocWriteState(PrintStream infoStream, Directory directory,
+  public PerDocWriteState(PrintStream infoStream, Directory directory,
       String segmentName, FieldInfos fieldInfos, Counter bytesUsed,
-      int codecId, IOContext context) {
+      String segmentSuffix, IOContext context) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.segmentCodecs = fieldInfos.buildSegmentCodecs(false);
-    this.codecId = codecId;
+    this.segmentSuffix = segmentSuffix;
     this.bytesUsed = bytesUsed;
     this.context = context;
   }
 
-  PerDocWriteState(SegmentWriteState state) {
+  public PerDocWriteState(SegmentWriteState state) {
     infoStream = state.infoStream;
     directory = state.directory;
-    segmentCodecs = state.segmentCodecs;
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
-    codecId = state.codecId;
+    segmentSuffix = state.segmentSuffix;
     bytesUsed = Counter.newCounter();
     context = state.context;
   }
 
-  PerDocWriteState(PerDocWriteState state, int codecId) {
+  public PerDocWriteState(PerDocWriteState state, String segmentSuffix) {
     this.infoStream = state.infoStream;
     this.directory = state.directory;
     this.segmentName = state.segmentName;
     this.fieldInfos = state.fieldInfos;
-    this.segmentCodecs = state.segmentCodecs;
-    this.codecId = codecId;
+    this.segmentSuffix = segmentSuffix;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
   }

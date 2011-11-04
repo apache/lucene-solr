@@ -219,7 +219,7 @@ Changes in Runtime Behavior
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
   properties from all previous segments combined. Field numbers are now tracked
-  globally across IndexWriter sessions and persisted into a X.fnx file on
+  globally across IndexWriter sessions and persisted into a _X.fnx file on
   successful commit. The corresponding file format changes are backwards-
   compatible. (Michael Busch, Simon Willnauer)
   
@@ -379,9 +379,8 @@ New features
 * LUCENE-1458, LUCENE-2111: With flexible indexing it is now possible
   for an application to create its own postings codec, to alter how
   fields, terms, docs and positions are encoded into the index.  The
-  standard codec is the default codec.  Both IndexWriter and
-  IndexReader accept a CodecProvider class to obtain codecs for newly
-  written segments as well as existing segments opened for reading.
+  standard codec is the default codec. IndexWriter accepts a Codec
+  class to obtain codecs for newly written segments.
 
 * LUCENE-1458, LUCENE-2111: Some experimental codecs have been added
   for flexible indexing, including pulsing codec (inlines
@@ -407,7 +406,7 @@ New features
 * LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
   lets you set the Codec per field (Mike McCandless)
 
-* LUCENE-2373: Extend CodecProvider to use SegmentInfosWriter and
+* LUCENE-2373: Extend Codec to use SegmentInfosWriter and
   SegmentInfosReader to allow customization of SegmentInfos data.
   (Andrzej Bialecki)
 
@@ -449,10 +448,10 @@ New features
   (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
   will be passed null for any open endpoint. (Adriano Crestani, yonik)
 
-* LUCENE-2742: Add native per-field codec support. CodecProvider lets you now
-  register a codec for each field and which is in turn recorded in the segment
-  and field information. Codecs are maintained on a per-segment basis and be
-  resolved without knowing the actual codec used for writing the segment.
+* LUCENE-2742: Add native per-field postings format support. Codec lets you now
+  register a postings format for each field and which is in turn recorded 
+  into the index. Postings formtas are maintained on a per-segment basis and be
+  resolved without knowing the actual postings format used for writing the segment.
   (Simon Willnauer)
 
 * LUCENE-2741: Add support for multiple codecs that use the same file

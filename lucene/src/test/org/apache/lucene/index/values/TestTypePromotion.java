@@ -15,7 +15,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoMergePolicy;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -42,8 +42,7 @@ public class TestTypePromotion extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault()
-        .getDefaultFieldCodec().equals("PreFlex"));
+    assumeFalse("cannot work with preflex codec", Codec.getDefault().getName().equals("Lucene3x"));
   }
 
   private static EnumSet<ValueType> INTEGERS = EnumSet.of(ValueType.VAR_INTS,

@@ -110,13 +110,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
   
   public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, String segment,
                               PostingsReaderBase postingsReader, IOContext ioContext,
-                              int codecId, int indexDivisor)
+                              String segmentSuffix, int indexDivisor)
     throws IOException {
     
     this.postingsReader = postingsReader;
 
     this.segment = segment;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTreeTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION),
                        ioContext);
 
     boolean success = false;
@@ -125,7 +125,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     try {
       readHeader(in);
       if (indexDivisor != -1) {
-        indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
+        indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
                                 ioContext);
         readIndexHeader(indexIn);
       }
@@ -206,14 +206,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, int codecID, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, BlockTreeTermsWriter.TERMS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION));
-  }
-
-  public static void getExtensions(Collection<String> extensions) {
-    extensions.add(BlockTreeTermsWriter.TERMS_EXTENSION);
-    extensions.add(BlockTreeTermsWriter.TERMS_INDEX_EXTENSION);
+  public static void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION));
   }
 
   @Override

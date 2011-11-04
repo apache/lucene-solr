@@ -35,6 +35,6 @@ public class StandardIndexReaderFactory extends IndexReaderFactory {
   @Override
   public IndexReader newReader(Directory indexDir, boolean readOnly)
       throws IOException {
-    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor, provider);
+    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor);
   }
 }

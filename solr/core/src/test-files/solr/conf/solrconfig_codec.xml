@@ -19,15 +19,5 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   
-  <mainIndex>
-    <codecProviderFactory class="org.apache.solr.core.MockCodecProviderFactory">
-      <str name="defaultCodec">Pulsing</str>
-      <lst name="codecs">
-        <str name="codec">org.apache.lucene.index.codecs.simpletext.SimpleTextCodec</str>
-        <str name="codec">org.apache.lucene.index.codecs.preflex.PreFlexCodec</str>
-      </lst>
-    </codecProviderFactory>
-  </mainIndex>
-
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler> 
 </config>

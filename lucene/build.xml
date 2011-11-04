@@ -30,15 +30,15 @@
   </path>
 
   <path id="test.classpath">
-  	<path refid="classpath"/>
-    <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/test-framework"/>
+    <path refid="classpath"/>
+    <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
 
   <path id="junit.classpath">
-    <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/test-framework"/>
+    <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/test"/>
     <pathelement location="${build.dir}/classes/java"/>
     <pathelement path="${java.class.path}"/>
@@ -556,11 +556,11 @@
 	<sequential>
       <mkdir dir="${javadoc.dir}/test-framework"/>
       <invoke-javadoc
-          overview="src/test-framework/overview.html"
+          overview="src/test-framework/java/overview.html"
           destdir="${javadoc.dir}/test-framework"
           title="${Name} ${version} Test Framework API">
         <sources>
-          <packageset dir="src/test-framework"/>
+          <packageset dir="src/test-framework/java"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>

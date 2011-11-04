@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Version;
@@ -121,7 +121,7 @@ public final class IndexWriterConfig implements Cloneable {
   private volatile int maxBufferedDocs;
   private volatile IndexingChain indexingChain;
   private volatile IndexReaderWarmer mergedSegmentWarmer;
-  private volatile CodecProvider codecProvider;
+  private volatile Codec codec;
   private volatile MergePolicy mergePolicy;
   private volatile DocumentsWriterPerThreadPool indexerThreadPool;
   private volatile boolean readerPooling;
@@ -158,7 +158,7 @@ public final class IndexWriterConfig implements Cloneable {
     maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     mergedSegmentWarmer = null;
-    codecProvider = CodecProvider.getDefault();
+    codec = Codec.getDefault();
     if (matchVersion.onOrAfter(Version.LUCENE_32)) {
       mergePolicy = new TieredMergePolicy();
     } else {
@@ -521,17 +521,17 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** Set the CodecProvider. See {@link CodecProvider}.
+  /** Set the Codec. See {@link Codec}.
    *
    * <p>Only takes effect when IndexWriter is first created. */
-  public IndexWriterConfig setCodecProvider(CodecProvider codecProvider) {
-    this.codecProvider = codecProvider;
+  public IndexWriterConfig setCodec(Codec codec) {
+    this.codec = codec;
     return this;
   }
 
-  /** Returns the current merged segment warmer. See {@link IndexReaderWarmer}. */
-  public CodecProvider getCodecProvider() {
-    return codecProvider;
+  /** Returns the current Codec. See {@link Codec}. */
+  public Codec getCodec() {
+    return codec;
   }
 
 
@@ -694,7 +694,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("ramBufferSizeMB=").append(ramBufferSizeMB).append("\n");
     sb.append("maxBufferedDocs=").append(maxBufferedDocs).append("\n");
     sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
-    sb.append("codecProvider=").append(codecProvider).append("\n");
+    sb.append("codec=").append(codec).append("\n");
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("indexerThreadPool=").append(indexerThreadPool).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");

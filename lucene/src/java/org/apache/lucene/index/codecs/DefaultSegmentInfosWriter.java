@@ -56,12 +56,13 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
   public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
 
   @Override
-  public IndexOutput writeInfos(Directory dir, String segmentFileName, SegmentInfos infos, IOContext context)
+  public IndexOutput writeInfos(Directory dir, String segmentFileName, String codecID, SegmentInfos infos, IOContext context)
           throws IOException {
     IndexOutput out = createOutput(dir, segmentFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount())));
     boolean success = false;
     try {
       out.writeInt(FORMAT_CURRENT); // write FORMAT
+      out.writeString(codecID); // write codecID
       out.writeLong(infos.version);
       out.writeInt(infos.counter); // write counter
       out.writeLong(infos.getGlobalFieldMapVersion());

@@ -28,8 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.search.FieldCache; // javadocs
@@ -312,7 +311,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Returns an IndexReader reading the index in the given
@@ -326,9 +325,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
-
+  
   /**
    * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
    *
@@ -363,7 +362,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -381,7 +380,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -409,7 +408,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor, null);
+    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -429,7 +428,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -462,78 +461,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor, null);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor);
   }
 
-  /** Expert: returns an IndexReader reading the index in
-   *  the given Directory, with a custom {@link
-   *  IndexDeletionPolicy}, and specified {@link CodecProvider}.
-   *  You should pass readOnly=true, since it gives much
-   *  better concurrent performance, unless you intend to do
-   *  write operations (delete documents or change norms)
-   *  with the reader.
-   * @param directory the index directory
-   * @param deletionPolicy a custom deletion policy (only used
-   *  if you use this reader to perform deletes or to set
-   *  norms); see {@link IndexWriter} for details.
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   * @param codecs CodecProvider to use when opening index
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor, CodecProvider codecs) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor, codecs);
-  }
-
-  /** Expert: returns an IndexReader reading the index in
-   *  the given Directory, using a specific commit and with
-   *  a custom {@link IndexDeletionPolicy} and specified
-   *  {@link CodecProvider}.  You should pass readOnly=true, since
-   *  it gives much better concurrent performance, unless
-   *  you intend to do write operations (delete documents or
-   *  change norms) with the reader.
-
-   * @param commit the specific {@link IndexCommit} to open;
-   * see {@link IndexReader#listCommits} to list all commits
-   * in a directory
-   * @param deletionPolicy a custom deletion policy (only used
-   *  if you use this reader to perform deletes or to set
-   *  norms); see {@link IndexWriter} for details.
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   * @param codecs CodecProvider to use when opening index
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor, CodecProvider codecs) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor, codecs);
-  }
-
-  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor,
-      CodecProvider codecs) throws CorruptIndexException, IOException {
-    if (codecs == null) {
-      codecs = CodecProvider.getDefault();
-    }
-    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor, codecs);
+  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor);
   }
 
   /**
@@ -767,7 +699,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
         }
       }.run()).longValue();
   }
-
+  
   /**
    * Reads version number from segments files. The version number is
    * initialized with a timestamp and then increased by one for each change of
@@ -779,24 +711,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
-    return getCurrentVersion(directory, CodecProvider.getDefault());
+    return SegmentInfos.readCurrentVersion(directory);
   }
   
-  /**
-   * Reads version number from segments files. The version number is
-   * initialized with a timestamp and then increased by one for each change of
-   * the index.
-   * 
-   * @param directory where the index resides.
-   * @param codecs the {@link CodecProvider} holding all {@link Codec}s required to open the index
-   * @return version number.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static long getCurrentVersion(Directory directory, CodecProvider codecs) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentVersion(directory, codecs);
-  }
-
   /**
    * Reads commitUserData, previously passed to {@link
    * IndexWriter#commit(Map)}, from current index
@@ -811,28 +728,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @see #getCommitUserData()
    */
-  public static Map<String,String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return getCommitUserData(directory,  CodecProvider.getDefault());
-  }
-  
-  
-  /**
-   * Reads commitUserData, previously passed to {@link
-   * IndexWriter#commit(Map)}, from current index
-   * segments file.  This will return null if {@link
-   * IndexWriter#commit(Map)} has never been called for
-   * this index.
-   * 
-   * @param directory where the index resides.
-   * @param codecs the {@link CodecProvider} provider holding all {@link Codec}s required to open the index
-   * @return commit userData.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   *
-   * @see #getCommitUserData()
-   */
-  public static Map<String, String> getCommitUserData(Directory directory, CodecProvider codecs) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory, codecs);
+  public static Map<String, String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
+    return SegmentInfos.readCurrentUserData(directory);
   }
 
   /**
@@ -979,22 +876,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public static boolean indexExists(Directory directory) throws IOException {
     try {
       new SegmentInfos().read(directory);
-      return true;
-    } catch (IOException ioe) {
-      return false;
-    }
-  }
-
-  /**
-   * Returns <code>true</code> if an index exists at the specified directory.
-   * @param  directory the directory to check for an index
-   * @param  codecProvider provides a CodecProvider in case the index uses non-core codecs
-   * @return <code>true</code> if an index exists; <code>false</code> otherwise
-   * @throws IOException if there is a problem with accessing the index
-   */
-  public static boolean indexExists(Directory directory, CodecProvider codecProvider) throws IOException {
-    try {
-      new SegmentInfos().read(directory, codecProvider);
       return true;
     } catch (IOException ioe) {
       return false;

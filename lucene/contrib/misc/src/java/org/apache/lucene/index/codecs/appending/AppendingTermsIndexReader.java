@@ -31,9 +31,9 @@ import org.apache.lucene.util.CodecUtil;
 public class AppendingTermsIndexReader extends FixedGapTermsIndexReader {
 
   public AppendingTermsIndexReader(Directory dir, FieldInfos fieldInfos,
-          String segment, int indexDivisor, Comparator<BytesRef> termComp, int codecId, IOContext context)
+          String segment, int indexDivisor, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
           throws IOException {
-    super(dir, fieldInfos, segment, indexDivisor, termComp, codecId, context);
+    super(dir, fieldInfos, segment, indexDivisor, termComp, segmentSuffix, context);
   }
   
   @Override

@@ -22,7 +22,6 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
@@ -36,6 +35,9 @@ public class TestForTooMuchCloning extends LuceneTestCase {
   // Make sure we don't clone IndexInputs too frequently
   // during merging:
   public void test() throws Exception {
+    // NOTE: if we see a fail on this test with "NestedPulsing" its because its 
+    // reuse isnt perfect (but reasonable). see TestPulsingReuse.testNestedPulsing 
+    // for more details
     final MockDirectoryWrapper dir = newDirectory();
     final TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setMaxMergeAtOnce(2);

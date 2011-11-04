@@ -167,10 +167,10 @@ public abstract class FieldType extends FieldProperties {
       initArgs.remove("positionIncrementGap");
     }
 
-    final String codec = initArgs.get("codec");
-    if (codec != null) {
-      this.codec = codec;
-      initArgs.remove("codec");
+    final String postingsFormat = initArgs.get("postingsFormat");
+    if (postingsFormat != null) {
+      this.postingsFormat = postingsFormat;
+      initArgs.remove("postingsFormat");
     }
 
     if (initArgs.size() > 0) {
@@ -527,12 +527,12 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
-   * The codec ID used for this field type
+   * The postings format used for this field type
    */
-  protected String codec;
+  protected String postingsFormat;
   
-  public String getCodec() {
-    return codec;
+  public String getPostingsFormat() {
+    return postingsFormat;
   }
   
   /**

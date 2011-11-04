@@ -19,7 +19,8 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;
@@ -35,13 +36,12 @@ public class TestRollingUpdates extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     final LineFileDocs docs = new LineFileDocs(random);
 
-    CodecProvider provider = CodecProvider.getDefault();
     //provider.register(new MemoryCodec());
-    if ( (!"PreFlex".equals(provider.getDefaultFieldCodec())) && random.nextBoolean()) {
-      provider.setFieldCodec("docid", "Memory");
+    if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random.nextBoolean()) {
+      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
     }
 
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(provider));
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.setInfoStream(VERBOSE ? System.out : null);
     final int SIZE = atLeast(TEST_NIGHTLY ? 100 : 20);
     int id = 0;

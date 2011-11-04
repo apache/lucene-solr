@@ -108,7 +108,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     if (reader instanceof MultiReader)
       // MultiReader does not "own" the directory so it does
       // not write the changes to sis on commit:
-      sis.commit(dir);
+      sis.commit(dir, sis.codecFormat());
 
     sis.read(dir);
     reader = openReader();
@@ -121,7 +121,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     if (reader instanceof MultiReader)
       // MultiReader does not "own" the directory so it does
       // not write the changes to sis on commit:
-      sis.commit(dir);
+      sis.commit(dir, sis.codecFormat());
     sis.read(dir);
     reader = openReader();
     assertEquals( 1, reader.numDocs() );

@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -37,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestBinaryTerms extends LuceneTestCase {
   public void testBinary() throws IOException {
     assumeFalse("PreFlex codec cannot work with binary terms!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        Codec.getDefault().getName().equals("Lucene3x"));
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);

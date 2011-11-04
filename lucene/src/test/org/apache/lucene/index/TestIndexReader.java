@@ -39,7 +39,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
@@ -88,6 +88,7 @@ public class TestIndexReader extends LuceneTestCase
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random)).setOpenMode(
               OpenMode.APPEND).setMaxBufferedDocs(2));
+      writer.setInfoStream(VERBOSE ? System.out : null);
       for(int i=0;i<7;i++)
         addDocumentWithFields(writer);
       writer.close();
@@ -947,7 +948,7 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
 
       SegmentInfos sis = new SegmentInfos();
-      sis.read(d, CodecProvider.getDefault());
+      sis.read(d);
       IndexReader r = IndexReader.open(d, false);
       IndexCommit c = r.getIndexCommit();
 
@@ -1231,7 +1232,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1609: don't load terms index
   public void testNoTermsIndex() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     Document doc = new Document();
     doc.add(newField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", TextField.TYPE_UNSTORED));
     doc.add(newField("number", "0 1 2 3 4 5 6 7 8 9", TextField.TYPE_UNSTORED));
@@ -1251,7 +1252,7 @@ public class TestIndexReader extends LuceneTestCase
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setCodecProvider(_TestUtil.alwaysCodec("Standard")).
+            setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())).
             setMergePolicy(newLogMergePolicy(10))
     );
     writer.addDocument(doc);

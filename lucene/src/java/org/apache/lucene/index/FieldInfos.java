@@ -29,9 +29,6 @@ import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.SegmentCodecs; // Required for Java 1.5 javadocs
-import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -146,17 +143,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     
     /**
-     * Returns a new {@link FieldInfos} instance with this as the global field
-     * map
-     * 
-     * @return a new {@link FieldInfos} instance with this as the global field
-     *         map
-     */
-    public FieldInfos newFieldInfos(SegmentCodecsBuilder segmentCodecsBuilder) {
-      return new FieldInfos(this, segmentCodecsBuilder);
-    }
-
-    /**
      * Returns <code>true</code> iff the last committed version differs from the
      * current version, otherwise <code>false</code>
      * 
@@ -198,7 +184,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final FieldNumberBiMap globalFieldNumbers;
-  private final SegmentCodecsBuilder segmentCodecsBuilder;
   
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
@@ -230,16 +215,15 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   /**
    * Creates a new {@link FieldInfos} instance with a private
-   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} and a default {@link SegmentCodecsBuilder}
-   * initialized with {@link CodecProvider#getDefault()}.
+   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} 
    * <p>
    * Note: this ctor should not be used during indexing use
    * {@link FieldInfos#FieldInfos(FieldInfos)} or
-   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder)}
+   * {@link FieldInfos#FieldInfos(FieldNumberBiMap)}
    * instead.
    */
   public FieldInfos() {
-    this(new FieldNumberBiMap(), SegmentCodecsBuilder.create(CodecProvider.getDefault()));
+    this(new FieldNumberBiMap());
   }
   
   /**
@@ -249,7 +233,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @see #isReadOnly()
    */
   FieldInfos(FieldInfos other) {
-    this(other.globalFieldNumbers, other.segmentCodecsBuilder);
+    this(other.globalFieldNumbers);
   }
   
   /**
@@ -257,9 +241,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
    * @see #isReadOnly()
    */
-  FieldInfos(FieldNumberBiMap globalFieldNumbers, SegmentCodecsBuilder segmentCodecsBuilder) {
+  FieldInfos(FieldNumberBiMap globalFieldNumbers) {
     this.globalFieldNumbers = globalFieldNumbers;
-    this.segmentCodecsBuilder = segmentCodecsBuilder;
   }
 
   /**
@@ -273,7 +256,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @throws IOException
    */
   public FieldInfos(Directory d, String name) throws IOException {
-    this((FieldNumberBiMap)null, null); // use null here to make this FIs Read-Only
+    this((FieldNumberBiMap)null); // use null here to make this FIs Read-Only
     final IndexInput input = d.openInput(name, IOContext.READONCE);
     try {
       read(input, name);
@@ -309,7 +292,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   @Override
   synchronized public Object clone() {
-    FieldInfos fis = new FieldInfos(globalFieldNumbers, segmentCodecsBuilder);
+    FieldInfos fis = new FieldInfos(globalFieldNumbers);
     fis.format = format;
     fis.hasFreq = hasFreq;
     fis.hasProx = hasProx;
@@ -468,7 +451,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
-    assert segmentCodecsBuilder != null : "SegmentCodecsBuilder is set to null but FieldInfos is not read-only";
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
       final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
@@ -476,9 +458,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
       fi.setDocValues(docValues);
-    }
-    if ((fi.isIndexed || fi.hasDocValues()) && fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
-      segmentCodecsBuilder.tryAddAndSet(fi);
     }
     version++;
     return fi;
@@ -569,22 +548,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     return false;
   }
-  
-  /**
-   * Builds the {@link SegmentCodecs} mapping for this {@link FieldInfos} instance.
-   * @param clearBuilder <code>true</code> iff the internal {@link SegmentCodecsBuilder} must be cleared otherwise <code>false</code>
-   */
-  public SegmentCodecs buildSegmentCodecs(boolean clearBuilder) {
-    if (globalFieldNumbers == null) {
-      throw new IllegalStateException("FieldInfos are read-only no SegmentCodecs available");
-    }
-    assert segmentCodecsBuilder != null;
-    final SegmentCodecs segmentCodecs = segmentCodecsBuilder.build();
-    if (clearBuilder) {
-      segmentCodecsBuilder.clear();
-    }
-    return segmentCodecs;
-  }
 
   public void write(Directory d, String name) throws IOException {
     IndexOutput output = d.createOutput(name, IOContext.READONCE);
@@ -628,7 +591,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         bits |= OMIT_POSITIONS;
       output.writeString(fi.name);
       output.writeInt(fi.number);
-      output.writeInt(fi.getCodecId());
       output.writeByte(bits);
 
       final byte b;
@@ -698,9 +660,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
     for (int i = 0; i < size; i++) {
       String name = input.readString();
-      // if this is a previous format codec 0 will be preflex!
       final int fieldNumber = format <= FORMAT_FLEX? input.readInt():i;
-      final int codecId = format <= FORMAT_FLEX? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
@@ -781,8 +741,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
           throw new IllegalStateException("unhandled indexValues type " + b);
         }
       }
-      final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
-      addInternal.setCodecId(codecId);
+      addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
     }
 
     if (input.getFilePointer() != input.length()) {
@@ -804,7 +763,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     if (isReadOnly()) {
       return this;
     }
-    final FieldInfos roFis = new FieldInfos((FieldNumberBiMap)null, null);
+    final FieldInfos roFis = new FieldInfos((FieldNumberBiMap)null);
     for (FieldInfo fieldInfo : this) {
       FieldInfo clone = (FieldInfo) (fieldInfo).clone();
       roFis.putInternal(clone);
@@ -814,5 +773,14 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     return roFis;
   }
-  
+
+  public boolean anyDocValuesFields() {
+    for (FieldInfo fi : this) {
+      if (fi.hasDocValues()) { 
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

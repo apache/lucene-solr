@@ -26,7 +26,6 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.DocValuesReaderBase;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -37,7 +36,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public class DefaultDocValuesProducer extends DocValuesReaderBase {
-  protected final TreeMap<String, IndexDocValues> docValues;
+  protected final TreeMap<String,IndexDocValues> docValues;
   private final Directory cfs;
 
   /**
@@ -45,10 +44,16 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
    * {@link IndexDocValues} instances for this segment and codec.
    */
   public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
-    cfs = new CompoundFileDirectory(state.dir, 
-        IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, IndexFileNames.COMPOUND_FILE_EXTENSION), 
-        state.context, false);
-    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.codecId, state.context);
+    if (state.fieldInfos.anyDocValuesFields()) {
+      cfs = new CompoundFileDirectory(state.dir, 
+                                      IndexFileNames.segmentFileName(state.segmentInfo.name,
+                                                                     DefaultDocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION), 
+                                      state.context, false);
+      docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
+    } else {
+      cfs = null;
+      docValues = new TreeMap<String,IndexDocValues>();
+    }
   }
   
   @Override
@@ -58,8 +63,12 @@ public class DefaultDocValuesProducer extends DocValuesReaderBase {
 
   @Override
   protected void closeInternal(Collection<? extends Closeable> closeables) throws IOException {
-    final ArrayList<Closeable> list = new ArrayList<Closeable>(closeables);
-    list.add(cfs);
-    IOUtils.close(list);
+    if (cfs != null) {
+      final ArrayList<Closeable> list = new ArrayList<Closeable>(closeables);
+      list.add(cfs);
+      IOUtils.close(list);
+    } else {
+      IOUtils.close(closeables);
+    }
   }
 }

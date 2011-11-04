@@ -32,10 +32,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -83,8 +84,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
                                    // there was an IOException that had interrupted a commit
 
   public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
-  
-  private CodecProvider codecs;
 
   private int format;
   
@@ -95,20 +94,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   private transient List<SegmentInfo> cachedUnmodifiableList;
   private transient Set<SegmentInfo> cachedUnmodifiableSet;  
   
+  private Codec codecFormat;
+  
   /**
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream = null;
   
-  public SegmentInfos() {
-    this(CodecProvider.getDefault());
-  }
-  
-  public SegmentInfos(CodecProvider codecs) {
-    this.codecs = codecs;
-  }
-
   public void setFormat(int format) {
     this.format = format;
   }
@@ -197,7 +190,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
      * since this file might belong to more than one segment (global map) and
      * could otherwise easily be confused with a per-segment file.
      */
-    return IndexFileNames.segmentFileName(""+ version, "", IndexFileNames.GLOBAL_FIELD_NUM_MAP_EXTENSION);
+    return IndexFileNames.segmentFileName("_"+ version, "", IndexFileNames.GLOBAL_FIELD_NUM_MAP_EXTENSION);
   }
 
   /**
@@ -241,9 +234,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final void read(Directory directory, String segmentFileName, 
-                         CodecProvider codecs) throws CorruptIndexException, IOException {
-    this.codecs = codecs;
+  public final void read(Directory directory, String segmentFileName) throws CorruptIndexException, IOException {
     boolean success = false;
 
     // Clear any previous segments:
@@ -253,12 +244,40 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     lastGeneration = generation;
 
+    // TODO: scary to have default impl reopen the file... but to make it a bit more flexible,
+    // maybe we could use a plain indexinput here... could default impl rewind/wrap with checksumII,
+    // and any checksumming is then up to implementation?
+    ChecksumIndexInput input = null;
     try {
-      SegmentInfosReader infosReader = codecs.getSegmentInfosReader();
-      infosReader.read(directory, segmentFileName, codecs, this, IOContext.READ);
+      input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
+      final int format = input.readInt();
+      setFormat(format);
+    
+      // check that it is a format we can understand
+      if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(segmentFileName, format,
+          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+      if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(segmentFileName, format,
+          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+
+      if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+        codecFormat = Codec.forName(input.readString());
+      } else {
+        codecFormat = Codec.forName("Lucene3x");
+      }
+      SegmentInfosReader infosReader = codecFormat.segmentInfosFormat().getSegmentInfosReader();
+      infosReader.read(directory, segmentFileName, input, this, IOContext.READ);
+      final long checksumNow = input.getChecksum();
+      final long checksumThen = input.readLong();
+      if (checksumNow != checksumThen)
+        throw new CorruptIndexException("checksum mismatch in segments file");
       success = true;
     }
     finally {
+      if (input != null) {
+        input.close();
+      }
       if (!success) {
         // Clear any segment infos we had loaded so we
         // have a clean slate on retry:
@@ -267,25 +286,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
   }
 
-  /**
-   * This version of read uses the retry logic (for lock-less
-   * commits) to find the right segments file to load.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
   public final void read(Directory directory) throws CorruptIndexException, IOException {
-    read(directory, CodecProvider.getDefault());
-  }
-  
-  public final void read(Directory directory, final CodecProvider codecs) throws CorruptIndexException, IOException {
     generation = lastGeneration = -1;
-    this.codecs = codecs;
 
     new FindSegmentsFile(directory) {
 
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-        read(directory, segmentFileName, codecs);
+        read(directory, segmentFileName);
         return null;
       }
     }.run();
@@ -297,7 +305,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   // before finishCommit is called
   IndexOutput pendingSegnOutput;
 
-  private void write(Directory directory) throws IOException {
+  private void write(Directory directory, Codec codec) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
     final String globalFieldMapFile;
@@ -322,8 +330,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     boolean success = false;
 
     try {
-      SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
-      segnOutput = infosWriter.writeInfos(directory, segmentFileName, this, IOContext.DEFAULT);
+      SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
+      segnOutput = infosWriter.writeInfos(directory, segmentFileName, codec.getName(), this, IOContext.DEFAULT);
       infosWriter.prepareCommit(segnOutput);
       pendingSegnOutput = segnOutput;
       success = true;
@@ -380,7 +388,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       sis.cachedUnmodifiableList = null;
       sis.cachedUnmodifiableSet = null;
       for(final SegmentInfo info : this) {
-        assert info.getSegmentCodecs() != null;
+        assert info.getCodec() != null;
         // dont directly access segments, use add method!!!
         sis.add((SegmentInfo) info.clone());
       }
@@ -409,7 +417,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static long readCurrentVersion(Directory directory, final CodecProvider codecs)
+  public static long readCurrentVersion(Directory directory)
     throws CorruptIndexException, IOException {
 
     // Fully read the segments file: this ensures that it's
@@ -417,8 +425,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     // IndexWriter.prepareCommit has been called (but not
     // yet commit), then the reader will still see itself as
     // current:
-    SegmentInfos sis = new SegmentInfos(codecs);
-    sis.read(directory, codecs);
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(directory);
     return sis.version;
   }
 
@@ -427,10 +435,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static Map<String,String> readCurrentUserData(Directory directory, CodecProvider codecs)
+  public static Map<String,String> readCurrentUserData(Directory directory)
     throws CorruptIndexException, IOException {
-    SegmentInfos sis = new SegmentInfos(codecs);
-    sis.read(directory, codecs);
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(directory);
     return sis.getUserData();
   }
 
@@ -808,10 +816,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  final void prepareCommit(Directory dir) throws IOException {
+  final void prepareCommit(Directory dir, Codec codec) throws IOException {
     if (pendingSegnOutput != null)
       throw new IllegalStateException("prepareCommit was already called");
-    write(dir);
+    write(dir, codec);
   }
   
   private final long writeGlobalFieldMap(FieldNumberBiMap map, Directory dir, String name) throws IOException {
@@ -882,12 +890,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     return files;
   }
 
-  final void finishCommit(Directory dir) throws IOException {
+  final void finishCommit(Directory dir, Codec codec) throws IOException {
     if (pendingSegnOutput == null)
       throw new IllegalStateException("prepareCommit was not called");
     boolean success = false;
     try {
-      SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
+      SegmentInfosWriter infosWriter = codec.segmentInfosFormat().getSegmentInfosWriter();
       infosWriter.finishCommit(pendingSegnOutput);
       pendingSegnOutput = null;
       success = true;
@@ -958,9 +966,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    *  method if changes have been made to this {@link SegmentInfos} instance
    *  </p>  
    **/
-  final void commit(Directory dir) throws IOException {
-    prepareCommit(dir);
-    finishCommit(dir);
+  final void commit(Directory dir, Codec codec) throws IOException {
+    prepareCommit(dir, codec);
+    finishCommit(dir, codec);
   }
 
   public String toString(Directory directory) {
@@ -1106,7 +1114,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     if (cloneChildren) {
       final List<SegmentInfo> list = new ArrayList<SegmentInfo>(size());
       for(final SegmentInfo info : this) {
-        assert info.getSegmentCodecs() != null;
+        assert info.getCodec() != null;
         list.add((SegmentInfo) info.clone());
       }
       return list;
@@ -1118,6 +1126,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   void rollbackSegmentInfos(List<SegmentInfo> infos) {
     this.clear();
     this.addAll(infos);
+  }
+  
+  /**
+   * Returns the codec used to decode this SegmentInfos from disk 
+   * @lucene.internal
+   */
+  Codec codecFormat() {
+    return codecFormat;
   }
   
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */

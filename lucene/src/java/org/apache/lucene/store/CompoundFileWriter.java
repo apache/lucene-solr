@@ -22,9 +22,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -85,6 +87,7 @@ final class CompoundFileWriter implements Closeable{
 
   private final Directory directory;
   private final Map<String, FileEntry> entries = new HashMap<String, FileEntry>();
+  private final Set<String> seenIDs = new HashSet<String>();
   // all entries that are written to a sep. file but not yet moved into CFS
   private final Queue<FileEntry> pendingEntries = new LinkedList<FileEntry>();
   private boolean closed = false;
@@ -238,6 +241,9 @@ final class CompoundFileWriter implements Closeable{
       final FileEntry entry = new FileEntry();
       entry.file = name;
       entries.put(name, entry);
+      final String id = IndexFileNames.stripSegmentName(name);
+      assert !seenIDs.contains(id): "file=\"" + name + "\" maps to id=\"" + id + "\", which was already written";
+      seenIDs.add(id);
       final DirectCFSIndexOutput out;
       if (outputTaken.compareAndSet(false, true)) {
         out = new DirectCFSIndexOutput(dataOut, entry, false);
@@ -284,7 +290,7 @@ final class CompoundFileWriter implements Closeable{
     }
   }
 
-  long fileLenght(String name) throws IOException {
+  long fileLength(String name) throws IOException {
     FileEntry fileEntry = entries.get(name);
     if (fileEntry == null) {
       throw new FileNotFoundException(name + " does not exist");

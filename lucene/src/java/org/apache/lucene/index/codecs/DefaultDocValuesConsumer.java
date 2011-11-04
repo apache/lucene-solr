@@ -25,7 +25,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.DocValuesWriterBase;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
@@ -34,42 +33,45 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 public class DefaultDocValuesConsumer extends DocValuesWriterBase {
-  private final Directory directory;
+  private final Directory mainDirectory;
+  private Directory directory;
+
+  final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
   
   public DefaultDocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
+    mainDirectory = state.directory;
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
-    this.directory = new CompoundFileDirectory(state.directory,
-        IndexFileNames.segmentFileName(state.segmentName, state.codecId,
-            IndexFileNames.COMPOUND_FILE_EXTENSION), state.context, true);
   }
   
   @Override
-  protected Directory getDirectory() {
+  protected Directory getDirectory() throws IOException {
+    // lazy init
+    if (directory == null) {
+      directory = new CompoundFileDirectory(mainDirectory,
+                                            IndexFileNames.segmentFileName(segmentName, DOC_VALUES_SEGMENT_SUFFIX,
+                                                                           IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
+    }
     return directory;
   }
 
   @Override
   public void close() throws IOException {
-    this.directory.close();
-  }
-
-  @SuppressWarnings("fallthrough")
-  public static void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
-    FieldInfos fieldInfos = segmentInfo.getFieldInfos();
-    for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.getCodecId() == codecId && fieldInfo.hasDocValues()) {
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
-        return;
-      }
+    if (directory != null) {
+      directory.close();
     }
   }
-  
-  public static void getExtensions(Set<String> extensions) {
-    extensions.add(IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-    extensions.add(IndexFileNames.COMPOUND_FILE_EXTENSION);
+
+  public static void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
+    FieldInfos fieldInfos = segmentInfo.getFieldInfos();
+    for (FieldInfo fieldInfo : fieldInfos) {
+      if (fieldInfo.hasDocValues()) {
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
+        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
+        break;
+      }
+    }
   }
 }

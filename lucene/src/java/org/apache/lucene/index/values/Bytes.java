@@ -61,6 +61,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 public final class Bytes {
+
+  static final String DV_SEGMENT_SUFFIX = "dv";
+
   // TODO - add bulk copy where possible
   private Bytes() { /* don't instantiate! */
   }
@@ -244,7 +247,7 @@ public final class Bytes {
       if (datOut == null) {
         boolean success = false;
         try {
-          datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+          datOut = dir.createOutput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
               DATA_EXTENSION), context);
           CodecUtil.writeHeader(datOut, codecName, version);
           success = true;
@@ -269,7 +272,7 @@ public final class Bytes {
       boolean success = false;
       try {
         if (idxOut == null) {
-          idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+          idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
               INDEX_EXTENSION), context);
           CodecUtil.writeHeader(idxOut, codecName, version);
         }
@@ -307,10 +310,10 @@ public final class Bytes {
     @Override
     public void files(Collection<String> files) throws IOException {
       assert datOut != null;
-      files.add(IndexFileNames.segmentFileName(id, "", DATA_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX, DATA_EXTENSION));
       if (idxOut != null) { // called after flush - so this must be initialized
         // if needed or present
-        final String idxFile = IndexFileNames.segmentFileName(id, "",
+        final String idxFile = IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
             INDEX_EXTENSION);
         files.add(idxFile);
       }
@@ -334,11 +337,11 @@ public final class Bytes {
       IndexInput indexIn = null;
       boolean success = false;
       try {
-        dataIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+        dataIn = dir.openInput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
                                                               Writer.DATA_EXTENSION), context);
         version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
         if (doIndex) {
-          indexIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
+          indexIn = dir.openInput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
                                                                  Writer.INDEX_EXTENSION), context);
           final int version2 = CodecUtil.checkHeader(indexIn, codecName,
                                                      maxVersion, maxVersion);
@@ -494,8 +497,7 @@ public final class Bytes {
     
     protected void releaseResources() {
       hash.close();
-      bytesUsed
-      .addAndGet((-docToEntry.length) * RamUsageEstimator.NUM_BYTES_INT);
+      bytesUsed.addAndGet((-docToEntry.length) * RamUsageEstimator.NUM_BYTES_INT);
       docToEntry = null;
     }
     

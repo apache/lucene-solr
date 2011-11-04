@@ -82,7 +82,7 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
 
   /** Verifies that the code version which wrote the segment is supported. */
   public static void checkCodeVersion(Directory dir, String segment) throws IOException {
-    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
     IndexInput idxStream = dir.openInput(indexStreamFN, IOContext.DEFAULT);
     
     try {
@@ -121,8 +121,8 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     try {
       fieldInfos = fn;
 
-      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), context);
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_EXTENSION), context);
+      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
       cloneableIndexStream = d.openInput(indexStreamFN, context);
       
       format = cloneableIndexStream.readInt();

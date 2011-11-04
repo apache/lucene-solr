@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
@@ -32,7 +32,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
     assumeFalse("PreFlex codec does not support docCount statistic!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        "Lucene3x".equals(Codec.getDefault().getName()));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     int numDocs = atLeast(100);

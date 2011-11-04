@@ -20,8 +20,6 @@ import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
-import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -128,7 +126,6 @@ public abstract class DocumentsWriterPerThreadPool {
 
   private final ThreadState[] perThreads;
   private volatile int numThreadStatesActive;
-  private CodecProvider codecProvider;
   private FieldNumberBiMap globalFieldMap;
   private final SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
   
@@ -148,11 +145,9 @@ public abstract class DocumentsWriterPerThreadPool {
 
   public void initialize(DocumentsWriter documentsWriter, FieldNumberBiMap globalFieldMap, IndexWriterConfig config) {
     this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
-    final CodecProvider codecs = config.getCodecProvider();
-    this.codecProvider = codecs;
     this.globalFieldMap = globalFieldMap;
     for (int i = 0; i < perThreads.length; i++) {
-      final FieldInfos infos = globalFieldMap.newFieldInfos(SegmentCodecsBuilder.create(codecs));
+      final FieldInfos infos = new FieldInfos(globalFieldMap);
       perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
     }
   }
@@ -240,7 +235,7 @@ public abstract class DocumentsWriterPerThreadPool {
     assert threadState.isHeldByCurrentThread();
     final DocumentsWriterPerThread dwpt = threadState.perThread;
     if (!closed) {
-      final FieldInfos infos = globalFieldMap.newFieldInfos(SegmentCodecsBuilder.create(codecProvider));
+      final FieldInfos infos = new FieldInfos(globalFieldMap);
       final DocumentsWriterPerThread newDwpt = new DocumentsWriterPerThread(dwpt, infos);
       newDwpt.initialize();
       threadState.resetWriter(newDwpt);

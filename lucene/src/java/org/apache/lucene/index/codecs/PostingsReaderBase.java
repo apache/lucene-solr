@@ -36,6 +36,9 @@ import org.apache.lucene.util.Bits;
  *  time. 
  *  @lucene.experimental */
 
+// TODO: find a better name; this defines the API that the
+// terms dict impls use to talk to a postings impl.
+// TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
 public abstract class PostingsReaderBase implements Closeable {
 
   public abstract void init(IndexInput termsIn) throws IOException;

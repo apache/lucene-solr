@@ -28,7 +28,7 @@ import org.apache.lucene.index.values.IndexDocValues;
  * {@link PerDocConsumer} counterpart.
  * <p>
  * The {@link PerDocValues} API is accessible through the
- * {@link Codec} - API providing per field consumers and producers for inverted
+ * {@link PostingsFormat} - API providing per field consumers and producers for inverted
  * data (terms, postings) as well as per-document data.
  * 
  * @lucene.experimental

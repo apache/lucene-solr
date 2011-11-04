@@ -106,7 +106,9 @@ public final class CompoundFileDirectory extends Directory {
               numEntries);
           for (int i = 0; i < numEntries; i++) {
             final FileEntry fileEntry = new FileEntry();
-            mapping.put(input.readString(), fileEntry);
+            final String id = input.readString();
+            assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
+            mapping.put(id, fileEntry);
             fileEntry.offset = input.readLong();
             fileEntry.length = input.readLong();
           }
@@ -170,6 +172,9 @@ public final class CompoundFileDirectory extends Directory {
       
       entry = new FileEntry();
       entry.offset = offset;
+
+      assert !entries.containsKey(id);
+
       entries.put(id, entry);
     }
     
@@ -271,7 +276,7 @@ public final class CompoundFileDirectory extends Directory {
   public long fileLength(String name) throws IOException {
     ensureOpen();
     if (this.writer != null) {
-      return writer.fileLenght(name);
+      return writer.fileLength(name);
     }
     FileEntry e = entries.get(IndexFileNames.stripSegmentName(name));
     if (e == null)
@@ -322,5 +327,10 @@ public final class CompoundFileDirectory extends Directory {
         return openSlice(0, entry.length);
       }
     };
+  }
+
+  @Override
+  public String toString() {
+    return "CompoundFileDirectory(file=\"" + fileName + "\" in dir=" + directory + ")";
   }
 }

@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -564,7 +564,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   /** Test whether all similarities return document 3 before documents 7 and 8. */
   public void testHeartRanking() throws IOException {
     assumeFalse("PreFlex codec does not support the stats necessary for this test!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        "Lucene3x".equals(Codec.getDefault().getName()));
 
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     

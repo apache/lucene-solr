@@ -27,7 +27,7 @@ public class TestIntBlockCodec extends LuceneTestCase {
   public void testSimpleIntBlocks() throws Exception {
     Directory dir = newDirectory();
 
-    IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
+    IntStreamFactory f = new MockFixedIntBlockPostingsFormat(128).getIntFactory();
 
     IntIndexOutput out = f.createOutput(dir, "test", newIOContext(random));
     for(int i=0;i<11777;i++) {
@@ -49,7 +49,7 @@ public class TestIntBlockCodec extends LuceneTestCase {
   public void testEmptySimpleIntBlocks() throws Exception {
     Directory dir = newDirectory();
 
-    IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
+    IntStreamFactory f = new MockFixedIntBlockPostingsFormat(128).getIntFactory();
     IntIndexOutput out = f.createOutput(dir, "test", newIOContext(random));
 
     // write no ints

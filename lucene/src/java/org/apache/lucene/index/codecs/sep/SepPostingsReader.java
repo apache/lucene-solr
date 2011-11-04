@@ -60,23 +60,23 @@ public class SepPostingsReader extends PostingsReaderBase {
   int maxSkipLevels;
   int skipMinimum;
 
-  public SepPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext context, IntStreamFactory intFactory, int codecId) throws IOException {
+  public SepPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext context, IntStreamFactory intFactory, String segmentSuffix) throws IOException {
     boolean success = false;
     try {
 
-      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.DOC_EXTENSION);
+      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.DOC_EXTENSION);
       docIn = intFactory.openInput(dir, docFileName, context);
 
-      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.SKIP_EXTENSION), context);
+      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.SKIP_EXTENSION), context);
 
       if (segmentInfo.getFieldInfos().hasFreq()) {
-        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.FREQ_EXTENSION), context);        
+        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.FREQ_EXTENSION), context);        
       } else {
         freqIn = null;
       }
       if (segmentInfo.getHasProx()) {
-        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.POS_EXTENSION), context);
-        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.PAYLOAD_EXTENSION), context);
+        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.POS_EXTENSION), context);
+        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.PAYLOAD_EXTENSION), context);
       } else {
         posIn = null;
         payloadIn = null;
@@ -89,17 +89,17 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, int codecId, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.DOC_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.SKIP_EXTENSION));
+  public static void files(SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) throws IOException {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.DOC_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.SKIP_EXTENSION));
 
     if (segmentInfo.getFieldInfos().hasFreq()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.FREQ_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.FREQ_EXTENSION));
     }
 
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.POS_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriter.PAYLOAD_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.POS_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SepPostingsWriter.PAYLOAD_EXTENSION));
     }
   }
 

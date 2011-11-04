@@ -35,7 +35,7 @@ public final class CodecUtil {
 
   private final static int CODEC_MAGIC = 0x3fd76c17;
 
-  public static DataOutput writeHeader(DataOutput out, String codec, int version)
+  public static void writeHeader(DataOutput out, String codec, int version)
     throws IOException {
     BytesRef bytes = new BytesRef(codec);
     if (bytes.length != codec.length() || bytes.length >= 128) {
@@ -44,8 +44,6 @@ public final class CodecUtil {
     out.writeInt(CODEC_MAGIC);
     out.writeString(codec);
     out.writeInt(version);
-
-    return out;
   }
 
   public static int headerLength(String codec) {

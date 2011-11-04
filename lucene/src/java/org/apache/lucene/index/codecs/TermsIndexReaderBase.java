@@ -45,8 +45,6 @@ public abstract class TermsIndexReaderBase implements Closeable {
 
   public abstract void close() throws IOException;
 
-  public abstract void getExtensions(Collection<String> extensions);
-
   public abstract boolean supportsOrd();
 
   public abstract int getDivisor();

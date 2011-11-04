@@ -62,6 +62,9 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     try {
       loadExternalFileDictionary(core);
       spellChecker.clearIndex();
+      // TODO: you should be able to specify the IWC params?
+      // TODO: if we enable this, codec gets angry since field won't exist in the schema
+      // config.setCodec(core.getCodec());
       spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -94,6 +97,8 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
                 setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                // TODO: if we enable this, codec gets angry since field won't exist in the schema
+                // .setCodec(core.getCodec())
         );
 
         List<String> lines = core.getResourceLoader().getLines(sourceLocation, characterEncoding);
@@ -106,7 +111,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
         writer.optimize();
         writer.close();
 
-        dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir),
+        dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir, true),
                 WORD_FIELD_NAME, 0.0f);
       } else {
         // check if character encoding is defined

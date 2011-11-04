@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -33,9 +34,9 @@ public abstract class SegmentInfosReader {
    * Read {@link SegmentInfos} data from a directory.
    * @param directory directory to read from
    * @param segmentsFileName name of the "segments_N" file
-   * @param codecs current codecs
+   * @param header input of "segments_N" file after reading preamble
    * @param infos empty instance to be populated with data
    * @throws IOException
    */
-  public abstract void read(Directory directory, String segmentsFileName, CodecProvider codecs, SegmentInfos infos, IOContext context) throws IOException;
+  public abstract void read(Directory directory, String segmentsFileName, ChecksumIndexInput header, SegmentInfos infos, IOContext context) throws IOException;
 }

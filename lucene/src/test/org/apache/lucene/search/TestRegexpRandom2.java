@@ -33,7 +33,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -143,7 +143,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   public void testRegexps() throws Exception {
     // we generate aweful regexps: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    int num = CodecProvider.getDefault().getFieldCodec(fieldName).equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
+    int num = Codec.getDefault().getName().equals("Lucene3x") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       if (VERBOSE) {

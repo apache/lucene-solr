@@ -213,6 +213,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           for (int i = 0; i < dirNames.length; i++) {
             Directory dir = dirFactory.get(dirNames[i], core.getSolrConfig().mainIndexConfig.lockType);
             dirsToBeReleased[i] = dir;
+            // TODO: why doesn't this use the IR factory? what is going on here?
             readersToBeClosed[i] = IndexReader.open(dir, true);
           }
         }

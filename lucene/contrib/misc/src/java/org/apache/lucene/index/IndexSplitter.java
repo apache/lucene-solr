@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.IndexWriter;  // Required for javadocs
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.FSDirectory;
 
 /**
@@ -54,8 +53,6 @@ import org.apache.lucene.store.FSDirectory;
  */
 public class IndexSplitter {
   public SegmentInfos infos;
-  
-  private final CodecProvider codecs;
 
   FSDirectory fsDir;
 
@@ -96,17 +93,12 @@ public class IndexSplitter {
       is.split(targetDir, segs.toArray(new String[0]));
     }
   }
-
-  public IndexSplitter(File dir) throws IOException {
-    this(dir, CodecProvider.getDefault());
-  }
   
-  public IndexSplitter(File dir, CodecProvider codecs) throws IOException {
+  public IndexSplitter(File dir) throws IOException {
     this.dir = dir;
-    this.codecs = codecs;
     fsDir = FSDirectory.open(dir);
-    infos = new SegmentInfos(codecs);
-    infos.read(fsDir, codecs);
+    infos = new SegmentInfos();
+    infos.read(fsDir);
   }
 
   public void listSegments() throws IOException {
@@ -140,13 +132,13 @@ public class IndexSplitter {
       infos.remove(idx);
     }
     infos.changed();
-    infos.commit(fsDir);
+    infos.commit(fsDir, infos.codecFormat());
   }
 
   public void split(File destDir, String[] segs) throws IOException {
     destDir.mkdirs();
     FSDirectory destFSDir = FSDirectory.open(destDir);
-    SegmentInfos destInfos = new SegmentInfos(codecs);
+    SegmentInfos destInfos = new SegmentInfos();
     destInfos.counter = infos.counter;
     for (String n : segs) {
       SegmentInfo info = getInfo(n);
@@ -160,7 +152,7 @@ public class IndexSplitter {
       }
     }
     destInfos.changed();
-    destInfos.commit(destFSDir);
+    destInfos.commit(destFSDir, infos.codecFormat());
     // System.out.println("destDir:"+destDir.getAbsolutePath());
   }
 

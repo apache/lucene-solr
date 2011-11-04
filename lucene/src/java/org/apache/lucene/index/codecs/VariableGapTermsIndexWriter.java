@@ -158,7 +158,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   // in the extremes.
 
   public VariableGapTermsIndexWriter(SegmentWriteState state, IndexTermSelector policy) throws IOException {
-    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_INDEX_EXTENSION);
+    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, TERMS_INDEX_EXTENSION);
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {

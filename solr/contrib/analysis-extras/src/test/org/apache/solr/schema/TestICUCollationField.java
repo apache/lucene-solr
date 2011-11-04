@@ -22,7 +22,7 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -37,7 +37,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("preflex format only supports UTF-8 encoded bytes", "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(Codec.getDefault().getName()));
     String home = setupSolrHome();
     initCore("solrconfig.xml","schema.xml", home);
     // add some docs

@@ -31,6 +31,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -125,8 +126,11 @@ final class DocumentsWriter {
   final DocumentsWriterPerThreadPool perThreadPool;
   final FlushPolicy flushPolicy;
   final DocumentsWriterFlushControl flushControl;
-  DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumberBiMap globalFieldNumbers,
+  
+  final Codec codec;
+  DocumentsWriter(Codec codec, IndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumberBiMap globalFieldNumbers,
       BufferedDeletesStream bufferedDeletesStream) throws IOException {
+    this.codec = codec;
     this.directory = directory;
     this.indexWriter = writer;
     this.similarityProvider = config.getSimilarityProvider();

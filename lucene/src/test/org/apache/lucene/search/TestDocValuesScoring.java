@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
@@ -49,7 +49,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
 
   public void testSimple() throws Exception {
     assumeFalse("PreFlex codec cannot work with IndexDocValues!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        "Lucene3x".equals(Codec.getDefault().getName()));
     
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);

@@ -18,7 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
@@ -413,7 +413,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
    */
   public void testTotalTermFreq() throws Exception {
     assumeFalse("PreFlex codec does not support collection-level term stats", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+        "Lucene3x".equals(Codec.getDefault().getName()));
     
     clearIndex();
     

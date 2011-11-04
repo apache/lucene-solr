@@ -47,7 +47,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   final static BytesRef PAYLOAD = new BytesRef("        payload ");
 
   public SimpleTextFieldsWriter(SegmentWriteState state) throws IOException {
-    final String fileName = SimpleTextCodec.getPostingsFileName(state.segmentName, state.codecId);
+    final String fileName = SimpleTextPostingsFormat.getPostingsFileName(state.segmentName, state.segmentSuffix);
     out = state.directory.createOutput(fileName, state.context);
   }
 

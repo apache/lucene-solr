@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -169,8 +168,10 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // them, the merged result can easily be larger than the
     // sum because the merged FST may use array encoding for
     // some arcs (which uses more space):
-    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("id").equals("Memory"));
-    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("content").equals("Memory"));
+
+    final String idFormat = _TestUtil.getPostingsFormat("id");
+    final String contentFormat = _TestUtil.getPostingsFormat("content");
+    assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
     MockDirectoryWrapper dir = newDirectory();
     Analyzer analyzer;
     if (random.nextBoolean()) {

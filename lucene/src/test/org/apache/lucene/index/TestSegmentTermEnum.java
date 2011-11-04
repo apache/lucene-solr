@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.store.Directory;
 
 
@@ -74,7 +75,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
   public void testPrevTermAtEnd() throws IOException
   {
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir, false));

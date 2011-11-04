@@ -39,8 +39,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
-import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.CompoundFileDirectory;
@@ -375,7 +374,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // just like we do when loading segments_N
         synchronized(this) {
           maybeApplyDeletes(applyAllDeletes);
-          r = new DirectoryReader(this, segmentInfos, codecs, applyAllDeletes);
+          r = new DirectoryReader(this, segmentInfos, applyAllDeletes);
           if (infoStream != null) {
             message("return reader version=" + r.getVersion() + " reader=" + r);
           }
@@ -802,7 +801,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       infoStream.println("IW " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
   }
 
-  CodecProvider codecs;
+  final Codec codec; // for writing new segments
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
@@ -837,7 +836,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     mergePolicy = conf.getMergePolicy();
     mergePolicy.setIndexWriter(this);
     mergeScheduler = conf.getMergeScheduler();
-    codecs = conf.getCodecProvider();
+    codec = conf.getCodec();
 
     bufferedDeletesStream = new BufferedDeletesStream(messageID);
     bufferedDeletesStream.setInfoStream(infoStream);
@@ -862,7 +861,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     // If index is too old, reading the segments will throw
     // IndexFormatTooOldException.
-    segmentInfos = new SegmentInfos(codecs);
+    segmentInfos = new SegmentInfos();
     try {
       if (create) {
         // Try to read first.  This is to allow create
@@ -870,7 +869,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // searching.  In this case we write the next
         // segments_N file with no segments:
         try {
-          segmentInfos.read(directory, codecs);
+          segmentInfos.read(directory);
           segmentInfos.clear();
         } catch (IOException e) {
           // Likely this means it's a fresh directory
@@ -881,7 +880,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         changeCount++;
         segmentInfos.changed();
       } else {
-        segmentInfos.read(directory, codecs);
+        segmentInfos.read(directory);
 
         IndexCommit commit = conf.getIndexCommit();
         if (commit != null) {
@@ -892,8 +891,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // points.
           if (commit.getDirectory() != directory)
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = new SegmentInfos(codecs);
-          oldInfos.read(directory, commit.getSegmentsFileName(), codecs);
+          SegmentInfos oldInfos = new SegmentInfos();
+          oldInfos.read(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changeCount++;
           segmentInfos.changed();
@@ -906,7 +905,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap(directory);
-      docWriter = new DocumentsWriter(config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
+      docWriter = new DocumentsWriter(codec, config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
@@ -914,8 +913,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       synchronized(this) {
         deleter = new IndexFileDeleter(directory,
                                        conf.getIndexDeletionPolicy(),
-                                       segmentInfos, infoStream,
-                                       codecs, this);
+                                       segmentInfos, infoStream, this);
       }
 
       if (deleter.startingCommitDeleted) {
@@ -2149,6 +2147,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public synchronized void deleteAll() throws IOException {
     ensureOpen();
+    boolean success = false;
     try {
 
       // Abort any running merges
@@ -2170,10 +2169,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Mark that the index has changed
       ++changeCount;
       segmentInfos.changed();
+      success = true;
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteAll");
     } finally {
-      if (infoStream != null) {
+      if (!success && infoStream != null) {
         message("hit exception during deleteAll");
       }
     }
@@ -2476,8 +2476,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (infoStream != null) {
           message("addIndexes: process directory " + dir);
         }
-        SegmentInfos sis = new SegmentInfos(codecs); // read infos from dir
-        sis.read(dir, codecs);
+        SegmentInfos sis = new SegmentInfos(); // read infos from dir
+        sis.read(dir);
         final Set<String> dsFilesCopied = new HashSet<String>();
         final Map<String, String> dsNames = new HashMap<String, String>();
         for (SegmentInfo info : sis) {
@@ -2567,7 +2567,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
-                                               globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)), context);
+                                               new FieldInfos(globalFieldNumberMap), codec, context);
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -2575,7 +2575,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       final FieldInfos fieldInfos = merger.fieldInfos();
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, merger.getSegmentCodecs(),
+                                         false, merger.getCodec(),
                                          fieldInfos);
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -2591,7 +2591,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        merger.createCompoundFile(mergedName + ".cfs", info, context);
+        merger.createCompoundFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), info, context);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
@@ -2916,7 +2916,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       try {
         if (infoStream != null)
     	  message("commit: pendingCommit != null");
-        pendingCommit.finishCommit(directory);
+        pendingCommit.finishCommit(directory, codec);
         if (infoStream != null)
           message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
         lastCommitChangeCount = pendingCommitChangeCount;
@@ -3459,7 +3459,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, new FieldInfos(globalFieldNumberMap));
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
@@ -3633,7 +3633,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     IOContext context = new IOContext(merge.getMergeInfo());
 
     SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
-                                             payloadProcessorProvider, merge.info.getFieldInfos(), context);
+                                             payloadProcessorProvider, merge.info.getFieldInfos(), codec, context);
 
     if (infoStream != null) {
       message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getFieldInfos().hasVectors());
@@ -3679,10 +3679,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       mergedDocCount = merge.info.docCount = merger.merge();
 
       // Record which codec was used to write the segment
-      merge.info.setSegmentCodecs(merger.getSegmentCodecs());
+      merge.info.setCodec(merger.getCodec());
 
       if (infoStream != null) {
-        message("merge segmentCodecs=" + merger.getSegmentCodecs());
+        message("merge codecs=" + merger.getCodec());
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
       anyNonBulkMerges |= merger.getAnyNonBulkMerges();
@@ -3975,7 +3975,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // Exception here means nothing is prepared
           // (this method unwinds everything it did on
           // an exception)
-          toSync.prepareCommit(directory);
+          toSync.prepareCommit(directory, codec);
 
           pendingCommitSet = true;
           pendingCommit = toSync;
