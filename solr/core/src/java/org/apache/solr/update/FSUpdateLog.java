@@ -17,7 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,7 +26,6 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.SchemaField;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -35,7 +33,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /** @lucene.experimental */
 class NullUpdateLog extends UpdateLog {
@@ -111,6 +108,15 @@ public class FSUpdateLog extends UpdateLog {
   private TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
   private TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap
 
+  private final int numDeletesToKeep = 1000;
+  // keep track of deletes only... this is not updated on an add
+  private LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+    protected boolean removeEldestEntry(Map.Entry eldest) {
+      return size() > numDeletesToKeep;
+    }
+  };
+
+
   private String[] tlogFiles;
   private File tlogDir;
   private Collection<String> globalStrings;
@@ -144,7 +150,7 @@ public class FSUpdateLog extends UpdateLog {
     tlogFiles = getLogList(tlogDir);
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
-    versionInfo = new VersionInfo(uhandler, 64);
+    versionInfo = new VersionInfo(uhandler, 256);
   }
 
   static class LogPtr {
@@ -201,6 +207,8 @@ public class FSUpdateLog extends UpdateLog {
       long pos = tlog.writeDelete(cmd);
       LogPtr ptr = new LogPtr(pos, cmd.version);
       map.put(br, ptr);
+
+      oldDeletes.put(br, ptr);
       // SolrCore.verbose("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
@@ -300,18 +308,18 @@ public class FSUpdateLog extends UpdateLog {
     synchronized (this) {
       entry = map.get(indexedId);
       lookupLog = tlog;  // something found in "map" will always be in "tlog"
-      // SolrCore.verbose("TLOG: lookup: for id " + indexedId.utf8ToString() + " in map " +  System.identityHashCode(map) + " got " + entry + " lookupLog=" + lookupLog);
+      // SolrCore.verbose("TLOG: lookup: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       if (entry == null && prevMap != null) {
         entry = prevMap.get(indexedId);
         // something found in prevMap will always be found in preMapLog (which could be tlog or prevTlog)
         lookupLog = prevMapLog;
-        // SolrCore.verbose("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+        // SolrCore.verbose("TLOG: lookup: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       }
       if (entry == null && prevMap2 != null) {
         entry = prevMap2.get(indexedId);
         // something found in prevMap2 will always be found in preMapLog2 (which could be tlog or prevTlog)
         lookupLog = prevMapLog2;
-        // SolrCore.verbose("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap2 " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+        // SolrCore.verbose("TLOG: lookup: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       }
 
       if (entry == null) {
@@ -329,6 +337,10 @@ public class FSUpdateLog extends UpdateLog {
 
   }
 
+  // This method works like realtime-get... it only guarantees to return the latest
+  // version of the *completed* update.  There can be updates in progress concurrently
+  // that have already grabbed higher version numbers.  Higher level coordination or
+  // synchronization is needed for stronger guarantees (as VersionUpdateProcessor does).
   @Override
   public Long lookupVersion(BytesRef indexedId) {
     LogPtr entry;
@@ -337,26 +349,44 @@ public class FSUpdateLog extends UpdateLog {
     synchronized (this) {
       entry = map.get(indexedId);
       lookupLog = tlog;  // something found in "map" will always be in "tlog"
-      // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in map " +  System.identityHashCode(map) + " got " + entry + " lookupLog=" + lookupLog);
+      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       if (entry == null && prevMap != null) {
         entry = prevMap.get(indexedId);
         // something found in prevMap will always be found in preMapLog (which could be tlog or prevTlog)
         lookupLog = prevMapLog;
-        // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+        // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       }
       if (entry == null && prevMap2 != null) {
         entry = prevMap2.get(indexedId);
         // something found in prevMap2 will always be found in preMapLog2 (which could be tlog or prevTlog)
         lookupLog = prevMapLog2;
-        // System.out.println("TLOG: lookup: for id " + indexedId.utf8ToString() + " in prevMap2 " +  System.identityHashCode(prevMap) + " got " + entry + " lookupLog="+lookupLog);
+        // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       }
     }
 
-    if (entry == null) {
-      return null;
+    if (entry != null) {
+      return entry.version;
     }
 
-    return entry.version;
+    // Now check real index
+    Long version = versionInfo.getVersionFromIndex(indexedId);
+
+    if (version != null) {
+      return version;
+    }
+
+    // We can't get any version info for deletes from the index, so if the doc
+    // wasn't found, check a cache of recent deletes.
+
+    synchronized (this) {
+      entry = oldDeletes.get(indexedId);
+    }
+
+    if (entry != null) {
+      return entry.version;
+    }
+
+    return null;
   }
 
 

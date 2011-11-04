@@ -18,16 +18,27 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.*;
+import org.apache.solr.util.RefCounted;
 import org.omg.PortableInterceptor.RequestInfo;
 
 
@@ -95,6 +106,29 @@ class VersionProcessor extends UpdateRequestProcessor
       return;
     }
 
+    boolean leaderForUpdate = true; // TODO: figure out if I'm the leader
+    boolean needToForward = false;  // TODO: figure out if I need to forward this to the leader
+
+    if (needToForward) {
+      // TODO: forward update to the leader
+      return;
+    }
+
+    // at this point, there is an update we need to try and apply.
+    // we may or may not be the leader.
+
+    // Find any existing version in the document
+    long versionOnUpdate = 0;
+    SolrInputField versionField = cmd.getSolrInputDocument().getField(VersionInfo.VERSION_FIELD);
+    if (versionField != null) {
+      Object o = versionField.getValue();
+      versionOnUpdate = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
+    } else {
+      // TODO: check for the version in the request params (this will be for user provided versions and optimistic concurrency only)
+    }
+
+
+
     VersionBucket bucket = vinfo.bucket(hash(cmd));
     synchronized (bucket) {
       // we obtain the version when synchronized and then do the add so we can ensure that
@@ -106,9 +140,31 @@ class VersionProcessor extends UpdateRequestProcessor
       // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
       // there may be other reasons in the future for a version on the commands
       if (versionsStored) {
-        long version = vinfo.getNewClock();
-        cmd.setVersion(version);
-        cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+        long bucketVersion = bucket.highest;
+
+        if (leaderForUpdate) {
+          long version = vinfo.getNewClock();
+          cmd.setVersion(version);
+          cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+          bucket.updateHighest(version);
+        } else {
+          // The leader forwarded us this update.
+          // if we aren't the leader, then we need to check that updates were not re-ordered
+          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+            // we're OK... this update has a version higher than anything we've seen
+            // in this bucket so far, so we know that no reordering has yet occured.
+            bucket.updateHighest(versionOnUpdate);
+          } else {
+            // there have been updates higher than the current update.  we need to check
+            // the specific version for this id.
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+              // This update is a repeat, or was reordered.  We need to drop this update.
+              // TODO: do we need to add anything to the response?
+              return;
+            }
+          }
+        }
       }
 
       super.processAdd(cmd);
@@ -144,12 +200,50 @@ class VersionProcessor extends UpdateRequestProcessor
       return;
     }
 
+    boolean leaderForUpdate = true; // TODO: figure out if I'm the leader
+    boolean needToForward = false;  // TODO: figure out if I need to forward this to the leader
+
+    if (needToForward) {
+      // TODO: forward update to the leader
+      return;
+    }
+
+    // at this point, there is an update we need to try and apply.
+    // we may or may not be the leader.
+
+    // Find the version
+    long versionOnUpdate = 0;
+   // TODO: check for the version in the request params (this will be for user provided versions and optimistic concurrency only)
+
     VersionBucket bucket = vinfo.bucket(hash(cmd));
     synchronized (bucket) {
       if (versionsStored) {
-        long version =  -vinfo.getNewClock();    // deletes have negative version
-        cmd.setVersion(version);
+        long bucketVersion = bucket.highest;
+
+        if (leaderForUpdate) {
+          long version = vinfo.getNewClock();
+          cmd.setVersion(-version);
+          bucket.updateHighest(version);
+        } else {
+          // The leader forwarded us this update.
+          // if we aren't the leader, then we need to check that updates were not re-ordered
+          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+            // we're OK... this update has a version higher than anything we've seen
+            // in this bucket so far, so we know that no reordering has yet occured.
+            bucket.updateHighest(versionOnUpdate);
+          } else {
+            // there have been updates higher than the current update.  we need to check
+            // the specific version for this id.
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+              // This update is a repeat, or was reordered.  We need to drop this update.
+              // TODO: do we need to add anything to the response?
+              return;
+            }
+          }
+        }
       }
+
       super.processDelete(cmd);
     }
 
@@ -183,6 +277,8 @@ class VersionProcessor extends UpdateRequestProcessor
   {
     super.processRollback(cmd);
   }
+
+
 }
 
 

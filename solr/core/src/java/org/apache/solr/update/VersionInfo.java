@@ -17,19 +17,39 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 
+import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class VersionInfo {
   public static final String VERSION_FIELD="_version_";
 
+  private SolrCore core;
+  private UpdateHandler updateHandler;
   private final VersionBucket[] buckets;
   private SchemaField versionField;
+  private SchemaField idField;
 
   public VersionInfo(UpdateHandler updateHandler, int nBuckets) {
-    versionField = updateHandler.core.getSchema().getFieldOrNull("_version_");
+    this.updateHandler = updateHandler;
+    this.core = updateHandler.core;
+    versionField = core.getSchema().getFieldOrNull("_version_");
+    idField = core.getSchema().getUniqueKeyField();
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
       buckets[i] = new VersionBucket();
@@ -102,6 +122,36 @@ public class VersionInfo {
 
     int slot = hash & (buckets.length-1);
     return buckets[slot];
+  }
+
+  public Long lookupVersion(BytesRef idBytes) {
+    return updateHandler.ulog.lookupVersion(idBytes);
+  }
+
+  public Long getVersionFromIndex(BytesRef idBytes) {
+    // TODO: we could cache much of this and invalidate during a commit.
+    // TODO: most DocValues classes are threadsafe - expose which.
+
+    RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(true);
+    try {
+      SolrIndexSearcher searcher = newestSearcher.get();
+      long lookup = searcher.lookupId(idBytes);
+      if (lookup < 0) return null;
+
+      ValueSource vs = versionField.getType().getValueSource(versionField, null);
+      Map context = ValueSource.newContext(searcher);
+      vs.createWeight(context, searcher);
+      DocValues dv = vs.getValues(context, searcher.getTopReaderContext().leaves()[(int)(lookup>>32)]);
+      long ver = dv.longVal((int)lookup);
+      return ver;
+
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading version from index", e);
+    } finally {
+      if (newestSearcher != null) {
+        newestSearcher.decref();
+      }
+    }
   }
 
 }

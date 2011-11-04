@@ -496,6 +496,36 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }
 
+  /** lookup the docid by the unique key field, and return the id *within* the leaf reader in the low 32 bits, and the index of the leaf reader in the high 32 bits.
+   * -1 is returned if not found.
+   * @lucene.internal
+   */
+  public long lookupId(BytesRef idBytes) throws IOException {
+    String field = schema.getUniqueKeyField().getName();
+    final AtomicReaderContext[] leaves = leafContexts;
+
+
+    for (int i=0; i<leaves.length; i++) {
+      final AtomicReaderContext leaf = leaves[i];
+      final IndexReader reader = leaf.reader;
+
+      final Fields fields = reader.fields();
+      if (fields == null) continue;
+      final Terms terms = fields.terms(field);
+      if (terms == null) continue;
+      final Bits liveDocs = reader.getLiveDocs();
+      final DocsEnum docs = terms.docs(liveDocs, idBytes, null);
+      if (docs == null) continue;
+      int id = docs.nextDoc();
+      if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
+      assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
+
+      return (((long)i) << 32) | id;
+    }
+
+    return -1;
+  }
+
 
   /**
    * Compute and cache the DocSet that matches a query.
