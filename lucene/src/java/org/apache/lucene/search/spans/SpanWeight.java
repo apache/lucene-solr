@@ -48,10 +48,17 @@ public class SpanWeight extends Weight {
     query.extractTerms(terms);
     final ReaderContext context = searcher.getTopReaderContext();
     final TermContext states[] = new TermContext[terms.size()];
+    final TermStatistics termStats[] = new TermStatistics[terms.size()];
     int i = 0;
-    for (Term term : terms)
-      states[i++] = TermContext.build(context, term, true);
-    stats = similarity.computeStats(searcher, query.getField(), query.getBoost(), states);
+    for (Term term : terms) {
+      states[i] = TermContext.build(context, term, true);
+      termStats[i] = searcher.termStatistics(term, states[i]);
+      i++;
+    }
+    stats = similarity.computeStats(
+        searcher.collectionStatistics(query.getField()), 
+        query.getBoost(), 
+        termStats);
   }
 
   @Override

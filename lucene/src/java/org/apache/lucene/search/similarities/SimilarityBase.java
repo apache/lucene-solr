@@ -20,15 +20,12 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
-import org.apache.lucene.util.TermContext;
 
 /**
  * A subclass of {@code Similarity} that provides a simplified API for its
@@ -71,12 +68,11 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   @Override
-  public final Stats computeStats(IndexSearcher searcher, String fieldName,
-      float queryBoost, TermContext... termContexts) throws IOException {
-    BasicStats stats[] = new BasicStats[termContexts.length];
-    for (int i = 0; i < termContexts.length; i++) {
+  public final Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+    BasicStats stats[] = new BasicStats[termStats.length];
+    for (int i = 0; i < termStats.length; i++) {
       stats[i] = newStats(queryBoost);
-      fillBasicStats(stats[i], searcher, fieldName, termContexts[i]);
+      fillBasicStats(stats[i], collectionStats, termStats[i]);
     }
     return stats.length == 1 ? stats[0] : new MultiSimilarity.MultiStats(stats);
   }
@@ -88,13 +84,11 @@ public abstract class SimilarityBase extends Similarity {
   
   /** Fills all member fields defined in {@code BasicStats} in {@code stats}. 
    *  Subclasses can override this method to fill additional stats. */
-  protected void fillBasicStats(BasicStats stats, IndexSearcher searcher,
-      String fieldName, TermContext termContext) throws IOException {
-    IndexReader reader = searcher.getIndexReader();
-    int numberOfDocuments = reader.maxDoc();
+  protected void fillBasicStats(BasicStats stats, CollectionStatistics collectionStats, TermStatistics termStats) {
+    int numberOfDocuments = collectionStats.maxDoc();
     
-    int docFreq = termContext.docFreq();
-    long totalTermFreq = termContext.totalTermFreq();
+    int docFreq = termStats.docFreq();
+    long totalTermFreq = termStats.totalTermFreq();
 
     // codec does not supply totalTermFreq: substitute docFreq
     if (totalTermFreq == -1) {
@@ -103,25 +97,19 @@ public abstract class SimilarityBase extends Similarity {
 
     final long numberOfFieldTokens;
     final float avgFieldLength;
-    
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), fieldName);
-    if (terms == null) {
-      // field does not exist;
-      numberOfFieldTokens = 0;
-      avgFieldLength = 1;
-    } else {
-      long sumTotalTermFreq = terms.getSumTotalTermFreq();
 
+    long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
+
+    if (sumTotalTermFreq <= 0) {
+      // field does not exist;
       // We have to provide something if codec doesnt supply these measures,
       // or if someone omitted frequencies for the field... negative values cause
       // NaN/Inf for some scorers.
-      if (sumTotalTermFreq == -1) {
-        numberOfFieldTokens = docFreq;
-        avgFieldLength = 1;
-      } else {
-        numberOfFieldTokens = sumTotalTermFreq;
-        avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
-      }
+      numberOfFieldTokens = docFreq;
+      avgFieldLength = 1;
+    } else {
+      numberOfFieldTokens = sumTotalTermFreq;
+      avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
     }
  
     // TODO: add sumDocFreq for field (numberOfFieldPostings)

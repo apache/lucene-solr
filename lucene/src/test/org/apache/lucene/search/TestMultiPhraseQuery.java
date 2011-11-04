@@ -316,8 +316,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
         return new DefaultSimilarity() {
           
           @Override
-          public Explanation idfExplain(TermContext stats[],
-              IndexSearcher searcher) throws IOException {
+          public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
             return new Explanation(10f, "just a test");
           } 
         };

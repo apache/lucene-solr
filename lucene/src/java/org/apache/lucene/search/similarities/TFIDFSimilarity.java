@@ -22,9 +22,11 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
@@ -575,15 +577,15 @@ public abstract class TFIDFSimilarity extends Similarity {
    * is inaccurate, so is {@link IndexSearcher#maxDoc()}, and in the same direction.
    * In addition, {@link IndexSearcher#maxDoc()} is more efficient to compute
    *   
-   * @param stats statistics of the term in question
-   * @param searcher the document collection being searched
+   * @param collectionStats collection-level statistics
+   * @param termStats term-level statistics for the term
    * @return an Explain object that includes both an idf score factor 
              and an explanation for the term.
    * @throws IOException
    */
-  public Explanation idfExplain(TermContext stats, final IndexSearcher searcher) throws IOException {
-    final int df = stats.docFreq();
-    final int max = searcher.maxDoc();
+  public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
+    final int df = termStats.docFreq();
+    final int max = collectionStats.maxDoc();
     final float idf = idf(df, max);
     return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
@@ -595,19 +597,19 @@ public abstract class TFIDFSimilarity extends Similarity {
    * The default implementation sums the idf factor for
    * each term in the phrase.
    * 
-   * @param stats statistics of the terms in the phrase
-   * @param searcher the document collection being searched
+   * @param collectionStats collection-level statistics
+   * @param termStats term-level statistics for the terms in the phrase
    * @return an Explain object that includes both an idf 
    *         score factor for the phrase and an explanation 
    *         for each term.
    * @throws IOException
    */
-  public Explanation idfExplain(final TermContext stats[], IndexSearcher searcher) throws IOException {
-    final int max = searcher.maxDoc();
+  public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
+    final int max = collectionStats.maxDoc();
     float idf = 0.0f;
     final Explanation exp = new Explanation();
     exp.setDescription("idf(), sum of:");
-    for (final TermContext stat : stats ) {
+    for (final TermStatistics stat : termStats ) {
       final int df = stat.docFreq();
       final float termIdf = idf(df, max);
       exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
@@ -693,11 +695,10 @@ public abstract class TFIDFSimilarity extends Similarity {
   public abstract float scorePayload(int doc, int start, int end, BytesRef payload);
 
   @Override
-  public final Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost,
-      TermContext... termContexts) throws IOException {
-    final Explanation idf = termContexts.length == 1
-    ? idfExplain(termContexts[0], searcher)
-    : idfExplain(termContexts, searcher);
+  public final Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+    final Explanation idf = termStats.length == 1
+    ? idfExplain(collectionStats, termStats[0])
+    : idfExplain(collectionStats, termStats);
     return new IDFStats(idf, queryBoost);
   }
 

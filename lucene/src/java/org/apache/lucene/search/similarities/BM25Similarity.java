@@ -20,14 +20,12 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
-import org.apache.lucene.util.TermContext;
 
 /**
  * BM25 Similarity. Introduced in Stephen E. Robertson, Steve Walker,
@@ -75,15 +73,13 @@ public class BM25Similarity extends Similarity {
   /** The default implementation computes the average as <code>sumTotalTermFreq / maxDoc</code>,
    * or returns <code>1</code> if the index does not store sumTotalTermFreq (Lucene 3.x indexes
    * or any field that omits frequency information). */
-  protected float avgFieldLength(IndexSearcher searcher, String field) throws IOException {
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), field);
-    if (terms == null) {
-      // field does not exist;
-      return 1f;
+  protected float avgFieldLength(CollectionStatistics collectionStats) {
+    final long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
+    if (sumTotalTermFreq <= 0) {
+      return 1f;       // field does not exist, or stat is unsupported
+    } else {
+      return (float) (sumTotalTermFreq / (double) collectionStats.maxDoc());
     }
-    long sumTotalTermFreq = terms.getSumTotalTermFreq();
-    long maxdoc = searcher.maxDoc();
-    return sumTotalTermFreq == -1 ? 1f : (float) (sumTotalTermFreq / (double) maxdoc);
   }
   
   /** The default implementation encodes <code>boost / sqrt(length)</code>
@@ -131,19 +127,19 @@ public class BM25Similarity extends Similarity {
     return encodeNormValue(state.getBoost(), numTerms);
   }
 
-  public Explanation idfExplain(TermContext stats, final IndexSearcher searcher) throws IOException {
-    final int df = stats.docFreq();
-    final int max = searcher.maxDoc();
+  public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
+    final int df = termStats.docFreq();
+    final int max = collectionStats.maxDoc();
     final float idf = idf(df, max);
     return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
-  public Explanation idfExplain(final TermContext stats[], IndexSearcher searcher) throws IOException {
-    final int max = searcher.maxDoc();
+  public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
+    final int max = collectionStats.maxDoc();
     float idf = 0.0f;
     final Explanation exp = new Explanation();
     exp.setDescription("idf(), sum of:");
-    for (final TermContext stat : stats ) {
+    for (final TermStatistics stat : termStats ) {
       final int df = stat.docFreq();
       final float termIdf = idf(df, max);
       exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
@@ -154,10 +150,10 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termStats) throws IOException {
-    Explanation idf = termStats.length == 1 ? idfExplain(termStats[0], searcher) : idfExplain(termStats, searcher);
+  public final Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+    Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
 
-    float avgdl = avgFieldLength(searcher, fieldName);
+    float avgdl = avgFieldLength(collectionStats);
 
     // compute freq-independent part of bm25 equation across all norm values
     float cache[] = new float[256];

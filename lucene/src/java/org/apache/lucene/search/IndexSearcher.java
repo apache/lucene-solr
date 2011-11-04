@@ -35,14 +35,18 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements search over a single IndexReader.
@@ -859,5 +863,35 @@ public class IndexSearcher implements Closeable {
   @Override
   public String toString() {
     return "IndexSearcher(" + reader + "; executor=" + executor + ")";
+  }
+  
+  /**
+   * Returns {@link TermStatistics} for a term
+   * @lucene.experimental
+   */
+  public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+    return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+  };
+  
+  /**
+   * Returns {@link CollectionStatistics} for a field
+   * @lucene.experimental
+   */
+  public CollectionStatistics collectionStatistics(String field) throws IOException {
+    final int docCount;
+    final long sumTotalTermFreq;
+    final long sumDocFreq;
+    
+    Terms terms = MultiFields.getTerms(reader, field);
+    if (terms == null) {
+      docCount = 0;
+      sumTotalTermFreq = 0;
+      sumDocFreq = 0;
+    } else {
+      docCount = terms.getDocCount();
+      sumTotalTermFreq = terms.getSumTotalTermFreq();
+      sumDocFreq = terms.getSumDocFreq();
+    }
+    return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
 }

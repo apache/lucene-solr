@@ -30,12 +30,15 @@ import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TermContext;
 import org.junit.Ignore;
@@ -172,7 +175,14 @@ public class TestSimilarityBase extends LuceneTestCase {
     stats.setTotalTermFreq(TOTAL_TERM_FREQ);
     return stats;
   }
-
+  
+  private CollectionStatistics toCollectionStats(BasicStats stats) {
+    return new CollectionStatistics("spoof", stats.getNumberOfDocuments(), -1, stats.getNumberOfFieldTokens(), -1);
+  }
+  
+  private TermStatistics toTermStats(BasicStats stats) {
+    return new TermStatistics(new BytesRef("spoofyText"), stats.getDocFreq(), stats.getTotalTermFreq());
+  }
   /**
    * The generic test core called by all unit test methods. It calls the
    * {@link SimilarityBase#score(BasicStats, float, int)} method of all
@@ -180,17 +190,11 @@ public class TestSimilarityBase extends LuceneTestCase {
    * is a finite positive real number.
    */
   private void unitTestCore(BasicStats stats, float freq, int docLen)
-      throws IOException {
-    // We have to fake everything, because computeStats() can be overridden and
-    // there is no way to inject false data after fillBasicStats().
-    SpoofIndexSearcher searcher = new SpoofIndexSearcher(stats);
-    TermContext tc = new TermContext(
-        searcher.getIndexReader().getTopReaderContext(),
-        new OrdTermState(), 0, stats.getDocFreq(), stats.getTotalTermFreq());
-    
+      throws IOException { 
     for (SimilarityBase sim : sims) {
-      BasicStats realStats = (BasicStats) sim.computeStats(new SpoofIndexSearcher(stats),
-          "spoof", stats.getTotalBoost(), tc);
+      BasicStats realStats = (BasicStats) sim.computeStats(toCollectionStats(stats), 
+          stats.getTotalBoost(),
+          toTermStats(stats));
       float score = sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
           realStats, 1, new Explanation(freq, "freq"), docLen).getValue();
@@ -520,16 +524,10 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   private void correctnessTestCore(SimilarityBase sim, float gold)
       throws IOException {
-    // We have to fake everything, because computeStats() can be overridden and
-    // there is no way to inject false data after fillBasicStats().
     BasicStats stats = createStats();
-    SpoofIndexSearcher searcher = new SpoofIndexSearcher(stats);
-    TermContext tc = new TermContext(
-        searcher.getIndexReader().getTopReaderContext(),
-        new OrdTermState(), 0, stats.getDocFreq(), stats.getTotalTermFreq());
-    
-    BasicStats realStats = (BasicStats) sim.computeStats(
-        searcher, "spoof", stats.getTotalBoost(), tc);
+    BasicStats realStats = (BasicStats) sim.computeStats(toCollectionStats(stats), 
+        stats.getTotalBoost(),
+        toTermStats(stats));
     float score = sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(
         sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);

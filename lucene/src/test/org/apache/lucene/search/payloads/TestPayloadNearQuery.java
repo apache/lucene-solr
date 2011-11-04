@@ -27,10 +27,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -42,7 +44,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -346,7 +347,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     
         // idf used for phrase queries
         @Override 
-        public Explanation idfExplain(TermContext states[], IndexSearcher searcher) throws IOException {
+        public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
           return new Explanation(1.0f, "Inexplicable");
         }
       };
