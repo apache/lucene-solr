@@ -129,7 +129,7 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
-  <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework"/>
+  <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework/java"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a contrib needs the original build, also for compile-tools to be called from contrib -->
   <property name="common.build.dir" location="${common.dir}/build"/>
@@ -323,7 +323,7 @@
     <!-- Copy the resources folder (if existent) -->
     <copy todir="${build.dir}/classes/java" includeEmptyDirs="false">
       <globmapper from="resources/*" to="*" handledirsep="yes"/>
-      <fileset dir="src" includes="resources/**"/>
+      <fileset dir="${src.dir}/.." includes="resources/**"/>
     </copy>
   </target>
 
@@ -472,12 +472,12 @@
   </path>
   
   <target name="compile-test-framework" depends="compile-core">
-  	<compile-test-macro srcdir="${tests-framework.src.dir}/java" destdir="${common.dir}/build/classes/test-framework"
+  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test-framework.classpath"/>
             <!-- Copy the resources folder (if existent) -->
         <copy todir="${build.dir}/classes/test-framework" includeEmptyDirs="false">
           <globmapper from="resources/*" to="*" handledirsep="yes"/>
-          <fileset dir="${tests-framework.src.dir}" includes="resources/**"/>
+          <fileset dir="${tests-framework.src.dir}/.." includes="resources/**"/>
        </copy>
   </target>
 
