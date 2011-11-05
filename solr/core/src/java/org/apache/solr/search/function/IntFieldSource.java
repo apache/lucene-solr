@@ -126,8 +126,8 @@ public class IntFieldSource extends FieldCacheSource {
     if (o.getClass() !=  IntFieldSource.class) return false;
     IntFieldSource other = (IntFieldSource)o;
     return super.equals(other)
-           && this.parser==null ? other.parser==null :
-              this.parser.getClass() == other.parser.getClass();
+           && (this.parser==null ? other.parser==null :
+              this.parser.getClass() == other.parser.getClass());
   }
 
   @Override
@@ -135,6 +135,6 @@ public class IntFieldSource extends FieldCacheSource {
     int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
-  };
+  }
 
 }

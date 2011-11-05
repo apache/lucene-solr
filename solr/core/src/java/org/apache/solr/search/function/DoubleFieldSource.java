@@ -152,8 +152,8 @@ public class DoubleFieldSource extends FieldCacheSource {
     if (o.getClass() != DoubleFieldSource.class) return false;
     DoubleFieldSource other = (DoubleFieldSource) o;
     return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
+            && (this.parser == null ? other.parser == null :
+            this.parser.getClass() == other.parser.getClass());
   }
 
   @Override

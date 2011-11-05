@@ -92,8 +92,8 @@ public class FloatFieldSource extends FieldCacheSource {
     if (o.getClass() !=  FloatFieldSource.class) return false;
     FloatFieldSource other = (FloatFieldSource)o;
     return super.equals(other)
-           && this.parser==null ? other.parser==null :
-              this.parser.getClass() == other.parser.getClass();
+           && (this.parser==null ? other.parser==null :
+              this.parser.getClass() == other.parser.getClass());
   }
 
   @Override
@@ -101,6 +101,6 @@ public class FloatFieldSource extends FieldCacheSource {
     int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
-  };
+  }
 
 }

@@ -99,8 +99,8 @@ public class ShortFieldSource extends FieldCacheSource{
     ShortFieldSource
             other = (ShortFieldSource) o;
     return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
+            && (this.parser == null ? other.parser == null :
+            this.parser.getClass() == other.parser.getClass());
   }
 
   @Override

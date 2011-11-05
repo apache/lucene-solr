@@ -133,8 +133,8 @@ public class LongFieldSource extends FieldCacheSource {
     if (o.getClass() != this.getClass()) return false;
     LongFieldSource other = (LongFieldSource) o;
     return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
+            && (this.parser == null ? other.parser == null :
+            this.parser.getClass() == other.parser.getClass());
   }
 
   @Override
