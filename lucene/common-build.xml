@@ -475,7 +475,7 @@
   						test.classpath="test-framework.classpath"/>
        <!-- Copy the resources folder (if existent) -->
        <copy todir="${build.dir}/classes/test-framework">
-          <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
+          <fileset dir="${tests-framework.src.dir}/../resources" erroronmissingdir="no"/>
        </copy>
   </target>
 
