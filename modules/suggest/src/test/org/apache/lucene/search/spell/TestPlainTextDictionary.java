@@ -35,7 +35,7 @@ public class TestPlainTextDictionary extends LuceneTestCase {
     PlainTextDictionary ptd = new PlainTextDictionary(new StringReader(input));
     Directory ramDir = newDirectory();
     SpellChecker spellChecker = new SpellChecker(ramDir);
-    spellChecker.indexDictionary(ptd);
+    spellChecker.indexDictionary(ptd, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
     String[] similar = spellChecker.suggestSimilar("treeword", 2);
     assertEquals(2, similar.length);
     assertEquals(similar[0], "threeword");

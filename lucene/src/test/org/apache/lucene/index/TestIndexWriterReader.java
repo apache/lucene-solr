@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -988,15 +989,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testNoTermsIndex() throws Exception {
     // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
     // they're picked.
-    HashSet<String> illegalCodecs = new HashSet<String>();
-    illegalCodecs.add("PreFlex");
-    illegalCodecs.add("SimpleText");
-    illegalCodecs.add("Memory");
+    assumeFalse("PreFlex codec does not support ReaderTermsIndexDivisor!", 
+        "Lucene3x".equals(Codec.getDefault().getName()));
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setReaderTermsIndexDivisor(-1);
+    
     // Don't proceed if picked Codec is in the list of illegal ones.
-    if (illegalCodecs.contains(conf.getCodecProvider().getFieldCodec("f"))) return;
+    final String format = _TestUtil.getPostingsFormat("f");
+    assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
+        (format.equals("SimpleText") || format.equals("Memory")));
 
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, conf);
@@ -1006,7 +1008,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader r = IndexReader.open(w, true).getSequentialSubReaders()[0];
     try {
       r.termDocsEnum(null, "f", new BytesRef("val"));
-      fail("should have failed to seek since terms index was not loaded. Codec used " + conf.getCodecProvider().getFieldCodec("f"));
+      fail("should have failed to seek since terms index was not loaded.");
     } catch (IllegalStateException e) {
       // expected - we didn't load the term index
     } finally {

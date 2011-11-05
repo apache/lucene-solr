@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs.sep;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
@@ -116,27 +115,27 @@ public final class SepPostingsWriter extends PostingsWriterBase {
     try {
       this.skipInterval = skipInterval;
       this.skipMinimum = skipInterval; /* set to the same for now */
-      final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, DOC_EXTENSION);
+      final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, DOC_EXTENSION);
       docOut = factory.createOutput(state.directory, docFileName, state.context);
       docIndex = docOut.index();
       
       if (state.fieldInfos.hasFreq()) {
-        final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, FREQ_EXTENSION);
+        final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, FREQ_EXTENSION);
         freqOut = factory.createOutput(state.directory, frqFileName, state.context);
         freqIndex = freqOut.index();
       }
 
       if (state.fieldInfos.hasProx()) {      
-        final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, POS_EXTENSION);
+        final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, POS_EXTENSION);
         posOut = factory.createOutput(state.directory, posFileName, state.context);
         posIndex = posOut.index();
         
         // TODO: -- only if at least one field stores payloads?
-        final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, PAYLOAD_EXTENSION);
+        final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, PAYLOAD_EXTENSION);
         payloadOut = state.directory.createOutput(payloadFileName, state.context);
       }
       
-      final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SKIP_EXTENSION);
+      final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, SKIP_EXTENSION);
       skipOut = state.directory.createOutput(skipFileName, state.context);
       
       totalNumDocs = state.numDocs;
@@ -203,7 +202,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
     //System.out.println("SEPW: startDoc: write doc=" + docID + " delta=" + delta + " out.fp=" + docOut);
 
     if (docID < 0 || (df > 0 && delta <= 0)) {
-      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )");
+      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " ) (docOut: " + docOut + ")");
     }
 
     if ((++df % skipInterval) == 0) {
@@ -390,13 +389,5 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   @Override
   public void close() throws IOException {
     IOUtils.close(docOut, skipOut, freqOut, posOut, payloadOut);
-  }
-
-  public static void getExtensions(Set<String> extensions) {
-    extensions.add(DOC_EXTENSION);
-    extensions.add(FREQ_EXTENSION);
-    extensions.add(SKIP_EXTENSION);
-    extensions.add(POS_EXTENSION);
-    extensions.add(PAYLOAD_EXTENSION);
   }
 }

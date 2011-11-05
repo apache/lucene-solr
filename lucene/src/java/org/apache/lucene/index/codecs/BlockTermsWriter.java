@@ -71,7 +71,7 @@ public class BlockTermsWriter extends FieldsConsumer {
   public BlockTermsWriter(TermsIndexWriterBase termsIndexWriter,
       SegmentWriteState state, PostingsWriterBase postingsWriter)
       throws IOException {
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
+    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
     out = state.directory.createOutput(termsFileName, state.context);
     boolean success = false;

@@ -53,8 +53,11 @@
   <build>
     <directory>${build-directory}</directory>
     <outputDirectory>${build-directory}/classes/test-framework</outputDirectory>
-    <sourceDirectory>.</sourceDirectory>
+    <sourceDirectory>java</sourceDirectory>
     <resources>
+      <resource>
+        <directory>resources</directory>
+      </resource>
       <resource>
         <directory>${project.build.sourceDirectory}</directory>
         <excludes>

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
+/** @lucene.experimental */
 public interface IndexableFieldType {
 
   /** True if this field should be indexed (inverted) */

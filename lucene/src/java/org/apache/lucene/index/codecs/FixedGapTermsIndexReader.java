@@ -68,14 +68,14 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   protected long dirOffset;
 
-  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, int codecId, IOContext context)
+  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
     throws IOException {
 
     this.termComp = termComp;
 
     assert indexDivisor == -1 || indexDivisor > 0;
 
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
     
     boolean success = false;
 
@@ -387,17 +387,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, int id, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, id, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
-  }
-
-  public static void getIndexExtensions(Collection<String> extensions) {
-    extensions.add(FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
-  }
-
-  @Override
-  public void getExtensions(Collection<String> extensions) {
-    getIndexExtensions(extensions);
+  public static void files(Directory dir, SegmentInfo info, String segmentSuffix, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(info.name, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
   @Override

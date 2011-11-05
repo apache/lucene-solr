@@ -141,13 +141,15 @@ public class MultiPhraseQuery extends Query {
       final ReaderContext context = searcher.getTopReaderContext();
       
       // compute idf
-      ArrayList<TermContext> allTerms = new ArrayList<TermContext>();
+      ArrayList<TermStatistics> allTermStats = new ArrayList<TermStatistics>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          allTerms.add(TermContext.build(context, term, true));
+          TermContext termContext = TermContext.build(context, term, true);
+          allTermStats.add(searcher.termStatistics(term, termContext));
         }
       }
-      stats = similarity.computeStats(searcher, field, getBoost(), allTerms.toArray(new TermContext[allTerms.size()]));
+      stats = similarity.computeStats(searcher.collectionStatistics(field), 
+          getBoost(), allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
 
     @Override

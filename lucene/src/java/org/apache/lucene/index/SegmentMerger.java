@@ -73,7 +73,7 @@ final class SegmentMerger {
   
   private IOContext context;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, IOContext context) {
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
@@ -89,6 +89,7 @@ final class SegmentMerger {
       };
     }
     this.termIndexInterval = termIndexInterval;
+    this.codec = codec;
     this.context = context;
   }
 
@@ -254,12 +255,11 @@ final class SegmentMerger {
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
-    final SegmentCodecs codecInfo = fieldInfos.buildSegmentCodecs(false);
 
     int docCount = 0;
 
     setMatchingSegmentReaders();
-    final FieldsWriter fieldsWriter = codecInfo.provider.fieldsWriter(directory, segment, context);
+    final FieldsWriter fieldsWriter = codec.fieldsFormat().fieldsWriter(directory, segment, context);
     try {
       int idx = 0;
       for (MergeState.IndexReaderAndLiveDocs reader : readers) {
@@ -293,7 +293,7 @@ final class SegmentMerger {
       // entering the index.  See LUCENE-1282 for
       // details.
       throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null, context);
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codec, null, context);
 
     return docCount;
   }
@@ -493,9 +493,9 @@ final class SegmentMerger {
     }
   }
 
-  SegmentCodecs getSegmentCodecs() {
+  Codec getCodec() {
     assert segmentWriteState != null;
-    return segmentWriteState.segmentCodecs;
+    return segmentWriteState.codec;
   }
 
   private final void mergeTerms() throws CorruptIndexException, IOException {
@@ -566,8 +566,8 @@ final class SegmentMerger {
         mergeState.dirPayloadProcessor[i] = payloadProcessorProvider.getDirProcessor(reader.reader.directory());
       }
     }
-    codec = segmentWriteState.segmentCodecs.codec();
-    final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
+
+    final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
     boolean success = false;
     try {
       consumer.merge(mergeState,
@@ -584,7 +584,7 @@ final class SegmentMerger {
   }
 
   private void mergePerDoc() throws IOException {
-      final PerDocConsumer docsConsumer = codec
+      final PerDocConsumer docsConsumer = codec.docValuesFormat()
           .docsConsumer(new PerDocWriteState(segmentWriteState));
       // TODO: remove this check when 3.x indexes are no longer supported
       // (3.x indexes don't have docvalues)

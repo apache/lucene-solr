@@ -82,15 +82,15 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
 
   /** Verifies that the code version which wrote the segment is supported. */
   public static void checkCodeVersion(Directory dir, String segment) throws IOException {
-    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
     IndexInput idxStream = dir.openInput(indexStreamFN, IOContext.DEFAULT);
     
     try {
       int format = idxStream.readInt();
       if (format < DefaultFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(indexStreamFN, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooOldException(idxStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
       if (format > DefaultFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(indexStreamFN, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooNewException(idxStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
     } finally {
       idxStream.close();
     }
@@ -121,16 +121,16 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     try {
       fieldInfos = fn;
 
-      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), context);
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_EXTENSION), context);
+      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
       cloneableIndexStream = d.openInput(indexStreamFN, context);
       
       format = cloneableIndexStream.readInt();
 
       if (format < DefaultFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(indexStreamFN, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooOldException(cloneableIndexStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
       if (format > DefaultFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(indexStreamFN, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooNewException(cloneableIndexStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
 
       fieldsStream = (IndexInput) cloneableFieldsStream.clone();
 
@@ -270,34 +270,5 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     fieldsStream.seek(startOffset);
 
     return fieldsStream;
-  }
-
-  /**
-   * Skip the field.  We still have to read some of the information about the field, but can skip past the actual content.
-   * This will have the most payoff on large fields.
-   */
-  private void skipField(int numeric) throws IOException {
-    final int numBytes;
-    switch(numeric) {
-      case 0:
-        numBytes = fieldsStream.readVInt();
-        break;
-      case DefaultFieldsWriter.FIELD_IS_NUMERIC_INT:
-      case DefaultFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
-        numBytes = 4;
-        break;
-      case DefaultFieldsWriter.FIELD_IS_NUMERIC_LONG:
-      case DefaultFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
-        numBytes = 8;
-        break;
-      default:
-        throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
-    }
-    
-    skipFieldBytes(numBytes);
-  }
-  
-  private void skipFieldBytes(int toRead) throws IOException {
-    fieldsStream.seek(fieldsStream.getFilePointer() + toRead);
   }
 }

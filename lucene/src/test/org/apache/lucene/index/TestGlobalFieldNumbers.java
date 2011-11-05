@@ -58,25 +58,25 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         }
         writer.commit();
         Collection<String> files = writer.getIndexFileNames();
-        files.remove("1.fnx");
+        files.remove("_1.fnx");
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
         }
 
-        assertFNXFiles(dir, "1.fnx");
+        assertFNXFiles(dir, "_1.fnx");
         d = new Document();
         d.add(new Field("f1", "d2 first field", TextField.TYPE_STORED));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
         files = writer.getIndexFileNames();
-        files.remove("2.fnx");
+        files.remove("_2.fnx");
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
         }
-        assertFNXFiles(dir, "2.fnx");
+        assertFNXFiles(dir, "_2.fnx");
         writer.close();
-        assertFNXFiles(dir, "2.fnx");
+        assertFNXFiles(dir, "_2.fnx");
       }
 
       {
@@ -89,12 +89,12 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         writer.addDocument(d);
         writer.close();
         Collection<String> files = writer.getIndexFileNames();
-        files.remove("2.fnx");
+        files.remove("_2.fnx");
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
         }
 
-        assertFNXFiles(dir, "2.fnx");
+        assertFNXFiles(dir, "_2.fnx");
       }
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
@@ -102,7 +102,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       writer.optimize();
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
-      assertFNXFiles(dir, "2.fnx");
+      assertFNXFiles(dir, "_2.fnx");
 
       dir.close();
     }
@@ -121,29 +121,29 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new Field("f2", "d1 second field", TextField.TYPE_STORED));
         writer.addDocument(d);
         writer.commit();
-        assertFNXFiles(dir, "1.fnx");
+        assertFNXFiles(dir, "_1.fnx");
         d = new Document();
         d.add(new Field("f1", "d2 first field", TextField.TYPE_STORED));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
-        assertFNXFiles(dir, "2.fnx");
+        assertFNXFiles(dir, "_2.fnx");
         writer.close();
-        assertFNXFiles(dir, "2.fnx");
+        assertFNXFiles(dir, "_2.fnx");
       }
       IndexReader reader = IndexReader.open(dir, false);
       reader.deleteDocument(0);
       reader.commit();
       reader.close();
       // make sure this reader can not modify the field map
-      assertFNXFiles(dir, "2.fnx");
+      assertFNXFiles(dir, "_2.fnx");
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       writer.optimize();
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
-      assertFNXFiles(dir, "2.fnx");
+      assertFNXFiles(dir, "_2.fnx");
 
       dir.close();
     }
@@ -162,7 +162,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new Field("f2", "d1 second field", TextField.TYPE_STORED));
         writer.addDocument(d);
         writer.commit();
-        assertFNXFiles(dir, "1.fnx");
+        assertFNXFiles(dir, "_1.fnx");
         d = new Document();
         d.add(new Field("f1", "d2 first field", TextField.TYPE_STORED));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
@@ -170,9 +170,9 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         writer.commit();
         writer.commit();
         writer.commit();
-        assertFNXFiles(dir, "1.fnx", "2.fnx");
+        assertFNXFiles(dir, "_1.fnx", "_2.fnx");
         writer.close();
-        assertFNXFiles(dir, "1.fnx", "2.fnx");
+        assertFNXFiles(dir, "_1.fnx", "_2.fnx");
       }
 
       {
@@ -184,14 +184,14 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
-        assertFNXFiles(dir, "2.fnx");
+        assertFNXFiles(dir, "_2.fnx");
       }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       writer.optimize();
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
-      assertFNXFiles(dir, "2.fnx");
+      assertFNXFiles(dir, "_2.fnx");
       dir.close();
     }
   }
@@ -208,14 +208,14 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       d.add(new Field("f2", "d1 second field", TextField.TYPE_STORED));
       writer.addDocument(d);
       writer.commit();
-      assertFNXFiles(dir, "1.fnx");
+      assertFNXFiles(dir, "_1.fnx");
       d = new Document();
       d.add(new Field("f1", "d2 first field", TextField.TYPE_STORED));
       d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
       writer.addDocument(d);
-      assertFNXFiles(dir, "1.fnx");
+      assertFNXFiles(dir, "_1.fnx");
       writer.close();
-      assertFNXFiles(dir, "1.fnx", "2.fnx");
+      assertFNXFiles(dir, "_1.fnx", "_2.fnx");
       // open first commit
       List<IndexCommit> listCommits = IndexReader.listCommits(dir);
       assertEquals(2, listCommits.size());
@@ -229,18 +229,18 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       writer.addDocument(d);
       writer.commit();
       // now we have 3 files since f3 is not present in the first commit
-      assertFNXFiles(dir, "1.fnx", "2.fnx", "3.fnx");
+      assertFNXFiles(dir, "_1.fnx", "_2.fnx", "_3.fnx");
       writer.close();
-      assertFNXFiles(dir, "1.fnx", "2.fnx", "3.fnx");
+      assertFNXFiles(dir, "_1.fnx", "_2.fnx", "_3.fnx");
 
       writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random)));
       writer.commit();
       listCommits = IndexReader.listCommits(dir);
       assertEquals(1, listCommits.size());
-      assertFNXFiles(dir, "3.fnx");
+      assertFNXFiles(dir, "_3.fnx");
       writer.close();
-      assertFNXFiles(dir, "3.fnx");
+      assertFNXFiles(dir, "_3.fnx");
       dir.close();
     }
   }
@@ -494,7 +494,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertEquals(1, segmentInfos.getGlobalFieldMapVersion());
       assertEquals(1, segmentInfos.getLastGlobalFieldMapVersion());
       files = writer.getIndexFileNames();
-      assertTrue(files.remove("1.fnx"));
+      assertTrue(files.remove("_1.fnx"));
       for (String string : files) {
         assertFalse(string.endsWith(".fnx"));
       }

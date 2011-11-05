@@ -34,23 +34,4 @@ import org.apache.lucene.index.Terms;
 
 public abstract class FieldsProducer extends Fields implements Closeable {
   public abstract void close() throws IOException;
-
-  public static final FieldsProducer EMPTY = new FieldsProducer() {
-    
-    @Override
-    public Terms terms(String field) throws IOException {
-      return null;
-    }
-    
-    @Override
-    public FieldsEnum iterator() throws IOException {
-      return FieldsEnum.EMPTY;
-    }
-
-    @Override
-    public void close() throws IOException {
-      
-    }
-  };
-  
 }

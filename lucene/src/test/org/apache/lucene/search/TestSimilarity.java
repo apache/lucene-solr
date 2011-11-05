@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
 
@@ -50,7 +49,7 @@ public class TestSimilarity extends LuceneTestCase {
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-        @Override public Explanation idfExplain(TermContext[] stats, IndexSearcher searcher) throws IOException {
+        @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] stats) {
           return new Explanation(1.0f, "Inexplicable"); 
         }
       };

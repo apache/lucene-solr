@@ -83,8 +83,7 @@
     </or>
   </condition>
   <property name="tests.multiplier" value="1" />
-  <property name="tests.codec" value="randomPerField" />
-  <property name="tests.codecprovider" value="random" />
+  <property name="tests.postingsformat" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
@@ -473,8 +472,13 @@
   </path>
   
   <target name="compile-test-framework" depends="compile-core">
-  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
+  	<compile-test-macro srcdir="${tests-framework.src.dir}/java" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test-framework.classpath"/>
+            <!-- Copy the resources folder (if existent) -->
+        <copy todir="${build.dir}/classes/test-framework" includeEmptyDirs="false">
+          <globmapper from="resources/*" to="*" handledirsep="yes"/>
+          <fileset dir="${tests-framework.src.dir}" includes="resources/**"/>
+       </copy>
   </target>
 
   <target name="compile-tools">
@@ -551,9 +555,7 @@
               <!-- directory for formatter lock -->
 	      <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
               <!-- set the codec tests should run with -->
-	      <sysproperty key="tests.codec" value="${tests.codec}"/>
-              <!-- set the codec provider tests should run with -->
-	      <sysproperty key="tests.codecprovider" value="${tests.codecprovider}"/>
+	      <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
               <!-- set the locale tests should run with -->
 	      <sysproperty key="tests.locale" value="${tests.locale}"/>
               <!-- set the timezone tests should run with -->

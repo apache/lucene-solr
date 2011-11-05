@@ -195,7 +195,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
     Directory dir = newDirectory();
     SpellChecker sc = new SpellChecker(dir);
     indexReader = IndexReader.open(store, true);
-    sc.indexDictionary(new LuceneDictionary(indexReader, "contents"));
+    sc.indexDictionary(new LuceneDictionary(indexReader, "contents"), newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
     String[] suggestions = sc.suggestSimilar("Tam", 1);
     assertEquals(1, suggestions.length);
     assertEquals("Tom", suggestions[0]);

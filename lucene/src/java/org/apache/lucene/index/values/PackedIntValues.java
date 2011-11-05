@@ -156,7 +156,7 @@ class PackedIntValues {
     protected PackedIntsReader(Directory dir, String id, int numDocs,
         IOContext context) throws IOException {
       datIn = dir.openInput(
-          IndexFileNames.segmentFileName(id, "", Writer.DATA_EXTENSION),
+                IndexFileNames.segmentFileName(id, Bytes.DV_SEGMENT_SUFFIX, Writer.DATA_EXTENSION),
           context);
       this.numDocs = numDocs;
       boolean success = false;

@@ -26,11 +26,13 @@ import org.apache.lucene.index.IndexReader; // javadoc
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms; // javadoc
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat; // javadoc
@@ -81,10 +83,10 @@ import org.apache.lucene.util.TermContext;
  * <a name="querytime"/>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
- *   <li>The {@link #computeStats(IndexSearcher, String, float, TermContext...)} method is called a single time,
+ *   <li>The {@link #computeStats(CollectionStatistics, float, TermStatistics...)} method is called a single time,
  *       allowing the implementation to compute any statistics (such as IDF, average document length, etc)
- *       across <i>the entire collection</i>. The {@link TermContext}s passed in are already positioned
- *       to the terms involved with the raw statistics involved, so a Similarity can freely use any combination
+ *       across <i>the entire collection</i>. The {@link TermStatistics} passed in already contain
+ *       the raw statistics involved, so a Similarity can freely use any combination
  *       of term statistics without causing any additional I/O. Lucene makes no assumption about what is 
  *       stored in the returned {@link Similarity.Stats} object.
  *   <li>The query normalization process occurs a single time: {@link Similarity.Stats#getValueForNormalization()}
@@ -128,7 +130,7 @@ public abstract class Similarity {
   /**
    * Compute any collection-level stats (e.g. IDF, average document length, etc) needed for scoring a query.
    */
-  public abstract Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termContexts) throws IOException;
+  public abstract Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats);
   
   /**
    * returns a new {@link Similarity.ExactDocScorer}.

@@ -40,7 +40,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -70,7 +70,7 @@ import org.junit.BeforeClass;
 
 public class TestSort extends LuceneTestCase {
   // true if our codec supports docvalues: true unless codec is preflex (3.x)
-  boolean supportsDocValues = CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex") == false;
+  boolean supportsDocValues = Codec.getDefault().getName().equals("Lucene3x") == false;
   private static int NUM_STRINGS;
   private IndexSearcher full;
   private IndexSearcher searchX;

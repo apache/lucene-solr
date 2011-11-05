@@ -17,9 +17,9 @@
 -->
 <schema name="codec" version="1.2">
  <types>
-  <fieldType name="string_pulsing" class="solr.StrField" codec="Pulsing"/>
-  <fieldType name="string_simpletext" class="solr.StrField" codec="SimpleText"/>
-  <fieldType name="string_standard" class="solr.StrField" codec="Standard"/>
+  <fieldType name="string_pulsing" class="solr.StrField" postingsFormat="Pulsing40"/>
+  <fieldType name="string_simpletext" class="solr.StrField" postingsFormat="SimpleText"/>
+  <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene40"/>
     <fieldType name="string" class="solr.StrField" />
   
  </types>

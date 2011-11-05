@@ -57,16 +57,24 @@
     <outputDirectory>${build-directory}/classes/java</outputDirectory>
     <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
     <sourceDirectory>java</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>resources</directory>
+      </resource>
+    </resources>
     <testSourceDirectory>test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>${project.build.testSourceDirectory}</directory>
+        <directory>test-framework/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>test-framework/java</directory>
         <excludes>
           <exclude>**/*.java</exclude>
         </excludes>
       </testResource>
       <testResource>
-        <directory>test-framework</directory>
+        <directory>${project.build.testSourceDirectory}</directory>
         <excludes>
           <exclude>**/*.java</exclude>
         </excludes>

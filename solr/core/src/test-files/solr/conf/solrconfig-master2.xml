@@ -32,13 +32,8 @@
     <ramBufferSizeMB>32</ramBufferSizeMB>
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
-    <writeLockTimeout>1000</writeLockTimeout>
-    <commitLockTimeout>10000</commitLockTimeout>
-
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
     <writeLockTimeout>1000</writeLockTimeout>
-    <commitLockTimeout>10000</commitLockTimeout>
-
     <lockType>single</lockType>
   </indexDefaults>
 

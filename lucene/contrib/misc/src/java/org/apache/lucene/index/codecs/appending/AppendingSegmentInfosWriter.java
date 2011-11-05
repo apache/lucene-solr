@@ -20,8 +20,6 @@ package org.apache.lucene.index.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
 public class AppendingSegmentInfosWriter extends DefaultSegmentInfosWriter {

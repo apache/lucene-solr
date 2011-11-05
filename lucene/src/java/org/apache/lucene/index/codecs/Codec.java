@@ -20,59 +20,67 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.util.NamedSPILoader;
 import org.apache.lucene.store.Directory;
 
-/** @lucene.experimental */
-public abstract class Codec {
-  public static final Codec[] EMPTY = new Codec[0];
-  /** Unique name that's used to retrieve this codec when
-   *  reading the index */
-  public final String name;
-  
-  protected Codec(String name) {
+/**
+ * Encodes/decodes an inverted index segment
+ */
+public abstract class Codec implements NamedSPILoader.NamedSPI {
+
+  private static final NamedSPILoader<Codec> loader =
+    new NamedSPILoader<Codec>(Codec.class);
+
+  private final String name;
+
+  public Codec(String name) {
     this.name = name;
   }
-
-  /** Writes a new segment */
-  public abstract FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
-
-  public static void debug(String s, String desc) {
-    if (desc != null) {
-      System.out.println(Thread.currentThread().getName()+ " [" + desc + "]:" + s);
-    } else {
-      System.out.println(Thread.currentThread().getName() + ": " + s);
-    }
+  
+  @Override
+  public String getName() {
+    return name;
   }
-  public static void debug(String s) {
-    debug(s, null);
+  
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    postingsFormat().files(dir, info, "", files);
+    //TODO: not yet fieldsFormat().files(dir, info, files);
+    docValuesFormat().files(dir, info, files);
+  }
+  
+  /** Encodes/decodes postings */
+  public abstract PostingsFormat postingsFormat();
+  
+  /** Encodes/decodes docvalues */
+  public abstract DocValuesFormat docValuesFormat();
+  
+  /** Encodes/decodes stored fields, term vectors, fieldinfos */
+  public abstract FieldsFormat fieldsFormat();
+  
+  public abstract SegmentInfosFormat segmentInfosFormat();
+  
+  /** looks up a codec by name */
+  public static Codec forName(String name) {
+    return loader.lookup(name);
+  }
+  
+  /** returns a list of all available codec names */
+  public static Set<String> availableCodecs() {
+    return loader.availableServices();
+  }
+  
+  private static Codec defaultCodec = Codec.forName("Lucene40");
+  
+  // TODO: should we use this, or maybe a system property is better?
+  public static Codec getDefault() {
+    return defaultCodec;
+  }
+  
+  public static void setDefault(Codec codec) {
+    defaultCodec = codec;
   }
 
-  /** Reads a segment.  NOTE: by the time this call
-   *  returns, it must hold open any files it will need to
-   *  use; else, those files may be deleted. */
-  public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
-  
-  public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
-  
-  public abstract PerDocValues docsProducer(SegmentReadState state) throws IOException;
-
-  /**
-   * Gathers files associated with this segment
-   * 
-   * @param dir the {@link Directory} this segment was written to
-   * @param segmentInfo the {@link SegmentInfo} for this segment 
-   * @param id the codec id within this segment
-   * @param files the of files to add the codec files to.
-   */
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException;
-
-  /** Records all file extensions this codec uses */
-  public abstract void getExtensions(Set<String> extensions);
-  
   @Override
   public String toString() {
     return name;

@@ -114,12 +114,12 @@ public final class IndexUpgrader {
   }
   
   public void upgrade() throws IOException {
-    if (!IndexReader.indexExists(dir, iwc.getCodecProvider())) {
+    if (!IndexReader.indexExists(dir)) {
       throw new IndexNotFoundException(dir.toString());
     }
   
     if (!deletePriorCommits) {
-      final Collection<IndexCommit> commits = DirectoryReader.listCommits(dir, iwc.getCodecProvider());
+      final Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
       if (commits.size() > 1) {
         throw new IllegalArgumentException("This tool was invoked to not delete prior commit points, but the following commits were found: " + commits);
       }

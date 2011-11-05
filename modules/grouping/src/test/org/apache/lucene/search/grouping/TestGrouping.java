@@ -950,7 +950,7 @@ public class TestGrouping extends LuceneTestCase {
               }
               
               if (searchIter == 14) {
-                for(int docIDX=0;docIDX<s.maxDoc();docIDX++) {
+                for(int docIDX=0;docIDX<s.getIndexReader().maxDoc();docIDX++) {
                   System.out.println("ID=" + docIDToID[docIDX] + " explain=" + s.explain(query, docIDX));
                 }
               }

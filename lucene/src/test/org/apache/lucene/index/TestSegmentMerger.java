@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -74,7 +75,7 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
 
   public void testMerge() throws IOException {
-    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), newIOContext(random));
+    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), Codec.getDefault(), newIOContext(random));
     merger.add(reader1);
     merger.add(reader2);
     int docsMerged = merger.merge();
@@ -82,7 +83,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final FieldInfos fieldInfos = merger.fieldInfos();
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = SegmentReader.get(false, mergedDir, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
-                                                                                     merger.getSegmentCodecs(), fieldInfos),
+                                                                                     merger.getCodec(), fieldInfos),
                                                    true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
@@ -145,7 +146,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     w.close();
     
     // Assert that SM fails if .del exists
-    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null, newIOContext(random));
+    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null, Codec.getDefault(), newIOContext(random));
     boolean doFail = false;
     try {
       sm.createCompoundFile("b1", w.segmentInfos.info(0), newIOContext(random));

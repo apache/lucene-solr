@@ -27,23 +27,20 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 
 /**
  * Test indexes ~82M docs with 26 terms each, so you get > Integer.MAX_VALUE terms/docs pairs
  * @lucene.experimental
  */
+@UseNoMemoryExpensiveCodec
 public class Test2BPostings extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
-
-    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("field").equals("Memory"));
-    assumeFalse("This test is super-slow and very disk-space-consuming with SimpleText codec", CodecProvider.getDefault().getFieldCodec("field").equals("SimpleText"));
-
     MockDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BPostings"));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setCheckIndexOnClose(false); // don't double-checkindex

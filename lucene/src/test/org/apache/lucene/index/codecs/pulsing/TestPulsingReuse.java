@@ -17,10 +17,8 @@ package org.apache.lucene.index.codecs.pulsing;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -30,27 +28,10 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.BlockTreeTermsReader;
-import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
@@ -63,10 +44,10 @@ public class TestPulsingReuse extends LuceneTestCase {
   // TODO: this is a basic test. this thing is complicated, add more
   public void testSophisticatedReuse() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
+    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g h i i j j k", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
@@ -101,11 +82,11 @@ public class TestPulsingReuse extends LuceneTestCase {
   /** tests reuse with Pulsing1(Pulsing2(Standard)) */
   public void testNestedPulsing() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new NestedPulsing());
+    Codec cp = _TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // will do this ourselves, custom codec
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g g h i i j j k l l m m m", TextField.TYPE_UNSTORED));
     // note: the reuse is imperfect, here we would have 4 enums (lost reuse when we get an enum for 'm')
@@ -138,79 +119,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     
     ir.close();
     CheckIndex ci = new CheckIndex(dir);
-    ci.checkIndex(null, cp);
+    ci.checkIndex(null);
     dir.close();
-  }
-  
-  static class NestedPulsing extends Codec {
-    public NestedPulsing() {
-      super("NestedPulsing");
-    }
-    
-    @Override
-    public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
-
-      PostingsWriterBase pulsingWriterInner = new PulsingPostingsWriter(2, docsWriter);
-      PostingsWriterBase pulsingWriter = new PulsingPostingsWriter(1, pulsingWriterInner);
-      
-      // Terms dict
-      boolean success = false;
-      try {
-        FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, 
-            BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          pulsingWriter.close();
-        }
-      }
-    }
-
-    @Override
-    public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
-      PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
-      PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
-      boolean success = false;
-      try {
-        FieldsProducer ret = new BlockTreeTermsReader(
-                                                      state.dir, state.fieldInfos, state.segmentInfo.name,
-                                                      pulsingReader,
-                                                      state.context,
-                                                      state.codecId,
-                                                      state.termsIndexDivisor);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          pulsingReader.close();
-        }
-      }
-    }
-
-    @Override
-    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-      return new DefaultDocValuesConsumer(state);
-    }
-
-    @Override
-    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-      return new DefaultDocValuesProducer(state);
-    }
-
-    @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      StandardPostingsReader.files(dir, segmentInfo, id, files);
-      BlockTreeTermsReader.files(dir, segmentInfo, id, files);
-      DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
-    }
-
-    @Override
-    public void getExtensions(Set<String> extensions) {
-      StandardCodec.getStandardExtensions(extensions);
-      DefaultDocValuesConsumer.getExtensions(extensions);
-    }
   }
 }

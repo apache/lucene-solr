@@ -183,7 +183,7 @@ public class RAMDirectory extends Directory {
     if (file == null) {
       throw new FileNotFoundException(name);
     }
-    return new RAMInputStream(file);
+    return new RAMInputStream(name, file);
   }
 
   /** Closes the store to future operations, releasing associated memory. */

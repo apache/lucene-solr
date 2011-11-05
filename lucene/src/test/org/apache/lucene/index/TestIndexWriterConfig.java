@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.util.LuceneTestCase;
@@ -71,6 +72,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(ThreadAffinityDocumentsWriterThreadPool.class, conf.getIndexerThreadPool().getClass());
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
+    assertEquals(Codec.getDefault(), conf.getCodec());
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<String>();
     getters.add("getAnalyzer");
@@ -88,7 +90,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMaxBufferedDocs");
     getters.add("getIndexingChain");
     getters.add("getMergedSegmentWarmer");
-    getters.add("getCodecProvider");
     getters.add("getMergePolicy");
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");
@@ -96,6 +97,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getReaderTermsIndexDivisor");
     getters.add("getFlushPolicy");
     getters.add("getRAMPerThreadHardLimitMB");
+    getters.add("getCodec");
     
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {

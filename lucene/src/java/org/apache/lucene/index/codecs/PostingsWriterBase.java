@@ -27,6 +27,9 @@ import org.apache.lucene.index.FieldInfo;
  * @lucene.experimental
  */
 
+// TODO: find a better name; this defines the API that the
+// terms dict impls use to talk to a postings impl.
+// TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
 public abstract class PostingsWriterBase extends PostingsConsumer implements Closeable {
 
   public abstract void start(IndexOutput termsOut) throws IOException;

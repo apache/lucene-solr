@@ -31,6 +31,7 @@ public class ChecksumIndexInput extends IndexInput {
   Checksum digest;
 
   public ChecksumIndexInput(IndexInput main) {
+    super("ChecksumIndexInput(" + main + ")");
     this.main = main;
     digest = new CRC32();
   }

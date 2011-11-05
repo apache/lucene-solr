@@ -109,14 +109,14 @@ public class BlockTermsReader extends FieldsProducer {
   // private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
-                          int termsCacheSize, int codecId)
+                          int termsCacheSize, String segmentSuffix)
     throws IOException {
     
     this.postingsReader = postingsReader;
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     // this.segment = segment;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION),
                        context);
 
     boolean success = false;
@@ -194,12 +194,8 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, BlockTermsWriter.TERMS_EXTENSION));
-  }
-
-  public static void getExtensions(Collection<String> extensions) {
-    extensions.add(BlockTermsWriter.TERMS_EXTENSION);
+  public static void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION));
   }
 
   @Override

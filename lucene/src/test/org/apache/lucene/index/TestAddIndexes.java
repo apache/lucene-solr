@@ -17,9 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -29,11 +30,22 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
+import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -975,30 +987,29 @@ public class TestAddIndexes extends LuceneTestCase {
     }
   }
 
-  public void testSimpleCaseCustomCodecProvider() throws IOException {
+  public void testSimpleCaseCustomCodec() throws IOException {
     // main directory
     Directory dir = newDirectory();
     // two auxiliary directories
     Directory aux = newDirectory();
     Directory aux2 = newDirectory();
-    CodecProvider provider = new MockCodecProvider();
+    Codec codec = new CustomPerFieldCodec();
     IndexWriter writer = null;
 
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodecProvider(
-        provider));
+        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(codec));
     // add 100 documents
     addDocs3(writer, 100);
     assertEquals(100, writer.maxDoc());
     writer.commit();
     writer.close();
-    _TestUtil.checkIndex(dir, provider);
+    _TestUtil.checkIndex(dir);
 
     writer = newWriter(
         aux,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.CREATE).
-            setCodecProvider(provider).
+            setCodec(codec).
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(false))
     );
@@ -1012,7 +1023,7 @@ public class TestAddIndexes extends LuceneTestCase {
         aux2,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.CREATE).
-            setCodecProvider(provider)
+            setCodec(codec)
     );
     // add 40 documents in compound files
     addDocs2(writer, 50);
@@ -1025,7 +1036,7 @@ public class TestAddIndexes extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.APPEND).
-            setCodecProvider(provider)
+            setCodec(codec)
     );
     assertEquals(100, writer.maxDoc());
     writer.addIndexes(aux, aux2);
@@ -1037,18 +1048,23 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  public static class MockCodecProvider extends CodecProvider {
-    public MockCodecProvider() {
-      StandardCodec standardCodec = new StandardCodec();
-      SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
-      MockSepCodec mockSepCodec = new MockSepCodec();
-      register(standardCodec);
-      register(mockSepCodec);
-      register(simpleTextCodec);
-      setFieldCodec("id", simpleTextCodec.name);
-      setFieldCodec("content", mockSepCodec.name);
+  private static final class CustomPerFieldCodec extends Lucene40Codec {
+    private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
+    private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene40");
+    private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
+
+    @Override
+    public PostingsFormat getPostingsFormatForField(String field) {
+      if (field.equals("id")) {
+        return simpleTextFormat;
+      } else if (field.equals("content")) {
+        return mockSepFormat;
+      } else {
+        return defaultFormat;
+      }
     }
   }
+
 
   // LUCENE-2790: tests that the non CFS files were deleted by addIndexes
   public void testNonCFSLeftovers() throws Exception {
@@ -1066,16 +1082,19 @@ public class TestAddIndexes extends LuceneTestCase {
     
     IndexReader[] readers = new IndexReader[] { IndexReader.open(dirs[0]), IndexReader.open(dirs[1]) };
     
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockDirectoryWrapper(random, new RAMDirectory());
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy());
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setUseCompoundFile(true);
     lmp.setNoCFSRatio(1.0); // Force creation of CFS
     IndexWriter w3 = new IndexWriter(dir, conf);
+    w3.setInfoStream(VERBOSE ? System.out : null);
     w3.addIndexes(readers);
     w3.close();
-    // we should now see segments_X, segments.gen,_Y.cfs,_Y.cfe, _Z.fnx
-    assertEquals("Only one compound segment should exist", 5, dir.listAll().length);
+    // we should now see segments_X,
+    // segments.gen,_Y.cfs,_Y.cfe, _Z.fnx
+    assertEquals("Only one compound segment should exist, but got: " + Arrays.toString(dir.listAll()), 5, dir.listAll().length);
+    dir.close();
   }
   
   // LUCENE-3126: tests that if a non-CFS segment is copied, it is converted to
@@ -1136,18 +1155,45 @@ public class TestAddIndexes extends LuceneTestCase {
     src.close();
     target.close();
   }
+
+  private static class UnRegisteredCodec extends Codec {
+    public UnRegisteredCodec() {
+      super("NotRegistered");
+    }
+
+    @Override
+    public PostingsFormat postingsFormat() {
+      return PostingsFormat.forName("Lucene40");
+    }
+
+    @Override
+    public DocValuesFormat docValuesFormat() {
+      return new DefaultDocValuesFormat();
+    }
+
+    @Override
+    public FieldsFormat fieldsFormat() {
+      return new DefaultFieldsFormat();
+    }
+
+    @Override
+    public SegmentInfosFormat segmentInfosFormat() {
+      return new DefaultSegmentInfosFormat();
+    }
+  }
   
   /*
    * simple test that ensures we getting expected exceptions 
    */
   public void testAddIndexMissingCodec() throws IOException {
-    Directory toAdd = newDirectory();
+    MockDirectoryWrapper toAdd = newDirectory();
+    // Disable checkIndex, else we get an exception because
+    // of the unregistered codec:
+    toAdd.setCheckIndexOnClose(false);
     {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      CodecProvider provider = new CodecProvider();
-      provider.register(new StandardCodec());
-      conf.setCodecProvider(provider);
+      conf.setCodec(new UnRegisteredCodec());
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();
       FieldType customType = new FieldType();
@@ -1156,13 +1202,12 @@ public class TestAddIndexes extends LuceneTestCase {
       w.addDocument(doc);
       w.close();
     }
+
     {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
-      CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(20)));
-      conf.setCodecProvider(provider);
+      conf.setCodec(_TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1 + random.nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);
@@ -1177,27 +1222,11 @@ public class TestAddIndexes extends LuceneTestCase {
       dir.close();
     }
 
-    {
-      Directory dir = newDirectory();
-      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random));
-      CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(20)));
-      conf.setCodecProvider(provider);
-      IndexWriter w = new IndexWriter(dir, conf);
+    try {
       IndexReader indexReader = IndexReader.open(toAdd);
-      try {
-        w.addIndexes(indexReader);
-        fail("no such codec");
-      } catch (IllegalArgumentException ex) {
-        // expected
-      }
-      indexReader.close();
-      w.close();
-      IndexReader open = IndexReader.open(dir);
-      assertEquals(0, open.numDocs());
-      open.close();
-      dir.close();
+      fail("no such codec");
+    } catch (IllegalArgumentException ex) {
+      // expected
     }
     toAdd.close();
   }

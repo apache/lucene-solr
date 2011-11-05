@@ -25,7 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import java.io.File;
 import java.io.IOException;
@@ -143,8 +143,8 @@ public class CheckIndex {
       /** Name of the segment. */
       public String name;
 
-      /** CodecInfo used to read this segment. */
-      public SegmentCodecs codec;
+      /** Codec used to read this segment. */
+      public Codec codec;
 
       /** Document count (does not take deletions into account). */
       public int docCount;
@@ -322,10 +322,6 @@ public class CheckIndex {
   public Status checkIndex() throws IOException {
     return checkIndex(null);
   }
-
-  public Status checkIndex(List<String> onlySegments) throws IOException {
-    return checkIndex(onlySegments, CodecProvider.getDefault());
-  }
   
   /** Returns a {@link Status} instance detailing
    *  the state of the index.
@@ -339,13 +335,13 @@ public class CheckIndex {
    *  <p><b>WARNING</b>: make sure
    *  you only call this when the index is not opened by any
    *  writer. */
-  public Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
+  public Status checkIndex(List<String> onlySegments) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
-    SegmentInfos sis = new SegmentInfos(codecs);
+    SegmentInfos sis = new SegmentInfos();
     Status result = new Status();
     result.dir = dir;
     try {
-      sis.read(dir, codecs);
+      sis.read(dir);
     } catch (Throwable t) {
       msg("ERROR: could not read any segments file in directory");
       result.missingSegments = true;
@@ -377,6 +373,7 @@ public class CheckIndex {
 
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getCurrentSegmentFileName();
+    // note: we only read the format byte (required preamble) here!
     IndexInput input = null;
     try {
       input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
@@ -489,7 +486,7 @@ public class CheckIndex {
       SegmentReader reader = null;
 
       try {
-        final SegmentCodecs codec = info.getSegmentCodecs();
+        final Codec codec = info.getCodec();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
         msg("    compound=" + info.getUseCompoundFile());
@@ -1182,11 +1179,11 @@ public class CheckIndex {
    *
    * <p><b>WARNING</b>: Make sure you only call this when the
    *  index is not opened  by any writer. */
-  public void fixIndex(Status result) throws IOException {
+  public void fixIndex(Status result, Codec codec) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
-    result.newSegments.commit(result.dir);
+    result.newSegments.commit(result.dir, codec);
   }
 
   private static boolean assertsOn;
@@ -1236,6 +1233,7 @@ public class CheckIndex {
   public static void main(String[] args) throws IOException, InterruptedException {
 
     boolean doFix = false;
+    Codec codec = Codec.getDefault(); // only used when fixing
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
@@ -1244,6 +1242,13 @@ public class CheckIndex {
       if (args[i].equals("-fix")) {
         doFix = true;
         i++;
+      } else if (args[i].equals("-codec")) {
+        if (i == args.length-1) {
+          System.out.println("ERROR: missing name for -codec option");
+          System.exit(1);
+        }
+        codec = Codec.forName(args[i+1]);
+        i+=2;
       } else if (args[i].equals("-verbose")) {
         verbose = true;
         i++;
@@ -1269,6 +1274,7 @@ public class CheckIndex {
       System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -codec X: when fixing, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
@@ -1329,7 +1335,7 @@ public class CheckIndex {
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        checker.fixIndex(result);
+        checker.fixIndex(result, codec);
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
       }

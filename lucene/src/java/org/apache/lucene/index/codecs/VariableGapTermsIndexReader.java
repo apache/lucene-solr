@@ -57,9 +57,9 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   protected long dirOffset;
 
   final String segment;
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, int codecId, IOContext context)
+  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String segmentSuffix, IOContext context)
     throws IOException {
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
     this.segment = segment;
     boolean success = false;
     assert indexDivisor == -1 || indexDivisor > 0;
@@ -215,17 +215,8 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, int id, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, id, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
-  }
-
-  public static void getIndexExtensions(Collection<String> extensions) {
-    extensions.add(VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
-  }
-
-  @Override
-  public void getExtensions(Collection<String> extensions) {
-    getIndexExtensions(extensions);
+  public static void files(Directory dir, SegmentInfo info, String segmentSuffix, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(info.name, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
   @Override

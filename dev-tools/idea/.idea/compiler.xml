@@ -36,6 +36,7 @@
       <entry name="?*.xsl" />
       <entry name="?*.vm" />
       <entry name="?*.zip" />
+      <entry name="org.apache.lucene.index.codecs*" />
       <entry name="README*" />
     </wildcardResourcePatterns>
   </component>

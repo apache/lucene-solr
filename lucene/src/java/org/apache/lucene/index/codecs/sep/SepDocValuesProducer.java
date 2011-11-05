@@ -39,7 +39,7 @@ public class SepDocValuesProducer extends DocValuesReaderBase {
    * {@link IndexDocValues} instances for this segment and codec.
    */
   public SepDocValuesProducer(SegmentReadState state) throws IOException {
-    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, state.dir, state.codecId, state.context);
+    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, state.dir, state.context);
   }
   
   @Override

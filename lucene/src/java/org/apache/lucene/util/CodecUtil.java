@@ -18,13 +18,13 @@ package org.apache.lucene.util;
  */
 
 
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
+import java.io.IOException;
+
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
-
-import java.io.IOException;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 
 /**
  * @lucene.experimental
@@ -35,7 +35,7 @@ public final class CodecUtil {
 
   private final static int CODEC_MAGIC = 0x3fd76c17;
 
-  public static DataOutput writeHeader(DataOutput out, String codec, int version)
+  public static void writeHeader(DataOutput out, String codec, int version)
     throws IOException {
     BytesRef bytes = new BytesRef(codec);
     if (bytes.length != codec.length() || bytes.length >= 128) {
@@ -44,8 +44,6 @@ public final class CodecUtil {
     out.writeInt(CODEC_MAGIC);
     out.writeString(codec);
     out.writeInt(version);
-
-    return out;
   }
 
   public static int headerLength(String codec) {
@@ -58,20 +56,20 @@ public final class CodecUtil {
     // Safety to guard against reading a bogus string:
     final int actualHeader = in.readInt();
     if (actualHeader != CODEC_MAGIC) {
-      throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC);
+      throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC + " (resource: " + in + ")");
     }
 
     final String actualCodec = in.readString();
     if (!actualCodec.equals(codec)) {
-      throw new CorruptIndexException("codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec);
+      throw new CorruptIndexException("codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec + " (resource: " + in + ")");
     }
 
     final int actualVersion = in.readInt();
     if (actualVersion < minVersion) {
-      throw new IndexFormatTooOldException(null, actualVersion, minVersion, maxVersion);
+      throw new IndexFormatTooOldException(in, actualVersion, minVersion, maxVersion);
     }
     if (actualVersion > maxVersion) {
-      throw new IndexFormatTooNewException(null, actualVersion, minVersion, maxVersion);
+      throw new IndexFormatTooNewException(in, actualVersion, minVersion, maxVersion);
     }
 
     return actualVersion;

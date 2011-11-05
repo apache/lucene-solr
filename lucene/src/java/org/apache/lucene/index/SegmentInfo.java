@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -97,7 +96,7 @@ public final class SegmentInfo implements Cloneable {
   
   private FieldInfos fieldInfos;
 
-  private SegmentCodecs segmentCodecs;
+  private Codec codec;
 
   private Map<String,String> diagnostics;
 
@@ -116,7 +115,7 @@ public final class SegmentInfo implements Cloneable {
   private long fieldInfosVersion;
   
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
-                     SegmentCodecs segmentCodecs, FieldInfos fieldInfos) {
+                     Codec codec, FieldInfos fieldInfos) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -124,7 +123,7 @@ public final class SegmentInfo implements Cloneable {
     this.isCompoundFile = isCompoundFile;
     this.docStoreOffset = -1;
     this.docStoreSegment = name;
-    this.segmentCodecs = segmentCodecs;
+    this.codec = codec;
     delCount = 0;
     version = Constants.LUCENE_MAIN_VERSION;
     this.fieldInfos = fieldInfos;
@@ -156,7 +155,7 @@ public final class SegmentInfo implements Cloneable {
     }
     isCompoundFile = src.isCompoundFile;
     delCount = src.delCount;
-    segmentCodecs = src.segmentCodecs;
+    codec = src.codec;
   }
 
   void setDiagnostics(Map<String, String> diagnostics) {
@@ -177,7 +176,7 @@ public final class SegmentInfo implements Cloneable {
    * @param format format of the segments info file
    * @param input input handle to read segment info from
    */
-  public SegmentInfo(Directory dir, int format, IndexInput input, CodecProvider codecs) throws IOException {
+  public SegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
     this.dir = dir;
     if (format <= DefaultSegmentInfosWriter.FORMAT_3_1) {
       version = input.readString();
@@ -221,13 +220,13 @@ public final class SegmentInfo implements Cloneable {
 
     hasProx = input.readByte();
 
+    
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
+    // note: if the codec is not available: Codec.forName will throw an exception.
     if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-      segmentCodecs = new SegmentCodecs(codecs, input);
+      codec = Codec.forName(input.readString());
     } else {
-      // codec ID on FieldInfo is 0 so it will simply use the first codec available
-      // TODO what todo if preflex is not available in the provider? register it or fail?
-      segmentCodecs = new SegmentCodecs(codecs, new Codec[] { codecs.lookup("PreFlex")});
+      codec = Codec.forName("Lucene3x");
     }
     diagnostics = input.readStringStringMap();
 
@@ -350,7 +349,7 @@ public final class SegmentInfo implements Cloneable {
 
   @Override
   public Object clone() {
-    final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, segmentCodecs,
+    final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, codec,
         fieldInfos == null ? null : (FieldInfos) fieldInfos.clone());
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;
@@ -573,7 +572,7 @@ public final class SegmentInfo implements Cloneable {
     output.writeByte((byte) (isCompoundFile ? YES : NO));
     output.writeInt(delCount);
     output.writeByte((byte) (hasProx));
-    segmentCodecs.write(output);
+    output.writeString(codec.getName());
     output.writeStringStringMap(diagnostics);
     output.writeByte((byte) (hasVectors));
   }
@@ -583,16 +582,16 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /** Can only be called once. */
-  public void setSegmentCodecs(SegmentCodecs segmentCodecs) {
-    assert this.segmentCodecs == null;
-    if (segmentCodecs == null) {
+  public void setCodec(Codec codec) {
+    assert this.codec == null;
+    if (codec == null) {
       throw new IllegalArgumentException("segmentCodecs must be non-null");
     }
-    this.segmentCodecs = segmentCodecs;
+    this.codec = codec;
   }
 
-  SegmentCodecs getSegmentCodecs() {
-    return segmentCodecs;
+  Codec getCodec() {
+    return codec;
   }
 
   private void addIfExists(Set<String> files, String fileName) throws IOException {
@@ -628,7 +627,7 @@ public final class SegmentInfo implements Cloneable {
       for(String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS) {
         addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));
       }
-      segmentCodecs.files(dir, this, fileSet);
+      codec.files(dir, this, fileSet);
     }
 
     if (docStoreOffset != -1) {

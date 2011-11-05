@@ -61,6 +61,10 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   // when removing support for old versions, leave the last supported version here
   static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
 
+  // TODO: remove from IndexFileNames
+  public static final String FIELDS_EXTENSION = IndexFileNames.FIELDS_EXTENSION;
+  public static final String FIELDS_INDEX_EXTENSION = IndexFileNames.FIELDS_INDEX_EXTENSION;
+
   // If null - we were supplied with streams, if notnull - we manage them ourselves
   private Directory directory;
   private String segment;
@@ -73,8 +77,8 @@ public final class DefaultFieldsWriter extends FieldsWriter {
 
     boolean success = false;
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), context);
-      indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION), context);
+      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
+      indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION), context);
 
       fieldsStream.writeInt(FORMAT_CURRENT);
       indexStream.writeInt(FORMAT_CURRENT);
@@ -129,11 +133,11 @@ public final class DefaultFieldsWriter extends FieldsWriter {
       } catch (IOException ignored) {
       }
       try {
-        directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION));
+        directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
       } catch (IOException ignored) {
       }
       try {
-        directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
+        directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
       } catch (IOException ignored) {
       }
     }

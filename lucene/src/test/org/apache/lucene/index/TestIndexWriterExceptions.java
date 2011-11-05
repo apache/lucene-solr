@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -927,10 +928,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       } catch (RuntimeException re) {
         // Expected
       }
-      assertTrue(dir.fileExists("1.fnx"));
+      assertTrue(dir.fileExists("_1.fnx"));
       assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
       w.rollback();
-      assertFalse(dir.fileExists("1.fnx"));
+      assertFalse(dir.fileExists("_1.fnx"));
       assertEquals(0, dir.listAll().length);
       dir.close();
     }

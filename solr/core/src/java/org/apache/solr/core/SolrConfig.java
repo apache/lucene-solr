@@ -35,8 +35,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.spelling.QueryConverter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.Version;
 
 import org.slf4j.Logger;
@@ -200,7 +198,7 @@ public class SolrConfig extends Config {
 
      loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
      loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
-     loadPluginInfo(CodecProviderFactory.class,"mainIndex/codecProviderFactory",false, false);
+     loadPluginInfo(CodecFactory.class,"mainIndex/codecFactory",false, false);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
      loadPluginInfo(UpdateLog.class,"updateHandler/updateLog",false, false);

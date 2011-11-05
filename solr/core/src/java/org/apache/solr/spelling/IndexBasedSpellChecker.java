@@ -17,6 +17,7 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 
@@ -63,7 +64,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     if (sourceLocation != null) {
       try {
         FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation));
-        this.reader = IndexReader.open(luceneIndexDir);
+        this.reader = IndexReader.open(luceneIndexDir, true);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -85,9 +86,14 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
       // Create the dictionary
       dictionary = new HighFrequencyDictionary(reader, field,
           threshold);
+      // TODO: maybe whether or not to clear the index should be configurable?
+      // an incremental update is faster (just adds new terms), but if you 'expunged'
+      // old terms I think they might hang around.
       spellChecker.clearIndex();
-      spellChecker.indexDictionary(dictionary);
-
+      // TODO: you should be able to specify the IWC params?
+      // TODO: if we enable this, codec gets angry since field won't exist in the schema
+      // config.setCodec(core.getCodec());
+      spellChecker.indexDictionary(dictionary, new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, null), false);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

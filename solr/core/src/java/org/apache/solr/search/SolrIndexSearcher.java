@@ -191,6 +191,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return core;
   }
 
+  public final int maxDoc() {
+    return reader.maxDoc();
+  }
+  
+  public final int docFreq(Term term) throws IOException {
+    return reader.docFreq(term);
+  }
 
   /** Register sub-objects such as caches
    */
