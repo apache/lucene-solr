@@ -37,6 +37,8 @@
       <entry name="?*.vm" />
       <entry name="?*.zip" />
       <entry name="README*" />
+      <entry name="[a-zA-Z][a-zA-Z]" />
+      <entry name="[a-zA-Z][a-zA-Z]-[a-zA-Z][a-zA-Z]" />
     </wildcardResourcePatterns>
   </component>
   <component name="JavacSettings">
