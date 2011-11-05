@@ -1,7 +1,8 @@
 <dataConfig>
     <dataSource type="BinFileDataSource" />
     <document>
-        <entity name="tika-test" processor="TikaEntityProcessor" url="../contrib/extraction/src/test/resources/solr-word.pdf" format="text">
+        <entity name="tika-test" processor="TikaEntityProcessor"
+                url="../contrib/extraction/src/test-files/extraction/solr-word.pdf" format="text">
                 <field column="Author" name="author" meta="true"/>
                 <field column="title" name="title" meta="true"/>
                 <field column="text" name="text"/>
