@@ -66,7 +66,7 @@
         </excludes>
       </testResource>
       <testResource>
-        <directory>test-framework</directory>
+        <directory>test-framework/java</directory>
         <excludes>
           <exclude>**/*.java</exclude>
         </excludes>
