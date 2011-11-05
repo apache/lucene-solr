@@ -38,6 +38,8 @@
       <entry name="?*.zip" />
       <entry name="org.apache.lucene.index.codecs*" />
       <entry name="README*" />
+      <entry name="[a-zA-Z][a-zA-Z]" />
+      <entry name="[a-zA-Z][a-zA-Z]-[a-zA-Z][a-zA-Z]" />
     </wildcardResourcePatterns>
   </component>
   <component name="JavacSettings">
