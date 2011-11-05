@@ -321,9 +321,8 @@
     </compile>
 
     <!-- Copy the resources folder (if existent) -->
-    <copy todir="${build.dir}/classes/java" includeEmptyDirs="false">
-      <globmapper from="resources/*" to="*" handledirsep="yes"/>
-      <fileset dir="${src.dir}/.." includes="resources/**"/>
+    <copy todir="${build.dir}/classes/java">
+      <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
     </copy>
   </target>
 
@@ -474,10 +473,9 @@
   <target name="compile-test-framework" depends="compile-core">
   	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test-framework.classpath"/>
-            <!-- Copy the resources folder (if existent) -->
-        <copy todir="${build.dir}/classes/test-framework" includeEmptyDirs="false">
-          <globmapper from="resources/*" to="*" handledirsep="yes"/>
-          <fileset dir="${tests-framework.src.dir}/.." includes="resources/**"/>
+       <!-- Copy the resources folder (if existent) -->
+       <copy todir="${build.dir}/classes/test-framework">
+          <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
        </copy>
   </target>
 
@@ -754,7 +752,9 @@
   </target>
 
   <target name="jar-src" depends="init">
-  	<jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar"/>
+    <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
+      <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
+    </jarify>
   </target>
 
   <target name="default" depends="jar-core"/>
