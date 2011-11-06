@@ -27,6 +27,7 @@ import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.InfoStream;
 
 /** Holds common state used during segment merging
  *
@@ -50,6 +51,7 @@ public class MergeState {
   public int[] docBase;                           // New docID base per reader
   public int mergedDocCount;                      // Total # merged docs
   public CheckAbort checkAbort;
+  public InfoStream infoStream;
 
   // Updated per field;
   public FieldInfo fieldInfo;

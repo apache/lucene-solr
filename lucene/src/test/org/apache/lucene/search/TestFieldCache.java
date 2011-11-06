@@ -59,7 +59,6 @@ public class TestFieldCache extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
-    writer.w.setInfoStream(VERBOSE ? System.out : null);
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
       doc.add(newField("theLong", String.valueOf(theLong--), StringField.TYPE_UNSTORED));

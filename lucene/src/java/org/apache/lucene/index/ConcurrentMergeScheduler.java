@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.CollectionUtil;
 
@@ -225,7 +226,10 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    * called and returned true.
    */
   protected void message(String message) {
-    writer.message("CMS: " + message);
+    final InfoStream infoStream = writer.infoStream;
+    if (infoStream != null) {
+      infoStream.message("CMS", message);
+    }
   }
 
   private synchronized void initMergeThreadPriority() {

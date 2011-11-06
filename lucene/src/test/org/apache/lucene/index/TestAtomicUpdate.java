@@ -131,7 +131,6 @@ public class TestAtomicUpdate extends LuceneTestCase {
         .setMaxBufferedDocs(7);
     ((TieredMergePolicy) conf.getMergePolicy()).setMaxMergeAtOnce(3);
     IndexWriter writer = new MockIndexWriter(directory, conf);
-    writer.setInfoStream(VERBOSE ? System.out : null);
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {

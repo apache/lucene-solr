@@ -479,9 +479,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       });
     
     writer = new IndexWriter(dir, conf);
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
     _TestUtil.reduceOpenFiles(writer);
 
     final ExecutorService es = random.nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory(testName));

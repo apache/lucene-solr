@@ -366,7 +366,6 @@ public class TestTermVectors extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
-    writer.w.setInfoStream(VERBOSE ? System.out : null);
     if (VERBOSE) {
       System.out.println("TEST: now add non-vectors");
     }

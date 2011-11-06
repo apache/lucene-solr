@@ -26,6 +26,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 
+import org.apache.lucene.util.InfoStream;
+
 /**
  *  Merges segments of approximately equal size, subject to
  *  an allowed number of segments per tier.  This is similar
@@ -648,7 +650,10 @@ public class TieredMergePolicy extends MergePolicy {
 
   private void message(String message) {
     if (verbose()) {
-      writer.get().message("TMP: " + message);
+      final InfoStream infoStream = writer.get().infoStream;
+      if (infoStream != null) {
+        infoStream.message("TMP", message);
+      }
     }
   }
 

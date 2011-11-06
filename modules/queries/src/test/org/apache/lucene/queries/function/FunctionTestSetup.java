@@ -101,7 +101,6 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
       iwc.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
     }
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, iwc);
-    iw.w.setInfoStream(VERBOSE ? System.out : null);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];

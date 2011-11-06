@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.InfoStream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -151,8 +152,12 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
 
   private void message(String message) {
-    if (verbose())
-      writer.get().message("UPGMP: " + message);
+    if (verbose()) {
+      final InfoStream infoStream = writer.get().infoStream;
+      if (infoStream != null) {
+        infoStream.message("UPGMP", message);
+      }
+    }
   }
   
 }

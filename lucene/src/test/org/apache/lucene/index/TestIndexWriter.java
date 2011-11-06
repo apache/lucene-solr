@@ -623,7 +623,6 @@ public class TestIndexWriter extends LuceneTestCase {
     public void testEmptyDocAfterFlushingRealDoc() throws IOException {
       Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer.setInfoStream(VERBOSE ? System.out : null);
       Document doc = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
@@ -698,7 +697,6 @@ public class TestIndexWriter extends LuceneTestCase {
         System.out.println("TEST: iter=" + i);
       }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
-      writer.setInfoStream(VERBOSE ? System.out : null);
       //LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       //lmp.setMergeFactor(2);
       //lmp.setUseCompoundFile(false);
@@ -766,7 +764,6 @@ public class TestIndexWriter extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(directory, conf);
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
-      writer.setInfoStream(VERBOSE ? System.out : null);
 
       for(int iter=0;iter<10;iter++) {
         if (VERBOSE) {
@@ -831,7 +828,6 @@ public class TestIndexWriter extends LuceneTestCase {
 
         // Reopen
         writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-        writer.setInfoStream(VERBOSE ? System.out : null);
       }
       writer.close();
     }
@@ -1159,7 +1155,6 @@ public class TestIndexWriter extends LuceneTestCase {
             IndexWriterConfig conf = newIndexWriterConfig(
                                                           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2);
             w = new IndexWriter(dir, conf);
-            w.setInfoStream(VERBOSE ? System.out : null);
 
             Document doc = new Document();
             doc.add(newField("field", "some text contents", storedTextType));
@@ -1378,7 +1373,6 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    writer.setInfoStream(new PrintStream(bos));
     writer.addDocument(new Document());
     writer.close();
 
@@ -1546,8 +1540,6 @@ public class TestIndexWriter extends LuceneTestCase {
                                          .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
     String[] files = dir.listAll();
 
-    writer.setInfoStream(VERBOSE ? System.out : null);
-
     // Creating over empty dir should not create any files,
     // or, at most the write.lock file
     final int extraFileCount;
@@ -1615,11 +1607,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     Random rand = random;
     RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
-    //w.w.setInfoStream(System.out);
     //w.w.setUseCompoundFile(false);
-    if (VERBOSE) {
-      w.w.setInfoStream(System.out);
-    }
     final int docCount = atLeast(200);
     final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
 

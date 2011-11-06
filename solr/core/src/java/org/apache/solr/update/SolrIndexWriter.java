@@ -31,6 +31,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
@@ -49,7 +51,6 @@ public class SolrIndexWriter extends IndexWriter {
   public static final AtomicLong numCloses = new AtomicLong();
 
   String name;
-  private PrintStream infoStream;
   private DirectoryFactory directoryFactory;
 
   public SolrIndexWriter(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
@@ -57,26 +58,25 @@ public class SolrIndexWriter extends IndexWriter {
         directoryFactory.get(path, config.lockType, forceNewDirectory),
         config.toIndexWriterConfig(schema).
             setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-            setIndexDeletionPolicy(delPolicy).setCodec(codec)
+            setIndexDeletionPolicy(delPolicy).setCodec(codec).setInfoStream(toInfoStream(config))
     );
     log.debug("Opened Writer " + name);
     this.name = name;
 
     this.directoryFactory = directoryFactory;
-    setInfoStream(config);
     numOpens.incrementAndGet();
   }
   
-  private void setInfoStream(SolrIndexConfig config)
-      throws IOException {
+  private static InfoStream toInfoStream(SolrIndexConfig config) throws IOException {
     String infoStreamFile = config.infoStreamFile;
     if (infoStreamFile != null) {
       File f = new File(infoStreamFile);
       File parent = f.getParentFile();
       if (parent != null) parent.mkdirs();
       FileOutputStream fos = new FileOutputStream(f, true);
-      infoStream = new TimeLoggingPrintStream(fos, true);
-      setInfoStream(infoStream);
+      return new PrintStreamInfoStream(new TimeLoggingPrintStream(fos, true));
+    } else {
+      return null;
     }
   }
 
@@ -118,7 +118,7 @@ public class SolrIndexWriter extends IndexWriter {
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
     Directory directory = getDirectory();
-    
+    final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();    
     try {
       super.close();
       if(infoStream != null) {
@@ -157,7 +157,7 @@ public class SolrIndexWriter extends IndexWriter {
   }
   
   // Helper class for adding timestamps to infoStream logging
-  class TimeLoggingPrintStream extends PrintStream {
+  static class TimeLoggingPrintStream extends PrintStream {
     private DateFormat dateFormat;
     public TimeLoggingPrintStream(OutputStream underlyingOutputStream,
         boolean autoFlush) {

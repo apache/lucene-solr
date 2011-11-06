@@ -68,7 +68,6 @@ public class TestExternalCodecs extends LuceneTestCase {
         setCodec(new CustomPerFieldCodec()).
             setMergePolicy(newLogMergePolicy(3))
     );
-    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     // uses default codec:
     doc.add(newField("field1", "this field uses the standard codec as the test", TextField.TYPE_UNSTORED));

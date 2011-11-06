@@ -93,7 +93,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
-    modifier.setInfoStream(VERBOSE ? System.out : null);
     int id = 0;
     int value = 100;
 
@@ -127,7 +126,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(1));
 
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addDocument(new Document());
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
@@ -147,7 +145,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(4)
           .setMaxBufferedDeleteTerms(4));
-      modifier.setInfoStream(VERBOSE ? System.out : null);
       int id = 0;
       int value = 100;
 
@@ -461,7 +458,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                              .setMaxBufferedDeleteTerms(1000)
                                              .setMergeScheduler(new ConcurrentMergeScheduler()));
       ((ConcurrentMergeScheduler) modifier.getConfig().getMergeScheduler()).setSuppressExceptions();
-      modifier.setInfoStream(VERBOSE ? System.out : null);
 
       // For each disk size, first try to commit against
       // dir that will hit random IOExceptions & disk
@@ -696,7 +692,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
                                                                      TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false).setMergePolicy(newLogMergePolicy()));
-    modifier.setInfoStream(VERBOSE ? System.out : null);
 
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(true);
@@ -909,7 +904,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
     };
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));
-    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", TextField.TYPE_UNSTORED));
     int num = atLeast(3);
@@ -952,7 +946,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
                                     .setRAMBufferSizeMB(0.2f).setMaxBufferedDocs(1000).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
-    w.setInfoStream(VERBOSE ? System.out : null);
     int count = 0;
     while(true) {
       Document doc = new Document();
@@ -998,7 +991,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
                                     setMaxBufferedDeleteTerms(flushAtDelCount).setMaxBufferedDocs(1000).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
-    w.setInfoStream(VERBOSE ? System.out : null);
     int count = 0;
     while(true) {
       Document doc = new Document();
@@ -1045,7 +1037,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           sawAfterFlush.set(true);
         }
       };
-    w.setInfoStream(VERBOSE ? System.out : null);
     int id = 0;
     while(true) {
       StringBuilder sb = new StringBuilder();

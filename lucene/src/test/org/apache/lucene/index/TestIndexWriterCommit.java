@@ -270,10 +270,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.optimize();
 
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
-
     // Open a reader before closing (commiting) the writer:
     IndexReader reader = IndexReader.open(dir, true);
 
@@ -297,9 +293,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       System.out.println("TEST: do real optimize");
     }
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
     writer.optimize();
     writer.close();
 

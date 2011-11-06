@@ -110,6 +110,8 @@ public abstract class LuceneTestCase extends Assert {
    * expected to print any messages.
    */
   public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
+  
+  public static final boolean INFOSTREAM = Boolean.parseBoolean(System.getProperty("tests.infostream", Boolean.toString(VERBOSE)));
 
   /** Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
@@ -216,6 +218,8 @@ public abstract class LuceneTestCase extends Assert {
   // default codec
   private static Codec savedCodec;
   
+  private static InfoStream savedInfoStream;
+
   private static SimilarityProvider similarityProvider;
 
   private static Locale locale;
@@ -263,6 +267,17 @@ public abstract class LuceneTestCase extends Assert {
       Set<String> postingsFormats = PostingsFormat.availablePostingsFormats();
       for (String postingsFormat : postingsFormats) {
         System.out.println("Loaded postingsFormat: '" + postingsFormat + "': " + PostingsFormat.forName(postingsFormat).getClass().getName());
+      }
+    }
+    
+    savedInfoStream = InfoStream.getDefault();
+    if (INFOSTREAM) {
+      // consume random for consistency
+      random.nextBoolean();
+      InfoStream.setDefault(new PrintStreamInfoStream(System.out));
+    } else {
+      if (random.nextBoolean()) {
+        InfoStream.setDefault(new NullInfoStream());
       }
     }
 
@@ -342,6 +357,7 @@ public abstract class LuceneTestCase extends Assert {
     
     String codecDescription = Codec.getDefault().toString();
     Codec.setDefault(savedCodec);
+    InfoStream.setDefault(savedInfoStream);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
     System.clearProperty("solr.solr.home");

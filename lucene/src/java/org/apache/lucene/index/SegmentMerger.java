@@ -40,6 +40,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ReaderUtil;
 
 /**
@@ -69,8 +70,10 @@ final class SegmentMerger {
   private final PayloadProcessorProvider payloadProcessorProvider;
   
   private final IOContext context;
+  private final InfoStream infoStream;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
+  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
+    this.infoStream = infoStream;
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
@@ -131,7 +134,7 @@ final class SegmentMerger {
     // threads.
 
     final int mergedDocs = mergeFields();
-    final SegmentWriteState segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, mergedDocs, termIndexInterval, codec, null, context);
+    final SegmentWriteState segmentWriteState = new SegmentWriteState(infoStream, directory, segment, fieldInfos, mergedDocs, termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
     mergePerDoc(segmentWriteState);
     mergeNorms();
@@ -503,6 +506,7 @@ final class SegmentMerger {
 
     // we may gather more readers than mergeState.readerCount
     mergeState = new MergeState();
+    mergeState.infoStream = infoStream;
     mergeState.readers = readers;
     mergeState.readerCount = readers.size();
     mergeState.fieldInfos = fieldInfos;

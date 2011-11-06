@@ -1,4 +1,4 @@
-package org.apache.lucene.benchmark.byTask.tasks;
+package org.apache.lucene.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,34 +19,31 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import java.io.IOException;
 import java.io.PrintStream;
-
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.util.InfoStream;
+import java.util.Date;
 
 /**
- * Rollback the index writer.
+ * @lucene.internal
  */
-public class RollbackIndexTask extends PerfTask {
-
-  public RollbackIndexTask(PerfRunData runData) {
-    super(runData);
+public class PrintStreamInfoStream extends InfoStream {
+  private final PrintStream stream;
+  
+  public PrintStreamInfoStream(PrintStream stream) {
+    this.stream = stream;
+  }
+  
+  @Override
+  public void message(String component, String message) {
+    stream.println(component + " " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);    
   }
 
-  boolean doWait = true;
-
   @Override
-  public int doLogic() throws IOException {
-    IndexWriter iw = getRunData().getIndexWriter();
-    if (iw != null) {
-      // If infoStream was set to output to a file, close it.
-      InfoStream infoStream = iw.getConfig().getInfoStream();
-      if (infoStream != null) {
-        infoStream.close();
-      }
-      iw.rollback();
-      getRunData().setIndexWriter(null);
+  public void close() throws IOException {
+    if (!isSystemStream()) {
+      stream.close();
     }
-    return 1;
+  }
+  
+  public boolean isSystemStream() {
+    return stream == System.out || stream == System.err;
   }
 }

@@ -88,7 +88,6 @@ public class TestIndexReader extends LuceneTestCase
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random)).setOpenMode(
               OpenMode.APPEND).setMaxBufferedDocs(2));
-      writer.setInfoStream(VERBOSE ? System.out : null);
       for(int i=0;i<7;i++)
         addDocumentWithFields(writer);
       writer.close();
@@ -1363,7 +1362,6 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addDocument(new Document());
     writer.commit();
     writer.addDocument(new Document());

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -86,30 +87,28 @@ public final class IndexUpgrader {
   }
   
   private final Directory dir;
-  private final PrintStream infoStream;
   private final IndexWriterConfig iwc;
   private final boolean deletePriorCommits;
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * {@code matchVersion}. The tool refuses to upgrade indexes with multiple commit points. */
   public IndexUpgrader(Directory dir, Version matchVersion) {
-    this(dir, new IndexWriterConfig(matchVersion, null), null, false);
+    this(dir, new IndexWriterConfig(matchVersion, null), false);
   }
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * {@code matchVersion}. You have the possibility to upgrade indexes with multiple commit points by removing
    * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
   public IndexUpgrader(Directory dir, Version matchVersion, PrintStream infoStream, boolean deletePriorCommits) {
-    this(dir, new IndexWriterConfig(matchVersion, null), infoStream, deletePriorCommits);
+    this(dir, new IndexWriterConfig(matchVersion, null).setInfoStream(infoStream), deletePriorCommits);
   }
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * config. You have the possibility to upgrade indexes with multiple commit points by removing
-   * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
-  public IndexUpgrader(Directory dir, IndexWriterConfig iwc, PrintStream infoStream, boolean deletePriorCommits) {
+   * all older ones. */
+  public IndexUpgrader(Directory dir, IndexWriterConfig iwc, boolean deletePriorCommits) {
     this.dir = dir;
     this.iwc = iwc;
-    this.infoStream = infoStream;
     this.deletePriorCommits = deletePriorCommits;
   }
   
@@ -131,10 +130,14 @@ public final class IndexUpgrader {
     
     final IndexWriter w = new IndexWriter(dir, c);
     try {
-      w.setInfoStream(infoStream);
-      w.message("Upgrading all pre-" + Constants.LUCENE_MAIN_VERSION + " segments of index directory '" + dir + "' to version " + Constants.LUCENE_MAIN_VERSION + "...");
+      InfoStream infoStream = c.getInfoStream();
+      if (infoStream != null) {
+        infoStream.message("IndexUpgrader", "Upgrading all pre-" + Constants.LUCENE_MAIN_VERSION + " segments of index directory '" + dir + "' to version " + Constants.LUCENE_MAIN_VERSION + "...");
+      }
       w.optimize();
-      w.message("All segments upgraded to version " + Constants.LUCENE_MAIN_VERSION);
+      if (infoStream != null) {
+        infoStream.message("IndexUpgrader", "All segments upgraded to version " + Constants.LUCENE_MAIN_VERSION);
+      }
     } finally {
       w.close();
     }

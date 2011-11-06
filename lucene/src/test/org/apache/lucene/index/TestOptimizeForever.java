@@ -56,7 +56,6 @@ public class TestOptimizeForever extends LuceneTestCase {
   public void test() throws Exception {
     final Directory d = newDirectory();
     final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.setInfoStream(VERBOSE ? System.out : null);
 
     // Try to make an index that requires optimizing:
     w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 11));

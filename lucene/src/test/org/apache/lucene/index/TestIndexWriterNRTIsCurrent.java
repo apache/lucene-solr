@@ -41,9 +41,6 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random));
     IndexWriter writer = new IndexWriter(dir, conf);
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
     ReaderHolder holder = new ReaderHolder();
     ReaderThread[] threads = new ReaderThread[atLeast(3)];
     final CountDownLatch latch = new CountDownLatch(1);

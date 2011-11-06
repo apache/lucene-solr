@@ -454,7 +454,7 @@ public final class DocumentsWriterFlushControl {
 
   void addFlushableState(ThreadState perThread) {
     if (documentsWriter.infoStream != null) {
-      documentsWriter.message("FC: " + Thread.currentThread().getName() + ": addFlushableState " + perThread.perThread);
+      documentsWriter.infoStream.message("DWFC", Thread.currentThread().getName() + ": addFlushableState " + perThread.perThread);
     }
     final DocumentsWriterPerThread dwpt = perThread.perThread;
     assert perThread.isHeldByCurrentThread();

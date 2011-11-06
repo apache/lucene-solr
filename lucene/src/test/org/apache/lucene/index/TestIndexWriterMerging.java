@@ -63,7 +63,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(2))
     );
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(indexA, indexB);
     writer.optimize();
     writer.close();
@@ -125,7 +124,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
         TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
                                                   IndexWriterConfig.DISABLE_AUTO_FLUSH));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     Document document = new Document();
 
     document = new Document();
@@ -233,8 +231,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
             setMergePolicy(newLogMergePolicy(50))
     );
 
-    writer.setInfoStream(VERBOSE ? System.out : null);
-
     FieldType customType = new FieldType();
     customType.setStored(true);
 
@@ -308,7 +304,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
     lmp.setMaxMergeDocs(20);
     lmp.setMergeFactor(2);
     IndexWriter iw = new IndexWriter(dir, conf);
-    iw.setInfoStream(VERBOSE ? System.out : null);
     Document document = new Document();
 
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);

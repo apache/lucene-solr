@@ -45,7 +45,6 @@ public class TestDemo extends LuceneTestCase {
     // To store an index on disk, use this instead:
     //Directory directory = FSDirectory.open("/tmp/testindex");
     RandomIndexWriter iwriter = new RandomIndexWriter(random, directory, analyzer);
-    iwriter.w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;

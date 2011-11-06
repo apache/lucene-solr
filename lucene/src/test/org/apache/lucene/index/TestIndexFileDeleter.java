@@ -54,8 +54,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
             setMergePolicy(mergePolicy)
     );
 
-    writer.setInfoStream(VERBOSE ? System.out : null);
-
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
