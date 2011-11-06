@@ -647,7 +647,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Send JSON update commands */
   public static String updateJ(String json, SolrParams args) throws Exception {
     SolrCore core = h.getCore();
-    if (args == null) args = params("wt","json","indent","true");
+    if (args == null) {
+      args = params("wt","json","indent","true");
+    } else {
+      ModifiableSolrParams newArgs = new ModifiableSolrParams(args);
+      if (newArgs.get("wt") == null) newArgs.set("wt","json");
+      if (newArgs.get("indent") == null) newArgs.set("indent","true");
+      args = newArgs;
+    }
     DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/update/json");
     if (handler == null) {
@@ -714,6 +721,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return out.toString();
   }
 
+    /** Creates a JSON add command from a SolrInputDocument list.  Doesn't currently handle boosts. */
+  public static String jsonDelId(Object... ids) {
+    CharArr out = new CharArr();
+    try {
+      out.append('{');
+      boolean first = true;
+      for (Object id : ids) {
+        if (first) first=false;
+        else out.append(',');
+        out.append("\"delete\":{\"id\":");
+        out.append(JSONUtil.toJSON(id));
+        out.append('}');
+      }
+      out.append('}');
+    } catch (IOException e) {
+      // should never happen
+    }
+    return out.toString();
+  }
 
   /////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// random document / index creation ///////////////////////

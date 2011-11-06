@@ -107,6 +107,7 @@ class VersionProcessor extends UpdateRequestProcessor
     }
 
     boolean leaderForUpdate = true; // TODO: figure out if I'm the leader
+    leaderForUpdate = req.getParams().getBool("leader",true);  // TODO: we need a better indicator of when an update comes from a leader
     boolean needToForward = false;  // TODO: figure out if I need to forward this to the leader
 
     if (needToForward) {
@@ -149,6 +150,8 @@ class VersionProcessor extends UpdateRequestProcessor
           bucket.updateHighest(version);
         } else {
           // The leader forwarded us this update.
+          cmd.setVersion(versionOnUpdate);
+
           // if we aren't the leader, then we need to check that updates were not re-ordered
           if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
             // we're OK... this update has a version higher than anything we've seen
@@ -201,6 +204,7 @@ class VersionProcessor extends UpdateRequestProcessor
     }
 
     boolean leaderForUpdate = true; // TODO: figure out if I'm the leader
+    leaderForUpdate = req.getParams().getBool("leader",true);  // TODO: we need a better indicator of when an update comes from a leader
     boolean needToForward = false;  // TODO: figure out if I need to forward this to the leader
 
     if (needToForward) {
@@ -212,8 +216,8 @@ class VersionProcessor extends UpdateRequestProcessor
     // we may or may not be the leader.
 
     // Find the version
-    long versionOnUpdate = 0;
-   // TODO: check for the version in the request params (this will be for user provided versions and optimistic concurrency only)
+    String versionOnUpdateS = req.getParams().get("_version_");
+    Long versionOnUpdate = versionOnUpdateS == null ? null : Long.parseLong(versionOnUpdateS);
 
     VersionBucket bucket = vinfo.bucket(hash(cmd));
     synchronized (bucket) {
@@ -226,6 +230,7 @@ class VersionProcessor extends UpdateRequestProcessor
           bucket.updateHighest(version);
         } else {
           // The leader forwarded us this update.
+          cmd.setVersion(versionOnUpdate);
           // if we aren't the leader, then we need to check that updates were not re-ordered
           if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
             // we're OK... this update has a version higher than anything we've seen
