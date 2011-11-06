@@ -28,7 +28,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultFieldsWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
@@ -284,17 +283,7 @@ final class SegmentMerger {
       fieldsWriter.close();
     }
 
-    // nocommit: do this check in codec somehow?
-    final String fileName = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
-    final long fdxFileLength = directory.fileLength(fileName);
-
-    if (4+((long) docCount)*8 != fdxFileLength)
-      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
-      // we detect that the bug has struck, here, and
-      // throw an exception to prevent the corruption from
-      // entering the index.  See LUCENE-1282 for
-      // details.
-      throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
+    fieldsWriter.verify(docCount);
     segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codec, null, context);
 
     return docCount;

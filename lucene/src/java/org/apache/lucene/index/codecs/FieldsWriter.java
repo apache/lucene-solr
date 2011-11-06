@@ -41,4 +41,8 @@ public abstract class FieldsWriter implements Closeable {
   public abstract void writeField(int fieldNumber, IndexableField field) throws IOException;
 
   public abstract void abort();
+  
+  /** called AFTER close(), to allow an implementation to possibly verify the output is ok */
+  // TODO: better name? default no-op impl? this is really pretty specific to the default impl?
+  public abstract void verify(int docCount) throws IOException;
 }

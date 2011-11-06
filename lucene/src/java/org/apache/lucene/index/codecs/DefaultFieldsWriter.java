@@ -239,4 +239,18 @@ public final class DefaultFieldsWriter extends FieldsWriter {
       }
     }
   }
+
+  @Override
+  public void verify(int docCount) throws IOException {
+    final String fileName = IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION);
+    final long fdxFileLength = directory.fileLength(fileName);
+
+    if (4+((long) docCount)*8 != fdxFileLength)
+      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
+      // we detect that the bug has struck, here, and
+      // throw an exception to prevent the corruption from
+      // entering the index.  See LUCENE-1282 for
+      // details.
+      throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
+  }
 }
