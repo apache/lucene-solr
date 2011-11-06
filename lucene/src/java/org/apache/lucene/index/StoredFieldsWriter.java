@@ -68,10 +68,13 @@ final class StoredFieldsWriter {
     }
 
     if (fieldsWriter != null) {
-      fieldsWriter.close();
-      fieldsWriter.verify(state.numDocs);
-      fieldsWriter = null;
-      lastDocID = 0;
+      try {
+        fieldsWriter.finish(state.numDocs);
+      } finally {
+        fieldsWriter.close();
+        fieldsWriter = null;
+        lastDocID = 0;
+      }
     }
   }
 

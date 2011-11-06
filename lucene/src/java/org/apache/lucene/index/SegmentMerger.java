@@ -279,11 +279,11 @@ final class SegmentMerger {
                                             reader, matchingFieldsReader);
         }
       }
+      fieldsWriter.finish(docCount);
     } finally {
       fieldsWriter.close();
     }
 
-    fieldsWriter.verify(docCount);
     segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codec, null, context);
 
     return docCount;
