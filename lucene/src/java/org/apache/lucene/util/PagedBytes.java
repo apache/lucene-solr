@@ -441,6 +441,7 @@ public final class PagedBytes {
 
     @Override
     public void readBytes(byte[] b, int offset, int len) {
+      assert b.length >= offset + len;
       final int offsetEnd = offset + len;
       while (true) {
         final int blockLeft = blockSize - currentBlockUpto;
@@ -485,6 +486,7 @@ public final class PagedBytes {
 
     @Override
     public void writeBytes(byte[] b, int offset, int length) throws IOException {
+      assert b.length >= offset + length;
       if (length == 0) {
         return;
       }
