@@ -75,7 +75,8 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
 
   public void testMerge() throws IOException {
-    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), Codec.getDefault(), newIOContext(random));
+    final Codec codec = Codec.getDefault();
+    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), codec, newIOContext(random));
     merger.add(reader1);
     merger.add(reader2);
     int docsMerged = merger.merge();
@@ -83,7 +84,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final FieldInfos fieldInfos = merger.fieldInfos();
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = SegmentReader.get(false, mergedDir, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
-                                                                                     merger.getCodec(), fieldInfos),
+                                                                                     codec, fieldInfos),
                                                    true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);

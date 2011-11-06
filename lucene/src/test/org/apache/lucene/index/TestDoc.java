@@ -198,7 +198,8 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
       SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
-      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, null, new FieldInfos(), Codec.getDefault(), context);
+      final Codec codec = Codec.getDefault();
+      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, null, new FieldInfos(), codec, context);
 
       merger.add(r1);
       merger.add(r2);
@@ -207,7 +208,7 @@ public class TestDoc extends LuceneTestCase {
       r2.close();
       final FieldInfos fieldInfos =  merger.fieldInfos();
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
-                                               false, merger.getCodec(), fieldInfos);
+                                               false, codec, fieldInfos);
       
       if (useCompoundFile) {
         Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info, newIOContext(random));

@@ -2582,7 +2582,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       final FieldInfos fieldInfos = merger.fieldInfos();
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, merger.getCodec(),
+                                         false, codec,
                                          fieldInfos);
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -3686,10 +3686,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       mergedDocCount = merge.info.docCount = merger.merge();
 
       // Record which codec was used to write the segment
-      merge.info.setCodec(merger.getCodec());
+      merge.info.setCodec(codec);
 
       if (infoStream != null) {
-        message("merge codecs=" + merger.getCodec());
+        message("merge codec=" + codec);
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
       anyNonBulkMerges |= merger.getAnyNonBulkMerges();

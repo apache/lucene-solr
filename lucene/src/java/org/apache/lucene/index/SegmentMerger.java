@@ -484,11 +484,6 @@ final class SegmentMerger {
     }
   }
 
-  Codec getCodec() {
-    assert segmentWriteState != null;
-    return segmentWriteState.codec;
-  }
-
   private final void mergeTerms() throws CorruptIndexException, IOException {
 
     // Let CodecProvider decide which codec will be used to write
