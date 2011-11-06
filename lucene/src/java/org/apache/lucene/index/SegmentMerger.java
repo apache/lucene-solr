@@ -58,8 +58,6 @@ final class SegmentMerger {
   private final List<MergeState.IndexReaderAndLiveDocs> readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
   private final FieldInfos fieldInfos;
 
-  private int mergedDocs;
-
   private final MergeState.CheckAbort checkAbort;
 
   /** Maximum number of contiguous documents to bulk-copy
@@ -133,13 +131,13 @@ final class SegmentMerger {
     // IndexWriter.close(false) takes to actually stop the
     // threads.
 
-    mergedDocs = mergeFields();
-    mergeTerms();
+    final int mergedDocs = mergeFields();
+    mergeTerms(mergedDocs);
     mergePerDoc();
     mergeNorms();
 
     if (fieldInfos.hasVectors()) {
-      mergeVectors();
+      mergeVectors(mergedDocs);
     }
     // write FIS once merge is done. IDV might change types or drops fields
     fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
@@ -373,7 +371,7 @@ final class SegmentMerger {
    * Merge the TermVectors from each of the segments into the new one.
    * @throws IOException
    */
-  private final void mergeVectors() throws IOException {
+  private final void mergeVectors(int mergedDocs) throws IOException {
     TermVectorsWriter termVectorsWriter = new TermVectorsWriter(directory, segment, fieldInfos, context);
 
     try {
@@ -484,7 +482,7 @@ final class SegmentMerger {
     }
   }
 
-  private final void mergeTerms() throws CorruptIndexException, IOException {
+  private final void mergeTerms(int mergedDocs) throws CorruptIndexException, IOException {
 
     // Let CodecProvider decide which codec will be used to write
     // the new segment:
