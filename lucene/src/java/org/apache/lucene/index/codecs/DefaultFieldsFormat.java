@@ -43,6 +43,6 @@ public class DefaultFieldsFormat extends FieldsFormat {
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    // TODO!
+    DefaultFieldsReader.files(dir, info, files);
   }
 }

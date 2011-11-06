@@ -28,6 +28,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultFieldsWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
@@ -283,7 +284,8 @@ final class SegmentMerger {
       fieldsWriter.close();
     }
 
-    final String fileName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+    // nocommit: do this check in codec somehow?
+    final String fileName = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
     final long fdxFileLength = directory.fileLength(fileName);
 
     if (4+((long) docCount)*8 != fdxFileLength)

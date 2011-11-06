@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldReaderException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -35,6 +36,7 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
+import java.util.Set;
 
 /**
  * Class responsible for access to stored document fields.
@@ -270,5 +272,20 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     fieldsStream.seek(startOffset);
 
     return fieldsStream;
+  }
+  
+  // TODO: split into PreFlexFieldsReader so it can handle this shared docstore crap?
+  // only preflex segments refer to these?
+  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    if (info.getDocStoreOffset() != -1) {
+      assert info.getDocStoreSegment() != null;
+      if (!info.getDocStoreIsCompoundFile()) {
+        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", DefaultFieldsWriter.FIELDS_EXTENSION));
+      }
+    } else {
+      files.add(IndexFileNames.segmentFileName(info.name, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(info.name, "", DefaultFieldsWriter.FIELDS_EXTENSION));
+    }
   }
 }

@@ -61,9 +61,11 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   // when removing support for old versions, leave the last supported version here
   static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
 
-  // TODO: remove from IndexFileNames
-  public static final String FIELDS_EXTENSION = IndexFileNames.FIELDS_EXTENSION;
-  public static final String FIELDS_INDEX_EXTENSION = IndexFileNames.FIELDS_INDEX_EXTENSION;
+  /** Extension of stored fields file */
+  public static final String FIELDS_EXTENSION = "fdt";
+  
+  /** Extension of stored fields index file */
+  public static final String FIELDS_INDEX_EXTENSION = "fdx";
 
   // If null - we were supplied with streams, if notnull - we manage them ourselves
   private Directory directory;

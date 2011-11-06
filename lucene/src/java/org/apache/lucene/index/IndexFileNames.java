@@ -53,12 +53,6 @@ public final class IndexFileNames {
   /** Extension of norms file */
   public static final String NORMS_EXTENSION = "nrm";
 
-  /** Extension of stored fields index file */
-  public static final String FIELDS_INDEX_EXTENSION = "fdx";
-
-  /** Extension of stored fields file */
-  public static final String FIELDS_EXTENSION = "fdt";
-
   /** Extension of vectors fields file */
   public static final String VECTORS_FIELDS_EXTENSION = "tvf";
 
@@ -100,8 +94,6 @@ public final class IndexFileNames {
     COMPOUND_FILE_EXTENSION,
     COMPOUND_FILE_ENTRIES_EXTENSION,
     FIELD_INFOS_EXTENSION,
-    FIELDS_INDEX_EXTENSION,
-    FIELDS_EXTENSION,
     DELETES_EXTENSION,
     VECTORS_INDEX_EXTENSION,
     VECTORS_DOCUMENTS_EXTENSION,
@@ -116,8 +108,6 @@ public final class IndexFileNames {
     VECTORS_INDEX_EXTENSION,
     VECTORS_FIELDS_EXTENSION,
     VECTORS_DOCUMENTS_EXTENSION,
-    FIELDS_INDEX_EXTENSION,
-    FIELDS_EXTENSION
   };
 
   public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
@@ -127,8 +117,6 @@ public final class IndexFileNames {
   
   static final String COMPOUND_EXTENSIONS_NOT_CODEC[] = new String[] {
     FIELD_INFOS_EXTENSION,
-    FIELDS_INDEX_EXTENSION,
-    FIELDS_EXTENSION,
   };
   
   /** File extensions for term vector support */
@@ -172,6 +160,7 @@ public final class IndexFileNames {
    * Returns true if the provided filename is one of the doc store files (ends
    * with an extension in {@link #STORE_INDEX_EXTENSIONS}).
    */
+  // TODO: this method is stupid.
   public static boolean isDocStoreFile(String fileName) {
     if (fileName.endsWith(COMPOUND_FILE_STORE_EXTENSION))
       return true;

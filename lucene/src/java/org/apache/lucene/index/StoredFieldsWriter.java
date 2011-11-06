@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultFieldsWriter;
 import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -72,7 +73,8 @@ final class StoredFieldsWriter {
       fieldsWriter = null;
       lastDocID = 0;
 
-      String fieldsIdxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+      // nocommit: do this check in codec somehow?
+      String fieldsIdxName = IndexFileNames.segmentFileName(state.segmentName, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
       if (4 + ((long) state.numDocs) * 8 != state.directory.fileLength(fieldsIdxName)) {
         throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
       }

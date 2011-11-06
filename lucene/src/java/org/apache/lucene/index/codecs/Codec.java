@@ -45,7 +45,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     postingsFormat().files(dir, info, "", files);
-    //TODO: not yet fieldsFormat().files(dir, info, files);
+    fieldsFormat().files(dir, info, files);
     docValuesFormat().files(dir, info, files);
   }
   
