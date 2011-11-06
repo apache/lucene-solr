@@ -696,7 +696,7 @@
     <fileset dir="contrib" id="clover.contrib.test.src.files">
       <include name="**/test/**/*.java"/>
     </fileset>
-    <fileset dir="${tests-framework.src.dir}" id="clover.test.src.files">
+    <fileset dir="${tests-framework.src.dir}" id="clover.test-framework.src.files">
       <include name="**/*.java" />
     </fileset>
     <fileset dir="${tests.src.dir}" id="clover.test.src.files">
@@ -711,12 +711,14 @@
        <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
           <format type="html" filter="assert"/>
           <testsources refid="clover.test.src.files"/>
+          <testsources refid="clover.test-framework.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
           <testresults refid="clover.test.result.files"/>
        </current>
        <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
           <format type="xml" filter="assert"/>
           <testsources refid="clover.test.src.files"/>
+          <testsources refid="clover.test-framework.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
           <testresults refid="clover.test.result.files"/>
        </current>
