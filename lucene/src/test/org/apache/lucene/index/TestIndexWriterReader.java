@@ -785,7 +785,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     // final check
     IndexReader r2 = IndexReader.openIfChanged(r);
-    if (r2 != r) {
+    if (r2 != null) {
       r.close();
       r = r2;
     }
