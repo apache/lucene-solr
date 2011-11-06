@@ -155,6 +155,9 @@ public class _TestUtil {
       System.out.println(bos.toString());
       throw new RuntimeException("CheckIndex failed");
     } else {
+      if (LuceneTestCase.INFOSTREAM) {
+        System.out.println(bos.toString());
+      }
       return indexStatus;
     }
   }
