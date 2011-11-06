@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.EOFException;
 
 /** A memory-resident {@link IndexInput} implementation. 
  *  
@@ -35,11 +36,12 @@ public class RAMInputStream extends IndexInput implements Cloneable {
   private long bufferStart;
   private int bufferLength;
 
-  public RAMInputStream(RAMFile f) throws IOException {
+  public RAMInputStream(String name, RAMFile f) throws IOException {
+    super("RAMInputStream(name=" + name + ")");
     file = f;
     length = file.length;
     if (length/BUFFER_SIZE >= Integer.MAX_VALUE) {
-      throw new IOException("Too large RAMFile! "+length); 
+      throw new IOException("RAMInputStream too large length=" + length + ": " + name); 
     }
 
     // make sure that we switch to the
@@ -88,9 +90,9 @@ public class RAMInputStream extends IndexInput implements Cloneable {
     bufferStart = (long) BUFFER_SIZE * (long) currentBufferIndex;
     if (currentBufferIndex >= file.numBuffers()) {
       // end of file reached, no more buffers left
-      if (enforceEOF)
-        throw new IOException("Read past EOF");
-      else {
+      if (enforceEOF) {
+        throw new EOFException("Read past EOF: " + this);
+      } else {
         // Force EOF if a read takes place at this position
         currentBufferIndex--;
         bufferPosition = BUFFER_SIZE;

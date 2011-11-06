@@ -1,14 +1,5 @@
 package org.apache.lucene.util;
 
-import java.io.IOException;
-import java.util.Random;
-
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ThreadInterruptedException;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +16,14 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.util.Random;
+
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Test utility - slow directory
@@ -84,6 +83,7 @@ public class SlowRAMDirectory extends RAMDirectory {
     private int numRead = 0;
     
     public SlowIndexInput(IndexInput ii) {
+      super("SlowIndexInput(" + ii + ")");
       this.ii = ii;
     }
     

@@ -40,33 +40,33 @@ public class CollectionStatistics {
   }
   
   /** returns the field name */
-  public String field() {
+  public final String field() {
     return field;
   }
   
   /** returns the total number of documents, regardless of 
    * whether they all contain values for this field. 
    * @see IndexReader#maxDoc() */
-  public int maxDoc() {
+  public final int maxDoc() {
     return maxDoc;
   }
   
   /** returns the total number of documents that
    * have at least one term for this field. 
    * @see Terms#getDocCount() */
-  public int docCount() {
+  public final int docCount() {
     return docCount;
   }
   
   /** returns the total number of tokens for this field
    * @see Terms#getSumTotalTermFreq() */
-  public long sumTotalTermFreq() {
+  public final long sumTotalTermFreq() {
     return sumTotalTermFreq;
   }
   
   /** returns the total number of postings for this field 
    * @see Terms#getSumDocFreq() */
-  public long sumDocFreq() {
+  public final long sumDocFreq() {
     return sumDocFreq;
   }
 }

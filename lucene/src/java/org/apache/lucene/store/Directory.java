@@ -225,8 +225,8 @@ public abstract class Directory implements Closeable {
     return new IndexInputSlicer() {
       private final IndexInput base = Directory.this.openInput(name, context);
       @Override
-      public IndexInput openSlice(long offset, long length) {
-        return new SlicedIndexInput(base, offset, length);
+      public IndexInput openSlice(String sliceDescription, long offset, long length) {
+        return new SlicedIndexInput("SlicedIndexInput(" + sliceDescription + " in " + base + ")", base, offset, length);
       }
       @Override
       public void close() throws IOException {
@@ -258,7 +258,7 @@ public abstract class Directory implements Closeable {
     /**
      * Returns an {@link IndexInput} slice starting at the given offset with the given length.
      */
-    public abstract IndexInput openSlice(long offset, long length) throws IOException;
+    public abstract IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException;
 
     /**
      * Returns an {@link IndexInput} slice starting at offset <i>0</i> with a
@@ -275,12 +275,12 @@ public abstract class Directory implements Closeable {
     long fileOffset;
     long length;
     
-    SlicedIndexInput(final IndexInput base, final long fileOffset, final long length) {
-      this(base, fileOffset, length, BufferedIndexInput.BUFFER_SIZE);
+    SlicedIndexInput(final String sliceDescription, final IndexInput base, final long fileOffset, final long length) {
+      this(sliceDescription, base, fileOffset, length, BufferedIndexInput.BUFFER_SIZE);
     }
     
-    SlicedIndexInput(final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
-      super(readBufferSize);
+    SlicedIndexInput(final String sliceDescription, final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
+      super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + fileOffset + ":" + (fileOffset+length) + ")", readBufferSize);
       this.base = (IndexInput) base.clone();
       this.fileOffset = fileOffset;
       this.length = length;

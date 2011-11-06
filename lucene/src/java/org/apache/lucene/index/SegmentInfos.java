@@ -255,10 +255,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     
       // check that it is a format we can understand
       if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(segmentFileName, format,
+        throw new IndexFormatTooOldException(input, format,
           DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
       if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(segmentFileName, format,
+        throw new IndexFormatTooNewException(input, format,
           DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
 
       if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
@@ -271,7 +271,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       final long checksumNow = input.getChecksum();
       final long checksumThen = input.readLong();
       if (checksumNow != checksumThen)
-        throw new CorruptIndexException("checksum mismatch in segments file");
+        throw new CorruptIndexException("checksum mismatch in segments file (resource: " + input + ")");
       success = true;
     }
     finally {
@@ -634,8 +634,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
                   }
                 } else {
                   /* TODO: Investigate this! 
-                  throw new IndexFormatTooNewException("segments.gen version number invalid: " + version +
-                    " (must be " + FORMAT_SEGMENTS_GEN_CURRENT + ")");
+                  throw new IndexFormatTooNewException(genInput, version, FORMAT_SEGMENTS_GEN_CURRENT, FORMAT_SEGMENTS_GEN_CURRENT);
                   */
                 }
               } catch (IOException err2) {

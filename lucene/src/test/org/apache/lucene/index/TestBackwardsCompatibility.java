@@ -122,7 +122,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                       "31.optimized.nocfs",
   };
   
-  /** This test checks that *only* IndexFormatTooOldExceptions are throws when you open and operate on too old indexes! */
+  /** This test checks that *only* IndexFormatTooOldExceptions are thrown when you open and operate on too old indexes! */
   public void testUnsupportedOldIndexes() throws Exception {
     for(int i=0;i<unsupportedNames.length;i++) {
       if (VERBOSE) {
@@ -154,6 +154,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           System.out.println("TEST: got expected exc:");
           e.printStackTrace(System.out);
         }
+        // Make sure exc message includes a path=
+        assertTrue("got exc message: " + e.getMessage(), e.getMessage().indexOf("path=\"") != -1);
       } finally {
         // we should fail to open IW, and so it should be null when we get here.
         // However, if the test fails (i.e., IW did not fail on open), we need

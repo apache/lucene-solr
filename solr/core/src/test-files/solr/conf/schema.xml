@@ -51,6 +51,9 @@
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
+
 
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -457,6 +460,8 @@
    <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
 
    <field name="home_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
+   <field name="work_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
+   
    <field name="home_gh" type="geohash" indexed="true" stored="true" multiValued="false"/>
 
 
@@ -572,6 +577,7 @@
    <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
+   <dynamicField name="*_b1" type="boolean" indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
    <dynamicField name="*_f1"  type="float"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
@@ -579,6 +585,11 @@
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_dt1" type="date"    indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
+   <dynamicField name="*_by"  type="byte"  indexed="true" stored="true"/>
+   <dynamicField name="*_by1" type="byte"  indexed="true" stored="true" multiValued="false"/>
+   <dynamicField name="*_sh" type="short"  indexed="true" stored="true"/>
+   <dynamicField name="*_sh1" type="short"  indexed="true" stored="true" multiValued="false"/>
+
 
       <!-- some trie-coded dynamic fields for faster range queries -->
    <dynamicField name="*_ti" type="tint"    indexed="true"  stored="true"/>

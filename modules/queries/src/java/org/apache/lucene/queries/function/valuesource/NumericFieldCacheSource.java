@@ -37,8 +37,8 @@ public abstract class NumericFieldCacheSource<T extends CachedArray> extends Fie
     if (o.getClass() != this.getClass()) return false;
     NumericFieldCacheSource other = (NumericFieldCacheSource) o;
     return super.equals(other)
-            && this.creator == null ? other.creator == null :
-            this.creator.getClass() == other.creator.getClass();
+            && (this.creator == null ? other.creator == null :
+            this.creator.getClass() == other.creator.getClass());
   }
 
   @Override

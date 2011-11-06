@@ -63,7 +63,7 @@ import java.util.Set;
  * 
  * The ShowFileRequestHandler uses the {@link RawResponseWriter} (wt=raw) to return
  * file contents.  If you need to use a different writer, you will need to change 
- * the registered invarient param for wt.
+ * the registered invariant param for wt.
  * 
  * If you want to override the contentType header returned for a given file, you can
  * set it directly using: {@link #USE_CONTENT_TYPE}.  For example, to get a plain text 

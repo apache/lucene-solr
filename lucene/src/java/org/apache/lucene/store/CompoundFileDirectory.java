@@ -139,7 +139,7 @@ public final class CompoundFileDirectory extends Directory {
     if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
       if (firstInt < CompoundFileWriter.FORMAT_CURRENT) {
         throw new CorruptIndexException("Incompatible format version: "
-            + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT);
+            + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT + " (resource: " + stream + ")");
       }
       // It's a post-3.1 index, read the count.
       count = stream.readVInt();
@@ -155,7 +155,7 @@ public final class CompoundFileDirectory extends Directory {
     for (int i=0; i<count; i++) {
       long offset = stream.readLong();
       if (offset < 0 || offset > streamLength) {
-        throw new CorruptIndexException("Invalid CFS entry offset: " + offset);
+        throw new CorruptIndexException("Invalid CFS entry offset: " + offset + " (resource: " + stream + ")");
       }
       String id = stream.readString();
       
@@ -218,7 +218,7 @@ public final class CompoundFileDirectory extends Directory {
     if (entry == null) {
       throw new IOException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
     }
-    return handle.openSlice(entry.offset, entry.length);
+    return handle.openSlice(name, entry.offset, entry.length);
   }
   
   /** Returns an array of strings, one for each file in the directory. */
@@ -318,13 +318,13 @@ public final class CompoundFileDirectory extends Directory {
       }
       
       @Override
-      public IndexInput openSlice(long offset, long length) throws IOException {
-        return handle.openSlice(entry.offset + offset, length);
+      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
+        return handle.openSlice(sliceDescription, entry.offset + offset, length);
       }
 
       @Override
       public IndexInput openFullSlice() throws IOException {
-        return openSlice(0, entry.length);
+        return openSlice("full-slice", 0, entry.length);
       }
     };
   }

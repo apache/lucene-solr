@@ -63,7 +63,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     //large distance
     checkHits(fieldName, "33.0,-80.0", 5000, 13);
   }
-
+  
   @Test
   public void testGeoHash() throws Exception {
     String fieldName = "home_gh";
@@ -117,6 +117,21 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     // falls outside of the real distance, but inside the bounding box   
     checkHits(fieldName, true, "43.517030,-96.789603", 110, 0);
     checkHits(fieldName, false, "43.517030,-96.789603", 110, 1, 17);
+    
+    
+	// Tests SOLR-2829
+	String fieldNameHome = "home_ll";
+	String fieldNameWork = "work_ll";
+
+	clearIndex();
+	assertU(adoc("id", "1", fieldNameHome, "52.67,7.30", fieldNameWork,"48.60,11.61"));
+	assertU(commit());
+
+	checkHits(fieldNameHome, "52.67,7.30", 1, 1);
+	checkHits(fieldNameWork, "48.60,11.61", 1, 1);
+	checkHits(fieldNameWork, "52.67,7.30", 1, 0);
+	checkHits(fieldNameHome, "48.60,11.61", 1, 0); 
+	  
   }
 
   private void checkHits(String fieldName, String pt, double distance, int count, int ... docIds) {

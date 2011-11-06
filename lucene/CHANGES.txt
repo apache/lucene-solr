@@ -759,6 +759,9 @@ Build
 
 * SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
+* LUCENE-3561: Fix maven xxx-src.jar files that were missing resources.
+  (Uwe Schindler)
+
 ======================= Lucene 3.4.0 =======================
 
 Bug fixes

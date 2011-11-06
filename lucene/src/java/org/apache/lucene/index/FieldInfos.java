@@ -650,10 +650,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     format = input.readVInt();
 
     if (format > FORMAT_MINIMUM) {
-      throw new IndexFormatTooOldException(fileName, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+      throw new IndexFormatTooOldException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
     }
     if (format < FORMAT_CURRENT) {
-      throw new IndexFormatTooNewException(fileName, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+      throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
     }
 
     final int size = input.readVInt(); //read in the size
@@ -675,7 +675,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         if (format <= FORMAT_OMIT_POSITIONS) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
         } else {
-          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format);
+          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format + " (resource: " + input + ")");
         }
       } else {
         indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -745,7 +745,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
 
     if (input.getFilePointer() != input.length()) {
-      throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length());
+      throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
     }    
   }
   

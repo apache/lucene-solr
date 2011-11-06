@@ -85,9 +85,9 @@ public final class SegmentTermEnum implements Cloneable {
 
       // check that it is a format we can understand
       if (format > FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+        throw new IndexFormatTooOldException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
       if (format < FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+        throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
 
       size = input.readLong();                    // read the size
       

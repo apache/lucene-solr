@@ -35,19 +35,19 @@ public class TermStatistics {
   }
   
   /** returns the term text */
-  public BytesRef term() {
+  public final BytesRef term() {
     return term;
   }
   
   /** returns the number of documents this term occurs in 
    * @see IndexReader#docFreq(String, BytesRef) */
-  public int docFreq() {
+  public final int docFreq() {
     return docFreq;
   }
   
   /** returns the total number of occurrences of this term
    * @see IndexReader#totalTermFreq(String, BytesRef) */
-  public long totalTermFreq() {
+  public final long totalTermFreq() {
     return totalTermFreq;
   }
 }

@@ -55,10 +55,9 @@ public class SimpleFSDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new SimpleFSIndexInput(new File(directory, name), context, getReadChunkSize());
+    final File path = new File(directory, name);
+    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", path, context, getReadChunkSize());
   }
-  
-  
 
   public IndexInputSlicer createSlicer(final String name,
       final IOContext context) throws IOException {
@@ -73,18 +72,17 @@ public class SimpleFSDirectory extends FSDirectory {
       }
 
       @Override
-      public IndexInput openSlice(long offset, long length) throws IOException {
-        return new SimpleFSIndexInput(descriptor, offset,
+      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
+        return new SimpleFSIndexInput("SimpleFSIndexInput(" + sliceDescription + " in path=\"" + file.getPath() + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
             length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
       }
 
       @Override
       public IndexInput openFullSlice() throws IOException {
-        return openSlice(0, descriptor.length);
+        return openSlice("full-slice", 0, descriptor.length);
       }
     };
   }
-
 
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
   
@@ -117,16 +115,16 @@ public class SimpleFSDirectory extends FSDirectory {
     protected final long off;
     protected final long end;
     
-    public SimpleFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
-      super(context);
+    public SimpleFSIndexInput(String resourceDesc, File path, IOContext context, int chunkSize) throws IOException {
+      super(resourceDesc, context);
       this.file = new Descriptor(path, "r"); 
       this.chunkSize = chunkSize;
       this.off = 0L;
       this.end = file.length;
     }
     
-    public SimpleFSIndexInput(Descriptor file, long off, long length, int bufferSize, int chunkSize) throws IOException {
-      super(bufferSize);
+    public SimpleFSIndexInput(String resourceDesc, Descriptor file, long off, long length, int bufferSize, int chunkSize) throws IOException {
+      super(resourceDesc, bufferSize);
       this.file = file;
       this.chunkSize = chunkSize;
       this.off = off;
@@ -147,7 +145,7 @@ public class SimpleFSDirectory extends FSDirectory {
         int total = 0;
 
         if (position + len > end) {
-          throw new IOException("read past EOF");
+          throw new IOException("read past EOF: " + this);
         }
 
         try {
@@ -172,6 +170,8 @@ public class SimpleFSDirectory extends FSDirectory {
               + "with a value smaller than the current chunk size (" + chunkSize + ")");
           outOfMemoryError.initCause(e);
           throw outOfMemoryError;
+        } catch (IOException ioe) {
+          throw new IOException(ioe.getMessage() + ": " + this, ioe);
         }
       }
     }

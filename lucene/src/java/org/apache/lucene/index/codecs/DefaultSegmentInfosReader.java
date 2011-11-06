@@ -64,7 +64,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
                 IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context, false);
           }
         } else if (si.getUseCompoundFile()) {
-          dir = new CompoundFileDirectory(dir,IndexFileNames.segmentFileName(
+          dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
               si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
         }
 
@@ -83,7 +83,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
         // If it's a 3x index touched by 3.1+ code, then segments record their
         // version, whether they are 2.x ones or not. We detect that and throw
         // appropriate exception.
-        throw new IndexFormatTooOldException(si.name, si.getVersion());
+        throw new IndexFormatTooOldException("segment " + si.name + " in resource " + input, si.getVersion());
       }
       infos.add(si);
     }

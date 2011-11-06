@@ -14,7 +14,9 @@ $Id$
 
 ==================  3.5.0 ==================
 
-(No Changes)
+Bug Fixes
+----------------------
+* SOLR-2875: Fix the incorrect url in tika-data-config.xml (Shinichiro Abe via koji)
 
 ==================  3.4.0 ==================
 

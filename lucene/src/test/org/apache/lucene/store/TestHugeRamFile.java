@@ -85,7 +85,7 @@ public class TestHugeRamFile extends LuceneTestCase {
     }
     out.close();
     // input part
-    RAMInputStream in = new RAMInputStream(f);
+    RAMInputStream in = new RAMInputStream("testcase", f);
     assertEquals("input length must match",n,in.length());
     //System.out.println("input length = "+in.length()+" % 1024 = "+in.length()%1024);
     for (int j=0; j<L; j++) {
