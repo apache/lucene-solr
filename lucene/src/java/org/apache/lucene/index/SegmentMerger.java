@@ -65,7 +65,6 @@ final class SegmentMerger {
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private final Codec codec;
-  private SegmentWriteState segmentWriteState;
 
   private final PayloadProcessorProvider payloadProcessorProvider;
   
@@ -132,12 +131,13 @@ final class SegmentMerger {
     // threads.
 
     final int mergedDocs = mergeFields();
-    mergeTerms(mergedDocs);
-    mergePerDoc();
+    final SegmentWriteState segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, mergedDocs, termIndexInterval, codec, null, context);
+    mergeTerms(segmentWriteState);
+    mergePerDoc(segmentWriteState);
     mergeNorms();
 
     if (fieldInfos.hasVectors()) {
-      mergeVectors(mergedDocs);
+      mergeVectors(segmentWriteState);
     }
     // write FIS once merge is done. IDV might change types or drops fields
     fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
@@ -282,8 +282,6 @@ final class SegmentMerger {
       fieldsWriter.close();
     }
 
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codec, null, context);
-
     return docCount;
   }
 
@@ -371,7 +369,7 @@ final class SegmentMerger {
    * Merge the TermVectors from each of the segments into the new one.
    * @throws IOException
    */
-  private final void mergeVectors(int mergedDocs) throws IOException {
+  private final void mergeVectors(SegmentWriteState segmentWriteState) throws IOException {
     TermVectorsWriter termVectorsWriter = new TermVectorsWriter(directory, segment, fieldInfos, context);
 
     try {
@@ -399,6 +397,7 @@ final class SegmentMerger {
 
     final String fileName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
     final long tvxSize = directory.fileLength(fileName);
+    final int mergedDocs = segmentWriteState.numDocs;
 
     if (4+((long) mergedDocs)*16 != tvxSize)
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
@@ -482,7 +481,7 @@ final class SegmentMerger {
     }
   }
 
-  private final void mergeTerms(int mergedDocs) throws CorruptIndexException, IOException {
+  private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
 
     // Let CodecProvider decide which codec will be used to write
     // the new segment:
@@ -507,7 +506,7 @@ final class SegmentMerger {
     mergeState.readers = readers;
     mergeState.readerCount = readers.size();
     mergeState.fieldInfos = fieldInfos;
-    mergeState.mergedDocCount = mergedDocs;
+    mergeState.mergedDocCount = segmentWriteState.numDocs;
 
     // Remap docIDs
     mergeState.docMaps = new int[mergeState.readerCount][];
@@ -567,7 +566,7 @@ final class SegmentMerger {
     }
   }
 
-  private void mergePerDoc() throws IOException {
+  private void mergePerDoc(SegmentWriteState segmentWriteState) throws IOException {
       final PerDocConsumer docsConsumer = codec.docValuesFormat()
           .docsConsumer(new PerDocWriteState(segmentWriteState));
       // TODO: remove this check when 3.x indexes are no longer supported
