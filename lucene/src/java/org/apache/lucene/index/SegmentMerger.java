@@ -51,11 +51,11 @@ import org.apache.lucene.util.ReaderUtil;
  * @see #add
  */
 final class SegmentMerger {
-  private Directory directory;
-  private String segment;
-  private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
+  private final Directory directory;
+  private final String segment;
+  private final int termIndexInterval;
 
-  private List<MergeState.IndexReaderAndLiveDocs> readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
+  private final List<MergeState.IndexReaderAndLiveDocs> readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
   private final FieldInfos fieldInfos;
 
   private int mergedDocs;
@@ -66,12 +66,12 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private Codec codec;
+  private final Codec codec;
   private SegmentWriteState segmentWriteState;
 
-  private PayloadProcessorProvider payloadProcessorProvider;
+  private final PayloadProcessorProvider payloadProcessorProvider;
   
-  private IOContext context;
+  private final IOContext context;
 
   SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
     this.payloadProcessorProvider = payloadProcessorProvider;
