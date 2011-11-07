@@ -267,9 +267,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // The PayloadProcessorProvider to use when segments are merged
   private PayloadProcessorProvider payloadProcessorProvider;
 
-  // for testing
-  boolean anyNonBulkMerges;
-
   IndexReader getReader() throws IOException {
     return getReader(true);
   }
@@ -3640,7 +3637,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (infoStream != null) {
         infoStream.message("IW", "merge codec=" + codec);
       }
-      anyNonBulkMerges |= merger.getAnyNonBulkMerges();
 
       assert mergedDocCount == totDocCount: "mergedDocCount=" + mergedDocCount + " vs " + totDocCount;
 

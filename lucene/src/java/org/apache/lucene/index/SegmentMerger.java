@@ -224,6 +224,9 @@ final class SegmentMerger {
     rawDocLengths2 = new int[MAX_RAW_MERGE_DOCS];
     if (infoStream != null) {
       infoStream.message("SM", "merge store matchedCount=" + matchedCount + " vs " + readers.size());
+      if (matchedCount != readers.size()) {
+        infoStream.message("SM", "" + (readers.size() - matchedCount) + " non-bulk merges");
+      }
     }
   }
 
@@ -591,11 +594,6 @@ final class SegmentMerger {
   }
   
   private MergeState mergeState;
-
-  public boolean getAnyNonBulkMerges() {
-    assert matchedCount <= readers.size();
-    return matchedCount != readers.size();
-  }
 
   private void mergeNorms() throws IOException {
     IndexOutput output = null;
