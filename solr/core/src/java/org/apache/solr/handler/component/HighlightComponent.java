@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -27,6 +28,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -61,7 +63,19 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
-    rb.doHighlights = highlighter.isHighlightingEnabled(rb.req.getParams());
+    SolrParams params = rb.req.getParams();
+    rb.doHighlights = highlighter.isHighlightingEnabled(params);
+    if(rb.doHighlights){
+      String hlq = params.get(HighlightParams.Q);
+      if(hlq != null){
+        try {
+          QParser parser = QParser.getParser(hlq, null, rb.req);
+          rb.setHighlightQuery(parser.getHighlightQuery());
+        } catch (ParseException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+        }
+      }
+    }
   }
 
   public void inform(SolrCore core) {
@@ -84,8 +98,8 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    SolrQueryRequest req = rb.req;
     if (rb.doHighlights) {
+      SolrQueryRequest req = rb.req;
       SolrParams params = req.getParams();
 
       String[] defaultHighlightFields;  //TODO: get from builder by default?
@@ -112,10 +126,11 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
       }
       
       if(highlightQuery != null) {
-        boolean rewrite = !(Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) && Boolean.valueOf(req.getParams().get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
+        boolean rewrite = !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
+            Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
         highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getIndexReader()) : highlightQuery;
       }
-      
+
       // No highlighting if there is no query -- consider q.alt="*:*
       if( highlightQuery != null ) {
         NamedList sumData = highlighter.doHighlighting(

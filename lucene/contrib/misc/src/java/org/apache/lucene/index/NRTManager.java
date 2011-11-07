@@ -222,6 +222,10 @@ public class NRTManager implements Closeable {
    */
   public SearcherManager waitForGeneration(long targetGen, boolean requireDeletes, long time, TimeUnit unit) {
     try {
+      final long curGen = indexingGen.get();
+      if (targetGen > curGen) {
+        throw new IllegalArgumentException("targetGen=" + targetGen + " was never returned by this NRTManager instance (current gen=" + curGen + ")");
+      }
       reopenLock.lockInterruptibly();
       try {
         if (targetGen > getCurrentSearchingGen(requireDeletes)) {

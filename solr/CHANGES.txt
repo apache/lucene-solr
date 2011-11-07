@@ -264,7 +264,9 @@ Bug Fixes
   rather than loading URL content streams automatically regardless of use.
   (David Smiley and Ryan McKinley via ehatcher)
   
-  
+* SOLR-2829: Fix problem with false-positives due to incorrect
+  equals methods. (Yonik Seeley, Hossman, Erick Erickson. 
+  Marc Tinnemeyer caught the bug)  
   
 Other Changes
 ----------------------
@@ -381,6 +383,8 @@ New Features
   
 * SOLR-2276: Add support for cologne phonetic to PhoneticFilterFactory. 
   (Marc Pompl via rmuir)
+
+* SOLR-1926: Add hl.q parameter. (koji)
 
 Bug Fixes
 ----------------------

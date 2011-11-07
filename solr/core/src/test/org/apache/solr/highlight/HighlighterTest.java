@@ -792,6 +792,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             "//lst[@name='highlighting']/lst[@name='1']" +
             "/arr[@name='subword_offsets']/str='lorem <em>PowerShot.com</em> ipsum'");
   }
+  
   public void testSubwordWildcardHighlightWithTermOffsets2() {
     assertU(adoc("subword_offsets", "lorem PowerShot ipsum", "id", "1"));
     assertU(commit());
@@ -799,5 +800,18 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             req("q", "subword_offsets:pow*", "hl", "true", "hl.fl", "subword_offsets"),
             "//lst[@name='highlighting']/lst[@name='1']" +
             "/arr[@name='subword_offsets']/str='lorem <em>PowerShot</em> ipsum'");
- }
+  }
+  
+  public void testHlQParameter() {
+    assertU(adoc("title", "Apache Software Foundation", "id", "1"));
+    assertU(commit());
+    assertQ("hl.q parameter overrides q parameter", 
+        req("q", "title:Apache", "hl", "true", "hl.fl", "title", "hl.q", "title:Software"),
+        "//lst[@name='highlighting']/lst[@name='1']" +
+        "/arr[@name='title']/str='Apache <em>Software</em> Foundation'");
+    assertQ("hl.q parameter overrides q parameter", 
+        req("q", "title:Apache", "hl", "true", "hl.fl", "title", "hl.q", "{!v=$qq}", "qq", "title:Foundation"),
+        "//lst[@name='highlighting']/lst[@name='1']" +
+        "/arr[@name='title']/str='Apache Software <em>Foundation</em>'");
+  }
 }

@@ -553,7 +553,7 @@ class SpatialDistanceQuery extends Query {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (SpatialDistanceQuery.class != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     SpatialDistanceQuery other = (SpatialDistanceQuery)o;
     return     this.latCenter == other.latCenter
             && this.lonCenter == other.lonCenter

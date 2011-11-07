@@ -37,7 +37,7 @@ public class TestPagedBytes extends LuceneTestCase {
         if (random.nextInt(10) == 7) {
           out.writeByte(answer[written++]);
         } else {
-          int chunk = Math.max(random.nextInt(1000), numBytes - written);
+          int chunk = Math.min(random.nextInt(1000), numBytes - written);
           out.writeBytes(answer, written, chunk);
           written += chunk;
         }
@@ -53,7 +53,7 @@ public class TestPagedBytes extends LuceneTestCase {
         if (random.nextInt(10) == 7) {
           verify[read++] = in.readByte();
         } else {
-          int chunk = Math.max(random.nextInt(1000), numBytes - read);
+          int chunk = Math.min(random.nextInt(1000), numBytes - read);
           in.readBytes(verify, read, chunk);
           read += chunk;
         }

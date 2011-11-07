@@ -38,7 +38,7 @@ import org.apache.lucene.store.Directory;
  * Use {@link #acquire} to obtain the current searcher, and {@link #release} to
  * release it, like this:
  * 
- * <pre>
+ * <pre class="prettyprint">
  * IndexSearcher s = manager.acquire();
  * try {
  *   // Do searching, doc retrieval, etc. with s

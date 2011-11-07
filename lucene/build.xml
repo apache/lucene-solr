@@ -571,7 +571,9 @@
 
   <target name="jar-test-framework-src" depends="init">
     <jarify basedir="${tests-framework.src.dir}" destfile="${build.dir}/lucene-test-framework-${version}-src.jar"
-            title="Lucene Search Engine: Test Framework" />
+            title="Lucene Search Engine: Test Framework">
+      <fileset dir="${tests-framework.src.dir}/../resources" erroronmissingdir="no"/>
+    </jarify>
   </target>
 
   <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
