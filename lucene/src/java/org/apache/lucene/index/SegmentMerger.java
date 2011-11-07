@@ -67,23 +67,14 @@ final class SegmentMerger {
   
   private final MergeState mergeState = new MergeState();
 
-  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
+  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
     mergeState.fieldInfos = fieldInfos;
+    mergeState.checkAbort = checkAbort;
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
-    if (merge != null) {
-      mergeState.checkAbort = new MergeState.CheckAbort(merge, directory);
-    } else {
-      mergeState.checkAbort = new MergeState.CheckAbort(null, null) {
-        @Override
-        public void work(double units) throws MergeAbortedException {
-          // do nothing
-        }
-      };
-    }
     this.termIndexInterval = termIndexInterval;
     this.codec = codec;
     this.context = context;

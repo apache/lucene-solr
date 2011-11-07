@@ -77,7 +77,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final Codec codec = Codec.getDefault();
-    SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), codec, newIOContext(random));
+    SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, MergeState.CheckAbort.NONE, null, new FieldInfos(), codec, newIOContext(random));
     merger.add(reader1);
     merger.add(reader2);
     MergeState mergeState = merger.merge();
@@ -149,7 +149,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     w.close();
     
     // Assert that SM fails if .del exists
-    SegmentMerger sm = new SegmentMerger(InfoStream.getDefault(), dir, 1, "a", null, null, null, Codec.getDefault(), newIOContext(random));
+    SegmentMerger sm = new SegmentMerger(InfoStream.getDefault(), dir, 1, "a", MergeState.CheckAbort.NONE, null, null, Codec.getDefault(), newIOContext(random));
     boolean doFail = false;
     try {
       sm.createCompoundFile("b1", w.segmentInfos.info(0), newIOContext(random));

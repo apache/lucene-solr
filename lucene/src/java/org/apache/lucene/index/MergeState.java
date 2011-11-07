@@ -80,5 +80,14 @@ public class MergeState {
         workCount = 0;
       }
     }
+    
+    /** If you use this: IW.close(false) cannot abort your merge!
+     * @lucene.internal */
+    static final MergeState.CheckAbort NONE = new MergeState.CheckAbort(null, null) {
+      @Override
+      public void work(double units) throws MergePolicy.MergeAbortedException {
+        // do nothing
+      }
+    };
   }
 }

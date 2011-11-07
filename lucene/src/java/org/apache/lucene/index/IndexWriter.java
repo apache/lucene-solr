@@ -2517,7 +2517,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(),
-                                               mergedName, null, payloadProcessorProvider,
+                                               mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
                                                new FieldInfos(globalFieldNumberMap), codec, context);
 
       for (IndexReader reader : readers)      // add new indexes
@@ -3585,7 +3585,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     
     IOContext context = new IOContext(merge.getMergeInfo());
 
-    SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, merge,
+    final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
+    SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, checkAbort,
                                              payloadProcessorProvider, merge.info.getFieldInfos(), codec, context);
 
     if (infoStream != null) {
