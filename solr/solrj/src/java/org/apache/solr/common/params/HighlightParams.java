@@ -23,6 +23,7 @@ package org.apache.solr.common.params;
  */
 public interface HighlightParams {
   public static final String HIGHLIGHT   = "hl";
+  public static final String Q           = HIGHLIGHT+".q";
   public static final String FIELDS      = HIGHLIGHT+".fl";
   public static final String SNIPPETS    = HIGHLIGHT+".snippets";
   public static final String FRAGSIZE    = HIGHLIGHT+".fragsize";
