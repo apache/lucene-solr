@@ -172,7 +172,7 @@ class FixedSortedBytesImpl {
   }
 
   static final class DirectFixedSortedSource extends SortedSource {
-    final PackedInts.RandomAccessReaderIterator docToOrdIndex;
+    final PackedInts.Reader docToOrdIndex;
     private final IndexInput datIn;
     private final long basePointer;
     private final int size;
@@ -182,7 +182,7 @@ class FixedSortedBytesImpl {
         int valueCount, Comparator<BytesRef> comp, ValueType type)
         throws IOException {
       super(type, comp);
-      docToOrdIndex = PackedInts.getRandomAccessReaderIterator(idxIn);
+      docToOrdIndex = PackedInts.getDirectReader(idxIn);
       basePointer = datIn.getFilePointer();
       this.datIn = datIn;
       this.size = size;
@@ -191,11 +191,7 @@ class FixedSortedBytesImpl {
 
     @Override
     public int ord(int docID) {
-      try {
-        return (int) docToOrdIndex.get(docID);
-      } catch (IOException e) {
-        throw new IllegalStateException("failed to get ord", e);
-      }
+      return (int) docToOrdIndex.get(docID);
     }
 
     @Override

@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
-import org.apache.lucene.index.values.DirectSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -190,6 +189,7 @@ class VarStraightBytesImpl {
           idxOut.writeVLong(0);
           final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount+1,
               PackedInts.bitsRequired(0));
+          // docCount+1 so we write sentinel
           for (int i = 0; i < docCount+1; i++) {
             w.add(0);
           }
@@ -202,6 +202,7 @@ class VarStraightBytesImpl {
           for (int i = 0; i < docCount; i++) {
             w.add(docToAddress[i]);
           }
+          // write sentinel
           w.add(address);
           w.finish();
         }
@@ -262,20 +263,22 @@ class VarStraightBytesImpl {
   
   public final static class DirectVarStraightSource extends DirectSource {
 
-    private final PackedInts.RandomAccessReaderIterator index;
+    private final PackedInts.Reader index;
 
     DirectVarStraightSource(IndexInput data, IndexInput index, ValueType type)
         throws IOException {
       super(data, type);
       index.readVLong();
-      this.index = PackedInts.getRandomAccessReaderIterator(index);
+      this.index = PackedInts.getDirectReader(index);
     }
 
     @Override
     protected int position(int docID) throws IOException {
       final long offset = index.get(docID);
       data.seek(baseOffset + offset);
-      return (int) (index.next() - offset);
+      // Safe to do 1+docID because we write sentinel at the end:
+      final long nextOffset = index.get(1+docID);
+      return (int) (nextOffset - offset);
     }
   }
 }
