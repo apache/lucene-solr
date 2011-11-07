@@ -231,10 +231,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (ureq.getParams() == null) {
         ureq.setParams(new ModifiableSolrParams());
       }
-      if (req.getParams().get(DistributedUpdateProcessorFactory.DOCVERSION) != null) {
-        ureq.getParams().add(DistributedUpdateProcessorFactory.DOCVERSION,
-            req.getParams().get(DistributedUpdateProcessorFactory.DOCVERSION));
+      String seenLeader = req.getParams().get(DistributedUpdateProcessorFactory.SEEN_LEADER);
+      if (seenLeader != null) {
+        ureq.getParams().add(DistributedUpdateProcessorFactory.SEEN_LEADER, seenLeader);
       }
+      
+      // nocommit: we add the right update chain - we should add the current one?
       ureq.getParams().add("update.chain", "distrib-update-chain");
       addCommit(ureq, cmd);
       submit(slot, ureq);
@@ -324,10 +326,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (ureq.getParams() == null) {
       ureq.setParams(new ModifiableSolrParams());
     }
-    if (req.getParams().get(DistributedUpdateProcessorFactory.DOCVERSION) != null) {
-      ureq.getParams().add(DistributedUpdateProcessorFactory.DOCVERSION,
-          req.getParams().get(DistributedUpdateProcessorFactory.DOCVERSION));
+    if (req.getParams().get(DistributedUpdateProcessorFactory.SEEN_LEADER) != null) {
+      ureq.getParams().add(DistributedUpdateProcessorFactory.SEEN_LEADER,
+          req.getParams().get(DistributedUpdateProcessorFactory.SEEN_LEADER));
     }
+    // nocommit: we add the right update chain - we should add the current one?
     ureq.getParams().add("update.chain", "distrib-update-chain");
     addCommit(ureq, ccmd);
     
@@ -350,10 +353,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (ureq.getParams() == null) {
       ureq.setParams(new ModifiableSolrParams());
     }
-    if (req.getParams().get(DistributedUpdateProcessorFactory.DOCVERSION) != null) {
-      ureq.getParams().add(DistributedUpdateProcessorFactory.DOCVERSION,
-          req.getParams().get(DistributedUpdateProcessorFactory.DOCVERSION));
+
+    String seenLeader = req.getParams().get(DistributedUpdateProcessorFactory.SEEN_LEADER);
+    if (seenLeader != null) {
+      ureq.getParams().add(DistributedUpdateProcessorFactory.SEEN_LEADER, seenLeader);
     }
+    
+    // nocommit: we add the right update chain - we should add the current one?
     ureq.getParams().add("update.chain", "distrib-update-chain");
     addCommit(ureq, ccmd);
     for (DeleteUpdateCommand cmd : dlist) {

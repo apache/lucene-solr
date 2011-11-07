@@ -39,7 +39,7 @@ import org.apache.zookeeper.KeeperException;
 
 public class DistributedUpdateProcessorFactory extends
     UpdateRequestProcessorFactory {
-  public static final String DOCVERSION = "docversion";
+  public static final String SEEN_LEADER = "leader";
   NamedList args;
   List<String> shards;
   String selfStr;
@@ -88,55 +88,42 @@ public class DistributedUpdateProcessorFactory extends
       List<String> leaderChildren;
       String collection = coreDesc.getCloudDescriptor().getCollectionName();
       String shardId = coreDesc.getCloudDescriptor().getShardId();
+      
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      
       String leaderNode = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
           + ZkStateReader.LEADER_ELECT_ZKNODE + "/" + shardId + "/leader";
       SolrZkClient zkClient = coreDesc.getCoreContainer().getZkController()
           .getZkClient();
+      
       try {
         leaderChildren = zkClient.getChildren(leaderNode, null);
         if (leaderChildren.size() > 0) {
           String leader = leaderChildren.get(0);
+          
           ZkNodeProps zkNodeProps = new ZkNodeProps();
           byte[] bytes = zkClient
               .getData(leaderNode + "/" + leader, null, null);
           zkNodeProps.load(bytes);
+          
           String leaderUrl = zkNodeProps.get("url");
           
           String nodeName = req.getCore().getCoreDescriptor()
               .getCoreContainer().getZkController().getNodeName();
           String shardZkNodeName = nodeName + "_" + req.getCore().getName();
 
-          if (params.get(DOCVERSION) != null
-              && params.get(DOCVERSION).equals("yes")) {
+          if (params.getBool(SEEN_LEADER, false)) {
             // we got a version, just go local
           } else if (shardZkNodeName.equals(leader)) {
             // that means I want to forward onto my replicas...
             
             // so get the replicas...
-            CloudState cloudState = req.getCore().getCoreDescriptor()
-                .getCoreContainer().getZkController().getCloudState();
-            Slice replicas = cloudState.getSlices(collection).get(shardId);
-            Map<String,ZkNodeProps> shardMap = replicas.getShards();
-            String self = null;
-            StringBuilder replicasUrl = new StringBuilder();
-            for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
-              if (replicasUrl.length() > 0) {
-                replicasUrl.append("|");
-              }
-              String replicaUrl = entry.getValue().get("url");
-              if (shardZkNodeName.equals(entry.getKey())) {
-                self = replicaUrl;
-              }
-              replicasUrl.append(replicaUrl);
-            }
+            addReplicasAndSelf(req, collection, shardId, params,
+                shardZkNodeName);
+            
             versionDoc(params);
-            params.add("self", self);
-            params.add("shards", replicasUrl.toString());
           } else {
             // I need to forward onto the leader...
-            // TODO: don't use leader - we need to get the real URL from the zk
-            // node
             params.add("shards", leaderUrl);
           }
           req.setParams(params);
@@ -158,8 +145,31 @@ public class DistributedUpdateProcessorFactory extends
     if (shards == null && shardStr == null) return null;
     return new DistributedUpdateProcessor(shardStr, req, rsp, this, next);
   }
+
+  private void addReplicasAndSelf(SolrQueryRequest req, String collection,
+      String shardId, ModifiableSolrParams params, String shardZkNodeName) {
+    CloudState cloudState = req.getCore().getCoreDescriptor()
+        .getCoreContainer().getZkController().getCloudState();
+    Slice replicas = cloudState.getSlices(collection).get(shardId);
+    Map<String,ZkNodeProps> shardMap = replicas.getShards();
+    String self = null;
+    StringBuilder replicasUrl = new StringBuilder();
+    for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
+      if (replicasUrl.length() > 0) {
+        replicasUrl.append("|");
+      }
+      String replicaUrl = entry.getValue().get("url");
+      if (shardZkNodeName.equals(entry.getKey())) {
+        self = replicaUrl;
+      }
+      replicasUrl.append(replicaUrl);
+    }
+
+    params.add("self", self);
+    params.add("shards", replicasUrl.toString());
+  }
   
   private void versionDoc(ModifiableSolrParams params) {
-    params.set(DOCVERSION, "yes");
+    params.set(SEEN_LEADER, true);
   }
 }
