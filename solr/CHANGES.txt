@@ -384,6 +384,8 @@ New Features
 * SOLR-2276: Add support for cologne phonetic to PhoneticFilterFactory. 
   (Marc Pompl via rmuir)
 
+* SOLR-1926: Add hl.q parameter. (koji)
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
