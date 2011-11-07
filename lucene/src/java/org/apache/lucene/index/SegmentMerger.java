@@ -31,7 +31,6 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
-import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -93,10 +92,6 @@ final class SegmentMerger {
     this.context = context;
   }
 
-  public FieldInfos fieldInfos() {
-    return fieldInfos;
-  }
-
   /**
    * Add an IndexReader to the collection of readers that are to be merged
    * @param reader
@@ -125,7 +120,7 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  final int merge() throws CorruptIndexException, IOException {
+  final MergeState merge() throws CorruptIndexException, IOException {
     // NOTE: it's important to add calls to
     // checkAbort.work(...) if you make any changes to this
     // method that will spend alot of time.  The frequency
@@ -144,7 +139,7 @@ final class SegmentMerger {
     }
     // write FIS once merge is done. IDV might change types or drops fields
     fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
-    return mergedDocs;
+    return mergeState;
   }
 
   /**

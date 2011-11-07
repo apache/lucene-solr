@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs;
  */
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiDocsEnum;
 import java.io.IOException;
 

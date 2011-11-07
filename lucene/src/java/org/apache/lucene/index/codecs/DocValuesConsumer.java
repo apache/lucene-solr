@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Writer;
@@ -87,13 +88,13 @@ public abstract class DocValuesConsumer {
   public abstract void files(Collection<String> files) throws IOException;
 
   /**
-   * Merges the given {@link org.apache.lucene.index.codecs.MergeState} into
+   * Merges the given {@link org.apache.lucene.index.MergeState} into
    * this {@link DocValuesConsumer}.
    * 
    * @param mergeState
    *          the state to merge
    * @param docValues docValues array containing one instance per reader (
-   *          {@link org.apache.lucene.index.codecs.MergeState#readers}) or <code>null</code> if the reader has
+   *          {@link org.apache.lucene.index.MergeState#readers}) or <code>null</code> if the reader has
    *          no {@link IndexDocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs
@@ -102,7 +103,7 @@ public abstract class DocValuesConsumer {
     assert mergeState != null;
     boolean hasMerged = false;
     for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
-      final org.apache.lucene.index.codecs.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
+      final org.apache.lucene.index.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
       if (docValues[readerIDX] != null) {
         hasMerged = true;
         merge(new Writer.SingleSubMergeState(docValues[readerIDX], mergeState.docBase[readerIDX], reader.reader.maxDoc(),

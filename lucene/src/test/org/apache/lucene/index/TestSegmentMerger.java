@@ -80,9 +80,10 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), codec, newIOContext(random));
     merger.add(reader1);
     merger.add(reader2);
-    int docsMerged = merger.merge();
+    MergeState mergeState = merger.merge();
+    int docsMerged = mergeState.mergedDocCount;
     assertTrue(docsMerged == 2);
-    final FieldInfos fieldInfos = merger.fieldInfos();
+    final FieldInfos fieldInfos = mergeState.fieldInfos;
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = SegmentReader.get(false, mergedDir, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
                                                                                      codec, fieldInfos),

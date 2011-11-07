@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.codecs.MergeState;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesSortedSourceBase;
 import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;

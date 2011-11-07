@@ -2522,9 +2522,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
-      int docCount = merger.merge();                // merge 'em
-
-      final FieldInfos fieldInfos = merger.fieldInfos();
+      MergeState mergeState = merger.merge();                // merge 'em
+      int docCount = mergeState.mergedDocCount;
+      final FieldInfos fieldInfos = mergeState.fieldInfos;
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
                                          false, codec,
                                          fieldInfos);
@@ -3629,7 +3629,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       merge.checkAborted(directory);
 
       // This is where all the work happens:
-      mergedDocCount = merge.info.docCount = merger.merge();
+      MergeState mergeState = merger.merge();
+      mergedDocCount = merge.info.docCount = mergeState.mergedDocCount;
 
       // Record which codec was used to write the segment
       merge.info.setCodec(codec);

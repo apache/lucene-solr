@@ -19,6 +19,7 @@ package org.apache.lucene.index.codecs;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum;
 import java.io.IOException;
 

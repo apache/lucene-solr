@@ -204,10 +204,10 @@ public class TestDoc extends LuceneTestCase {
 
       merger.add(r1);
       merger.add(r2);
-      merger.merge();
+      MergeState mergeState = merger.merge();
       r1.close();
       r2.close();
-      final FieldInfos fieldInfos =  merger.fieldInfos();
+      final FieldInfos fieldInfos =  mergeState.fieldInfos;
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
                                                false, codec, fieldInfos);
       
