@@ -3,9 +3,12 @@ package org.apache.lucene.index.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -43,4 +46,42 @@ public abstract class FieldsWriter implements Closeable {
   public abstract void abort();
   
   public abstract void finish(int numDocs) throws IOException;
+  
+  // nocommit: test me
+  public int merge(MergeState mergeState) throws IOException {
+    int docCount = 0;
+    for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+      final int maxDoc = reader.reader.maxDoc();
+      if (reader.liveDocs != null) {
+        final Bits liveDocs = reader.liveDocs;
+        assert liveDocs != null;
+        for (int i = 0; i < maxDoc; i++) {
+          if (!liveDocs.get(i)) {
+            // skip deleted docs
+            continue;
+          }
+          // TODO: this could be more efficient using
+          // FieldVisitor instead of loading/writing entire
+          // doc; ie we just have to renumber the field number
+          // on the fly?
+          // NOTE: it's very important to first assign to doc then pass it to
+          // fieldsWriter.addDocument; see LUCENE-1282
+          Document doc = reader.reader.document(i);
+          addDocument(doc, mergeState.fieldInfos);
+          docCount++;
+          mergeState.checkAbort.work(300);
+        }
+      } else {
+        for (int i = 0; i < maxDoc; i++) {
+          // NOTE: it's very important to first assign to doc then pass it to
+          // fieldsWriter.addDocument; see LUCENE-1282
+          Document doc = reader.reader.document(docCount);
+          addDocument(doc, mergeState.fieldInfos);
+          docCount++;
+          mergeState.checkAbort.work(300);
+        }
+      }
+    }
+    return docCount;
+  }
 }
