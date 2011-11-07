@@ -58,6 +58,11 @@ public class MergeState {
   public DirPayloadProcessor[] dirPayloadProcessor;
   public PayloadProcessor[] currentPayloadProcessor;
 
+  // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
+  // but is this really so expensive to compute again in different components, versus once in SM?
+  public SegmentReader[] matchingSegmentReaders;
+  public int matchedCount;
+  
   public static class CheckAbort {
     private double workCount;
     private MergePolicy.OneMerge merge;

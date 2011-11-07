@@ -7,7 +7,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -30,13 +29,6 @@ public abstract class FieldsWriter implements Closeable {
 
   public abstract void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException;
   
-  /** Bulk write a contiguous series of documents.  The
-   *  lengths array is the length (in bytes) of each raw
-   *  document.  The stream IndexInput is the
-   *  fieldsStream from which we should bulk-copy all
-   *  bytes. */
-  public abstract void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException;
-  
   public abstract void startDocument(int numStoredFields) throws IOException;
   
   public abstract void skipDocument() throws IOException;
@@ -52,34 +44,22 @@ public abstract class FieldsWriter implements Closeable {
     int docCount = 0;
     for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
       final int maxDoc = reader.reader.maxDoc();
-      if (reader.liveDocs != null) {
-        final Bits liveDocs = reader.liveDocs;
-        assert liveDocs != null;
-        for (int i = 0; i < maxDoc; i++) {
-          if (!liveDocs.get(i)) {
-            // skip deleted docs
-            continue;
-          }
-          // TODO: this could be more efficient using
-          // FieldVisitor instead of loading/writing entire
-          // doc; ie we just have to renumber the field number
-          // on the fly?
-          // NOTE: it's very important to first assign to doc then pass it to
-          // fieldsWriter.addDocument; see LUCENE-1282
-          Document doc = reader.reader.document(i);
-          addDocument(doc, mergeState.fieldInfos);
-          docCount++;
-          mergeState.checkAbort.work(300);
+      final Bits liveDocs = reader.liveDocs;
+      for (int i = 0; i < maxDoc; i++) {
+        if (liveDocs != null && !liveDocs.get(i)) {
+          // skip deleted docs
+          continue;
         }
-      } else {
-        for (int i = 0; i < maxDoc; i++) {
-          // NOTE: it's very important to first assign to doc then pass it to
-          // fieldsWriter.addDocument; see LUCENE-1282
-          Document doc = reader.reader.document(docCount);
-          addDocument(doc, mergeState.fieldInfos);
-          docCount++;
-          mergeState.checkAbort.work(300);
-        }
+        // TODO: this could be more efficient using
+        // FieldVisitor instead of loading/writing entire
+        // doc; ie we just have to renumber the field number
+        // on the fly?
+        // NOTE: it's very important to first assign to doc then pass it to
+        // fieldsWriter.addDocument; see LUCENE-1282
+        Document doc = reader.reader.document(i);
+        addDocument(doc, mergeState.fieldInfos);
+        docCount++;
+        mergeState.checkAbort.work(300);
       }
     }
     return docCount;

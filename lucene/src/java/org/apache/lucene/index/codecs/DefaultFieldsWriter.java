@@ -18,13 +18,19 @@ package org.apache.lucene.index.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -249,5 +255,119 @@ public final class DefaultFieldsWriter extends FieldsWriter {
       // entering the index.  See LUCENE-1282 for
       // details.
       throw new RuntimeException("mergeFields produced an invalid result: docCount is " + numDocs + " but fdx file size is " + indexStream.getFilePointer() + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
+  }
+  
+  @Override
+  public int merge(MergeState mergeState) throws IOException {
+    int docCount = 0;
+    // Used for bulk-reading raw bytes for stored fields
+    int rawDocLengths[] = new int[MAX_RAW_MERGE_DOCS];
+    int idx = 0;
+    
+    for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+      final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
+      DefaultFieldsReader matchingFieldsReader = null;
+      if (matchingSegmentReader != null) {
+        final FieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
+        // we can only bulk-copy if the matching reader is also a DefaultFieldsReader
+        if (fieldsReader != null && fieldsReader instanceof DefaultFieldsReader) {
+          matchingFieldsReader = (DefaultFieldsReader) fieldsReader;
+        }
+      }
+    
+      if (reader.liveDocs != null) {
+        docCount += copyFieldsWithDeletions(mergeState,
+                                            reader, matchingFieldsReader, rawDocLengths);
+      } else {
+          docCount += copyFieldsNoDeletions(mergeState,
+                                            reader, matchingFieldsReader, rawDocLengths);
+      }
+    }
+
+    return docCount;
+  }
+
+  /** Maximum number of contiguous documents to bulk-copy
+      when merging stored fields */
+  private final static int MAX_RAW_MERGE_DOCS = 4192;
+
+  private int copyFieldsWithDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
+                                      final DefaultFieldsReader matchingFieldsReader, int rawDocLengths[])
+    throws IOException, MergeAbortedException, CorruptIndexException {
+    int docCount = 0;
+    final int maxDoc = reader.reader.maxDoc();
+    final Bits liveDocs = reader.liveDocs;
+    assert liveDocs != null;
+    if (matchingFieldsReader != null) {
+      // We can bulk-copy because the fieldInfos are "congruent"
+      for (int j = 0; j < maxDoc;) {
+        if (!liveDocs.get(j)) {
+          // skip deleted docs
+          ++j;
+          continue;
+        }
+        // We can optimize this case (doing a bulk byte copy) since the field
+        // numbers are identical
+        int start = j, numDocs = 0;
+        do {
+          j++;
+          numDocs++;
+          if (j >= maxDoc) break;
+          if (!liveDocs.get(j)) {
+            j++;
+            break;
+          }
+        } while(numDocs < MAX_RAW_MERGE_DOCS);
+
+        IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, start, numDocs);
+        addRawDocuments(stream, rawDocLengths, numDocs);
+        docCount += numDocs;
+        mergeState.checkAbort.work(300 * numDocs);
+      }
+    } else {
+      for (int j = 0; j < maxDoc; j++) {
+        if (!liveDocs.get(j)) {
+          // skip deleted docs
+          continue;
+        }
+        // TODO: this could be more efficient using
+        // FieldVisitor instead of loading/writing entire
+        // doc; ie we just have to renumber the field number
+        // on the fly?
+        // NOTE: it's very important to first assign to doc then pass it to
+        // fieldsWriter.addDocument; see LUCENE-1282
+        Document doc = reader.reader.document(j);
+        addDocument(doc, mergeState.fieldInfos);
+        docCount++;
+        mergeState.checkAbort.work(300);
+      }
+    }
+    return docCount;
+  }
+
+  private int copyFieldsNoDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
+                                    final DefaultFieldsReader matchingFieldsReader, int rawDocLengths[])
+    throws IOException, MergeAbortedException, CorruptIndexException {
+    final int maxDoc = reader.reader.maxDoc();
+    int docCount = 0;
+    if (matchingFieldsReader != null) {
+      // We can bulk-copy because the fieldInfos are "congruent"
+      while (docCount < maxDoc) {
+        int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
+        IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, docCount, len);
+        addRawDocuments(stream, rawDocLengths, len);
+        docCount += len;
+        mergeState.checkAbort.work(300 * len);
+      }
+    } else {
+      for (; docCount < maxDoc; docCount++) {
+        // NOTE: it's very important to first assign to doc then pass it to
+        // fieldsWriter.addDocument; see LUCENE-1282
+        Document doc = reader.reader.document(docCount);
+        addDocument(doc, mergeState.fieldInfos);
+        mergeState.checkAbort.work(300);
+      }
+    }
+    return docCount;
   }
 }

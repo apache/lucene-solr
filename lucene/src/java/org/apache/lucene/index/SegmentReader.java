@@ -368,7 +368,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     hasChanges = false;
   }
 
-  FieldsReader getFieldsReader() {
+  /** @lucene.internal */
+  public FieldsReader getFieldsReader() {
     return fieldsReaderLocal.get();
   }
 

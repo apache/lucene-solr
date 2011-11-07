@@ -23,19 +23,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.FieldsReader;
 import org.apache.lucene.index.codecs.FieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
@@ -56,7 +53,7 @@ final class SegmentMerger {
   private final int termIndexInterval;
 
   /** Maximum number of contiguous documents to bulk-copy
-      when merging stored fields */
+      when merging term vectors */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private final Codec codec;
@@ -178,17 +175,12 @@ final class SegmentMerger {
     }
   }
 
-  private SegmentReader[] matchingSegmentReaders;
-  private int[] rawDocLengths;
-  private int[] rawDocLengths2;
-  private int matchedCount;
-
   private void setMatchingSegmentReaders() {
     // If the i'th reader is a SegmentReader and has
     // identical fieldName -> number mapping, then this
     // array will be non-null at position i:
     int numReaders = mergeState.readers.size();
-    matchingSegmentReaders = new SegmentReader[numReaders];
+    mergeState.matchingSegmentReaders = new SegmentReader[numReaders];
 
     // If this reader is a SegmentReader, and all of its
     // field name -> number mappings match the "merged"
@@ -204,19 +196,16 @@ final class SegmentMerger {
           same = mergeState.fieldInfos.fieldName(fi.number).equals(fi.name);
         }
         if (same) {
-          matchingSegmentReaders[i] = segmentReader;
-          matchedCount++;
+          mergeState.matchingSegmentReaders[i] = segmentReader;
+          mergeState.matchedCount++;
         }
       }
     }
 
-    // Used for bulk-reading raw bytes for stored fields
-    rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
-    rawDocLengths2 = new int[MAX_RAW_MERGE_DOCS];
     if (mergeState.infoStream != null) {
-      mergeState.infoStream.message("SM", "merge store matchedCount=" + matchedCount + " vs " + mergeState.readers.size());
-      if (matchedCount != mergeState.readers.size()) {
-        mergeState.infoStream.message("SM", "" + (mergeState.readers.size() - matchedCount) + " non-bulk merges");
+      mergeState.infoStream.message("SM", "merge store matchedCount=" + mergeState.matchedCount + " vs " + mergeState.readers.size());
+      if (mergeState.matchedCount != mergeState.readers.size()) {
+        mergeState.infoStream.message("SM", "" + (mergeState.readers.size() - mergeState.matchedCount) + " non-bulk merges");
       }
     }
   }
@@ -256,109 +245,12 @@ final class SegmentMerger {
 
     final FieldsWriter fieldsWriter = codec.fieldsFormat().fieldsWriter(directory, segment, context);
     try {
-      int idx = 0;
-      for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-        final SegmentReader matchingSegmentReader = matchingSegmentReaders[idx++];
-        FieldsReader matchingFieldsReader = null;
-        if (matchingSegmentReader != null) {
-          final FieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
-          if (fieldsReader != null) {
-            matchingFieldsReader = fieldsReader;
-          }
-        }
-        if (reader.liveDocs != null) {
-          docCount += copyFieldsWithDeletions(fieldsWriter,
-                                              reader, matchingFieldsReader);
-        } else {
-          docCount += copyFieldsNoDeletions(fieldsWriter,
-                                            reader, matchingFieldsReader);
-        }
-      }
+      docCount = fieldsWriter.merge(mergeState);
       fieldsWriter.finish(docCount);
     } finally {
       fieldsWriter.close();
     }
 
-    return docCount;
-  }
-
-  private int copyFieldsWithDeletions(final FieldsWriter fieldsWriter, final MergeState.IndexReaderAndLiveDocs reader,
-                                      final FieldsReader matchingFieldsReader)
-    throws IOException, MergeAbortedException, CorruptIndexException {
-    int docCount = 0;
-    final int maxDoc = reader.reader.maxDoc();
-    final Bits liveDocs = reader.liveDocs;
-    assert liveDocs != null;
-    if (matchingFieldsReader != null) {
-      // We can bulk-copy because the fieldInfos are "congruent"
-      for (int j = 0; j < maxDoc;) {
-        if (!liveDocs.get(j)) {
-          // skip deleted docs
-          ++j;
-          continue;
-        }
-        // We can optimize this case (doing a bulk byte copy) since the field
-        // numbers are identical
-        int start = j, numDocs = 0;
-        do {
-          j++;
-          numDocs++;
-          if (j >= maxDoc) break;
-          if (!liveDocs.get(j)) {
-            j++;
-            break;
-          }
-        } while(numDocs < MAX_RAW_MERGE_DOCS);
-
-        IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, start, numDocs);
-        fieldsWriter.addRawDocuments(stream, rawDocLengths, numDocs);
-        docCount += numDocs;
-        mergeState.checkAbort.work(300 * numDocs);
-      }
-    } else {
-      for (int j = 0; j < maxDoc; j++) {
-        if (!liveDocs.get(j)) {
-          // skip deleted docs
-          continue;
-        }
-        // TODO: this could be more efficient using
-        // FieldVisitor instead of loading/writing entire
-        // doc; ie we just have to renumber the field number
-        // on the fly?
-        // NOTE: it's very important to first assign to doc then pass it to
-        // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.reader.document(j);
-        fieldsWriter.addDocument(doc, mergeState.fieldInfos);
-        docCount++;
-        mergeState.checkAbort.work(300);
-      }
-    }
-    return docCount;
-  }
-
-  private int copyFieldsNoDeletions(final FieldsWriter fieldsWriter, final MergeState.IndexReaderAndLiveDocs reader,
-                                    final FieldsReader matchingFieldsReader)
-    throws IOException, MergeAbortedException, CorruptIndexException {
-    final int maxDoc = reader.reader.maxDoc();
-    int docCount = 0;
-    if (matchingFieldsReader != null) {
-      // We can bulk-copy because the fieldInfos are "congruent"
-      while (docCount < maxDoc) {
-        int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
-        IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, docCount, len);
-        fieldsWriter.addRawDocuments(stream, rawDocLengths, len);
-        docCount += len;
-        mergeState.checkAbort.work(300 * len);
-      }
-    } else {
-      for (; docCount < maxDoc; docCount++) {
-        // NOTE: it's very important to first assign to doc then pass it to
-        // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.reader.document(docCount);
-        fieldsWriter.addDocument(doc, mergeState.fieldInfos);
-        mergeState.checkAbort.work(300);
-      }
-    }
     return docCount;
   }
 
@@ -368,11 +260,13 @@ final class SegmentMerger {
    */
   private final void mergeVectors(SegmentWriteState segmentWriteState) throws IOException {
     TermVectorsWriter termVectorsWriter = new TermVectorsWriter(directory, segment, mergeState.fieldInfos, context);
-
+    // Used for bulk-reading raw bytes for term vectors
+    int rawDocLengths[] = new int[MAX_RAW_MERGE_DOCS];
+    int rawDocLengths2[] = new int[MAX_RAW_MERGE_DOCS];
     try {
       int idx = 0;
       for (final MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-        final SegmentReader matchingSegmentReader = matchingSegmentReaders[idx++];
+        final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
         TermVectorsReader matchingVectorsReader = null;
         if (matchingSegmentReader != null) {
           TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();
@@ -383,9 +277,9 @@ final class SegmentMerger {
           }
         }
         if (reader.liveDocs != null) {
-          copyVectorsWithDeletions(termVectorsWriter, matchingVectorsReader, reader);
+          copyVectorsWithDeletions(termVectorsWriter, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
         } else {
-          copyVectorsNoDeletions(termVectorsWriter, matchingVectorsReader, reader);
+          copyVectorsNoDeletions(termVectorsWriter, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
         }
       }
     } finally {
@@ -407,7 +301,9 @@ final class SegmentMerger {
 
   private void copyVectorsWithDeletions(final TermVectorsWriter termVectorsWriter,
                                         final TermVectorsReader matchingVectorsReader,
-                                        final MergeState.IndexReaderAndLiveDocs reader)
+                                        final MergeState.IndexReaderAndLiveDocs reader,
+                                        int rawDocLengths[],
+                                        int rawDocLengths2[])
     throws IOException, MergeAbortedException {
     final int maxDoc = reader.reader.maxDoc();
     final Bits liveDocs = reader.liveDocs;
@@ -454,7 +350,9 @@ final class SegmentMerger {
 
   private void copyVectorsNoDeletions(final TermVectorsWriter termVectorsWriter,
                                       final TermVectorsReader matchingVectorsReader,
-                                      final MergeState.IndexReaderAndLiveDocs reader)
+                                      final MergeState.IndexReaderAndLiveDocs reader,
+                                      int rawDocLengths[],
+                                      int rawDocLengths2[])
       throws IOException, MergeAbortedException {
     final int maxDoc = reader.reader.maxDoc();
     if (matchingVectorsReader != null) {
