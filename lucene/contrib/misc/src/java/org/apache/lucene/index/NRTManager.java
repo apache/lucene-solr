@@ -51,6 +51,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 
 public class NRTManager implements Closeable {
+  private static final long MAX_SEARCHER_GEN = Long.MAX_VALUE;
   private final IndexWriter writer;
   private final SearcherManagerRef withoutDeletes;
   private final SearcherManagerRef withDeletes;
@@ -275,6 +276,10 @@ public class NRTManager implements Closeable {
         // Mark gen as of when reopen started:
         final long newSearcherGen = indexingGen.getAndIncrement();
         boolean setSearchGen = false;
+        if (reference.generation == MAX_SEARCHER_GEN) {
+          newGeneration.signalAll(); // wake up threads if we have a new generation
+          return false;
+        }
         if (!(setSearchGen = reference.manager.isSearcherCurrent())) {
           setSearchGen = reference.manager.maybeReopen();
         }
@@ -298,13 +303,17 @@ public class NRTManager implements Closeable {
    * <p>
    * <b>NOTE</b>: caller must separately close the writer.
    */
-  public synchronized void close() throws IOException {
+  public void close() throws IOException {
     reopenLock.lock();
     try {
-      IOUtils.close(withDeletes, withoutDeletes);
-      newGeneration.signalAll();
+      try {
+        IOUtils.close(withDeletes, withoutDeletes);
+      } finally { // make sure we signal even if close throws an exception
+        newGeneration.signalAll();
+      }
     } finally {
       reopenLock.unlock();
+      assert withDeletes.generation == MAX_SEARCHER_GEN && withoutDeletes.generation == MAX_SEARCHER_GEN;
     }
   }
 
@@ -339,7 +348,7 @@ public class NRTManager implements Closeable {
     }
     
     public void close() throws IOException {
-      generation = Long.MAX_VALUE; // max it out to make sure nobody can wait on another gen
+      generation = MAX_SEARCHER_GEN; // max it out to make sure nobody can wait on another gen
       manager.close();
     }
   }
