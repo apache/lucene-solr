@@ -363,6 +363,9 @@ class TransactionLog {
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
   List<String> globalStringList = new ArrayList<String>();
 
+  long lengthForDebugging;
+
+
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
@@ -496,8 +499,6 @@ class TransactionLog {
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
         // fos.flushBuffer();  // flush later
 
-
-
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -563,6 +564,8 @@ class TransactionLog {
           throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
         }
         ***/
+        assert pos < fos.size();
+        assert fos.size() == channel.size();
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
@@ -616,6 +619,8 @@ class ChannelFastInputStream extends FastInputStream {
   @Override
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
     ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
+    assert chPosition  < ch.size();
+
     int ret = ch.read(bb, chPosition);
     if (ret >= 0) {
       chPosition += ret;
