@@ -331,7 +331,7 @@ final class SegmentMerger {
         // doc; ie we just have to renumber the field number
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
-        // termVectorsWriter.addAllDocVectors; see LUCENE-1282
+        // fieldsWriter.addDocument; see LUCENE-1282
         Document doc = reader.reader.document(j);
         fieldsWriter.addDocument(doc, fieldInfos);
         docCount++;
@@ -358,7 +358,7 @@ final class SegmentMerger {
     } else {
       for (; docCount < maxDoc; docCount++) {
         // NOTE: it's very important to first assign to doc then pass it to
-        // termVectorsWriter.addAllDocVectors; see LUCENE-1282
+        // fieldsWriter.addDocument; see LUCENE-1282
         Document doc = reader.reader.document(docCount);
         fieldsWriter.addDocument(doc, fieldInfos);
         checkAbort.work(300);
@@ -484,10 +484,6 @@ final class SegmentMerger {
   }
 
   private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
-
-    // Let CodecProvider decide which codec will be used to write
-    // the new segment:
-
     int docBase = 0;
     
     final List<Fields> fields = new ArrayList<Fields>();
@@ -520,14 +516,12 @@ final class SegmentMerger {
     mergeState.checkAbort = checkAbort;
 
     docBase = 0;
-    int inputDocBase = 0;
 
     for(int i=0;i<mergeState.readerCount;i++) {
 
       final MergeState.IndexReaderAndLiveDocs reader = readers.get(i);
 
       mergeState.docBase[i] = docBase;
-      inputDocBase += reader.reader.maxDoc();
       final int maxDoc = reader.reader.maxDoc();
       if (reader.liveDocs != null) {
         int delCount = 0;
