@@ -127,7 +127,8 @@ final class SegmentMerger {
     // of this check impacts how long
     // IndexWriter.close(false) takes to actually stop the
     // threads.
-
+    mergeFieldInfos();
+    setMatchingSegmentReaders();
     final int mergedDocs = mergeFields();
     final SegmentWriteState segmentWriteState = new SegmentWriteState(infoStream, directory, segment, fieldInfos, mergedDocs, termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
@@ -225,13 +226,7 @@ final class SegmentMerger {
     }
   }
 
-  /**
-   *
-   * @return The number of documents in all of the readers
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  private int mergeFields() throws CorruptIndexException, IOException {
+  private void mergeFieldInfos() throws IOException {
     for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : readers) {
       final IndexReader reader = readerAndLiveDocs.reader;
       if (reader instanceof SegmentReader) {
@@ -253,10 +248,17 @@ final class SegmentMerger {
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
+  }
 
+  /**
+   *
+   * @return The number of documents in all of the readers
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  private int mergeFields() throws CorruptIndexException, IOException {
     int docCount = 0;
 
-    setMatchingSegmentReaders();
     final FieldsWriter fieldsWriter = codec.fieldsFormat().fieldsWriter(directory, segment, context);
     try {
       int idx = 0;
