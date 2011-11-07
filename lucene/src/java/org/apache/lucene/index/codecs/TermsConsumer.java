@@ -104,7 +104,7 @@ public abstract class TermsConsumer {
         if (postingsEnumIn != null) {
           postingsEnum.reset(postingsEnumIn);
           // set PayloadProcessor
-          if (mergeState.hasPayloadProcessorProvider) {
+          if (mergeState.payloadProcessorProvider != null) {
             for (int i = 0; i < mergeState.readers.size(); i++) {
               if (mergeState.dirPayloadProcessor[i] != null) {
                 mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);

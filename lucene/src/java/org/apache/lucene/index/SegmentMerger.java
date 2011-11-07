@@ -60,8 +60,6 @@ final class SegmentMerger {
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private final Codec codec;
-
-  private final PayloadProcessorProvider payloadProcessorProvider;
   
   private final IOContext context;
   
@@ -72,7 +70,7 @@ final class SegmentMerger {
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
     mergeState.fieldInfos = fieldInfos;
     mergeState.checkAbort = checkAbort;
-    this.payloadProcessorProvider = payloadProcessorProvider;
+    mergeState.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
     this.termIndexInterval = termIndexInterval;
@@ -120,7 +118,6 @@ final class SegmentMerger {
     // Remap docIDs
     mergeState.docMaps = new int[numReaders][];
     mergeState.docBase = new int[numReaders];
-    mergeState.hasPayloadProcessorProvider = payloadProcessorProvider != null;
     mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[numReaders];
     mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
 
@@ -526,8 +523,8 @@ final class SegmentMerger {
         docBase += maxDoc;
       }
 
-      if (payloadProcessorProvider != null) {
-        mergeState.dirPayloadProcessor[i] = payloadProcessorProvider.getDirProcessor(reader.reader.directory());
+      if (mergeState.payloadProcessorProvider != null) {
+        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(reader.reader.directory());
       }
     }
 

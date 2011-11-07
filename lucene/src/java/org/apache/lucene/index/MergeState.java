@@ -52,7 +52,9 @@ public class MergeState {
   public FieldInfo fieldInfo;
   
   // Used to process payloads
-  public boolean hasPayloadProcessorProvider;
+  // TODO: this is a FactoryFactory here basically
+  // and we could make a codec(wrapper) to do all of this privately so IW is uninvolved
+  public PayloadProcessorProvider payloadProcessorProvider;
   public DirPayloadProcessor[] dirPayloadProcessor;
   public PayloadProcessor[] currentPayloadProcessor;
 
