@@ -363,9 +363,6 @@ class TransactionLog {
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
   List<String> globalStringList = new ArrayList<String>();
 
-  long lengthForDebugging;
-
-
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
@@ -621,11 +618,16 @@ class ChannelFastInputStream extends FastInputStream {
     ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
     assert chPosition  < ch.size();
 
-    int ret = ch.read(bb, chPosition);
-    if (ret >= 0) {
-      chPosition += ret;
+    for (;;) {
+      int ret = ch.read(bb, chPosition);
+      if (ret > 0) {
+        chPosition += ret;
+        return ret;
+      } else if (ret < 0) {
+        return ret;
+      }
+      // a channel read can return 0 - retry if this happens
     }
-    return ret;
   }
 
   @Override
