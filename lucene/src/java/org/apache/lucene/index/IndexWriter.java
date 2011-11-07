@@ -3639,7 +3639,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       if (infoStream != null) {
         infoStream.message("IW", "merge codec=" + codec);
-        infoStream.message("IW", "merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
       anyNonBulkMerges |= merger.getAnyNonBulkMerges();
 

@@ -192,10 +192,6 @@ final class SegmentMerger {
   private int[] rawDocLengths2;
   private int matchedCount;
 
-  public int getMatchedSubReaderCount() {
-    return matchedCount;
-  }
-
   private void setMatchingSegmentReaders() {
     // If the i'th reader is a SegmentReader and has
     // identical fieldName -> number mapping, then this
@@ -226,6 +222,9 @@ final class SegmentMerger {
     // Used for bulk-reading raw bytes for stored fields
     rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
     rawDocLengths2 = new int[MAX_RAW_MERGE_DOCS];
+    if (infoStream != null) {
+      infoStream.message("SM", "merge store matchedCount=" + matchedCount + " vs " + readers.size());
+    }
   }
 
   /**
