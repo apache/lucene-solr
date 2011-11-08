@@ -73,7 +73,8 @@ public class TestFSTs extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    dir.close();
+    // can be null if we force simpletext (funky, some kind of bug in test runner maybe)
+    if (dir != null) dir.close();
     super.tearDown();
   }
 
