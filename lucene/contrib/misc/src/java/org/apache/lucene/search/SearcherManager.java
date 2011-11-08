@@ -147,7 +147,8 @@ public final class SearcherManager {
    * </p>
    * 
    * <p>
-   * This method returns true if a new reader was in fact opened.
+   * This method returns true if a new reader was in fact opened or 
+   * if the current searcher has no pending changes.
    * </p>
    */
   public boolean maybeReopen() throws IOException {
@@ -173,10 +174,8 @@ public final class SearcherManager {
               release(newSearcher);
             }
           }
-          return true;
-        } else {
-          return false;
         }
+        return true;
       } finally {
         reopenLock.release();
       }
@@ -184,7 +183,7 @@ public final class SearcherManager {
       return false;
     }
   }
-
+  
   /**
    * Returns <code>true</code> if no changes have occured since this searcher
    * ie. reader was opened, otherwise <code>false</code>.
@@ -251,4 +250,5 @@ public final class SearcherManager {
     currentSearcher = newSearcher;
     release(oldSearcher);
   }
+ 
 }
