@@ -58,7 +58,7 @@ public class DocNameExtractor {
 
         @Override
         public Status needsField(FieldInfo fieldInfo) throws IOException {
-          if (name.isEmpty()) {
+          if (!name.isEmpty()) {
             return Status.STOP;
           } else if (fieldInfo.name.equals(docNameField)) {
             return Status.YES;
