@@ -51,8 +51,10 @@ import org.apache.lucene.util._TestUtil;
 public class RandomCodec extends Lucene40Codec {
   /** shuffled list of postingsformats to use for new mappings */
   private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
-  /** memorized field->postingsformat mappings */
-  private Map<String,PostingsFormat> previousMappings = new HashMap<String,PostingsFormat>();
+  // note: we have to sync this map even though its just for debugging/toString, 
+  // otherwise DWPT's .toString() calls that iterate over the map can 
+  // cause concurrentmodificationexception if indexwriter's infostream is on
+  private Map<String,PostingsFormat> previousMappings = Collections.synchronizedMap(new HashMap<String,PostingsFormat>());
   private final int perFieldSeed;
 
   @Override
