@@ -56,6 +56,9 @@
     <sourceDirectory>java</sourceDirectory>
     <resources>
       <resource>
+        <directory>resources</directory>
+      </resource>
+      <resource>
         <directory>${project.build.sourceDirectory}</directory>
         <excludes>
           <exclude>**/*.java</exclude>
