@@ -116,7 +116,7 @@
 	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
-	<classpathentry kind="lib" path="solr/lib/zookeeper-3.4.rc1.jar"/>
+	<classpathentry kind="lib" path="solr/lib/zookeeper-3.4.0.rc1.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/servlet-api-2.5-20081211.jar"/>
