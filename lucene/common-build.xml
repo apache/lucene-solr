@@ -83,6 +83,7 @@
     </or>
   </condition>
   <property name="tests.multiplier" value="1" />
+  <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
@@ -555,6 +556,8 @@
               <!-- directory for formatter lock -->
 	      <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
               <!-- set the codec tests should run with -->
+	      <sysproperty key="tests.codec" value="${tests.codec}"/>
+              <!-- set the postingsformat tests should run with -->
 	      <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
               <!-- set the locale tests should run with -->
 	      <sysproperty key="tests.locale" value="${tests.locale}"/>

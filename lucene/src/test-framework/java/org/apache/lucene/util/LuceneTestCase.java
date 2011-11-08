@@ -52,6 +52,7 @@ import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -141,6 +142,8 @@ public abstract class LuceneTestCase extends Assert {
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
   // tests)
+  /** Gets the codec to run tests with. */
+  public static final String TEST_CODEC = System.getProperty("tests.codec", "random");
   /** Gets the postingsFormat to run tests with. */
   public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
   /** Gets the locale to run tests with */
@@ -284,9 +287,15 @@ public abstract class LuceneTestCase extends Assert {
     PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
     final Codec codec;
-    if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
+    int randomVal = random.nextInt(10);
+    
+    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal <= 3)) { // preflex-only setup
       codec = new PreFlexRWCodec();
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+    } else if ("SimpleText".equals(TEST_CODEC) || "random".equals(TEST_CODEC) && randomVal == 10) {
+      codec = new SimpleTextCodec();
+    } else if (!"random".equals(TEST_CODEC)) {
+      codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {
       codec = new RandomCodec(random, useNoMemoryExpensiveCodec);
     } else {
@@ -1289,6 +1298,7 @@ public abstract class LuceneTestCase extends Assert {
   // extra params that were overridden needed to reproduce the command
   private static String reproduceWithExtraParams() {
     StringBuilder sb = new StringBuilder();
+    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
     if (!TEST_POSTINGSFORMAT.equals("random")) sb.append(" -Dtests.postingsformat=").append(TEST_POSTINGSFORMAT);
     if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
