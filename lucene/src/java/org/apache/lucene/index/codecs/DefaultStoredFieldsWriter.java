@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /** @lucene.experimental */
-public final class DefaultFieldsWriter extends FieldsWriter {
+public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   // NOTE: bit 0 is free here!  You can steal it!
   static final int FIELD_IS_BINARY = 1 << 1;
 
@@ -78,7 +78,7 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
-  public DefaultFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  public DefaultStoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
 
@@ -235,12 +235,12 @@ public final class DefaultFieldsWriter extends FieldsWriter {
     
     for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
-      DefaultFieldsReader matchingFieldsReader = null;
+      DefaultStoredFieldsReader matchingFieldsReader = null;
       if (matchingSegmentReader != null) {
-        final FieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
+        final StoredFieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
         // we can only bulk-copy if the matching reader is also a DefaultFieldsReader
-        if (fieldsReader != null && fieldsReader instanceof DefaultFieldsReader) {
-          matchingFieldsReader = (DefaultFieldsReader) fieldsReader;
+        if (fieldsReader != null && fieldsReader instanceof DefaultStoredFieldsReader) {
+          matchingFieldsReader = (DefaultStoredFieldsReader) fieldsReader;
         }
       }
     
@@ -261,7 +261,7 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private int copyFieldsWithDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
-                                      final DefaultFieldsReader matchingFieldsReader, int rawDocLengths[])
+                                      final DefaultStoredFieldsReader matchingFieldsReader, int rawDocLengths[])
     throws IOException, MergeAbortedException, CorruptIndexException {
     int docCount = 0;
     final int maxDoc = reader.reader.maxDoc();
@@ -315,7 +315,7 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   }
 
   private int copyFieldsNoDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
-                                    final DefaultFieldsReader matchingFieldsReader, int rawDocLengths[])
+                                    final DefaultStoredFieldsReader matchingFieldsReader, int rawDocLengths[])
     throws IOException, MergeAbortedException, CorruptIndexException {
     final int maxDoc = reader.reader.maxDoc();
     int docCount = 0;

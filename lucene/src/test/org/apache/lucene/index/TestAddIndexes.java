@@ -32,10 +32,10 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
@@ -1163,8 +1163,8 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     @Override
-    public FieldsFormat fieldsFormat() {
-      return new DefaultFieldsFormat();
+    public StoredFieldsFormat storedFieldsFormat() {
+      return new DefaultStoredFieldsFormat();
     }
 
     @Override

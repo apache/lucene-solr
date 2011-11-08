@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.FieldsWriter;
+import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -243,7 +243,7 @@ final class SegmentMerger {
   private int mergeFields() throws CorruptIndexException, IOException {
     int docCount = 0;
 
-    final FieldsWriter fieldsWriter = codec.fieldsFormat().fieldsWriter(directory, segment, context);
+    final StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, segment, context);
     try {
       docCount = fieldsWriter.merge(mergeState);
     } finally {

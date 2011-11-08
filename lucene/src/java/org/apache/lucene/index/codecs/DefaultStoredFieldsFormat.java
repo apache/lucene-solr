@@ -26,22 +26,22 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
 /** @lucene.experimental */
-public class DefaultFieldsFormat extends FieldsFormat {
+public class DefaultStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
-  public FieldsReader fieldsReader(Directory directory, SegmentInfo si,
+  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
       FieldInfos fn, IOContext context) throws IOException {
-    return new DefaultFieldsReader(directory, si, fn, context);
+    return new DefaultStoredFieldsReader(directory, si, fn, context);
   }
 
   @Override
-  public FieldsWriter fieldsWriter(Directory directory, String segment,
+  public StoredFieldsWriter fieldsWriter(Directory directory, String segment,
       IOContext context) throws IOException {
-    return new DefaultFieldsWriter(directory, segment, context);
+    return new DefaultStoredFieldsWriter(directory, segment, context);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    DefaultFieldsReader.files(dir, info, files);
+    DefaultStoredFieldsReader.files(dir, info, files);
   }
 }

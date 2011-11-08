@@ -40,7 +40,7 @@ import org.apache.lucene.util.Bits;
  * 
  * @lucene.experimental
  */
-public abstract class FieldsWriter implements Closeable {
+public abstract class StoredFieldsWriter implements Closeable {
   
   /** Called before writing the stored fields of the document.
    *  {@link #writeField(int, IndexableField)} will be called

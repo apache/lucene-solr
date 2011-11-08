@@ -46,7 +46,7 @@ import java.util.Set;
  * 
  * @lucene.internal
  */
-public final class DefaultFieldsReader extends FieldsReader implements Cloneable, Closeable {
+public final class DefaultStoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
   private final static int FORMAT_SIZE = 4;
 
   private final FieldInfos fieldInfos;
@@ -78,22 +78,22 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
    *  clones are called (eg, currently SegmentReader manages
    *  this logic). */
   @Override
-  public DefaultFieldsReader clone() {
+  public DefaultStoredFieldsReader clone() {
     ensureOpen();
-    return new DefaultFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
+    return new DefaultStoredFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
   }
 
   /** Verifies that the code version which wrote the segment is supported. */
   public static void checkCodeVersion(Directory dir, String segment) throws IOException {
-    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
+    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultStoredFieldsWriter.FIELDS_INDEX_EXTENSION);
     IndexInput idxStream = dir.openInput(indexStreamFN, IOContext.DEFAULT);
     
     try {
       int format = idxStream.readInt();
-      if (format < DefaultFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(idxStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
-      if (format > DefaultFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(idxStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
+      if (format < DefaultStoredFieldsWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(idxStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
+      if (format > DefaultStoredFieldsWriter.FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(idxStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
     } finally {
       idxStream.close();
     }
@@ -101,7 +101,7 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
   }
   
   // Used only by clone
-  private DefaultFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int docStoreOffset,
+  private DefaultStoredFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int docStoreOffset,
                        IndexInput cloneableFieldsStream, IndexInput cloneableIndexStream) {
     this.fieldInfos = fieldInfos;
     this.numTotalDocs = numTotalDocs;
@@ -114,7 +114,7 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     indexStream = (IndexInput) cloneableIndexStream.clone();
   }
 
-  public DefaultFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+  public DefaultStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     final String segment = si.getDocStoreSegment();
     final int docStoreOffset = si.getDocStoreOffset();
     final int size = si.docCount;
@@ -123,16 +123,16 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     try {
       fieldInfos = fn;
 
-      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_EXTENSION), context);
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION);
+      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", DefaultStoredFieldsWriter.FIELDS_EXTENSION), context);
+      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultStoredFieldsWriter.FIELDS_INDEX_EXTENSION);
       cloneableIndexStream = d.openInput(indexStreamFN, context);
       
       format = cloneableIndexStream.readInt();
 
-      if (format < DefaultFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(cloneableIndexStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
-      if (format > DefaultFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(cloneableIndexStream, format, DefaultFieldsWriter.FORMAT_MINIMUM, DefaultFieldsWriter.FORMAT_CURRENT);
+      if (format < DefaultStoredFieldsWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(cloneableIndexStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
+      if (format > DefaultStoredFieldsWriter.FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(cloneableIndexStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
 
       fieldsStream = (IndexInput) cloneableFieldsStream.clone();
 
@@ -214,7 +214,7 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
       FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
       
       int bits = fieldsStream.readByte() & 0xFF;
-      assert bits <= (DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK | DefaultFieldsWriter.FIELD_IS_BINARY): "bits=" + Integer.toHexString(bits);
+      assert bits <= (DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_MASK | DefaultStoredFieldsWriter.FIELD_IS_BINARY): "bits=" + Integer.toHexString(bits);
 
       switch(visitor.needsField(fieldInfo)) {
         case YES:
@@ -232,19 +232,19 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
   static final Charset UTF8 = Charset.forName("UTF-8");
 
   private void readField(StoredFieldVisitor visitor, FieldInfo info, int bits) throws IOException {
-    final int numeric = bits & DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK;
+    final int numeric = bits & DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_MASK;
     if (numeric != 0) {
       switch(numeric) {
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_INT:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_INT:
           visitor.intField(info, fieldsStream.readInt());
           return;
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_LONG:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_LONG:
           visitor.longField(info, fieldsStream.readLong());
           return;
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
           visitor.floatField(info, Float.intBitsToFloat(fieldsStream.readInt()));
           return;
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
           visitor.doubleField(info, Double.longBitsToDouble(fieldsStream.readLong()));
           return;
         default:
@@ -254,7 +254,7 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
       final int length = fieldsStream.readVInt();
       byte bytes[] = new byte[length];
       fieldsStream.readBytes(bytes, 0, length);
-      if ((bits & DefaultFieldsWriter.FIELD_IS_BINARY) != 0) {
+      if ((bits & DefaultStoredFieldsWriter.FIELD_IS_BINARY) != 0) {
         visitor.binaryField(info, bytes, 0, bytes.length);
       } else {
         visitor.stringField(info, new String(bytes, 0, bytes.length, UTF8));
@@ -263,15 +263,15 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
   }
   
   private void skipField(int bits) throws IOException {
-    final int numeric = bits & DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK;
+    final int numeric = bits & DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_MASK;
     if (numeric != 0) {
       switch(numeric) {
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_INT:
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_INT:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
           fieldsStream.readInt();
           return;
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_LONG:
-        case DefaultFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_LONG:
+        case DefaultStoredFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
           fieldsStream.readLong();
           return;
         default: 
@@ -315,12 +315,12 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     if (info.getDocStoreOffset() != -1) {
       assert info.getDocStoreSegment() != null;
       if (!info.getDocStoreIsCompoundFile()) {
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", DefaultFieldsWriter.FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", DefaultStoredFieldsWriter.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", DefaultStoredFieldsWriter.FIELDS_EXTENSION));
       }
     } else {
-      files.add(IndexFileNames.segmentFileName(info.name, "", DefaultFieldsWriter.FIELDS_INDEX_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", DefaultFieldsWriter.FIELDS_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(info.name, "", DefaultStoredFieldsWriter.FIELDS_INDEX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(info.name, "", DefaultStoredFieldsWriter.FIELDS_EXTENSION));
     }
   }
 }
