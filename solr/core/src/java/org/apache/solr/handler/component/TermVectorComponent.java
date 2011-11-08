@@ -12,6 +12,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFieldVisitor.Status;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.index.Terms;
@@ -199,33 +200,28 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     final String finalUniqFieldName = uniqFieldName;
 
     final List<String> uniqValues = new ArrayList<String>();
+    
+    // TODO: is this required to be single-valued? if so, we should STOP
+    // once we find it...
     final StoredFieldVisitor getUniqValue = new StoredFieldVisitor() {
       @Override 
-      public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
-        if (fieldInfo.name.equals(finalUniqFieldName)) {
-          final byte[] b = new byte[numUTF8Bytes];
-          in.readBytes(b, 0, b.length);
-          uniqValues.add(new String(b, "UTF-8"));
-        } else {
-          in.seek(in.getFilePointer() + numUTF8Bytes);
-        }
-        return false;
+      public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+        uniqValues.add(value);
       }
 
       @Override 
-      public boolean intField(FieldInfo fieldInfo, int value) throws IOException {
-        if (fieldInfo.name.equals(finalUniqFieldName)) {
-          uniqValues.add(Integer.toString(value));
-        }
-        return false;
+      public void intField(FieldInfo fieldInfo, int value) throws IOException {
+        uniqValues.add(Integer.toString(value));
       }
 
       @Override 
-      public boolean longField(FieldInfo fieldInfo, long value) throws IOException {
-        if (fieldInfo.name.equals(finalUniqFieldName)) {
-          uniqValues.add(Long.toString(value));
-        }
-        return false;
+      public void longField(FieldInfo fieldInfo, long value) throws IOException {
+        uniqValues.add(Long.toString(value));
+      }
+
+      @Override
+      public Status needsField(FieldInfo fieldInfo) throws IOException {
+        return (fieldInfo.name.equals(finalUniqFieldName)) ? Status.YES : Status.NO;
       }
     };
 

@@ -24,7 +24,6 @@ import java.util.HashSet;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.store.IndexInput;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
  *  Document} containing all stored fields, or only specific
@@ -57,81 +56,54 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   }
 
   @Override
-  public boolean binaryField(FieldInfo fieldInfo, IndexInput in, int numBytes) throws IOException {
-    if (accept(fieldInfo)) {
-      final byte[] b = new byte[numBytes];
-      in.readBytes(b, 0, b.length);
-      doc.add(new BinaryField(fieldInfo.name, b));
-    } else {
-      in.seek(in.getFilePointer() + numBytes);
-    }
-    return false;
+  public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
+    doc.add(new BinaryField(fieldInfo.name, value));
   }
 
   @Override
-  public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
-    if (accept(fieldInfo)) {
-      final byte[] b = new byte[numUTF8Bytes];
-      in.readBytes(b, 0, b.length);
-      final FieldType ft = new FieldType(TextField.TYPE_STORED);
-      ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
-      ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setIndexed(fieldInfo.isIndexed);
-      ft.setOmitNorms(fieldInfo.omitNorms);
-      ft.setIndexOptions(fieldInfo.indexOptions);
-      doc.add(new Field(fieldInfo.name,
-          new String(b, "UTF-8"), ft
-      ));
-    } else {
-      in.seek(in.getFilePointer() + numUTF8Bytes);
-    }
-    return false;
+  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    final FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(fieldInfo.storeTermVector);
+    ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+    ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+    ft.setStoreTermVectors(fieldInfo.storeTermVector);
+    ft.setIndexed(fieldInfo.isIndexed);
+    ft.setOmitNorms(fieldInfo.omitNorms);
+    ft.setIndexOptions(fieldInfo.indexOptions);
+    doc.add(new Field(fieldInfo.name, value, ft));
   }
 
   @Override
-  public boolean intField(FieldInfo fieldInfo, int value) {
-    if (accept(fieldInfo)) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
-      ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
-    }
-    return false;
+  public void intField(FieldInfo fieldInfo, int value) {
+    FieldType ft = new FieldType(NumericField.TYPE_STORED);
+    ft.setIndexed(fieldInfo.isIndexed);
+    doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
   }
 
   @Override
-  public boolean longField(FieldInfo fieldInfo, long value) {
-    if (accept(fieldInfo)) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
-      ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
-    }
-    return false;
+  public void longField(FieldInfo fieldInfo, long value) {
+    FieldType ft = new FieldType(NumericField.TYPE_STORED);
+    ft.setIndexed(fieldInfo.isIndexed);
+    doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
   }
 
   @Override
-  public boolean floatField(FieldInfo fieldInfo, float value) {
-    if (accept(fieldInfo)) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
-      ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
-    }
-    return false;
+  public void floatField(FieldInfo fieldInfo, float value) {
+    FieldType ft = new FieldType(NumericField.TYPE_STORED);
+    ft.setIndexed(fieldInfo.isIndexed);
+    doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
   }
 
   @Override
-  public boolean doubleField(FieldInfo fieldInfo, double value) {
-    if (accept(fieldInfo)) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
-      ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
-    }
-    return false;
+  public void doubleField(FieldInfo fieldInfo, double value) {
+    FieldType ft = new FieldType(NumericField.TYPE_STORED);
+    ft.setIndexed(fieldInfo.isIndexed);
+    doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
   }
 
-  private boolean accept(FieldInfo fieldInfo) {
-    return fieldsToAdd == null || fieldsToAdd.contains(fieldInfo.name);
+  @Override
+  public Status needsField(FieldInfo fieldInfo) throws IOException {
+    return fieldsToAdd == null || fieldsToAdd.contains(fieldInfo.name) ? Status.YES : Status.NO;
   }
 
   public Document getDocument() {

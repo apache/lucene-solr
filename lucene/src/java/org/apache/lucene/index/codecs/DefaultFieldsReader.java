@@ -36,6 +36,7 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
+import java.nio.charset.Charset;
 import java.util.Set;
 
 /**
@@ -215,39 +216,70 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
       int bits = fieldsStream.readByte() & 0xFF;
       assert bits <= (DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK | DefaultFieldsWriter.FIELD_IS_BINARY): "bits=" + Integer.toHexString(bits);
 
-      final boolean binary = (bits & DefaultFieldsWriter.FIELD_IS_BINARY) != 0;
-      final int numeric = bits & DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK;
+      switch(visitor.needsField(fieldInfo)) {
+        case YES:
+          readField(visitor, fieldInfo, bits);
+          break;
+        case NO: 
+          skipField(bits);
+          break;
+        case STOP: 
+          return;
+      }
+    }
+  }
+  
+  static final Charset UTF8 = Charset.forName("UTF-8");
 
-      final boolean doStop;
-      if (binary) {
-        final int numBytes = fieldsStream.readVInt();
-        doStop = visitor.binaryField(fieldInfo, fieldsStream, numBytes);
-      } else if (numeric != 0) {
-        switch(numeric) {
+  private void readField(StoredFieldVisitor visitor, FieldInfo info, int bits) throws IOException {
+    final int numeric = bits & DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK;
+    if (numeric != 0) {
+      switch(numeric) {
         case DefaultFieldsWriter.FIELD_IS_NUMERIC_INT:
-          doStop = visitor.intField(fieldInfo, fieldsStream.readInt());
-          break;
+          visitor.intField(info, fieldsStream.readInt());
+          return;
         case DefaultFieldsWriter.FIELD_IS_NUMERIC_LONG:
-          doStop = visitor.longField(fieldInfo, fieldsStream.readLong());
-          break;
+          visitor.longField(info, fieldsStream.readLong());
+          return;
         case DefaultFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
-          doStop = visitor.floatField(fieldInfo, Float.intBitsToFloat(fieldsStream.readInt()));
-          break;
+          visitor.floatField(info, Float.intBitsToFloat(fieldsStream.readInt()));
+          return;
         case DefaultFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
-          doStop = visitor.doubleField(fieldInfo, Double.longBitsToDouble(fieldsStream.readLong()));
-          break;
+          visitor.doubleField(info, Double.longBitsToDouble(fieldsStream.readLong()));
+          return;
         default:
           throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
-        }
+      }
+    } else { 
+      final int length = fieldsStream.readVInt();
+      byte bytes[] = new byte[length];
+      fieldsStream.readBytes(bytes, 0, length);
+      if ((bits & DefaultFieldsWriter.FIELD_IS_BINARY) != 0) {
+        visitor.binaryField(info, bytes, 0, bytes.length);
       } else {
-        // Text:
-        final int numUTF8Bytes = fieldsStream.readVInt();
-        doStop = visitor.stringField(fieldInfo, fieldsStream, numUTF8Bytes);
+        visitor.stringField(info, new String(bytes, 0, bytes.length, UTF8));
       }
-
-      if (doStop) {
-        return;
+    }
+  }
+  
+  private void skipField(int bits) throws IOException {
+    final int numeric = bits & DefaultFieldsWriter.FIELD_IS_NUMERIC_MASK;
+    if (numeric != 0) {
+      switch(numeric) {
+        case DefaultFieldsWriter.FIELD_IS_NUMERIC_INT:
+        case DefaultFieldsWriter.FIELD_IS_NUMERIC_FLOAT:
+          fieldsStream.readInt();
+          return;
+        case DefaultFieldsWriter.FIELD_IS_NUMERIC_LONG:
+        case DefaultFieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
+          fieldsStream.readLong();
+          return;
+        default: 
+          throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
       }
+    } else {
+      final int length = fieldsStream.readVInt();
+      fieldsStream.seek(fieldsStream.getFilePointer() + length);
     }
   }
 

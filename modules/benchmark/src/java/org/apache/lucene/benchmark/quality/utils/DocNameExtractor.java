@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFieldVisitor.Status;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.IndexInput;
 
@@ -51,15 +52,19 @@ public class DocNameExtractor {
     final List<String> name = new ArrayList<String>();
     searcher.getIndexReader().document(docid, new StoredFieldVisitor() {
         @Override
-        public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
-          if (fieldInfo.name.equals(docNameField) && name.size() == 0) {
-            final byte[] b = new byte[numUTF8Bytes];
-            in.readBytes(b, 0, b.length);
-            name.add(new String(b, "UTF-8"));
+        public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+          name.add(value);
+        }
+
+        @Override
+        public Status needsField(FieldInfo fieldInfo) throws IOException {
+          if (name.isEmpty()) {
+            return Status.STOP;
+          } else if (fieldInfo.name.equals(docNameField)) {
+            return Status.YES;
           } else {
-            in.seek(in.getFilePointer() + numUTF8Bytes);
+            return Status.NO;
           }
-          return false;
         }
       });
     if (name.size() != 0) {

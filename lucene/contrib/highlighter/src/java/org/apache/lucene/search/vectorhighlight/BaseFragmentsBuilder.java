@@ -32,7 +32,6 @@ import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
-import org.apache.lucene.store.IndexInput;
 
 public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
@@ -124,20 +123,19 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
     final List<Field> fields = new ArrayList<Field>();
     reader.document(docId, new StoredFieldVisitor() {
+        
         @Override
-        public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
-          if (fieldInfo.name.equals(fieldName)) {
-            final byte[] b = new byte[numUTF8Bytes];
-            in.readBytes(b, 0, b.length);
-            FieldType ft = new FieldType(TextField.TYPE_STORED);
-            ft.setStoreTermVectors(fieldInfo.storeTermVector);
-            ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
-            ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-            fields.add(new Field(fieldInfo.name, new String(b, "UTF-8"), ft));
-          } else {
-            in.seek(in.getFilePointer() + numUTF8Bytes);
-          }
-          return false;
+        public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+          FieldType ft = new FieldType(TextField.TYPE_STORED);
+          ft.setStoreTermVectors(fieldInfo.storeTermVector);
+          ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+          ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+          fields.add(new Field(fieldInfo.name, value, ft));
+        }
+
+        @Override
+        public Status needsField(FieldInfo fieldInfo) throws IOException {
+          return fieldInfo.name.equals(fieldName) ? Status.YES : Status.NO;
         }
       });
     return fields.toArray(new Field[fields.size()]);
