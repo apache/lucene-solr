@@ -21,8 +21,15 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask
@@ -36,28 +43,23 @@ public class LazyDocument {
   // null until first field is loaded
   private Document doc;
 
-  private Map<String,LazyField> fields = new HashMap<String,LazyField>();
+  private Map<Integer,Integer> fields = new HashMap<Integer,Integer>();
 
   public LazyDocument(IndexReader reader, int docID) {
     this.reader = reader;
     this.docID = docID;
   }
 
-  public Field getField(FieldInfo fieldInfo) {  
-    LazyField f = fields.get(fieldInfo.name);
-    if (f == null) {
-      final FieldType ft = new FieldType(TextField.TYPE_STORED);
-      ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
-      ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setIndexed(fieldInfo.isIndexed);
-      ft.setOmitNorms(fieldInfo.omitNorms);
-      ft.setIndexOptions(fieldInfo.indexOptions);
-      f = new LazyField(fieldInfo.name, ft);
-      fields.put(fieldInfo.name, f);
+  public IndexableField getField(FieldInfo fieldInfo) {  
+    Integer num = fields.get(fieldInfo.number);
+    if (num == null) {
+      num = 0;
+    } else {
+      num++;
     }
-    return f;
+    fields.put(fieldInfo.number, num);
+
+    return new LazyField(fieldInfo.name, num);
   }
 
   private synchronized Document getDocument() {
@@ -72,34 +74,113 @@ public class LazyDocument {
     return doc;
   }
 
-  private class LazyField extends Field {
-    public LazyField(String name, FieldType ft) {
-      super(name, ft);
+  private class LazyField implements IndexableField {
+    private String name;
+    private int num;
+    
+    public LazyField(String name, int num) {
+      this.name = name;
+      this.num = num;
     }
 
     @Override
-    public Number numericValue() {
-      return null;
+    public String name() {
+      return name;
     }
 
     @Override
-    public NumericField.DataType numericDataType() {
-      return null;
-    }
-
-    @Override
-    public Reader readerValue() {
-      return null;
-    }
-
-    @Override
-    public String stringValue() {
-      return getDocument().get(name);
+    public float boost() {
+      return 1.0f;
     }
 
     @Override
     public BytesRef binaryValue() {
-      return getDocument().getBinaryValue(name);
+      if (num == 0) {
+        return getDocument().getField(name).binaryValue();
+      } else {
+        return getDocument().getFields(name)[num].binaryValue();
+      }
+    }
+
+    @Override
+    public String stringValue() {
+      if (num == 0) {
+        return getDocument().getField(name).stringValue();
+      } else {
+        return getDocument().getFields(name)[num].stringValue();
+      }
+    }
+
+    @Override
+    public Reader readerValue() {
+      if (num == 0) {
+        return getDocument().getField(name).readerValue();
+      } else {
+        return getDocument().getFields(name)[num].readerValue();
+      }
+    }
+
+    @Override
+    public boolean numeric() {
+      if (num == 0) {
+        return getDocument().getField(name).numeric();
+      } else {
+        return getDocument().getFields(name)[num].numeric();
+      }
+    }
+
+    @Override
+    public DataType numericDataType() {
+      if (num == 0) {
+        return getDocument().getField(name).numericDataType();
+      } else {
+        return getDocument().getFields(name)[num].numericDataType();
+      }
+    }
+
+    @Override
+    public Number numericValue() {
+      if (num == 0) {
+        return getDocument().getField(name).numericValue();
+      } else {
+        return getDocument().getFields(name)[num].numericValue();
+      }
+    }
+
+    @Override
+    public IndexableFieldType fieldType() {
+      if (num == 0) {
+        return getDocument().getField(name).fieldType();
+      } else {
+        return getDocument().getFields(name)[num].fieldType();
+      }
+    }
+
+    @Override
+    public PerDocFieldValues docValues() {
+      if (num == 0) {
+        return getDocument().getField(name).docValues();
+      } else {
+        return getDocument().getFields(name)[num].docValues();
+      }
+    }
+
+    @Override
+    public ValueType docValuesType() {
+      if (num == 0) {
+        return getDocument().getField(name).docValuesType();
+      } else {
+        return getDocument().getFields(name)[num].docValuesType();
+      }
+    }
+
+    @Override
+    public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+      if (num == 0) {
+        return getDocument().getField(name).tokenStream(analyzer);
+      } else {
+        return getDocument().getFields(name)[num].tokenStream(analyzer);
+      }
     }
   }
 }
