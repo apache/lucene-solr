@@ -102,7 +102,7 @@ final class StoredFieldsWriter {
     // We must "catch up" for all docs before us
     // that had no stored fields:
     while(lastDocID < docID) {
-      fieldsWriter.skipDocument();
+      fieldsWriter.startDocument(0);
       lastDocID++;
     }
   }

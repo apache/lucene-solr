@@ -246,7 +246,6 @@ final class SegmentMerger {
     final FieldsWriter fieldsWriter = codec.fieldsFormat().fieldsWriter(directory, segment, context);
     try {
       docCount = fieldsWriter.merge(mergeState);
-      fieldsWriter.finish(docCount);
     } finally {
       fieldsWriter.close();
     }

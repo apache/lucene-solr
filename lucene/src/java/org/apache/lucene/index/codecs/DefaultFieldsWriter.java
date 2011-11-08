@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
@@ -117,11 +116,6 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   public void startDocument(int numStoredFields) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
     fieldsStream.writeVInt(numStoredFields);
-  }
-
-  public void skipDocument() throws IOException {
-    indexStream.writeLong(fieldsStream.getFilePointer());
-    fieldsStream.writeVInt(0);
   }
 
   public void close() throws IOException {
@@ -228,24 +222,6 @@ public final class DefaultFieldsWriter extends FieldsWriter {
     assert fieldsStream.getFilePointer() == position;
   }
 
-  public final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
-    indexStream.writeLong(fieldsStream.getFilePointer());
-
-    int storedCount = 0;
-    for (IndexableField field : doc) {
-      if (field.fieldType().stored()) {
-        storedCount++;
-      }
-    }
-    fieldsStream.writeVInt(storedCount);
-
-    for (IndexableField field : doc) {
-      if (field.fieldType().stored()) {
-        writeField(fieldInfos.fieldNumber(field.name()), field);
-      }
-    }
-  }
-
   @Override
   public void finish(int numDocs) throws IOException {
     if (4+((long) numDocs)*8 != indexStream.getFilePointer())
@@ -279,11 +255,11 @@ public final class DefaultFieldsWriter extends FieldsWriter {
         docCount += copyFieldsWithDeletions(mergeState,
                                             reader, matchingFieldsReader, rawDocLengths);
       } else {
-          docCount += copyFieldsNoDeletions(mergeState,
-                                            reader, matchingFieldsReader, rawDocLengths);
+        docCount += copyFieldsNoDeletions(mergeState,
+                                          reader, matchingFieldsReader, rawDocLengths);
       }
     }
-
+    finish(docCount);
     return docCount;
   }
 

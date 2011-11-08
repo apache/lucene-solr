@@ -201,7 +201,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * encoded as UTF8.  If a term arrives from the analyzer
    * longer than this length, it is skipped and a message is
    * printed to infoStream, if set (see {@link
-   * #setInfoStream}).
+   * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
   public final static int MAX_TERM_LENGTH = DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8;
   volatile private boolean hitOOM;
