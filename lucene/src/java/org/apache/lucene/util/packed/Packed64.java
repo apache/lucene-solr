@@ -38,7 +38,7 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
   static final int MOD_MASK = BLOCK_SIZE - 1; // x % BLOCK_SIZE
 
   private static final int ENTRY_SIZE = BLOCK_SIZE + 1;
-  private static final int FAC_BITPOS = 3;
+  static final int FAC_BITPOS = 3;
 
   /*
    * In order to make an efficient value-getter, conditionals should be
@@ -50,10 +50,9 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
    * the right bits. By always shifting the second block right and applying
    * a mask, we get the right bits there. After that, we | the two bitsets.
   */
-  private static final int[][] SHIFTS =
-          new int[ENTRY_SIZE][ENTRY_SIZE * FAC_BITPOS];
-          //new int[BLOCK_SIZE+1][BLOCK_SIZE][BLOCK_SIZE+1];
-  private static final long[][] MASKS = new long[ENTRY_SIZE][ENTRY_SIZE];
+  static final int[][] SHIFTS =
+    new int[ENTRY_SIZE][ENTRY_SIZE * FAC_BITPOS];
+  static final long[][] MASKS = new long[ENTRY_SIZE][ENTRY_SIZE];
 
   static { // Generate shifts
       for (int elementBits = 1 ; elementBits <= BLOCK_SIZE ; elementBits++) {

@@ -223,12 +223,16 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected IndexSearcher getCurrentSearcher() throws Exception {
-    return nrt.getSearcherManager(false).acquire();
+    // Test doesn't assert deletions until the end, so we
+    // can randomize whether dels must be applied
+    return nrt.getSearcherManager(random.nextBoolean()).acquire();
   }
 
   @Override
   protected void releaseSearcher(IndexSearcher s) throws Exception {
-    nrt.getSearcherManager(false).release(s);
+    // Test doesn't assert deletions until the end, so we
+    // can randomize whether dels must be applied
+    nrt.getSearcherManager(random.nextBoolean()).release(s);
   }
 
   @Override

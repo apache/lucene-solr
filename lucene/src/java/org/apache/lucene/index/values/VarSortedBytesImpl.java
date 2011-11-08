@@ -133,6 +133,7 @@ final class VarSortedBytesImpl {
         datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
         offset += bytes.length;
       }
+      // write sentinel
       offsetWriter.add(offset);
       offsetWriter.finish();
       // write index
@@ -189,8 +190,8 @@ final class VarSortedBytesImpl {
   }
 
   private static final class DirectSortedSource extends SortedSource {
-    private final PackedInts.RandomAccessReaderIterator docToOrdIndex;
-    private final PackedInts.RandomAccessReaderIterator ordToOffsetIndex;
+    private final PackedInts.Reader docToOrdIndex;
+    private final PackedInts.Reader ordToOffsetIndex;
     private final IndexInput datIn;
     private final long basePointer;
     private final int valueCount;
@@ -199,29 +200,26 @@ final class VarSortedBytesImpl {
         Comparator<BytesRef> comparator, ValueType type) throws IOException {
       super(type, comparator);
       idxIn.readLong();
-      ordToOffsetIndex = PackedInts.getRandomAccessReaderIterator(idxIn);
+      ordToOffsetIndex = PackedInts.getDirectReader(idxIn);
       valueCount = ordToOffsetIndex.size()-1; // the last value here is just a dummy value to get the length of the last value
       // advance this iterator to the end and clone the stream once it points to the docToOrdIndex header
-      ordToOffsetIndex.advance(valueCount);
-      docToOrdIndex = PackedInts.getRandomAccessReaderIterator((IndexInput) idxIn.clone()); // read the ords in to prevent too many random disk seeks
+      ordToOffsetIndex.get(valueCount);
+      docToOrdIndex = PackedInts.getDirectReader((IndexInput) idxIn.clone()); // read the ords in to prevent too many random disk seeks
       basePointer = datIn.getFilePointer();
       this.datIn = datIn;
     }
 
     @Override
     public int ord(int docID) {
-      try {
-        return (int) docToOrdIndex.get(docID);
-      } catch (IOException ex) {
-        throw new IllegalStateException("failed", ex);
-      }
+      return (int) docToOrdIndex.get(docID);
     }
 
     @Override
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
       try {
         final long offset = ordToOffsetIndex.get(ord);
-        final long nextOffset = ordToOffsetIndex.next();
+        // 1+ord is safe because we write a sentinel at the end
+        final long nextOffset = ordToOffsetIndex.get(1+ord);
         datIn.seek(basePointer + offset);
         final int length = (int) (nextOffset - offset);
         bytesRef.grow(length);
@@ -231,7 +229,6 @@ final class VarSortedBytesImpl {
         return bytesRef;
       } catch (IOException ex) {
         throw new IllegalStateException("failed", ex);
-
       }
     }
     

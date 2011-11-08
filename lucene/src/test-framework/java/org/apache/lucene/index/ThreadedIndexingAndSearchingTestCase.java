@@ -479,7 +479,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
         }
       }
       });
-    
+
     writer = new IndexWriter(dir, conf);
     _TestUtil.reduceOpenFiles(writer);
 
@@ -524,6 +524,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     if (VERBOSE) {
       System.out.println("TEST: finalSearcher=" + s);
     }
+
+    assertFalse(failed.get());
+
     boolean doFail = false;
 
     // Verify: make sure delIDs are in fact deleted:

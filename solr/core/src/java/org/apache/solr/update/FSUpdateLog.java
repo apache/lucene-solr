@@ -496,8 +496,6 @@ class TransactionLog {
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
         // fos.flushBuffer();  // flush later
 
-
-
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -563,6 +561,8 @@ class TransactionLog {
           throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
         }
         ***/
+        assert pos < fos.size();
+        assert fos.size() == channel.size();
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
@@ -616,11 +616,18 @@ class ChannelFastInputStream extends FastInputStream {
   @Override
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
     ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
-    int ret = ch.read(bb, chPosition);
-    if (ret >= 0) {
-      chPosition += ret;
+    assert chPosition  < ch.size();
+
+    for (;;) {
+      int ret = ch.read(bb, chPosition);
+      if (ret > 0) {
+        chPosition += ret;
+        return ret;
+      } else if (ret < 0) {
+        return ret;
+      }
+      // a channel read can return 0 - retry if this happens
     }
-    return ret;
   }
 
   @Override

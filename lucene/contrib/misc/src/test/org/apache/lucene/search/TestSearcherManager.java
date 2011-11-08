@@ -74,6 +74,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       }
     };
     if (random.nextBoolean()) {
+      // TODO: can we randomize the applyAllDeletes?  But
+      // somehow for final searcher we must apply
+      // deletes...
       mgr = new SearcherManager(writer, true, warmer, es);
       isNRT = true;
     } else {
