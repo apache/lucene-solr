@@ -41,6 +41,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -1531,6 +1533,8 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testEmptyDirRollback() throws Exception {
+    // TODO: generalize this test
+    assumeFalse("test makes assumptions about file counts", Codec.getDefault() instanceof SimpleTextCodec);
     // Tests that if IW is created over an empty Directory, some documents are
     // indexed, flushed (but not committed) and then IW rolls back, then no
     // files are left in the Directory.
