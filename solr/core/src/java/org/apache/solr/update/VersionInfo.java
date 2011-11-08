@@ -17,13 +17,12 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Terms;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -31,10 +30,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class VersionInfo {
   public static final String VERSION_FIELD="_version_";
@@ -48,7 +43,7 @@ public class VersionInfo {
   public VersionInfo(UpdateHandler updateHandler, int nBuckets) {
     this.updateHandler = updateHandler;
     this.core = updateHandler.core;
-    versionField = core.getSchema().getFieldOrNull("_version_");
+    versionField = core.getSchema().getFieldOrNull(VERSION_FIELD);
     idField = core.getSchema().getUniqueKeyField();
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {

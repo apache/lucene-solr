@@ -578,9 +578,19 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     String cmp;
+    if (System.getProperty("remove.version.field") != null) {
+      // nocommit: we don't care if one has a version and the other doesnt -
+      // control vs distrib
+      for (SolrDocument doc : a.getResults()) {
+        doc.removeFields("_version_");
+      }
+      for (SolrDocument doc : b.getResults()) {
+        doc.removeFields("_version_");
+      }
+    }
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.info("Mismatched responses:\n" + a + "\n" + b);
+      log.error("Mismatched responses:\n" + a + "\n" + b);
       TestCase.fail(cmp);
     }
   }

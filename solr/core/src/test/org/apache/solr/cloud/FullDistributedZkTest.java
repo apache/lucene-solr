@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.net.MalformedURLException;
 
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -61,6 +62,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   public static void beforeClass() throws Exception {
     System.setProperty("CLOUD_UPDATE_DELAY", "0");
     System.setProperty("numShards", Integer.toString(sliceCount));
+    
+    System.setProperty("remove.version.field", "true");
   }
   
   public FullDistributedZkTest() {
@@ -131,8 +134,18 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     ureq.setParam("update.chain", "distrib-update-chain");
+    System.out.println("set update.chain on req");
     ureq.process(client);
   }
+  
+  protected void del(String q) throws Exception {
+    controlClient.deleteByQuery(q);
+    for (SolrServer client : clients) {
+      UpdateRequest ureq = new UpdateRequest();
+      ureq.setParam("update.chain", "distrib-update-chain");
+      ureq.deleteByQuery(q).process(client);
+    }
+  }// serial commit...
   
   /* (non-Javadoc)
    * @see org.apache.solr.BaseDistributedSearchTestCase#doTest()
@@ -329,5 +342,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     super.tearDown();
     System.clearProperty("CLOUD_UPDATE_DELAY");
     System.clearProperty("zkHost");
+    System.clearProperty("remove.version.field");
   }
 }

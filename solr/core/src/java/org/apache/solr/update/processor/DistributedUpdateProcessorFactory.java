@@ -76,8 +76,8 @@ public class DistributedUpdateProcessorFactory extends
   public DistributedUpdateProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-    
-    // TODO: could do this here, or in a previous update processor.
+    boolean isLeader = false;
+    boolean forwardToLeader = false;
     // if we are in zk mode...
     if (coreDesc.getCoreContainer().getZkController() != null) {
       // the leader is...
@@ -95,7 +95,7 @@ public class DistributedUpdateProcessorFactory extends
           + ZkStateReader.LEADER_ELECT_ZKNODE + "/" + shardId + "/leader";
       SolrZkClient zkClient = coreDesc.getCoreContainer().getZkController()
           .getZkClient();
-      
+
       try {
         leaderChildren = zkClient.getChildren(leaderNode, null);
         if (leaderChildren.size() > 0) {
@@ -112,20 +112,31 @@ public class DistributedUpdateProcessorFactory extends
               .getCoreContainer().getZkController().getNodeName();
           String shardZkNodeName = nodeName + "_" + req.getCore().getName();
 
+          System.out.println("params:" + params);
           if (params.getBool(SEEN_LEADER, false)) {
             // we got a version, just go local
-          } else if (shardZkNodeName.equals(leader)) {
-            // that means I want to forward onto my replicas...
             
+            // still mark if i am the leader though
+            if (shardZkNodeName.equals(leader)) {
+              isLeader = true;
+            }
+            System.out.println(" go local");
+          } else if (shardZkNodeName.equals(leader)) {
+            isLeader = true;
+            // that means I want to forward onto my replicas...
             // so get the replicas...
             addReplicasAndSelf(req, collection, shardId, params,
                 shardZkNodeName);
             
-            versionDoc(params);
+            // mark that this req has been to the leader
+            params.set(SEEN_LEADER, true);
+            System.out.println("mark leader seen");
           } else {
             // I need to forward onto the leader...
             params.add("shards", leaderUrl);
+            forwardToLeader  = true;
           }
+          System.out.println("set params on req:" + params);
           req.setParams(params);
         }
       } catch (KeeperException e) {
@@ -143,7 +154,7 @@ public class DistributedUpdateProcessorFactory extends
     
     String shardStr = req.getParams().get("shards");
     if (shards == null && shardStr == null) return null;
-    return new DistributedUpdateProcessor(shardStr, req, rsp, this, next);
+    return new DistributedUpdateProcessor(shardStr, req, rsp, this, isLeader, forwardToLeader, next);
   }
 
   private void addReplicasAndSelf(SolrQueryRequest req, String collection,
