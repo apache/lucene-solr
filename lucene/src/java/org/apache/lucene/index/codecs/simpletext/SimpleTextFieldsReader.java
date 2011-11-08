@@ -116,7 +116,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   private class SimpleTextTermsEnum extends TermsEnum {
-    private final IndexInput in;
     private final IndexOptions indexOptions;
     private int docFreq;
     private long totalTermFreq;
@@ -125,7 +124,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fstEnum;
 
     public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst, IndexOptions indexOptions) throws IOException {
-      this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
       this.indexOptions = indexOptions;
       fstEnum = new BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(fst);
     }
