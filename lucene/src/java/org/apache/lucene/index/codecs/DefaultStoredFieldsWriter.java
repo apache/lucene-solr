@@ -72,13 +72,13 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   /** Extension of stored fields index file */
   public static final String FIELDS_INDEX_EXTENSION = "fdx";
 
-  // If null - we were supplied with streams, if notnull - we manage them ourselves
   private Directory directory;
   private String segment;
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
   public DefaultStoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+    assert directory != null;
     this.directory = directory;
     this.segment = segment;
 
@@ -98,10 +98,6 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
-  void setFieldsStream(IndexOutput stream) {
-    this.fieldsStream = stream;
-  }
-
   // Writes the contents of buffer into the fields stream
   // and adds a new entry for this document into the index
   // stream.  This assumes the buffer was already written
@@ -112,29 +108,25 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   public void close() throws IOException {
-    if (directory != null) {
-      try {
-        IOUtils.close(fieldsStream, indexStream);
-      } finally {
-        fieldsStream = indexStream = null;
-      }
+    try {
+      IOUtils.close(fieldsStream, indexStream);
+    } finally {
+      fieldsStream = indexStream = null;
     }
   }
 
   public void abort() {
-    if (directory != null) {
-      try {
-        close();
-      } catch (IOException ignored) {
-      }
-      try {
-        directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
-      } catch (IOException ignored) {
-      }
-      try {
-        directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
-      } catch (IOException ignored) {
-      }
+    try {
+      close();
+    } catch (IOException ignored) {
+    }
+    try {
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
+    } catch (IOException ignored) {
+    }
+    try {
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
+    } catch (IOException ignored) {
     }
   }
 
