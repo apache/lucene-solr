@@ -78,7 +78,7 @@ public final class DefaultFieldsWriter extends FieldsWriter {
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
-  DefaultFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  public DefaultFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
 
@@ -96,13 +96,6 @@ public final class DefaultFieldsWriter extends FieldsWriter {
         abort();
       }
     }
-  }
-
-  DefaultFieldsWriter(IndexOutput fdx, IndexOutput fdt) {
-    directory = null;
-    segment = null;
-    fieldsStream = fdt;
-    indexStream = fdx;
   }
 
   void setFieldsStream(IndexOutput stream) {

@@ -29,10 +29,9 @@ import org.apache.lucene.store.IOContext;
 public class DefaultFieldsFormat extends FieldsFormat {
 
   @Override
-  public FieldsReader fieldsReader(Directory directory, String segment,
-      FieldInfos fn, IOContext context, int docStoreOffset, int size)
-      throws IOException {
-    return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
+  public FieldsReader fieldsReader(Directory directory, SegmentInfo si,
+      FieldInfos fn, IOContext context) throws IOException {
+    return new DefaultFieldsReader(directory, si, fn, context);
   }
 
   @Override

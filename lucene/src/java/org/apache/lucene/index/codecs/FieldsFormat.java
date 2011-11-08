@@ -29,7 +29,7 @@ import org.apache.lucene.store.IOContext;
  * Controls the format of stored fields/termvectors/...
  */
 public abstract class FieldsFormat {
-  public abstract FieldsReader fieldsReader(Directory directory, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException;
+  public abstract FieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException;
   public abstract FieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
   public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
 }

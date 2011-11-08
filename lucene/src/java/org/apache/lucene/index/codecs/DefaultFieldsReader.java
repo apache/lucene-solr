@@ -112,12 +112,11 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
     fieldsStream = (IndexInput) cloneableFieldsStream.clone();
     indexStream = (IndexInput) cloneableIndexStream.clone();
   }
-  
-  public DefaultFieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
-    this(d, segment, fn, IOContext.DEFAULT, -1, 0);
-  }
 
-  public DefaultFieldsReader(Directory d, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException {
+  public DefaultFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+    final String segment = si.getDocStoreSegment();
+    final int docStoreOffset = si.getDocStoreOffset();
+    final int size = si.docCount;
     boolean success = false;
     isOriginal = true;
     try {
@@ -149,6 +148,10 @@ public final class DefaultFieldsReader extends FieldsReader implements Cloneable
       } else {
         this.docStoreOffset = 0;
         this.size = (int) (indexSize >> 3);
+        // Verify two sources of "maxDoc" agree:
+        if (this.size != si.docCount) {
+          throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.docCount);
+        }
       }
 
       indexStream = (IndexInput) cloneableIndexStream.clone();

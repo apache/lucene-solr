@@ -166,14 +166,8 @@ final class SegmentCoreReaders {
       }
       
       final String storesSegment = si.getDocStoreSegment();
-      fieldsReaderOrig = si.getCodec().fieldsFormat().fieldsReader(storeDir, storesSegment, fieldInfos, context,
-          si.getDocStoreOffset(), si.docCount);
-      
-      // Verify two sources of "maxDoc" agree:
-      if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
-        throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
-      }
-      
+      fieldsReaderOrig = si.getCodec().fieldsFormat().fieldsReader(storeDir, si, fieldInfos, context);
+ 
       if (si.getHasVectors()) { // open term vector files only as needed
         termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
       }

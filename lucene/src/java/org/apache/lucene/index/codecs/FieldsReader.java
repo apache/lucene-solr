@@ -22,11 +22,18 @@ import org.apache.lucene.index.StoredFieldVisitor;
  * the License.
  */
 
+/**
+ * Codec API for reading stored fields:
+ * 
+ * You need to implement {@link #visitDocument(int, StoredFieldVisitor)} to
+ * read the stored fields for a document, implement {@link #clone()} (creating
+ * clones of any IndexInputs used, etc), and {@link #close()}
+ * @lucene.experimental
+ */
 public abstract class FieldsReader implements Cloneable, Closeable {
   
+  /** Visit the stored fields for document <code>n</code> */
   public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
-  
-  public abstract int size();
 
   public abstract FieldsReader clone();
 }
