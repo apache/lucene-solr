@@ -58,12 +58,12 @@ import java.io.PrintStream;
  * This task also supports a "writer.info.stream" property with the following
  * values:
  * <ul>
- * <li>SystemOut - sets {@link IndexWriter#setInfoStream(java.io.PrintStream)}
+ * <li>SystemOut - sets {@link IndexWriterConfig#setInfoStream(java.io.PrintStream)}
  * to {@link System#out}.
- * <li>SystemErr - sets {@link IndexWriter#setInfoStream(java.io.PrintStream)}
+ * <li>SystemErr - sets {@link IndexWriterConfig#setInfoStream(java.io.PrintStream)}
  * to {@link System#err}.
  * <li>&lt;file_name&gt; - attempts to create a file given that name and sets
- * {@link IndexWriter#setInfoStream(java.io.PrintStream)} to that file. If this
+ * {@link IndexWriterConfig#setInfoStream(java.io.PrintStream)} to that file. If this
  * denotes an invalid file name, or some error occurs, an exception will be
  * thrown.
  * </ul>
