@@ -108,8 +108,8 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
   @Override
   public Object toObject(IndexableField f) {
-    if (f instanceof NumericField) {
-      final Number val = ((NumericField) f).numericValue();
+    if (f.numeric()) {
+      final Number val = f.numericValue();
       if (val==null) return badFieldString(f);
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {

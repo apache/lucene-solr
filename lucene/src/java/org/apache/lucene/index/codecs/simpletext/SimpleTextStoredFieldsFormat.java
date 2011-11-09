@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.simpletext;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,27 +22,32 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.codecs.StoredFieldsFormat;
+import org.apache.lucene.index.codecs.StoredFieldsReader;
+import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-/** @lucene.experimental */
-public class DefaultFieldsFormat extends FieldsFormat {
+/**
+ * plain text stored fields format.
+ * <p>
+ * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * @lucene.experimental
+ */
+public class SimpleTextStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
-  public FieldsReader fieldsReader(Directory directory, String segment,
-      FieldInfos fn, IOContext context, int docStoreOffset, int size)
-      throws IOException {
-    return new DefaultFieldsReader(directory, segment, fn, context, docStoreOffset, size);
+  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+    return new SimpleTextStoredFieldsReader(directory, si, fn, context);
   }
 
   @Override
-  public FieldsWriter fieldsWriter(Directory directory, String segment,
-      IOContext context) throws IOException {
-    return new DefaultFieldsWriter(directory, segment, context);
+  public StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+    return new SimpleTextStoredFieldsWriter(directory, segment, context);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    // TODO!
+    SimpleTextStoredFieldsReader.files(dir, info, files);
   }
 }

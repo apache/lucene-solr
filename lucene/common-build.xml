@@ -83,6 +83,7 @@
     </or>
   </condition>
   <property name="tests.multiplier" value="1" />
+  <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
@@ -95,6 +96,8 @@
   <property name="tests.nightly" value="false" />
   <property name="tests.cleanthreads.sysprop" value="perMethod"/>
   <property name="tests.asserts.gracious" value="false"/>
+  <property name="tests.verbose" value="false"/>
+  <property name="tests.infostream" value="${tests.verbose}"/>
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -491,8 +494,6 @@
   	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
   </target>
-
-  <property name="tests.verbose" value="false"/>
 	
   <macrodef name="compile-test-macro" description="Compiles junit tests.">
   	<attribute name="srcdir"/>
@@ -550,9 +551,13 @@
 	
 	      <!-- allow tests to control debug prints -->
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+	      <!-- even more debugging -->
+	      <sysproperty key="tests.infostream" value="${tests.infostream}"/>
               <!-- directory for formatter lock -->
 	      <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
               <!-- set the codec tests should run with -->
+	      <sysproperty key="tests.codec" value="${tests.codec}"/>
+              <!-- set the postingsformat tests should run with -->
 	      <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
               <!-- set the locale tests should run with -->
 	      <sysproperty key="tests.locale" value="${tests.locale}"/>

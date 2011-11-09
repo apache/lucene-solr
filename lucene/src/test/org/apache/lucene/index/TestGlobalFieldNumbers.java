@@ -36,6 +36,7 @@ import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -98,9 +99,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       }
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new FailOnNonBulkMergesInfoStream()));
       writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
       assertFNXFiles(dir, "_2.fnx");
 
@@ -139,9 +139,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertFNXFiles(dir, "_2.fnx");
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new FailOnNonBulkMergesInfoStream()));
       writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
       assertFNXFiles(dir, "_2.fnx");
 
@@ -187,9 +186,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         assertFNXFiles(dir, "_2.fnx");
       }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new FailOnNonBulkMergesInfoStream()));
       writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
       assertFNXFiles(dir, "_2.fnx");
       dir.close();

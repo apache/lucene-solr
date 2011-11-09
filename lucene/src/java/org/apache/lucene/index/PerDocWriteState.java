@@ -21,6 +21,7 @@ import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.InfoStream;
 
 /**
  * Encapsulates all necessary state to initiate a {@link PerDocConsumer} and
@@ -29,7 +30,7 @@ import org.apache.lucene.util.Counter;
  * @lucene.experimental
  */
 public class PerDocWriteState {
-  public final PrintStream infoStream;
+  public final InfoStream infoStream;
   public final Directory directory;
   public final String segmentName;
   public final FieldInfos fieldInfos;
@@ -37,7 +38,7 @@ public class PerDocWriteState {
   public final String segmentSuffix;
   public final IOContext context;
 
-  public PerDocWriteState(PrintStream infoStream, Directory directory,
+  public PerDocWriteState(InfoStream infoStream, Directory directory,
       String segmentName, FieldInfos fieldInfos, Counter bytesUsed,
       String segmentSuffix, IOContext context) {
     this.infoStream = infoStream;

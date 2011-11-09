@@ -175,18 +175,19 @@ public class CreateIndexTask extends PerfTask {
   }
   
   public static IndexWriter configureWriter(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) throws CorruptIndexException, LockObtainFailedException, IOException {
-    IndexWriter writer = new IndexWriter(runData.getDirectory(), createWriterConfig(config, runData, mode, commit));
+    IndexWriterConfig iwc = createWriterConfig(config, runData, mode, commit);
     String infoStreamVal = config.get("writer.info.stream", null);
     if (infoStreamVal != null) {
       if (infoStreamVal.equals("SystemOut")) {
-        writer.setInfoStream(System.out);
+        iwc.setInfoStream(System.out);
       } else if (infoStreamVal.equals("SystemErr")) {
-        writer.setInfoStream(System.err);
+        iwc.setInfoStream(System.err);
       } else {
         File f = new File(infoStreamVal).getAbsoluteFile();
-        writer.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f))));
+        iwc.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f))));
       }
     }
+    IndexWriter writer = new IndexWriter(runData.getDirectory(), iwc);
     return writer;
   }
 }

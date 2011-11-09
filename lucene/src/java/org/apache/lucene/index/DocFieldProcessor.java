@@ -44,7 +44,7 @@ import org.apache.lucene.util.IOUtils;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocFieldConsumer consumer;
-  final StoredFieldsWriter fieldsWriter;
+  final StoredFieldsConsumer fieldsWriter;
 
   // Holds all fields seen in current doc
   DocFieldProcessorPerField[] fields = new DocFieldProcessorPerField[1];
@@ -62,7 +62,7 @@ final class DocFieldProcessor extends DocConsumer {
   public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
     this.docState = docWriter.docState;
     this.consumer = consumer;
-    fieldsWriter = new StoredFieldsWriter(docWriter);
+    fieldsWriter = new StoredFieldsConsumer(docWriter);
   }
 
   @Override

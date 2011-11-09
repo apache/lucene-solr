@@ -74,7 +74,6 @@ public class TestThreadedOptimize extends LuceneTestCase {
       }
 
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
-      writer.setInfoStream(VERBOSE ? System.out : null);
 
       Thread[] threads = new Thread[NUM_THREADS];
       

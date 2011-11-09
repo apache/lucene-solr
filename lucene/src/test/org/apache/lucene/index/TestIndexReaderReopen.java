@@ -1003,7 +1003,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           System.out.println("TEST: modify index");
         }
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        w.setInfoStream(VERBOSE ? System.out : null);
         w.deleteDocuments(new Term("field2", "a11"));
         w.deleteDocuments(new Term("field2", "b30"));
         w.close();

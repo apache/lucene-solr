@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,14 +19,11 @@ package org.apache.lucene.index.codecs;
 
 import java.util.List;
 
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.InfoStream;
 
 /** Holds common state used during segment merging
  *
@@ -45,20 +42,27 @@ public class MergeState {
 
   public FieldInfos fieldInfos;
   public List<IndexReaderAndLiveDocs> readers;    // Readers & liveDocs being merged
-  public int readerCount;                         // Number of readers being merged
   public int[][] docMaps;                         // Maps docIDs around deletions
   public int[] docBase;                           // New docID base per reader
   public int mergedDocCount;                      // Total # merged docs
   public CheckAbort checkAbort;
+  public InfoStream infoStream;
 
   // Updated per field;
   public FieldInfo fieldInfo;
   
   // Used to process payloads
-  public boolean hasPayloadProcessorProvider;
+  // TODO: this is a FactoryFactory here basically
+  // and we could make a codec(wrapper) to do all of this privately so IW is uninvolved
+  public PayloadProcessorProvider payloadProcessorProvider;
   public DirPayloadProcessor[] dirPayloadProcessor;
   public PayloadProcessor[] currentPayloadProcessor;
 
+  // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
+  // but is this really so expensive to compute again in different components, versus once in SM?
+  public SegmentReader[] matchingSegmentReaders;
+  public int matchedCount;
+  
   public static class CheckAbort {
     private double workCount;
     private MergePolicy.OneMerge merge;
@@ -83,5 +87,14 @@ public class MergeState {
         workCount = 0;
       }
     }
+    
+    /** If you use this: IW.close(false) cannot abort your merge!
+     * @lucene.internal */
+    static final MergeState.CheckAbort NONE = new MergeState.CheckAbort(null, null) {
+      @Override
+      public void work(double units) throws MergePolicy.MergeAbortedException {
+        // do nothing
+      }
+    };
   }
 }

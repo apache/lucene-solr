@@ -17,18 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.PrintStream;
-
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.InfoStream;
 
 /**
  * @lucene.experimental
  */
 public class SegmentWriteState {
-  public final PrintStream infoStream;
+  public final InfoStream infoStream;
   public final Directory directory;
   public final String segmentName;
   public final FieldInfos fieldInfos;
@@ -56,7 +55,7 @@ public class SegmentWriteState {
   
   public final IOContext context;
 
-  public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
+  public SegmentWriteState(InfoStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
       int numDocs, int termIndexInterval, Codec codec, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;

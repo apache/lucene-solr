@@ -18,10 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,6 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
 
 /* Tracks the stream of {@link BufferedDeletes}.
  * When DocumentsWriterPerThread flushes, its buffered
@@ -63,22 +62,11 @@ class BufferedDeletesStream {
   // used only by assert
   private Term lastDeleteTerm;
 
-  private PrintStream infoStream;
+  private final InfoStream infoStream;
   private final AtomicLong bytesUsed = new AtomicLong();
   private final AtomicInteger numTerms = new AtomicInteger();
-  private final int messageID;
 
-  public BufferedDeletesStream(int messageID) {
-    this.messageID = messageID;
-  }
-
-  private synchronized void message(String message) {
-    if (infoStream != null) {
-      infoStream.println("BD " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
-    }
-  }
-
-  public synchronized void setInfoStream(PrintStream infoStream) {
+  public BufferedDeletesStream(InfoStream infoStream) {
     this.infoStream = infoStream;
   }
 
@@ -101,7 +89,7 @@ class BufferedDeletesStream {
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream != null) {
-      message("push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size() + " totBytesUsed=" + bytesUsed.get());
+      infoStream.message("BD", "push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size() + " totBytesUsed=" + bytesUsed.get());
     }
     assert checkDeleteStats();
     return packet.delGen();
@@ -171,12 +159,14 @@ class BufferedDeletesStream {
     assert checkDeleteStats();
 
     if (!any()) {
-      message("applyDeletes: no deletes; skipping");
+      if (infoStream != null) {
+        infoStream.message("BD", "applyDeletes: no deletes; skipping");
+      }
       return new ApplyDeletesResult(false, nextGen++, null);
     }
 
     if (infoStream != null) {
-      message("applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
+      infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
     }
 
     List<SegmentInfo> infos2 = new ArrayList<SegmentInfo>();
@@ -248,7 +238,7 @@ class BufferedDeletesStream {
         }
 
         if (infoStream != null) {
-          message("seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
         }
 
         if (coalescedDeletes == null) {
@@ -290,7 +280,7 @@ class BufferedDeletesStream {
           }
 
           if (infoStream != null) {
-            message("seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
         info.setBufferedDeletesGen(nextGen);
@@ -301,7 +291,7 @@ class BufferedDeletesStream {
 
     assert checkDeleteStats();
     if (infoStream != null) {
-      message("applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
+      infoStream.message("BD", "applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
 
@@ -324,7 +314,7 @@ class BufferedDeletesStream {
     }
 
     if (infoStream != null) {
-      message("prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + deletes.size());
+      infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + deletes.size());
     }
     final int limit = deletes.size();
     for(int delIDX=0;delIDX<limit;delIDX++) {
@@ -344,7 +334,7 @@ class BufferedDeletesStream {
   private synchronized void prune(int count) {
     if (count > 0) {
       if (infoStream != null) {
-        message("pruneDeletes: prune " + count + " packets; " + (deletes.size() - count) + " packets remain");
+        infoStream.message("BD", "pruneDeletes: prune " + count + " packets; " + (deletes.size() - count) + " packets remain");
       }
       for(int delIDX=0;delIDX<count;delIDX++) {
         final FrozenBufferedDeletes packet = deletes.get(delIDX);

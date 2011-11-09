@@ -190,7 +190,6 @@ public class TestOmitNorms extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setUseCompoundFile(false);

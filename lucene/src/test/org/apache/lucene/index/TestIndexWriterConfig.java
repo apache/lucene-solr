@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -73,6 +74,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
     assertEquals(Codec.getDefault(), conf.getCodec());
+    assertEquals(InfoStream.getDefault(), conf.getInfoStream());
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<String>();
     getters.add("getAnalyzer");
@@ -98,6 +100,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getFlushPolicy");
     getters.add("getRAMPerThreadHardLimitMB");
     getters.add("getCodec");
+    getters.add("getInfoStream");
     
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {

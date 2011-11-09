@@ -335,7 +335,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
           System.out.println("TEST: open writer for optimize");
         }
         writer = new IndexWriter(dir, conf);
-        writer.setInfoStream(VERBOSE ? System.out : null);
         writer.optimize();
         writer.close();
       }
@@ -645,7 +644,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
           ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
         }
         writer = new IndexWriter(dir, conf);
-        writer.setInfoStream(VERBOSE ? System.out : null);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }

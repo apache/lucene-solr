@@ -156,7 +156,6 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     // smaller one here could increase the disk usage and
     // cause a false failure:
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setTermIndexInterval(termIndexInterval).setMergePolicy(newLogMergePolicy()));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.optimize();
     writer.close();
     long maxDiskUsage = dir.getMaxUsedSizeInBytes();

@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.InfoStream;
+
 /** <p>This class implements a {@link MergePolicy} that tries
  *  to merge segments into levels of exponentially
  *  increasing size, where each level has fewer segments than
@@ -104,8 +106,12 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
   
   protected void message(String message) {
-    if (verbose())
-      writer.get().message("LMP: " + message);
+    if (verbose()) {
+      final InfoStream infoStream = writer.get().infoStream;
+      if (infoStream != null) {
+        infoStream.message("LMP", message);
+      }
+    }
   }
 
   /** <p>Returns the number of segments that are merged at

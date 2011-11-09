@@ -17,10 +17,18 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
@@ -46,11 +54,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -388,16 +391,71 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * FieldSelector which loads the specified fields, and load all other
    * field lazily.
    */
-  static class SetNonLazyFieldSelector implements FieldSelector {
+  // TODO: can we just subclass DocumentStoredFieldVisitor?
+  // need to open up access to its Document...
+  static class SetNonLazyFieldSelector extends StoredFieldVisitor {
     private Set<String> fieldsToLoad;
-    SetNonLazyFieldSelector(Set<String> toLoad) {
+    final Document doc = new Document();
+    final LazyDocument lazyDoc;
+
+    SetNonLazyFieldSelector(Set<String> toLoad, IndexReader reader, int docID) {
       fieldsToLoad = toLoad;
+      lazyDoc = new LazyDocument(reader, docID);
     }
-    public FieldSelectorResult accept(String fieldName) { 
-      if(fieldsToLoad.contains(fieldName))
-        return FieldSelectorResult.LOAD; 
-      else
-        return FieldSelectorResult.LAZY_LOAD;
+
+    public Status needsField(FieldInfo fieldInfo) {
+      if (fieldsToLoad.contains(fieldInfo.name)) {
+        return Status.YES;
+      } else {
+        doc.add(lazyDoc.getField(fieldInfo));
+        return Status.NO;
+      }
+    }
+
+    @Override
+    public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
+      doc.add(new BinaryField(fieldInfo.name, value));
+    }
+
+    @Override
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+      final FieldType ft = new FieldType(TextField.TYPE_STORED);
+      ft.setStoreTermVectors(fieldInfo.storeTermVector);
+      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+      ft.setStoreTermVectors(fieldInfo.storeTermVector);
+      ft.setIndexed(fieldInfo.isIndexed);
+      ft.setOmitNorms(fieldInfo.omitNorms);
+      ft.setIndexOptions(fieldInfo.indexOptions);
+      doc.add(new Field(fieldInfo.name, value, ft));
+    }
+
+    @Override
+    public void intField(FieldInfo fieldInfo, int value) {
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
+    }
+
+    @Override
+    public void longField(FieldInfo fieldInfo, long value) {
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
+    }
+
+    @Override
+    public void floatField(FieldInfo fieldInfo, float value) {
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
+    }
+
+    @Override
+    public void doubleField(FieldInfo fieldInfo, double value) {
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
     }
   }
 
@@ -436,9 +494,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if(!enableLazyFieldLoading || fields == null) {
       d = getIndexReader().document(i);
     } else {
-      final FieldSelectorVisitor visitor = new FieldSelectorVisitor(new SetNonLazyFieldSelector(fields));
+      final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, getIndexReader(), i);
       getIndexReader().document(i, visitor);
-      d = visitor.getDocument();
+      d = visitor.doc;
     }
 
     if (documentCache != null) {

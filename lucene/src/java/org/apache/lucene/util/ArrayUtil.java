@@ -509,6 +509,32 @@ public final class ArrayUtil {
     }
     return false;
   }
+  
+  // Since Arrays.equals doesn't implement offsets for equals
+  /**
+   * See if two array slices are the same.
+   *
+   * @param left        The left array to compare
+   * @param offsetLeft  The offset into the array.  Must be positive
+   * @param right       The right array to compare
+   * @param offsetRight the offset into the right array.  Must be positive
+   * @param length      The length of the section of the array to compare
+   * @return true if the two arrays, starting at their respective offsets, are equal
+   * 
+   * @see java.util.Arrays#equals(byte[], byte[])
+   */
+  public static boolean equals(byte[] left, int offsetLeft, byte[] right, int offsetRight, int length) {
+    if ((offsetLeft + length <= left.length) && (offsetRight + length <= right.length)) {
+      for (int i = 0; i < length; i++) {
+        if (left[offsetLeft + i] != right[offsetRight + i]) {
+          return false;
+        }
+
+      }
+      return true;
+    }
+    return false;
+  }
 
   /* DISABLE THIS FOR NOW: This has performance problems until Java creates intrinsics for Class#getComponentType() and Array.newInstance()
   public static <T> T[] grow(T[] array, int minSize) {

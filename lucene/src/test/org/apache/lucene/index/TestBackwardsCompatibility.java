@@ -191,7 +191,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      w.setInfoStream(VERBOSE ? System.out : null);
       w.optimize();
       w.close();
       
@@ -351,7 +350,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = newFSDirectory(oldIndexDir);
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     // add 10 docs
     for(int i=0;i<10;i++) {
       addDoc(writer, 35+i);
@@ -756,7 +754,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       _TestUtil.unzip(getDataFile("index." + name + ".zip"), oldIndxeDir);
       Directory dir = newFSDirectory(oldIndxeDir);
 
-      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false)
         .upgrade();
 
       checkAllSegmentsUpgraded(dir);
@@ -798,14 +796,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
-      w.setInfoStream(VERBOSE ? System.out : null);
       w.addIndexes(ramDir);
       w.close(false);
       
       // determine count of segments in modified index
       final int origSegCount = getNumberOfSegments(dir);
       
-      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false)
         .upgrade();
 
       final int segCount = checkAllSegmentsUpgraded(dir);

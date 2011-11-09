@@ -61,7 +61,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        writer.setInfoStream(VERBOSE ? System.out : null);
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
         if (ms instanceof ConcurrentMergeScheduler) {
           // This test intentionally produces exceptions
@@ -251,7 +250,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir, newIOContext(random)));
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         IOException err = null;
-        writer.setInfoStream(VERBOSE ? System.out : null);
 
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
         for(int x=0;x<2;x++) {

@@ -49,8 +49,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private final IndexInput in;
   private final FieldInfos fieldInfos;
 
-  final static byte NEWLINE     = SimpleTextFieldsWriter.NEWLINE;
-  final static byte ESCAPE      = SimpleTextFieldsWriter.ESCAPE;
   final static BytesRef END     = SimpleTextFieldsWriter.END;
   final static BytesRef FIELD   = SimpleTextFieldsWriter.FIELD;
   final static BytesRef TERM    = SimpleTextFieldsWriter.TERM;
@@ -65,27 +63,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     fieldInfos = state.fieldInfos;
   }
 
-  static void readLine(IndexInput in, BytesRef scratch) throws IOException {
-    int upto = 0;
-    while(true) {
-      byte b = in.readByte();
-      if (scratch.bytes.length == upto) {
-        scratch.grow(1+upto);
-      }
-      if (b == ESCAPE) {
-        scratch.bytes[upto++] = in.readByte();
-      } else {
-        if (b == NEWLINE) {
-          break;
-        } else {
-          scratch.bytes[upto++] = b;
-        }
-      }
-    }
-    scratch.offset = 0;
-    scratch.length = upto;
-  }
-
   private class SimpleTextFieldsEnum extends FieldsEnum {
     private final IndexInput in;
     private final BytesRef scratch = new BytesRef(10);
@@ -98,7 +75,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public String next() throws IOException {
       while(true) {
-        readLine(in, scratch);
+        SimpleTextUtil.readLine(in, scratch);
         if (scratch.equals(END)) {
           current = null;
           return null;
@@ -292,7 +269,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       int termFreq = 0;
       while(true) {
         final long lineStart = in.getFilePointer();
-        readLine(in, scratch);
+        SimpleTextUtil.readLine(in, scratch);
         if (scratch.startsWith(DOC)) {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             in.seek(lineStart);
@@ -379,7 +356,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       long posStart = 0;
       while(true) {
         final long lineStart = in.getFilePointer();
-        readLine(in, scratch);
+        SimpleTextUtil.readLine(in, scratch);
         if (scratch.startsWith(DOC)) {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
@@ -419,12 +396,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int nextPosition() throws IOException {
-      readLine(in, scratch);
+      SimpleTextUtil.readLine(in, scratch);
       assert scratch.startsWith(POS): "got line=" + scratch.utf8ToString();
       UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length, scratchUTF16_2);
       final int pos = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
       final long fp = in.getFilePointer();
-      readLine(in, scratch);
+      SimpleTextUtil.readLine(in, scratch);
       if (scratch.startsWith(PAYLOAD)) {
         final int len = scratch.length - PAYLOAD.length;
         if (scratch2.bytes.length < len) {
@@ -498,7 +475,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       long totalTermFreq = 0;
       OpenBitSet visitedDocs = new OpenBitSet();
       while(true) {
-        readLine(in, scratch);
+        SimpleTextUtil.readLine(in, scratch);
         if (scratch.equals(END) || scratch.startsWith(FIELD)) {
           if (lastDocsStart != -1) {
             b.add(lastTerm, new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,

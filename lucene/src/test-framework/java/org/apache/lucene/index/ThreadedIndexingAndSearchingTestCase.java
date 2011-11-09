@@ -47,6 +47,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -435,7 +436,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final File tempDir = _TestUtil.getTempDir(testName);
     dir = newFSDirectory(tempDir);
     ((MockDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        setInfoStream(new FailOnNonBulkMergesInfoStream());
 
     if (LuceneTestCase.TEST_NIGHTLY) {
       // newIWConfig makes smallish max seg size, which
@@ -479,9 +481,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       });
 
     writer = new IndexWriter(dir, conf);
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
     _TestUtil.reduceOpenFiles(writer);
 
     final ExecutorService es = random.nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory(testName));
@@ -616,7 +615,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
 
-    assertFalse(writer.anyNonBulkMerges);
     doClose();
     writer.close(false);
 

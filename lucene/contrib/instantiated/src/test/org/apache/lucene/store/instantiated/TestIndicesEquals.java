@@ -98,7 +98,6 @@ public class TestIndicesEquals extends LuceneTestCase {
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
                                                                         TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed))).setMergePolicy(newLogMergePolicy()));
-    indexWriter.setInfoStream(VERBOSE ? System.out : null);
     if (VERBOSE) {
       System.out.println("TEST: make test index");
     }

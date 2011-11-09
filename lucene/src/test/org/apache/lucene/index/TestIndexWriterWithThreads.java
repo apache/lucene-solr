@@ -131,7 +131,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       );
       ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
       dir.setMaxSizeInBytes(4*1024+20*iter);
-      writer.setInfoStream(VERBOSE ? System.out : null);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 
@@ -245,7 +244,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(4))
       );
       ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
-      writer.setInfoStream(VERBOSE ? System.out : null);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 

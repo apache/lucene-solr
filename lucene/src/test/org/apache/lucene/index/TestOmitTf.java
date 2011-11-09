@@ -120,7 +120,6 @@ public class TestOmitTf extends LuceneTestCase {
             setMaxBufferedDocs(3).
             setMergePolicy(newLogMergePolicy(2))
     );
-    writer.setInfoStream(VERBOSE ? System.out : null);
     Document d = new Document();
         
     // this field will have Tf
@@ -262,7 +261,6 @@ public class TestOmitTf extends LuceneTestCase {
             setSimilarityProvider(new SimpleSimilarityProvider()).
             setMergePolicy(newLogMergePolicy(2))
     );
-    writer.setInfoStream(VERBOSE ? System.out : null);
         
     StringBuilder sb = new StringBuilder(265);
     String term = "term";

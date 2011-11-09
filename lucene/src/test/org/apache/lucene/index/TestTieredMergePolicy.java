@@ -37,7 +37,6 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     tmp.setSegmentsPerTier(100);
     tmp.setExpungeDeletesPctAllowed(30.0);
     IndexWriter w = new IndexWriter(dir, conf);
-    w.setInfoStream(VERBOSE ? System.out : null);
     for(int i=0;i<80;i++) {
       Document doc = new Document();
       doc.add(newField("content", "aaa " + (i%4), TextField.TYPE_UNSTORED));
@@ -82,7 +81,6 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       tmp.setSegmentsPerTier(6);
 
       IndexWriter w = new IndexWriter(dir, conf);
-      w.setInfoStream(VERBOSE ? System.out : null);
       int maxCount = 0;
       final int numDocs = _TestUtil.nextInt(random, 20, 100);
       for(int i=0;i<numDocs;i++) {

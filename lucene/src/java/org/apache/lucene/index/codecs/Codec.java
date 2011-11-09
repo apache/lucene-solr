@@ -45,7 +45,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     postingsFormat().files(dir, info, "", files);
-    //TODO: not yet fieldsFormat().files(dir, info, files);
+    storedFieldsFormat().files(dir, info, files);
     docValuesFormat().files(dir, info, files);
   }
   
@@ -55,9 +55,10 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Encodes/decodes docvalues */
   public abstract DocValuesFormat docValuesFormat();
   
-  /** Encodes/decodes stored fields, term vectors, fieldinfos */
-  public abstract FieldsFormat fieldsFormat();
+  /** Encodes/decodes stored fields */
+  public abstract StoredFieldsFormat storedFieldsFormat();
   
+  /** Encodes/decodes segments file */
   public abstract SegmentInfosFormat segmentInfosFormat();
   
   /** looks up a codec by name */

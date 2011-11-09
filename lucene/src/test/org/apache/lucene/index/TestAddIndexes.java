@@ -32,10 +32,10 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
@@ -69,7 +69,6 @@ public class TestAddIndexes extends LuceneTestCase {
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     // add 100 documents
     addDocs(writer, 100);
     assertEquals(100, writer.maxDoc());
@@ -171,7 +170,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(aux);
 
     // Adds 10 docs, then replaces them with another 10
@@ -465,7 +463,6 @@ public class TestAddIndexes extends LuceneTestCase {
             setMaxBufferedDocs(100).
             setMergePolicy(newLogMergePolicy(10))
     );
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(aux);
     assertEquals(30, writer.maxDoc());
     assertEquals(3, writer.getSegmentCount());
@@ -655,7 +652,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
       dir2 = newDirectory();
       writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer2.setInfoStream(VERBOSE ? System.out : null);
       writer2.commit();
       
 
@@ -773,7 +769,6 @@ public class TestAddIndexes extends LuceneTestCase {
     final int NUM_ITER = TEST_NIGHTLY ? 15 : 5;
     final int NUM_COPY = 3;
     CommitAndAddIndexes c = new CommitAndAddIndexes(NUM_COPY);
-    c.writer2.setInfoStream(VERBOSE ? System.out : null);
     c.launchThreads(NUM_ITER);
 
     for(int i=0;i<100;i++)
@@ -898,9 +893,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     final int NUM_COPY = 50;
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
-    if (VERBOSE) {
-      c.writer2.setInfoStream(System.out);
-    }
     c.launchThreads(-1);
 
     Thread.sleep(_TestUtil.nextInt(random, 10, 500));
@@ -1088,7 +1080,6 @@ public class TestAddIndexes extends LuceneTestCase {
     lmp.setUseCompoundFile(true);
     lmp.setNoCFSRatio(1.0); // Force creation of CFS
     IndexWriter w3 = new IndexWriter(dir, conf);
-    w3.setInfoStream(VERBOSE ? System.out : null);
     w3.addIndexes(readers);
     w3.close();
     // we should now see segments_X,
@@ -1172,8 +1163,8 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     @Override
-    public FieldsFormat fieldsFormat() {
-      return new DefaultFieldsFormat();
+    public StoredFieldsFormat storedFieldsFormat() {
+      return new DefaultStoredFieldsFormat();
     }
 
     @Override

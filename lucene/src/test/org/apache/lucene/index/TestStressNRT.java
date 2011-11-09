@@ -108,7 +108,6 @@ public class TestStressNRT extends LuceneTestCase {
 
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.setDoRandomOptimizeAssert(false);
-    writer.w.setInfoStream(VERBOSE ? System.out : null);
     writer.commit();
     reader = IndexReader.open(dir);
 

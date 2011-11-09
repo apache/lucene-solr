@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.store.IndexInput;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -23,17 +22,18 @@ import org.apache.lucene.store.IndexInput;
  * the License.
  */
 
-public abstract class FieldsReader implements Cloneable, Closeable {
+/**
+ * Codec API for reading stored fields:
+ * 
+ * You need to implement {@link #visitDocument(int, StoredFieldVisitor)} to
+ * read the stored fields for a document, implement {@link #clone()} (creating
+ * clones of any IndexInputs used, etc), and {@link #close()}
+ * @lucene.experimental
+ */
+public abstract class StoredFieldsReader implements Cloneable, Closeable {
   
+  /** Visit the stored fields for document <code>n</code> */
   public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
-  
-  /** Returns the length in bytes of each raw document in a
-   *  contiguous range of length numDocs starting with
-   *  startDocID.  Returns the IndexInput (the fieldStream),
-   *  already seeked to the starting point for startDocID.*/
-  public abstract IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException;
 
-  public abstract int size();
-
-  public abstract FieldsReader clone();
+  public abstract StoredFieldsReader clone();
 }

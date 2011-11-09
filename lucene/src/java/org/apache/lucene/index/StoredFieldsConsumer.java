@@ -20,15 +20,15 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.FieldsWriter;
+import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** This is a DocFieldConsumer that writes stored fields. */
-final class StoredFieldsWriter {
+final class StoredFieldsConsumer {
 
-  FieldsWriter fieldsWriter;
+  StoredFieldsWriter fieldsWriter;
   final DocumentsWriterPerThread docWriter;
   int lastDocID;
 
@@ -37,7 +37,7 @@ final class StoredFieldsWriter {
   final DocumentsWriterPerThread.DocState docState;
   final Codec codec;
 
-  public StoredFieldsWriter(DocumentsWriterPerThread docWriter) {
+  public StoredFieldsConsumer(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     this.docState = docWriter.docState;
     this.codec = docWriter.codec;
@@ -68,20 +68,19 @@ final class StoredFieldsWriter {
     }
 
     if (fieldsWriter != null) {
-      fieldsWriter.close();
-      fieldsWriter = null;
-      lastDocID = 0;
-
-      String fieldsIdxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
-      if (4 + ((long) state.numDocs) * 8 != state.directory.fileLength(fieldsIdxName)) {
-        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
+      try {
+        fieldsWriter.finish(state.numDocs);
+      } finally {
+        fieldsWriter.close();
+        fieldsWriter = null;
+        lastDocID = 0;
       }
     }
   }
 
   private synchronized void initFieldsWriter(IOContext context) throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = codec.fieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
+      fieldsWriter = codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegment(), context);
       lastDocID = 0;
     }
   }
@@ -103,7 +102,7 @@ final class StoredFieldsWriter {
     // We must "catch up" for all docs before us
     // that had no stored fields:
     while(lastDocID < docID) {
-      fieldsWriter.skipDocument();
+      fieldsWriter.startDocument(0);
       lastDocID++;
     }
   }

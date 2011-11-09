@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFieldVisitor.Status;
 import org.apache.lucene.store.IndexInput;
 
 /**
@@ -41,13 +42,13 @@ abstract class Consts {
   public static final class LoadFullPathOnly extends StoredFieldVisitor {
     private String fullPath;
 
-    public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
-      final byte[] bytes = new byte[numUTF8Bytes];
-      in.readBytes(bytes, 0, bytes.length);
-      fullPath = new String(bytes, "UTF-8");
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+      fullPath = value;
+    }
 
-      // Stop loading:
-      return true;
+    @Override
+    public Status needsField(FieldInfo fieldInfo) throws IOException {
+      return fullPath == null ? Status.YES : Status.STOP;
     }
 
     public String getFullPath() {

@@ -362,7 +362,6 @@ public class TestTermsEnum extends LuceneTestCase {
     */
 
     final RandomIndexWriter w = new RandomIndexWriter(random, d, iwc);
-    w.w.setInfoStream(VERBOSE ? System.out : null);
     for(String term : terms) {
       Document doc = new Document();
       Field f = newField(FIELD, term, StringField.TYPE_UNSTORED);
@@ -504,7 +503,6 @@ public class TestTermsEnum extends LuceneTestCase {
   public void testZeroTerms() throws Exception {
     d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, d);
-    w.w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "one two three", TextField.TYPE_UNSTORED));
     doc = new Document();

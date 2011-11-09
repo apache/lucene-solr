@@ -22,6 +22,7 @@ import java.io.PrintStream;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.util.InfoStream;
 
 /**
  * Rollback the index writer.
@@ -39,9 +40,8 @@ public class RollbackIndexTask extends PerfTask {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
       // If infoStream was set to output to a file, close it.
-      PrintStream infoStream = iw.getInfoStream();
-      if (infoStream != null && infoStream != System.out
-          && infoStream != System.err) {
+      InfoStream infoStream = iw.getConfig().getInfoStream();
+      if (infoStream != null) {
         infoStream.close();
       }
       iw.rollback();

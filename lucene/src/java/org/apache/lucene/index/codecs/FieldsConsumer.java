@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermsEnum;
 
 import java.io.IOException;

@@ -17,10 +17,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +44,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestIndexWriterReader extends LuceneTestCase {
-  static PrintStream infoStream = VERBOSE ? System.out : null;
   
   private final int numThreads = TEST_NIGHTLY ? 5 : 3;
   
@@ -130,7 +127,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
       System.out.println("TEST: make index");
     }
     IndexWriter writer = new IndexWriter(dir1, iwc);
-    writer.setInfoStream(VERBOSE ? System.out : null);
 
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
@@ -244,7 +240,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     IndexWriter writer = new IndexWriter(dir1, iwc);
 
-    writer.setInfoStream(infoStream);
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
     writer.flush(false, true);
@@ -252,7 +247,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // create a 2nd index
     Directory dir2 = newDirectory();
     IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer2.setInfoStream(infoStream);
     createIndexNoClose(!optimize, "index2", writer2);
     writer2.close();
 
@@ -290,12 +284,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.setInfoStream(infoStream);
 
     // create a 2nd index
     Directory dir2 = newDirectory();
     IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer2.setInfoStream(infoStream);
     createIndexNoClose(!optimize, "index2", writer2);
     writer2.close();
 
@@ -324,7 +316,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setReaderTermsIndexDivisor(2));
-    writer.setInfoStream(infoStream);
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
     writer.flush(false, true);
@@ -362,7 +353,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
         
     // reopen the writer to verify the delete made it to the directory
     writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.setInfoStream(infoStream);
     IndexReader w2r1 = writer.getReader();
     assertEquals(0, count(new Term("id", id10), w2r1));
     w2r1.close();
@@ -378,7 +368,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     _TestUtil.reduceOpenFiles(mainWriter);
 
-    mainWriter.setInfoStream(infoStream);
     AddDirectoriesThreads addDirThreads = new AddDirectoriesThreads(numIter, mainWriter);
     addDirThreads.launchThreads(numDirs);
     addDirThreads.joinThreads();
@@ -529,7 +518,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void doTestIndexWriterReopenSegment(boolean optimize) throws Exception {
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.setInfoStream(infoStream);
     IndexReader r1 = writer.getReader();
     assertEquals(0, r1.maxDoc());
     createIndexNoClose(false, "index1", writer);
@@ -629,7 +617,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setMergeScheduler(new ConcurrentMergeScheduler()).
             setMergePolicy(newLogMergePolicy())
     );
-    writer.setInfoStream(infoStream);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -661,7 +648,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergeScheduler(new ConcurrentMergeScheduler()));
     writer.commit();
-    writer.setInfoStream(infoStream);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -693,7 +679,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testAfterClose() throws Exception {
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.setInfoStream(infoStream);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -727,7 +712,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(2))
     );
-    writer.setInfoStream(infoStream);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -812,7 +796,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(2))
     );
-    writer.setInfoStream(infoStream);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -1023,7 +1006,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter w = new IndexWriter(
         d,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.setInfoStream(VERBOSE ? System.out : null);
 
     IndexReader r = w.getReader(); // start pooling readers
 

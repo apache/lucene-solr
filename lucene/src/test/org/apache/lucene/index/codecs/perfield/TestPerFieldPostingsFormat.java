@@ -62,7 +62,6 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     conf.setMergePolicy(logByteSizeMergePolicy);
 
     final IndexWriter writer = new IndexWriter(dir, conf);
-    writer.setInfoStream(VERBOSE ? System.out : null);
     return writer;
   }
 

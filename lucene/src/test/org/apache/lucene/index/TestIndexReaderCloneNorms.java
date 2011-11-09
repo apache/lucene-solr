@@ -121,7 +121,6 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
             setMaxBufferedDocs(5).
         setMergePolicy(newLogMergePolicy(3))
     );
-    iw.setInfoStream(VERBOSE ? System.out : null);
     iw.addIndexes(dir1, dir2);
     iw.optimize();
     iw.close();
@@ -317,7 +316,6 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
     IndexWriter iw = new IndexWriter(dir, conf);
-    iw.setInfoStream(VERBOSE ? System.out : null);
     for (int i = 0; i < ndocs; i++) {
       iw.addDocument(newDoc());
     }
