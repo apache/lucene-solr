@@ -128,7 +128,12 @@ public class ZkTestServer {
       if (cnxnFactory == null) {
         throw new IllegalStateException("A port has not yet been selected");
       }
-      int port = cnxnFactory.getLocalPort();
+      int port;
+      try {
+        port = cnxnFactory.getLocalPort();
+      } catch (NullPointerException e) {
+        throw new IllegalStateException("A port has not yet been selected");
+      }
       if (port == 0) {
         throw new IllegalStateException("A port has not yet been selected");
       }
