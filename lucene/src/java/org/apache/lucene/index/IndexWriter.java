@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Query;
@@ -2542,7 +2543,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        merger.createCompoundFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), info, context);
+        createCompoundFile(directory, IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), MergeState.CheckAbort.NONE, info, context);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
@@ -3659,7 +3660,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (infoStream != null) {
             infoStream.message("IW", "create compound file " + compoundFileName);
           }
-          merger.createCompoundFile(compoundFileName, merge.info, new IOContext(merge.getMergeInfo()));
+          createCompoundFile(directory, compoundFileName, checkAbort, merge.info, new IOContext(merge.getMergeInfo()));
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -4104,5 +4105,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   public PayloadProcessorProvider getPayloadProcessorProvider() {
     ensureOpen();
     return payloadProcessorProvider;
+  }
+  
+  /**
+   * NOTE: this method creates a compound file for all files returned by
+   * info.files(). While, generally, this may include separate norms and
+   * deletion files, this SegmentInfo must not reference such files when this
+   * method is called, because they are not allowed within a compound file.
+   */
+  static final Collection<String> createCompoundFile(Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
+          throws IOException {
+
+    // Now merge all added files
+    Collection<String> files = info.files();
+    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
+    try {
+      for (String file : files) {
+        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
+                  : ".del file is not allowed in .cfs: " + file;
+        assert !IndexFileNames.isSeparateNormsFile(file) 
+                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
+        directory.copy(cfsDir, file, file, context);
+        checkAbort.work(directory.fileLength(file));
+      }
+    } finally {
+      cfsDir.close();
+    }
+
+    return files;
   }
 }

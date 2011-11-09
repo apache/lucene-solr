@@ -130,13 +130,13 @@ public class TestDoc extends LuceneTestCase {
       printSegment(out, si2);
       writer.close();
 
-      SegmentInfo siMerge = merge(si1, si2, "merge", false);
+      SegmentInfo siMerge = merge(directory, si1, si2, "merge", false);
       printSegment(out, siMerge);
 
-      SegmentInfo siMerge2 = merge(si1, si2, "merge2", false);
+      SegmentInfo siMerge2 = merge(directory, si1, si2, "merge2", false);
       printSegment(out, siMerge2);
 
-      SegmentInfo siMerge3 = merge(siMerge, siMerge2, "merge3", false);
+      SegmentInfo siMerge3 = merge(directory, siMerge, siMerge2, "merge3", false);
       printSegment(out, siMerge3);
       
       directory.close();
@@ -164,13 +164,13 @@ public class TestDoc extends LuceneTestCase {
       printSegment(out, si2);
       writer.close();
 
-      siMerge = merge(si1, si2, "merge", true);
+      siMerge = merge(directory, si1, si2, "merge", true);
       printSegment(out, siMerge);
 
-      siMerge2 = merge(si1, si2, "merge2", true);
+      siMerge2 = merge(directory, si1, si2, "merge2", true);
       printSegment(out, siMerge2);
 
-      siMerge3 = merge(siMerge, siMerge2, "merge3", true);
+      siMerge3 = merge(directory, siMerge, siMerge2, "merge3", true);
       printSegment(out, siMerge3);
       
       directory.close();
@@ -193,7 +193,7 @@ public class TestDoc extends LuceneTestCase {
    }
 
 
-   private SegmentInfo merge(SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
+   private SegmentInfo merge(Directory dir, SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
       IOContext context = newIOContext(random);
       SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
@@ -212,7 +212,7 @@ public class TestDoc extends LuceneTestCase {
                                                false, codec, fieldInfos);
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info, newIOContext(random));
+        Collection<String> filesToDelete = IndexWriter.createCompoundFile(dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random));
         info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) 
           si1.dir.deleteFile(fileToDelete);

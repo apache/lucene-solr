@@ -135,34 +135,6 @@ final class SegmentMerger {
     return mergeState;
   }
 
-  /**
-   * NOTE: this method creates a compound file for all files returned by
-   * info.files(). While, generally, this may include separate norms and
-   * deletion files, this SegmentInfo must not reference such files when this
-   * method is called, because they are not allowed within a compound file.
-   */
-  final Collection<String> createCompoundFile(String fileName, final SegmentInfo info, IOContext context)
-          throws IOException {
-
-    // Now merge all added files
-    Collection<String> files = info.files();
-    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
-    try {
-      for (String file : files) {
-        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
-                  : ".del file is not allowed in .cfs: " + file;
-        assert !IndexFileNames.isSeparateNormsFile(file) 
-                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
-        directory.copy(cfsDir, file, file, context);
-        mergeState.checkAbort.work(directory.fileLength(file));
-      }
-    } finally {
-      cfsDir.close();
-    }
-
-    return files;
-  }
-  
   private static void addIndexed(IndexReader reader, FieldInfos fInfos,
       Collection<String> names, boolean storeTermVectors,
       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,

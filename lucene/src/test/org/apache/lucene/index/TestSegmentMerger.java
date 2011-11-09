@@ -152,7 +152,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentMerger sm = new SegmentMerger(InfoStream.getDefault(), dir, 1, "a", MergeState.CheckAbort.NONE, null, null, Codec.getDefault(), newIOContext(random));
     boolean doFail = false;
     try {
-      sm.createCompoundFile("b1", w.segmentInfos.info(0), newIOContext(random));
+      IndexWriter.createCompoundFile(dir, "b1", MergeState.CheckAbort.NONE, w.segmentInfos.info(0), newIOContext(random));
       doFail = true; // should never get here
     } catch (AssertionError e) {
       // expected
@@ -173,7 +173,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
     try {
-      sm.createCompoundFile("b2", sis.info(0), newIOContext(random));
+      IndexWriter.createCompoundFile(dir, "b2", MergeState.CheckAbort.NONE, sis.info(0), newIOContext(random));
       doFail = true; // should never get here
     } catch (AssertionError e) {
       // expected
