@@ -1307,7 +1307,7 @@ public abstract class LuceneTestCase extends Assert {
     if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
     // TODO we can't randomize this yet (it drives ant crazy) but this makes tests reproduceable
     // in case machines have different default charsets...
-    sb.append(" -Dfile.encoding=" + System.getProperty("file.encoding"));
+    sb.append(" -Dargs=\"-Dfile.encoding=" + System.getProperty("file.encoding") + "\"");
     return sb.toString();
   }
 
