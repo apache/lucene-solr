@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.index.IndexReader;        // javadocs
-import org.apache.lucene.index.NRTManager;        // javadocs
+import org.apache.lucene.search.NRTManager;        // javadocs
 import org.apache.lucene.search.IndexSearcher;        // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
@@ -95,6 +95,8 @@ import org.apache.lucene.util.IOUtils;
  * it's unlikely you'll hit two of them in your expiration
  * window.  Still you should budget plenty of heap in the
  * JVM to have a good safety margin.
+ * 
+ * @lucene.experimental
  */
 
 public class SearcherLifetimeManager implements Closeable {

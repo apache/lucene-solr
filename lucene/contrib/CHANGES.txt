@@ -20,6 +20,9 @@ Changes in backwards compatibility policy
    
    Previously, there was no way to specify an IndexWriterConfig, and some
    of these methods would sneakily pass 'true' to optimize.  (Robert Muir)
+   
+ * LUCENE-3558: Moved NRTManager & NRTManagerReopenThread into lucene core 
+   o.a.l.search. (Simon Willnauer)
 
  * LUCENE-3552: Renamed LuceneTaxonomyReader/Writer to DirectoryTR/TW. (Shai Erera)
 

@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.NRTManager; // javadocs
+import org.apache.lucene.search.NRTManager; // javadocs
 import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;

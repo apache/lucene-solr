@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.search;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,6 +31,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
