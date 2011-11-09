@@ -338,7 +338,7 @@ public class TieredMergePolicy extends MergePolicy {
       for(int idx = tooBigCount; idx<infosSorted.size(); idx++) {
         final SegmentInfo info = infosSorted.get(idx);
         if (merging.contains(info)) {
-          mergingBytes += info.sizeInBytes(true);
+          mergingBytes += info.sizeInBytes();
         } else if (!toBeMerged.contains(info)) {
           eligible.add(info);
         }
@@ -430,7 +430,7 @@ public class TieredMergePolicy extends MergePolicy {
       final long segBytes = size(info);
       totAfterMergeBytes += segBytes;
       totAfterMergeBytesFloored += floorSize(segBytes);
-      totBeforeMergeBytes += info.sizeInBytes(true);
+      totBeforeMergeBytes += info.sizeInBytes();
     }
 
     // Measure "skew" of the merge, which can range
@@ -632,7 +632,7 @@ public class TieredMergePolicy extends MergePolicy {
 
   // Segment size in bytes, pro-rated by % deleted
   private long size(SegmentInfo info) throws IOException {
-    final long byteSize = info.sizeInBytes(true);    
+    final long byteSize = info.sizeInBytes();    
     final int delCount = writer.get().numDeletedDocs(info);
     final double delRatio = (info.docCount <= 0 ? 0.0f : ((double)delCount / (double)info.docCount));    
     assert delRatio <= 1.0;

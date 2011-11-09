@@ -280,11 +280,23 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /**
+   * Returns total size in bytes of all of files used by this segment
+   */
+  public long sizeInBytes() throws IOException {
+    return sizeInBytes(true);
+  }
+  
+  /**
    * Returns total size in bytes of all of files used by this segment (if
    * {@code includeDocStores} is true), or the size of all files except the
    * store files otherwise.
+   * <p>
+   * NOTE: includeDocStores=false should only be used for debugging.
+   * Theoretically a codec could combine its files however it wants (after-
+   * the-fact or something), and this calculation is not particularly
+   * efficient.
    */
-  public long sizeInBytes(boolean includeDocStores) throws IOException {
+  long sizeInBytes(boolean includeDocStores) throws IOException {
     // TODO: based on how this is used, can't we just forget about all this docstore crap?
     // its really an abstraction violation into the codec
     if (includeDocStores) {
