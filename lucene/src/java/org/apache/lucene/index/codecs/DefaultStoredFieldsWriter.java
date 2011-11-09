@@ -72,8 +72,8 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   /** Extension of stored fields index file */
   public static final String FIELDS_INDEX_EXTENSION = "fdx";
 
-  private Directory directory;
-  private String segment;
+  private final Directory directory;
+  private final String segment;
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
@@ -118,16 +118,15 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
+    
     try {
       directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
+    
     try {
       directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
   }
 
   public final void writeField(int fieldNumber, IndexableField field) throws IOException {
