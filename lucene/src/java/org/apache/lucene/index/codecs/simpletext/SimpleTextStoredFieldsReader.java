@@ -138,7 +138,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     readLine();
     assert scratch.startsWith(VALUE);
     if (type == TYPE_STRING) {
-      visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length));
+      visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, "UTF-8"));
     } else if (type == TYPE_BINARY) {
       // TODO: who owns the bytes?
       byte[] copy = new byte[scratch.length-VALUE.length];
