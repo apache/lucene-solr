@@ -292,7 +292,7 @@ public abstract class LuceneTestCase extends Assert {
     if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal <= 3)) { // preflex-only setup
       codec = new PreFlexRWCodec();
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("SimpleText".equals(TEST_CODEC) || "random".equals(TEST_CODEC) && randomVal == 9) {
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9)) {
       codec = new SimpleTextCodec();
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
@@ -1305,6 +1305,9 @@ public abstract class LuceneTestCase extends Assert {
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
     if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
+    // TODO we can't randomize this yet (it drives ant crazy) but this makes tests reproduceable
+    // in case machines have different default charsets...
+    sb.append(" -Dargs=\"-Dfile.encoding=" + System.getProperty("file.encoding") + "\"");
     return sb.toString();
   }
 
