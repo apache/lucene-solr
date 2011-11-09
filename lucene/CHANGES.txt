@@ -726,6 +726,9 @@ New Features
   for more efficient storage of int arrays when the values are
   bounded, for example for storing the terms dict index (Toke
   Eskildsen via Mike McCandless)
+  
+* LUCENE-3558: Moved SearcherManager, NRTManager & SearcherLifetimeManager into
+  core. All classes are contained in o.a.l.search. (Simon Willnauer)
 
 Optimizations
 

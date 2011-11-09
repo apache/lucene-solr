@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.NRTManager; // javadocs
+import org.apache.lucene.search.NRTManager; // javadocs
 
 /** Pass an implementation of this to {@link NRTManager} or
  *  {@link SearcherManager} to warm a new {@link

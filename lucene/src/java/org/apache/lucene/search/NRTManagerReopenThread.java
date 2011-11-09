@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.search;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -77,6 +77,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *   reopenThread.close();       
  *   manager.close();
  * </pre>
+ * 
+ * @lucene.experimental
  */
 
 public class NRTManagerReopenThread extends Thread implements NRTManager.WaitingListener, Closeable {
