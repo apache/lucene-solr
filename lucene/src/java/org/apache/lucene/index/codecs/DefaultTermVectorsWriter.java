@@ -21,7 +21,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
@@ -39,10 +38,8 @@ import java.io.IOException;
 public final class DefaultTermVectorsWriter extends TermVectorsWriter {
 
   private IndexOutput tvx = null, tvd = null, tvf = null;
-  private FieldInfos fieldInfos;
 
-  public DefaultTermVectorsWriter(Directory directory, String segment,
-                           FieldInfos fieldInfos, IOContext context) throws IOException {
+  public DefaultTermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     boolean success = false;
     try {
       // Open files for TermVector storage
@@ -58,8 +55,6 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
       }
     }
-
-    this.fieldInfos = fieldInfos;
   }
 
   /**
@@ -70,7 +65,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
    * @throws IOException
    */
   @Override
-  public final void addAllDocVectors(TermFreqVector[] vectors) throws IOException {
+  public final void addAllDocVectors(TermFreqVector[] vectors, FieldInfos fieldInfos) throws IOException {
 
     tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
@@ -223,9 +218,9 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         }
       }
       if (reader.liveDocs != null) {
-        numDocs += copyVectorsWithDeletions(mergeState.checkAbort, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
+        numDocs += copyVectorsWithDeletions(mergeState, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
       } else {
-        numDocs += copyVectorsNoDeletions(mergeState.checkAbort, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
+        numDocs += copyVectorsNoDeletions(mergeState, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
       }
     }
     finish(numDocs);
@@ -236,7 +231,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
       when merging term vectors */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private int copyVectorsWithDeletions(CheckAbort checkAbort,
+  private int copyVectorsWithDeletions(MergeState mergeState,
                                         final DefaultTermVectorsReader matchingVectorsReader,
                                         final MergeState.IndexReaderAndLiveDocs reader,
                                         int rawDocLengths[],
@@ -269,7 +264,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         matchingVectorsReader.rawDocs(rawDocLengths, rawDocLengths2, start, numDocs);
         addRawDocuments(matchingVectorsReader, rawDocLengths, rawDocLengths2, numDocs);
         totalNumDocs += numDocs;
-        checkAbort.work(300 * numDocs);
+        mergeState.checkAbort.work(300 * numDocs);
       }
     } else {
       for (int docNum = 0; docNum < maxDoc; docNum++) {
@@ -281,15 +276,15 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         TermFreqVector[] vectors = reader.reader.getTermFreqVectors(docNum);
-        addAllDocVectors(vectors);
+        addAllDocVectors(vectors, mergeState.fieldInfos);
         totalNumDocs++;
-        checkAbort.work(300);
+        mergeState.checkAbort.work(300);
       }
     }
     return totalNumDocs;
   }
   
-  private int copyVectorsNoDeletions(CheckAbort checkAbort,
+  private int copyVectorsNoDeletions(MergeState mergeState,
                                       final DefaultTermVectorsReader matchingVectorsReader,
                                       final MergeState.IndexReaderAndLiveDocs reader,
                                       int rawDocLengths[],
@@ -304,15 +299,15 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         matchingVectorsReader.rawDocs(rawDocLengths, rawDocLengths2, docCount, len);
         addRawDocuments(matchingVectorsReader, rawDocLengths, rawDocLengths2, len);
         docCount += len;
-        checkAbort.work(300 * len);
+        mergeState.checkAbort.work(300 * len);
       }
     } else {
       for (int docNum = 0; docNum < maxDoc; docNum++) {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         TermFreqVector[] vectors = reader.reader.getTermFreqVectors(docNum);
-        addAllDocVectors(vectors);
-        checkAbort.work(300);
+        addAllDocVectors(vectors, mergeState.fieldInfos);
+        mergeState.checkAbort.work(300);
       }
     }
     return maxDoc;

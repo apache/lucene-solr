@@ -223,7 +223,7 @@ final class SegmentMerger {
    * @throws IOException
    */
   private final int mergeVectors() throws IOException {
-    final TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, segment, mergeState.fieldInfos, context);
+    final TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, segment, context);
     
     try {
       return termVectorsWriter.merge(mergeState);

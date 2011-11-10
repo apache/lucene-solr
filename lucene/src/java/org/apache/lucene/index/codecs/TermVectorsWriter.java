@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.util.Bits;
@@ -54,7 +55,7 @@ public abstract class TermVectorsWriter implements Closeable {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         TermFreqVector[] vectors = reader.reader.getTermFreqVectors(i);
-        addAllDocVectors(vectors);
+        addAllDocVectors(vectors, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
       }
@@ -64,5 +65,5 @@ public abstract class TermVectorsWriter implements Closeable {
   }
   
   // nocommit: this should be a sugar method only that consumes the normal api (once we have one)
-  public abstract void addAllDocVectors(TermFreqVector[] vectors) throws IOException;
+  public abstract void addAllDocVectors(TermFreqVector[] vectors, FieldInfos fieldInfos) throws IOException;
 }

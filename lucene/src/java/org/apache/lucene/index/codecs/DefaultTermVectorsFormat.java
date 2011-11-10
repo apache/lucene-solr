@@ -33,8 +33,8 @@ public class DefaultTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, String segment, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new DefaultTermVectorsWriter(directory, segment, fieldInfos, context);
+  public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
+    return new DefaultTermVectorsWriter(directory, segment, context);
   }
 
   @Override
