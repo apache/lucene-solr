@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -101,9 +102,9 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         tvd = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), context);
         tvf = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_FIELDS_EXTENSION), context);
 
-        tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
-        tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
-        tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
+        tvx.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
+        tvd.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
+        tvf.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
         success = true;
       } finally {
         if (!success) {

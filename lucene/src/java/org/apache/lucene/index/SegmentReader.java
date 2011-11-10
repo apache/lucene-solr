@@ -32,6 +32,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
@@ -667,11 +668,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       if (orig == null) {
         return null;
       } else {
-        try {
-          tvReader = (TermVectorsReader) orig.clone();
-        } catch (CloneNotSupportedException cnse) {
-          return null;
-        }
+        tvReader = orig.clone();
       }
       termVectorsLocal.set(tvReader);
     }

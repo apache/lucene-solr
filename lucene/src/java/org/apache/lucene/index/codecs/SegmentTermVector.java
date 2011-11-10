@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.*;
 
+import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.util.BytesRef;
 
 

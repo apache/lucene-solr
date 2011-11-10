@@ -1,5 +1,7 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs;
 
+import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.util.BytesRef;
 
 /**

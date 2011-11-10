@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,6 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexFormatTooNewException;
+import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermVectorMapper;
+import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -24,11 +32,10 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
-class TermVectorsReader implements Cloneable, Closeable {
+public class DefaultTermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than
   // the current format
@@ -38,7 +45,8 @@ class TermVectorsReader implements Cloneable, Closeable {
 
   // NOTE: always change this if you switch to a new format!
   // whenever you add a new format, make it 1 larger (positive version logic)!
-  static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
+  // nocommit: not public
+  public static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
   
   // when removing support for old versions, leave the last supported version here
   static final int FORMAT_MINIMUM = FORMAT_UTF8_LENGTH_IN_BYTES;
@@ -46,8 +54,10 @@ class TermVectorsReader implements Cloneable, Closeable {
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   static final int FORMAT_SIZE = 4;
 
-  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
-  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
+  // nocommit: not public
+  public static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
+  // nocommit: not public
+  public static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
   
   private FieldInfos fieldInfos;
 
@@ -63,12 +73,25 @@ class TermVectorsReader implements Cloneable, Closeable {
   
   private final int format;
 
-  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context)
+  // only used by a test: nocommit
+  public DefaultTermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
     this(d, segment, fieldInfos, context, -1, 0);
   }
+  
+  // used by clone: nocommit
+  DefaultTermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int docStoreOffset, int format) {
+    this.fieldInfos = fieldInfos;
+    this.tvx = tvx;
+    this.tvd = tvd;
+    this.tvf = tvf;
+    this.size = size;
+    this.numTotalDocs = numTotalDocs;
+    this.docStoreOffset = docStoreOffset;
+    this.format = format;
+  }
     
-  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size)
+  public DefaultTermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size)
     throws CorruptIndexException, IOException {
     boolean success = false;
 
@@ -115,12 +138,16 @@ class TermVectorsReader implements Cloneable, Closeable {
   }
 
   // Used for bulk copy when merging
-  IndexInput getTvdStream() {
+  // nocommit: not public
+  @Override
+  public IndexInput getTvdStream() {
     return tvd;
   }
 
   // Used for bulk copy when merging
-  IndexInput getTvfStream() {
+  // nocommit: not public
+  @Override
+  public IndexInput getTvfStream() {
     return tvf;
   }
 
@@ -128,7 +155,8 @@ class TermVectorsReader implements Cloneable, Closeable {
     tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
   }
 
-  boolean canReadRawDocs() {
+  @Override
+  public boolean canReadRawDocs() {
     // we can always read raw docs, unless the term vectors
     // didn't exist
     return format != 0;
@@ -140,7 +168,9 @@ class TermVectorsReader implements Cloneable, Closeable {
    *  merging segments, if the field numbers are
    *  congruent.  Once this returns, the tvf & tvd streams
    *  are seeked to the startDocID. */
-  final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
+  // nocommit: not public
+  @Override
+  public final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
 
     if (tvx == null) {
       Arrays.fill(tvdLengths, 0);
@@ -201,6 +231,7 @@ class TermVectorsReader implements Cloneable, Closeable {
     return size;
   }
 
+  @Override
   public void get(int docNum, String field, TermVectorMapper mapper) throws IOException {
     if (tvx != null) {
       int fieldNumber = fieldInfos.fieldNumber(field);
@@ -252,8 +283,9 @@ class TermVectorsReader implements Cloneable, Closeable {
    * @param field The field within the document to retrieve
    * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
    * @throws IOException if there is an error reading the term vector files
-   */ 
-  TermFreqVector get(int docNum, String field) throws IOException {
+   */
+  @Override
+  public TermFreqVector get(int docNum, String field) throws IOException {
     // Check if no term vectors are available for this segment at all
     ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
     get(docNum, field, mapper);
@@ -299,7 +331,8 @@ class TermVectorsReader implements Cloneable, Closeable {
    * @return All term frequency vectors
    * @throws IOException if there is an error reading the term vector files 
    */
-  TermFreqVector[] get(int docNum) throws IOException {
+  @Override
+  public TermFreqVector[] get(int docNum) throws IOException {
     TermFreqVector[] result = null;
     if (tvx != null) {
       //We need to offset by
@@ -460,79 +493,20 @@ class TermVectorsReader implements Cloneable, Closeable {
   }
 
   @Override
-  protected Object clone() throws CloneNotSupportedException {
-    
-    final TermVectorsReader clone = (TermVectorsReader) super.clone();
+  public TermVectorsReader clone() {
+    IndexInput cloneTvx = null;
+    IndexInput cloneTvd = null;
+    IndexInput cloneTvf = null;
 
     // These are null when a TermVectorsReader was created
     // on a segment that did not have term vectors saved
     if (tvx != null && tvd != null && tvf != null) {
-      clone.tvx = (IndexInput) tvx.clone();
-      clone.tvd = (IndexInput) tvd.clone();
-      clone.tvf = (IndexInput) tvf.clone();
+      cloneTvx = (IndexInput) tvx.clone();
+      cloneTvd = (IndexInput) tvd.clone();
+      cloneTvf = (IndexInput) tvf.clone();
     }
     
-    return clone;
+    return new DefaultTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
   }
 }
 
-
-/**
- * Models the existing parallel array structure
- */
-class ParallelArrayTermVectorMapper extends TermVectorMapper
-{
-
-  private BytesRef[] terms;
-  private int[] termFreqs;
-  private int positions[][];
-  private TermVectorOffsetInfo offsets[][];
-  private int currentPosition;
-  private boolean storingOffsets;
-  private boolean storingPositions;
-  private String field;
-
-  @Override
-  public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-    this.field = field;
-    terms = new BytesRef[numTerms];
-    termFreqs = new int[numTerms];
-    this.storingOffsets = storeOffsets;
-    this.storingPositions = storePositions;
-    if(storePositions)
-      this.positions = new int[numTerms][];
-    if(storeOffsets)
-      this.offsets = new TermVectorOffsetInfo[numTerms][];
-  }
-
-  @Override
-  public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
-    terms[currentPosition] = term;
-    termFreqs[currentPosition] = frequency;
-    if (storingOffsets)
-    {
-      this.offsets[currentPosition] = offsets;
-    }
-    if (storingPositions)
-    {
-      this.positions[currentPosition] = positions; 
-    }
-    currentPosition++;
-  }
-
-  /**
-   * Construct the vector
-   * @return The {@link TermFreqVector} based on the mappings.
-   */
-  public TermFreqVector materializeVector() {
-    SegmentTermVector tv = null;
-    if (field != null && terms != null) {
-      if (storingPositions || storingOffsets) {
-        tv = new SegmentTermPositionVector(field, terms, termFreqs, positions, offsets);
-      } else {
-        tv = new SegmentTermVector(field, terms, termFreqs);
-      }
-    }
-    return tv;
-  }
-}

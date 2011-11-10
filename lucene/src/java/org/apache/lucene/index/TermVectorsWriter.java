@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -37,11 +39,11 @@ final class TermVectorsWriter {
     try {
       // Open files for TermVector storage
       tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION), context);
-      tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvx.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
       tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), context);
-      tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvd.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
       tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION), context);
-      tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvf.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
       success = true;
     } finally {
       if (!success) {
@@ -92,8 +94,8 @@ final class TermVectorsWriter {
           tpVector = (TermPositionVector) vectors[i];
           storePositions = tpVector.size() > 0 && tpVector.getTermPositions(0) != null;
           storeOffsets = tpVector.size() > 0 && tpVector.getOffsets(0) != null;
-          bits = (byte) ((storePositions ? TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR : 0) +
-                         (storeOffsets ? TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR : 0));
+          bits = (byte) ((storePositions ? DefaultTermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR : 0) +
+                         (storeOffsets ? DefaultTermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR : 0));
         } else {
           tpVector = null;
           bits = 0;

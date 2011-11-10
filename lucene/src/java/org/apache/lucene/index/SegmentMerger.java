@@ -30,6 +30,8 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -229,6 +231,7 @@ final class SegmentMerger {
    * Merge the TermVectors from each of the segments into the new one.
    * @throws IOException
    */
+  // nocommit: move to codec
   private final void mergeVectors(SegmentWriteState segmentWriteState) throws IOException {
     TermVectorsWriter termVectorsWriter = new TermVectorsWriter(directory, segment, mergeState.fieldInfos, context);
     // Used for bulk-reading raw bytes for term vectors

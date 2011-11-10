@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -126,9 +127,9 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     tvf.writeVInt(numPostings);
     byte bits = 0x0;
     if (doVectorPositions)
-      bits |= TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
+      bits |= DefaultTermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
     if (doVectorOffsets)
-      bits |= TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
+      bits |= DefaultTermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
     tvf.writeByte(bits);
 
     int lastLen = 0;
