@@ -27,7 +27,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultTermVectorsWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -233,7 +232,7 @@ final class SegmentMerger {
    */
   // nocommit: move to codec
   private final void mergeVectors(SegmentWriteState segmentWriteState) throws IOException {
-    TermVectorsWriter termVectorsWriter = new DefaultTermVectorsWriter(directory, segment, mergeState.fieldInfos, context);
+    TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, segment, mergeState.fieldInfos, context);
     // Used for bulk-reading raw bytes for term vectors
     int rawDocLengths[] = new int[MAX_RAW_MERGE_DOCS];
     int rawDocLengths2[] = new int[MAX_RAW_MERGE_DOCS];

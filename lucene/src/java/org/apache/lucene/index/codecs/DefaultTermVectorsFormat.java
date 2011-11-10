@@ -20,10 +20,22 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 public class DefaultTermVectorsFormat extends TermVectorsFormat {
+
+  @Override
+  public TermVectorsReader vectorsReader(Directory directory, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size) throws IOException {
+    return new DefaultTermVectorsReader(directory, segment, fieldInfos, context, docStoreOffset, size);
+  }
+
+  @Override
+  public TermVectorsWriter vectorsWriter(Directory directory, String segment, FieldInfos fieldInfos, IOContext context) throws IOException {
+    return new DefaultTermVectorsWriter(directory, segment, fieldInfos, context);
+  }
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {

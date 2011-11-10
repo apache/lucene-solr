@@ -25,7 +25,7 @@ import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -57,7 +57,7 @@ final class SegmentCoreReaders {
   private final SegmentReader owner;
   
   StoredFieldsReader fieldsReaderOrig;
-  DefaultTermVectorsReader termVectorsReaderOrig;
+  TermVectorsReader termVectorsReaderOrig;
   CompoundFileDirectory cfsReader;
   CompoundFileDirectory storeCFSReader;
 
@@ -107,7 +107,7 @@ final class SegmentCoreReaders {
     this.owner = owner;
   }
   
-  synchronized DefaultTermVectorsReader getTermVectorsReaderOrig() {
+  synchronized TermVectorsReader getTermVectorsReaderOrig() {
     return termVectorsReaderOrig;
   }
   
@@ -171,7 +171,7 @@ final class SegmentCoreReaders {
  
       if (si.getHasVectors()) { // open term vector files only as needed
         // nocommit
-        termVectorsReaderOrig = new DefaultTermVectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
+        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
       }
     }
   }

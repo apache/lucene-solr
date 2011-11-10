@@ -20,12 +20,17 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Controls the format of term vectors
  */
 public abstract class TermVectorsFormat {
+  // nocommit: privatize size-check and docstore crap
+  public abstract TermVectorsReader vectorsReader(Directory directory, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size) throws IOException;
+  public abstract TermVectorsWriter vectorsWriter(Directory directory, String segment, FieldInfos fieldInfos, IOContext context) throws IOException;
   public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
 }
