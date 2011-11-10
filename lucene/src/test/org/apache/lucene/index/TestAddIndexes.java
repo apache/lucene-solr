@@ -34,10 +34,12 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
+import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
@@ -1165,6 +1167,11 @@ public class TestAddIndexes extends LuceneTestCase {
     @Override
     public StoredFieldsFormat storedFieldsFormat() {
       return new DefaultStoredFieldsFormat();
+    }
+    
+    @Override
+    public TermVectorsFormat termVectorsFormat() {
+      return new DefaultTermVectorsFormat();
     }
 
     @Override

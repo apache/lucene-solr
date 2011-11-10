@@ -21,10 +21,12 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
+import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -39,6 +41,7 @@ import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 // (it writes a minor version, etc).
 public class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new DefaultStoredFieldsFormat();
+  private final TermVectorsFormat vectorsFormat = new DefaultTermVectorsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
   private final SegmentInfosFormat infosFormat = new DefaultSegmentInfosFormat();
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
@@ -55,6 +58,11 @@ public class Lucene40Codec extends Codec {
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;
+  }
+  
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return vectorsFormat;
   }
 
   @Override

@@ -20,10 +20,12 @@ package org.apache.lucene.index.codecs.appending;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 
 /**
@@ -45,6 +47,7 @@ public class AppendingCodec extends Codec {
   private final PostingsFormat postings = new AppendingPostingsFormat();
   private final SegmentInfosFormat infos = new AppendingSegmentInfosFormat();
   private final StoredFieldsFormat fields = new DefaultStoredFieldsFormat();
+  private final TermVectorsFormat vectors = new DefaultTermVectorsFormat();
   private final DocValuesFormat docValues = new DefaultDocValuesFormat();
   
   @Override
@@ -55,6 +58,11 @@ public class AppendingCodec extends Codec {
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return fields;
+  }
+  
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return vectors;
   }
 
   @Override
