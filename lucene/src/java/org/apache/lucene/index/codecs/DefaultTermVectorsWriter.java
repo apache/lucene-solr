@@ -36,10 +36,13 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 
 public final class DefaultTermVectorsWriter extends TermVectorsWriter {
-
+  private final Directory directory;
+  private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;
 
   public DefaultTermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
+    this.directory = directory;
+    this.segment = segment;
     boolean success = false;
     try {
       // Open files for TermVector storage
@@ -172,6 +175,32 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
       }
     } else
       tvd.writeVInt(0);
+  }
+  
+  @Override
+  public void startDocument(int numVectorFields) throws IOException {
+    tvx.writeLong(tvd.getFilePointer());
+    tvx.writeLong(tvf.getFilePointer());
+    tvd.writeVInt(numVectorFields);
+  }
+  
+  @Override
+  public void abort() {
+    try {
+      close();
+    } catch (IOException ignored) {}
+    
+    try {
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+    } catch (IOException ignored) {}
+    
+    try {
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+    } catch (IOException ignored) {}
+    
+    try {
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
+    } catch (IOException ignored) {}
   }
 
   /**
@@ -330,5 +359,6 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     // make an effort to close all streams we can but remember and re-throw
     // the first exception encountered in this process
     IOUtils.close(tvx, tvd, tvf);
+    tvx = tvd = tvf = null;
   }
 }

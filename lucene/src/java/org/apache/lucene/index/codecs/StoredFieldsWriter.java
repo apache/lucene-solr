@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
@@ -31,7 +32,7 @@ import org.apache.lucene.util.Bits;
  * <ol>
  *   <li>For every document, {@link #startDocument(int)} is called,
  *       informing the Codec how many fields will be written.
- *   <li>{@link #writeField(int, IndexableField)} is called for 
+ *   <li>{@link #writeField(FieldInfo, IndexableField)} is called for 
  *       each field in the document.
  *   <li>After all documents have been written, {@link #finish(int)} 
  *       is called for verification/sanity-checks.
@@ -50,7 +51,7 @@ public abstract class StoredFieldsWriter implements Closeable {
   public abstract void startDocument(int numStoredFields) throws IOException;
   
   /** Writes a single stored field. */
-  public abstract void writeField(int fieldNumber, IndexableField field) throws IOException;
+  public abstract void writeField(FieldInfo info, IndexableField field) throws IOException;
 
   /** Aborts writing entirely, implementation should remove
    *  any partially-written files, etc. */
@@ -110,7 +111,7 @@ public abstract class StoredFieldsWriter implements Closeable {
 
     for (IndexableField field : doc) {
       if (field.fieldType().stored()) {
-        writeField(fieldInfos.fieldNumber(field.name()), field);
+        writeField(fieldInfos.fieldInfo(field.name()), field);
       }
     }
   }
