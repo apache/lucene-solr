@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -94,9 +95,8 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
     
     static {
       try {
-        DEFAULT_STOP_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-            Version.LUCENE_CURRENT, WordlistLoader.getWordSet(BrazilianAnalyzer.class, 
-                DEFAULT_STOPWORD_FILE, "#"), false));
+        DEFAULT_STOP_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(BrazilianAnalyzer.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -171,7 +171,8 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   @Deprecated
   public BrazilianAnalyzer(Version matchVersion, File stopwords)
       throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, WordlistLoader.getWordSet(
+        IOUtils.getDecodingReader(stopwords, IOUtils.CHARSET_UTF_8), matchVersion));
   }
 
 	/**
@@ -198,7 +199,8 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 */
 	@Deprecated
 	public void setStemExclusionTable( File exclusionlist ) throws IOException {
-		excltable = WordlistLoader.getWordSet( exclusionlist );
+		excltable = WordlistLoader.getWordSet(
+		    IOUtils.getDecodingReader(exclusionlist, IOUtils.CHARSET_UTF_8), matchVersion);
 		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
 

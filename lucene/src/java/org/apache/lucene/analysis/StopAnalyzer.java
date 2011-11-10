@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
@@ -74,19 +75,20 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   }
 
   /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwordsFile File to load stop words from */
   public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwordsFile));
+    this(matchVersion, WordlistLoader.getWordSet(IOUtils.getDecodingReader(stopwordsFile,
+        IOUtils.CHARSET_UTF_8), matchVersion));
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwords Reader to load stop words from */
   public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, WordlistLoader.getWordSet(stopwords, matchVersion));
   }
 
   /**

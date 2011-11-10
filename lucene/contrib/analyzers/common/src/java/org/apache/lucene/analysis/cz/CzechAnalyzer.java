@@ -28,9 +28,11 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -99,9 +101,8 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
 	  
 	  static {
 	    try {
-	      DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-	          Version.LUCENE_CURRENT, WordlistLoader.getWordSet(CzechAnalyzer.class, 
-	              DEFAULT_STOPWORD_FILE, "#"), false));
+	      DEFAULT_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(CzechAnalyzer.class, 
+	          DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
 	    } catch (IOException ex) {
 	      // default set should always be present as it is part of the
 	      // distribution (JAR)
@@ -192,14 +193,15 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    */
   @Deprecated
   public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
-    this(matchVersion, (Set<?>)WordlistLoader.getWordSet( stopwords ));
+    this(matchVersion, (Set<?>)WordlistLoader.getWordSet(
+        IOUtils.getDecodingReader(stopwords, IOUtils.CHARSET_UTF_8), matchVersion));
 	}
 
     /**
      * Loads stopwords hash from resource stream (file, database...).
      * @param   wordfile    File containing the wordlist
      * @param   encoding    Encoding used (win-1250, iso-8859-2, ...), null for default system encoding
-     * @deprecated use {@link WordlistLoader#getWordSet(Reader, String) }
+     * @deprecated use {@link WordlistLoader#getWordSet(Reader, String, Version) }
      *             and {@link #CzechAnalyzer(Version, Set)} instead
      */
     // TODO extend StopwordAnalyzerBase once this method is gone!
@@ -207,20 +209,14 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
     public void loadStopWords( InputStream wordfile, String encoding ) {
         setPreviousTokenStream(null); // force a new stopfilter to be created
         if ( wordfile == null ) {
-            stoptable = Collections.emptySet();
+            stoptable = CharArraySet.EMPTY_SET;
             return;
         }
         try {
             // clear any previous table (if present)
-            stoptable = Collections.emptySet();
-
-            InputStreamReader isr;
-            if (encoding == null)
-                isr = new InputStreamReader(wordfile);
-            else
-                isr = new InputStreamReader(wordfile, encoding);
-
-            stoptable = WordlistLoader.getWordSet(isr);
+            stoptable = CharArraySet.EMPTY_SET;
+            stoptable = WordlistLoader.getWordSet(IOUtils.getDecodingReader(wordfile, 
+                encoding == null ? IOUtils.CHARSET_UTF_8 : Charset.forName(encoding)), matchVersion);
         } catch ( IOException e ) {
           // clear any previous table (if present)
           // TODO: throw IOException

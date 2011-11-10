@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.German2Stemmer;
 
@@ -106,8 +107,8 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     private static final Set<?> DEFAULT_SET;
     static {
       try {
-        DEFAULT_SET = 
-          WordlistLoader.getSnowballWordSet(SnowballFilter.class, DEFAULT_STOPWORD_FILE);
+        DEFAULT_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -188,7 +189,8 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    */
   @Deprecated
   public GermanAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, WordlistLoader.getWordSet(
+        IOUtils.getDecodingReader(stopwords, IOUtils.CHARSET_UTF_8), matchVersion));
   }
 
   /**
@@ -217,7 +219,8 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    */
   @Deprecated
   public void setStemExclusionTable(File exclusionlist) throws IOException {
-    exclusionSet = WordlistLoader.getWordSet(exclusionlist);
+    exclusionSet = WordlistLoader.getWordSet(IOUtils.getDecodingReader(exclusionlist,
+        IOUtils.CHARSET_UTF_8), matchVersion);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 

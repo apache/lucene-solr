@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.nl;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -31,6 +32,7 @@ import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -73,10 +75,19 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
   @Deprecated
-  public final static String[] DUTCH_STOP_WORDS = getDefaultStopSet().toArray(new String[0]);
+  public final static String[] DUTCH_STOP_WORDS;
   
   /** File containing default Dutch stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "dutch_stop.txt";
+  
+  static {
+    Set<?> defaultStopSet =  getDefaultStopSet();
+    DUTCH_STOP_WORDS = new String[defaultStopSet.size()];
+    int i = 0;
+    for (Object object: defaultStopSet) {
+      DUTCH_STOP_WORDS[i++] = new String((char[])object);
+    } // what a hack!
+  }
 
   /**
    * Returns an unmodifiable instance of the default stop-words set.
@@ -91,14 +102,15 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE);
+        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
         throw new RuntimeException("Unable to load default stopword set");
       }
     }
+    
   }
 
 
@@ -112,7 +124,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    */
   private Set<?> excltable = Collections.emptySet();
 
-  private Map<String, String> stemdict = new HashMap<String, String>();
+  private Map<Object,String>  stemdict = CharArrayMap.emptyMap();
   private final Version matchVersion;
 
   /**
@@ -122,6 +134,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    */
   public DutchAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+    stemdict = new CharArrayMap<String>(matchVersion, 16, false);
     stemdict.put("fiets", "fiets"); //otherwise fiet
     stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
     stemdict.put("ei", "eier");
@@ -171,7 +184,8 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   public DutchAnalyzer(Version matchVersion, File stopwords) {
     // this is completely broken!
     try {
-      stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
+      stoptable = WordlistLoader.getWordSet(IOUtils.getDecodingReader(stopwords,
+          IOUtils.CHARSET_UTF_8), matchVersion);
     } catch (IOException e) {
       // TODO: throw IOException
       throw new RuntimeException(e);
@@ -208,7 +222,9 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   @Deprecated
   public void setStemExclusionTable(File exclusionlist) {
     try {
-      excltable = org.apache.lucene.analysis.WordlistLoader.getWordSet(exclusionlist);
+      
+      excltable = WordlistLoader.getWordSet(IOUtils.getDecodingReader(exclusionlist,
+          IOUtils.CHARSET_UTF_8), matchVersion);
       setPreviousTokenStream(null); // force a new stemmer to be created
     } catch (IOException e) {
       // TODO: throw IOException
@@ -226,7 +242,8 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   @Deprecated
   public void setStemDictionary(File stemdictFile) {
     try {
-      stemdict = WordlistLoader.getStemDict(stemdictFile);
+      stemdict = WordlistLoader.getStemDict(IOUtils.getDecodingReader(stemdictFile,
+          IOUtils.CHARSET_UTF_8), new CharArrayMap<String>(matchVersion, 16, false));
       setPreviousTokenStream(null); // force a new stemmer to be created
     } catch (IOException e) {
       // TODO: throw IOException

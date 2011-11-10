@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -103,7 +104,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  private Set<?> excltable = Collections.<Object>emptySet();
+  private Set<?> excltable = CharArraySet.EMPTY_SET;
 
   /**
    * Returns an unmodifiable instance of the default stop-words set.
@@ -122,8 +123,8 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     static final Set<?> DEFAULT_STOP_SET;
     static {
       try {
-        DEFAULT_STOP_SET = 
-          WordlistLoader.getSnowballWordSet(SnowballFilter.class, DEFAULT_STOPWORD_FILE);
+        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
+                DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -187,7 +188,8 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    */
   @Deprecated
   public FrenchAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, WordlistLoader.getWordSet(IOUtils.getDecodingReader(stopwords,
+        IOUtils.CHARSET_UTF_8), matchVersion));
   }
 
   /**
@@ -217,7 +219,8 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    */
   @Deprecated
   public void setStemExclusionTable(File exclusionlist) throws IOException {
-    excltable = new HashSet<Object>(WordlistLoader.getWordSet(exclusionlist));
+    excltable = WordlistLoader.getWordSet(IOUtils.getDecodingReader(exclusionlist,
+        IOUtils.CHARSET_UTF_8), matchVersion);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 

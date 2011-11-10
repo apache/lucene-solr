@@ -52,7 +52,7 @@ public class TestCharArraySet extends LuceneTestCase {
   public void testNonZeroOffset() {
     String[] words={"Hello","World","this","is","a","test"};
     char[] findme="xthisy".toCharArray();   
-    CharArraySet set=new CharArraySet(TEST_VERSION_CURRENT, 10,true);
+    CharArraySet set= new CharArraySet(TEST_VERSION_CURRENT, 10, true);
     set.addAll(Arrays.asList(words));
     assertTrue(set.contains(findme, 1, 4));
     assertTrue(set.contains(new String(findme,1,4)));

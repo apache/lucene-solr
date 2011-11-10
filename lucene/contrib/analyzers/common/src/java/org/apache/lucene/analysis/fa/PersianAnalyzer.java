@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -134,7 +135,9 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    */
   @Deprecated
   public PersianAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT));
+    this(matchVersion, WordlistLoader.getWordSet(
+        IOUtils.getDecodingReader(stopwords, IOUtils.CHARSET_UTF_8),
+        STOPWORDS_COMMENT, matchVersion));
   }
 
   /**

@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -64,7 +65,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * The comment character in the stopwords file.  All lines prefixed with this will be ignored
-   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly  
+   * @deprecated use {@link WordlistLoader#getWordSet(Reader, String, Version)} directly  
    */
   // TODO make this private 
   @Deprecated
@@ -159,7 +160,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    */
   @Deprecated
   public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT));
+    this(matchVersion, WordlistLoader.getWordSet(IOUtils.getDecodingReader(stopwords,
+        IOUtils.CHARSET_UTF_8), STOPWORDS_COMMENT, matchVersion));
   }
 
   /**

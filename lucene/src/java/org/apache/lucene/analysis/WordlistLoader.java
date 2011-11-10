@@ -18,165 +18,91 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * Loader for text files that represent a list of stopwords.
+ * 
+ * @see IOUtils to obtain {@link Reader} instances
+ * @lucene.internal
  */
 public class WordlistLoader {
- 
-  /**
-   * Loads a text file associated with a given class (See
-   * {@link Class#getResourceAsStream(String)}) and adds every line as an entry
-   * to a {@link Set} (omitting leading and trailing whitespace). Every line of
-   * the file should contain only one word. The words need to be in lower-case if
-   * you make use of an Analyzer which uses LowerCaseFilter (like
-   * StandardAnalyzer).
-   * 
-   * @param aClass
-   *          a class that is associated with the given stopwordResource
-   * @param stopwordResource
-   *          name of the resource file associated with the given class
-   * @return a {@link Set} with the file's words
-   */
-  public static Set<String> getWordSet(Class<?> aClass, String stopwordResource)
-      throws IOException {
-    final Reader reader = new BufferedReader(new InputStreamReader(aClass
-        .getResourceAsStream(stopwordResource), "UTF-8"));
-    try {
-      return getWordSet(reader);
-    } finally {
-      reader.close();
-    }
-  }
+  
+  private static final int INITITAL_CAPACITY = 16;
   
   /**
-   * Loads a text file associated with a given class (See
-   * {@link Class#getResourceAsStream(String)}) and adds every line as an entry
-   * to a {@link Set} (omitting leading and trailing whitespace). Every line of
-   * the file should contain only one word. The words need to be in lower-case if
-   * you make use of an Analyzer which uses LowerCaseFilter (like
-   * StandardAnalyzer).
-   * 
-   * @param aClass
-   *          a class that is associated with the given stopwordResource
-   * @param stopwordResource
-   *          name of the resource file associated with the given class
-   * @param comment
-   *          the comment string to ignore
-   * @return a {@link Set} with the file's words
-   */
-  public static Set<String> getWordSet(Class<?> aClass,
-      String stopwordResource, String comment) throws IOException {
-    final Reader reader = new BufferedReader(new InputStreamReader(aClass
-        .getResourceAsStream(stopwordResource), "UTF-8"));
-    try {
-      return getWordSet(reader, comment);
-    } finally {
-      reader.close();
-    }
-  }
-  
-  /**
-   * Loads a text file and adds every line as an entry to a HashSet (omitting
-   * leading and trailing whitespace). Every line of the file should contain only
-   * one word. The words need to be in lowercase if you make use of an
-   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
-   *
-   * @param wordfile File containing the wordlist
-   * @return A HashSet with the file's words
-   */
-  public static HashSet<String> getWordSet(File wordfile) throws IOException {
-    FileReader reader = null;
-    try {
-      reader = new FileReader(wordfile);
-      return getWordSet(reader);
-    }
-    finally {
-      if (reader != null)
-        reader.close();
-    }
-  }
-
-  /**
-   * Loads a text file and adds every non-comment line as an entry to a HashSet (omitting
-   * leading and trailing whitespace). Every line of the file should contain only
-   * one word. The words need to be in lowercase if you make use of an
-   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
-   *
-   * @param wordfile File containing the wordlist
-   * @param comment The comment string to ignore
-   * @return A HashSet with the file's words
-   */
-  public static HashSet<String> getWordSet(File wordfile, String comment) throws IOException {
-    FileReader reader = null;
-    try {
-      reader = new FileReader(wordfile);
-      return getWordSet(reader, comment);
-    }
-    finally {
-      if (reader != null)
-        reader.close();
-    }
-  }
-
-
-  /**
-   * Reads lines from a Reader and adds every line as an entry to a HashSet (omitting
+   * Reads lines from a Reader and adds every line as an entry to a CharArraySet (omitting
    * leading and trailing whitespace). Every line of the Reader should contain only
    * one word. The words need to be in lowercase if you make use of an
    * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
    *
    * @param reader Reader containing the wordlist
-   * @return A HashSet with the reader's words
+   * @param result the {@link CharArraySet} to fill with the readers words
+   * @return the given {@link CharArraySet} with the reader's words
    */
-  public static HashSet<String> getWordSet(Reader reader) throws IOException {
-    final HashSet<String> result = new HashSet<String>();
+  public static CharArraySet getWordSet(Reader reader, CharArraySet result) throws IOException {
     BufferedReader br = null;
     try {
-      if (reader instanceof BufferedReader) {
-        br = (BufferedReader) reader;
-      } else {
-        br = new BufferedReader(reader);
-      }
+      br = getBufferedReader(reader);
       String word = null;
       while ((word = br.readLine()) != null) {
         result.add(word.trim());
       }
     }
     finally {
-      if (br != null)
-        br.close();
+      IOUtils.close(br);
     }
     return result;
   }
+  
+  /**
+   * Reads lines from a Reader and adds every line as an entry to a CharArraySet (omitting
+   * leading and trailing whitespace). Every line of the Reader should contain only
+   * one word. The words need to be in lowercase if you make use of an
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   *
+   * @param reader Reader containing the wordlist
+   * @param matchVersion the Lucene {@link Version}
+   * @return A {@link CharArraySet} with the reader's words
+   */
+  public static CharArraySet getWordSet(Reader reader, Version matchVersion) throws IOException {
+    return getWordSet(reader, new CharArraySet(matchVersion, INITITAL_CAPACITY, false));
+  }
 
   /**
-   * Reads lines from a Reader and adds every non-comment line as an entry to a HashSet (omitting
+   * Reads lines from a Reader and adds every non-comment line as an entry to a CharArraySet (omitting
    * leading and trailing whitespace). Every line of the Reader should contain only
    * one word. The words need to be in lowercase if you make use of an
    * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
    *
    * @param reader Reader containing the wordlist
    * @param comment The string representing a comment.
-   * @return A HashSet with the reader's words
+   * @param matchVersion the Lucene {@link Version}
+   * @return A CharArraySet with the reader's words
    */
-  public static HashSet<String> getWordSet(Reader reader, String comment) throws IOException {
-    final HashSet<String> result = new HashSet<String>();
+  public static CharArraySet getWordSet(Reader reader, String comment, Version matchVersion) throws IOException {
+    return getWordSet(reader, comment, new CharArraySet(matchVersion, INITITAL_CAPACITY, false));
+  }
+
+  /**
+   * Reads lines from a Reader and adds every non-comment line as an entry to a CharArraySet (omitting
+   * leading and trailing whitespace). Every line of the Reader should contain only
+   * one word. The words need to be in lowercase if you make use of an
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   *
+   * @param reader Reader containing the wordlist
+   * @param comment The string representing a comment.
+   * @param result the {@link CharArraySet} to fill with the readers words
+   * @return the given {@link CharArraySet} with the reader's words
+   */
+  public static CharArraySet getWordSet(Reader reader, String comment, CharArraySet result) throws IOException {
     BufferedReader br = null;
     try {
-      if (reader instanceof BufferedReader) {
-        br = (BufferedReader) reader;
-      } else {
-        br = new BufferedReader(reader);
-      }
+      br = getBufferedReader(reader);
       String word = null;
       while ((word = br.readLine()) != null) {
         if (word.startsWith(comment) == false){
@@ -185,33 +111,44 @@ public class WordlistLoader {
       }
     }
     finally {
-      if (br != null)
-        br.close();
+      IOUtils.close(br);
     }
     return result;
   }
 
+  
   /**
-   * Loads a text file in Snowball format associated with a given class (See
-   * {@link Class#getResourceAsStream(String)}) and adds all words as entries to
-   * a {@link Set}. The words need to be in lower-case if you make use of an
-   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   * Reads stopwords from a stopword list in Snowball format.
+   * <p>
+   * The snowball format is the following:
+   * <ul>
+   * <li>Lines may contain multiple words separated by whitespace.
+   * <li>The comment character is the vertical line (&#124;).
+   * <li>Lines may contain trailing comments.
+   * </ul>
+   * </p>
    * 
-   * @param aClass a class that is associated with the given stopwordResource
-   * @param stopwordResource name of the resource file associated with the given
-   *          class
-   * @return a {@link Set} with the file's words
-   * @see #getSnowballWordSet(Reader)
+   * @param reader Reader containing a Snowball stopword list
+   * @param result the {@link CharArraySet} to fill with the readers words
+   * @return the given {@link CharArraySet} with the reader's words
    */
-  public static Set<String> getSnowballWordSet(Class<?> aClass,
-      String stopwordResource) throws IOException {
-    final Reader reader = new BufferedReader(new InputStreamReader(aClass
-        .getResourceAsStream(stopwordResource), "UTF-8"));
+  public static CharArraySet getSnowballWordSet(Reader reader, CharArraySet result)
+      throws IOException {
+    BufferedReader br = null;
     try {
-      return getSnowballWordSet(reader);
+      br = getBufferedReader(reader);
+      String line = null;
+      while ((line = br.readLine()) != null) {
+        int comment = line.indexOf('|');
+        if (comment >= 0) line = line.substring(0, comment);
+        String words[] = line.split("\\s+");
+        for (int i = 0; i < words.length; i++)
+          if (words[i].length() > 0) result.add(words[i]);
+      }
     } finally {
-      reader.close();
+      IOUtils.close(br);
     }
+    return result;
   }
   
   /**
@@ -226,30 +163,11 @@ public class WordlistLoader {
    * </p>
    * 
    * @param reader Reader containing a Snowball stopword list
-   * @return A Set with the reader's words
+   * @param matchVersion the Lucene {@link Version}
+   * @return A {@link CharArraySet} with the reader's words
    */
-  public static Set<String> getSnowballWordSet(Reader reader)
-      throws IOException {
-    final Set<String> result = new HashSet<String>();
-    BufferedReader br = null;
-    try {
-      if (reader instanceof BufferedReader) {
-        br = (BufferedReader) reader;
-      } else {
-        br = new BufferedReader(reader);
-      }
-      String line = null;
-      while ((line = br.readLine()) != null) {
-        int comment = line.indexOf('|');
-        if (comment >= 0) line = line.substring(0, comment);
-        String words[] = line.split("\\s+");
-        for (int i = 0; i < words.length; i++)
-          if (words[i].length() > 0) result.add(words[i]);
-      }
-    } finally {
-      if (br != null) br.close();
-    }
-    return result;
+  public static CharArraySet getSnowballWordSet(Reader reader, Version matchVersion) throws IOException {
+    return getSnowballWordSet(reader, new CharArraySet(matchVersion, INITITAL_CAPACITY, false));
   }
 
 
@@ -261,24 +179,24 @@ public class WordlistLoader {
    * @return stem dictionary that overrules the stemming algorithm
    * @throws IOException 
    */
-  public static HashMap<String, String> getStemDict(File wordstemfile) throws IOException {
-    if (wordstemfile == null)
-      throw new NullPointerException("wordstemfile may not be null");
-    final HashMap<String, String> result = new HashMap<String,String>();
+  public static CharArrayMap<String> getStemDict(Reader reader, CharArrayMap<String> result) throws IOException {
     BufferedReader br = null;
-    
     try {
-      br = new BufferedReader(new FileReader(wordstemfile));
+      br = getBufferedReader(reader);
       String line;
       while ((line = br.readLine()) != null) {
         String[] wordstem = line.split("\t", 2);
         result.put(wordstem[0], wordstem[1]);
       }
     } finally {
-      if(br != null)
-        br.close();
+      IOUtils.close(br);
     }
     return result;
   }
-
+  
+  private static BufferedReader getBufferedReader(Reader reader) {
+    return (reader instanceof BufferedReader) ? (BufferedReader) reader
+        : new BufferedReader(reader);
+  }
+  
 }

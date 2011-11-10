@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.stempel.StempelStemmer;
 import org.apache.lucene.analysis.stempel.StempelFilter;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 import org.egothor.stemmer.Trie;
 
@@ -68,8 +69,8 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
     
     static {
       try {
-        DEFAULT_STOP_SET = WordlistLoader.getWordSet(PolishAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE);
+        DEFAULT_STOP_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(PolishAnalyzer.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -87,21 +88,22 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
   }
 
   /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion Lucene version to match See {@link
    * <a href="#version">above</a>}
    * @param stopwords File to read stop words from */
   public ClassicAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, WordlistLoader.getWordSet(IOUtils.getDecodingReader(stopwords,
+        IOUtils.CHARSET_UTF_8), matchVersion));
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion Lucene version to match See {@link
    * <a href="#version">above</a>}
    * @param stopwords Reader to read stop words from */
   public ClassicAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, WordlistLoader.getWordSet(stopwords, matchVersion));
   }
 
   /**

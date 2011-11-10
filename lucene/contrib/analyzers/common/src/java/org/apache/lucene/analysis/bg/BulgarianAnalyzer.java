@@ -57,7 +57,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
   /**
    * The comment character in the stopwords file. All lines prefixed with this
    * will be ignored
-   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly
+   * @deprecated use {@link WordlistLoader#getWordSet(Reader, String, Version)} directly
    */
   //TODO make this private
   @Deprecated

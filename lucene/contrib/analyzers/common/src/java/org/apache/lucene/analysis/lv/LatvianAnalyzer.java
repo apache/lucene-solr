@@ -27,11 +27,13 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -60,8 +62,8 @@ public final class LatvianAnalyzer extends StopwordAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = WordlistLoader.getWordSet(LatvianAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE);
+        DEFAULT_STOP_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(LatvianAnalyzer.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
