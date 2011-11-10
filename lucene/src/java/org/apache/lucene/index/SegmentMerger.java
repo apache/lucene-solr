@@ -255,21 +255,10 @@ final class SegmentMerger {
           copyVectorsNoDeletions(termVectorsWriter, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
         }
       }
+      termVectorsWriter.finish(segmentWriteState.numDocs);
     } finally {
       termVectorsWriter.close();
     }
-
-    final String fileName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-    final long tvxSize = directory.fileLength(fileName);
-    final int mergedDocs = segmentWriteState.numDocs;
-
-    if (4+((long) mergedDocs)*16 != tvxSize)
-      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
-      // we detect that the bug has struck, here, and
-      // throw an exception to prevent the corruption from
-      // entering the index.  See LUCENE-1282 for
-      // details.
-      throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + mergedDocs + " but tvx size is " + tvxSize + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
   }
 
   private void copyVectorsWithDeletions(final TermVectorsWriter termVectorsWriter,

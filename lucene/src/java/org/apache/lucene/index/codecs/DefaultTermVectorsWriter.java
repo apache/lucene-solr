@@ -197,6 +197,17 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     assert tvf.getFilePointer() == tvfPosition;
   }
 
+  @Override
+  public void finish(int numDocs) throws IOException {
+    if (4+((long) numDocs)*16 != tvx.getFilePointer())
+      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
+      // we detect that the bug has struck, here, and
+      // throw an exception to prevent the corruption from
+      // entering the index.  See LUCENE-1282 for
+      // details.
+      throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + numDocs + " but tvx size is " + tvx.getFilePointer() + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
+  }
+
   /** Close all streams. */
   @Override
   public void close() throws IOException {

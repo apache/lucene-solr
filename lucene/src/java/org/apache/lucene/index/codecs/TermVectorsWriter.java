@@ -24,6 +24,15 @@ import org.apache.lucene.index.TermFreqVector;
 
 public abstract class TermVectorsWriter implements Closeable {
   
+  /** Called before {@link #close()}, passing in the number
+   *  of documents that were written. Note that this is 
+   *  intentionally redundant (equivalent to the number of
+   *  calls to XXX, but a Codec should
+   *  check that this is the case to detect the JRE bug described 
+   *  in LUCENE-1282. */
+  public abstract void finish(int numDocs) throws IOException;
+  
+  // nocommit: this should be a sugar method only that consumes the normal api (once we have one)
   public abstract void addAllDocVectors(TermFreqVector[] vectors) throws IOException;
   
   // nocommit: nuke this
