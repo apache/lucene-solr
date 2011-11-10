@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,8 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
-import org.apache.lucene.index.codecs.TermVectorsReader;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -28,12 +31,12 @@ import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 
-final class TermVectorsWriter {
+public final class DefaultTermVectorsWriter extends TermVectorsWriter {
 
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private FieldInfos fieldInfos;
 
-  public TermVectorsWriter(Directory directory, String segment,
+  public DefaultTermVectorsWriter(Directory directory, String segment,
                            FieldInfos fieldInfos, IOContext context) throws IOException {
     boolean success = false;
     try {
@@ -61,6 +64,7 @@ final class TermVectorsWriter {
    * @param vectors
    * @throws IOException
    */
+  @Override
   public final void addAllDocVectors(TermFreqVector[] vectors) throws IOException {
 
     tvx.writeLong(tvd.getFilePointer());
@@ -175,7 +179,8 @@ final class TermVectorsWriter {
    * streams.  This is used to expedite merging, if the
    * field numbers are congruent.
    */
-  final void addRawDocuments(TermVectorsReader reader, int[] tvdLengths, int[] tvfLengths, int numDocs) throws IOException {
+  @Override
+  public void addRawDocuments(TermVectorsReader reader, int[] tvdLengths, int[] tvfLengths, int numDocs) throws IOException {
     long tvdPosition = tvd.getFilePointer();
     long tvfPosition = tvf.getFilePointer();
     long tvdStart = tvdPosition;
@@ -193,7 +198,8 @@ final class TermVectorsWriter {
   }
 
   /** Close all streams. */
-  final void close() throws IOException {
+  @Override
+  public void close() throws IOException {
     // make an effort to close all streams we can but remember and re-throw
     // the first exception encountered in this process
     IOUtils.close(tvx, tvd, tvf);
