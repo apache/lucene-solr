@@ -163,7 +163,6 @@ public class WordlistLoader {
    * </p>
    * 
    * @param reader Reader containing a Snowball stopword list
-   * @param result the {@link CharArraySet} to fill with the readers words
    * @param matchVersion the Lucene {@link Version}
    * @return A {@link CharArraySet} with the reader's words
    */

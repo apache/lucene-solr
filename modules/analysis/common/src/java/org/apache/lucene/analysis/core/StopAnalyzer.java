@@ -77,7 +77,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   }
 
   /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwordsFile File to load stop words from */
   public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
@@ -85,7 +85,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwords Reader to load stop words from */
   public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
