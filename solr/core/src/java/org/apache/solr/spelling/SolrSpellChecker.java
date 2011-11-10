@@ -17,13 +17,24 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.search.spell.SuggestWordQueue;
+import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -64,6 +75,74 @@ public abstract class SolrSpellChecker {
     }
     return name;
   }
+  /**
+   * Integrate spelling suggestions from the various shards in a distributed environment.
+   * 
+   * @param mergeData
+   * @param numSug
+   * @param count
+   * @param extendedResults
+   * @return
+   */
+  public SpellingResult mergeSuggestions(SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
+    float min = 0.5f;
+    try {
+      min = getAccuracy();
+    } catch(UnsupportedOperationException uoe) {
+      //just use .5 as a default
+    }
+    
+    StringDistance sd = getStringDistance() == null ? new LevensteinDistance() : getStringDistance();    
+    
+    SpellingResult result = new SpellingResult();
+    for (Map.Entry<String, HashSet<String>> entry : mergeData.origVsSuggested.entrySet()) {
+      String original = entry.getKey();
+      
+      //Only use this suggestion if all shards reported it as misspelled.
+      Integer numShards = mergeData.origVsShards.get(original);
+      if(numShards<mergeData.totalNumberShardResponses) {
+        continue;
+      }
+      
+      HashSet<String> suggested = entry.getValue();
+      SuggestWordQueue sugQueue = new SuggestWordQueue(numSug);
+      for (String suggestion : suggested) {
+        SuggestWord sug = mergeData.suggestedVsWord.get(suggestion);
+        sug.score = sd.getDistance(original, sug.string);
+        if (sug.score < min) continue;
+        sugQueue.insertWithOverflow(sug);
+        if (sugQueue.size() == numSug) {
+          // if queue full, maintain the minScore score
+          min = sugQueue.top().score;
+        }
+      }
+
+      // create token
+      SpellCheckResponse.Suggestion suggestion = mergeData.origVsSuggestion.get(original);
+      Token token = new Token(original, suggestion.getStartOffset(), suggestion.getEndOffset());
+
+      // get top 'count' suggestions out of 'sugQueue.size()' candidates
+      SuggestWord[] suggestions = new SuggestWord[Math.min(count, sugQueue.size())];
+      // skip the first sugQueue.size() - count elements
+      for (int k=0; k < sugQueue.size() - count; k++) sugQueue.pop();
+      // now collect the top 'count' responses
+      for (int k = Math.min(count, sugQueue.size()) - 1; k >= 0; k--)  {
+        suggestions[k] = sugQueue.pop();
+      }
+
+      if (extendedResults) {
+        Integer o = mergeData.origVsFreq.get(original);
+        if (o != null) result.addFrequency(token, o);
+        for (SuggestWord word : suggestions)
+          result.add(token, word.string, word.freq);
+      } else {
+        List<String> words = new ArrayList<String>(sugQueue.size());
+        for (SuggestWord word : suggestions) words.add(word.string);
+        result.add(token, words);
+      }
+    }
+    return result;
+  }
   
   public Analyzer getQueryAnalyzer() {
     return analyzer;
@@ -84,6 +163,23 @@ public abstract class SolrSpellChecker {
    * (re)Builds the spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt.
    */
   public abstract void build(SolrCore core, SolrIndexSearcher searcher);
+  
+  /**
+   * Get the value of {@link SpellingParams.SPELLCHECK_ACCURACY} if supported.  
+   * Otherwise throws UnsupportedOperationException.
+   * @return
+   */
+  protected float getAccuracy() {
+    throw new UnsupportedOperationException();
+  }
+  
+  /**
+   * Get the distance implementation used by this spellchecker, or NULL if not applicable.
+   * @return
+   */
+  protected StringDistance getStringDistance()  {
+    throw new UnsupportedOperationException();
+  }
 
 
   /**

@@ -267,6 +267,10 @@ Bug Fixes
 * SOLR-2829: Fix problem with false-positives due to incorrect
   equals methods. (Yonik Seeley, Hossman, Erick Erickson. 
   Marc Tinnemeyer caught the bug)  
+
+* SOLR-2848: Removed 'instanceof AbstractLuceneSpellChecker' hacks from distributed spellchecking code,
+  and added a merge() method to SolrSpellChecker instead. Previously if you extended SolrSpellChecker
+  your spellchecker would not work in distributed fashion.  (James Dyer via rmuir)
   
 Other Changes
 ----------------------
