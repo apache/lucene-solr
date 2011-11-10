@@ -24,6 +24,7 @@ import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.apache.solr.client.solrj.response.SpellCheckResponse;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SpellCheckMergeData;
@@ -82,7 +83,6 @@ public abstract class SolrSpellChecker {
    * @param numSug
    * @param count
    * @param extendedResults
-   * @return
    */
   public SpellingResult mergeSuggestions(SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
     float min = 0.5f;
@@ -165,9 +165,8 @@ public abstract class SolrSpellChecker {
   public abstract void build(SolrCore core, SolrIndexSearcher searcher);
   
   /**
-   * Get the value of {@link SpellingParams.SPELLCHECK_ACCURACY} if supported.  
+   * Get the value of {@link SpellingParams#SPELLCHECK_ACCURACY} if supported.  
    * Otherwise throws UnsupportedOperationException.
-   * @return
    */
   protected float getAccuracy() {
     throw new UnsupportedOperationException();
@@ -175,7 +174,6 @@ public abstract class SolrSpellChecker {
   
   /**
    * Get the distance implementation used by this spellchecker, or NULL if not applicable.
-   * @return
    */
   protected StringDistance getStringDistance()  {
     throw new UnsupportedOperationException();
