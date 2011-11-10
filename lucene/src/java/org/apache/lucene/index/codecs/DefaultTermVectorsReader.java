@@ -138,16 +138,12 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   }
 
   // Used for bulk copy when merging
-  // nocommit: not public
-  @Override
-  public IndexInput getTvdStream() {
+  IndexInput getTvdStream() {
     return tvd;
   }
 
   // Used for bulk copy when merging
-  // nocommit: not public
-  @Override
-  public IndexInput getTvfStream() {
+  IndexInput getTvfStream() {
     return tvf;
   }
 
@@ -155,8 +151,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
   }
 
-  @Override
-  public boolean canReadRawDocs() {
+  boolean canReadRawDocs() {
     // we can always read raw docs, unless the term vectors
     // didn't exist
     return format != 0;
@@ -168,9 +163,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
    *  merging segments, if the field numbers are
    *  congruent.  Once this returns, the tvf & tvd streams
    *  are seeked to the startDocID. */
-  // nocommit: not public
-  @Override
-  public final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
+  final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
 
     if (tvx == null) {
       Arrays.fill(tvdLengths, 0);

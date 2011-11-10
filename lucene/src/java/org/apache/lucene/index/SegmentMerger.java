@@ -25,12 +25,10 @@ import java.util.List;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.index.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -52,10 +50,6 @@ final class SegmentMerger {
   private final Directory directory;
   private final String segment;
   private final int termIndexInterval;
-
-  /** Maximum number of contiguous documents to bulk-copy
-      when merging term vectors */
-  private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private final Codec codec;
   
@@ -129,7 +123,8 @@ final class SegmentMerger {
     mergeNorms();
 
     if (mergeState.fieldInfos.hasVectors()) {
-      mergeVectors(segmentWriteState);
+      int numMerged = mergeVectors();
+      assert numMerged == mergeState.mergedDocCount;
     }
     // write FIS once merge is done. IDV might change types or drops fields
     mergeState.fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
@@ -214,127 +209,26 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   private int mergeFields() throws CorruptIndexException, IOException {
-    int docCount = 0;
-
     final StoredFieldsWriter fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, segment, context);
+    
     try {
-      docCount = fieldsWriter.merge(mergeState);
+      return fieldsWriter.merge(mergeState);
     } finally {
       fieldsWriter.close();
     }
-
-    return docCount;
   }
 
   /**
    * Merge the TermVectors from each of the segments into the new one.
    * @throws IOException
    */
-  // nocommit: move to codec
-  private final void mergeVectors(SegmentWriteState segmentWriteState) throws IOException {
-    TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, segment, mergeState.fieldInfos, context);
-    // Used for bulk-reading raw bytes for term vectors
-    int rawDocLengths[] = new int[MAX_RAW_MERGE_DOCS];
-    int rawDocLengths2[] = new int[MAX_RAW_MERGE_DOCS];
+  private final int mergeVectors() throws IOException {
+    final TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, segment, mergeState.fieldInfos, context);
+    
     try {
-      int idx = 0;
-      for (final MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-        final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
-        TermVectorsReader matchingVectorsReader = null;
-        if (matchingSegmentReader != null) {
-          TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();
-
-          // If the TV* files are an older format then they cannot read raw docs:
-          if (vectorsReader != null && vectorsReader.canReadRawDocs()) {
-            matchingVectorsReader = vectorsReader;
-          }
-        }
-        if (reader.liveDocs != null) {
-          copyVectorsWithDeletions(termVectorsWriter, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
-        } else {
-          copyVectorsNoDeletions(termVectorsWriter, matchingVectorsReader, reader, rawDocLengths, rawDocLengths2);
-        }
-      }
-      termVectorsWriter.finish(segmentWriteState.numDocs);
+      return termVectorsWriter.merge(mergeState);
     } finally {
       termVectorsWriter.close();
-    }
-  }
-
-  private void copyVectorsWithDeletions(final TermVectorsWriter termVectorsWriter,
-                                        final TermVectorsReader matchingVectorsReader,
-                                        final MergeState.IndexReaderAndLiveDocs reader,
-                                        int rawDocLengths[],
-                                        int rawDocLengths2[])
-    throws IOException, MergeAbortedException {
-    final int maxDoc = reader.reader.maxDoc();
-    final Bits liveDocs = reader.liveDocs;
-    if (matchingVectorsReader != null) {
-      // We can bulk-copy because the fieldInfos are "congruent"
-      for (int docNum = 0; docNum < maxDoc;) {
-        if (!liveDocs.get(docNum)) {
-          // skip deleted docs
-          ++docNum;
-          continue;
-        }
-        // We can optimize this case (doing a bulk byte copy) since the field
-        // numbers are identical
-        int start = docNum, numDocs = 0;
-        do {
-          docNum++;
-          numDocs++;
-          if (docNum >= maxDoc) break;
-          if (!liveDocs.get(docNum)) {
-            docNum++;
-            break;
-          }
-        } while(numDocs < MAX_RAW_MERGE_DOCS);
-
-        matchingVectorsReader.rawDocs(rawDocLengths, rawDocLengths2, start, numDocs);
-        termVectorsWriter.addRawDocuments(matchingVectorsReader, rawDocLengths, rawDocLengths2, numDocs);
-        mergeState.checkAbort.work(300 * numDocs);
-      }
-    } else {
-      for (int docNum = 0; docNum < maxDoc; docNum++) {
-        if (!liveDocs.get(docNum)) {
-          // skip deleted docs
-          continue;
-        }
-
-        // NOTE: it's very important to first assign to vectors then pass it to
-        // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        TermFreqVector[] vectors = reader.reader.getTermFreqVectors(docNum);
-        termVectorsWriter.addAllDocVectors(vectors);
-        mergeState.checkAbort.work(300);
-      }
-    }
-  }
-
-  private void copyVectorsNoDeletions(final TermVectorsWriter termVectorsWriter,
-                                      final TermVectorsReader matchingVectorsReader,
-                                      final MergeState.IndexReaderAndLiveDocs reader,
-                                      int rawDocLengths[],
-                                      int rawDocLengths2[])
-      throws IOException, MergeAbortedException {
-    final int maxDoc = reader.reader.maxDoc();
-    if (matchingVectorsReader != null) {
-      // We can bulk-copy because the fieldInfos are "congruent"
-      int docCount = 0;
-      while (docCount < maxDoc) {
-        int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
-        matchingVectorsReader.rawDocs(rawDocLengths, rawDocLengths2, docCount, len);
-        termVectorsWriter.addRawDocuments(matchingVectorsReader, rawDocLengths, rawDocLengths2, len);
-        docCount += len;
-        mergeState.checkAbort.work(300 * len);
-      }
-    } else {
-      for (int docNum = 0; docNum < maxDoc; docNum++) {
-        // NOTE: it's very important to first assign to vectors then pass it to
-        // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        TermFreqVector[] vectors = reader.reader.getTermFreqVectors(docNum);
-        termVectorsWriter.addAllDocVectors(vectors);
-        mergeState.checkAbort.work(300);
-      }
     }
   }
 

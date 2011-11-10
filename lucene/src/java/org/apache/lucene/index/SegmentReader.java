@@ -660,8 +660,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /**
    * Create a clone from the initial TermVectorsReader and store it in the ThreadLocal.
    * @return TermVectorsReader
+   * @lucene.internal
    */
-  TermVectorsReader getTermVectorsReader() {
+  public TermVectorsReader getTermVectorsReader() {
     TermVectorsReader tvReader = termVectorsLocal.get();
     if (tvReader == null) {
       TermVectorsReader orig = core.getTermVectorsReaderOrig();

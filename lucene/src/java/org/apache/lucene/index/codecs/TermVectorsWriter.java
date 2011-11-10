@@ -65,7 +65,4 @@ public abstract class TermVectorsWriter implements Closeable {
   
   // nocommit: this should be a sugar method only that consumes the normal api (once we have one)
   public abstract void addAllDocVectors(TermFreqVector[] vectors) throws IOException;
-  
-  // nocommit: nuke this
-  public abstract void addRawDocuments(TermVectorsReader reader, int[] tvdLengths, int[] tvfLengths, int numDocs) throws IOException;
 }

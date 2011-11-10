@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermVectorMapper;
-import org.apache.lucene.store.IndexInput;
 
 public abstract class TermVectorsReader implements Cloneable,Closeable {
   // TODO: can we consolidate all these get's?
@@ -32,11 +31,5 @@ public abstract class TermVectorsReader implements Cloneable,Closeable {
   public abstract void get(int doc, TermVectorMapper mapper) throws IOException;
   public abstract void get(int doc, String field, TermVectorMapper mapper) throws IOException;
 
-  public abstract TermVectorsReader clone();  
-
-  // nocommit: nuke all of these methods below:
-  public abstract boolean canReadRawDocs();
-  public abstract void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException;
-  public abstract IndexInput getTvdStream();
-  public abstract IndexInput getTvfStream(); 
+  public abstract TermVectorsReader clone();
 }
