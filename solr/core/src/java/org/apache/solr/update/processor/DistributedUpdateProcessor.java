@@ -351,8 +351,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     distribDelete(cmd);
 
-    
-    if (returnVersions && rsp != null) {
+    // cmd.getIndexId == null when delete by query
+    if (returnVersions && rsp != null && cmd.getIndexedId() != null) {
       if (deleteResponse == null) {
         deleteResponse = new NamedList<String>();
         rsp.add("deletes",deleteResponse);
