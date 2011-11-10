@@ -20,7 +20,9 @@ package org.apache.lucene.index.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.util.Bits;
 
 public abstract class TermVectorsWriter implements Closeable {
   
@@ -31,6 +33,35 @@ public abstract class TermVectorsWriter implements Closeable {
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
   public abstract void finish(int numDocs) throws IOException;
+  
+  /** Merges in the stored fields from the readers in 
+   *  <code>mergeState</code>. The default implementation skips
+   *  over deleted documents, and uses XXX, XXX, and XXX
+   *  returning the number of documents that were written.
+   *  Implementations can override this method for more sophisticated
+   *  merging (bulk-byte copying, etc). */
+  // nocommit: test that I work
+  public int merge(MergeState mergeState) throws IOException {
+    int docCount = 0;
+    for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+      final int maxDoc = reader.reader.maxDoc();
+      final Bits liveDocs = reader.liveDocs;
+      for (int i = 0; i < maxDoc; i++) {
+        if (liveDocs != null && !liveDocs.get(i)) {
+          // skip deleted docs
+          continue;
+        }
+        // NOTE: it's very important to first assign to vectors then pass it to
+        // termVectorsWriter.addAllDocVectors; see LUCENE-1282
+        TermFreqVector[] vectors = reader.reader.getTermFreqVectors(i);
+        addAllDocVectors(vectors);
+        docCount++;
+        mergeState.checkAbort.work(300);
+      }
+    }
+    finish(docCount);
+    return docCount;
+  }
   
   // nocommit: this should be a sugar method only that consumes the normal api (once we have one)
   public abstract void addAllDocVectors(TermFreqVector[] vectors) throws IOException;
