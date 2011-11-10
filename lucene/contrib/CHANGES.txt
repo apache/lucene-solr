@@ -99,6 +99,11 @@ Changes in backwards compatibility policy
    
  * LUCENE-3558: Moved NRTManager & NRTManagerReopenThread into lucene core 
    o.a.l.search. (Simon Willnauer)
+   
+ * LUCENE-2564: WordListLoader is now flaged as @lucene.internal. All methods in
+   WordListLoader now return CharArraySet/Map and expect Reader instances for 
+   efficiency. Utilities to open Readers from Files, InputStreams or Java 
+   resources were added to IOUtils. (Simon Willnauer, Robert Muir)
 
 New Features
 

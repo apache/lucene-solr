@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -66,7 +67,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<String> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -75,7 +76,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
    * accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<String> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
@@ -87,13 +88,14 @@ public final class SmartChineseAnalyzer extends Analyzer {
       }
     }
 
-    static Set<String> loadDefaultStopWordSet() throws IOException {
+    static CharArraySet loadDefaultStopWordSet() throws IOException {
       InputStream stream = SmartChineseAnalyzer.class
           .getResourceAsStream(DEFAULT_STOPWORD_FILE);
       try {
         InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
         // make sure it is unmodifiable as we expose it in the outer class
-        return Collections.unmodifiableSet(WordlistLoader.getWordSet(reader, STOPWORD_FILE_COMMENT));
+        return CharArraySet.unmodifiableSet(WordlistLoader.getWordSet(reader,
+            STOPWORD_FILE_COMMENT, Version.LUCENE_CURRENT));
       } finally {
         stream.close();
       }

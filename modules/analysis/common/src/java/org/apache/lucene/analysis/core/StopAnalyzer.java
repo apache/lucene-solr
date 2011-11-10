@@ -57,8 +57,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
       "they", "this", "to", "was", "will", "with"
     );
     final CharArraySet stopSet = new CharArraySet(Version.LUCENE_CURRENT, 
-        stopWords.size(), false);
-    stopSet.addAll(stopWords);  
+        stopWords, false);
     ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet); 
   }
   
@@ -82,7 +81,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwordsFile File to load stop words from */
   public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwordsFile));
+    this(matchVersion, loadStopwordSet(stopwordsFile, matchVersion));
   }
 
   /** Builds an analyzer with the stop words from the given reader.
@@ -90,7 +89,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwords Reader to load stop words from */
   public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
 
   /**
