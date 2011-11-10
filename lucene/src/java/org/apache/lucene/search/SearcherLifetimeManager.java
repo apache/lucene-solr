@@ -47,8 +47,9 @@ import org.apache.lucene.util.IOUtils;
  * then record this searcher:
  *
  * <pre>
- *   // Record token into user's search results, eg as a
- *   // hidden HTML form field:
+ *   // Record the current searcher, and save the returend
+ *   // token into user's search results (eg as a  hidden
+ *   // HTML form field):
  *   long token = mgr.record(searcher);
  * </pre>
  *
@@ -57,9 +58,9 @@ import org.apache.lucene.util.IOUtils;
  * that you saved from the previous search and:
  *
  * <pre>
- *   // If possible, obtain same searcher version as last
+ *   // If possible, obtain the same searcher as the last
  *   // search:
- *   IndexSearcher searcher = mgr.acquire(version);
+ *   IndexSearcher searcher = mgr.acquire(token);
  *   if (searcher != null) {
  *     // Searcher is still here
  *     try {
@@ -80,7 +81,7 @@ import org.apache.lucene.util.IOUtils;
  * periodically prune old searchers:
  *
  * <pre>
- *   mgr.prune(new PruneByAge(600.0);
+ *   mgr.prune(new PruneByAge(600.0));
  * </pre>
  *
  * <p><b>NOTE</b>: keeping many searchers around means
