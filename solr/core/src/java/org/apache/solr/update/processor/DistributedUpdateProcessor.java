@@ -205,9 +205,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     System.out.println("leader? " + leaderForUpdate);
     if (forwardToLeader) {
-      // TODO: forward update to the leader\
+      // TODO: forward update to the leader
       System.out.println("forward to leader");
-      super.processAdd(cmd);
       return;
     }
 
