@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.search.cache.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
@@ -104,11 +103,13 @@ public class SortField {
   private String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-  private CachedArrayCreator<?> creator;
-  public Object missingValue = null; // used for 'sortMissingFirst/Last'
+  private FieldCache.Parser parser;
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
+
+  // Used for 'sortMissingFirst/Last'
+  public Object missingValue = null;
 
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.
@@ -141,10 +142,7 @@ public class SortField {
    *  by testing which numeric parser the parser subclasses.
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
-   *  
-   *  @deprecated (4.0) use EntryCreator version
    */
-  @Deprecated
   public SortField(String field, FieldCache.Parser parser) {
     this(field, parser, false);
   }
@@ -159,65 +157,27 @@ public class SortField {
    * @param reverse True if natural order should be reversed.
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
-   *  
-   *  @deprecated (4.0) use EntryCreator version
    */
-  @Deprecated
   public SortField(String field, FieldCache.Parser parser, boolean reverse) {
-    if (field == null) {
-      throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
-    } 
-    this.field = field;
-    this.reverse = reverse;
-    
-    if (parser instanceof FieldCache.IntParser) {
-      this.creator = new IntValuesCreator( field, (FieldCache.IntParser)parser );
-    }
-    else if (parser instanceof FieldCache.FloatParser) {
-      this.creator = new FloatValuesCreator( field, (FieldCache.FloatParser)parser );
-    }
-    else if (parser instanceof FieldCache.ShortParser) {
-      this.creator = new ShortValuesCreator( field, (FieldCache.ShortParser)parser );
-    }
-    else if (parser instanceof FieldCache.ByteParser) {
-      this.creator = new ByteValuesCreator( field, (FieldCache.ByteParser)parser );
-    }
-    else if (parser instanceof FieldCache.LongParser) {
-      this.creator = new LongValuesCreator( field, (FieldCache.LongParser)parser );
-    }
-    else if (parser instanceof FieldCache.DoubleParser) {
-      this.creator = new DoubleValuesCreator( field, (FieldCache.DoubleParser)parser );
-    }
-    else
+    if (parser instanceof FieldCache.IntParser) initFieldType(field, Type.INT);
+    else if (parser instanceof FieldCache.FloatParser) initFieldType(field, Type.FLOAT);
+    else if (parser instanceof FieldCache.ShortParser) initFieldType(field, Type.SHORT);
+    else if (parser instanceof FieldCache.ByteParser) initFieldType(field, Type.BYTE);
+    else if (parser instanceof FieldCache.LongParser) initFieldType(field, Type.LONG);
+    else if (parser instanceof FieldCache.DoubleParser) initFieldType(field, Type.DOUBLE);
+    else {
       throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache (got " + parser + ")");
-
-    this.type = this.creator.getSortType();
-  }
-  
-  /**
-   * Sort by a cached entry value
-   * @param creator
-   * @param reverse
-   */
-  public SortField( CachedArrayCreator<?> creator, boolean reverse ) 
-  {
-    this.field = creator.field;
-    this.reverse = reverse;
-    this.creator = creator;
-    this.type = creator.getSortType();
-  }
-  
-  public SortField setMissingValue( Object v )
-  {
-    missingValue = v;
-    if( missingValue != null ) {
-      if( this.creator == null ) {
-        throw new IllegalArgumentException( "Missing value only works for sort fields with a CachedArray" );
-      }
-
-      // Set the flag to get bits 
-      creator.setFlag( CachedArrayCreator.OPTION_CACHE_BITS );
     }
+
+    this.reverse = reverse;
+    this.parser = parser;
+  }
+  
+  public SortField setMissingValue(Object missingValue) {
+    if (type != Type.BYTE && type != Type.SHORT && type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
+      throw new IllegalArgumentException( "Missing value only works for numeric types" );
+    }
+    this.missingValue = missingValue;
     return this;
   }
 
@@ -246,22 +206,11 @@ public class SortField {
   private void initFieldType(String field, Type type) {
     this.type = type;
     if (field == null) {
-      if (type != Type.SCORE && type != Type.DOC)
+      if (type != Type.SCORE && type != Type.DOC) {
         throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
+      }
     } else {
       this.field = field;
-    }
-    
-    if( creator != null ) {
-      throw new IllegalStateException( "creator already exists: "+creator );
-    }
-    switch( type ) {
-    case BYTE:   creator = new ByteValuesCreator( field, null ); break;
-    case SHORT:  creator = new ShortValuesCreator( field, null ); break;
-    case INT:    creator = new IntValuesCreator( field, null ); break;
-    case LONG:   creator = new LongValuesCreator( field, null ); break;
-    case FLOAT:  creator = new FloatValuesCreator( field, null ); break;
-    case DOUBLE: creator = new DoubleValuesCreator( field, null ); break;
     }
   }
 
@@ -283,15 +232,9 @@ public class SortField {
   /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
    * May return <code>null</code> if no parser was specified. Sorting is using the default parser then.
    * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
-   * @deprecated (4.0) use getEntryCreator()
    */
-  @Deprecated
   public FieldCache.Parser getParser() {
-    return (creator==null) ? null : creator.getParser();
-  }
-
-  public CachedArrayCreator<?> getEntryCreator() {
-    return creator;
+    return parser;
   }
 
   /** Returns whether the sort should be reversed.
@@ -365,7 +308,6 @@ public class SortField {
         break;
     }
 
-    if (creator != null) buffer.append('(').append(creator).append(')');
     if (reverse) buffer.append('!');
 
     return buffer.toString();
@@ -385,7 +327,6 @@ public class SortField {
       && other.type == this.type
       && other.reverse == this.reverse
       && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))
-      && (other.creator == null ? this.creator == null : other.creator.equals(this.creator))
     );
   }
 
@@ -399,7 +340,6 @@ public class SortField {
     int hash = type.hashCode() ^ 0x346565dd + Boolean.valueOf(reverse).hashCode() ^ 0xaf5998bb;
     if (field != null) hash += field.hashCode()^0xff5685dd;
     if (comparatorSource != null) hash += comparatorSource.hashCode();
-    if (creator != null) hash += creator.hashCode()^0x3aaf56ff;
     return hash;
   }
 
@@ -448,27 +388,27 @@ public class SortField {
       if (useIndexValues) {
         return new FieldComparator.IntDocValuesComparator(numHits, field);
       } else {
-        return new FieldComparator.IntComparator(numHits, (IntValuesCreator)creator, (Integer) missingValue);
+        return new FieldComparator.IntComparator(numHits, field, parser, (Integer) missingValue);
       }
 
     case FLOAT:
       if (useIndexValues) {
         return new FieldComparator.FloatDocValuesComparator(numHits, field);
       } else {
-        return new FieldComparator.FloatComparator(numHits, (FloatValuesCreator) creator, (Float) missingValue);
+        return new FieldComparator.FloatComparator(numHits, field, parser, (Float) missingValue);
       }
 
     case LONG:
-      return new FieldComparator.LongComparator(numHits, (LongValuesCreator)creator, (Long)missingValue );
+      return new FieldComparator.LongComparator(numHits, field, parser, (Long) missingValue);
 
     case DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, (DoubleValuesCreator)creator, (Double)missingValue );
+      return new FieldComparator.DoubleComparator(numHits, field, parser, (Double) missingValue);
 
     case BYTE:
-      return new FieldComparator.ByteComparator(numHits, (ByteValuesCreator)creator, (Byte)missingValue );
+      return new FieldComparator.ByteComparator(numHits, field, parser, (Byte) missingValue);
 
     case SHORT:
-      return new FieldComparator.ShortComparator(numHits, (ShortValuesCreator)creator, (Short)missingValue );
+      return new FieldComparator.ShortComparator(numHits, field, parser, (Short) missingValue);
 
     case CUSTOM:
       assert comparatorSource != null;

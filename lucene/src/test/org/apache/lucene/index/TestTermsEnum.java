@@ -232,7 +232,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
 
     // NOTE: intentional insanity!!
-    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id");
+    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 

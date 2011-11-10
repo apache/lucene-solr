@@ -23,9 +23,8 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.cache.FloatValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.FloatValues;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -37,23 +36,28 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
  *
  */
 
-public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
+public class FloatFieldSource extends FieldCacheSource {
 
-  public FloatFieldSource(FloatValuesCreator creator) {
-    super(creator);
+  protected FieldCache.FloatParser parser;
+
+  public FloatFieldSource(String field) {
+    this(field, null);
   }
 
-  @Override
+  public FloatFieldSource(String field, FieldCache.FloatParser parser) {
+    super(field);
+    this.parser = parser;
+  }
+
   public String description() {
     return "float(" + field + ')';
   }
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FloatValues vals = cache.getFloats(readerContext.reader, field, creator);
-    final float[] arr = vals.values;
-    final Bits valid = vals.valid;
-    
+    final float[] arr = cache.getFloats(readerContext.reader, field, parser, true);
+    final Bits valid = cache.getDocsWithField(readerContext.reader, field);
+
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
@@ -91,4 +95,18 @@ public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
 
     };
   }
+
+  public boolean equals(Object o) {
+    if (o.getClass() !=  FloatFieldSource.class) return false;
+    FloatFieldSource other = (FloatFieldSource)o;
+    return super.equals(other)
+      && (this.parser==null ? other.parser==null :
+          this.parser.getClass() == other.parser.getClass());
+  }
+
+  public int hashCode() {
+    int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
+    h += super.hashCode();
+    return h;
+  };
 }

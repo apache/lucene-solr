@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,20 +30,8 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
-import org.apache.lucene.index.codecs.BlockTermsReader;
-import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.TermsIndexReaderBase;
-import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -317,7 +304,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             _TestUtil.nextInt(random, 2, 10));
                                             
 
-    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id");
+    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);

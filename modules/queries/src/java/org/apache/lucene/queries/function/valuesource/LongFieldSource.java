@@ -17,20 +17,18 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.cache.LongValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.LongValues;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
-
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
@@ -40,10 +38,17 @@ import java.util.Map;
  *
  */
 
-public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
+public class LongFieldSource extends FieldCacheSource {
 
-  public LongFieldSource(LongValuesCreator creator) {
-    super(creator);
+  protected FieldCache.LongParser parser;
+
+  public LongFieldSource(String field) {
+    this(field, null);
+  }
+
+  public LongFieldSource(String field, FieldCache.LongParser parser) {
+    super(field);
+    this.parser = parser;
   }
 
   @Override
@@ -61,9 +66,8 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final LongValues vals = cache.getLongs(readerContext.reader, field, creator);
-    final long[] arr = vals.values;
-    final Bits valid = vals.valid;
+    final long[] arr = cache.getLongs(readerContext.reader, field, parser, true);
+    final Bits valid = cache.getDocsWithField(readerContext.reader, field);
     
     return new LongDocValues(this) {
       @Override
@@ -141,4 +145,17 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
     return new MutableValueLong();  
   }
 
+  public boolean equals(Object o) {
+    if (o.getClass() != this.getClass()) return false;
+    LongFieldSource other = (LongFieldSource) o;
+    return super.equals(other)
+      && (this.parser == null ? other.parser == null :
+          this.parser.getClass() == other.parser.getClass());
+  }
+
+  public int hashCode() {
+    int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
+    h += super.hashCode();
+    return h;
+  }
 }

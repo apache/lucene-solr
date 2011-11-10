@@ -134,7 +134,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getBytes(IndexReader,String)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getBytes(IndexReader,String,boolean)}. This works with all
    * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -143,7 +143,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getBytes(IndexReader,String,FieldCache.ByteParser)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getBytes(IndexReader,String,FieldCache.ByteParser,boolean)}. This works with all
    * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -172,7 +172,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final byte[] values = FieldCache.DEFAULT.getBytes(context.reader, field, (FieldCache.ByteParser) parser);
+        final byte[] values = FieldCache.DEFAULT.getBytes(context.reader, field, (FieldCache.ByteParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
@@ -184,7 +184,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getShorts(IndexReader,String)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getShorts(IndexReader,String,boolean)}. This works with all
    * short fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -193,7 +193,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getShorts(IndexReader,String,FieldCache.ShortParser)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getShorts(IndexReader,String,FieldCache.ShortParser,boolean)}. This works with all
    * short fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -222,7 +222,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final short[] values = FieldCache.DEFAULT.getShorts(context.reader, field, (FieldCache.ShortParser) parser);
+        final short[] values = FieldCache.DEFAULT.getShorts(context.reader, field, (FieldCache.ShortParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
@@ -234,7 +234,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getInts(IndexReader,String)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getInts(IndexReader,String,boolean)}. This works with all
    * int fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -243,7 +243,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getInts(IndexReader,String,FieldCache.IntParser)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getInts(IndexReader,String,FieldCache.IntParser,boolean)}. This works with all
    * int fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -272,7 +272,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final int[] values = FieldCache.DEFAULT.getInts(context.reader, field, (FieldCache.IntParser) parser);
+        final int[] values = FieldCache.DEFAULT.getInts(context.reader, field, (FieldCache.IntParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
@@ -284,7 +284,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getLongs(IndexReader,String)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getLongs(IndexReader,String,boolean)}. This works with all
    * long fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -293,7 +293,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getLongs(IndexReader,String,FieldCache.LongParser)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getLongs(IndexReader,String,FieldCache.LongParser,boolean)}. This works with all
    * long fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -322,7 +322,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final long[] values = FieldCache.DEFAULT.getLongs(context.reader, field, (FieldCache.LongParser) parser);
+        final long[] values = FieldCache.DEFAULT.getLongs(context.reader, field, (FieldCache.LongParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
@@ -334,7 +334,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getFloats(IndexReader,String)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getFloats(IndexReader,String,boolean)}. This works with all
    * float fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -343,7 +343,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getFloats(IndexReader,String,FieldCache.FloatParser)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getFloats(IndexReader,String,FieldCache.FloatParser,boolean)}. This works with all
    * float fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -376,7 +376,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final float[] values = FieldCache.DEFAULT.getFloats(context.reader, field, (FieldCache.FloatParser) parser);
+        final float[] values = FieldCache.DEFAULT.getFloats(context.reader, field, (FieldCache.FloatParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
           boolean matchDoc(int doc) {
@@ -388,7 +388,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getDoubles(IndexReader,String)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getDoubles(IndexReader,String,boolean)}. This works with all
    * double fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -397,7 +397,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
-   * Creates a numeric range filter using {@link FieldCache#getDoubles(IndexReader,String,FieldCache.DoubleParser)}. This works with all
+   * Creates a numeric range filter using {@link FieldCache#getDoubles(IndexReader,String,FieldCache.DoubleParser,boolean)}. This works with all
    * double fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -430,7 +430,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final double[] values = FieldCache.DEFAULT.getDoubles(context.reader, field, (FieldCache.DoubleParser) parser);
+        final double[] values = FieldCache.DEFAULT.getDoubles(context.reader, field, (FieldCache.DoubleParser) parser, false);
         // ignore deleted docs if range doesn't contain 0
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override

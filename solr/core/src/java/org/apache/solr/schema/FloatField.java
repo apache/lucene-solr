@@ -20,8 +20,6 @@ package org.apache.solr.schema;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.cache.CachedArrayCreator;
-import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.solr.search.QParser;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.response.TextResponseWriter;
@@ -46,7 +44,7 @@ public class FloatField extends FieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new FloatFieldSource( new FloatValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
+    return new FloatFieldSource(field.name);
   }
 
   @Override

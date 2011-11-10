@@ -1141,7 +1141,7 @@ public class TestIndexReader extends LuceneTestCase
 
     // Open reader
     IndexReader r = getOnlySegmentReader(IndexReader.open(dir, false));
-    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    final int[] ints = FieldCache.DEFAULT.getInts(r, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
@@ -1149,7 +1149,7 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader r2 = (IndexReader) r.clone();
     r.close();
     assertTrue(r2 != r);
-    final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number");
+    final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number", false);
     r2.close();
 
     assertEquals(1, ints2.length);
@@ -1177,7 +1177,7 @@ public class TestIndexReader extends LuceneTestCase
     // Open reader1
     IndexReader r = IndexReader.open(dir, false);
     IndexReader r1 = getOnlySegmentReader(r);
-    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
@@ -1190,7 +1190,7 @@ public class TestIndexReader extends LuceneTestCase
     assertNotNull(r2);
     r.close();
     IndexReader sub0 = r2.getSequentialSubReaders()[0];
-    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number");
+    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
 

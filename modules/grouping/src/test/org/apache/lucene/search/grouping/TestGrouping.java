@@ -705,7 +705,7 @@ public class TestGrouping extends LuceneTestCase {
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id");
+      final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
       IndexReader rBlocks = null;
       Directory dirBlocks = null;
 
@@ -733,7 +733,7 @@ public class TestGrouping extends LuceneTestCase {
         dirBlocks = newDirectory();
         rBlocks = getDocBlockReader(dirBlocks, groupDocs);
         final Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
-        final int[] docIDToIDBlocks = FieldCache.DEFAULT.getInts(rBlocks, "id");
+        final int[] docIDToIDBlocks = FieldCache.DEFAULT.getInts(rBlocks, "id", false);
 
         final IndexSearcher sBlocks = newSearcher(rBlocks);
         final ShardState shardsBlocks = new ShardState(sBlocks);

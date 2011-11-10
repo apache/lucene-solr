@@ -1279,7 +1279,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     IndexReader r = IndexReader.open(dir, false);
     assertTrue(r instanceof DirectoryReader);
     IndexReader r1 = getOnlySegmentReader(r);
-    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
@@ -1299,7 +1299,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     r.close();
     assertTrue(((DirectoryReader) r2).readOnly);
     IndexReader[] subs = r2.getSequentialSubReaders();
-    final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number");
+    final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number", false);
     r2.close();
 
     assertTrue(((SegmentReader) subs[0]).readOnly);

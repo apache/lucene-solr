@@ -17,28 +17,42 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.cache.*;
-import org.apache.lucene.search.cache.CachedArray.*;
-import org.apache.lucene.util.FieldCacheSanityChecker;
-
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FieldCacheSanityChecker;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.packed.GrowableWriter;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
  * A WeakHashMap is used for storage.
  *
  * <p>Created: May 19, 2004 4:40:36 PM
- * 
- * @lucene.internal -- this is now public so that the tests can use reflection
- * to call methods.  It will likely be removed without (much) notice.
- * 
+ *
  * @since   lucene 1.4
  */
-public class FieldCacheImpl implements FieldCache {  // Made Public so that 
+class FieldCacheImpl implements FieldCache {
 	
   private Map<Class<?>,Cache> caches;
   FieldCacheImpl() {
@@ -46,17 +60,18 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   }
   private synchronized void init() {
     caches = new HashMap<Class<?>,Cache>(9);
-    caches.put(Byte.TYPE, new Cache<ByteValues>(this));
-    caches.put(Short.TYPE, new Cache<ShortValues>(this));
-    caches.put(Integer.TYPE, new Cache<IntValues>(this));
-    caches.put(Float.TYPE, new Cache<FloatValues>(this));
-    caches.put(Long.TYPE, new Cache<LongValues>(this));
-    caches.put(Double.TYPE, new Cache<DoubleValues>(this));
-    caches.put(DocTermsIndex.class, new Cache<DocTermsIndex>(this));
-    caches.put(DocTerms.class, new Cache<DocTerms>(this));
-    caches.put(DocTermOrds.class, new Cache<DocTermOrds>(this));
+    caches.put(Byte.TYPE, new ByteCache(this));
+    caches.put(Short.TYPE, new ShortCache(this));
+    caches.put(Integer.TYPE, new IntCache(this));
+    caches.put(Float.TYPE, new FloatCache(this));
+    caches.put(Long.TYPE, new LongCache(this));
+    caches.put(Double.TYPE, new DoubleCache(this));
+    caches.put(DocTerms.class, new DocTermsCache(this));
+    caches.put(DocTermsIndex.class, new DocTermsIndexCache(this));
+    caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
+    caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
   }
-  
+
   public synchronized void purgeAllCaches() {
     init();
   }
@@ -70,15 +85,17 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   public synchronized CacheEntry[] getCacheEntries() {
     List<CacheEntry> result = new ArrayList<CacheEntry>(17);
     for(final Map.Entry<Class<?>,Cache> cacheEntry: caches.entrySet()) {
-      final Cache<?> cache = cacheEntry.getValue();
+      final Cache cache = cacheEntry.getValue();
       final Class<?> cacheType = cacheEntry.getKey();
       synchronized(cache.readerCache) {
-        for( Object readerKey : cache.readerCache.keySet() ) {
-          Map<?, Object> innerCache = cache.readerCache.get(readerKey);
-          for (final Map.Entry<?, Object> mapEntry : innerCache.entrySet()) {
-            Entry entry = (Entry)mapEntry.getKey();
+        for (final Map.Entry<Object,Map<Entry, Object>> readerCacheEntry : cache.readerCache.entrySet()) {
+          final Object readerKey = readerCacheEntry.getKey();
+          if (readerKey == null) continue;
+          final Map<Entry, Object> innerCache = readerCacheEntry.getValue();
+          for (final Map.Entry<Entry, Object> mapEntry : innerCache.entrySet()) {
+            Entry entry = mapEntry.getKey();
             result.add(new CacheEntryImpl(readerKey, entry.field,
-                                          cacheType, entry.creator,
+                                          cacheType, entry.custom,
                                           mapEntry.getValue()));
           }
         }
@@ -91,11 +108,11 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     private final Object readerKey;
     private final String fieldName;
     private final Class<?> cacheType;
-    private final EntryCreator custom;
+    private final Object custom;
     private final Object value;
     CacheEntryImpl(Object readerKey, String fieldName,
                    Class<?> cacheType,
-                   EntryCreator custom,
+                   Object custom,
                    Object value) {
         this.readerKey = readerKey;
         this.fieldName = fieldName;
@@ -121,30 +138,37 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     public Object getValue() { return value; }
   }
 
+  /**
+   * Hack: When thrown from a Parser (NUMERIC_UTILS_* ones), this stops
+   * processing terms and returns the current FieldCache
+   * array.
+   */
+  static final class StopFillCacheException extends RuntimeException {
+  }
+
   final static IndexReader.ReaderFinishedListener purgeReader = new IndexReader.ReaderFinishedListener() {
-    @Override
+    // @Override -- not until Java 1.6
     public void finished(IndexReader reader) {
       FieldCache.DEFAULT.purge(reader);
     }
   };
 
   /** Expert: Internal cache. */
-  final static class Cache<T> {
+  abstract static class Cache {
     Cache() {
       this.wrapper = null;
     }
 
-    Cache(FieldCache wrapper) {
+    Cache(FieldCacheImpl wrapper) {
       this.wrapper = wrapper;
     }
 
-    final FieldCache wrapper;
+    final FieldCacheImpl wrapper;
 
-    final Map<Object,Map<Entry<T>,Object>> readerCache = new WeakHashMap<Object,Map<Entry<T>,Object>>();
-
-    protected Object createValue(IndexReader reader, Entry entryKey) throws IOException {
-      return entryKey.creator.create( reader );
-    }
+    final Map<Object,Map<Entry,Object>> readerCache = new WeakHashMap<Object,Map<Entry,Object>>();
+    
+    protected abstract Object createValue(IndexReader reader, Entry key, boolean setDocsWithField)
+        throws IOException;
 
     /** Remove this reader from the cache, if present. */
     public void purge(IndexReader r) {
@@ -154,16 +178,36 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
       }
     }
 
-    @SuppressWarnings("unchecked")
-    public Object get(IndexReader reader, Entry<T> key) throws IOException {
-      Map<Entry<T>,Object> innerCache;
+    /** Sets the key to the value for the provided reader;
+     *  if the key is already set then this doesn't change it. */
+    public void put(IndexReader reader, Entry key, Object value) {
+      final Object readerKey = reader.getCoreCacheKey();
+      synchronized (readerCache) {
+        Map<Entry,Object> innerCache = readerCache.get(readerKey);
+        if (innerCache == null) {
+          // First time this reader is using FieldCache
+          innerCache = new HashMap<Entry,Object>();
+          readerCache.put(readerKey, innerCache);
+          reader.addReaderFinishedListener(purgeReader);
+        }
+        if (innerCache.get(key) == null) {
+          innerCache.put(key, value);
+        } else {
+          // Another thread beat us to it; leave the current
+          // value
+        }
+      }
+    }
+
+    public Object get(IndexReader reader, Entry key, boolean setDocsWithField) throws IOException {
+      Map<Entry,Object> innerCache;
       Object value;
       final Object readerKey = reader.getCoreCacheKey();
       synchronized (readerCache) {
         innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
           // First time this reader is using FieldCache
-          innerCache = new HashMap<Entry<T>,Object>();
+          innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
           reader.addReaderFinishedListener(purgeReader);
           value = null;
@@ -179,7 +223,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
         synchronized (value) {
           CreationPlaceholder progress = (CreationPlaceholder) value;
           if (progress.value == null) {
-            progress.value = createValue(reader, key);
+            progress.value = createValue(reader, key, setDocsWithField);
             synchronized (readerCache) {
               innerCache.put(key, progress.value);
             }
@@ -187,7 +231,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
             // Only check if key.custom (the parser) is
             // non-null; else, we check twice for a single
             // call to FieldCache.getXXX
-            if (key.creator != null && wrapper != null) {
+            if (key.custom != null && wrapper != null) {
               final PrintStream infoStream = wrapper.getInfoStream();
               if (infoStream != null) {
                 printNewInsanity(infoStream, progress.value);
@@ -196,11 +240,6 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
           }
           return progress.value;
         }
-      }
-      
-      // Validate new entries
-      if( key.creator.shouldValidate() ) {
-        key.creator.validate( (T)value, reader);
       }
       return value;
     }
@@ -224,14 +263,14 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   }
 
   /** Expert: Every composite-key in the internal cache is of this type. */
-  static class Entry<T> {
+  static class Entry {
     final String field;        // which Fieldable
-    final EntryCreator<T> creator;       // which custom comparator or parser
+    final Object custom;       // which custom comparator or parser
 
     /** Creates one of these objects for a custom comparator/parser. */
-    Entry (String field, EntryCreator<T> custom) {
+    Entry (String field, Object custom) {
       this.field = field;
-      this.creator = custom;
+      this.custom = custom;
     }
 
     /** Two of these are equal iff they reference the same field and type. */
@@ -240,9 +279,9 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
       if (o instanceof Entry) {
         Entry other = (Entry) o;
         if (other.field.equals(field)) {
-          if (other.creator == null) {
-            if (creator == null) return true;
-          } else if (other.creator.equals (creator)) {
+          if (other.custom == null) {
+            if (custom == null) return true;
+          } else if (other.custom.equals (custom)) {
             return true;
           }
         }
@@ -253,134 +292,1012 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     /** Composes a hashcode based on the field and type. */
     @Override
     public int hashCode() {
-      return field.hashCode() ^ (creator==null ? 0 : creator.hashCode());
+      return field.hashCode() ^ (custom==null ? 0 : custom.hashCode());
     }
   }
 
   // inherit javadocs
-  public byte[] getBytes (IndexReader reader, String field) throws IOException {
-    return getBytes(reader, field, new ByteValuesCreator(field, null)).values;
+  public byte[] getBytes (IndexReader reader, String field, boolean setDocsWithField) throws IOException {
+    return getBytes(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public byte[] getBytes(IndexReader reader, String field, ByteParser parser) throws IOException {
-    return getBytes(reader, field, new ByteValuesCreator(field, parser)).values;
+  public byte[] getBytes(IndexReader reader, String field, ByteParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (byte[]) caches.get(Byte.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  @SuppressWarnings("unchecked")
-  public ByteValues getBytes(IndexReader reader, String field, EntryCreator<ByteValues> creator ) throws IOException 
-  {
-    return (ByteValues)caches.get(Byte.TYPE).get(reader, new Entry(field, creator));
+  static final class ByteCache extends Cache {
+    ByteCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      String field = entryKey.field;
+      ByteParser parser = (ByteParser) entryKey.custom;
+      if (parser == null) {
+        return wrapper.getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER, setDocsWithField);
+      }
+      final int maxDoc = reader.maxDoc();
+      final byte[] retArray = new byte[maxDoc];
+      Terms terms = MultiFields.getTerms(reader, field);
+      FixedBitSet docsWithField = null;
+      if (terms != null) {
+        if (setDocsWithField) {
+          final int termsDocCount = terms.getDocCount();
+          assert termsDocCount <= maxDoc;
+          if (termsDocCount == maxDoc) {
+            // Fast case: all docs have this field:
+            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            setDocsWithField = false;
+          }
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        try {
+          while(true) {
+            final BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            final byte termval = parser.parseByte(term);
+            docs = termsEnum.docs(null, docs);
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              }
+              retArray[docID] = termval;
+              if (setDocsWithField) {
+                if (docsWithField == null) {
+                  // Lazy init
+                  docsWithField = new FixedBitSet(maxDoc);
+                }
+                docsWithField.set(docID);
+              }
+            }
+          }
+        } catch (StopFillCacheException stop) {
+        }
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      return retArray;
+    }
   }
   
   // inherit javadocs
-  public short[] getShorts (IndexReader reader, String field) throws IOException {
-    return getShorts(reader, field, new ShortValuesCreator(field,null)).values;
+  public short[] getShorts (IndexReader reader, String field, boolean setDocsWithField) throws IOException {
+    return getShorts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public short[] getShorts(IndexReader reader, String field, ShortParser parser) throws IOException {
-    return getShorts(reader, field, new ShortValuesCreator(field,parser)).values;
+  public short[] getShorts(IndexReader reader, String field, ShortParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (short[]) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  @SuppressWarnings("unchecked")
-  public ShortValues getShorts(IndexReader reader, String field, EntryCreator<ShortValues> creator ) throws IOException 
-  {
-    return (ShortValues)caches.get(Short.TYPE).get(reader, new Entry(field, creator));
+  static final class ShortCache extends Cache {
+    ShortCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      String field = entryKey.field;
+      ShortParser parser = (ShortParser) entryKey.custom;
+      if (parser == null) {
+        return wrapper.getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER, setDocsWithField);
+      }
+      final int maxDoc = reader.maxDoc();
+      final short[] retArray = new short[maxDoc];
+      Terms terms = MultiFields.getTerms(reader, field);
+      FixedBitSet docsWithField = null;
+      if (terms != null) {
+        if (setDocsWithField) {
+          final int termsDocCount = terms.getDocCount();
+          assert termsDocCount <= maxDoc;
+          if (termsDocCount == maxDoc) {
+            // Fast case: all docs have this field:
+            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            setDocsWithField = false;
+          }
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        try {
+          while(true) {
+            final BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            final short termval = parser.parseShort(term);
+            docs = termsEnum.docs(null, docs);
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              }
+              retArray[docID] = termval;
+              if (setDocsWithField) {
+                if (docsWithField == null) {
+                  // Lazy init
+                  docsWithField = new FixedBitSet(maxDoc);
+                }
+                docsWithField.set(docID);
+              }
+            }
+          }
+        } catch (StopFillCacheException stop) {
+        }
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      return retArray;
+    }
+  }
+
+  // null Bits means no docs matched
+  void setDocsWithField(IndexReader reader, String field, Bits docsWithField) {
+    final int maxDoc = reader.maxDoc();
+    final Bits bits;
+    if (docsWithField == null) {
+      bits = new Bits.MatchNoBits(maxDoc);
+    } else if (docsWithField instanceof FixedBitSet) {
+      final int numSet = ((FixedBitSet) docsWithField).cardinality();
+      if (numSet >= maxDoc) {
+        // The cardinality of the BitSet is maxDoc if all documents have a value.
+        assert numSet == maxDoc;
+        bits = new Bits.MatchAllBits(maxDoc);
+      } else {
+        bits = docsWithField;
+      }
+    } else {
+      bits = docsWithField;
+    }
+    caches.get(DocsWithFieldCache.class).put(reader, new Entry(field, null), bits);
   }
   
   // inherit javadocs
-  public int[] getInts (IndexReader reader, String field) throws IOException {
-    return getInts(reader, field, new IntValuesCreator( field, null )).values;
+  public int[] getInts (IndexReader reader, String field, boolean setDocsWithField) throws IOException {
+    return getInts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public int[] getInts(IndexReader reader, String field, IntParser parser) throws IOException {
-    return getInts(reader, field, new IntValuesCreator( field, parser )).values;
+  public int[] getInts(IndexReader reader, String field, IntParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (int[]) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  @SuppressWarnings("unchecked")
-  public IntValues getInts(IndexReader reader, String field, EntryCreator<IntValues> creator ) throws IOException {
-    return (IntValues)caches.get(Integer.TYPE).get(reader, new Entry(field, creator));
+  static final class IntCache extends Cache {
+    IntCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      String field = entryKey.field;
+      IntParser parser = (IntParser) entryKey.custom;
+      if (parser == null) {
+        try {
+          return wrapper.getInts(reader, field, DEFAULT_INT_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getInts(reader, field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
+        }
+      }
+      final int maxDoc = reader.maxDoc();
+      int[] retArray = null;
+
+      Terms terms = MultiFields.getTerms(reader, field);
+      FixedBitSet docsWithField = null;
+      if (terms != null) {
+        if (setDocsWithField) {
+          final int termsDocCount = terms.getDocCount();
+          assert termsDocCount <= maxDoc;
+          if (termsDocCount == maxDoc) {
+            // Fast case: all docs have this field:
+            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            setDocsWithField = false;
+          }
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        try {
+          while(true) {
+            final BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            final int termval = parser.parseInt(term);
+            if (retArray == null) {
+              // late init so numeric fields don't double allocate
+              retArray = new int[maxDoc];
+            }
+
+            docs = termsEnum.docs(null, docs);
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              }
+              retArray[docID] = termval;
+              if (setDocsWithField) {
+                if (docsWithField == null) {
+                  // Lazy init
+                  docsWithField = new FixedBitSet(maxDoc);
+                }
+                docsWithField.set(docID);
+              }
+            }
+          }
+        } catch (StopFillCacheException stop) {
+        }
+      }
+
+      if (retArray == null) {
+        // no values
+        retArray = new int[maxDoc];
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      return retArray;
+    }
+  }
+  
+  public Bits getDocsWithField(IndexReader reader, String field)
+      throws IOException {
+    return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null), false);
+  }
+
+  static final class DocsWithFieldCache extends Cache {
+    DocsWithFieldCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+    
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+    throws IOException {
+      final String field = entryKey.field;      
+      FixedBitSet res = null;
+      Terms terms = MultiFields.getTerms(reader, field);
+      final int maxDoc = reader.maxDoc();
+      if (terms != null) {
+        final int termsDocCount = terms.getDocCount();
+        assert termsDocCount <= maxDoc;
+        if (termsDocCount == maxDoc) {
+          // Fast case: all docs have this field:
+          return new Bits.MatchAllBits(maxDoc);
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          if (res == null) {
+            // lazy init
+            res = new FixedBitSet(maxDoc);
+          }
+
+          docs = termsEnum.docs(null, docs);
+          // TODO: use bulk API
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
+              break;
+            }
+            res.set(docID);
+          }
+        }
+      }
+      if (res == null) {
+        return new Bits.MatchNoBits(maxDoc);
+      }
+      final int numSet = res.cardinality();
+      if (numSet >= maxDoc) {
+        // The cardinality of the BitSet is maxDoc if all documents have a value.
+        assert numSet == maxDoc;
+        return new Bits.MatchAllBits(maxDoc);
+      }
+      return res;
+    }
+  }
+
+  // inherit javadocs
+  public float[] getFloats (IndexReader reader, String field, boolean setDocsWithField)
+    throws IOException {
+    return getFloats(reader, field, null, setDocsWithField);
+  }
+
+  // inherit javadocs
+  public float[] getFloats(IndexReader reader, String field, FloatParser parser, boolean setDocsWithField)
+    throws IOException {
+
+    return (float[]) caches.get(Float.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
+
+  static final class FloatCache extends Cache {
+    FloatCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      String field = entryKey.field;
+      FloatParser parser = (FloatParser) entryKey.custom;
+      if (parser == null) {
+        try {
+          return wrapper.getFloats(reader, field, DEFAULT_FLOAT_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
+        }
+      }
+      final int maxDoc = reader.maxDoc();
+      float[] retArray = null;
+
+      Terms terms = MultiFields.getTerms(reader, field);
+      FixedBitSet docsWithField = null;
+      if (terms != null) {
+        if (setDocsWithField) {
+          final int termsDocCount = terms.getDocCount();
+          assert termsDocCount <= maxDoc;
+          if (termsDocCount == maxDoc) {
+            // Fast case: all docs have this field:
+            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            setDocsWithField = false;
+          }
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        try {
+          while(true) {
+            final BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            final float termval = parser.parseFloat(term);
+            if (retArray == null) {
+              // late init so numeric fields don't double allocate
+              retArray = new float[maxDoc];
+            }
+            
+            docs = termsEnum.docs(null, docs);
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              }
+              retArray[docID] = termval;
+              if (setDocsWithField) {
+                if (docsWithField == null) {
+                  // Lazy init
+                  docsWithField = new FixedBitSet(maxDoc);
+                }
+                docsWithField.set(docID);
+              }
+            }
+          }
+        } catch (StopFillCacheException stop) {
+        }
+      }
+
+      if (retArray == null) {
+        // no values
+        retArray = new float[maxDoc];
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      return retArray;
+    }
+  }
+
+
+  public long[] getLongs(IndexReader reader, String field, boolean setDocsWithField) throws IOException {
+    return getLongs(reader, field, null, setDocsWithField);
   }
   
   // inherit javadocs
-  public float[] getFloats (IndexReader reader, String field) throws IOException {
-    return getFloats(reader, field, new FloatValuesCreator( field, null ) ).values;
+  public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (long[]) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
+
+  static final class LongCache extends Cache {
+    LongCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      String field = entryKey.field;
+      FieldCache.LongParser parser = (FieldCache.LongParser) entryKey.custom;
+      if (parser == null) {
+        try {
+          return wrapper.getLongs(reader, field, DEFAULT_LONG_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
+        }
+      }
+      final int maxDoc = reader.maxDoc();
+      long[] retArray = null;
+
+      Terms terms = MultiFields.getTerms(reader, field);
+      FixedBitSet docsWithField = null;
+      if (terms != null) {
+        if (setDocsWithField) {
+          final int termsDocCount = terms.getDocCount();
+          assert termsDocCount <= maxDoc;
+          if (termsDocCount == maxDoc) {
+            // Fast case: all docs have this field:
+            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            setDocsWithField = false;
+          }
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        try {
+          while(true) {
+            final BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            final long termval = parser.parseLong(term);
+            if (retArray == null) {
+              // late init so numeric fields don't double allocate
+              retArray = new long[maxDoc];
+            }
+
+            docs = termsEnum.docs(null, docs);
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              }
+              retArray[docID] = termval;
+              if (setDocsWithField) {
+                if (docsWithField == null) {
+                  // Lazy init
+                  docsWithField = new FixedBitSet(maxDoc);
+                }
+                docsWithField.set(docID);
+              }
+            }
+          }
+        } catch (StopFillCacheException stop) {
+        }
+      }
+
+      if (retArray == null) {
+        // no values
+        retArray = new long[maxDoc];
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      return retArray;
+    }
   }
 
   // inherit javadocs
-  public float[] getFloats(IndexReader reader, String field, FloatParser parser) throws IOException {
-    return getFloats(reader, field, new FloatValuesCreator( field, parser ) ).values;
-  }
-
-  @SuppressWarnings("unchecked")
-  public FloatValues getFloats(IndexReader reader, String field, EntryCreator<FloatValues> creator ) throws IOException {
-    return (FloatValues)caches.get(Float.TYPE).get(reader, new Entry(field, creator));
-  }
-
-  public long[] getLongs(IndexReader reader, String field) throws IOException {
-    return getLongs(reader, field, new LongValuesCreator( field, null ) ).values;
+  public double[] getDoubles(IndexReader reader, String field, boolean setDocsWithField)
+    throws IOException {
+    return getDoubles(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser) throws IOException {
-    return getLongs(reader, field, new LongValuesCreator( field, parser ) ).values;
+  public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (double[]) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  @SuppressWarnings("unchecked")
-  public LongValues getLongs(IndexReader reader, String field, EntryCreator<LongValues> creator ) throws IOException {
-    return (LongValues)caches.get(Long.TYPE).get(reader, new Entry(field, creator));
-  }
-  
-  // inherit javadocs
-  public double[] getDoubles(IndexReader reader, String field) throws IOException {
-    return getDoubles(reader, field, new DoubleValuesCreator( field, null ) ).values;
+  static final class DoubleCache extends Cache {
+    DoubleCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      String field = entryKey.field;
+      FieldCache.DoubleParser parser = (FieldCache.DoubleParser) entryKey.custom;
+      if (parser == null) {
+        try {
+          return wrapper.getDoubles(reader, field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
+        }
+      }
+      final int maxDoc = reader.maxDoc();
+      double[] retArray = null;
+
+      Terms terms = MultiFields.getTerms(reader, field);
+      FixedBitSet docsWithField = null;
+      if (terms != null) {
+        if (setDocsWithField) {
+          final int termsDocCount = terms.getDocCount();
+          assert termsDocCount <= maxDoc;
+          if (termsDocCount == maxDoc) {
+            // Fast case: all docs have this field:
+            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            setDocsWithField = false;
+          }
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        try {
+          while(true) {
+            final BytesRef term = termsEnum.next();
+            if (term == null) {
+              break;
+            }
+            final double termval = parser.parseDouble(term);
+            if (retArray == null) {
+              // late init so numeric fields don't double allocate
+              retArray = new double[maxDoc];
+            }
+
+            docs = termsEnum.docs(null, docs);
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              }
+              retArray[docID] = termval;
+              if (setDocsWithField) {
+                if (docsWithField == null) {
+                  // Lazy init
+                  docsWithField = new FixedBitSet(maxDoc);
+                }
+                docsWithField.set(docID);
+              }
+            }
+          }
+        } catch (StopFillCacheException stop) {
+        }
+      }
+      if (retArray == null) { // no values
+        retArray = new double[maxDoc];
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      return retArray;
+    }
   }
 
-  // inherit javadocs
-  public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser) throws IOException {
-    return getDoubles(reader, field, new DoubleValuesCreator( field, parser ) ).values;
+  public static class DocTermsIndexImpl extends DocTermsIndex {
+    private final PagedBytes.Reader bytes;
+    private final PackedInts.Reader termOrdToBytesOffset;
+    private final PackedInts.Reader docToTermOrd;
+    private final int numOrd;
+
+    public DocTermsIndexImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
+      this.bytes = bytes;
+      this.docToTermOrd = docToTermOrd;
+      this.termOrdToBytesOffset = termOrdToBytesOffset;
+      this.numOrd = numOrd;
+    }
+
+    @Override
+    public PackedInts.Reader getDocToOrd() {
+      return docToTermOrd;
+    }
+
+    @Override
+    public int numOrd() {
+      return numOrd;
+    }
+
+    @Override
+    public int getOrd(int docID) {
+      return (int) docToTermOrd.get(docID);
+    }
+
+    @Override
+    public int size() {
+      return docToTermOrd.size();
+    }
+
+    @Override
+    public BytesRef lookup(int ord, BytesRef ret) {
+      return bytes.fill(ret, termOrdToBytesOffset.get(ord));
+    }
+
+    @Override
+    public TermsEnum getTermsEnum() {
+      return this.new DocTermsIndexEnum();
+    }
+
+    class DocTermsIndexEnum extends TermsEnum {
+      int currentOrd;
+      int currentBlockNumber;
+      int end;  // end position in the current block
+      final byte[][] blocks;
+      final int[] blockEnds;
+
+      final BytesRef term = new BytesRef();
+
+      public DocTermsIndexEnum() {
+        currentOrd = 0;
+        currentBlockNumber = 0;
+        blocks = bytes.getBlocks();
+        blockEnds = bytes.getBlockEnds();
+        currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get(0));
+        end = blockEnds[currentBlockNumber];
+      }
+
+      @Override
+      public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+        int low = 1;
+        int high = numOrd-1;
+        
+        while (low <= high) {
+          int mid = (low + high) >>> 1;
+          seekExact(mid);
+          int cmp = term.compareTo(text);
+
+          if (cmp < 0)
+            low = mid + 1;
+          else if (cmp > 0)
+            high = mid - 1;
+          else
+            return SeekStatus.FOUND; // key found
+        }
+        
+        if (low == numOrd) {
+          return SeekStatus.END;
+        } else {
+          seekExact(low);
+          return SeekStatus.NOT_FOUND;
+        }
+      }
+
+      public void seekExact(long ord) throws IOException {
+        assert(ord >= 0 && ord <= numOrd);
+        // TODO: if gap is small, could iterate from current position?  Or let user decide that?
+        currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get((int)ord));
+        end = blockEnds[currentBlockNumber];
+        currentOrd = (int)ord;
+      }
+
+      @Override
+      public BytesRef next() throws IOException {
+        int start = term.offset + term.length;
+        if (start >= end) {
+          // switch byte blocks
+          if (currentBlockNumber +1 >= blocks.length) {
+            return null;
+          }
+          currentBlockNumber++;
+          term.bytes = blocks[currentBlockNumber];
+          end = blockEnds[currentBlockNumber];
+          start = 0;
+          if (end<=0) return null;  // special case of empty last array
+        }
+
+        currentOrd++;
+
+        byte[] block = term.bytes;
+        if ((block[start] & 128) == 0) {
+          term.length = block[start];
+          term.offset = start+1;
+        } else {
+          term.length = (((block[start] & 0x7f)) << 8) | (block[1+start] & 0xff);
+          term.offset = start+2;
+        }
+
+        return term;
+      }
+
+      @Override
+      public BytesRef term() throws IOException {
+        return term;
+      }
+
+      @Override
+      public long ord() throws IOException {
+        return currentOrd;
+      }
+
+      @Override
+      public int docFreq() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long totalTermFreq() {
+        return -1;
+      }
+
+      @Override
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Comparator<BytesRef> getComparator() throws IOException {
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
+      }
+
+      @Override
+      public void seekExact(BytesRef term, TermState state) throws IOException {
+        assert state != null && state instanceof OrdTermState;
+        this.seekExact(((OrdTermState)state).ord);
+      }
+
+      @Override
+      public TermState termState() throws IOException {
+        OrdTermState state = new OrdTermState();
+        state.ord = currentOrd;
+        return state;
+      }
+    }
   }
 
-  @SuppressWarnings("unchecked")
-  public DoubleValues getDoubles(IndexReader reader, String field, EntryCreator<DoubleValues> creator ) throws IOException {
-    return (DoubleValues)caches.get(Double.TYPE).get(reader, new Entry(field, creator));
+  private static boolean DEFAULT_FASTER_BUT_MORE_RAM = true;
+
+  public DocTermsIndex getTermsIndex(IndexReader reader, String field) throws IOException {
+    return getTermsIndex(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
   }
 
-  public DocTermsIndex getTermsIndex(IndexReader reader, String field) throws IOException {    
-    return getTermsIndex(reader, field, new DocTermsIndexCreator(field));
+  public DocTermsIndex getTermsIndex(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
+    return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)), false);
   }
 
-  public DocTermsIndex getTermsIndex(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {    
-    return getTermsIndex(reader, field, new DocTermsIndexCreator(field, 
-        fasterButMoreRAM ? DocTermsIndexCreator.FASTER_BUT_MORE_RAM : 0));
+  static class DocTermsIndexCache extends Cache {
+    DocTermsIndexCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+
+      Terms terms = MultiFields.getTerms(reader, entryKey.field);
+
+      final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
+
+      final PagedBytes bytes = new PagedBytes(15);
+
+      int startBytesBPV;
+      int startTermsBPV;
+      int startNumUniqueTerms;
+
+      int maxDoc = reader.maxDoc();
+      final int termCountHardLimit;
+      if (maxDoc == Integer.MAX_VALUE) {
+        termCountHardLimit = Integer.MAX_VALUE;
+      } else {
+        termCountHardLimit = maxDoc+1;
+      }
+
+      if (terms != null) {
+        // Try for coarse estimate for number of bits; this
+        // should be an underestimate most of the time, which
+        // is fine -- GrowableWriter will reallocate as needed
+        long numUniqueTerms = 0;
+        try {
+          numUniqueTerms = terms.getUniqueTermCount();
+        } catch (UnsupportedOperationException uoe) {
+          numUniqueTerms = -1;
+        }
+        if (numUniqueTerms != -1) {
+
+          if (numUniqueTerms > termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            numUniqueTerms = termCountHardLimit;
+          }
+
+          startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
+          startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
+
+          startNumUniqueTerms = (int) numUniqueTerms;
+        } else {
+          startBytesBPV = 1;
+          startTermsBPV = 1;
+          startNumUniqueTerms = 1;
+        }
+      } else {
+        startBytesBPV = 1;
+        startTermsBPV = 1;
+        startNumUniqueTerms = 1;
+      }
+
+      GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, fasterButMoreRAM);
+      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, fasterButMoreRAM);
+
+      // 0 is reserved for "unset"
+      bytes.copyUsingLengthPrefix(new BytesRef());
+      int termOrd = 1;
+
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          if (termOrd >= termCountHardLimit) {
+            break;
+          }
+
+          if (termOrd == termOrdToBytesOffset.size()) {
+            // NOTE: this code only runs if the incoming
+            // reader impl doesn't implement
+            // getUniqueTermCount (which should be uncommon)
+            termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
+          }
+          termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
+          docs = termsEnum.docs(null, docs);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
+              break;
+            }
+            docToTermOrd.set(docID, termOrd);
+          }
+          termOrd++;
+        }
+
+        if (termOrdToBytesOffset.size() > termOrd) {
+          termOrdToBytesOffset = termOrdToBytesOffset.resize(termOrd);
+        }
+      }
+
+      // maybe an int-only impl?
+      return new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+    }
   }
 
-  @SuppressWarnings("unchecked")
-  public DocTermsIndex getTermsIndex(IndexReader reader, String field, EntryCreator<DocTermsIndex> creator) throws IOException {
-    return (DocTermsIndex)caches.get(DocTermsIndex.class).get(reader, new Entry(field, creator));
+  private static class DocTermsImpl extends DocTerms {
+    private final PagedBytes.Reader bytes;
+    private final PackedInts.Reader docToOffset;
+
+    public DocTermsImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
+      this.bytes = bytes;
+      this.docToOffset = docToOffset;
+    }
+
+    @Override
+    public int size() {
+      return docToOffset.size();
+    }
+
+    @Override
+    public boolean exists(int docID) {
+      return docToOffset.get(docID) == 0;
+    }
+
+    @Override
+    public BytesRef getTerm(int docID, BytesRef ret) {
+      final int pointer = (int) docToOffset.get(docID);
+      return bytes.fill(ret, pointer);
+    }      
   }
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
   public DocTerms getTerms(IndexReader reader, String field) throws IOException {
-    return getTerms(reader, field, new DocTermsCreator(field));
+    return getTerms(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
   }
 
   public DocTerms getTerms(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
-    return getTerms(reader, field, new DocTermsCreator(field,
-        fasterButMoreRAM ? DocTermsCreator.FASTER_BUT_MORE_RAM : 0));
+    return (DocTerms) caches.get(DocTerms.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)), false);
   }
 
-  @SuppressWarnings("unchecked")
-  public DocTerms getTerms(IndexReader reader, String field, EntryCreator<DocTerms> creator) throws IOException {
-    return (DocTerms)caches.get(DocTerms.class).get(reader, new Entry(field, creator));
+  static final class DocTermsCache extends Cache {
+    DocTermsCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+
+      Terms terms = MultiFields.getTerms(reader, entryKey.field);
+
+      final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
+
+      final int termCountHardLimit = reader.maxDoc();
+
+      // Holds the actual term data, expanded.
+      final PagedBytes bytes = new PagedBytes(15);
+
+      int startBPV;
+
+      if (terms != null) {
+        // Try for coarse estimate for number of bits; this
+        // should be an underestimate most of the time, which
+        // is fine -- GrowableWriter will reallocate as needed
+        long numUniqueTerms = 0;
+        try {
+          numUniqueTerms = terms.getUniqueTermCount();
+        } catch (UnsupportedOperationException uoe) {
+          numUniqueTerms = -1;
+        }
+        if (numUniqueTerms != -1) {
+          if (numUniqueTerms > termCountHardLimit) {
+            numUniqueTerms = termCountHardLimit;
+          }
+          startBPV = PackedInts.bitsRequired(numUniqueTerms*4);
+        } else {
+          startBPV = 1;
+        }
+      } else {
+        startBPV = 1;
+      }
+
+      final GrowableWriter docToOffset = new GrowableWriter(startBPV, reader.maxDoc(), fasterButMoreRAM);
+      
+      // pointer==0 means not set
+      bytes.copyUsingLengthPrefix(new BytesRef());
+
+      if (terms != null) {
+        int termCount = 0;
+        final TermsEnum termsEnum = terms.iterator();
+        DocsEnum docs = null;
+        while(true) {
+          if (termCount++ == termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            break;
+          }
+
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final long pointer = bytes.copyUsingLengthPrefix(term);
+          docs = termsEnum.docs(null, docs);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
+              break;
+            }
+            docToOffset.set(docID, pointer);
+          }
+        }
+      }
+
+      // maybe an int-only impl?
+      return new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
+    }
   }
 
-  @SuppressWarnings("unchecked")
   public DocTermOrds getDocTermOrds(IndexReader reader, String field) throws IOException {
-    return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new Entry(field, new DocTermOrdsCreator(field, 0)));
+    return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new Entry(field, null), false);
+  }
+
+  static final class DocTermOrdsCache extends Cache {
+    DocTermOrdsCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+      return new DocTermOrds(reader, entryKey.field);
+    }
   }
 
   private volatile PrintStream infoStream;
