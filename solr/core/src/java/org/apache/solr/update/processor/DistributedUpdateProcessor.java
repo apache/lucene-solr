@@ -100,7 +100,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final UpdateLog ulog;
   private final VersionInfo vinfo;
   private final boolean versionsStored;
-  private final boolean returnVersions = false; // todo: default to false and make configurable
+  private final boolean returnVersions = true; // todo: default to false and make configurable
 
   private NamedList addsResponse = null;
   private NamedList deleteResponse = null;
