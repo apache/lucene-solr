@@ -1179,8 +1179,13 @@ public abstract class LuceneTestCase extends Assert {
     return d;
   }
 
-  /** Registers a temp file that will be deleted when tests are done. */
-  public static void registerTempFile(File tmpFile) {
+  /**
+   * Registers a temp directory that will be deleted when tests are done. This
+   * is used by {@link _TestUtil#getTempDir(String)} and
+   * {@link _TestUtil#unzip(File, File)}, so you should call these methods when
+   * possible.
+   */
+  static void registerTempDir(File tmpFile) {
     tempDirs.put(tmpFile.getAbsoluteFile(), Thread.currentThread().getStackTrace());
   }
   
@@ -1193,11 +1198,9 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File tmpFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
-        tmpFile.delete();
-        tmpFile.mkdir();
-        registerTempFile(tmpFile);
-        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile);
+        final File dir = _TestUtil.getTempDir("index");
+        dir.mkdirs(); // ensure it's created so we 'have' it.
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }
 
       // try empty ctor

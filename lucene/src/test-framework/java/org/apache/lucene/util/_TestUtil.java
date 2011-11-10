@@ -62,7 +62,7 @@ public class _TestUtil {
     try {
       File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
       f.delete();
-      LuceneTestCase.registerTempFile(f);
+      LuceneTestCase.registerTempDir(f);
       return f;
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -74,6 +74,9 @@ public class _TestUtil {
    */
   public static void rmDir(File dir) throws IOException {
     if (dir.exists()) {
+      if (dir.isFile() && !dir.delete()) {
+        throw new IOException("could not delete " + dir);
+      }
       for (File f : dir.listFiles()) {
         if (f.isDirectory()) {
           rmDir(f);
@@ -101,7 +104,7 @@ public class _TestUtil {
     rmDir(destDir);
     
     destDir.mkdir();
-    LuceneTestCase.registerTempFile(destDir);
+    LuceneTestCase.registerTempDir(destDir);
     
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
