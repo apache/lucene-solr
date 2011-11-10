@@ -252,7 +252,14 @@ public class SearcherLifetimeManager implements Closeable {
    *  from the same background thread that opens new
    *  searchers. */
   public synchronized void prune(Pruner pruner) throws IOException {
-    final List<SearcherTracker> trackers = new ArrayList<SearcherTracker>(searchers.values());
+    // Cannot just pass searchers.values() to ArrayList ctor
+    // (not thread-safe since the values can change while
+    // ArrayList is init'ing itself); must instead iterate
+    // ourselves:
+    final List<SearcherTracker> trackers = new ArrayList<SearcherTracker>();
+    for(SearcherTracker tracker : searchers.values()) {
+      trackers.add(tracker);
+    }
     Collections.sort(trackers);
     final long newestSec = trackers.isEmpty() ? 0L : trackers.get(0).recordTimeSec;
     for (SearcherTracker tracker: trackers) {
