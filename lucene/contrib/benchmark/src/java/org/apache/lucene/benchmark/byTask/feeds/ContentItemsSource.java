@@ -149,6 +149,9 @@ public abstract class ContentItemsSource {
   }
 
   public void printStatistics(String itemsName) {
+    if (!verbose) {
+      return;
+    }
     boolean print = false;
     String col = "                  ";
     StringBuilder sb = new StringBuilder();
