@@ -19,11 +19,9 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -653,8 +651,8 @@ final class IndexFileDeleter {
     Collection<CommitPoint> commitsToDelete;
     long version;
     long generation;
-    final boolean isOptimized;
     final Map<String,String> userData;
+    private final int segmentCount;
 
     public CommitPoint(Collection<CommitPoint> commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
@@ -664,7 +662,7 @@ final class IndexFileDeleter {
       version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
       files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));
-      isOptimized = segmentInfos.size() == 1 && !segmentInfos.info(0).hasDeletions();
+      segmentCount = segmentInfos.size();
     }
 
     @Override
@@ -673,8 +671,8 @@ final class IndexFileDeleter {
     }
 
     @Override
-    public boolean isOptimized() {
-      return isOptimized;
+    public int getSegmentCount() {
+      return segmentCount;
     }
 
     @Override

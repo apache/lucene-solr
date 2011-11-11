@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs.perfield;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -107,7 +106,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     writer.commit();
     assertEquals(30, writer.maxDoc());
     _TestUtil.checkIndex(dir);
-    writer.optimize();
+    writer.forceMerge(1);
     assertEquals(30, writer.maxDoc());
     writer.close();
     dir.close();
@@ -158,8 +157,6 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     codec = (Lucene40Codec)iwconf.getCodec();
-    PostingsFormat origContentCodec = PostingsFormat.forName("MockSep");
-    PostingsFormat newContentCodec = PostingsFormat.forName("Lucene40");
     assertEquals(30, writer.maxDoc());
     assertQuery(new Term("content", "bbb"), dir, 10);
     assertQuery(new Term("content", "ccc"), dir, 10);   ////
@@ -178,7 +175,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now optimize");
     }
-    writer.optimize();
+    writer.forceMerge(1);
     assertEquals(40, writer.maxDoc());
     writer.close();
     assertQuery(new Term("content", "ccc"), dir, 10);
@@ -260,7 +257,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
         writer.addDocument(doc);
       }
       if (random.nextBoolean()) {
-        writer.optimize();
+        writer.forceMerge(1);
       }
       writer.commit();
       assertEquals((i + 1) * docsPerRound, writer.maxDoc());

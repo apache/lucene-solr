@@ -711,7 +711,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     final TestReopen test = new TestReopen() {      
@@ -961,7 +961,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     
     if (!multiSegment) {
-      w.optimize();
+      w.forceMerge(1);
     }
     
     w.close();
@@ -1019,14 +1019,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 2: {
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        w.optimize();
+        w.forceMerge(1);
         w.close();
         break;
       }
       case 3: {
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         w.addDocument(createDocument(101, 4));
-        w.optimize();
+        w.forceMerge(1);
         w.addDocument(createDocument(102, 4));
         w.addDocument(createDocument(103, 4));
         w.close();

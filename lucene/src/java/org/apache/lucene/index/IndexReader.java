@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.search.FieldCache; // javadocs
@@ -804,16 +803,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
-  /**
-   * Checks is the index is optimized (if it has a single segment and 
-   * no deletions).  Not implemented in the IndexReader base class.
-   * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
-   * @throws UnsupportedOperationException unless overridden in subclass
-   */
-  public boolean isOptimized() {
-    throw new UnsupportedOperationException("This reader does not support this method.");
-  }
-  
   /**
    * Return an array of term frequency vectors for the specified document.
    * The array contains a vector for each vectorized field in the document.

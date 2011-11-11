@@ -21,22 +21,25 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
 
 /**
- * Optimize the index.
+ * Runs forceMerge on the index.
  * <br>Other side effects: none.
  */
-public class OptimizeTask extends PerfTask {
+public class ForceMergeTask extends PerfTask {
 
-  public OptimizeTask(PerfRunData runData) {
+  public ForceMergeTask(PerfRunData runData) {
     super(runData);
   }
 
-  int maxNumSegments = 1;
+  int maxNumSegments = -1;
 
   @Override
   public int doLogic() throws Exception {
+    if (maxNumSegments == -1) {
+      throw new IllegalStateException("required argument (maxNumSegments) was not specified");
+    }
     IndexWriter iw = getRunData().getIndexWriter();
-    iw.optimize(maxNumSegments);
-    //System.out.println("optimize called");
+    iw.forceMerge(maxNumSegments);
+    //System.out.println("forceMerge called");
     return 1;
   }
 

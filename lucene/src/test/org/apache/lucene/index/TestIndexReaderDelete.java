@@ -33,7 +33,7 @@ import static org.apache.lucene.index.TestIndexReader.assertTermDocsCount;
 import static org.apache.lucene.index.TestIndexReader.createDocument;
 
 public class TestIndexReaderDelete extends LuceneTestCase {
-  private void deleteReaderReaderConflict(boolean optimize) throws IOException {
+  private void deleteReaderReaderConflict(boolean doFullMerge) throws IOException {
     Directory dir = newDirectory();
 
     Term searchTerm1 = new Term("content", "aaa");
@@ -49,8 +49,9 @@ public class TestIndexReaderDelete extends LuceneTestCase {
         addDoc(writer, searchTerm2.text());
         addDoc(writer, searchTerm3.text());
     }
-    if(optimize)
-      writer.optimize();
+    if (doFullMerge) {
+      writer.forceMerge(1);
+    }
     writer.close();
 
     // OPEN TWO READERS
@@ -131,7 +132,7 @@ public class TestIndexReaderDelete extends LuceneTestCase {
     dir.close();
   }
 
-  private void deleteReaderWriterConflict(boolean optimize) throws IOException {
+  private void deleteReaderWriterConflict(boolean doFullMerge) throws IOException {
     //Directory dir = new RAMDirectory();
     Directory dir = newDirectory();
 
@@ -159,13 +160,14 @@ public class TestIndexReaderDelete extends LuceneTestCase {
         addDoc(writer, searchTerm2.text());
     }
 
-    // REQUEST OPTIMIZATION
+    // REQUEST full merge
     // This causes a new segment to become current for all subsequent
     // searchers. Because of this, deletions made via a previously open
     // reader, which would be applied to that reader's segment, are lost
     // for subsequent searchers/readers
-    if(optimize)
-      writer.optimize();
+    if (doFullMerge) {
+      writer.forceMerge(1);
+    }
     writer.close();
 
     // The reader should not see the new data
@@ -255,19 +257,19 @@ public class TestIndexReaderDelete extends LuceneTestCase {
     dir.close();
   }
 
-  public void testDeleteReaderReaderConflictUnoptimized() throws IOException {
+  public void testDeleteReaderReaderConflictNoFullMerge() throws IOException {
     deleteReaderReaderConflict(false);
   }
   
-  public void testDeleteReaderReaderConflictOptimized() throws IOException {
+  public void testDeleteReaderReaderConflictFullMerge() throws IOException {
     deleteReaderReaderConflict(true);
   }
   
-  public void testDeleteReaderWriterConflictUnoptimized() throws IOException {
+  public void testDeleteReaderWriterConflictNoFullMerge() throws IOException {
     deleteReaderWriterConflict(false);
   }
   
-  public void testDeleteReaderWriterConflictOptimized() throws IOException {
+  public void testDeleteReaderWriterConflictFullMerge() throws IOException {
     deleteReaderWriterConflict(true);
   }
   

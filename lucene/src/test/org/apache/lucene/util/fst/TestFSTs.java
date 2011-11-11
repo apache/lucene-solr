@@ -1461,7 +1461,7 @@ public class TestFSTs extends LuceneTestCase {
         w.addDocument(doc);
       }
 
-      //w.optimize();
+      //w.forceMerge(1);
 
       // turn writer into reader:
       final IndexReader r = w.getReader();

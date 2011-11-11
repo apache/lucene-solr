@@ -24,7 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSizeBoundedOptimize extends LuceneTestCase {
+public class TestSizeBoundedForceMerge extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
@@ -44,7 +44,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   }
   
   public void testByteSizeLimit() throws Exception {
-    // tests that the max merge size constraint is applied during optimize.
+    // tests that the max merge size constraint is applied during forceMerge.
     Directory dir = new RAMDirectory();
 
     // Prepare an index w/ several small segments and a large one.
@@ -63,11 +63,11 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
 
     conf = newWriterConfig();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
-    lmp.setMaxMergeMBForOptimize((min + 1) / (1 << 20));
+    lmp.setMaxMergeMBForForcedMerge((min + 1) / (1 << 20));
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
@@ -77,7 +77,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   }
 
   public void testNumDocsLimit() throws Exception {
-    // tests that the max merge docs constraint is applied during optimize.
+    // tests that the max merge docs constraint is applied during forceMerge.
     Directory dir = new RAMDirectory();
 
     // Prepare an index w/ several small segments and a large one.
@@ -100,7 +100,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
@@ -128,7 +128,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     SegmentInfos sis = new SegmentInfos();
@@ -155,7 +155,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     SegmentInfos sis = new SegmentInfos();
@@ -182,7 +182,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     SegmentInfos sis = new SegmentInfos();
@@ -208,7 +208,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     SegmentInfos sis = new SegmentInfos();
@@ -235,7 +235,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     SegmentInfos sis = new SegmentInfos();
@@ -266,7 +266,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     // Should only be 4 segments in the index, because of the merge factor and
@@ -276,7 +276,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     assertEquals(4, sis.size());
   }
   
-  public void testSingleNonOptimizedSegment() throws Exception {
+  public void testSingleMergeableSegment() throws Exception {
     Directory dir = new RAMDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
@@ -288,7 +288,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
   
-    // delete the last document, so that the last segment is optimized.
+    // delete the last document, so that the last segment is merged.
     IndexReader r = IndexReader.open(dir, false);
     r.deleteDocument(r.numDocs() - 1);
     r.close();
@@ -299,7 +299,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     // Verify that the last segment does not have deletions.
@@ -309,7 +309,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     assertFalse(sis.info(2).hasDeletions());
   }
   
-  public void testSingleOptimizedSegment() throws Exception {
+  public void testSingleNonMergeableSegment() throws Exception {
     Directory dir = new RAMDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
@@ -325,7 +325,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     // Verify that the last segment does not have deletions.
@@ -334,7 +334,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     assertEquals(1, sis.size());
   }
 
-  public void testSingleNonOptimizedTooLargeSegment() throws Exception {
+  public void testSingleMergeableTooLargeSegment() throws Exception {
     Directory dir = new RAMDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
@@ -355,7 +355,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     // Verify that the last segment does not have deletions.

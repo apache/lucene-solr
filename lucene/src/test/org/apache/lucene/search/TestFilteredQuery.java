@@ -77,7 +77,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     // tests here require single segment (eg try seed
     // 8239472272678419952L), because SingleDocTestFilter(x)
     // blindly accepts that docID in any sub-segment
-    writer.optimize();
+    writer.forceMerge(1);
 
     reader = writer.getReader();
     writer.close ();

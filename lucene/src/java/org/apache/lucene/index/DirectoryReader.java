@@ -523,16 +523,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
 
-  /**
-   * Checks is the index is optimized (if it has a single segment and no deletions)
-   * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
-   */
-  @Override
-  public boolean isOptimized() {
-    ensureOpen();
-    return segmentInfos.size() == 1 && !hasDeletions();
-  }
-
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
@@ -953,8 +943,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     Directory dir;
     long generation;
     long version;
-    final boolean isOptimized;
     final Map<String,String> userData;
+    private final int segmentCount;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
@@ -963,7 +953,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       files = Collections.unmodifiableCollection(infos.files(dir, true));
       version = infos.getVersion();
       generation = infos.getGeneration();
-      isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
+      segmentCount = infos.size();
     }
 
     @Override
@@ -972,8 +962,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
 
     @Override
-    public boolean isOptimized() {
-      return isOptimized;
+    public int getSegmentCount() {
+      return segmentCount;
     }
 
     @Override

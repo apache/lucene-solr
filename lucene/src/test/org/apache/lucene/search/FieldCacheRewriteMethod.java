@@ -85,7 +85,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
     /**
      * Expert: Return the number of unique terms visited during execution of the filter.
      * If there are many of them, you may consider using another filter type
-     * or optimize your total term count in index.
+     * or reduce your total term count in index.
      * <p>This method is not thread safe, be sure to only call it when no filter is running!
      * If you re-use the same filter instance for another
      * search, be sure to first reset the term counter

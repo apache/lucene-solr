@@ -213,7 +213,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       doc.add(new TextField("field", contents));
       w.addDocument(doc);
     }
-    w.optimize();
+    w.forceMerge(1);
     final IndexReader r = w.getReader();
     final IndexSearcher s = newSearcher(r);
     w.close();

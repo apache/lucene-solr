@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -54,16 +53,13 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.BytesRef;
@@ -108,10 +104,10 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(60, reader.numDocs());
         reader.close();
 
-        // optimize the index and check that the new doc count is correct
+        // merge the index down and check that the new doc count is correct
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         assertEquals(60, writer.numDocs());
-        writer.optimize();
+        writer.forceMerge(1);
         assertEquals(60, writer.maxDoc());
         assertEquals(60, writer.numDocs());
         writer.close();
@@ -733,7 +729,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         //LogMergePolicy lmp2 = (LogMergePolicy) writer.getConfig().getMergePolicy();
         //lmp2.setUseCompoundFile(false);
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
       }
     }
@@ -1302,7 +1298,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     w.addDocument(doc);
     w.commit();
-    w.optimize();   // force segment merge.
+    w.forceMerge(1);   // force segment merge.
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
@@ -1439,7 +1435,7 @@ public class TestIndexWriter extends LuceneTestCase {
       List<String> files = Arrays.asList(dir.listAll());
       assertTrue(files.contains("_0.cfs"));
       w.addDocument(doc);
-      w.optimize();
+      w.forceMerge(1);
       if (iter == 1) {
         w.commit();
       }
@@ -1450,10 +1446,10 @@ public class TestIndexWriter extends LuceneTestCase {
 
       // NOTE: here we rely on "Windows" behavior, ie, even
       // though IW wanted to delete _0.cfs since it was
-      // optimized away, because we have a reader open
+      // merged away, because we have a reader open
       // against this file, it should still be here:
       assertTrue(files.contains("_0.cfs"));
-      // optimize created this
+      // forceMerge created this
       //assertTrue(files.contains("_2.cfs"));
       w.deleteUnusedFiles();
 
@@ -1697,7 +1693,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
         s.close();
         r.close();
-        w.optimize();
+        w.forceMerge(1);
       }
     }
     w.close();

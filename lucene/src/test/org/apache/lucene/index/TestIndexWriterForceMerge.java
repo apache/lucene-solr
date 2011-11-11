@@ -28,8 +28,8 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestIndexWriterOptimize extends LuceneTestCase {
-  public void testOptimizeMaxNumSegments() throws IOException {
+public class TestIndexWriterForceMerge extends LuceneTestCase {
+  public void testPartialMerge() throws IOException {
 
     MockDirectoryWrapper dir = newDirectory();
 
@@ -56,7 +56,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
       ldmp.setMergeFactor(5);
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setMergePolicy(ldmp));
-      writer.optimize(3);
+      writer.forceMerge(3);
       writer.close();
 
       sis = new SegmentInfos();
@@ -71,7 +71,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     dir.close();
   }
 
-  public void testOptimizeMaxNumSegments2() throws IOException {
+  public void testMaxNumSegments2() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
@@ -97,7 +97,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
 
       final int segCount = sis.size();
 
-      writer.optimize(7);
+      writer.forceMerge(7);
       writer.commit();
       writer.waitForMerges();
 
@@ -115,11 +115,11 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
   }
 
   /**
-   * Make sure optimize doesn't use any more than 1X
+   * Make sure forceMerge doesn't use any more than 1X
    * starting index size as its temporary free space
    * required.
    */
-  public void testOptimizeTempSpaceUsage() throws IOException {
+  public void testForceMergeTempSpaceUsage() throws IOException {
 
     MockDirectoryWrapper dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
@@ -156,18 +156,18 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     // smaller one here could increase the disk usage and
     // cause a false failure:
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setTermIndexInterval(termIndexInterval).setMergePolicy(newLogMergePolicy()));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     long maxDiskUsage = dir.getMaxUsedSizeInBytes();
-    assertTrue("optimize used too much temporary space: starting usage was " + startDiskUsage + " bytes; max temp usage was " + maxDiskUsage + " but should have been " + (4*startDiskUsage) + " (= 4X starting usage)",
+    assertTrue("forceMerge used too much temporary space: starting usage was " + startDiskUsage + " bytes; max temp usage was " + maxDiskUsage + " but should have been " + (4*startDiskUsage) + " (= 4X starting usage)",
                maxDiskUsage <= 4*startDiskUsage);
     dir.close();
   }
   
-  // Test calling optimize(false) whereby optimize is kicked
+  // Test calling forceMerge(1, false) whereby forceMerge is kicked
   // off but we don't wait for it to finish (but
   // writer.close()) does wait
-  public void testBackgroundOptimize() throws IOException {
+  public void testBackgroundForceMerge() throws IOException {
 
     Directory dir = newDirectory();
     for(int pass=0;pass<2;pass++) {
@@ -182,22 +182,22 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
       doc.add(newField("field", "aaa", StringField.TYPE_UNSTORED));
       for(int i=0;i<100;i++)
         writer.addDocument(doc);
-      writer.optimize(false);
+      writer.forceMerge(1, false);
 
       if (0 == pass) {
         writer.close();
         IndexReader reader = IndexReader.open(dir, true);
-        assertTrue(reader.isOptimized());
+        assertEquals(1, reader.getSequentialSubReaders().length);
         reader.close();
       } else {
         // Get another segment to flush so we can verify it is
-        // NOT included in the optimization
+        // NOT included in the merging
         writer.addDocument(doc);
         writer.addDocument(doc);
         writer.close();
 
         IndexReader reader = IndexReader.open(dir, true);
-        assertTrue(!reader.isOptimized());
+        assertTrue(reader.getSequentialSubReaders().length > 1);
         reader.close();
 
         SegmentInfos infos = new SegmentInfos();

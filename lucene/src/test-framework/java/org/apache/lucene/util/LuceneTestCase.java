@@ -32,7 +32,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -41,17 +40,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
-import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
-import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
@@ -1329,7 +1319,7 @@ public abstract class LuceneTestCase extends Assert {
       context = IOContext.READONCE;
       break;
     case 3:
-      context = new IOContext(new MergeInfo(randomNumDocs, size, true, false));
+      context = new IOContext(new MergeInfo(randomNumDocs, size, true, -1));
       break;
     case 4:
       context = new IOContext(new FlushInfo(randomNumDocs, size));

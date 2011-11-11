@@ -1635,7 +1635,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.addDocument( doc( "t_text1", "more random words for second field del" ) );
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
     writer.addDocument( doc( "t_text1", "more random words for second field" ) );
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
   }
   
@@ -1643,7 +1643,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     writer.deleteDocuments( new Term( "t_text1", "del" ) );
     // To see negative idf, keep comment the following line
-    //writer.optimize();
+    //writer.forceMerge(1);
     writer.close();
   }
   
@@ -1759,7 +1759,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     reader = IndexReader.open(ramDir, true);
     numHighlights = 0;

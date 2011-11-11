@@ -42,7 +42,7 @@ public class TestIndexCommit extends LuceneTestCase {
       @Override public long getTimestamp() throws IOException { return 1;}
       @Override public Map<String, String> getUserData() throws IOException { return null; }
       @Override public boolean isDeleted() { return false; }
-      @Override public boolean isOptimized() { return false; }
+      @Override public int getSegmentCount() { return 2; }
     };
     
     IndexCommit ic2 = new IndexCommit() {
@@ -55,7 +55,7 @@ public class TestIndexCommit extends LuceneTestCase {
       @Override public long getTimestamp() throws IOException { return 1;}
       @Override public Map<String, String> getUserData() throws IOException { return null; }
       @Override public boolean isDeleted() { return false; }
-      @Override public boolean isOptimized() { return false; }
+      @Override public int getSegmentCount() { return 2; }
     };
 
     assertEquals(ic1, ic2);

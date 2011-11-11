@@ -74,7 +74,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       IndexCommit lastCommit =  commits.get(commits.size()-1);
       IndexReader r = IndexReader.open(dir, true);
-      assertEquals("lastCommit.isOptimized()=" + lastCommit.isOptimized() + " vs IndexReader.isOptimized=" + r.isOptimized(), r.isOptimized(), lastCommit.isOptimized());
+      assertEquals("lastCommit.segmentCount()=" + lastCommit.getSegmentCount() + " vs IndexReader.segmentCount=" + r.getSequentialSubReaders().length, r.getSequentialSubReaders().length, lastCommit.getSegmentCount());
       r.close();
       verifyCommitOrder(commits);
       numOnCommit++;
@@ -317,13 +317,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
       writer.close();
 
-      final boolean isOptimized;
+      final boolean needsMerging;
       {
         IndexReader r = IndexReader.open(dir);
-        isOptimized = r.isOptimized();
+        needsMerging = r.getSequentialSubReaders().length != 1;
         r.close();
       }
-      if (!isOptimized) {
+      if (needsMerging) {
         conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
                                     new MockAnalyzer(random)).setOpenMode(
                                                                     OpenMode.APPEND).setIndexDeletionPolicy(policy);
@@ -332,22 +332,22 @@ public class TestDeletionPolicy extends LuceneTestCase {
           ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
         }
         if (VERBOSE) {
-          System.out.println("TEST: open writer for optimize");
+          System.out.println("TEST: open writer for forceMerge");
         }
         writer = new IndexWriter(dir, conf);
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
       }
-      assertEquals(isOptimized ? 0:1, policy.numOnInit);
+      assertEquals(needsMerging ? 1:0, policy.numOnInit);
 
       // If we are not auto committing then there should
       // be exactly 2 commits (one per close above):
-      assertEquals(1 + (isOptimized ? 0:1), policy.numOnCommit);
+      assertEquals(1 + (needsMerging ? 1:0), policy.numOnCommit);
 
       // Test listCommits
       Collection<IndexCommit> commits = IndexReader.listCommits(dir);
       // 2 from closing writer
-      assertEquals(1 + (isOptimized ? 0:1), commits.size());
+      assertEquals(1 + (needsMerging ? 1:0), commits.size());
 
       // Make sure we can open a reader on each commit:
       for (final IndexCommit commit : commits) {
@@ -418,16 +418,16 @@ public class TestDeletionPolicy extends LuceneTestCase {
     }
     assertTrue(lastCommit != null);
 
-    // Now add 1 doc and optimize
+    // Now add 1 doc and merge
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(policy));
     addDoc(writer);
     assertEquals(11, writer.numDocs());
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     assertEquals(6, IndexReader.listCommits(dir).size());
 
-    // Now open writer on the commit just before optimize:
+    // Now open writer on the commit just before merge:
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setIndexDeletionPolicy(policy).setIndexCommit(lastCommit));
     assertEquals(10, writer.numDocs());
@@ -436,8 +436,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.rollback();
 
     IndexReader r = IndexReader.open(dir, true);
-    // Still optimized, still 11 docs
-    assertTrue(r.isOptimized());
+    // Still merged, still 11 docs
+    assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(11, r.numDocs());
     r.close();
 
@@ -451,39 +451,39 @@ public class TestDeletionPolicy extends LuceneTestCase {
     assertEquals(7, IndexReader.listCommits(dir).size());
     
     r = IndexReader.open(dir, true);
-    // Not optimized because we rolled it back, and now only
+    // Not fully merged because we rolled it back, and now only
     // 10 docs
-    assertTrue(!r.isOptimized());
+    assertTrue(r.getSequentialSubReaders().length > 1);
     assertEquals(10, r.numDocs());
     r.close();
 
-    // Reoptimize
+    // Re-merge
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(policy));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     r = IndexReader.open(dir, true);
-    assertTrue(r.isOptimized());
+    assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(10, r.numDocs());
     r.close();
 
-    // Now open writer on the commit just before optimize,
+    // Now open writer on the commit just before merging,
     // but this time keeping only the last commit:
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexCommit(lastCommit));
     assertEquals(10, writer.numDocs());
     
-    // Reader still sees optimized index, because writer
+    // Reader still sees fully merged index, because writer
     // opened on the prior commit has not yet committed:
     r = IndexReader.open(dir, true);
-    assertTrue(r.isOptimized());
+    assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(10, r.numDocs());
     r.close();
 
     writer.close();
 
-    // Now reader sees unoptimized index:
+    // Now reader sees not-fully-merged index:
     r = IndexReader.open(dir, true);
-    assertTrue(!r.isOptimized());
+    assertTrue(r.getSequentialSubReaders().length > 1);
     assertEquals(10, r.numDocs());
     r.close();
 
@@ -525,7 +525,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         ((LogMergePolicy) mp).setUseCompoundFile(true);
       }
       writer = new IndexWriter(dir, conf);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       assertEquals(1, policy.numOnInit);
@@ -569,7 +569,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         for(int i=0;i<17;i++) {
           addDoc(writer);
         }
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
       }
 
@@ -673,15 +673,15 @@ public class TestDeletionPolicy extends LuceneTestCase {
         ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
       }
       IndexReader r = IndexReader.open(dir);
-      final boolean wasOptimized = r.isOptimized();
+      final boolean wasFullyMerged = r.getSequentialSubReaders().length == 1 && !r.hasDeletions();
       r.close();
       writer = new IndexWriter(dir, conf);
-      writer.optimize();
+      writer.forceMerge(1);
       // this is a commit
       writer.close();
 
       assertEquals(2*(N+1)+1, policy.numOnInit);
-      assertEquals(2*(N+2) - (wasOptimized ? 1:0), policy.numOnCommit);
+      assertEquals(2*(N+2) - (wasFullyMerged ? 1:0), policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

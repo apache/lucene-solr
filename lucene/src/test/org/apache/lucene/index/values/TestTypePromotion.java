@@ -87,7 +87,7 @@ public class TestTypePromotion extends LuceneTestCase {
     
     if (random.nextInt(4) == 0) {
       // once in a while use addIndexes
-      writer.optimize();
+      writer.forceMerge(1);
       
       Directory dir_2 = newDirectory() ;
       IndexWriter writer_2 = new IndexWriter(dir_2,
@@ -110,7 +110,7 @@ public class TestTypePromotion extends LuceneTestCase {
           randomValueType(types, random), values, num_1 + num_2, num_3);
     }
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     assertValues(type, dir, values);
     dir.close();
@@ -119,7 +119,7 @@ public class TestTypePromotion extends LuceneTestCase {
   private void assertValues(TestType type, Directory dir, long[] values)
       throws CorruptIndexException, IOException {
     IndexReader reader = IndexReader.open(dir);
-    assertTrue(reader.isOptimized());
+    assertEquals(1, reader.getSequentialSubReaders().length);
     ReaderContext topReaderContext = reader.getTopReaderContext();
     ReaderContext[] children = topReaderContext.children();
     IndexDocValues docValues = children[0].reader.docValues("promote");
@@ -292,14 +292,14 @@ public class TestTypePromotion extends LuceneTestCase {
     writer.close();
     writerConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     if (writerConfig.getMergePolicy() instanceof NoMergePolicy) {
-      writerConfig.setMergePolicy(newLogMergePolicy()); // make sure we optimize to one segment (merge everything together)
+      writerConfig.setMergePolicy(newLogMergePolicy()); // make sure we merge to one segment (merge everything together)
     }
     writer = new IndexWriter(dir, writerConfig);
-    // now optimize
-    writer.optimize();
+    // now merge
+    writer.forceMerge(1);
     writer.close();
     IndexReader reader = IndexReader.open(dir);
-    assertTrue(reader.isOptimized());
+    assertEquals(1, reader.getSequentialSubReaders().length);
     ReaderContext topReaderContext = reader.getTopReaderContext();
     ReaderContext[] children = topReaderContext.children();
     IndexDocValues docValues = children[0].reader.docValues("promote");

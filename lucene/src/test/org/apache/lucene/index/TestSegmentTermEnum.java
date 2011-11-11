@@ -61,15 +61,15 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
     writer.close();
 
-    // verify document frequency of terms in an unoptimized index
+    // verify document frequency of terms in an multi segment index
     verifyDocFreq();
 
-    // merge segments by optimizing the index
+    // merge segments
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
-    // verify document frequency of terms in an optimized index
+    // verify document frequency of terms in a single segment index
     verifyDocFreq();
   }
 

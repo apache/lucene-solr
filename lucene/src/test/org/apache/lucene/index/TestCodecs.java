@@ -33,7 +33,6 @@ import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -371,7 +370,7 @@ public class TestCodecs extends LuceneTestCase {
       assertEquals(2, results.length);
       assertEquals(0, results[0].doc);
 
-      writer.optimize();
+      writer.forceMerge(1);
 
       // optimise to merge the segments.
       results = this.search(writer, pq, 5);

@@ -758,7 +758,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   void refreshCommitpoint() {
     IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    if(replicateOnCommit || (replicateOnOptimize && commitPoint.isOptimized())) {
+    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
       indexCommitPoint = commitPoint;
     }
   }
@@ -827,7 +827,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               if(replicateOnOptimize){
                 Collection<IndexCommit> commits = IndexReader.listCommits(reader.directory());
                 for (IndexCommit ic : commits) {
-                  if(ic.isOptimized()){
+                  if(ic.getSegmentCount() == 1){
                     if(indexCommitPoint == null || indexCommitPoint.getVersion() < ic.getVersion()) indexCommitPoint = ic;
                   }
                 }

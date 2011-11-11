@@ -62,7 +62,7 @@ import org.apache.lucene.util.InfoStream;
  *  <p><b>NOTE</b>: This policy always merges by byte size
  *  of the segments, always pro-rates by percent deletes,
  *  and does not apply any maximum segment size during
- *  optimize (unlike {@link LogByteSizeMergePolicy}).
+ *  forceMerge (unlike {@link LogByteSizeMergePolicy}).
  *
  *  @lucene.experimental
  */
@@ -88,7 +88,7 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** Maximum number of segments to be merged at a time
    *  during "normal" merging.  For explicit merging (eg,
-   *  optimize or expungeDeletes was called), see {@link
+   *  forceMerge or expungeDeletes was called), see {@link
    *  #setMaxMergeAtOnceExplicit}.  Default is 10. */
   public TieredMergePolicy setMaxMergeAtOnce(int v) {
     if (v < 2) {
@@ -107,7 +107,7 @@ public class TieredMergePolicy extends MergePolicy {
   // if user calls IW.maybeMerge "explicitly"
 
   /** Maximum number of segments to be merged at a time,
-   *  during optimize or expungeDeletes. Default is 30. */
+   *  during forceMerge or expungeDeletes. Default is 30. */
   public TieredMergePolicy setMaxMergeAtOnceExplicit(int v) {
     if (v < 2) {
       throw new IllegalArgumentException("maxMergeAtOnceExplicit must be > 1 (got " + v + ")");
@@ -478,23 +478,23 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge) throws IOException {
     if (verbose()) {
-      message("findMergesForOptimize maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToOptimize=" + segmentsToOptimize);
+      message("findForcedMerges maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToMerge=" + segmentsToMerge);
     }
 
     List<SegmentInfo> eligible = new ArrayList<SegmentInfo>();
-    boolean optimizeMergeRunning = false;
+    boolean forceMergeRunning = false;
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
     boolean segmentIsOriginal = false;
     for(SegmentInfo info : infos) {
-      final Boolean isOriginal = segmentsToOptimize.get(info);
+      final Boolean isOriginal = segmentsToMerge.get(info);
       if (isOriginal != null) {
         segmentIsOriginal = isOriginal;
         if (!merging.contains(info)) {
           eligible.add(info);
         } else {
-          optimizeMergeRunning = true;
+          forceMergeRunning = true;
         }
       }
     }
@@ -504,9 +504,9 @@ public class TieredMergePolicy extends MergePolicy {
     }
 
     if ((maxSegmentCount > 1 && eligible.size() <= maxSegmentCount) ||
-        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isOptimized(eligible.get(0))))) {
+        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(eligible.get(0))))) {
       if (verbose()) {
-        message("already optimized");
+        message("already merged");
       }
       return null;
     }
@@ -515,7 +515,7 @@ public class TieredMergePolicy extends MergePolicy {
 
     if (verbose()) {
       message("eligible=" + eligible);
-      message("optimizeMergeRunning=" + optimizeMergeRunning);
+      message("forceMergeRunning=" + forceMergeRunning);
     }
 
     int end = eligible.size();
@@ -535,7 +535,7 @@ public class TieredMergePolicy extends MergePolicy {
       end -= maxMergeAtOnceExplicit;
     }
 
-    if (spec == null && !optimizeMergeRunning) {
+    if (spec == null && !forceMergeRunning) {
       // Do final merge
       final int numToMerge = end - maxSegmentCount + 1;
       final OneMerge merge = new OneMerge(eligible.subList(end-numToMerge, end));
@@ -580,7 +580,7 @@ public class TieredMergePolicy extends MergePolicy {
     while(start < eligible.size()) {
       // Don't enforce max merged size here: app is explicitly
       // calling expungeDeletes, and knows this may take a
-      // long time / produce big segments (like optimize):
+      // long time / produce big segments (like forceMerge):
       final int end = Math.min(start + maxMergeAtOnceExplicit, eligible.size());
       if (spec == null) {
         spec = new MergeSpecification();
@@ -619,7 +619,7 @@ public class TieredMergePolicy extends MergePolicy {
   public void close() {
   }
 
-  private boolean isOptimized(SegmentInfo info)
+  private boolean isMerged(SegmentInfo info)
     throws IOException {
     IndexWriter w = writer.get();
     assert w != null;

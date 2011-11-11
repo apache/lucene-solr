@@ -71,7 +71,7 @@ public class TestScorerPerf extends LuceneTestCase {
       }
       iw.addDocument(d);
     }
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
   }
 
@@ -103,7 +103,7 @@ public class TestScorerPerf extends LuceneTestCase {
     @Override
     public void collect(int doc) {
       count++;
-      sum += docBase + doc;  // use it to avoid any possibility of being optimized away
+      sum += docBase + doc;  // use it to avoid any possibility of being eliminated by hotspot
     }
 
     public int getCount() { return count; }

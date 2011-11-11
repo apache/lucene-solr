@@ -136,8 +136,8 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     }
 
     @Override
-    public boolean isOptimized() {
-      return cp.isOptimized();
+    public int getSegmentCount() {
+      return cp.getSegmentCount();
     }
   }
 
@@ -340,7 +340,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
    * <b>NOTE:</b> while the snapshot is held, the files it references will not
    * be deleted, which will consume additional disk space in your index. If you
    * take a snapshot at a particularly bad time (say just before you call
-   * optimize()) then in the worst case this could consume an extra 1X of your
+   * forceMerge) then in the worst case this could consume an extra 1X of your
    * total index size, until you release the snapshot.
    * 
    * @param id

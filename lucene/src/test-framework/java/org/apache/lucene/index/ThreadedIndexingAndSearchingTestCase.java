@@ -54,7 +54,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
 
 // TODO
-//   - mix in optimize, addIndexes
+//   - mix in forceMerge, addIndexes
 //   - randomly mix in non-congruent docs
 
 /** Utility class that spawns multiple indexing and

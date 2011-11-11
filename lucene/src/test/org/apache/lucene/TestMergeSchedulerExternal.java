@@ -142,7 +142,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     writer.commit(); // trigger flush
     writer.addDocument(new Document());
     writer.commit(); // trigger flush
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     dir.close();
   }

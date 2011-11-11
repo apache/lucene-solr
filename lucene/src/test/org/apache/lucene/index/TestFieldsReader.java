@@ -203,7 +203,7 @@ public class TestFieldsReader extends LuceneTestCase {
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       IndexReader reader = IndexReader.open(dir, true);

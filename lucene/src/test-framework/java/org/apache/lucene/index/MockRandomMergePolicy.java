@@ -55,18 +55,18 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMergesForOptimize(
-       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+  public MergeSpecification findForcedMerges(
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
     throws CorruptIndexException, IOException {
 
     final List<SegmentInfo> eligibleSegments = new ArrayList<SegmentInfo>();
     for(SegmentInfo info : segmentInfos) {
-      if (segmentsToOptimize.containsKey(info)) {
+      if (segmentsToMerge.containsKey(info)) {
         eligibleSegments.add(info);
       }
     }
 
-    //System.out.println("MRMP: findMergesForOptimize sis=" + segmentInfos + " eligible=" + eligibleSegments);
+    //System.out.println("MRMP: findMerges sis=" + segmentInfos + " eligible=" + eligibleSegments);
     MergeSpecification mergeSpec = null;
     if (eligibleSegments.size() > 1 || (eligibleSegments.size() == 1 && eligibleSegments.get(0).hasDeletions())) {
       mergeSpec = new MergeSpecification();
@@ -85,7 +85,7 @@ public class MockRandomMergePolicy extends MergePolicy {
     if (mergeSpec != null) {
       for(OneMerge merge : mergeSpec.merges) {
         for(SegmentInfo info : merge.segments) {
-          assert segmentsToOptimize.containsKey(info);
+          assert segmentsToMerge.containsKey(info);
         }
       }
     }

@@ -98,7 +98,7 @@ public class TestTermdocPerf extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
   }
 

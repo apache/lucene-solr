@@ -94,7 +94,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     fsDir.close();
   }
 
-  public void testDeleteThenOptimize() throws Exception {
+  public void testDeleteThenFullMerge() throws Exception {
     // Create directories where the indexes will reside
     File indexPath = new File(TEMP_DIR, "testfilesplitter");
     _TestUtil.rmDir(indexPath);
@@ -134,7 +134,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     indexReader.close();
     fsDirDest.close();
 
-    // Optimize the split index
+    // Fully merge the split index
     mergePolicy = new LogByteSizeMergePolicy();
     mergePolicy.setNoCFSRatio(1);
     iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -142,7 +142,7 @@ public class TestIndexSplitter extends LuceneTestCase {
                    .setMergePolicy(mergePolicy);
     fsDirDest = newFSDirectory(indexSplitPath);
     indexWriter = new IndexWriter(fsDirDest, iwConfig);
-    indexWriter.optimize();
+    indexWriter.forceMerge(1);
     indexWriter.close();
     fsDirDest.close();
 

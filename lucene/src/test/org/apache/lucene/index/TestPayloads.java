@@ -134,7 +134,7 @@ public class TestPayloads extends LuceneTestCase {
         writer.addDocument(d);
 
         // force merge
-        writer.optimize();
+        writer.forceMerge(1);
         // flush
         writer.close();
 
@@ -204,7 +204,7 @@ public class TestPayloads extends LuceneTestCase {
             writer.addDocument(d, analyzer);
         }
         
-        writer.optimize();
+        writer.forceMerge(1);
         // flush
         writer.close();
         
@@ -322,7 +322,7 @@ public class TestPayloads extends LuceneTestCase {
         writer.addDocument(d);
 
         
-        writer.optimize();
+        writer.forceMerge(1);
         // flush
         writer.close();
         
@@ -621,7 +621,7 @@ public class TestPayloads extends LuceneTestCase {
     doc.add(new Field("hasMaybepayload2", "here we go", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.addDocument(doc);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     dir.close();

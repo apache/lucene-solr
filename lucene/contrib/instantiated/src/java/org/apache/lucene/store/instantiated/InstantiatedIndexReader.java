@@ -56,14 +56,6 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   /**
-   * @return always true.
-   */
-  @Override
-  public boolean isOptimized() {
-    return true;
-  }
-
-  /**
    * An InstantiatedIndexReader is not a snapshot in time, it is completely in
    * sync with the latest commit to the store!
    * 

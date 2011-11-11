@@ -17,13 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -657,7 +654,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       reader = IndexReader.open(dir, true);
@@ -771,7 +768,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       reader = IndexReader.open(dir, true);
@@ -927,7 +924,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
-  public void testOptimizeExceptions() throws IOException {
+  public void testForceMergeExceptions() throws IOException {
     Directory startDir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(100);
@@ -947,10 +944,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       w = new IndexWriter(dir, conf);
       dir.setRandomIOExceptionRate(0.5);
       try {
-        w.optimize();
+        w.forceMerge(1);
       } catch (IOException ioe) {
         if (ioe.getCause() == null)
-          fail("optimize threw IOException without root cause");
+          fail("forceMerge threw IOException without root cause");
       }
       dir.setRandomIOExceptionRate(0);
       w.close();

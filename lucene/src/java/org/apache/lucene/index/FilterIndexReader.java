@@ -431,12 +431,6 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
-  public boolean isOptimized() {
-    ensureOpen();
-    return in.isOptimized();
-  }
-  
-  @Override
   public IndexReader[] getSequentialSubReaders() {
     return in.getSequentialSubReaders();
   }

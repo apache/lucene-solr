@@ -81,7 +81,7 @@ public class TestOmitTf extends LuceneTestCase {
     d.add(f2);
         
     writer.addDocument(d);
-    writer.optimize();
+    writer.forceMerge(1);
     // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
     // keep things constant
     d = new Document();
@@ -96,7 +96,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.addDocument(d);
 
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -148,7 +148,7 @@ public class TestOmitTf extends LuceneTestCase {
       writer.addDocument(d);
         
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -190,7 +190,7 @@ public class TestOmitTf extends LuceneTestCase {
       writer.addDocument(d);
 
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
 
     // flush
     writer.close();
@@ -233,7 +233,8 @@ public class TestOmitTf extends LuceneTestCase {
 
     assertNoPrx(ram);
     
-    // now add some documents with positions, and check there is no prox after optimization
+    // now add some documents with positions, and check
+    // there is no prox after full merge
     d = new Document();
     f1 = newField("f1", "This field has positions", TextField.TYPE_UNSTORED);
     d.add(f1);
@@ -242,7 +243,7 @@ public class TestOmitTf extends LuceneTestCase {
       writer.addDocument(d);
  
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -278,7 +279,7 @@ public class TestOmitTf extends LuceneTestCase {
       //System.out.println(d);
     }
         
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -413,7 +414,7 @@ public class TestOmitTf extends LuceneTestCase {
     @Override
     public void collect(int doc) throws IOException {
       count++;
-      sum += doc + docBase;  // use it to avoid any possibility of being optimized away
+      sum += doc + docBase;  // use it to avoid any possibility of being merged away
     }
 
     public static int getCount() { return count; }

@@ -74,7 +74,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
     {
       dir = newDirectory();
       final RandomIndexWriter w = new RandomIndexWriter(random, dir);
-      // w.setDoRandomOptimize(false);
+      // w.setDoRandomForceMerge(false);
 
       // w.w.getConfig().setMaxBufferedDocs(atLeast(100));
 

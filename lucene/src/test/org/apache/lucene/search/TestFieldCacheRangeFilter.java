@@ -540,7 +540,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
       writer.addDocument(doc);
     }
     
-    writer.optimize();
+    writer.forceMerge(1);
     writer.deleteDocuments(new Term("id","0"));
     writer.close();
 

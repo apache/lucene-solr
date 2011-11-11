@@ -77,7 +77,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       assertEquals("f4", fis2.fieldInfo(3).name);
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       sis = new SegmentInfos();
@@ -141,7 +141,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     assertEquals("f4", fis2.fieldInfo(3).name);
 
     writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     sis = new SegmentInfos();
@@ -252,7 +252,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
           new LogByteSizeMergePolicy()).setInfoStream(new FailOnNonBulkMergesInfoStream()));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       SegmentInfos sis = new SegmentInfos();
@@ -293,7 +293,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       writer.addDocument(d);
     }
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     SegmentInfos sis = new SegmentInfos();
