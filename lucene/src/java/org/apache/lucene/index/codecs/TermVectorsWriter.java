@@ -24,6 +24,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -97,7 +99,6 @@ public abstract class TermVectorsWriter implements Closeable {
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
-  // nocommit: test that I work
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
     for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
@@ -120,6 +121,61 @@ public abstract class TermVectorsWriter implements Closeable {
     return docCount;
   }
   
-  // nocommit: this should be a sugar method only that consumes the normal api (once we have one)
-  public abstract void addAllDocVectors(TermFreqVector[] vectors, FieldInfos fieldInfos) throws IOException;
+  /** sugar method to write every vector field in the document */
+  protected final void addAllDocVectors(TermFreqVector[] vectors, FieldInfos fieldInfos) throws IOException {
+    final int numFields = vectors == null ? 0 : vectors.length;
+    startDocument(numFields);
+    
+    for (int i = 0; i < numFields; i++) {
+      final TermFreqVector vector = vectors[i];
+      
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(vector.getField());
+
+      final int numTerms = vectors[i].size();
+      final TermPositionVector posVector;
+      final boolean positions;
+      final boolean offsets;
+      
+      if (vector instanceof TermPositionVector) {
+        // May have positions & offsets
+        posVector = (TermPositionVector) vector;
+        positions = posVector.size() > 0 && posVector.getTermPositions(0) != null;
+        offsets = posVector.size() > 0 && posVector.getOffsets(0) != null;
+      } else {
+        posVector = null;
+        positions = offsets = false;
+      }
+      
+      startField(fieldInfo, numTerms, positions, offsets);
+      
+      final BytesRef[] terms = vectors[i].getTerms();
+      final int[] freqs = vectors[i].getTermFrequencies();
+      
+      for (int j = 0; j < numTerms; j++) {
+        startTerm(terms[j], freqs[j]);
+        
+        if (positions) {
+          final int[] pos = posVector.getTermPositions(j);
+          if (pos == null) {
+            throw new IllegalStateException("Trying to write positions that are null!");
+          }
+          assert pos.length == freqs[j];
+          for (int k = 0; k < pos.length; k++) {
+            addPosition(pos[k]);
+          }
+        }
+        
+        if (offsets) {
+          final TermVectorOffsetInfo[] off = posVector.getOffsets(j);
+          if (off == null) {
+            throw new IllegalStateException("Trying to write offsets that are null!");
+          }
+          assert off.length == freqs[j];
+          for (int k = 0; k < off.length; k++) {
+            addOffset(off[k].getStartOffset(), off[k].getEndOffset());
+          }
+        }
+      }
+    }
+  }
 }
