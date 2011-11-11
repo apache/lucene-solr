@@ -138,6 +138,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       }
       long lastPos = tvf.getFilePointer();
       perFields[0].finishDocument();
+      perFields[0].fieldInfo.commitVectors();
       for(int i=1;i<numVectorFields;i++) {
         long pos = tvf.getFilePointer();
         tvd.writeVLong(pos-lastPos);
