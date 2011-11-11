@@ -74,7 +74,7 @@ public class DocumentsWriterPerThread {
 
     // Build up indexing chain:
 
-      final TermsHashConsumer termVectorsWriter = new TermVectorsTermsWriter(documentsWriterPerThread);
+      final TermsHashConsumer termVectorsWriter = new TermVectorsConsumer(documentsWriterPerThread);
       final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
 
       final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,

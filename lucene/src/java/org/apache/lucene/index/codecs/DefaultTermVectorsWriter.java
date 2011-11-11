@@ -48,11 +48,11 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     boolean success = false;
     try {
       // Open files for TermVector storage
-      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION), context);
+      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION), context);
       tvx.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), context);
+      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION), context);
       tvd.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION), context);
+      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_FIELDS_EXTENSION), context);
       tvf.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
       success = true;
     } finally {
@@ -254,15 +254,15 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     } catch (IOException ignored) {}
     
     try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION));
     } catch (IOException ignored) {}
     
     try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
     } catch (IOException ignored) {}
     
     try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_FIELDS_EXTENSION));
     } catch (IOException ignored) {}
   }
 

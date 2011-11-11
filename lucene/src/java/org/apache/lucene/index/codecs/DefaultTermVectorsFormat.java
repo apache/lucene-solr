@@ -39,6 +39,6 @@ public class DefaultTermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    // nocommit impl
+    DefaultTermVectorsReader.files(dir, info, files);
   }
 }

@@ -25,10 +25,10 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
+final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
 
   final TermsHashPerField termsHashPerField;
-  final TermVectorsTermsWriter termsWriter;
+  final TermVectorsConsumer termsWriter;
   final FieldInfo fieldInfo;
   final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
@@ -40,7 +40,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   int maxNumPostings;
   OffsetAttribute offsetAttribute = null;
 
-  public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriter termsWriter, FieldInfo fieldInfo) {
+  public TermVectorsConsumerPerField(TermsHashPerField termsHashPerField, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
     this.termsWriter = termsWriter;
     this.fieldInfo = fieldInfo;

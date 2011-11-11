@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class TermVectorsTermsWriter extends TermsHashConsumer {
+final class TermVectorsConsumer extends TermsHashConsumer {
 
   TermVectorsWriter writer;
   final DocumentsWriterPerThread docWriter;
@@ -42,7 +42,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   final ByteSliceReader vectorSliceReader = new ByteSliceReader();
   boolean hasVectors;
 
-  public TermVectorsTermsWriter(DocumentsWriterPerThread docWriter) {
+  public TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     docState = docWriter.docState;
   }
@@ -63,7 +63,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
 
     for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
-      TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) field;
+      TermVectorsConsumerPerField perField = (TermVectorsConsumerPerField) field;
       perField.termsHashPerField.reset();
       perField.shrinkHash();
     }
@@ -134,22 +134,22 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   int numVectorFields;
 
-  TermVectorsTermsWriterPerField[] perFields;
+  TermVectorsConsumerPerField[] perFields;
 
   void reset() {
     numVectorFields = 0;
-    perFields = new TermVectorsTermsWriterPerField[1];
+    perFields = new TermVectorsConsumerPerField[1];
   }
 
   @Override
   public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
-    return new TermVectorsTermsWriterPerField(termsHashPerField, this, fieldInfo);
+    return new TermVectorsConsumerPerField(termsHashPerField, this, fieldInfo);
   }
 
-  void addFieldToFlush(TermVectorsTermsWriterPerField fieldToFlush) {
+  void addFieldToFlush(TermVectorsConsumerPerField fieldToFlush) {
     if (numVectorFields == perFields.length) {
       int newSize = ArrayUtil.oversize(numVectorFields + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-      TermVectorsTermsWriterPerField[] newArray = new TermVectorsTermsWriterPerField[newSize];
+      TermVectorsConsumerPerField[] newArray = new TermVectorsConsumerPerField[newSize];
       System.arraycopy(perFields, 0, newArray, 0, numVectorFields);
       perFields = newArray;
     }

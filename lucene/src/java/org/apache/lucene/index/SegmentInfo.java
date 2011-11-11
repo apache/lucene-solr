@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -252,7 +253,8 @@ public final class SegmentInfo implements Cloneable {
         dirToTest = dir;
       }
       try {
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION)) ? YES : NO;
+        // TODO: remove this manual file check or push to preflex codec
+        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION)) ? YES : NO;
       } finally {
         if (isCompoundFile) {
           dirToTest.close();
@@ -330,10 +332,11 @@ public final class SegmentInfo implements Cloneable {
   }
   
   // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
-  private boolean isDocStoreFile(String fileName) throws IOException {
+  boolean isDocStoreFile(String fileName) throws IOException {
     Set<String> docStoreFiles = new HashSet<String>();
     codec.storedFieldsFormat().files(dir, this, docStoreFiles);
-    return IndexFileNames.isDocStoreFile(fileName) || docStoreFiles.contains(fileName);
+    codec.termVectorsFormat().files(dir, this, docStoreFiles);
+    return fileName.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION) || docStoreFiles.contains(fileName);
   }
 
   public boolean getHasVectors() throws IOException {
@@ -658,18 +661,6 @@ public final class SegmentInfo implements Cloneable {
       // TODO: push this out into preflex fieldsFormat?
       if (docStoreIsCompoundFile) {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
-      } else {
-        if (getHasVectors()) {
-          fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-          fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-          fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-        }
-      }
-    } else if (!useCompoundFile) {
-      if (getHasVectors()) {
-        fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-        fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-        fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
       }
     }
 

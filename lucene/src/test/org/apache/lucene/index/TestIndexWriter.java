@@ -42,6 +42,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
@@ -1736,10 +1737,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
     assertNoUnreferencedFiles(dir, "no tv files");
     String[] files = dir.listAll();
+    // TODO: this check should use codec's files()
     for(String file : files) {
-      assertTrue(!file.endsWith(IndexFileNames.VECTORS_FIELDS_EXTENSION));
-      assertTrue(!file.endsWith(IndexFileNames.VECTORS_INDEX_EXTENSION));
-      assertTrue(!file.endsWith(IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+      assertTrue(!file.endsWith(DefaultTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+      assertTrue(!file.endsWith(DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION));
+      assertTrue(!file.endsWith(DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
     }
 
     dir.close();

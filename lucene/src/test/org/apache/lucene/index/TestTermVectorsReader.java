@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -185,8 +186,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void test() throws IOException {
     //Check to see the files were created properly in setup
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION)));
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_INDEX_EXTENSION)));
+    // TODO: fix this or at least add 'or' simpletext's extension
+    assumeFalse("test makes assumptions about filenames", Codec.getDefault().getName().equals("SimpleText"));
+    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION)));
+    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION)));
   }
 
   public void testReader() throws IOException {

@@ -22,6 +22,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
@@ -34,6 +35,7 @@ import org.apache.lucene.util.IOUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 
 public class DefaultTermVectorsReader extends TermVectorsReader {
 
@@ -45,8 +47,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
   // NOTE: always change this if you switch to a new format!
   // whenever you add a new format, make it 1 larger (positive version logic)!
-  // nocommit: not public
-  public static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
+  static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
   
   // when removing support for old versions, leave the last supported version here
   static final int FORMAT_MINIMUM = FORMAT_UTF8_LENGTH_IN_BYTES;
@@ -54,11 +55,22 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   static final int FORMAT_SIZE = 4;
 
-  // nocommit: not public
-  public static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
-  // nocommit: not public
-  public static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
+  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
+
+  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
   
+  /** Extension of vectors fields file */
+  // TODO: make pkg-private after we remove/refactor fileExists check in SI or drop 3.x support
+  public static final String VECTORS_FIELDS_EXTENSION = "tvf";
+
+  /** Extension of vectors documents file */
+  // TODO: make pkg-private after we remove/refactor fileExists check in SI or drop 3.x support
+  public static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
+
+  /** Extension of vectors index file */
+  // TODO: make pkg-private after we remove/refactor fileExists check in SI or drop 3.x support
+  public static final String VECTORS_INDEX_EXTENSION = "tvx";
+
   private FieldInfos fieldInfos;
 
   private IndexInput tvx;
@@ -96,13 +108,13 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     boolean success = false;
 
     try {
-      String idxName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
+      String idxName = IndexFileNames.segmentFileName(segment, "", VECTORS_INDEX_EXTENSION);
       tvx = d.openInput(idxName, context);
       format = checkValidFormat(tvx, idxName);
-      String fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      String fn = IndexFileNames.segmentFileName(segment, "", VECTORS_DOCUMENTS_EXTENSION);
       tvd = d.openInput(fn, context);
       final int tvdFormat = checkValidFormat(tvd, fn);
-      fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      fn = IndexFileNames.segmentFileName(segment, "", VECTORS_FIELDS_EXTENSION);
       tvf = d.openInput(fn, context);
       final int tvfFormat = checkValidFormat(tvf, fn);
 
@@ -500,6 +512,23 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     }
     
     return new DefaultTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
+  }
+  
+  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    if (info.getHasVectors()) {
+      if (info.getDocStoreOffset() != -1) {
+        assert info.getDocStoreSegment() != null;
+        if (!info.getDocStoreIsCompoundFile()) {
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_INDEX_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_FIELDS_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_DOCUMENTS_EXTENSION));
+        }
+      } else {
+        files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
+      }
+    }
   }
 }
 
