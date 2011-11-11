@@ -16,17 +16,22 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
@@ -56,6 +61,9 @@ public class TestFieldCache extends LuceneTestCase {
       if (i%2 == 0) {
         doc.add(newField("sparse", String.valueOf(i), Field.Store.NO, Field.Index.NOT_ANALYZED));
       }
+      if (i%2 == 0) {
+        doc.add(new NumericField("numInt").setIntValue(i));
+      }
       writer.addDocument(doc);
     }
     writer.close();
@@ -84,7 +92,7 @@ public class TestFieldCache extends LuceneTestCase {
 
   public void test() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
-    double [] doubles = cache.getDoubles(reader, "theDouble");
+    double [] doubles = cache.getDoubles(reader, "theDouble", null, random.nextBoolean());
     assertSame("Second request to cache return same array", doubles, cache.getDoubles(reader, "theDouble"));
     assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER));
     assertTrue("doubles Size: " + doubles.length + " is not: " + NUM_DOCS, doubles.length == NUM_DOCS);
@@ -93,7 +101,7 @@ public class TestFieldCache extends LuceneTestCase {
 
     }
     
-    long [] longs = cache.getLongs(reader, "theLong");
+    long [] longs = cache.getLongs(reader, "theLong", null, random.nextBoolean());
     assertSame("Second request to cache return same array", longs, cache.getLongs(reader, "theLong"));
     assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.DEFAULT_LONG_PARSER));
     assertTrue("longs Size: " + longs.length + " is not: " + NUM_DOCS, longs.length == NUM_DOCS);
@@ -102,7 +110,7 @@ public class TestFieldCache extends LuceneTestCase {
 
     }
     
-    byte [] bytes = cache.getBytes(reader, "theByte");
+    byte [] bytes = cache.getBytes(reader, "theByte", null, random.nextBoolean());
     assertSame("Second request to cache return same array", bytes, cache.getBytes(reader, "theByte"));
     assertSame("Second request with explicit parser return same array", bytes, cache.getBytes(reader, "theByte", FieldCache.DEFAULT_BYTE_PARSER));
     assertTrue("bytes Size: " + bytes.length + " is not: " + NUM_DOCS, bytes.length == NUM_DOCS);
@@ -111,7 +119,7 @@ public class TestFieldCache extends LuceneTestCase {
 
     }
     
-    short [] shorts = cache.getShorts(reader, "theShort");
+    short [] shorts = cache.getShorts(reader, "theShort", null, random.nextBoolean());
     assertSame("Second request to cache return same array", shorts, cache.getShorts(reader, "theShort"));
     assertSame("Second request with explicit parser return same array", shorts, cache.getShorts(reader, "theShort", FieldCache.DEFAULT_SHORT_PARSER));
     assertTrue("shorts Size: " + shorts.length + " is not: " + NUM_DOCS, shorts.length == NUM_DOCS);
@@ -120,7 +128,7 @@ public class TestFieldCache extends LuceneTestCase {
 
     }
     
-    int [] ints = cache.getInts(reader, "theInt");
+    int [] ints = cache.getInts(reader, "theInt", null, random.nextBoolean());
     assertSame("Second request to cache return same array", ints, cache.getInts(reader, "theInt"));
     assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.DEFAULT_INT_PARSER));
     assertTrue("ints Size: " + ints.length + " is not: " + NUM_DOCS, ints.length == NUM_DOCS);
@@ -129,7 +137,7 @@ public class TestFieldCache extends LuceneTestCase {
 
     }
     
-    float [] floats = cache.getFloats(reader, "theFloat");
+    float [] floats = cache.getFloats(reader, "theFloat", null, random.nextBoolean());
     assertSame("Second request to cache return same array", floats, cache.getFloats(reader, "theFloat"));
     assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.DEFAULT_FLOAT_PARSER));
     assertTrue("floats Size: " + floats.length + " is not: " + NUM_DOCS, floats.length == NUM_DOCS);
@@ -153,5 +161,111 @@ public class TestFieldCache extends LuceneTestCase {
     for (int i = 0; i < docsWithField.length(); i++) {
       assertEquals(i%2 == 0, docsWithField.get(i));
     }
+  }
+  public void testDocsWithField() throws Exception {
+    FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+    assertEquals(0, cache.getCacheEntries().length);
+    double[] doubles = cache.getDoubles(reader, "theDouble", null, true);
+
+    // The double[] takes two slots (one w/ null parser, one
+    // w/ real parser), and docsWithField should also
+    // have been populated:
+    assertEquals(3, cache.getCacheEntries().length);
+    Bits bits = cache.getDocsWithField(reader, "theDouble");
+
+    // No new entries should appear:
+    assertEquals(3, cache.getCacheEntries().length);
+    assertTrue(bits instanceof Bits.MatchAllBits);
+
+    int[] ints = cache.getInts(reader, "sparse", null, true);
+    assertEquals(6, cache.getCacheEntries().length);
+    Bits docsWithField = cache.getDocsWithField(reader, "sparse");
+    assertEquals(6, cache.getCacheEntries().length);
+    for (int i = 0; i < docsWithField.length(); i++) {
+      if (i%2 == 0) {
+        assertTrue(docsWithField.get(i));
+        assertEquals(i, ints[i]);
+      } else {
+        assertFalse(docsWithField.get(i));
+      }
+    }
+
+    int[] numInts = cache.getInts(reader, "numInt", null, random.nextBoolean());
+    docsWithField = cache.getDocsWithField(reader, "numInt");
+    for (int i = 0; i < docsWithField.length(); i++) {
+      if (i%2 == 0) {
+        assertTrue(docsWithField.get(i));
+        assertEquals(i, numInts[i]);
+      } else {
+        assertFalse(docsWithField.get(i));
+      }
+    }
+  }
+  
+  public void testGetDocsWithFieldThreadSafety() throws Exception {
+    final FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+
+    int NUM_THREADS = 3;
+    Thread[] threads = new Thread[NUM_THREADS];
+    final AtomicBoolean failed = new AtomicBoolean();
+    final AtomicInteger iters = new AtomicInteger();
+    final int NUM_ITER = 200 * RANDOM_MULTIPLIER;
+    final CyclicBarrier restart = new CyclicBarrier(NUM_THREADS,
+                                                    new Runnable() {
+                                                      // @Override not until java 1.6
+                                                      public void run() {
+                                                        cache.purgeAllCaches();
+                                                        iters.incrementAndGet();
+                                                      }
+                                                    });
+    for(int threadIDX=0;threadIDX<NUM_THREADS;threadIDX++) {
+      threads[threadIDX] = new Thread() {
+          @Override
+          public void run() {
+
+            try {
+              while(!failed.get()) {
+                final int op = random.nextInt(3);
+                if (op == 0) {
+                  // Purge all caches & resume, once all
+                  // threads get here:
+                  restart.await();
+                  if (iters.get() >= NUM_ITER) {
+                    break;
+                  }
+                } else if (op == 1) {
+                  Bits docsWithField = cache.getDocsWithField(reader, "sparse");
+                  for (int i = 0; i < docsWithField.length(); i++) {
+                    assertEquals(i%2 == 0, docsWithField.get(i));
+                  }
+                } else {
+                  int[] ints = cache.getInts(reader, "sparse", null, true);
+                  Bits docsWithField = cache.getDocsWithField(reader, "sparse");
+                  for (int i = 0; i < docsWithField.length(); i++) {
+                    if (i%2 == 0) {
+                      assertTrue(docsWithField.get(i));
+                      assertEquals(i, ints[i]);
+                    } else {
+                      assertFalse(docsWithField.get(i));
+                    }
+                  }
+                }
+              }
+            } catch (Throwable t) {
+              failed.set(true);
+              restart.reset();
+              throw new RuntimeException(t);
+            }
+          }
+        };
+      threads[threadIDX].start();
+    }
+
+    for(int threadIDX=0;threadIDX<NUM_THREADS;threadIDX++) {
+      threads[threadIDX].join();
+    }
+    assertFalse(failed.get());
   }
 }

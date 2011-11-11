@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,15 +148,15 @@ class FieldCacheImpl implements FieldCache {
       this.wrapper = null;
     }
 
-    Cache(FieldCache wrapper) {
+    Cache(FieldCacheImpl wrapper) {
       this.wrapper = wrapper;
     }
 
-    final FieldCache wrapper;
+    final FieldCacheImpl wrapper;
 
     final Map<Object,Map<Entry,Object>> readerCache = new WeakHashMap<Object,Map<Entry,Object>>();
     
-    protected abstract Object createValue(IndexReader reader, Entry key)
+    protected abstract Object createValue(IndexReader reader, Entry key, boolean setDocsWithField)
         throws IOException;
 
     /** Remove this reader from the cache, if present. */
@@ -168,7 +167,28 @@ class FieldCacheImpl implements FieldCache {
       }
     }
 
-    public Object get(IndexReader reader, Entry key) throws IOException {
+    /** Sets the key to the value for the provided reader;
+     *  if the key is already set then this doesn't change it. */
+    public void put(IndexReader reader, Entry key, Object value) {
+      final Object readerKey = reader.getCoreCacheKey();
+      synchronized (readerCache) {
+        Map<Entry,Object> innerCache = readerCache.get(readerKey);
+        if (innerCache == null) {
+          // First time this reader is using FieldCache
+          innerCache = new HashMap<Entry,Object>();
+          readerCache.put(readerKey, innerCache);
+          reader.addReaderFinishedListener(purgeReader);
+        }
+        if (innerCache.get(key) == null) {
+          innerCache.put(key, value);
+        } else {
+          // Another thread beat us to it; leave the current
+          // value
+        }
+      }
+    }
+
+    public Object get(IndexReader reader, Entry key, boolean setDocsWithField) throws IOException {
       Map<Entry,Object> innerCache;
       Object value;
       final Object readerKey = reader.getCoreCacheKey();
@@ -192,7 +212,7 @@ class FieldCacheImpl implements FieldCache {
         synchronized (value) {
           CreationPlaceholder progress = (CreationPlaceholder) value;
           if (progress.value == null) {
-            progress.value = createValue(reader, key);
+            progress.value = createValue(reader, key, setDocsWithField);
             synchronized (readerCache) {
               innerCache.put(key, progress.value);
             }
@@ -267,31 +287,39 @@ class FieldCacheImpl implements FieldCache {
 
   // inherit javadocs
   public byte[] getBytes (IndexReader reader, String field) throws IOException {
-    return getBytes(reader, field, null);
+    return getBytes(reader, field, null, false);
   }
 
   // inherit javadocs
   public byte[] getBytes(IndexReader reader, String field, ByteParser parser)
       throws IOException {
-    return (byte[]) caches.get(Byte.TYPE).get(reader, new Entry(field, parser));
+    return getBytes(reader, field, parser, false);
+  }
+
+  public byte[] getBytes(IndexReader reader, String field, ByteParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (byte[]) caches.get(Byte.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
   static final class ByteCache extends Cache {
-    ByteCache(FieldCache wrapper) {
+    ByteCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
+
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       Entry entry = entryKey;
       String field = entry.field;
       ByteParser parser = (ByteParser) entry.custom;
       if (parser == null) {
-        return wrapper.getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER);
+        return wrapper.getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER, setDocsWithField);
       }
-      final byte[] retArray = new byte[reader.maxDoc()];
+      final int maxDoc = reader.maxDoc();
+      final byte[] retArray = new byte[maxDoc];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
+      FixedBitSet docsWithField = null;
       try {
         do {
           Term term = termEnum.term();
@@ -299,13 +327,24 @@ class FieldCacheImpl implements FieldCache {
           byte termval = parser.parseByte(term.text());
           termDocs.seek (termEnum);
           while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
+            final int docID = termDocs.doc();
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
+              }
+              docsWithField.set(docID);
+            }
           }
         } while (termEnum.next());
       } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();
+      }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
       }
       return retArray;
     }
@@ -313,32 +352,40 @@ class FieldCacheImpl implements FieldCache {
   
   // inherit javadocs
   public short[] getShorts (IndexReader reader, String field) throws IOException {
-    return getShorts(reader, field, null);
+    return getShorts(reader, field, null, false);
   }
 
   // inherit javadocs
   public short[] getShorts(IndexReader reader, String field, ShortParser parser)
       throws IOException {
-    return (short[]) caches.get(Short.TYPE).get(reader, new Entry(field, parser));
+    return getShorts(reader, field, parser, false);
+  }
+
+  // inherit javadocs
+  public short[] getShorts(IndexReader reader, String field, ShortParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (short[]) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
   static final class ShortCache extends Cache {
-    ShortCache(FieldCache wrapper) {
+    ShortCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       Entry entry =  entryKey;
       String field = entry.field;
       ShortParser parser = (ShortParser) entry.custom;
       if (parser == null) {
-        return wrapper.getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER);
+        return wrapper.getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER, setDocsWithField);
       }
-      final short[] retArray = new short[reader.maxDoc()];
+      final int maxDoc = reader.maxDoc();
+      final short[] retArray = new short[maxDoc];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
+      FixedBitSet docsWithField = null;
       try {
         do {
           Term term = termEnum.term();
@@ -346,7 +393,15 @@ class FieldCacheImpl implements FieldCache {
           short termval = parser.parseShort(term.text());
           termDocs.seek (termEnum);
           while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
+            final int docID = termDocs.doc();
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
+              }
+              docsWithField.set(docID);
+            }
           }
         } while (termEnum.next());
       } catch (StopFillCacheException stop) {
@@ -354,10 +409,34 @@ class FieldCacheImpl implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
       return retArray;
     }
   }
   
+  // null Bits means no docs matched
+  void setDocsWithField(IndexReader reader, String field, Bits docsWithField) {
+    final int maxDoc = reader.maxDoc();
+    final Bits bits;
+    if (docsWithField == null) {
+      bits = new Bits.MatchNoBits(maxDoc);
+    } else if (docsWithField instanceof FixedBitSet) {
+      final int numSet = ((FixedBitSet) docsWithField).cardinality();
+      if (numSet >= maxDoc) {
+        // The cardinality of the BitSet is maxDoc if all documents have a value.
+        assert numSet == maxDoc;
+        bits = new Bits.MatchAllBits(maxDoc);
+      } else {
+        bits = docsWithField;
+      }
+    } else {
+      bits = docsWithField;
+    }
+    caches.get(DocsWithFieldCache.class).put(reader, new Entry(field, null), bits);
+  }
+
   // inherit javadocs
   public int[] getInts (IndexReader reader, String field) throws IOException {
     return getInts(reader, field, null);
@@ -366,40 +445,57 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public int[] getInts(IndexReader reader, String field, IntParser parser)
       throws IOException {
-    return (int[]) caches.get(Integer.TYPE).get(reader, new Entry(field, parser));
+    return getInts(reader, field, parser, false);
+  }
+
+  // inherit javadocs
+  public int[] getInts(IndexReader reader, String field, IntParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (int[]) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
   static final class IntCache extends Cache {
-    IntCache(FieldCache wrapper) {
+    IntCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       Entry entry = entryKey;
       String field = entry.field;
       IntParser parser = (IntParser) entry.custom;
       if (parser == null) {
         try {
-          return wrapper.getInts(reader, field, DEFAULT_INT_PARSER);
+          return wrapper.getInts(reader, field, DEFAULT_INT_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getInts(reader, field, NUMERIC_UTILS_INT_PARSER);      
+          return wrapper.getInts(reader, field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
         }
       }
+      final int maxDoc = reader.maxDoc();
       int[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
+      FixedBitSet docsWithField = null;
       try {
         do {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           int termval = parser.parseInt(term.text());
-          if (retArray == null) // late init
-            retArray = new int[reader.maxDoc()];
+          if (retArray == null) { // late init
+            retArray = new int[maxDoc];
+          }
           termDocs.seek (termEnum);
           while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
+            final int docID = termDocs.doc();
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
+              }
+              docsWithField.set(docID);
+            }
           }
         } while (termEnum.next());
       } catch (StopFillCacheException stop) {
@@ -407,24 +503,28 @@ class FieldCacheImpl implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      if (retArray == null) // no values
-        retArray = new int[reader.maxDoc()];
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      if (retArray == null) { // no values
+        retArray = new int[maxDoc];
+      }
       return retArray;
     }
   }
   
   public Bits getDocsWithField(IndexReader reader, String field)
       throws IOException {
-    return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null));
+    return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null), false);
   }
 
   static final class DocsWithFieldCache extends Cache {
-    DocsWithFieldCache(FieldCache wrapper) {
+    DocsWithFieldCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
     
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
     throws IOException {
       final Entry entry = entryKey;
       final String field = entry.field;      
@@ -462,47 +562,63 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public float[] getFloats (IndexReader reader, String field)
     throws IOException {
-    return getFloats(reader, field, null);
+    return getFloats(reader, field, null, false);
   }
 
   // inherit javadocs
   public float[] getFloats(IndexReader reader, String field, FloatParser parser)
     throws IOException {
+    return getFloats(reader, field, parser, false);
+  }
 
-    return (float[]) caches.get(Float.TYPE).get(reader, new Entry(field, parser));
+  public float[] getFloats(IndexReader reader, String field, FloatParser parser, boolean setDocsWithField)
+    throws IOException {
+
+    return (float[]) caches.get(Float.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
   static final class FloatCache extends Cache {
-    FloatCache(FieldCache wrapper) {
+    FloatCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       Entry entry = entryKey;
       String field = entry.field;
       FloatParser parser = (FloatParser) entry.custom;
       if (parser == null) {
         try {
-          return wrapper.getFloats(reader, field, DEFAULT_FLOAT_PARSER);
+          return wrapper.getFloats(reader, field, DEFAULT_FLOAT_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER);      
+          return wrapper.getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
         }
-    }
+      }
+      final int maxDoc = reader.maxDoc();
       float[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
+      FixedBitSet docsWithField = null;
       try {
         do {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           float termval = parser.parseFloat(term.text());
-          if (retArray == null) // late init
-            retArray = new float[reader.maxDoc()];
+          if (retArray == null) { // late init
+            retArray = new float[maxDoc];
+          }
           termDocs.seek (termEnum);
           while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
+            final int docID = termDocs.doc();
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
+              }
+              docsWithField.set(docID);
+            }
           }
         } while (termEnum.next());
       } catch (StopFillCacheException stop) {
@@ -510,53 +626,73 @@ class FieldCacheImpl implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      if (retArray == null) // no values
-        retArray = new float[reader.maxDoc()];
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      if (retArray == null) { // no values
+        retArray = new float[maxDoc];
+      }
       return retArray;
     }
   }
 
-
   public long[] getLongs(IndexReader reader, String field) throws IOException {
-    return getLongs(reader, field, null);
+    return getLongs(reader, field, null, false);
   }
   
   // inherit javadocs
   public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser)
       throws IOException {
-    return (long[]) caches.get(Long.TYPE).get(reader, new Entry(field, parser));
+    return getLongs(reader, field, parser, false);
+  }
+
+  // inherit javadocs
+  public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (long[]) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
   static final class LongCache extends Cache {
-    LongCache(FieldCache wrapper) {
+    LongCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entry)
+    protected Object createValue(IndexReader reader, Entry entry, boolean setDocsWithField)
         throws IOException {
       String field = entry.field;
       FieldCache.LongParser parser = (FieldCache.LongParser) entry.custom;
       if (parser == null) {
         try {
-          return wrapper.getLongs(reader, field, DEFAULT_LONG_PARSER);
+          return wrapper.getLongs(reader, field, DEFAULT_LONG_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER);      
+          return wrapper.getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
         }
       }
+      final int maxDoc = reader.maxDoc();
       long[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term(field));
+      FixedBitSet docsWithField = null;
       try {
         do {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           long termval = parser.parseLong(term.text());
-          if (retArray == null) // late init
-            retArray = new long[reader.maxDoc()];
+          if (retArray == null) { // late init
+            retArray = new long[maxDoc];
+          }
           termDocs.seek (termEnum);
           while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
+            final int docID = termDocs.doc();
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
+              }
+              docsWithField.set(docID);
+            }
           }
         } while (termEnum.next());
       } catch (StopFillCacheException stop) {
@@ -564,8 +700,12 @@ class FieldCacheImpl implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      if (retArray == null) // no values
-        retArray = new long[reader.maxDoc()];
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      if (retArray == null) { // no values
+        retArray = new long[maxDoc];
+      }
       return retArray;
     }
   }
@@ -573,46 +713,63 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public double[] getDoubles(IndexReader reader, String field)
     throws IOException {
-    return getDoubles(reader, field, null);
+    return getDoubles(reader, field, null, false);
   }
 
   // inherit javadocs
   public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser)
       throws IOException {
-    return (double[]) caches.get(Double.TYPE).get(reader, new Entry(field, parser));
+    return getDoubles(reader, field, parser, false);
+  }
+
+  // inherit javadocs
+  public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
+      throws IOException {
+    return (double[]) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
   static final class DoubleCache extends Cache {
-    DoubleCache(FieldCache wrapper) {
+    DoubleCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       Entry entry = entryKey;
       String field = entry.field;
       FieldCache.DoubleParser parser = (FieldCache.DoubleParser) entry.custom;
       if (parser == null) {
         try {
-          return wrapper.getDoubles(reader, field, DEFAULT_DOUBLE_PARSER);
+          return wrapper.getDoubles(reader, field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER);      
+          return wrapper.getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
         }
       }
+      final int maxDoc = reader.maxDoc();
       double[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
+      FixedBitSet docsWithField = null;
       try {
         do {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           double termval = parser.parseDouble(term.text());
-          if (retArray == null) // late init
-            retArray = new double[reader.maxDoc()];
+          if (retArray == null) { // late init
+            retArray = new double[maxDoc];
+          }
           termDocs.seek (termEnum);
           while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
+            final int docID = termDocs.doc();
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
+              }
+              docsWithField.set(docID);
+            }
           }
         } while (termEnum.next());
       } catch (StopFillCacheException stop) {
@@ -620,8 +777,12 @@ class FieldCacheImpl implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      if (retArray == null) // no values
-        retArray = new double[reader.maxDoc()];
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, field, docsWithField);
+      }
+      if (retArray == null) { // no values
+        retArray = new double[maxDoc];
+      }
       return retArray;
     }
   }
@@ -629,16 +790,16 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public String[] getStrings(IndexReader reader, String field)
       throws IOException {
-    return (String[]) caches.get(String.class).get(reader, new Entry(field, (Parser)null));
+    return (String[]) caches.get(String.class).get(reader, new Entry(field, (Parser)null), false);
   }
 
   static final class StringCache extends Cache {
-    StringCache(FieldCache wrapper) {
+    StringCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
       String field = StringHelper.intern(entryKey.field);
       final String[] retArray = new String[reader.maxDoc()];
@@ -674,16 +835,16 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public StringIndex getStringIndex(IndexReader reader, String field)
       throws IOException {
-    return (StringIndex) caches.get(StringIndex.class).get(reader, new Entry(field, (Parser)null));
+    return (StringIndex) caches.get(StringIndex.class).get(reader, new Entry(field, (Parser)null), false);
   }
 
   static final class StringIndexCache extends Cache {
-    StringIndexCache(FieldCache wrapper) {
+    StringIndexCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
       String field = StringHelper.intern(entryKey.field);
       final int[] retArray = new int[reader.maxDoc()];
