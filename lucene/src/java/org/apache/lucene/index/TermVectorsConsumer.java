@@ -122,6 +122,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
 
     if (writer != null) {
       writer.abort();
+      writer = null;
     }
 
     lastDocID = 0;
