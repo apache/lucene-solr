@@ -23,7 +23,7 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Used by {@link DefaultTermVectorsReader} to retrieve term vectors.
+ * Used by {@link TermVectorsReader#get(int, String)} to retrieve term vectors.
  */
 // Models the existing parallel array structure
 public class ParallelArrayTermVectorMapper extends TermVectorMapper {

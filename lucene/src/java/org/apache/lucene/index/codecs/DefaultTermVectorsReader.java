@@ -278,24 +278,6 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     }
   }
 
-
-
-  /**
-   * Retrieve the term vector for the given document and field
-   * @param docNum The document number to retrieve the vector for
-   * @param field The field within the document to retrieve
-   * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
-   * @throws IOException if there is an error reading the term vector files
-   */
-  @Override
-  public TermFreqVector get(int docNum, String field) throws IOException {
-    // Check if no term vectors are available for this segment at all
-    ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
-    get(docNum, field, mapper);
-
-    return mapper.materializeVector();
-  }
-
   // Reads the String[] fields; you have to pre-seek tvd to
   // the right point
   private String[] readFields(int fieldCount) throws IOException {

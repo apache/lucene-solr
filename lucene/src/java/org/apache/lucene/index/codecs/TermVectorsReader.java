@@ -31,10 +31,25 @@ import org.apache.lucene.index.TermVectorMapper;
 public abstract class TermVectorsReader implements Cloneable,Closeable {
   // TODO: can we consolidate all these get's?
   public abstract TermFreqVector[] get(int doc) throws IOException;
-  public abstract TermFreqVector get(int doc, String field) throws IOException;
   
   public abstract void get(int doc, TermVectorMapper mapper) throws IOException;
   public abstract void get(int doc, String field, TermVectorMapper mapper) throws IOException;
 
   public abstract TermVectorsReader clone();
+
+  /**
+   * Retrieve the term vector for the given document and field
+   * @param docNum The document number to retrieve the vector for
+   * @param field The field within the document to retrieve
+   * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
+   * @throws IOException if there is an error reading the term vector files
+   */
+  // TODO: does this method belong here? This seems like sugar...
+  public TermFreqVector get(int doc, String field) throws IOException {
+    // Check if no term vectors are available for this segment at all
+    ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
+    get(doc, field, mapper);
+
+    return mapper.materializeVector();
+  }
 }
