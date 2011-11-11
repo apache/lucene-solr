@@ -22,7 +22,6 @@ import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.cache.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.IOException;
@@ -77,9 +76,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   @Test
   public void testCustomScoreFloat() throws Exception {
     // INT field can be parsed as float
-    FloatValuesCreator valuesCreator = new FloatValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
-    FloatFieldSource fieldSource = new FloatFieldSource(valuesCreator);
-
     doTestCustomScore(INT_AS_FLOAT_VALUESOURCE, 1.0);
     doTestCustomScore(INT_AS_FLOAT_VALUESOURCE, 5.0);
 
@@ -177,7 +173,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     @Override
     protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
-      final int[] values = FieldCache.DEFAULT.getInts(context.reader, INT_FIELD);
+      final int[] values = FieldCache.DEFAULT.getInts(context.reader, INT_FIELD, false);
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
@@ -237,8 +233,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestCustomScore(ValueSource valueSource, double dboost) throws Exception {
-    FunctionQuery functionQuery = new FunctionQuery(valueSource);
     float boost = (float) dboost;
+    FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexSearcher s = new IndexSearcher(dir, true);
 
     // regular (boolean) query.

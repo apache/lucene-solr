@@ -20,8 +20,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.cache.ByteValuesCreator;
-import org.apache.lucene.search.cache.CachedArrayCreator;
 
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -48,7 +46,7 @@ public class ByteField extends FieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new ByteFieldSource( new ByteValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
+    return new ByteFieldSource(field.name);
   }
 
   @Override

@@ -12,7 +12,6 @@ import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
-import org.apache.lucene.search.cache.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -54,13 +53,11 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
 
-  private static final int CREATOR_FLAGS = CachedArrayCreator.CACHE_VALUES_AND_BITS;
-
-  protected ValueSource BYTE_VALUESOURCE = new ByteFieldSource(new ByteValuesCreator(INT_FIELD, null, CREATOR_FLAGS));
-  protected ValueSource SHORT_VALUESOURCE = new ShortFieldSource(new ShortValuesCreator(INT_FIELD, null, CREATOR_FLAGS));
-  protected ValueSource INT_VALUESOURCE = new IntFieldSource(new IntValuesCreator(INT_FIELD, null, CREATOR_FLAGS));
-  protected ValueSource INT_AS_FLOAT_VALUESOURCE = new FloatFieldSource(new FloatValuesCreator(INT_FIELD, null, CREATOR_FLAGS));
-  protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(new FloatValuesCreator(FLOAT_FIELD, null, CREATOR_FLAGS));
+  protected ValueSource BYTE_VALUESOURCE = new ByteFieldSource(INT_FIELD);
+  protected ValueSource SHORT_VALUESOURCE = new ShortFieldSource(INT_FIELD);
+  protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
+  protected ValueSource INT_AS_FLOAT_VALUESOURCE = new FloatFieldSource(INT_FIELD);
+  protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
 
   private static final String DOC_TEXT_LINES[] = {
           "Well, this is just some plain text we use for creating the ",

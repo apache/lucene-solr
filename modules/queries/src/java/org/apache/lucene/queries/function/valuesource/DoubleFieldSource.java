@@ -17,19 +17,18 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.cache.DoubleValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.DoubleValues;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
@@ -39,23 +38,27 @@ import java.util.Map;
  *
  */
 
-public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
+public class DoubleFieldSource extends FieldCacheSource {
 
-  public DoubleFieldSource(DoubleValuesCreator creator) {
-    super(creator);
+  protected FieldCache.DoubleParser parser;
+
+  public DoubleFieldSource(String field) {
+    this(field, null);
   }
 
-  @Override
+  public DoubleFieldSource(String field, FieldCache.DoubleParser parser) {
+    super(field);
+    this.parser = parser;
+  }
+
   public String description() {
     return "double(" + field + ')';
   }
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DoubleValues vals = cache.getDoubles(readerContext.reader, field, creator);
-    final double[] arr = vals.values;
-    final Bits valid = vals.valid;
-    
+    final double[] arr = cache.getDoubles(readerContext.reader, field, parser, true);
+    final Bits valid = cache.getDocsWithField(readerContext.reader, field);
     return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
@@ -147,5 +150,19 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
 
       };
 
+  }
+
+  public boolean equals(Object o) {
+    if (o.getClass() != DoubleFieldSource.class) return false;
+    DoubleFieldSource other = (DoubleFieldSource) o;
+    return super.equals(other)
+      && (this.parser == null ? other.parser == null :
+          this.parser.getClass() == other.parser.getClass());
+  }
+
+  public int hashCode() {
+    int h = parser == null ? Double.class.hashCode() : parser.getClass().hashCode();
+    h += super.hashCode();
+    return h;
   }
 }

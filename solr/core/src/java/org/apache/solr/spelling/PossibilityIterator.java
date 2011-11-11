@@ -59,6 +59,9 @@ public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 	public PossibilityIterator(Map<Token, LinkedHashMap<String, Integer>> suggestions, int maximumRequiredSuggestions, int maxEvaluations) {
 		for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
 			Token token = entry.getKey();
+			if(entry.getValue().size()==0) {
+			  continue;
+			}
 			List<SpellCheckCorrection> possibleCorrections = new ArrayList<SpellCheckCorrection>();
 			for (Map.Entry<String, Integer> entry1 : entry.getValue().entrySet()) {
 				SpellCheckCorrection correction = new SpellCheckCorrection();

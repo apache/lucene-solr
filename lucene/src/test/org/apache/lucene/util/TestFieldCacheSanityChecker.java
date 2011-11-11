@@ -87,12 +87,12 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getDoubles(readerA, "theDouble");
-    cache.getDoubles(readerA, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER);
-    cache.getDoubles(readerB, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER);
+    cache.getDoubles(readerA, "theDouble", false);
+    cache.getDoubles(readerA, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(readerB, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
 
-    cache.getInts(readerX, "theInt");
-    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER);
+    cache.getInts(readerX, "theInt", false);
+    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER, false);
 
     // // // 
 
@@ -110,9 +110,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER);
+    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER, false);
     cache.getTerms(readerX, "theInt");
-    cache.getBytes(readerX, "theByte");
+    cache.getBytes(readerX, "theByte", false);
 
     // // // 
 
@@ -138,7 +138,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     cache.getTerms(readerB, "theString");
     cache.getTerms(readerX, "theString");
 
-    cache.getBytes(readerX, "theByte");
+    cache.getBytes(readerX, "theByte", false);
 
 
     // // // 

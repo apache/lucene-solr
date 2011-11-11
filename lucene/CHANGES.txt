@@ -726,6 +726,9 @@ New Features
   for more efficient storage of int arrays when the values are
   bounded, for example for storing the terms dict index (Toke
   Eskildsen via Mike McCandless)
+  
+* LUCENE-3558: Moved SearcherManager, NRTManager & SearcherLifetimeManager into
+  core. All classes are contained in o.a.l.search. (Simon Willnauer)
 
 Optimizations
 
@@ -743,6 +746,11 @@ Optimizations
 
 * LUCENE-2205: Very substantial (3-5X) RAM reduction required to hold
   the terms index on opening an IndexReader (Aaron McCurry via Mike McCandless)
+
+* LUCENE-3443: FieldCache can now set docsWithField, and create an
+  array, in a single pass.  This results in faster init time for apps
+  that need both (such as sorting by a field with a missing value).
+  (Mike McCandless)
 
 Test Cases
 

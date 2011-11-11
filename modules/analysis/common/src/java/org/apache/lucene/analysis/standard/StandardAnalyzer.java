@@ -81,21 +81,21 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
   }
 
   /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion Lucene version to match See {@link
    * <a href="#version">above</a>}
    * @param stopwords File to read stop words from */
   public StandardAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader)
+   * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion Lucene version to match See {@link
    * <a href="#version">above</a>}
    * @param stopwords Reader to read stop words from */
   public StandardAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+    this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
 
   /**

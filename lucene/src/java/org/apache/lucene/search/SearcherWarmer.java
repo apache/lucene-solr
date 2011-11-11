@@ -1,6 +1,6 @@
-package org.apache.lucene.search.cache;
+package org.apache.lucene.search;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,35 +17,18 @@ package org.apache.lucene.search.cache;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.IndexReader;
-
 import java.io.IOException;
 
-/**
- * Creates {@link DocTermOrds} instances.
- */
-public class DocTermOrdsCreator extends EntryCreatorWithOptions<DocTermOrds> {
+import org.apache.lucene.search.NRTManager; // javadocs
 
-  private final String field;
+/** Pass an implementation of this to {@link NRTManager} or
+ *  {@link SearcherManager} to warm a new {@link
+ *  IndexSearcher} before it's put into production.
+ *
+ * @lucene.experimental */
 
-  public DocTermOrdsCreator(String field, int flag) {
-    super(flag);
-    this.field = field;
-  }
-
-  @Override
-  public DocTermOrds create(IndexReader reader) throws IOException {
-    return new DocTermOrds(reader, field);
-  }
-
-  @Override
-  public DocTermOrds validate(DocTermOrds entry, IndexReader reader) throws IOException {
-    return entry;
-  }
-
-  @Override
-  public EntryKey getCacheKey() {
-    return new SimpleEntryKey(DocTermOrdsCreator.class, field);
-  }
+public interface SearcherWarmer {
+  // TODO: can we somehow merge this w/ IW's
+  // IndexReaderWarmer.... should IW switch to this?    
+  public void warm(IndexSearcher s) throws IOException;
 }

@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.index.NRTManager;        // javadocs
+import org.apache.lucene.search.NRTManager;        // javadocs
 import org.apache.lucene.index.IndexReader;        // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
@@ -46,8 +46,9 @@ import org.apache.lucene.util.IOUtils;
  * then record this searcher:
  *
  * <pre>
- *   // Record token into user's search results, eg as a
- *   // hidden HTML form field:
+ *   // Record the current searcher, and save the returend
+ *   // token into user's search results (eg as a  hidden
+ *   // HTML form field):
  *   long token = mgr.record(searcher);
  * </pre>
  *
@@ -56,9 +57,9 @@ import org.apache.lucene.util.IOUtils;
  * that you saved from the previous search and:
  *
  * <pre>
- *   // If possible, obtain same searcher version as last
+ *   // If possible, obtain the same searcher as the last
  *   // search:
- *   IndexSearcher searcher = mgr.acquire(version);
+ *   IndexSearcher searcher = mgr.acquire(token);
  *   if (searcher != null) {
  *     // Searcher is still here
  *     try {
@@ -79,7 +80,7 @@ import org.apache.lucene.util.IOUtils;
  * periodically prune old searchers:
  *
  * <pre>
- *   mgr.prune(new PruneByAge(600.0);
+ *   mgr.prune(new PruneByAge(600.0));
  * </pre>
  *
  * <p><b>NOTE</b>: keeping many searchers around means
@@ -94,6 +95,8 @@ import org.apache.lucene.util.IOUtils;
  * it's unlikely you'll hit two of them in your expiration
  * window.  Still you should budget plenty of heap in the
  * JVM to have a good safety margin.
+ * 
+ * @lucene.experimental
  */
 
 public class SearcherLifetimeManager implements Closeable {
@@ -249,7 +252,14 @@ public class SearcherLifetimeManager implements Closeable {
    *  from the same background thread that opens new
    *  searchers. */
   public synchronized void prune(Pruner pruner) throws IOException {
-    final List<SearcherTracker> trackers = new ArrayList<SearcherTracker>(searchers.values());
+    // Cannot just pass searchers.values() to ArrayList ctor
+    // (not thread-safe since the values can change while
+    // ArrayList is init'ing itself); must instead iterate
+    // ourselves:
+    final List<SearcherTracker> trackers = new ArrayList<SearcherTracker>();
+    for(SearcherTracker tracker : searchers.values()) {
+      trackers.add(tracker);
+    }
     Collections.sort(trackers);
     final long newestSec = trackers.isEmpty() ? 0L : trackers.get(0).recordTimeSec;
     for (SearcherTracker tracker: trackers) {

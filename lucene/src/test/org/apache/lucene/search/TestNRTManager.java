@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.search;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,10 +27,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.SearcherWarmer;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
+import org.apache.lucene.search.NRTManagerReopenThread;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NRTCachingDirectory;

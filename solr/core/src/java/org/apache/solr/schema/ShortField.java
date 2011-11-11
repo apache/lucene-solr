@@ -20,8 +20,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.cache.CachedArrayCreator;
-import org.apache.lucene.search.cache.ShortValuesCreator;
 
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -51,7 +49,7 @@ public class ShortField extends FieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new ShortFieldSource(new ShortValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
+    return new ShortFieldSource(field.name);
   }
 
   @Override
