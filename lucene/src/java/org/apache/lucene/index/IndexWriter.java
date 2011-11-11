@@ -2594,7 +2594,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
   
   /** Copies the segment files as-is into the IndexWriter's directory. */
-  // nocommit: are we testing all the cases here?!
   private void copySegmentAsIs(SegmentInfo info, String segName,
       Map<String, String> dsNames, Set<String> dsFilesCopied, IOContext context)
       throws IOException {
@@ -2618,11 +2617,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       newDsName = segName;
     }
     
+    Set<String> codecDocStoreFiles = info.codecDocStoreFiles();
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;
-      // nocommit: this method is slow!
-      if (info.isDocStoreFile(file)) {
+      if (codecDocStoreFiles.contains(file) || file.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
         if (dsFilesCopied.contains(newFileName)) {
           continue;

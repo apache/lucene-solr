@@ -331,11 +331,16 @@ public final class SegmentInfo implements Cloneable {
     }
   }
   
-  // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
-  boolean isDocStoreFile(String fileName) throws IOException {
+  Set<String> codecDocStoreFiles() throws IOException {
     Set<String> docStoreFiles = new HashSet<String>();
     codec.storedFieldsFormat().files(dir, this, docStoreFiles);
     codec.termVectorsFormat().files(dir, this, docStoreFiles);
+    return docStoreFiles;
+  }
+
+  // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
+  private boolean isDocStoreFile(String fileName) throws IOException {
+    Set<String> docStoreFiles = codecDocStoreFiles();
     return fileName.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION) || docStoreFiles.contains(fileName);
   }
 
