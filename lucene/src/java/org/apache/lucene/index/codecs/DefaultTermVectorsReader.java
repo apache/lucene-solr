@@ -85,13 +85,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   
   private final int format;
 
-  // only used by a test: nocommit
-  public DefaultTermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context)
-    throws CorruptIndexException, IOException {
-    this(d, segment, fieldInfos, context, -1, 0);
-  }
-  
-  // used by clone: nocommit
+  // used by clone
   DefaultTermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int docStoreOffset, int format) {
     this.fieldInfos = fieldInfos;
     this.tvx = tvx;
@@ -103,8 +97,12 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     this.format = format;
   }
     
-  public DefaultTermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size)
+  public DefaultTermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
+    final String segment = si.getDocStoreSegment();
+    final int docStoreOffset = si.getDocStoreOffset();
+    final int size = si.docCount;
+    
     boolean success = false;
 
     try {

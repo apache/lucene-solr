@@ -23,6 +23,11 @@ import java.io.IOException;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermVectorMapper;
 
+/**
+ * Codec API for reading term vectors:
+ * 
+ * @lucene.experimental
+ */
 public abstract class TermVectorsReader implements Cloneable,Closeable {
   // TODO: can we consolidate all these get's?
   public abstract TermFreqVector[] get(int doc) throws IOException;

@@ -166,12 +166,10 @@ final class SegmentCoreReaders {
         assert storeDir != null;
       }
       
-      final String storesSegment = si.getDocStoreSegment();
       fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(storeDir, si, fieldInfos, context);
  
       if (si.getHasVectors()) { // open term vector files only as needed
-        // nocommit
-        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
+        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(storeDir, si, fieldInfos, context);
       }
     }
   }

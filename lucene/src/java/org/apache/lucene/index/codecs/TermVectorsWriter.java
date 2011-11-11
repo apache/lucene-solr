@@ -27,24 +27,53 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * Codec API for writing term vectors:
+ * <p>
+ * <ol>
+ *   <li>For every document, {@link #startDocument(int)} is called,
+ *       informing the Codec how many fields will be written.
+ *   <li>{@link #startField(FieldInfo, int, boolean, boolean)} is called for 
+ *       each field in the document, informing the codec how many terms
+ *       will be written for that field, and whether or not positions
+ *       or offsets are enabled.
+ *   <li>Within each field, {@link #startTerm(BytesRef, int)} is called
+ *       for each term.
+ *   <li>If offsets and/or positions are enabled, then {@link #addPosition(int)}
+ *       and {@link #addOffset(int, int)} will be called for each term
+ *       occurrence.
+ *   <li>After all documents have been written, {@link #finish(int)} 
+ *       is called for verification/sanity-checks.
+ *   <li>Finally the writer is closed ({@link #close()})
+ * </ol>
+ * 
+ * @lucene.experimental
+ */
 public abstract class TermVectorsWriter implements Closeable {
   
   /** Called before writing the term vectors of the document.
-   *  {@link #startField(FieldInfo, int)} will be called 
-   *  <code>numVectorFields</code> times. Note that if term 
+   *  {@link #startField(FieldInfo, int, boolean, boolean)} will 
+   *  be called <code>numVectorFields</code> times. Note that if term 
    *  vectors are enabled, this is called even if the document 
    *  has no vector fields, in this case <code>numVectorFields</code> 
    *  will be zero. */
   public abstract void startDocument(int numVectorFields) throws IOException;
   
   /** Called before writing the terms of the field.
-   *  XXX will be called <code>numTerms</code> times. */
+   *  {@link #startTerm(BytesRef, int)} will be called <code>numTerms</code> times. */
   public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException;
   
+  /** Adds a term and its term frequency <code>freq</code>.
+   * If this field has positions and/or offsets enabled, then
+   * {@link #addPosition(int)} and/or {@link #addOffset(int, int)}
+   * will be called <code>freq</code> times respectively.
+   */
   public abstract void startTerm(BytesRef term, int freq) throws IOException;
   
+  /** Adds a term position */
   public abstract void addPosition(int position) throws IOException;
   
+  /** Adds term start and end offsets */
   public abstract void addOffset(int startOffset, int endOffset) throws IOException;
   
   /** Aborts writing entirely, implementation should remove
@@ -54,14 +83,17 @@ public abstract class TermVectorsWriter implements Closeable {
   /** Called before {@link #close()}, passing in the number
    *  of documents that were written. Note that this is 
    *  intentionally redundant (equivalent to the number of
-   *  calls to XXX, but a Codec should
+   *  calls to {@link #startDocument(int)}, but a Codec should
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
   public abstract void finish(int numDocs) throws IOException;
   
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
-   *  over deleted documents, and uses XXX, XXX, and XXX
+   *  over deleted documents, and uses {@link #startDocument(int)},
+   *  {@link #startField(FieldInfo, int, boolean, boolean)}, 
+   *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int)},
+   *  {@link #addOffset(int, int)}, and {@link #finish(int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */

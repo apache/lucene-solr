@@ -29,8 +29,7 @@ import org.apache.lucene.store.IOContext;
  * Controls the format of term vectors
  */
 public abstract class TermVectorsFormat {
-  // nocommit: privatize size-check and docstore crap
-  public abstract TermVectorsReader vectorsReader(Directory directory, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size) throws IOException;
+  public abstract TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException;
   public abstract TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException;
   public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
 }

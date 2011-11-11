@@ -47,7 +47,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private int[][] positions = new int[testTerms.length][];
   private TermVectorOffsetInfo[][] offsets = new TermVectorOffsetInfo[testTerms.length][];
   private Directory dir;
-  private String seg;
+  private SegmentInfo seg;
   private FieldInfos fieldInfos = new FieldInfos();
   private static int TERM_FREQ = 3;
 
@@ -127,10 +127,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
     for(int j=0;j<5;j++)
       writer.addDocument(doc);
     writer.commit();
-    seg = writer.newestSegment().name;
+    seg = writer.newestSegment();
     writer.close();
 
-    fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
   }
   
   @Override
@@ -188,8 +188,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
     //Check to see the files were created properly in setup
     // TODO: fix this or at least add 'or' simpletext's extension
     assumeFalse("test makes assumptions about filenames", Codec.getDefault().getName().equals("SimpleText"));
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION)));
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION)));
+    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg.name, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION)));
+    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg.name, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION)));
   }
 
   public void testReader() throws IOException {

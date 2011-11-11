@@ -28,8 +28,8 @@ import org.apache.lucene.store.IOContext;
 public class DefaultTermVectorsFormat extends TermVectorsFormat {
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size) throws IOException {
-    return new DefaultTermVectorsReader(directory, segment, fieldInfos, context, docStoreOffset, size);
+  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
+    return new DefaultTermVectorsReader(directory, segmentInfo, fieldInfos, context);
   }
 
   @Override

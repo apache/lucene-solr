@@ -44,7 +44,7 @@ import org.apache.lucene.util.Bits;
 public abstract class StoredFieldsWriter implements Closeable {
   
   /** Called before writing the stored fields of the document.
-   *  {@link #writeField(int, IndexableField)} will be called
+   *  {@link #writeField(FieldInfo, IndexableField)} will be called
    *  <code>numStoredFields</code> times. Note that this is
    *  called even if the document has no stored fields, in
    *  this case <code>numStoredFields</code> will be zero. */
@@ -68,7 +68,7 @@ public abstract class StoredFieldsWriter implements Closeable {
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
-   *  {@link #writeField(int, IndexableField)}, and {@link #finish(int)},
+   *  {@link #writeField(FieldInfo, IndexableField)}, and {@link #finish(int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
