@@ -245,7 +245,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     processors.put(dir, new PerTermPayloadProcessor());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     verifyPayloadExists(dir, "p", new BytesRef("p1"), 0);

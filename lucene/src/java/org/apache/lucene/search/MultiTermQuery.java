@@ -273,14 +273,14 @@ public abstract class MultiTermQuery extends Query {
   /**
    * Expert: Return the number of unique terms visited during execution of the query.
    * If there are many of them, you may consider using another query type
-   * or optimize your total term count in index.
+   * or reduce your total term count in index.
    * <p>This method is not thread safe, be sure to only call it when no query is running!
    * If you re-use the same query instance for another
    * search, be sure to first reset the term counter
    * with {@link #clearTotalNumberOfTerms}.
-   * <p>On optimized indexes / no MultiReaders, you get the correct number of
+   * <p>On single-segment indexes / no MultiReaders, you get the correct number of
    * unique terms for the whole index. Use this number to compare different queries.
-   * For non-optimized indexes this number can also be achieved in
+   * For multi-segment indexes this number can also be achieved in
    * non-constant-score mode. In constant-score mode you get the total number of
    * terms seeked for all segments / sub-readers.
    * @see #clearTotalNumberOfTerms

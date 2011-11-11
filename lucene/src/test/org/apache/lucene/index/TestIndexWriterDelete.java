@@ -64,7 +64,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       doc.add(newField("city", text[i], TextField.TYPE_STORED));
       modifier.addDocument(doc);
     }
-    modifier.optimize();
+    modifier.forceMerge(1);
     modifier.commit();
 
     Term term = new Term("city", "Amsterdam");
@@ -711,10 +711,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // flush (and commit if ac)
 
     if (VERBOSE) {
-      System.out.println("TEST: now optimize");
+      System.out.println("TEST: now full merge");
     }
 
-    modifier.optimize();
+    modifier.forceMerge(1);
     if (VERBOSE) {
       System.out.println("TEST: now commit");
     }

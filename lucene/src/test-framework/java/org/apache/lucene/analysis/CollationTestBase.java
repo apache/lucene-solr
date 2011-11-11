@@ -216,7 +216,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
         doc.add(new TextField("Denmark", denmarkAnalyzer.tokenStream("Denmark", new StringReader(sortData[i][5]))));
       writer.addDocument(doc);
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
 

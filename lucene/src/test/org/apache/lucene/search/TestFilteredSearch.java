@@ -61,15 +61,16 @@ public class TestFilteredSearch extends LuceneTestCase {
     directory.close();
   }
 
-  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean optimize) {
+  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean fullMerge) {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
         doc.add(newField(FIELD, Integer.toString(i), StringField.TYPE_STORED));
         writer.addDocument(doc);
       }
-      if(optimize)
-        writer.optimize();
+      if (fullMerge) {
+        writer.forceMerge(1);
+      }
       writer.close();
 
       BooleanQuery booleanQuery = new BooleanQuery();

@@ -42,7 +42,7 @@ public class TestDocCount extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     verifyCount(ir);
     ir.close();
-    iw.optimize();
+    iw.forceMerge(1);
     ir = iw.getReader();
     verifyCount(ir);
     ir.close();

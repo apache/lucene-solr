@@ -50,8 +50,8 @@ public class IndexMergeTool {
     System.out.println("Merging...");
     writer.addIndexes(indexes);
 
-    System.out.println("Optimizing...");
-    writer.optimize();
+    System.out.println("Full merge...");
+    writer.forceMerge(1);
     writer.close();
     System.out.println("Done.");
   }

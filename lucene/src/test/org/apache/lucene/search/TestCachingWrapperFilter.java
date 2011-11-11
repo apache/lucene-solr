@@ -32,7 +32,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util._TestUtil;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
   
@@ -239,8 +238,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
     assertEquals(missCount, filter.missCount);
 
-    // NOTE: silliness to make sure JRE does not optimize
-    // away our holding onto oldReader to prevent
+    // NOTE: silliness to make sure JRE does not eliminate
+    // our holding onto oldReader to prevent
     // CachingWrapperFilter's WeakHashMap from dropping the
     // entry:
     assertTrue(oldReader != null);

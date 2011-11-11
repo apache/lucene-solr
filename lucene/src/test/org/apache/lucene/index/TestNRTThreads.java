@@ -25,7 +25,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 
 // TODO
-//   - mix in optimize, addIndexes
+//   - mix in forceMerge, addIndexes
 //   - randomoly mix in non-congruent docs
 
 @UseNoMemoryExpensiveCodec

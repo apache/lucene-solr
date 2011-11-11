@@ -31,7 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 
-public class TestThreadedOptimize extends LuceneTestCase {
+public class TestThreadedForceMerge extends LuceneTestCase {
   
   private static final Analyzer ANALYZER = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
 
@@ -85,7 +85,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
           public void run() {
             try {
               for(int j=0;j<NUM_ITER2;j++) {
-                writerFinal.optimize(false);
+                writerFinal.forceMerge(1, false);
                 for(int k=0;k<17*(1+iFinal);k++) {
                   Document d = new Document();
                   d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, customType));
@@ -94,7 +94,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
                 }
                 for(int k=0;k<9*(1+iFinal);k++)
                   writerFinal.deleteDocuments(new Term("id", iterFinal + "_" + iFinal + "_" + j + "_" + k));
-                writerFinal.optimize();
+                writerFinal.forceMerge(1);
               }
             } catch (Throwable t) {
               setFailed();
@@ -124,7 +124,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
           OpenMode.APPEND).setMaxBufferedDocs(2));
       
       IndexReader reader = IndexReader.open(directory, true);
-      assertTrue("reader=" + reader, reader.isOptimized());
+      assertEquals("reader=" + reader, 1, reader.getSequentialSubReaders().length);
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }
@@ -135,7 +135,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
     Run above stress test against RAMDirectory and then
     FSDirectory.
   */
-  public void testThreadedOptimize() throws Exception {
+  public void testThreadedForceMerge() throws Exception {
     Directory directory = newDirectory();
     runTest(random, directory);
     directory.close();

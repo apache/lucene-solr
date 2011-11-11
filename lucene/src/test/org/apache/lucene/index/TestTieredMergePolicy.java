@@ -65,7 +65,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     dir.close();
   }
 
-  public void testPartialOptimize() throws Exception {
+  public void testPartialMerge() throws Exception {
     int num = atLeast(10);
     for(int iter=0;iter<num;iter++) {
       if (VERBOSE) {
@@ -97,9 +97,9 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       int segmentCount = w.getSegmentCount();
       int targetCount = _TestUtil.nextInt(random, 1, segmentCount);
       if (VERBOSE) {
-        System.out.println("TEST: optimize to " + targetCount + " segs (current count=" + segmentCount + ")");
+        System.out.println("TEST: merge to " + targetCount + " segs (current count=" + segmentCount + ")");
       }
-      w.optimize(targetCount);
+      w.forceMerge(targetCount);
       assertEquals(targetCount, w.getSegmentCount());
 
       w.close();
@@ -116,7 +116,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     conf.setMergePolicy(tmp);
 
     final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);
-    w.setDoRandomOptimize(false);
+    w.setDoRandomForceMerge(false);
 
     final int numDocs = atLeast(200);
     for(int i=0;i<numDocs;i++) {
@@ -126,7 +126,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       w.addDocument(doc);
     }
 
-    w.optimize();
+    w.forceMerge(1);
     IndexReader r = w.getReader();
     assertEquals(numDocs, r.maxDoc());
     assertEquals(numDocs, r.numDocs());

@@ -49,7 +49,7 @@ public class TestOmitNorms extends LuceneTestCase {
     d.add(f2);
         
     writer.addDocument(d);
-    writer.optimize();
+    writer.forceMerge(1);
     // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
     // keep things constant
     d = new Document();
@@ -62,7 +62,7 @@ public class TestOmitNorms extends LuceneTestCase {
     writer.addDocument(d);
 
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -116,7 +116,7 @@ public class TestOmitNorms extends LuceneTestCase {
     }
         
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -163,7 +163,7 @@ public class TestOmitNorms extends LuceneTestCase {
     }
 
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
 
     // flush
     writer.close();
@@ -209,7 +209,7 @@ public class TestOmitNorms extends LuceneTestCase {
     assertNoNrm(ram);
         
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -221,7 +221,7 @@ public class TestOmitNorms extends LuceneTestCase {
    * Tests various combinations of omitNorms=true/false, the field not existing at all,
    * ensuring that only omitNorms is 'viral'.
    * Internally checks that MultiNorms.norms() is consistent (returns the same bytes)
-   * as the optimized equivalent.
+   * as the fully merged equivalent.
    */
   public void testOmitNormsCombos() throws IOException {
     // indexed with norms
@@ -290,8 +290,8 @@ public class TestOmitNorms extends LuceneTestCase {
     IndexReader ir1 = riw.getReader();
     byte[] norms1 = MultiNorms.norms(ir1, field);
     
-    // optimize and validate MultiNorms against single segment.
-    riw.optimize();
+    // fully merge and validate MultiNorms against single segment.
+    riw.forceMerge(1);
     IndexReader ir2 = riw.getReader();
     byte[] norms2 = ir2.getSequentialSubReaders()[0].norms(field);
     

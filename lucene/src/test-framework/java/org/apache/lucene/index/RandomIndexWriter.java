@@ -38,7 +38,7 @@ import org.apache.lucene.util._TestUtil;
 
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
- *  commit periodically; may or may not optimize in the end,
+ *  commit periodically; may or may not forceMerge in the end,
  *  may flush by doc count instead of RAM, etc. 
  */
 
@@ -323,8 +323,8 @@ public class RandomIndexWriter implements Closeable {
     return getReader(true);
   }
 
-  private boolean doRandomOptimize = true;
-  private boolean doRandomOptimizeAssert = true;
+  private boolean doRandomForceMerge = true;
+  private boolean doRandomForceMergeAssert = true;
 
   public void expungeDeletes(boolean doWait) throws IOException {
     w.expungeDeletes(doWait);
@@ -334,25 +334,25 @@ public class RandomIndexWriter implements Closeable {
     w.expungeDeletes();
   }
 
-  public void setDoRandomOptimize(boolean v) {
-    doRandomOptimize = v;
+  public void setDoRandomForceMerge(boolean v) {
+    doRandomForceMerge = v;
   }
 
-  public void setDoRandomOptimizeAssert(boolean v) {
-    doRandomOptimizeAssert = v;
+  public void setDoRandomForceMergeAssert(boolean v) {
+    doRandomForceMergeAssert = v;
   }
 
-  private void doRandomOptimize() throws IOException {
-    if (doRandomOptimize) {
+  private void doRandomForceMerge() throws IOException {
+    if (doRandomForceMerge) {
       final int segCount = w.getSegmentCount();
       if (r.nextBoolean() || segCount == 0) {
-        // full optimize
-        w.optimize();
+        // full forceMerge
+        w.forceMerge(1);
       } else {
-        // partial optimize
+        // partial forceMerge
         final int limit = _TestUtil.nextInt(r, 1, segCount);
-        w.optimize(limit);
-        assert !doRandomOptimizeAssert || w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
+        w.forceMerge(limit);
+        assert !doRandomForceMergeAssert || w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
       }
     }
     switchDoDocValues();
@@ -361,7 +361,7 @@ public class RandomIndexWriter implements Closeable {
   public IndexReader getReader(boolean applyDeletions) throws IOException {
     getReaderCalled = true;
     if (r.nextInt(4) == 2) {
-      doRandomOptimize();
+      doRandomForceMerge();
     }
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
@@ -394,21 +394,21 @@ public class RandomIndexWriter implements Closeable {
    */
   public void close() throws IOException {
     // if someone isn't using getReader() API, we want to be sure to
-    // maybeOptimize since presumably they might open a reader on the dir.
+    // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2) {
-      doRandomOptimize();
+      doRandomForceMerge();
     }
     w.close();
   }
 
   /**
-   * Forces an optimize.
+   * Forces a forceMerge.
    * <p>
    * NOTE: this should be avoided in tests unless absolutely necessary,
    * as it will result in less test coverage.
-   * @see IndexWriter#optimize()
+   * @see IndexWriter#forceMerge(int)
    */
-  public void optimize() throws IOException {
-    w.optimize();
+  public void forceMerge(int maxSegmentCount) throws IOException {
+    w.forceMerge(maxSegmentCount);
   }
 }

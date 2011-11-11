@@ -326,9 +326,9 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     // Test multi segment
     r.close();
 
-    writer.optimize();
+    writer.forceMerge(1);
 
-    // Test optimized single segment
+    // Test single segment
     r = writer.getReader();
     checkTermsOrder(r, allTerms, true);
     r.close();

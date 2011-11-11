@@ -135,7 +135,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
       IndexCommit newest = commits.get(commits.size() - 1);
       log.info("newest commit = " + newest.getVersion());
 
-      int optimizedKept = newest.isOptimized() ? 1 : 0;
+      int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 
       // work our way from newest to oldest, skipping the first since we always want to keep it.
@@ -158,9 +158,9 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
           log.warn("Exception while checking commit point's age for deletion", e);
         }
 
-        if (optimizedKept < maxOptimizedCommitsToKeep && commit.isOptimized()) {
+        if (singleSegKept < maxOptimizedCommitsToKeep && commit.getSegmentCount() == 1) {
           totalKept++;
-          optimizedKept++;
+          singleSegKept++;
           continue;
         }
 

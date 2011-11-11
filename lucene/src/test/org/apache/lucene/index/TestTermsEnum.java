@@ -510,7 +510,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.addDocument(doc);
     w.commit();
     w.deleteDocuments(new Term("field", "one"));
-    w.optimize();
+    w.forceMerge(1);
     IndexReader r = w.getReader();
     w.close();
     assertEquals(1, r.numDocs());

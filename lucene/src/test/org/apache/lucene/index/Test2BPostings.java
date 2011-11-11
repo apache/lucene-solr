@@ -73,7 +73,7 @@ public class Test2BPostings extends LuceneTestCase {
         System.out.println(i + " of " + numDocs + "...");
       }
     }
-    w.optimize();
+    w.forceMerge(1);
     w.close();
     CheckIndex ci = new CheckIndex(dir);
     if (VERBOSE) {

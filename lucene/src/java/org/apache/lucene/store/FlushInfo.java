@@ -18,7 +18,7 @@ package org.apache.lucene.store;
  */
 
 /**
- * <p>A FlushInfo provides information required for a FLUSH context and other optimization operations.
+ * <p>A FlushInfo provides information required for a FLUSH context.
  *  It is used as part of an {@link IOContext} in case of FLUSH context.</p>
  */
 

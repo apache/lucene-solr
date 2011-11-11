@@ -321,7 +321,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(doc);
-    writer.optimize(); // be sure to have a single segment
+    writer.forceMerge(1); // be sure to have a single segment
     writer.close();
 
     _TestUtil.checkIndex(dir);

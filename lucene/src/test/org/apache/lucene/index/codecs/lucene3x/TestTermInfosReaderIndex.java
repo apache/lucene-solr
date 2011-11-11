@@ -181,7 +181,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
       }
       writer.addDocument(document);
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     return config.getTermIndexInterval();
   }

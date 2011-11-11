@@ -48,7 +48,7 @@ public class TestFlex extends LuceneTestCase {
           w.addDocument(doc);
         }
       } else {
-        w.optimize();
+        w.forceMerge(1);
       }
 
       IndexReader r = w.getReader();

@@ -195,8 +195,8 @@ public class Test2BTerms extends LuceneTestCase {
       }
       savedTerms = ts.savedTerms;
 
-      System.out.println("TEST: optimize");
-      w.optimize();
+      System.out.println("TEST: full merge");
+      w.forceMerge(1);
       System.out.println("TEST: close writer");
       w.close();
     }

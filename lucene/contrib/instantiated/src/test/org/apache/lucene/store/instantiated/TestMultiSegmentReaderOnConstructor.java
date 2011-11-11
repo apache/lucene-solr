@@ -30,7 +30,7 @@ import org.apache.lucene.document.TextField;
 /**
  * @since 2009-mar-30 13:15:49
  */
-public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
+public class TestMultiSegmentReaderOnConstructor extends LuceneTestCase {
 
   public void test() throws Exception {
     Directory dir = newDirectory();
@@ -49,18 +49,18 @@ public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
     addDocument(iw, "All work and no play makes wendy a dull girl");
     iw.close();
 
-    IndexReader unoptimizedReader = IndexReader.open(dir, false);
-    unoptimizedReader.deleteDocument(2);
+    IndexReader multiSegReader = IndexReader.open(dir, false);
+    multiSegReader.deleteDocument(2);
 
     try {
-      new InstantiatedIndex(unoptimizedReader);
+      new InstantiatedIndex(multiSegReader);
     } catch (Exception e) {
       e.printStackTrace(System.out);
-      fail("No exceptions when loading an unoptimized reader!");
+      fail("No exceptions when loading a multi-seg reader!");
     }
 
     // todo some assertations.
-    unoptimizedReader.close();
+    multiSegReader.close();
     dir.close();
   }
 

@@ -80,7 +80,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   /**
    * Test that norms values are preserved as the index is maintained. Including
    * separate norms. Including merging indexes with seprate norms. Including
-   * optimize.
+   * full merge.
    */
   public void testNorms() throws IOException {
     // test with a single index: index1
@@ -112,7 +112,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
     createIndex(random, dir3);
     if (VERBOSE) {
-      System.out.println("TEST: now addIndexes/optimize");
+      System.out.println("TEST: now addIndexes/full merge");
     }
     IndexWriter iw = new IndexWriter(
         dir3,
@@ -122,7 +122,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
         setMergePolicy(newLogMergePolicy(3))
     );
     iw.addIndexes(dir1, dir2);
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
 
     norms1.addAll(norms);
@@ -135,7 +135,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     verifyIndex(dir3);
     doTestNorms(random, dir3);
 
-    // now with optimize
+    // now with full merge
     iw = new IndexWriter(
         dir3,
         newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
@@ -143,7 +143,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
             setMaxBufferedDocs(5).
             setMergePolicy(newLogMergePolicy(3))
     );
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     verifyIndex(dir3);
 

@@ -31,13 +31,13 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
   public static final double DEFAULT_MAX_MERGE_MB = 2048;
 
   /** Default maximum segment size.  A segment of this size
-   *  or larger will never be merged during optimize.  @see setMaxMergeMBForOptimize */
-  public static final double DEFAULT_MAX_MERGE_MB_FOR_OPTIMIZE = Long.MAX_VALUE;
+   *  or larger will never be merged during forceMerge.  @see setMaxMergeMBForForceMerge */
+  public static final double DEFAULT_MAX_MERGE_MB_FOR_MERGE_IF_NEEDED = Long.MAX_VALUE;
 
   public LogByteSizeMergePolicy() {
     minMergeSize = (long) (DEFAULT_MIN_MERGE_MB*1024*1024);
     maxMergeSize = (long) (DEFAULT_MAX_MERGE_MB*1024*1024);
-    maxMergeSizeForOptimize = (long) (DEFAULT_MAX_MERGE_MB_FOR_OPTIMIZE*1024*1024);
+    maxMergeSizeForForcedMerge = (long) (DEFAULT_MAX_MERGE_MB_FOR_MERGE_IF_NEEDED*1024*1024);
   }
   
   @Override
@@ -70,19 +70,19 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
 
   /** <p>Determines the largest segment (measured by total
    *  byte size of the segment's files, in MB) that may be
-   *  merged with other segments during optimize. Setting
+   *  merged with other segments during forceMerge. Setting
    *  it low will leave the index with more than 1 segment,
-   *  even if {@link IndexWriter#optimize()} is called.*/
-  public void setMaxMergeMBForOptimize(double mb) {
-    maxMergeSizeForOptimize = (long) (mb*1024*1024);
+   *  even if {@link IndexWriter#forceMerge} is called.*/
+  public void setMaxMergeMBForForcedMerge(double mb) {
+    maxMergeSizeForForcedMerge = (long) (mb*1024*1024);
   }
 
   /** Returns the largest segment (measured by total byte
    *  size of the segment's files, in MB) that may be merged
-   *  with other segments during optimize.
-   *  @see #setMaxMergeMBForOptimize */
-  public double getMaxMergeMBForOptimize() {
-    return ((double) maxMergeSizeForOptimize)/1024/1024;
+   *  with other segments during forceMerge.
+   *  @see #setMaxMergeMBForForcedMerge */
+  public double getMaxMergeMBForForcedMerge() {
+    return ((double) maxMergeSizeForForcedMerge)/1024/1024;
   }
 
   /** Sets the minimum size for the lowest level segments.

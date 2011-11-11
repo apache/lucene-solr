@@ -172,7 +172,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(dir);

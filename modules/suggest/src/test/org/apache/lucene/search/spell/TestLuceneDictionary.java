@@ -70,7 +70,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
     doc.add(newField("zzz", "bar", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
   }
 

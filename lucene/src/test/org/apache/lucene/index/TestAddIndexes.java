@@ -41,13 +41,7 @@ import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
-import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
-import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -116,7 +110,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(40, writer.maxDoc());
     writer.close();
 
-    // test doc count before segments are merged/index is optimized
+    // test doc count before segments are merged
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     assertEquals(190, writer.maxDoc());
     writer.addIndexes(aux3);
@@ -130,9 +124,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
     verifyTermDocs(dir, new Term("content", "bbb"), 50);
 
-    // now optimize it.
+    // now fully merge it.
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     // make sure the new index is correct
@@ -188,7 +182,7 @@ public class TestAddIndexes extends LuceneTestCase {
     q.add(new Term("content", "14"));
     writer.deleteDocuments(q);
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.commit();
 
     verifyNumDocs(dir, 1039);
@@ -226,7 +220,7 @@ public class TestAddIndexes extends LuceneTestCase {
     q.add(new Term("content", "14"));
     writer.deleteDocuments(q);
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.commit();
 
     verifyNumDocs(dir, 1039);
@@ -264,7 +258,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer.addIndexes(aux);
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.commit();
 
     verifyNumDocs(dir, 1039);
@@ -731,10 +725,10 @@ public class TestAddIndexes extends LuceneTestCase {
       switch(j%5) {
       case 0:
         if (VERBOSE) {
-          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(Dir[]) then optimize");
+          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(Dir[]) then full merge");
         }
         writer2.addIndexes(dirs);
-        writer2.optimize();
+        writer2.forceMerge(1);
         break;
       case 1:
         if (VERBOSE) {
@@ -836,10 +830,10 @@ public class TestAddIndexes extends LuceneTestCase {
       switch(j%5) {
       case 0:
         if (VERBOSE) {
-          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes + optimize");
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes + full merge");
         }
         writer2.addIndexes(dirs);
-        writer2.optimize();
+        writer2.forceMerge(1);
         break;
       case 1:
         if (VERBOSE) {
@@ -855,9 +849,9 @@ public class TestAddIndexes extends LuceneTestCase {
         break;
       case 3:
         if (VERBOSE) {
-          System.out.println("TEST: " + Thread.currentThread().getName() + ": optimize");
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": full merge");
         }
-        writer2.optimize();
+        writer2.forceMerge(1);
         break;
       case 4:
         if (VERBOSE) {
@@ -1221,7 +1215,7 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     try {
-      IndexReader indexReader = IndexReader.open(toAdd);
+      IndexReader.open(toAdd);
       fail("no such codec");
     } catch (IllegalArgumentException ex) {
       // expected

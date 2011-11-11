@@ -27,13 +27,12 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+public class TestForceMergeForever extends LuceneTestCase {
 
-public class TestOptimizeForever extends LuceneTestCase {
-
-  // Just counts how many merges are done for optimize
+  // Just counts how many merges are done
   private static class MyIndexWriter extends IndexWriter {
 
-    AtomicInteger optimizeMergeCount = new AtomicInteger();
+    AtomicInteger mergeCount = new AtomicInteger();
     private boolean first;
 
     public MyIndexWriter(Directory dir, IndexWriterConfig conf) throws Exception {
@@ -42,12 +41,12 @@ public class TestOptimizeForever extends LuceneTestCase {
 
     @Override
     public void merge(MergePolicy.OneMerge merge) throws CorruptIndexException, IOException {
-      if (merge.optimize && (first || merge.segments.size() == 1)) {
+      if (merge.maxNumSegments != -1 && (first || merge.segments.size() == 1)) {
         first = false;
         if (VERBOSE) {
-          System.out.println("TEST: optimized merge");
+          System.out.println("TEST: maxNumSegments merge");
         }
-        optimizeMergeCount.incrementAndGet();
+        mergeCount.incrementAndGet();
       }
       super.merge(merge);
     }
@@ -57,7 +56,7 @@ public class TestOptimizeForever extends LuceneTestCase {
     final Directory d = newDirectory();
     final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
-    // Try to make an index that requires optimizing:
+    // Try to make an index that requires merging:
     w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 11));
     final int numStartDocs = atLeast(20);
     final LineFileDocs docs = new LineFileDocs(random);
@@ -95,10 +94,10 @@ public class TestOptimizeForever extends LuceneTestCase {
       }
       };
     t.start();
-    w.optimize();
+    w.forceMerge(1);
     doStop.set(true);
     t.join();
-    assertTrue("optimize count is " + w.optimizeMergeCount.get(), w.optimizeMergeCount.get() <= 1);
+    assertTrue("merge count is " + w.mergeCount.get(), w.mergeCount.get() <= 1);
     w.close();
     d.close();
   }

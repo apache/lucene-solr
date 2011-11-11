@@ -105,22 +105,22 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   }
   
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToMerge) throws IOException {
     
     assert maxNumSegments > 0;
 
     MergeSpecification spec = null;
 
-    if (!isOptimized(infos, maxNumSegments, segmentsToOptimize)) {
+    if (!isMerged(infos, maxNumSegments, segmentsToMerge)) {
 
       // Find the newest (rightmost) segment that needs to
-      // be optimized (other segments may have been flushed
-      // since optimize started):
+      // be merged (other segments may have been flushed
+      // since the merge started):
       int last = infos.size();
       while(last > 0) {
 
         final SegmentInfo info = infos.info(--last);
-        if (segmentsToOptimize.containsKey(info)) {
+        if (segmentsToMerge.containsKey(info)) {
           last++;
           break;
         }
@@ -130,9 +130,9 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
 
         if (maxNumSegments == 1) {
 
-          // Since we must optimize down to 1 segment, the
+          // Since we must merge down to 1 segment, the
           // choice is simple:
-          if (last > 1 || !isOptimized(infos.info(0))) {
+          if (last > 1 || !isMerged(infos.info(0))) {
 
             spec = new MergeSpecification();
             spec.add(new OneMerge(infos.asList().subList(0, last)));

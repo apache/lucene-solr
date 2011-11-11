@@ -92,7 +92,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       assertFalse(reader.isCurrent());
       reader.close();
     }
-    writer.optimize(); // make sure all merging is done etc.
+    writer.forceMerge(1); // make sure all merging is done etc.
     IndexReader reader = writer.getReader();
     writer.commit(); // no changes that are not visible to the reader
     assertTrue(reader.isCurrent());
@@ -110,7 +110,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   }
   
   public void testUpdateDocument() throws Exception {
-    boolean optimize = true;
+    boolean doFullMerge = true;
 
     Directory dir1 = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
@@ -129,7 +129,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir1, iwc);
 
     // create the index
-    createIndexNoClose(!optimize, "index1", writer);
+    createIndexNoClose(!doFullMerge, "index1", writer);
 
     // writer.flush(false, true, true);
 
@@ -199,7 +199,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(nrtReader.isCurrent());
     writer.addDocument(doc);
     assertFalse(nrtReader.isCurrent()); // should see the changes
-    writer.optimize(); // make sure we don't have a merge going on
+    writer.forceMerge(1); // make sure we don't have a merge going on
     assertFalse(nrtReader.isCurrent());
     nrtReader.close();
     
@@ -225,7 +225,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
    * @throws Exception
    */
   public void testAddIndexes() throws Exception {
-    boolean optimize = false;
+    boolean doFullMerge = false;
 
     Directory dir1 = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
@@ -241,13 +241,13 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir1, iwc);
 
     // create the index
-    createIndexNoClose(!optimize, "index1", writer);
+    createIndexNoClose(!doFullMerge, "index1", writer);
     writer.flush(false, true);
 
     // create a 2nd index
     Directory dir2 = newDirectory();
     IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    createIndexNoClose(!optimize, "index2", writer2);
+    createIndexNoClose(!doFullMerge, "index2", writer2);
     writer2.close();
 
     IndexReader r0 = writer.getReader();
@@ -280,7 +280,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   }
   
   public void testAddIndexes2() throws Exception {
-    boolean optimize = false;
+    boolean doFullMerge = false;
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
@@ -288,7 +288,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // create a 2nd index
     Directory dir2 = newDirectory();
     IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    createIndexNoClose(!optimize, "index2", writer2);
+    createIndexNoClose(!doFullMerge, "index2", writer2);
     writer2.close();
 
     writer.addIndexes(dir2);
@@ -312,12 +312,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
    * @throws Exception
    */
   public void testDeleteFromIndexWriter() throws Exception {
-    boolean optimize = true;
+    boolean doFullMerge = true;
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setReaderTermsIndexDivisor(2));
     // create the index
-    createIndexNoClose(!optimize, "index1", writer);
+    createIndexNoClose(!doFullMerge, "index1", writer);
     writer.flush(false, true);
     // get a reader
     IndexReader r1 = writer.getReader();
@@ -487,7 +487,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       switch (j % 4) {
         case 0:
           mainWriter.addIndexes(dirs);
-          mainWriter.optimize();
+          mainWriter.forceMerge(1);
           break;
         case 1:
           mainWriter.addIndexes(dirs);
@@ -503,7 +503,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
   }
 
-  public void testIndexWriterReopenSegmentOptimize() throws Exception {
+  public void testIndexWriterReopenSegmentFullMerge() throws Exception {
     doTestIndexWriterReopenSegment(true);
   }
 
@@ -515,13 +515,13 @@ public class TestIndexWriterReader extends LuceneTestCase {
    * Tests creating a segment, then check to insure the segment can be seen via
    * IW.getReader
    */
-  public void doTestIndexWriterReopenSegment(boolean optimize) throws Exception {
+  public void doTestIndexWriterReopenSegment(boolean doFullMerge) throws Exception {
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     IndexReader r1 = writer.getReader();
     assertEquals(0, r1.maxDoc());
     createIndexNoClose(false, "index1", writer);
-    writer.flush(!optimize, true);
+    writer.flush(!doFullMerge, true);
 
     IndexReader iwr1 = writer.getReader();
     assertEquals(100, iwr1.maxDoc());
@@ -581,7 +581,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       w.addDocument(DocHelper.createDocument(i, indexName, 4));
     }
     if (!multiSegment) {
-      w.optimize();
+      w.forceMerge(1);
     }
     w.close();
   }
@@ -592,7 +592,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       w.addDocument(DocHelper.createDocument(i, indexName, 4));
     }
     if (!multiSegment) {
-      w.optimize();
+      w.forceMerge(1);
     }
   }
 
@@ -636,7 +636,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final int count = warmer.warmCount;
 
     writer.addDocument(DocHelper.createDocument(17, "test", 4));
-    writer.optimize();
+    writer.forceMerge(1);
     assertTrue(warmer.warmCount > count);
     
     writer.close();

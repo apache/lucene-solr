@@ -57,7 +57,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 
     // Until we fix LUCENE-2348, the index must
     // have only 1 segment:
-    writer.optimize();
+    writer.forceMerge(1);
 
     reader = writer.getReader();
     writer.close();

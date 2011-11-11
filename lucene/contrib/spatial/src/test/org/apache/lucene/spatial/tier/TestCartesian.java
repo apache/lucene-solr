@@ -141,7 +141,7 @@ public class TestCartesian extends LuceneTestCase {
    
     writer.commit();
     // TODO: fix CustomScoreQuery usage in testRange/testGeoHashRange so we don't need this.
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
   }
 

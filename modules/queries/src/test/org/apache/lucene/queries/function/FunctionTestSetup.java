@@ -113,9 +113,9 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     }
     if (!doMultiSegment) {
       if (VERBOSE) {
-        System.out.println("TEST: setUp optimize");
+        System.out.println("TEST: setUp full merge");
       }
-      iw.optimize();
+      iw.forceMerge(1);
     }
     iw.close();
     if (VERBOSE) {
