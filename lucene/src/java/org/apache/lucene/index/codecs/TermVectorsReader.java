@@ -29,7 +29,8 @@ import org.apache.lucene.index.TermVectorMapper;
  * @lucene.experimental
  */
 public abstract class TermVectorsReader implements Cloneable,Closeable {
-  // TODO: can we consolidate all these get's?
+  // TODO: it would be nice to present an improved API here, 
+  // such as flex API (Fields + Terms etc) over the document
   public abstract TermFreqVector[] get(int doc) throws IOException;
   
   public abstract void get(int doc, TermVectorMapper mapper) throws IOException;
