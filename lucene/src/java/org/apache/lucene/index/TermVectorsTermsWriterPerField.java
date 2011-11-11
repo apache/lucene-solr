@@ -20,8 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.index.codecs.TermVectorsWriter;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -118,24 +117,14 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     assert termsWriter.vectorFieldsInOrder(fieldInfo);
 
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
-    final IndexOutput tvf = termsWriter.tvf;
+    final TermVectorsWriter tv = termsWriter.writer;
 
     // TODO: we may want to make this sort in same order
     // as Codec's terms dict?
     final int[] termIDs = termsHashPerField.sortPostings(BytesRef.getUTF8SortedAsUnicodeComparator());
 
-    tvf.writeVInt(numPostings);
-    byte bits = 0x0;
-    if (doVectorPositions)
-      bits |= DefaultTermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
-    if (doVectorOffsets)
-      bits |= DefaultTermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
-    tvf.writeByte(bits);
-
-    int lastLen = 0;
-    byte[] lastBytes = null;
-    int lastStart = 0;
-
+    tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets);
+    
     final ByteSliceReader reader = termsWriter.vectorSliceReader;
     final ByteBlockPool termBytePool = termsHashPerField.termBytePool;
 
@@ -145,37 +134,26 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
       // Get BytesRef
       termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
+      tv.startTerm(flushTerm, freq);
 
-      // Compute common byte prefix between last term and
-      // this term
-      int prefix = 0;
-      if (j > 0) {
-        while(prefix < lastLen && prefix < flushTerm.length) {
-          if (lastBytes[lastStart+prefix] != flushTerm.bytes[flushTerm.offset+prefix]) {
-            break;
-          }
-          prefix++;
+      int accum = 0;
+      
+      if (doVectorPositions) {
+        termsHashPerField.initReader(reader, termID, 0);
+        for (int i = 0; i < freq; i++) {
+          accum += reader.readVInt();
+          tv.addPosition(accum);
         }
       }
 
-      lastLen = flushTerm.length;
-      lastBytes = flushTerm.bytes;
-      lastStart = flushTerm.offset;
-
-      final int suffix = flushTerm.length - prefix;
-      tvf.writeVInt(prefix);
-      tvf.writeVInt(suffix);
-      tvf.writeBytes(flushTerm.bytes, lastStart+prefix, suffix);
-      tvf.writeVInt(freq);
-
-      if (doVectorPositions) {
-        termsHashPerField.initReader(reader, termID, 0);
-        reader.writeTo(tvf);
-      }
-
+      accum = 0;
+      
       if (doVectorOffsets) {
         termsHashPerField.initReader(reader, termID, 1);
-        reader.writeTo(tvf);
+        for (int i = 0; i < freq; i++) {
+          accum += reader.readVInt();
+          tv.addOffset(accum, accum + reader.readVInt());
+        }
       }
     }
 

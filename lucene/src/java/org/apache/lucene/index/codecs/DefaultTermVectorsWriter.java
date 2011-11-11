@@ -17,6 +17,7 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
@@ -28,6 +29,7 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -179,11 +181,72 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   
   @Override
   public void startDocument(int numVectorFields) throws IOException {
+    this.numVectorFields = numVectorFields;
     tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
     tvd.writeVInt(numVectorFields);
+    fieldCount = 0;
+    fps = ArrayUtil.grow(fps, numVectorFields);
   }
   
+  private long fps[] = new long[10]; // pointers to the tvf before writing each field 
+  private int fieldCount = 0;        // number of fields we have written so far for this document
+  private int numVectorFields = 0;   // total number of fields we will write for this document
+  
+  @Override
+  public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException {
+    lastTerm.length = 0;
+    fps[fieldCount++] = tvf.getFilePointer();
+    tvd.writeVInt(info.number);
+    tvf.writeVInt(numTerms);
+    byte bits = 0x0;
+    if (positions)
+      bits |= DefaultTermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
+    if (offsets)
+      bits |= DefaultTermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
+    tvf.writeByte(bits);
+    
+    assert fieldCount <= numVectorFields;
+    if (fieldCount == numVectorFields) {
+      // last field of the document
+      // this is crazy because the file format is crazy!
+      for (int i = 1; i < fieldCount; i++) {
+        tvd.writeVLong(fps[i] - fps[i-1]);
+      }
+    }
+  }
+  
+  private final BytesRef lastTerm = new BytesRef(10);
+
+  @Override
+  public void startTerm(BytesRef term, int freq) throws IOException {
+    final int prefix = StringHelper.bytesDifference(lastTerm.bytes, lastTerm.offset, lastTerm.length, 
+                                                    term.bytes, term.offset, term.length);
+    final int suffix = term.length - prefix;
+    tvf.writeVInt(prefix);
+    tvf.writeVInt(suffix);
+    tvf.writeBytes(term.bytes, term.offset + prefix, suffix);
+    tvf.writeVInt(freq);
+    lastTerm.copy(term);
+    lastPosition = lastOffset = 0;
+  }
+
+  int lastPosition = 0;
+  int lastOffset = 0;
+  
+  @Override
+  public void addPosition(int position) throws IOException {
+    tvf.writeVInt(position - lastPosition);
+    lastPosition = position;
+  }
+
+  @Override
+  public void addOffset(int startOffset, int endOffset) throws IOException {
+    tvf.writeVInt(startOffset - lastOffset);
+    tvf.writeVInt(endOffset - startOffset);
+    lastOffset = startOffset;
+  }
+
   @Override
   public void abort() {
     try {

@@ -20,11 +20,9 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsWriter;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -32,11 +30,9 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 final class TermVectorsTermsWriter extends TermsHashConsumer {
 
+  TermVectorsWriter writer;
   final DocumentsWriterPerThread docWriter;
   int freeCount;
-  IndexOutput tvx;
-  IndexOutput tvd;
-  IndexOutput tvf;
   int lastDocID;
 
   final DocumentsWriterPerThread.DocState docState;
@@ -53,16 +49,14 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   @Override
   void flush(Map<FieldInfo, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
-    if (tvx != null) {
+    if (writer != null) {
       // At least one doc in this run had term vectors enabled
       fill(state.numDocs);
       assert state.segmentName != null;
-      String idxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-      IOUtils.close(tvx, tvf, tvd);
-      tvx = tvd = tvf = null;
-      if (4+((long) state.numDocs)*16 != state.directory.fileLength(idxName)) {
-        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
-      }
+      writer.finish(state.numDocs);
+      // nocommit: I think we should try-finally?
+      IOUtils.close(writer);
+      writer = null;
 
       lastDocID = 0;
       hasVectors = false;
@@ -78,40 +72,16 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   /** Fills in no-term-vectors for all docs we haven't seen
    *  since the last doc that had term vectors. */
   void fill(int docID) throws IOException {
-    if (lastDocID < docID) {
-      final long tvfPosition = tvf.getFilePointer();
-      while(lastDocID < docID) {
-        tvx.writeLong(tvd.getFilePointer());
-        tvd.writeVInt(0);
-        tvx.writeLong(tvfPosition);
-        lastDocID++;
-      }
+    while(lastDocID < docID) {
+      writer.startDocument(0);
+      lastDocID++;
     }
   }
 
   private final void initTermVectorsWriter() throws IOException {
-    if (tvx == null) {
-      boolean success = false;
-      try {
-        IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
-        // If we hit an exception while init'ing the term
-        // vector output files, we must abort this segment
-        // because those files will be in an unknown
-        // state:
-        tvx = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_INDEX_EXTENSION), context);
-        tvd = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), context);
-        tvf = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_FIELDS_EXTENSION), context);
-
-        tvx.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-        tvd.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-        tvf.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-        success = true;
-      } finally {
-        if (!success) {
-          IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
-        }
-      }
-
+    if (writer == null) {
+      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
+      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegment(), context);
       lastDocID = 0;
     }
   }
@@ -130,23 +100,14 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     fill(docState.docID);
 
     // Append term vectors to the real outputs:
-    tvx.writeLong(tvd.getFilePointer());
-    tvx.writeLong(tvf.getFilePointer());
-    tvd.writeVInt(numVectorFields);
-    if (numVectorFields > 0) {
-      for(int i=0;i<numVectorFields;i++) {
-        tvd.writeVInt(perFields[i].fieldInfo.number);
-      }
-      long lastPos = tvf.getFilePointer();
-      perFields[0].finishDocument();
-      for(int i=1;i<numVectorFields;i++) {
-        long pos = tvf.getFilePointer();
-        tvd.writeVLong(pos-lastPos);
-        lastPos = pos;
-        perFields[i].finishDocument();
-        // commit the termVectors once successful success - FI will otherwise reset them
-        perFields[i].fieldInfo.commitVectors();
-      }
+    writer.startDocument(numVectorFields);
+    for (int i = 0; i < numVectorFields; i++) {
+      perFields[i].finishDocument();
+      // nocommit: loop thru the fields and commit field info after all are successful?
+      // or commit each one after its done?
+      
+      // commit the termVectors once successful success - FI will otherwise reset them
+      perFields[i].fieldInfo.commitVectors();
     }
 
     assert lastDocID == docState.docID: "lastDocID=" + lastDocID + " docState.docID=" + docState.docID;
@@ -161,29 +122,11 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   @Override
   public void abort() {
     hasVectors = false;
-    try {
-      IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
-    } catch (IOException e) {
-      // cannot happen since we suppress exceptions
-      throw new RuntimeException(e);
+
+    if (writer != null) {
+      writer.abort();
     }
-    
-    try {
-      docWriter.directory.deleteFile(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-    } catch (IOException ignored) {
-    }
-    
-    try {
-      docWriter.directory.deleteFile(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-    } catch (IOException ignored) {
-    }
-    
-    try {
-      docWriter.directory.deleteFile(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-    } catch (IOException ignored) {
-    }
-    
-    tvx = tvd = tvf = null;
+
     lastDocID = 0;
 
     reset();

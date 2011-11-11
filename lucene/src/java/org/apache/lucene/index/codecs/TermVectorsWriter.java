@@ -20,19 +20,32 @@ package org.apache.lucene.index.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
 public abstract class TermVectorsWriter implements Closeable {
   
-  /** Called before writing the stored fields of the document.
-   *  XXX will be called <code>numVectorFields</code> times.
-   *  Note that if term vectors are enabled, this is called 
-   *  even if the document has no vector fields, in
-   *  this case <code>numVectorFields</code> will be zero. */
+  /** Called before writing the term vectors of the document.
+   *  {@link #startField(FieldInfo, int)} will be called 
+   *  <code>numVectorFields</code> times. Note that if term 
+   *  vectors are enabled, this is called even if the document 
+   *  has no vector fields, in this case <code>numVectorFields</code> 
+   *  will be zero. */
   public abstract void startDocument(int numVectorFields) throws IOException;
+  
+  /** Called before writing the terms of the field.
+   *  XXX will be called <code>numTerms</code> times. */
+  public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException;
+  
+  public abstract void startTerm(BytesRef term, int freq) throws IOException;
+  
+  public abstract void addPosition(int position) throws IOException;
+  
+  public abstract void addOffset(int startOffset, int endOffset) throws IOException;
   
   /** Aborts writing entirely, implementation should remove
    *  any partially-written files, etc. */
