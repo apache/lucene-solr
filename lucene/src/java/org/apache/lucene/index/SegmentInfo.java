@@ -47,8 +47,10 @@ import org.apache.lucene.util.StringHelper;
 public final class SegmentInfo implements Cloneable {
   // TODO: remove with hasVector and hasProx
   private static final int CHECK_FIELDINFO = -2;
-  static final int NO = -1;          // e.g. no norms; no deletes;
-  static final int YES = 1;          // e.g. have norms; have deletes;
+  
+  // TODO: remove these from this class
+  public static final int NO = DefaultSegmentInfosWriter.NO;          // e.g. no norms; no deletes;
+  public static final int YES = DefaultSegmentInfosWriter.YES;          // e.g. have norms; have deletes;
   static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
   public String name;				  // unique name in dir
@@ -177,6 +179,7 @@ public final class SegmentInfo implements Cloneable {
    * @param format format of the segments info file
    * @param input input handle to read segment info from
    */
+  // TODO pull this i/o out of this class, maybe codec reader should just create SIs?
   public SegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
     this.dir = dir;
     if (format <= DefaultSegmentInfosWriter.FORMAT_3_1) {
@@ -571,41 +574,6 @@ public final class SegmentInfo implements Cloneable {
     this.docStoreSegment = docStoreSegment;
   }
 
-  /** Save this segment's info. */
-  public void write(IndexOutput output)
-    throws IOException {
-    assert delCount <= docCount: "delCount=" + delCount + " docCount=" + docCount + " segment=" + name;
-    // Write the Lucene version that created this segment, since 3.1
-    output.writeString(version);
-    output.writeString(name);
-    output.writeInt(docCount);
-    output.writeLong(delGen);
-
-    output.writeInt(docStoreOffset);
-    if (docStoreOffset != -1) {
-      output.writeString(docStoreSegment);
-      output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
-    }
-
-
-    if (normGen == null) {
-      output.writeInt(NO);
-    } else {
-      output.writeInt(normGen.size());
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        output.writeInt(entry.getKey());
-        output.writeLong(entry.getValue());
-      }
-    }
-
-    output.writeByte((byte) (isCompoundFile ? YES : NO));
-    output.writeInt(delCount);
-    output.writeByte((byte) (hasProx));
-    output.writeString(codec.getName());
-    output.writeStringStringMap(diagnostics);
-    output.writeByte((byte) (hasVectors));
-  }
-
   public boolean getHasProx() throws IOException {
     return hasProx == CHECK_FIELDINFO ? getFieldInfos().hasProx() : hasProx == YES;
   }
@@ -619,7 +587,7 @@ public final class SegmentInfo implements Cloneable {
     this.codec = codec;
   }
 
-  Codec getCodec() {
+  public Codec getCodec() {
     return codec;
   }
 
@@ -802,5 +770,28 @@ public final class SegmentInfo implements Cloneable {
 
   void setBufferedDeletesGen(long v) {
     bufferedDeletesGen = v;
+  }
+  
+  /** @lucene.internal */
+  public long getDelGen() {
+    return delGen;
+  }
+  
+  /** @lucene.internal */
+  public Map<Integer,Long> getNormGen() {
+    return normGen;
+  }
+  
+  // TODO: clean up this SI/FI stuff here
+  /** returns the 'real' value for hasProx (doesn't consult fieldinfos) 
+   * @lucene.internal */
+  public int getHasProxInternal() {
+    return hasProx;
+  }
+  
+  /** returns the 'real' value for hasVectors (doesn't consult fieldinfos) 
+   * @lucene.internal */
+  public int getHasVectorsInternal() {
+    return hasVectors;
   }
 }
