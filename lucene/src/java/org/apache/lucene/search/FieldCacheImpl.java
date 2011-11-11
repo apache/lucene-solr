@@ -561,7 +561,7 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+      protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
     throws IOException {
       final String field = entryKey.field;      
       FixedBitSet res = null;
@@ -1065,7 +1065,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
 
       Terms terms = MultiFields.getTerms(reader, entryKey.field);
@@ -1210,7 +1210,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
 
       Terms terms = MultiFields.getTerms(reader, entryKey.field);
@@ -1294,7 +1294,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
       return new DocTermOrds(reader, entryKey.field);
     }
