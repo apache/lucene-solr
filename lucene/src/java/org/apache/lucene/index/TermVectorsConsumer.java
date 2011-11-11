@@ -51,15 +51,17 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   void flush(Map<FieldInfo, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     if (writer != null) {
       // At least one doc in this run had term vectors enabled
-      fill(state.numDocs);
-      assert state.segmentName != null;
-      writer.finish(state.numDocs);
-      // nocommit: I think we should try-finally?
-      IOUtils.close(writer);
-      writer = null;
+      try {
+        fill(state.numDocs);
+        assert state.segmentName != null;
+        writer.finish(state.numDocs);
+      } finally {
+        IOUtils.close(writer);
+        writer = null;
 
-      lastDocID = 0;
-      hasVectors = false;
+        lastDocID = 0;
+        hasVectors = false;
+      }
     }
 
     for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
