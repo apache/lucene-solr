@@ -103,11 +103,6 @@ final class TermVectorsConsumer extends TermsHashConsumer {
     writer.startDocument(numVectorFields);
     for (int i = 0; i < numVectorFields; i++) {
       perFields[i].finishDocument();
-      // nocommit: loop thru the fields and commit field info after all are successful?
-      // or commit each one after its done?
-      
-      // commit the termVectors once successful success - FI will otherwise reset them
-      perFields[i].fieldInfo.commitVectors();
     }
 
     assert lastDocID == docState.docID: "lastDocID=" + lastDocID + " docState.docID=" + docState.docID;

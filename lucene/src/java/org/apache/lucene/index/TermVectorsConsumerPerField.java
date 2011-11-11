@@ -158,6 +158,8 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     }
 
     termsHashPerField.reset();
+    // commit the termVectors once successful success - FI will otherwise reset them
+    fieldInfo.commitVectors();
   }
 
   void shrinkHash() {
