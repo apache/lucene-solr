@@ -23,9 +23,9 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Models the existing parallel array structure
+ * Used by {@link DefaultTermVectorsReader} to retrieve term vectors.
  */
-// nocommit: not public? wtf is this?
+// Models the existing parallel array structure
 public class ParallelArrayTermVectorMapper extends TermVectorMapper {
 
   private BytesRef[] terms;
