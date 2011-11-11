@@ -250,6 +250,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      // NOTE: must do this before calling super otherwise
+      // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getBytes(reader, field, parser, missingValue != null);
       super.setNextReader(reader, docBase);
     }
@@ -368,6 +370,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      // NOTE: must do this before calling super otherwise
+      // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getDoubles(reader, field, parser, missingValue != null);
       super.setNextReader(reader, docBase);
     }
@@ -444,6 +448,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      // NOTE: must do this before calling super otherwise
+      // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getFloats(reader, field, parser, missingValue != null);
       super.setNextReader(reader, docBase);
     }
@@ -524,6 +530,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      // NOTE: must do this before calling super otherwise
+      // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getInts(reader, field, parser, missingValue != null);
       super.setNextReader(reader, docBase);
     }
@@ -600,6 +608,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      // NOTE: must do this before calling super otherwise
+      // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getLongs(reader, field, parser, missingValue != null);
       super.setNextReader(reader, docBase);
     }
@@ -726,6 +736,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      // NOTE: must do this before calling super otherwise
+      // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getShorts(reader, field, parser, missingValue != null);
       super.setNextReader(reader, docBase);
     }
