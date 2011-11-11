@@ -477,7 +477,7 @@
   	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test-framework.classpath"/>
        <!-- Copy the resources folder (if existent) -->
-       <copy todir="${build.dir}/classes/test-framework">
+       <copy todir="${common.dir}/build/classes/test-framework">
           <fileset dir="${tests-framework.src.dir}/../resources" erroronmissingdir="no"/>
        </copy>
   </target>
