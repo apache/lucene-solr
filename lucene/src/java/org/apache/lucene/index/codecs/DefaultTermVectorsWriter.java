@@ -168,7 +168,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         for (int i = 0; i < offsetIndex; i++) {
           tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
           tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
-          lastOffset = offsetStartBuffer[i];
+          lastOffset = offsetEndBuffer[i];
         }
       }
     } else if (positions) {
@@ -179,7 +179,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
       // write offset deltas
       tvf.writeVInt(startOffset - lastOffset);
       tvf.writeVInt(endOffset - startOffset);
-      lastOffset = startOffset;
+      lastOffset = endOffset;
     }
   }
 

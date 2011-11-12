@@ -109,15 +109,27 @@ public abstract class TermVectorsWriter implements Closeable {
   // TODO: we should probably nuke this and make a more efficient 4.x format
   // PreFlex-RW could then be slow and buffer (its only used in tests...)
   public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
-    int lastPosition = 0;
+    int position = 0;
     int lastOffset = 0;
 
     for (int i = 0; i < numProx; i++) {
-      final int position = positions == null ? -1 : lastPosition + positions.readVInt();
-      final int offset = offsets == null ? -1 : lastOffset + offsets.readVInt();
-      addPosition(position, offset, offsets == null ? -1 : offset + offsets.readVInt());
-      lastPosition = position;
-      lastOffset = offset;
+      final int startOffset;
+      final int endOffset;
+      
+      if (positions == null) {
+        position = -1;
+      } else {
+        position += positions.readVInt();
+      }
+      
+      if (offsets == null) {
+        startOffset = endOffset = -1;
+      } else {
+        startOffset = lastOffset + offsets.readVInt();
+        endOffset = startOffset + offsets.readVInt();
+        lastOffset = endOffset;
+      }
+      addPosition(position, startOffset, endOffset);
     }
   }
   
@@ -153,8 +165,6 @@ public abstract class TermVectorsWriter implements Closeable {
   }
   
   /** Safe (but, slowish) default method to write every vector field in the document */
-  // nocommit: there are bugs in this thing (or the Fields api). 
-  // disable DefaultTermVectorsWriter.merge and run TestStressIndexing2
   protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       startDocument(0);
