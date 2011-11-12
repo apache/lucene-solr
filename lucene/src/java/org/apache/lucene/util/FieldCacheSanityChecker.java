@@ -119,6 +119,13 @@ public final class FieldCacheSanityChecker {
       final CacheEntry item = cacheEntries[i];
       final Object val = item.getValue();
 
+      // It's OK to have dup entries, where one is eg
+      // float[] and the other is the Bits (from
+      // getDocWithField())
+      if (val instanceof Bits) {
+        continue;
+      }
+
       if (val instanceof FieldCache.CreationPlaceholder)
         continue;
 
