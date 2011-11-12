@@ -80,7 +80,9 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    * search, be sure to first reset the term counter
    * with {@link #clearTotalNumberOfTerms}.
    * @see #clearTotalNumberOfTerms
+   * @deprecated Don't use this method, as its not thread safe and useless.
    */
+  @Deprecated
   public int getTotalNumberOfTerms() {
     return query.getTotalNumberOfTerms();
   }
@@ -89,7 +91,9 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    * Expert: Resets the counting of unique terms.
    * Do this before executing the filter.
    * @see #getTotalNumberOfTerms
+   * @deprecated Don't use this method, as its not thread safe and useless.
    */
+  @Deprecated
   public void clearTotalNumberOfTerms() {
     query.clearTotalNumberOfTerms();
   }

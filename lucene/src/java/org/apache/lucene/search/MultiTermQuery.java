@@ -268,7 +268,9 @@ public abstract class MultiTermQuery extends Query {
    * non-constant-score mode. In constant-score mode you get the total number of
    * terms seeked for all segments / sub-readers.
    * @see #clearTotalNumberOfTerms
+   * @deprecated Don't use this method, as its not thread safe and useless.
    */
+  @Deprecated
   public int getTotalNumberOfTerms() {
     return numberOfTerms;
   }
@@ -277,11 +279,17 @@ public abstract class MultiTermQuery extends Query {
    * Expert: Resets the counting of unique terms.
    * Do this before executing the query/filter.
    * @see #getTotalNumberOfTerms
+   * @deprecated Don't use this method, as its not thread safe and useless.
    */
+  @Deprecated
   public void clearTotalNumberOfTerms() {
     numberOfTerms = 0;
   }
   
+  /** 
+   * @deprecated Don't use this method, as its not thread safe and useless.
+   */
+  @Deprecated
   protected void incTotalNumberOfTerms(int inc) {
     numberOfTerms += inc;
   }
