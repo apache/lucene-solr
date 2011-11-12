@@ -62,7 +62,7 @@ public class InstantiatedTermDocumentInformation {
   private int[] termPositions;
   private InstantiatedTerm term;
   private InstantiatedDocument document;
-  private TermVectorOffsetInfo[] termOffsets;
+  //private TermVectorOffsetInfo[] termOffsets;
 
 
 
@@ -123,6 +123,7 @@ public class InstantiatedTermDocumentInformation {
     this.document = document;
   }
 
+  /*
   public TermVectorOffsetInfo[] getTermOffsets() {
     return termOffsets;
   }
@@ -130,4 +131,5 @@ public class InstantiatedTermDocumentInformation {
   void setTermOffsets(TermVectorOffsetInfo[] termOffsets) {
     this.termOffsets = termOffsets;
   }
+  */
 }

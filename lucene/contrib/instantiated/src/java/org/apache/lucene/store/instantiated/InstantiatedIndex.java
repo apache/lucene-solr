@@ -36,7 +36,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
@@ -286,6 +285,7 @@ public class InstantiatedIndex
     }
 
     // load offsets to term-document informations
+    /*
     for (InstantiatedDocument document : getDocumentsByNumber()) {
       if (document == null) {
         continue; // deleted
@@ -304,6 +304,7 @@ public class InstantiatedIndex
         }
       }
     }
+    */
   }
 
   public InstantiatedIndexWriter indexWriterFactory(Analyzer analyzer, boolean create) throws IOException {

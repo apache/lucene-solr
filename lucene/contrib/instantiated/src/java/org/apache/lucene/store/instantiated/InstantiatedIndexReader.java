@@ -410,6 +410,12 @@ public class InstantiatedIndexReader extends IndexReader {
           }
         };
       }
+
+      @Override
+      public int getUniqueFieldCount() {
+        // nocommit can we do this easily?
+        return -1;
+      }
     };
   }
   
@@ -419,50 +425,9 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
-    InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    if (doc.getVectorSpace() == null) {
-      return null;
-    }
-    TermFreqVector[] ret = new TermFreqVector[doc.getVectorSpace().size()];
-    Iterator<String> it = doc.getVectorSpace().keySet().iterator();
-    for (int i = 0; i < ret.length; i++) {
-      ret[i] = new InstantiatedTermPositionVector(getIndex().getDocumentsByNumber()[docNumber], it.next());
-    }
-    return ret;
-  }
-
-  @Override
-  public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
-    InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    if (doc.getVectorSpace() == null || doc.getVectorSpace().get(field) == null) {
-      return null;
-    } else {
-      return new InstantiatedTermPositionVector(doc, field);
-    }
-  }
-
-  @Override
-  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
-    InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    if (doc.getVectorSpace() != null && doc.getVectorSpace().get(field) == null) {
-      List<InstantiatedTermDocumentInformation> tv = doc.getVectorSpace().get(field);
-      mapper.setExpectations(field, tv.size(), true, true);
-      for (InstantiatedTermDocumentInformation tdi : tv) {
-        mapper.map(tdi.getTerm().getTerm().bytes(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
-      }
-    }
-  }
-
-  @Override
-  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
-    InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    for (Map.Entry<String, List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {
-      mapper.setExpectations(e.getKey(), e.getValue().size(), true, true);
-      for (InstantiatedTermDocumentInformation tdi : e.getValue()) {
-        mapper.map(tdi.getTerm().getTerm().bytes(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
-      }
-    }
+  public Fields getTermVectors(int docID) throws IOException {
+    // nocommit
+    return null;
   }
 
   @Override

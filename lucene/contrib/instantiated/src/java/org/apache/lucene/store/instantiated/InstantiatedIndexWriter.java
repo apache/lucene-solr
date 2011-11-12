@@ -41,7 +41,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+//import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.ArrayUtil;
@@ -325,6 +325,8 @@ public class InstantiatedIndexWriter implements Closeable {
         }
 
         // term vector offsets
+        // nocommit
+        /*
         if (eFieldSetting_TermDocInfoFactoriesByTermText.getKey().storeOffsetWithTermVector) {
           for (Map.Entry<InstantiatedTerm, InstantiatedTermDocumentInformation> e : informationByTermOfCurrentDocument.entrySet()) {
             if (eFieldSetting_TermDocInfoFactoriesByTermText.getKey().fieldName.equals(e.getKey().field())) {
@@ -333,6 +335,7 @@ public class InstantiatedIndexWriter implements Closeable {
             }
           }
         }
+        */
       }
 
       Map<String, List<InstantiatedTermDocumentInformation>> termDocumentInformationsByField = new HashMap<String, List<InstantiatedTermDocumentInformation>>();
@@ -576,7 +579,7 @@ public class InstantiatedIndexWriter implements Closeable {
         termDocumentInformationFactoryByTermTextAndFieldSetting.put(fieldSettingsByFieldName.get(eField_Tokens.getKey().name()), termDocumentInformationFactoryByTermText);
       }
 
-      int lastOffset = 0;
+      // int lastOffset = 0;
 
       // for each new field, move positions a bunch.
       if (fieldSetting.position > 0) {
@@ -603,18 +606,22 @@ public class InstantiatedIndexWriter implements Closeable {
           termDocumentInformationFactory.payloads.add(null);
         }
 
+        /*
         if (eField_Tokens.getKey().fieldType().storeTermVectorOffsets()) {
 
           termDocumentInformationFactory.termOffsets.add(new TermVectorOffsetInfo(fieldSetting.offset + token.startOffset(), fieldSetting.offset + token.endOffset()));
           lastOffset = fieldSetting.offset + token.endOffset();
         }
+        */
 
 
       }
 
+      /*
       if (eField_Tokens.getKey().fieldType().storeTermVectorOffsets()) {
         fieldSetting.offset = lastOffset + 1;
       }
+      */
 
     }
 
@@ -667,7 +674,7 @@ public class InstantiatedIndexWriter implements Closeable {
   private class TermDocumentInformationFactory {
     private LinkedList<byte[]> payloads = new LinkedList<byte[]>();
     private LinkedList<Integer> termPositions = new LinkedList<Integer>();
-    private LinkedList<TermVectorOffsetInfo> termOffsets = new LinkedList<TermVectorOffsetInfo>();
+    //private LinkedList<TermVectorOffsetInfo> termOffsets = new LinkedList<TermVectorOffsetInfo>();
   }
 
 

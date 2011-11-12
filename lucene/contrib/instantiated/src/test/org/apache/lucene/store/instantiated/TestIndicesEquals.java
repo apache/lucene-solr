@@ -41,8 +41,6 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
@@ -514,12 +512,13 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     for (int documentNumber = 0; documentNumber < aprioriReader.numDocs(); documentNumber++) {
 
+      /*
       if (documentNumber > 0) {
-        assertNotNull(aprioriReader.getTermFreqVector(documentNumber, "b0"));
-        assertNull(aprioriReader.getTermFreqVector(documentNumber, "b1"));
+        assertNotNull(aprioriReader.getTermVector(documentNumber, "b0"));
+        assertNull(aprioriReader.getTermVector(documentNumber, "b1"));
 
-        assertNotNull(testReader.getTermFreqVector(documentNumber, "b0"));
-        assertNull(testReader.getTermFreqVector(documentNumber, "b1"));
+        assertNotNull(testReader.getTermVector(documentNumber, "b0"));
+        assertNull(testReader.getTermVector(documentNumber, "b1"));
 
       }
 
@@ -563,6 +562,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
         }
       }
+      */
     }
 
     aprioriReader.close();
