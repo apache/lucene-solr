@@ -1142,15 +1142,38 @@ public class CheckIndex {
         infoStream.print("    test: term vectors........");
       }
 
+      // TODO: maybe we can factor out testTermIndex and reuse here?
       final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           Fields tfv = reader.getTermVectors(j);
           if (tfv != null) {
+            int tfvComputedFieldCount = 0;
+            int tfvComputedTermCount = 0;
+
             FieldsEnum fieldsEnum = tfv.iterator();
-            while(fieldsEnum.next() != null) {
+            String field = null;
+            while((field = fieldsEnum.next()) != null) {
               status.totVectors++;
+              tfvComputedFieldCount++;
+              
+              Terms terms = tfv.terms(field);
+              TermsEnum termsEnum = terms.iterator();
+              while (termsEnum.next() != null) {
+                tfvComputedTermCount++;
+              }
+            }
+            
+            // TODO: testTermIndex should check this stat too!
+            int tfvUniqueFieldCount = tfv.getUniqueFieldCount();
+            if (tfvUniqueFieldCount != -1 && tfvUniqueFieldCount != tfvComputedFieldCount) {
+              throw new RuntimeException("vector field count for doc " + j + "=" + tfvUniqueFieldCount + " != recomputed uniqueFieldCount=" + tfvComputedFieldCount);
+            }
+            
+            long tfvUniqueTermCount = tfv.getUniqueTermCount();
+            if (tfvUniqueTermCount != -1 && tfvUniqueTermCount != tfvComputedTermCount) {
+              throw new RuntimeException("vector term count for doc " + j + "=" + tfvUniqueTermCount + " != recomputed uniqueTermCount=" + tfvComputedTermCount);
             }
           }
         }
