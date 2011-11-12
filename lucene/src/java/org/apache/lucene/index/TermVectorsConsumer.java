@@ -39,7 +39,8 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   final BytesRef flushTerm = new BytesRef();
 
   // Used by perField when serializing the term vectors
-  final ByteSliceReader vectorSliceReader = new ByteSliceReader();
+  final ByteSliceReader vectorSliceReaderPos = new ByteSliceReader();
+  final ByteSliceReader vectorSliceReaderOff = new ByteSliceReader();
   boolean hasVectors;
 
   public TermVectorsConsumer(DocumentsWriterPerThread docWriter) {

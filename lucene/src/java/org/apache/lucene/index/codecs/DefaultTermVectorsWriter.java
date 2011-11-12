@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -75,6 +76,8 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   
   @Override
   public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException {
+    this.positions = positions;
+    this.offsets = offsets;
     lastTerm.length = 0;
     fps[fieldCount++] = tvf.getFilePointer();
     tvd.writeVInt(info.number);
@@ -98,6 +101,15 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   
   private final BytesRef lastTerm = new BytesRef(10);
 
+  // NOTE: we override addProx, so we don't need to buffer when indexing.
+  // we also don't buffer during bulk merges.
+  private int offsetStartBuffer[] = new int[10];
+  private int offsetEndBuffer[] = new int[10];
+  private int offsetIndex = 0;
+  private int offsetFreq = 0;
+  private boolean positions = false;
+  private boolean offsets = false;
+
   @Override
   public void startTerm(BytesRef term, int freq) throws IOException {
     final int prefix = StringHelper.bytesDifference(lastTerm.bytes, lastTerm.offset, lastTerm.length, 
@@ -109,22 +121,66 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     tvf.writeVInt(freq);
     lastTerm.copy(term);
     lastPosition = lastOffset = 0;
+    
+    if (offsets && positions) {
+      // we might need to buffer if its a non-bulk merge
+      offsetStartBuffer = ArrayUtil.grow(offsetStartBuffer, freq);
+      offsetEndBuffer = ArrayUtil.grow(offsetEndBuffer, freq);
+      offsetIndex = 0;
+      offsetFreq = freq;
+    }
   }
 
   int lastPosition = 0;
   int lastOffset = 0;
-  
+
   @Override
-  public void addPosition(int position) throws IOException {
-    tvf.writeVInt(position - lastPosition);
-    lastPosition = position;
+  public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
+    // TODO: technically we could just copy bytes and not re-encode if we knew the length...
+    if (positions != null) {
+      for (int i = 0; i < numProx; i++) {
+        tvf.writeVInt(positions.readVInt());
+      }
+    }
+    
+    if (offsets != null) {
+      for (int i = 0; i < numProx; i++) {
+        tvf.writeVInt(offsets.readVInt());
+        tvf.writeVInt(offsets.readVInt());
+      }
+    }
   }
 
   @Override
-  public void addOffset(int startOffset, int endOffset) throws IOException {
-    tvf.writeVInt(startOffset - lastOffset);
-    tvf.writeVInt(endOffset - startOffset);
-    lastOffset = startOffset;
+  public void addPosition(int position, int startOffset, int endOffset) throws IOException {
+    if (positions && offsets) {
+      // write position delta
+      tvf.writeVInt(position - lastPosition);
+      lastPosition = position;
+      
+      // buffer offsets
+      offsetStartBuffer[offsetIndex] = startOffset;
+      offsetEndBuffer[offsetIndex] = endOffset;
+      offsetIndex++;
+      
+      // dump buffer if we are done
+      if (offsetIndex == offsetFreq) {
+        for (int i = 0; i < offsetIndex; i++) {
+          tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
+          tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
+          lastOffset = offsetStartBuffer[i];
+        }
+      }
+    } else if (positions) {
+      // write position delta
+      tvf.writeVInt(position - lastPosition);
+      lastPosition = position;
+    } else if (offsets) {
+      // write offset deltas
+      tvf.writeVInt(startOffset - lastOffset);
+      tvf.writeVInt(endOffset - startOffset);
+      lastOffset = startOffset;
+    }
   }
 
   @Override

@@ -29,10 +29,9 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Codec API for writing term vectors:
@@ -46,8 +45,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  *       or offsets are enabled.
  *   <li>Within each field, {@link #startTerm(BytesRef, int)} is called
  *       for each term.
- *   <li>If offsets and/or positions are enabled, then {@link #addPosition(int)}
- *       and {@link #addOffset(int, int)} will be called for each term
+ *   <li>If offsets and/or positions are enabled, then 
+ *       {@link #addPosition(int, int, int)} will be called for each term
  *       occurrence.
  *   <li>After all documents have been written, {@link #finish(int)} 
  *       is called for verification/sanity-checks.
@@ -74,18 +73,13 @@ public abstract class TermVectorsWriter implements Closeable {
   
   /** Adds a term and its term frequency <code>freq</code>.
    * If this field has positions and/or offsets enabled, then
-   * {@link #addPosition(int)} and/or {@link #addOffset(int, int)}
-   * will be called <code>freq</code> times respectively.
+   * {@link #addPosition(int, int, int)} will be called 
+   * <code>freq</code> times respectively.
    */
   public abstract void startTerm(BytesRef term, int freq) throws IOException;
   
-  /** Adds a term position */
-  // nocommit can we do pos & offsets together...?  ie push
-  // buffering into 3x/40 impl
-  public abstract void addPosition(int position) throws IOException;
-  
-  /** Adds term start and end offsets */
-  public abstract void addOffset(int startOffset, int endOffset) throws IOException;
+  /** Adds a term position and offsets */
+  public abstract void addPosition(int position, int startOffset, int endOffset) throws IOException;
   
   /** Aborts writing entirely, implementation should remove
    *  any partially-written files, etc. */
@@ -98,6 +92,34 @@ public abstract class TermVectorsWriter implements Closeable {
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
   public abstract void finish(int numDocs) throws IOException;
+  
+  /** 
+   * Called by IndexWriter when writing new segments.
+   * <p>
+   * This is an expert API that allows the codec to consume 
+   * positions and offsets directly from the indexer.
+   * <p>
+   * The default implementation calls {@link #addPosition(int, int, int)},
+   * but subclasses can override this if they want to efficiently write 
+   * all the positions, then all the offsets, for example.
+   * <p>
+   * NOTE: This API is extremely expert and subject to change or removal!!!
+   * @lucene.internal
+   */
+  // TODO: we should probably nuke this and make a more efficient 4.x format
+  // PreFlex-RW could then be slow and buffer (its only used in tests...)
+  public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
+    int lastPosition = 0;
+    int lastOffset = 0;
+
+    for (int i = 0; i < numProx; i++) {
+      final int position = positions == null ? -1 : lastPosition + positions.readVInt();
+      final int offset = offsets == null ? -1 : lastOffset + offsets.readVInt();
+      addPosition(position, offset, offsets == null ? -1 : offset + offsets.readVInt());
+      lastPosition = position;
+      lastOffset = offset;
+    }
+  }
   
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
@@ -131,6 +153,8 @@ public abstract class TermVectorsWriter implements Closeable {
   }
   
   /** Safe (but, slowish) default method to write every vector field in the document */
+  // nocommit: there are bugs in this thing (or the Fields api). 
+  // disable DefaultTermVectorsWriter.merge and run TestStressIndexing2
   protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       startDocument(0);
@@ -157,7 +181,6 @@ public abstract class TermVectorsWriter implements Closeable {
       final long numTerms = vectors.terms(fieldName).getUniqueTermCount();
 
       final boolean positions;
-      final boolean offsets;
 
       final TermsEnum termsEnum = fieldsEnum.terms();
       final OffsetAttribute offsetAtt;
@@ -189,17 +212,6 @@ public abstract class TermVectorsWriter implements Closeable {
       
       startField(fieldInfo, (int) numTerms, positions, offsetAtt != null);
 
-      int[] startOffsets;
-      int[] endOffsets;
-
-      if (offsetAtt != null) {
-        startOffsets = new int[4];
-        endOffsets = new int[4];
-      } else {
-        startOffsets = null;
-        endOffsets = null;
-      }
-
       long termCount = 1;
 
       // NOTE: we already .next()'d the TermsEnum above, to
@@ -214,34 +226,13 @@ public abstract class TermVectorsWriter implements Closeable {
           final int docID = docsAndPositionsEnum.nextDoc();
           assert docID != DocsEnum.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
-          if (positions && offsetAtt != null && startOffsets.length < freq) {
-            startOffsets = new int[ArrayUtil.oversize(freq, RamUsageEstimator.NUM_BYTES_INT)];
-            endOffsets = new int[ArrayUtil.oversize(freq, RamUsageEstimator.NUM_BYTES_INT)];
-          }
 
           for(int posUpto=0; posUpto<freq; posUpto++) {
             final int pos = docsAndPositionsEnum.nextPosition();
-            if (positions) {
-              addPosition(pos);
-              if (offsetAtt != null) {
-                // Must buffer up offsets and write in 2nd
-                // pass, until we fix file format:
-                startOffsets[posUpto] = offsetAtt.startOffset();
-                endOffsets[posUpto] = offsetAtt.endOffset();
-              }
-            } else {
-              // Don't buffer, just add live:
-              addOffset(offsetAtt.startOffset(),
-                        offsetAtt.endOffset());
-            }
-          }
-
-          if (positions && offsetAtt != null) {
-            // 2nd pass to write offsets:
-            for(int posUpto=0; posUpto<freq; posUpto++) {
-              addOffset(startOffsets[posUpto],
-                        endOffsets[posUpto]);
-            }
+            final int startOffset = offsetAtt == null ? -1 : offsetAtt.startOffset();
+            final int endOffset = offsetAtt == null ? -1 : offsetAtt.endOffset();
+            
+            addPosition(pos, startOffset, endOffset);
           }
         }
         

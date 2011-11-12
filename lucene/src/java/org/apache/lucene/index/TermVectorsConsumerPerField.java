@@ -125,7 +125,9 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets);
     
-    final ByteSliceReader reader = termsWriter.vectorSliceReader;
+    final ByteSliceReader posReader = doVectorPositions ? termsWriter.vectorSliceReaderPos : null;
+    final ByteSliceReader offReader = doVectorOffsets ? termsWriter.vectorSliceReaderOff : null;
+    
     final ByteBlockPool termBytePool = termsHashPerField.termBytePool;
 
     for(int j=0;j<numPostings;j++) {
@@ -135,25 +137,15 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
       // Get BytesRef
       termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
       tv.startTerm(flushTerm, freq);
-
-      int accum = 0;
       
-      if (doVectorPositions) {
-        termsHashPerField.initReader(reader, termID, 0);
-        for (int i = 0; i < freq; i++) {
-          accum += reader.readVInt();
-          tv.addPosition(accum);
+      if (doVectorPositions || doVectorOffsets) {
+        if (posReader != null) {
+          termsHashPerField.initReader(posReader, termID, 0);
         }
-      }
-
-      accum = 0;
-      
-      if (doVectorOffsets) {
-        termsHashPerField.initReader(reader, termID, 1);
-        for (int i = 0; i < freq; i++) {
-          accum += reader.readVInt();
-          tv.addOffset(accum, accum + reader.readVInt());
+        if (offReader != null) {
+          termsHashPerField.initReader(offReader, termID, 1);
         }
+        tv.addProx(freq, posReader, offReader);
       }
     }
 
