@@ -1,7 +1,5 @@
 package org.apache.lucene.store.instantiated;
 
-import org.apache.lucene.index.TermVectorOffsetInfo;
-
 import java.util.Comparator;
 
 /**

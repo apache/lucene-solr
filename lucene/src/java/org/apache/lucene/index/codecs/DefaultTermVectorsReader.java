@@ -331,15 +331,19 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   private class TVTerms extends Terms {
     private final int numTerms;
     private final int docID;
+    private final long tvfFPStart;
 
     public TVTerms(int docID, long tvfFP) throws IOException {
       this.docID = docID;
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
+      tvfFPStart = tvf.getFilePointer();
     }
 
     @Override
     public TermsEnum iterator() throws IOException {
+      // nocommit -- to be "safe" we should clone tvf here...?
+      tvf.seek(tvfFPStart);
       return new TVTermsEnum(docID, numTerms);
     }
 

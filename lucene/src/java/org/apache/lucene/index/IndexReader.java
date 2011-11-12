@@ -804,8 +804,18 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   // nocommit javadoc
-  abstract public Fields getTermVectors(int docNumber)
+  abstract public Fields getTermVectors(int docID)
           throws IOException;
+
+  // nocommit javadoc
+  public Terms getTermVector(int docID, String field)
+    throws IOException {
+    Fields vectors = getTermVectors(docID);
+    if (vectors == null) {
+      return null;
+    }
+    return vectors.terms(field);
+  }
 
   /**
    * Returns <code>true</code> if an index exists at the specified directory.
