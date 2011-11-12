@@ -653,6 +653,14 @@ Changes in backwards compatibility policy
 * LUCENE-3541: Remove IndexInput's protected copyBuf. If you want to
   keep a buffer in your IndexInput, do this yourself in your implementation, 
   and be sure to do the right thing on clone()!  (Robert Muir)
+  
+* LUCENE-2822: TimeLimitingCollector now expects a counter clock instead of
+  relying on a private daemon thread. The global time limiting clock thread
+  has been exposed and is now lazily loaded and fully optional.
+  TimeLimitingCollector now supports setting clock baseline manually to include
+  prelude of a search. Previous versions set the baseline on construction time, 
+  now baseline is set once the first IndexReader is passed to the collector
+  unless set before. (Simon Willnauer)
 
 Changes in runtime behavior
 

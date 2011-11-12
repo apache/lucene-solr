@@ -28,17 +28,17 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
+import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.junit.Ignore;
 
 /**
  * Tests the {@link TimeLimitingCollector}.  This test checks (1) search
  * correctness (regardless of timeout), (2) expected timeout behavior,
  * and (3) a sanity test with multiple searching threads.
  */
-@Ignore("broken: see https://issues.apache.org/jira/browse/LUCENE-2822")
 public class TestTimeLimitingCollector extends LuceneTestCase {
   private static final int SLOW_DOWN = 3;
   private static final long TIME_ALLOWED = 17 * SLOW_DOWN; // so searches can find about 17 docs.
@@ -57,6 +57,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
 
   private final String FIELD_NAME = "body";
   private Query query;
+  private Counter counter;
+  private TimerThread counterThread;
 
   /**
    * initializes searcher with a document set
@@ -64,6 +66,9 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    counter = Counter.newCounter(true);
+    counterThread = new TimerThread(counter);
+    counterThread.start();
     final String docText[] = {
         "docThatNeverMatchesSoWeCanRequireLastDocCollectedToBeGreaterThanZero",
         "one blah three",
@@ -98,7 +103,6 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     
     // warm the searcher
     searcher.search(query, null, 1000);
-
   }
 
   @Override
@@ -106,6 +110,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     searcher.close();
     reader.close();
     directory.close();
+    counterThread.stopTimer();
+    counterThread.join();
     super.tearDown();
   }
 
@@ -147,7 +153,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
 
   private Collector createTimedCollector(MyHitCollector hc, long timeAllowed, boolean greedy) {
-    TimeLimitingCollector res = new TimeLimitingCollector(hc, timeAllowed);
+    TimeLimitingCollector res = new TimeLimitingCollector(hc, counter, timeAllowed);
     res.setGreedy(greedy); // set to true to make sure at least one doc is collected.
     return res;
   }
@@ -199,8 +205,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     // verify that elapsed time at exception is within valid limits
     assertEquals( timoutException.getTimeAllowed(), TIME_ALLOWED);
     // a) Not too early
-    assertTrue ( "elapsed="+timoutException.getTimeElapsed()+" <= (allowed-resolution)="+(TIME_ALLOWED-TimeLimitingCollector.getResolution()),
-        timoutException.getTimeElapsed() > TIME_ALLOWED-TimeLimitingCollector.getResolution());
+    assertTrue ( "elapsed="+timoutException.getTimeElapsed()+" <= (allowed-resolution)="+(TIME_ALLOWED-counterThread.getResolution()),
+        timoutException.getTimeElapsed() > TIME_ALLOWED-counterThread.getResolution());
     // b) Not too late.
     //    This part is problematic in a busy test system, so we just print a warning.
     //    We already verified that a timeout occurred, we just can't be picky about how long it took.
@@ -215,7 +221,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
 
   private long maxTime(boolean multiThreaded) {
-    long res = 2 * TimeLimitingCollector.getResolution() + TIME_ALLOWED + SLOW_DOWN; // some slack for less noise in this test
+    long res = 2 * counterThread.getResolution() + TIME_ALLOWED + SLOW_DOWN; // some slack for less noise in this test
     if (multiThreaded) {
       res *= MULTI_THREAD_SLACK; // larger slack  
     }
@@ -226,7 +232,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     String s =
       "( " +
       "2*resolution +  TIME_ALLOWED + SLOW_DOWN = " +
-      "2*" + TimeLimitingCollector.getResolution() + " + " + TIME_ALLOWED + " + " + SLOW_DOWN +
+      "2*" + counterThread.getResolution() + " + " + TIME_ALLOWED + " + " + SLOW_DOWN +
       ")";
     if (multiThreaded) {
       s = MULTI_THREAD_SLACK + " * "+s;  
@@ -240,22 +246,22 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   public void testModifyResolution() {
     try {
       // increase and test
-      long resolution = 20 * TimeLimitingCollector.DEFAULT_RESOLUTION; //400
-      TimeLimitingCollector.setResolution(resolution);
-      assertEquals(resolution, TimeLimitingCollector.getResolution());
+      long resolution = 20 * TimerThread.DEFAULT_RESOLUTION; //400
+      counterThread.setResolution(resolution);
+      assertEquals(resolution, counterThread.getResolution());
       doTestTimeout(false,true);
       // decrease much and test
       resolution = 5;
-      TimeLimitingCollector.setResolution(resolution);
-      assertEquals(resolution, TimeLimitingCollector.getResolution());
+      counterThread.setResolution(resolution);
+      assertEquals(resolution, counterThread.getResolution());
       doTestTimeout(false,true);
       // return to default and test
-      resolution = TimeLimitingCollector.DEFAULT_RESOLUTION;
-      TimeLimitingCollector.setResolution(resolution);
-      assertEquals(resolution, TimeLimitingCollector.getResolution());
+      resolution = TimerThread.DEFAULT_RESOLUTION;
+      counterThread.setResolution(resolution);
+      assertEquals(resolution, counterThread.getResolution());
       doTestTimeout(false,true);
     } finally {
-      TimeLimitingCollector.setResolution(TimeLimitingCollector.DEFAULT_RESOLUTION);
+      counterThread.setResolution(TimerThread.DEFAULT_RESOLUTION);
     }
   }
   
