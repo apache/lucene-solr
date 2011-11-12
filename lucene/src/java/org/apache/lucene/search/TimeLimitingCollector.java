@@ -69,7 +69,9 @@ public class TimeLimitingCollector extends Collector {
   /**
    * Create a TimeLimitedCollector wrapper over another {@link Collector} with a specified timeout.
    * @param collector the wrapped {@link Collector}
-   * @param timeAllowed max time allowed for collecting hits after which {@link TimeExceededException} is thrown
+   * @param clock the timer clock
+   * @param ticksAllowed max time allowed for collecting
+   * hits after which {@link TimeExceededException} is thrown
    */
   public TimeLimitingCollector(final Collector collector, Counter clock, final long ticksAllowed ) {
     this.collector = collector;
@@ -79,10 +81,9 @@ public class TimeLimitingCollector extends Collector {
   
   /**
    * Sets the baseline for this collector. By default the collectors baseline is 
-   * initialized once the first reader is passed to
-   * {@link #setNextReader(AtomicReaderContext)}. To include operations executed
-   * in prior to the actual document collection set the baseline through this method
-   * in your prelude.
+   * initialized once the first reader is passed to the collector. 
+   * To include operations executed in prior to the actual document collection
+   * set the baseline through this method in your prelude.
    * <p>
    * Example usage:
    * <pre>
