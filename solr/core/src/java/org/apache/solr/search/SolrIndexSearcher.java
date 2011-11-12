@@ -1243,7 +1243,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
       
       if( timeAllowed > 0 ) {
-        collector = new TimeLimitingCollector(collector, timeAllowed);
+        collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
       }
       if (pf.postFilter != null) {
         pf.postFilter.setLastDelegate(collector);
@@ -1272,7 +1272,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
       Collector collector = topCollector;
       if( timeAllowed > 0 ) {
-        collector = new TimeLimitingCollector(collector, timeAllowed);
+        collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
       }
       if (pf.postFilter != null) {
         pf.postFilter.setLastDelegate(collector);
@@ -1362,7 +1362,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
        }
 
        if( timeAllowed > 0 ) {
-         collector = new TimeLimitingCollector(collector, timeAllowed);
+         collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
        }
       if (pf.postFilter != null) {
         pf.postFilter.setLastDelegate(collector);
@@ -1398,7 +1398,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       Collector collector = setCollector;
 
       if( timeAllowed > 0 ) {
-        collector = new TimeLimitingCollector(collector, timeAllowed );
+        collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed );
       }
       if (pf.postFilter != null) {
         pf.postFilter.setLastDelegate(collector);
