@@ -95,7 +95,7 @@ public class TestIndexReader extends LuceneTestCase
       IndexReader r3 = IndexReader.openIfChanged(r2);
       assertNotNull(r3);
       assertFalse(c.equals(r3.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().getSegmentCount() == 1);
+      assertFalse(r2.getIndexCommit().getSegmentCount() == 1 && !r2.hasDeletions());
       r3.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
