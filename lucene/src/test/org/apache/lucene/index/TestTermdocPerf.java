@@ -22,7 +22,6 @@ import java.io.Reader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -95,7 +94,7 @@ public class TestTermdocPerf extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
   }
 

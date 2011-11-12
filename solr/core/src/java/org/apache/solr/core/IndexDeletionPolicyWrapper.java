@@ -173,8 +173,8 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     }
 
     @Override
-    public boolean isOptimized() {
-      return delegate.isOptimized();
+    public int getSegmentCount() {
+      return delegate.getSegmentCount();
     }
 
     @Override

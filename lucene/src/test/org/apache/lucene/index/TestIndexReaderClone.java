@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -192,15 +191,15 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   // open non-readOnly reader1 on multi-segment index, then
-  // optimize the index, then clone to readOnly reader2
-  public void testReadOnlyCloneAfterOptimize() throws Exception {
+  // fully merge the index, then clone to readOnly reader2
+  public void testReadOnlyCloneAfterFullMerge() throws Exception {
     final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, false);
     IndexWriter w = new IndexWriter(dir1, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.optimize();
+    w.forceMerge(1);
     w.close();
     IndexReader reader2 = reader1.clone(true);
     assertTrue(isReadOnly(reader2));

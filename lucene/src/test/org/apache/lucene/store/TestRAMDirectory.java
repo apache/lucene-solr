@@ -26,7 +26,6 @@ import java.io.ByteArrayOutputStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -108,7 +107,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     
     final IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
@@ -135,7 +134,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     for (int i=0; i<numThreads; i++)
       threads[i].join();
 
-    writer.optimize();
+    writer.forceMerge(1);
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     writer.close();

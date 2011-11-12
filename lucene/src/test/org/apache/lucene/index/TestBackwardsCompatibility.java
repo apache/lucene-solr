@@ -24,7 +24,6 @@ import java.io.DataInputStream;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -76,16 +75,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   /*
   // These are only needed for the special upgrade test to verify
-  // that also optimized indexes are correctly upgraded by IndexUpgrader.
+  // that also single-segment indexes are correctly upgraded by IndexUpgrader.
   // You don't need them to be build for non-3.1 (the test is happy with just one
   // "old" segment format, version is unimportant:
   
-  public void testCreateOptimizedCFS() throws IOException {
-    createIndex("index.optimized.cfs", true, true);
+  public void testCreateSingleSegmentCFS() throws IOException {
+    createIndex("index.singlesegment.cfs", true, true);
   }
 
-  public void testCreateOptimizedNoCFS() throws IOException {
-    createIndex("index.optimized.nocfs", false, true);
+  public void testCreateSingleSegmentNoCFS() throws IOException {
+    createIndex("index.singlesegment.nocfs", false, true);
   }
   */
 
@@ -111,8 +110,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "32.nocfs",
   };
   
-  final String[] oldOptimizedNames = {"31.optimized.cfs",
-                                      "31.optimized.nocfs",
+  final String[] oldSingleSegmentNames = {"31.optimized.cfs",
+                                          "31.optimized.nocfs",
   };
   
   private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
@@ -149,7 +148,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         }
       }
       
-      // check if field was decompressed after optimize
+      // check if field was decompressed after full merge
       for(int i=0; i<reader.maxDoc(); i++) {
         if (!reader.isDeleted(i)) {
           Document d = reader.document(i, new FieldSelector() {
@@ -414,9 +413,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     testHits(hits, 43, searcher.getIndexReader());
     searcher.close();
 
-    // optimize
+    // fully merge
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     searcher = new IndexSearcher(dir, true);
@@ -462,9 +461,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     testHits(hits, 33, searcher.getIndexReader());
     searcher.close();
 
-    // optimize
+    // fully merge
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     searcher = new IndexSearcher(dir, true);
@@ -478,7 +477,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public File createIndex(String dirName, boolean doCFS, boolean optimized) throws IOException {
+  public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
     _TestUtil.rmDir(indexDir);
@@ -494,12 +493,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       addDoc(writer, i);
     }
     assertEquals("wrong doc count", 35, writer.maxDoc());
-    if (optimized) {
-      writer.optimize();
+    if (fullyMerged) {
+      writer.forceMerge(1);
     }
     writer.close();
 
-    if (!optimized) {
+    if (!fullyMerged) {
       // open fresh writer so we get no prx file in the added segment
       mp = new LogByteSizeMergePolicy();
       mp.setUseCompoundFile(doCFS);
@@ -725,9 +724,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testUpgradeOldIndex() throws Exception {
-    List<String> names = new ArrayList<String>(oldNames.length + oldOptimizedNames.length);
+    List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
-    names.addAll(Arrays.asList(oldOptimizedNames));
+    names.addAll(Arrays.asList(oldSingleSegmentNames));
     for(String name : names) {
       if (VERBOSE) {
         System.out.println("testUpgradeOldIndex: index=" +name);
@@ -746,16 +745,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void testUpgradeOldOptimizedIndexWithAdditions() throws Exception {
-    for (String name : oldOptimizedNames) {
+  public void testUpgradeOldSingleSegmentIndexWithAdditions() throws Exception {
+    for (String name : oldSingleSegmentNames) {
       if (VERBOSE) {
-        System.out.println("testUpgradeOldOptimizedIndexWithAdditions: index=" +name);
+        System.out.println("testUpgradeOldSingleSegmentIndexWithAdditions: index=" +name);
       }
       File oldIndxeDir = _TestUtil.getTempDir(name);
       _TestUtil.unzip(getDataFile("index." + name + ".zip"), oldIndxeDir);
       Directory dir = newFSDirectory(oldIndxeDir);
 
-      assertEquals("Original index must be optimized", 1, getNumberOfSegments(dir));
+      assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
 
       // create a bunch of dummy segments
       int id = 40;
@@ -773,7 +772,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         w.close(false);
       }
       
-      // add dummy segments (which are all in current version) to optimized index
+      // add dummy segments (which are all in current
+      // version) to single segment index
       MergePolicy mp = random.nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
       IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
         .setMergePolicy(mp);

@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -185,7 +184,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       doc.add(new Field("field", contents, Field.Store.NO, Field.Index.ANALYZED));
       w.addDocument(doc);
     }
-    w.optimize();
+    w.forceMerge(1);
     final IndexReader r = w.getReader();
     final IndexSearcher s = newSearcher(r);
     w.close();

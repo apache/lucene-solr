@@ -324,7 +324,7 @@ public class TestSimpleExplanations extends TestExplanations {
 
     writerA.addDocument(lDoc);
     writerA.addDocument(lDoc2);
-    writerA.optimize();
+    writerA.forceMerge(1);
     writerA.close();
 
     writerB.addDocument(lDoc3);

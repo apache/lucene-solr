@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -133,8 +132,8 @@ public class Test2BTerms extends LuceneTestCase {
       }
       savedTerms = ts.savedTerms;
 
-      System.out.println("TEST: optimize");
-      w.optimize();
+      System.out.println("TEST: full merge");
+      w.forceMerge(1);
       System.out.println("TEST: close writer");
       w.close();
     }

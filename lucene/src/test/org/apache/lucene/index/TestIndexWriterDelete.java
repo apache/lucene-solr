@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,9 +32,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -72,7 +68,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                        Field.Index.ANALYZED));
       modifier.addDocument(doc);
     }
-    modifier.optimize();
+    modifier.forceMerge(1);
     modifier.commit();
 
     Term term = new Term("city", "Amsterdam");
@@ -717,10 +713,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // flush (and commit if ac)
 
     if (VERBOSE) {
-      System.out.println("TEST: now optimize");
+      System.out.println("TEST: now full merge");
     }
 
-    modifier.optimize();
+    modifier.forceMerge(1);
     if (VERBOSE) {
       System.out.println("TEST: now commit");
     }

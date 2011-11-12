@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
@@ -167,64 +166,6 @@ public class TestParallelReader extends LuceneTestCase {
     
     // now both are not current anymore
     assertFalse(pr.isCurrent());
-    pr.close();
-    dir1.close();
-    dir2.close();
-  }
-
-  public void testIsOptimized() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
-    
-    // add another document to ensure that the indexes are not optimized
-    IndexWriter modifier = new IndexWriter(
-        dir1,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    Document d = new Document();
-    d.add(newField("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
-    modifier.addDocument(d);
-    modifier.close();
-
-    modifier = new IndexWriter(
-        dir2,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    d = new Document();
-    d.add(newField("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
-    modifier.addDocument(d);
-    modifier.close();
-
-    
-    ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    assertFalse(pr.isOptimized());
-    pr.close();
-    
-    modifier = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    modifier.optimize();
-    modifier.close();
-    
-    pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    // just one of the two indexes are optimized
-    assertFalse(pr.isOptimized());
-    pr.close();
-
-    
-    modifier = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    modifier.optimize();
-    modifier.close();
-    
-    pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    // now both indexes are optimized
-    assertTrue(pr.isOptimized());
     pr.close();
     dir1.close();
     dir2.close();

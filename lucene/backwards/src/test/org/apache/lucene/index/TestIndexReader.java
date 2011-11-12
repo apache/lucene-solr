@@ -32,7 +32,6 @@ import java.util.SortedSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
@@ -41,15 +40,10 @@ import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -93,7 +87,6 @@ public class TestIndexReader extends LuceneTestCase {
 
       IndexReader r3 = r2.reopen();
       assertFalse(c.equals(r3.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().isOptimized());
       r3.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -103,7 +96,6 @@ public class TestIndexReader extends LuceneTestCase {
       writer.close();
 
       r3 = r2.reopen();
-      assertTrue(r3.getIndexCommit().isOptimized());
       r2.close();
       r3.close();
       d.close();
@@ -938,7 +930,6 @@ public class TestIndexReader extends LuceneTestCase {
 
       IndexReader r2 = r.reopen();
       assertFalse(c.equals(r2.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().isOptimized());
       r2.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -948,7 +939,6 @@ public class TestIndexReader extends LuceneTestCase {
       writer.close();
 
       r2 = r.reopen();
-      assertTrue(r2.getIndexCommit().isOptimized());
 
       r.close();
       r2.close();

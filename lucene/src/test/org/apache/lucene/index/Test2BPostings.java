@@ -28,7 +28,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Ignore;
 
 /**
  * Test indexes ~82M docs with 26 terms each, so you get > Integer.MAX_VALUE terms/docs pairs
@@ -70,7 +69,7 @@ public class Test2BPostings extends LuceneTestCase {
         System.out.println(i + " of " + numDocs + "...");
       }
     }
-    w.optimize();
+    w.forceMerge(1);
     w.close();
     CheckIndex ci = new CheckIndex(dir);
     if (VERBOSE) {

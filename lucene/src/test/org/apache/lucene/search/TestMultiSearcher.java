@@ -91,7 +91,7 @@ public class TestMultiSearcher extends LuceneTestCase
         writerA.addDocument(lDoc);
         writerA.addDocument(lDoc2);
         writerA.addDocument(lDoc3);
-        writerA.optimize();
+        writerA.forceMerge(1);
         writerA.close();
 
         // closing the second index
@@ -130,7 +130,7 @@ public class TestMultiSearcher extends LuceneTestCase
                 new StandardAnalyzer(TEST_VERSION_CURRENT))
                 .setOpenMode(OpenMode.APPEND));
         writerB.addDocument(lDoc);
-        writerB.optimize();
+        writerB.forceMerge(1);
         writerB.close();
 
         // building the searchables
@@ -178,7 +178,7 @@ public class TestMultiSearcher extends LuceneTestCase
             TEST_VERSION_CURRENT, 
                 new StandardAnalyzer(TEST_VERSION_CURRENT))
                 .setOpenMode(OpenMode.APPEND));
-        writerB.optimize();
+        writerB.forceMerge(1);
         writerB.close();
 
         // building the searchables

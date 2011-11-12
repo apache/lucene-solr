@@ -24,7 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.MockDirectoryWrapper;
 
 // TODO
-//   - mix in optimize, addIndexes
+//   - mix in forceMerge, addIndexes
 //   - randomoly mix in non-congruent docs
 
 public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {

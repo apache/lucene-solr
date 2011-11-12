@@ -57,7 +57,7 @@ import org.apache.lucene.util.encoding.IntEncoder;
  * conf.setMergePolicy(new ForceOptimizeMergePolicy());
  * IndexWriter writer = new IndexWriter(oldDir, conf);
  * writer.setPayloadProcessorProvider(fppp);
- * writer.optimize();
+ * writer.forceMerge(1);
  * writer.close();
  * 
  * // merge that directory with the new index.

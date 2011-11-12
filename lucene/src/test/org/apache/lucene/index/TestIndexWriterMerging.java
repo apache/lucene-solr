@@ -17,7 +17,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -66,7 +65,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(new Directory[]{indexA, indexB});
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     fail = verifyIndex(merged, 0);

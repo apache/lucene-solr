@@ -17,21 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.ReaderUtil;         // for javadocs
 import org.apache.lucene.util.VirtualMethod;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.Closeable;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -1002,12 +1003,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
-  /**
-   * Checks is the index is optimized (if it has a single segment and 
-   * no deletions).  Not implemented in the IndexReader base class.
-   * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
-   * @throws UnsupportedOperationException unless overridden in subclass
-   */
+  /** @deprecated Check segment count using {@link
+   *  #getSequentialSubReaders} instead. */
+  @Deprecated
   public boolean isOptimized() {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }

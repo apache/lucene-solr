@@ -17,20 +17,19 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
-
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.util.Random;
-
-public class TestThreadedOptimize extends LuceneTestCase {
+public class TestThreadedForceMerge extends LuceneTestCase {
   
   private static final Analyzer ANALYZER = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
 
@@ -60,17 +59,16 @@ public class TestThreadedOptimize extends LuceneTestCase {
     for(int iter=0;iter<NUM_ITER;iter++) {
       final int iterFinal = iter;
 
-      setMergeFactor(writer.getConfig().getMergePolicy(), 100);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
 
       for(int i=0;i<200;i++) {
         Document d = new Document();
         d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-        d.add(newField("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
+        d.add(newField("contents", English.intToEnglish(i), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
         writer.addDocument(d);
       }
 
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
-      writer.setInfoStream(VERBOSE ? System.out : null);
 
       Thread[] threads = new Thread[NUM_THREADS];
       
@@ -82,16 +80,16 @@ public class TestThreadedOptimize extends LuceneTestCase {
           public void run() {
             try {
               for(int j=0;j<NUM_ITER2;j++) {
-                writerFinal.optimize(false);
+                writerFinal.forceMerge(1, false);
                 for(int k=0;k<17*(1+iFinal);k++) {
                   Document d = new Document();
                   d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-                  d.add(newField("contents", English.intToEnglish(iFinal+k), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
+                  d.add(newField("contents", English.intToEnglish(iFinal+k), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
                   writerFinal.addDocument(d);
                 }
                 for(int k=0;k<9*(1+iFinal);k++)
                   writerFinal.deleteDocuments(new Term("id", iterFinal + "_" + iFinal + "_" + j + "_" + k));
-                writerFinal.optimize();
+                writerFinal.forceMerge(1);
               }
             } catch (Throwable t) {
               setFailed();
@@ -121,14 +119,18 @@ public class TestThreadedOptimize extends LuceneTestCase {
           OpenMode.APPEND).setMaxBufferedDocs(2));
       
       IndexReader reader = IndexReader.open(directory, true);
-      assertTrue("reader=" + reader, reader.isOptimized());
+      assertEquals("reader=" + reader, 1, reader.getSequentialSubReaders().length);
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }
     writer.close();
   }
 
-  public void testThreadedOptimize() throws Exception {
+  /*
+    Run above stress test against RAMDirectory and then
+    FSDirectory.
+  */
+  public void testThreadedForceMerge() throws Exception {
     Directory directory = newDirectory();
     runTest(random, directory);
     directory.close();

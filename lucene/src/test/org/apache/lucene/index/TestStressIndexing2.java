@@ -179,7 +179,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       threads[i].join();
     }
 
-    // w.optimize();
+    // w.forceMerge(1);
     //w.close();    
 
     for (int i=0; i<threads.length; i++) {
@@ -228,7 +228,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         threads[i].join();
       }
 
-      // w.optimize();
+      // w.forceMerge(1);
       w.close();    
 
       for (int i=0; i<threads.length; i++) {

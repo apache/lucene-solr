@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.Constants;
@@ -41,7 +40,7 @@ public class TestCheckIndex extends LuceneTestCase {
     for(int i=0;i<19;i++) {
       writer.addDocument(doc);
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(5);

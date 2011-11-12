@@ -171,9 +171,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
         writer.addDocument (doc);
       
     }
-    //writer.optimize ();
+    //writer.forceMerge(1);
     //System.out.println(writer.getSegmentCount());
-    writer.close ();
+    writer.close();
     return new IndexSearcher (indexStore, true);
   }
   
@@ -1216,7 +1216,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
         doc.add (new Field ("string", "b"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
         writer.addDocument (doc);
     }
-    writer.optimize(); // enforce one segment to have a higher unique term count in all cases
+    writer.forceMerge(1); // enforce one segment to have a higher unique term count in all cases
     writer.close();
     sort.setSort(
         new SortField("string", SortField.STRING),

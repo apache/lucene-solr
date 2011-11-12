@@ -267,13 +267,14 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.isCurrent();
   }
-  
+
+  @Deprecated
   @Override
   public boolean isOptimized() {
     ensureOpen();
     return in.isOptimized();
   }
-  
+
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return in.getSequentialSubReaders();

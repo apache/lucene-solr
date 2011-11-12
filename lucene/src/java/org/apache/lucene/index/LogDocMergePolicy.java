@@ -31,10 +31,10 @@ public class LogDocMergePolicy extends LogMergePolicy {
   public LogDocMergePolicy() {
     minMergeSize = DEFAULT_MIN_MERGE_DOCS;
     
-    // maxMergeSize(ForOptimize) are never used by LogDocMergePolicy; set
+    // maxMergeSize(ForForcedMerge) are never used by LogDocMergePolicy; set
     // it to Long.MAX_VALUE to disable it
     maxMergeSize = Long.MAX_VALUE;
-    maxMergeSizeForOptimize = Long.MAX_VALUE;
+    maxMergeSizeForForcedMerge = Long.MAX_VALUE;
   }
 
   @Override

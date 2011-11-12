@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -177,7 +176,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     te3.close();
 
     // really a dummy assert to ensure that we got some docs and to ensure that
-    // nothing is optimized out.
+    // nothing is eliminated by hotspot
     assertTrue(ret > 0);
     readers1[0].close();
     readers1[1].close();

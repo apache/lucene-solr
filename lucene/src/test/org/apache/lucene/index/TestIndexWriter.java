@@ -24,14 +24,13 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Collections;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -42,30 +41,31 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -103,10 +103,10 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(60, reader.numDocs());
         reader.close();
 
-        // optimize the index and check that the new doc count is correct
+        // merge the index down and check that the new doc count is correct
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         assertEquals(60, writer.numDocs());
-        writer.optimize();
+        writer.forceMerge(1);
         assertEquals(60, writer.maxDoc());
         assertEquals(60, writer.numDocs());
         writer.close();
@@ -913,7 +913,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         //LogMergePolicy lmp2 = (LogMergePolicy) writer.getConfig().getMergePolicy();
         //lmp2.setUseCompoundFile(false);
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
       }
     }
@@ -1505,7 +1505,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     w.addDocument(doc);
     w.commit();
-    w.optimize();   // force segment merge.
+    w.forceMerge(1);   // force segment merge.
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
@@ -1611,7 +1611,7 @@ public class TestIndexWriter extends LuceneTestCase {
       List<String> files = Arrays.asList(dir.listAll());
       assertTrue(files.contains("_0.cfs"));
       w.addDocument(doc);
-      w.optimize();
+      w.forceMerge(1);
       if (iter == 1) {
         w.commit();
       }
@@ -1622,10 +1622,10 @@ public class TestIndexWriter extends LuceneTestCase {
 
       // NOTE: here we rely on "Windows" behavior, ie, even
       // though IW wanted to delete _0.cfs since it was
-      // optimized away, because we have a reader open
+      // merged away, because we have a reader open
       // against this file, it should still be here:
       assertTrue(files.contains("_0.cfs"));
-      // optimize created this
+      // forceMerge created this
       //assertTrue(files.contains("_2.cfs"));
       w.deleteUnusedFiles();
 
@@ -1859,7 +1859,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
         s.close();
         r.close();
-        w.optimize();
+        w.forceMerge(1);
       }
     }
     w.close();

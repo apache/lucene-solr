@@ -220,12 +220,13 @@ public class MultiReader extends IndexReader implements Cloneable {
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
 
+  @Deprecated
   @Override
   public boolean isOptimized() {
     ensureOpen();
     return false;
   }
-  
+
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)

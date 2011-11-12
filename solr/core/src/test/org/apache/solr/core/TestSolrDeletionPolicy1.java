@@ -95,7 +95,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     for (Long version : commits.keySet()) {
       if (commits.get(version) == latest)
         continue;
-      assertTrue(commits.get(version).isOptimized());
+      assertEquals(1, commits.get(version).getSegmentCount());
     }
   }
 

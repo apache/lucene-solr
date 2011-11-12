@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -60,7 +59,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     // When unpatched, Lucene crashes here with a NoSuchElementException (caused by ParallelTermEnum)
     iwOut.addIndexes(new IndexReader[] { pr });
 		
-    iwOut.optimize();
+    iwOut.forceMerge(1);
     iwOut.close();
     rdOut.close();
     rd1.close();
@@ -90,7 +89,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       ir.close();
 
       iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-      iw.optimize();
+      iw.forceMerge(1);
       iw.close();
     }
 
@@ -118,7 +117,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     rd1.close();
     rd2.close();
 		
-    iwOut.optimize();
+    iwOut.forceMerge(1);
     iwOut.close();
     
     rdOut.close();

@@ -12,7 +12,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -71,7 +70,7 @@ public class TestScorerPerf extends LuceneTestCase {
       }
       iw.addDocument(d);
     }
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
   }
 
@@ -103,7 +102,7 @@ public class TestScorerPerf extends LuceneTestCase {
     @Override
     public void collect(int doc) {
       count++;
-      sum += docBase + doc;  // use it to avoid any possibility of being optimized away
+      sum += docBase + doc;  // use it to avoid any possibility of being eliminated by hotspot
     }
 
     public int getCount() { return count; }

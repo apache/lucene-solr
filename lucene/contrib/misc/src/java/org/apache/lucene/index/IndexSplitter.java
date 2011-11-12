@@ -36,8 +36,8 @@ import org.apache.lucene.store.FSDirectory;
  *
  * <p>This tool does file-level copying of segments files.
  * This means it's unable to split apart a single segment
- * into multiple segments.  For example if your index is
- * optimized, this tool won't help.  Also, it does basic
+ * into multiple segments.  For example if your index is a
+ * single segment, this tool won't help.  Also, it does basic
  * file-level copying (using simple
  * File{In,Out}putStream) so it will not work with non
  * FSDirectory Directory impls.</p>

@@ -291,7 +291,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
       doc.add(new Field("title", ALT_DOCS[i], Field.Store.YES, Field.Index.ANALYZED));
       iw.addDocument(doc);
     }
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     dir.close();
     indexDir.mkdirs();

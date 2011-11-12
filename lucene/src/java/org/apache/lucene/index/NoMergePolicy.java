@@ -58,8 +58,8 @@ public final class NoMergePolicy extends MergePolicy {
       throws CorruptIndexException, IOException { return null; }
 
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos,
-             int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
+             int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
       throws CorruptIndexException, IOException { return null; }
 
   @Override

@@ -33,7 +33,6 @@ import java.util.SortedSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
@@ -42,15 +41,10 @@ import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -95,18 +89,18 @@ public class TestIndexReader extends LuceneTestCase {
       IndexReader r3 = IndexReader.openIfChanged(r2);
       assertNotNull(r3);
       assertFalse(c.equals(r3.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().isOptimized());
+      assertFalse(r2.getIndexCommit().getSegmentCount() == 1);
       r3.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       r3 = IndexReader.openIfChanged(r2);
       assertNotNull(r3);
-      assertTrue(r3.getIndexCommit().isOptimized());
+      assertEquals(1, r3.getIndexCommit().getSegmentCount());
       r2.close();
       r3.close();
       d.close();
@@ -372,11 +366,11 @@ public class TestIndexReader extends LuceneTestCase {
           assertEquals(bin[i], data1[i + fb1.getBinaryOffset()]);
         }
         reader.close();
-        // force optimize
+        // force merge
 
 
         writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
         reader = IndexReader.open(dir, false);
         doc = reader.document(reader.maxDoc() - 1);
@@ -710,7 +704,7 @@ public class TestIndexReader extends LuceneTestCase {
       // [incorrectly] hit a "docs out of order"
       // IllegalStateException because above out-of-bounds
       // deleteDocument corrupted the index:
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
       if (!gotException) {
         fail("delete of out-of-bounds doc number failed to hit exception");
@@ -827,7 +821,9 @@ public class TestIndexReader extends LuceneTestCase {
       assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
       assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
       assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
-      assertEquals("Only one index is optimized.", index1.isOptimized(), index2.isOptimized());
+      if (!(index1 instanceof ParallelReader)) {
+        assertEquals("Single segment test differs.", index1.getSequentialSubReaders().length == 1, index2.getSequentialSubReaders().length == 1);
+      }
       
       // check field names
       Collection<String> fields1 = index1.getFieldNames(FieldOption.ALL);
@@ -942,19 +938,19 @@ public class TestIndexReader extends LuceneTestCase {
       IndexReader r2 = IndexReader.openIfChanged(r);
       assertNotNull(r2);
       assertFalse(c.equals(r2.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().isOptimized());
+      assertFalse(r2.getIndexCommit().getSegmentCount() == 1);
       r2.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       r2 = IndexReader.openIfChanged(r);
       assertNotNull(r2);
       assertNull(IndexReader.openIfChanged(r2));
-      assertTrue(r2.getIndexCommit().isOptimized());
+      assertEquals(1, r2.getIndexCommit().getSegmentCount());
 
       r.close();
       r2.close();
@@ -1004,7 +1000,7 @@ public class TestIndexReader extends LuceneTestCase {
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       // Make sure reopen to a single segment is still readonly:

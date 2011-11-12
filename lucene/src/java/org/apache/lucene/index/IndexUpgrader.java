@@ -34,7 +34,7 @@ import java.util.Collection;
   *  java -cp lucene-core.jar org.apache.lucene.index.IndexUpgrader [-delete-prior-commits] [-verbose] indexDir
   * </pre>
   * Alternatively this class can be instantiated and {@link #upgrade} invoked. It uses {@link UpgradeIndexMergePolicy}
-  * and triggers the upgrade via an optimize request to {@link IndexWriter}.
+  * and triggers the upgrade via an forceMerge request to {@link IndexWriter}.
   * <p>This tool keeps only the last commit in an index; for this
   * reason, if the incoming index has more than one commit, the tool
   * refuses to run by default. Specify {@code -delete-prior-commits}
@@ -44,7 +44,7 @@ import java.util.Collection;
   * <p><b>Warning:</b> This tool may reorder documents if the index was partially
   * upgraded before execution (e.g., documents were added). If your application relies
   * on &quot;monotonicity&quot; of doc IDs (which means that the order in which the documents
-  * were added to the index is preserved), do a full optimize instead.
+  * were added to the index is preserved), do a full forceMerge instead.
   * The {@link MergePolicy} set by {@link IndexWriterConfig} may also reorder
   * documents.
   */
@@ -133,7 +133,7 @@ public final class IndexUpgrader {
     try {
       w.setInfoStream(infoStream);
       w.message("Upgrading all pre-" + Constants.LUCENE_MAIN_VERSION + " segments of index directory '" + dir + "' to version " + Constants.LUCENE_MAIN_VERSION + "...");
-      w.optimize();
+      w.forceMerge(1);
       w.message("All segments upgraded to version " + Constants.LUCENE_MAIN_VERSION);
     } finally {
       w.close();

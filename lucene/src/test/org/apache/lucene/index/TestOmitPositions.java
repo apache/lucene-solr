@@ -22,9 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -111,7 +109,7 @@ public class TestOmitPositions extends LuceneTestCase {
     d.add(f9);
         
     writer.addDocument(d);
-    writer.optimize();
+    writer.forceMerge(1);
 
     // now we add another document which has docs-only for f1, f4, f7, docs/freqs for f2, f5, f8, 
     // and docs/freqs/positions for f3, f6, f9
@@ -159,7 +157,7 @@ public class TestOmitPositions extends LuceneTestCase {
     writer.addDocument(d);
 
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 
@@ -227,7 +225,7 @@ public class TestOmitPositions extends LuceneTestCase {
       writer.addDocument(d);
 
     // force merge
-    writer.optimize();
+    writer.forceMerge(1);
     // flush
     writer.close();
 

@@ -105,7 +105,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
           d.add(new Field(WORD_FIELD_NAME, s, Field.Store.NO, Field.Index.ANALYZED));
           writer.addDocument(d);
         }
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
 
         dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir),

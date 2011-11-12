@@ -92,7 +92,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         }
         
         // make sure the index has only a single segment
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
         
         SegmentReader reader = SegmentReader.getOnlySegmentReader(directory);

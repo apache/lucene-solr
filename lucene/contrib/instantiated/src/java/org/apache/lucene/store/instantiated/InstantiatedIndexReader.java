@@ -50,9 +50,7 @@ public class InstantiatedIndexReader extends IndexReader {
     readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
   }
 
-  /**
-   * @return always true.
-   */
+  @Deprecated
   @Override
   public boolean isOptimized() {
     return true;

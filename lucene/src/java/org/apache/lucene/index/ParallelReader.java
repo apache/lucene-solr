@@ -448,9 +448,7 @@ public class ParallelReader extends IndexReader {
     return true;
   }
 
-  /**
-   * Checks recursively if all subindexes are optimized 
-   */
+  @Deprecated
   @Override
   public boolean isOptimized() {
     ensureOpen();
@@ -464,7 +462,6 @@ public class ParallelReader extends IndexReader {
     return true;
   }
 
-  
   /** Not implemented.
    * @throws UnsupportedOperationException
    */

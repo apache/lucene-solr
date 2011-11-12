@@ -74,7 +74,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       IndexCommit lastCommit =  commits.get(commits.size()-1);
       IndexReader r = IndexReader.open(dir, true);
-      assertEquals("lastCommit.isOptimized()=" + lastCommit.isOptimized() + " vs IndexReader.isOptimized=" + r.isOptimized(), r.isOptimized(), lastCommit.isOptimized());
       r.close();
       verifyCommitOrder(commits);
       numOnCommit++;

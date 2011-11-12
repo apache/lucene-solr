@@ -54,6 +54,12 @@ public class MockRandomMergePolicy extends MergePolicy {
     return mergeSpec;
   }
 
+  public MergeSpecification findForcedMerges(
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+    throws CorruptIndexException, IOException {
+    return findMergesForOptimize(segmentInfos, maxSegmentCount, segmentsToOptimize);
+  }
+    
   @Override
   public MergeSpecification findMergesForOptimize(
        SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)

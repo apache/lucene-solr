@@ -219,7 +219,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     }
     long midDiskUsage = dir.getMaxUsedSizeInBytes();
     dir.resetMaxUsedSizeInBytes();
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     IndexReader.open(dir, true).close();
@@ -241,11 +241,11 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
 
   /*
-   * Verify that calling optimize when writer is open for
+   * Verify that calling forceMerge when writer is open for
    * "commit on close" works correctly both for rollback()
    * and close().
    */
-  public void testCommitOnCloseOptimize() throws IOException {
+  public void testCommitOnCloseForceMerge() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
     // Must disable throwing exc on double-write: this
     // test uses IW.rollback which easily results in
@@ -263,7 +263,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     writer.close();
 
     writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
 
     if (VERBOSE) {
       writer.setInfoStream(System.out);
@@ -272,42 +272,42 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // Open a reader before closing (commiting) the writer:
     IndexReader reader = IndexReader.open(dir, true);
 
-    // Reader should see index as unoptimized at this
+    // Reader should see index as multi-seg at this
     // point:
-    assertFalse("Reader incorrectly sees that the index is optimized", reader.isOptimized());
+    assertTrue("Reader incorrectly sees one segment", reader.getSequentialSubReaders().length > 1);
     reader.close();
 
     // Abort the writer:
     writer.rollback();
-    TestIndexWriter.assertNoUnreferencedFiles(dir, "aborted writer after optimize");
+    TestIndexWriter.assertNoUnreferencedFiles(dir, "aborted writer after forceMerge");
 
     // Open a reader after aborting writer:
     reader = IndexReader.open(dir, true);
 
-    // Reader should still see index as unoptimized:
-    assertFalse("Reader incorrectly sees that the index is optimized", reader.isOptimized());
+    // Reader should still see index as multi-segment
+    assertTrue("Reader incorrectly sees one segment", reader.getSequentialSubReaders().length > 1);
     reader.close();
 
     if (VERBOSE) {
-      System.out.println("TEST: do real optimize");
+      System.out.println("TEST: do real full merge");
     }
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     if (VERBOSE) {
       writer.setInfoStream(System.out);
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     if (VERBOSE) {
       System.out.println("TEST: writer closed");
     }
-    TestIndexWriter.assertNoUnreferencedFiles(dir, "aborted writer after optimize");
+    TestIndexWriter.assertNoUnreferencedFiles(dir, "aborted writer after forceMerge");
 
     // Open a reader after aborting writer:
     reader = IndexReader.open(dir, true);
 
-    // Reader should still see index as unoptimized:
-    assertTrue("Reader incorrectly sees that the index is unoptimized", reader.isOptimized());
+    // Reader should see index as one segment
+    assertEquals("Reader incorrectly sees more than one segment", 1, reader.getSequentialSubReaders().length);
     reader.close();
     dir.close();
   }
@@ -659,7 +659,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     r.close();
 
     w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.optimize();
+    w.forceMerge(1);
     w.close();
 
     assertEquals("test1", IndexReader.getCommitUserData(dir).get("label"));

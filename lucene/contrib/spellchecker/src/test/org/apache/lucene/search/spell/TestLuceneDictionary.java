@@ -22,7 +22,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -71,7 +70,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
     doc.add(newField("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
   }
 

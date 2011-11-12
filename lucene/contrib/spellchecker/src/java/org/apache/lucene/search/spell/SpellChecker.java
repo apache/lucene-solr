@@ -561,11 +561,11 @@ public class SpellChecker implements java.io.Closeable {
    * Indexes the data from the given {@link Dictionary}.
    * @param dict Dictionary to index
    * @param config {@link IndexWriterConfig} to use
-   * @param optimize whether or not the spellcheck index should be optimized
+   * @param fullMerge whether or not the spellcheck index should be fully merged
    * @throws AlreadyClosedException if the Spellchecker is already closed
    * @throws IOException
    */
-  public final void indexDictionary(Dictionary dict, IndexWriterConfig config, boolean optimize) throws IOException {
+  public final void indexDictionary(Dictionary dict, IndexWriterConfig config, boolean fullMerge) throws IOException {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
@@ -607,9 +607,10 @@ public class SpellChecker implements java.io.Closeable {
       } finally {
         releaseSearcher(indexSearcher);
       }
+      if (fullMerge) {
+        writer.forceMerge(1);
+      }
       // close writer
-      if (optimize)
-        writer.optimize();
       writer.close();
       // TODO: this isn't that great, maybe in the future SpellChecker should take
       // IWC in its ctor / keep its writer open?

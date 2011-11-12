@@ -52,7 +52,7 @@ public class TestStressAdvance extends LuceneTestCase {
         w.addDocument(doc);
       }
 
-      w.optimize();
+      w.forceMerge(1);
 
       final List<Integer> aDocIDs = new ArrayList<Integer>();
       final List<Integer> bDocIDs = new ArrayList<Integer>();

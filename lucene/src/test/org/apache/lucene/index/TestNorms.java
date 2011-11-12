@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test that norms info is preserved during index life - including
- * separate norms, addDocument, addIndexes, optimize.
+ * separate norms, addDocument, addIndexes, forceMerge.
  */
 public class TestNorms extends LuceneTestCase {
 
@@ -68,7 +68,7 @@ public class TestNorms extends LuceneTestCase {
    * Test that norms values are preserved as the index is maintained.
    * Including separate norms.
    * Including merging indexes with seprate norms. 
-   * Including optimize. 
+   * Including forceMerge. 
    */
   public void testNorms() throws IOException {
     Directory dir1 = newDirectory();
@@ -101,7 +101,7 @@ public class TestNorms extends LuceneTestCase {
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
                                      .setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
     iw.addIndexes(new Directory[]{dir1,dir2});
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     
     norms1.addAll(norms);
@@ -114,10 +114,10 @@ public class TestNorms extends LuceneTestCase {
     verifyIndex(dir3);
     doTestNorms(random, dir3);
     
-    // now with optimize
+    // now with single segment
     iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
         anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     verifyIndex(dir3);
     

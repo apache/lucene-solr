@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -145,7 +144,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       writer.addDocument(d4);
     }
 
-    writer.optimize();
+    writer.forceMerge(1);
     r = writer.getReader();
     writer.close();
     s = newSearcher(r);

@@ -169,7 +169,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     }
     
     // Now, build a starting index that has START_COUNT docs.  We
-    // will then try to addIndexesNoOptimize into a copy of this:
+    // will then try to addIndexes into a copy of this:
     MockDirectoryWrapper startDir = newDirectory();
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for(int j=0;j<START_COUNT;j++) {
@@ -223,7 +223,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       
       String methodName;
       if (0 == method) {
-        methodName = "addIndexes(Directory[]) + optimize()";
+        methodName = "addIndexes(Directory[]) + forceMerge(1)";
       } else if (1 == method) {
         methodName = "addIndexes(IndexReader[])";
       } else {
@@ -293,7 +293,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             
             if (0 == method) {
               writer.addIndexes(dirs);
-              writer.optimize();
+              writer.forceMerge(1);
             } else if (1 == method) {
               IndexReader readers[] = new IndexReader[dirs.length];
               for(int i=0;i<dirs.length;i++) {

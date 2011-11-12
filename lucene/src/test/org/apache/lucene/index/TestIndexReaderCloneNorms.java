@@ -29,7 +29,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
@@ -74,7 +73,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   /**
    * Test that norms values are preserved as the index is maintained. Including
    * separate norms. Including merging indexes with seprate norms. Including
-   * optimize.
+   * full merge.
    */
   public void testNorms() throws IOException {
     // test with a single index: index1
@@ -105,11 +104,17 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Directory dir3 = newDirectory();
 
     createIndex(random, dir3);
-    IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-                                     .setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
-    iw.addIndexes(new Directory[] { dir1, dir2 });
-    iw.optimize();
+    if (VERBOSE) {
+      System.out.println("TEST: now addIndexes/full merge");
+    }
+    IndexWriter iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3)));
+    iw.addIndexes(dir1, dir2);
+    iw.forceMerge(1);
     iw.close();
 
     norms1.addAll(norms);
@@ -122,10 +127,10 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     verifyIndex(dir3);
     doTestNorms(random, dir3);
 
-    // now with optimize
+    // now with full merge
     iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
                                                      anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     verifyIndex(dir3);
 

@@ -18,10 +18,6 @@ package org.apache.lucene.analysis;
  */
 
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
@@ -228,7 +224,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                           Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     Searcher searcher = new IndexSearcher(indexStore, true);
 
