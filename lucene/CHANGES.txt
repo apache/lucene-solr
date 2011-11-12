@@ -721,6 +721,15 @@ Bug fixes
 * LUCENE-3548: Fix CharsRef#append to extend length of the existing char[]
   and presever existing chars. (Simon Willnauer) 
 
+API Changes
+
+* LUCENE-3454: Rename IndexWriter.optimize to forceMerge to discourage
+  use of this method since it is horribly costly and rarely justified
+  anymore.  MergePolicy.findMergesForOptimize was renamed to
+  findForcedMerges.  IndexReader.isOptimized was
+  deprecated. IndexCommit.isOptimized was replaced with
+  getSegmentCount. (Robert Muir, Mike McCandless)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
