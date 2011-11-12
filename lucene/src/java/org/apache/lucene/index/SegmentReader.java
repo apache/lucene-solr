@@ -687,67 +687,15 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @throws IOException
    */
   @Override
-  public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
-    // Check if this field is invalid or has no stored term vector
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    FieldInfo fi = core.fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.storeTermVector) 
-      return null;
-    
-    TermVectorsReader termVectorsReader = getTermVectorsReader();
-    if (termVectorsReader == null)
-      return null;
-    
-    return termVectorsReader.get(docNumber, field);
-  }
-
-
-  @Override
-  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    FieldInfo fi = core.fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.storeTermVector)
-      return;
-
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null) {
-      return;
-    }
-
-
-    termVectorsReader.get(docNumber, field, mapper);
-  }
-
-
-  @Override
-  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-
-    TermVectorsReader termVectorsReader = getTermVectorsReader();
-    if (termVectorsReader == null)
-      return;
-
-    termVectorsReader.get(docNumber, mapper);
-  }
-
-  /** Return an array of term frequency vectors for the specified document.
-   *  The array contains a vector for each vectorized field in the document.
-   *  Each vector vector contains term numbers and frequencies for all terms
-   *  in a given vectorized field.
-   *  If no such fields existed, the method returns null.
-   * @throws IOException
-   */
-  @Override
-  public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
-    ensureOpen();
-    
-    TermVectorsReader termVectorsReader = getTermVectorsReader();
-    if (termVectorsReader == null)
       return null;
-    
-    return termVectorsReader.get(docNumber);
+    }
+    return termVectorsReader.get(docID);
   }
-  
+
   /** {@inheritDoc} */
   @Override
   public String toString() {

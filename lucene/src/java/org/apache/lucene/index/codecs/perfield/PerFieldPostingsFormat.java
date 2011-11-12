@@ -246,6 +246,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
     
     @Override
+    public int getUniqueFieldCount() {
+      return fields.size();
+    }
+
+    @Override
     public void close() throws IOException {
       IOUtils.close(formats.values());
     }

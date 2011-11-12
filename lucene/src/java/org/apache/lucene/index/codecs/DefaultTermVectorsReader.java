@@ -17,25 +17,31 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Set;
+
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermVectorMapper;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
 
 public class DefaultTermVectorsReader extends TermVectorsReader {
 
@@ -234,246 +240,446 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     return size;
   }
 
-  @Override
-  public void get(int docNum, String field, TermVectorMapper mapper) throws IOException {
-    if (tvx != null) {
-      int fieldNumber = fieldInfos.fieldNumber(field);
-      //We need to account for the FORMAT_SIZE at when seeking in the tvx
-      //We don't need to do this in other seeks because we already have the
-      // file pointer
-      //that was written in another file
-      seekTvx(docNum);
-      //System.out.println("TVX Pointer: " + tvx.getFilePointer());
-      long tvdPosition = tvx.readLong();
+  private class TVFields extends Fields {
+    // nocommit make hashmap so .terms(String) is O(1)
+    private final int[] fieldNumbers;
+    private final long[] fieldFPs;
+    private final int docID;
 
-      tvd.seek(tvdPosition);
-      int fieldCount = tvd.readVInt();
-      //System.out.println("Num Fields: " + fieldCount);
-      // There are only a few fields per document. We opt for a full scan
-      // rather then requiring that they be ordered. We need to read through
-      // all of the fields anyway to get to the tvf pointers.
-      int number = 0;
-      int found = -1;
-      for (int i = 0; i < fieldCount; i++) {
-        number = tvd.readVInt();
-        if (number == fieldNumber)
-          found = i;
-      }
-
-      // This field, although valid in the segment, was not found in this
-      // document
-      if (found != -1) {
-        // Compute position in the tvf file
-        long position = tvx.readLong();
-        for (int i = 1; i <= found; i++)
-          position += tvd.readVLong();
-
-        mapper.setDocumentNumber(docNum);
-        readTermVector(field, position, mapper);
-      } else {
-        //System.out.println("Fieldable not found");
-      }
-    } else {
-      //System.out.println("No tvx file");
-    }
-  }
-
-  // Reads the String[] fields; you have to pre-seek tvd to
-  // the right point
-  private String[] readFields(int fieldCount) throws IOException {
-    int number = 0;
-    String[] fields = new String[fieldCount];
-
-    for (int i = 0; i < fieldCount; i++) {
-      number = tvd.readVInt();
-      fields[i] = fieldInfos.fieldName(number);
-    }
-
-    return fields;
-  }
-
-  // Reads the long[] offsets into TVF; you have to pre-seek
-  // tvx/tvd to the right point
-  private long[] readTvfPointers(int fieldCount) throws IOException {
-    // Compute position in the tvf file
-    long position = tvx.readLong();
-
-    long[] tvfPointers = new long[fieldCount];
-    tvfPointers[0] = position;
-
-    for (int i = 1; i < fieldCount; i++) {
-      position += tvd.readVLong();
-      tvfPointers[i] = position;
-    }
-
-    return tvfPointers;
-  }
-
-  /**
-   * Return all term vectors stored for this document or null if the could not be read in.
-   * 
-   * @param docNum The document number to retrieve the vector for
-   * @return All term frequency vectors
-   * @throws IOException if there is an error reading the term vector files 
-   */
-  @Override
-  public TermFreqVector[] get(int docNum) throws IOException {
-    TermFreqVector[] result = null;
-    if (tvx != null) {
-      //We need to offset by
-      seekTvx(docNum);
-      long tvdPosition = tvx.readLong();
-
-      tvd.seek(tvdPosition);
-      int fieldCount = tvd.readVInt();
-
-      // No fields are vectorized for this document
-      if (fieldCount != 0) {
-        final String[] fields = readFields(fieldCount);
-        final long[] tvfPointers = readTvfPointers(fieldCount);
-        result = readTermVectors(docNum, fields, tvfPointers);
-      }
-    } else {
-      //System.out.println("No tvx file");
-    }
-    return result;
-  }
-
-  public void get(int docNumber, TermVectorMapper mapper) throws IOException {
-    // Check if no term vectors are available for this segment at all
-    if (tvx != null) {
-      //We need to offset by
-
-      seekTvx(docNumber);
-      long tvdPosition = tvx.readLong();
-
-      tvd.seek(tvdPosition);
-      int fieldCount = tvd.readVInt();
-
-      // No fields are vectorized for this document
-      if (fieldCount != 0) {
-        final String[] fields = readFields(fieldCount);
-        final long[] tvfPointers = readTvfPointers(fieldCount);
-        mapper.setDocumentNumber(docNumber);
-        readTermVectors(fields, tvfPointers, mapper);
-      }
-    } else {
-      //System.out.println("No tvx file");
-    }
-  }
-
-
-  private SegmentTermVector[] readTermVectors(int docNum, String fields[], long tvfPointers[])
-          throws IOException {
-    SegmentTermVector res[] = new SegmentTermVector[fields.length];
-    for (int i = 0; i < fields.length; i++) {
-      ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
-      mapper.setDocumentNumber(docNum);
-      readTermVector(fields[i], tvfPointers[i], mapper);
-      res[i] = (SegmentTermVector) mapper.materializeVector();
-    }
-    return res;
-  }
-
-  private void readTermVectors(String fields[], long tvfPointers[], TermVectorMapper mapper)
-          throws IOException {
-    for (int i = 0; i < fields.length; i++) {
-      readTermVector(fields[i], tvfPointers[i], mapper);
-    }
-  }
-
-
-  /**
-   * 
-   * @param field The field to read in
-   * @param tvfPointer The pointer within the tvf file where we should start reading
-   * @param mapper The mapper used to map the TermVector
-   * @throws IOException
-   */ 
-  private void readTermVector(String field, long tvfPointer, TermVectorMapper mapper)
-          throws IOException {
-
-    // Now read the data from specified position
-    //We don't need to offset by the FORMAT here since the pointer already includes the offset
-    tvf.seek(tvfPointer);
-
-    int numTerms = tvf.readVInt();
-    //System.out.println("Num Terms: " + numTerms);
-    // If no terms - return a constant empty termvector. However, this should never occur!
-    if (numTerms == 0) 
-      return;
-    
-    boolean storePositions;
-    boolean storeOffsets;
-    
-    byte bits = tvf.readByte();
-    storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-    storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
-
-    mapper.setExpectations(field, numTerms, storeOffsets, storePositions);
-    int start = 0;
-    int deltaLength = 0;
-    int totalLength = 0;
-    byte[] byteBuffer;
-
-    // init the buffer
-    byteBuffer = new byte[20];
-
-    for (int i = 0; i < numTerms; i++) {
-      start = tvf.readVInt();
-      deltaLength = tvf.readVInt();
-      totalLength = start + deltaLength;
-
-      final BytesRef term = new BytesRef(totalLength);
+    public TVFields(int docID) throws IOException {
+      this.docID = docID;
+      seekTvx(docID);
+      tvd.seek(tvx.readLong());
       
-      // Term stored as utf8 bytes
-      if (byteBuffer.length < totalLength) {
-        byteBuffer = ArrayUtil.grow(byteBuffer, totalLength);
+      final int fieldCount = tvd.readVInt();
+      assert fieldCount >= 0;
+      if (fieldCount != 0) {
+        fieldNumbers = new int[fieldCount];
+        fieldFPs = new long[fieldCount];
+        for(int fieldUpto=0;fieldUpto<fieldCount;fieldUpto++) {
+          // nocommit i think this are already sorted
+          // correctly during write...?
+          fieldNumbers[fieldUpto] = tvd.readVInt();
+        }
+
+        long position = tvx.readLong();
+        fieldFPs[0] = position;
+        for(int fieldUpto=1;fieldUpto<fieldCount;fieldUpto++) {
+          position += tvd.readVLong();
+          fieldFPs[fieldUpto] = position;
+        }
+      } else {
+        // nocommit: why do we write docs w/ 0 vectors!?
+        // and... can we return null (Fields) in this case...?
+        fieldNumbers = null;
+        fieldFPs = null;
       }
-      tvf.readBytes(byteBuffer, start, deltaLength);
-      System.arraycopy(byteBuffer, 0, term.bytes, 0, totalLength);
-      term.length = totalLength;
-      int freq = tvf.readVInt();
-      int [] positions = null;
-      if (storePositions) { //read in the positions
-        //does the mapper even care about positions?
-        if (!mapper.isIgnoringPositions()) {
-          positions = new int[freq];
-          int prevPosition = 0;
-          for (int j = 0; j < freq; j++)
-          {
-            positions[j] = prevPosition + tvf.readVInt();
-            prevPosition = positions[j];
-          }
-        } else {
-          //we need to skip over the positions.  Since these are VInts, I don't believe there is anyway to know for sure how far to skip
-          //
-          for (int j = 0; j < freq; j++)
-          {
-            tvf.readVInt();
+    }
+    
+    @Override
+    public FieldsEnum iterator() throws IOException {
+
+      return new FieldsEnum() {
+        private int fieldUpto;
+
+        @Override
+        public String next() throws IOException {
+          if (fieldNumbers != null && fieldUpto < fieldNumbers.length) {
+            return fieldInfos.fieldName(fieldNumbers[fieldUpto++]);
+          } else {
+            return null;
           }
         }
+
+        @Override
+        public TermsEnum terms() throws IOException {
+          tvf.seek(fieldFPs[fieldUpto-1]);
+          final int numTerms = tvf.readVInt();
+          return new TVTermsEnum(docID, numTerms);
+        }
+      };
+    }
+
+    @Override
+    public Terms terms(String field) throws IOException {
+      final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      if (fieldInfo == null) {
+        // No such field
+        return null;
       }
-      TermVectorOffsetInfo[] offsets = null;
+
+      for(int fieldUpto=0;fieldUpto<fieldNumbers.length;fieldUpto++) {
+        if (fieldInfo.number == fieldNumbers[fieldUpto]) {
+          return new TVTerms(docID, fieldFPs[fieldUpto]);
+        }
+      }
+
+      // Field exists, but was not TVd for this doc
+      return null;
+    }
+
+    @Override
+    public int getUniqueFieldCount() {
+      if (fieldNumbers == null) {
+        return 0;
+      } else {
+        return fieldNumbers.length;
+      }
+    }
+  }
+
+  private class TVTerms extends Terms {
+    private final int numTerms;
+    private final int docID;
+
+    public TVTerms(int docID, long tvfFP) throws IOException {
+      this.docID = docID;
+      tvf.seek(tvfFP);
+      numTerms = tvf.readVInt();
+    }
+
+    @Override
+    public TermsEnum iterator() throws IOException {
+      return new TVTermsEnum(docID, numTerms);
+    }
+
+    @Override
+    public long getUniqueTermCount() {
+      return numTerms;
+    }
+
+    @Override
+    public long getSumTotalTermFreq() {
+      return -1;
+    }
+
+    @Override
+    public long getSumDocFreq() {
+      // Every term occurs in just one doc:
+      return numTerms;
+    }
+
+    @Override
+    public int getDocCount() {
+      return 1;
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      // TODO: really indexer hardwires
+      // this...?  I guess codec could buffer and re-sort...
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
+    }
+  }
+
+  private class TVTermsEnum extends TermsEnum {
+    private final int numTerms;
+    private final int docID;
+    private int nextTerm;
+    private int freq;
+    private BytesRef lastTerm = new BytesRef();
+    private BytesRef term = new BytesRef();
+    private final boolean storePositions;
+    private final boolean storeOffsets;
+    private final long tvfFP;
+
+    private int[] positions;
+    private int[] startOffsets;
+    private int[] endOffsets;
+
+    // NOTE: tvf is pre-positioned by caller
+    public TVTermsEnum(int docID, int numTerms) throws IOException {
+      this.numTerms = numTerms;
+      this.docID = docID;
+    
+      final byte bits = tvf.readByte();
+      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
+      
+      tvfFP = tvf.getFilePointer();
+    }
+
+    // NOTE: slow!  (linear scan)
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache)
+      throws IOException {
+      if (nextTerm != 0 && text.compareTo(term) < 0) {
+        nextTerm = 0;
+        tvf.seek(tvfFP);
+      }
+
+      while (next() != null) {
+        final int cmp = text.compareTo(term);
+        if (cmp < 0) {
+          return SeekStatus.NOT_FOUND;
+        } else if (cmp == 0) {
+          return SeekStatus.FOUND;
+        }
+      }
+
+      return SeekStatus.END;
+    }
+
+    @Override
+    public void seekExact(long ord) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      if (nextTerm >= numTerms) {
+        return null;
+      }
+      term.copy(lastTerm);
+      final int start = tvf.readVInt();
+      final int deltaLen = tvf.readVInt();
+      term.length = start + deltaLen;
+      term.grow(term.length);
+      tvf.readBytes(term.bytes, start, deltaLen);
+      freq = tvf.readVInt();
+
+      if (storePositions) {
+        // TODO: we could maybe reuse last array, if we can
+        // somehow be careful about consumer never using two
+        // D&PEnums at once...
+        positions = new int[freq];
+        int pos = 0;
+        for(int posUpto=0;posUpto<freq;posUpto++) {
+          pos += tvf.readVInt();
+          positions[posUpto] = pos;
+        }
+      }
+
       if (storeOffsets) {
-        //does the mapper even care about offsets?
-        if (!mapper.isIgnoringOffsets()) {
-          offsets = new TermVectorOffsetInfo[freq];
-          int prevOffset = 0;
-          for (int j = 0; j < freq; j++) {
-            int startOffset = prevOffset + tvf.readVInt();
-            int endOffset = startOffset + tvf.readVInt();
-            offsets[j] = new TermVectorOffsetInfo(startOffset, endOffset);
-            prevOffset = endOffset;
-          }
-        } else {
-          for (int j = 0; j < freq; j++){
-            tvf.readVInt();
-            tvf.readVInt();
-          }
+        startOffsets = new int[freq];
+        endOffsets = new int[freq];
+        int offset = 0;
+        for(int posUpto=0;posUpto<freq;posUpto++) {
+          startOffsets[posUpto] = offset + tvf.readVInt();
+          offset = endOffsets[posUpto] = startOffsets[posUpto] + tvf.readVInt();
         }
       }
-      mapper.map(term, freq, offsets, positions);
+
+      lastTerm.copy(term);
+      nextTerm++;
+      return term;
+    }
+
+    @Override
+    public BytesRef term() {
+      return term;
+    }
+
+    @Override
+    public long ord() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docFreq() {
+      return 1;
+    }
+
+    @Override
+    public long totalTermFreq() {
+      return freq;
+    }
+
+    @Override
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      TVDocsEnum docsEnum;
+      if (reuse != null && reuse instanceof TVDocsEnum) {
+        docsEnum = (TVDocsEnum) reuse;
+      } else {
+        docsEnum = new TVDocsEnum();
+      }
+      docsEnum.reset(liveDocs, docID, freq);
+      return docsEnum;
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+      if (!storePositions && !storeOffsets) {
+        return null;
+      }
+      
+      TVDocsAndPositionsEnum docsAndPositionsEnum;
+      if (reuse != null) {
+        docsAndPositionsEnum = (TVDocsAndPositionsEnum) reuse;
+        if (docsAndPositionsEnum.canReuse(storeOffsets)) {
+          docsAndPositionsEnum = (TVDocsAndPositionsEnum) reuse;
+        } else {
+          docsAndPositionsEnum = new TVDocsAndPositionsEnum(storeOffsets);
+        }
+      } else {
+        docsAndPositionsEnum = new TVDocsAndPositionsEnum(storeOffsets);
+      }
+      docsAndPositionsEnum.reset(liveDocs, docID, positions, startOffsets, endOffsets);
+      return docsAndPositionsEnum;
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      // TODO: really indexer hardwires
+      // this...?  I guess codec could buffer and re-sort...
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
+    }
+  }
+
+  // nocommit not really useful?  you can get the freq from
+  // .totalTF from the TermsEnum...
+  private static class TVDocsEnum extends DocsEnum {
+    private boolean didNext;
+    private int docID;
+    private int freq;
+    private Bits liveDocs;
+
+    @Override
+    public int freq() {
+      return freq;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      if (!didNext && (liveDocs == null || liveDocs.get(docID))) {
+        didNext = true;
+        return docID;
+      } else {
+        return NO_MORE_DOCS;
+      }
+    }
+
+    @Override
+    public int advance(int target) {
+      if (!didNext && target <= docID) {
+        return nextDoc();
+      } else {
+        return NO_MORE_DOCS;
+      }
+    }
+
+    public void reset(Bits liveDocs, int docID, int freq) {
+      this.liveDocs = liveDocs;
+      this.docID = docID;
+      this.freq = freq;
+      didNext = false;
+    }
+  }
+
+  private static class TVDocsAndPositionsEnum extends DocsAndPositionsEnum {
+    private final OffsetAttribute offsetAtt;
+    private boolean didNext;
+    private int docID;
+    private int nextPos;
+    private Bits liveDocs;
+    private int[] positions;
+    private int[] startOffsets;
+    private int[] endOffsets;
+
+    public TVDocsAndPositionsEnum(boolean storeOffsets) {
+      if (storeOffsets) {
+        offsetAtt = attributes().addAttribute(OffsetAttribute.class);
+      } else {
+        offsetAtt = null;
+      }
+    }
+
+    public boolean canReuse(boolean storeOffsets) {
+      return storeOffsets == (offsetAtt != null);
+    }
+
+    @Override
+    public int freq() {
+      if (positions != null) {
+        return positions.length;
+      } else {
+        assert startOffsets != null;
+        return startOffsets.length;
+      }
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      if (!didNext && (liveDocs == null || liveDocs.get(docID))) {
+        didNext = true;
+        return docID;
+      } else {
+        return NO_MORE_DOCS;
+      }
+    }
+
+    @Override
+    public int advance(int target) {
+      if (!didNext && target <= docID) {
+        return nextDoc();
+      } else {
+        return NO_MORE_DOCS;
+      }
+    }
+
+    public void reset(Bits liveDocs, int docID, int[] positions, int[] startOffsets, int[] endOffsets) {
+      this.liveDocs = liveDocs;
+      this.docID = docID;
+      this.positions = positions;
+      this.startOffsets = startOffsets;
+      this.endOffsets = endOffsets;
+      didNext = false;
+      nextPos = 0;
+    }
+
+    @Override
+    public BytesRef getPayload() {
+      return null;
+    }
+
+    @Override
+    public boolean hasPayload() {
+      return false;
+    }
+
+    @Override
+    public int nextPosition() {
+      assert (positions != null && nextPos < positions.length) ||
+        startOffsets != null && nextPos < startOffsets.length;
+
+      if (startOffsets != null) {
+        offsetAtt.setOffset(startOffsets[nextPos],
+                            endOffsets[nextPos]);
+      }
+      if (positions != null) {
+        return positions[nextPos++];
+      } else {
+        nextPos++;
+        return -1;
+      }
+    }
+  }
+
+  @Override
+  public Fields get(int docID) throws IOException {
+    if (docID < 0 || docID >= numTotalDocs) {
+      throw new IllegalArgumentException("doID=" + docID + " is out of bounds [0.." + (numTotalDocs-1) + "]");
+    }
+    if (tvx != null) {
+      Fields fields = new TVFields(docID);
+      if (fields.getUniqueFieldCount() == 0) {
+        // nocommit writer should write in this case!?
+        return null;
+      } else {
+        return fields;
+      }
+    } else {
+      return null;
     }
   }
 

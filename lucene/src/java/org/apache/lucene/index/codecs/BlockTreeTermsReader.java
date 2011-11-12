@@ -19,11 +19,8 @@ package org.apache.lucene.index.codecs;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.io.Writer;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -219,6 +216,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public Terms terms(String field) throws IOException {
     return fields.get(field);
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return fields.size();
   }
 
   // Iterates through all fields

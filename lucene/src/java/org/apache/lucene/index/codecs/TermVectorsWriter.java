@@ -20,14 +20,19 @@ package org.apache.lucene.index.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Codec API for writing term vectors:
@@ -59,10 +64,12 @@ public abstract class TermVectorsWriter implements Closeable {
    *  vectors are enabled, this is called even if the document 
    *  has no vector fields, in this case <code>numVectorFields</code> 
    *  will be zero. */
+  // nocommit must we pass numVectorFields...
   public abstract void startDocument(int numVectorFields) throws IOException;
   
   /** Called before writing the terms of the field.
    *  {@link #startTerm(BytesRef, int)} will be called <code>numTerms</code> times. */
+  // nocommit must we pass numTerms...
   public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException;
   
   /** Adds a term and its term frequency <code>freq</code>.
@@ -73,6 +80,8 @@ public abstract class TermVectorsWriter implements Closeable {
   public abstract void startTerm(BytesRef term, int freq) throws IOException;
   
   /** Adds a term position */
+  // nocommit can we do pos & offsets together...?  ie push
+  // buffering into 3x/40 impl
   public abstract void addPosition(int position) throws IOException;
   
   /** Adds term start and end offsets */
@@ -104,14 +113,14 @@ public abstract class TermVectorsWriter implements Closeable {
     for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
       final int maxDoc = reader.reader.maxDoc();
       final Bits liveDocs = reader.liveDocs;
-      for (int i = 0; i < maxDoc; i++) {
-        if (liveDocs != null && !liveDocs.get(i)) {
+      for (int docID = 0; docID < maxDoc; docID++) {
+        if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
           continue;
         }
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        TermFreqVector[] vectors = reader.reader.getTermFreqVectors(i);
+        Fields vectors = reader.reader.getTermVectors(docID);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
@@ -121,60 +130,126 @@ public abstract class TermVectorsWriter implements Closeable {
     return docCount;
   }
   
-  /** sugar method to write every vector field in the document */
-  protected final void addAllDocVectors(TermFreqVector[] vectors, FieldInfos fieldInfos) throws IOException {
-    final int numFields = vectors == null ? 0 : vectors.length;
+  /** Safe (but, slowish) default method to write every vector field in the document */
+  protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
+    if (vectors == null) {
+      startDocument(0);
+      return;
+    }
+
+    final int numFields = vectors.getUniqueFieldCount();
+    if (numFields == -1) {
+      throw new IllegalStateException("vectors.getUniqueFieldCount() returned -1");
+    }
     startDocument(numFields);
     
-    for (int i = 0; i < numFields; i++) {
-      final TermFreqVector vector = vectors[i];
-      
-      FieldInfo fieldInfo = fieldInfos.fieldInfo(vector.getField());
+    final FieldsEnum fieldsEnum = vectors.iterator();
+    String fieldName;
 
-      final int numTerms = vectors[i].size();
-      final TermPositionVector posVector;
+    while((fieldName = fieldsEnum.next()) != null) {
+      
+      final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
+
+      // nocommit O(N^2) under here:
+      // nocommit just cast to int right off....?  single
+      // doc w/ > 2.1 B terms is surely crazy...?
+      // nocommit -- must null check here
+      final long numTerms = vectors.terms(fieldName).getUniqueTermCount();
+
       final boolean positions;
       final boolean offsets;
-      
-      if (vector instanceof TermPositionVector) {
-        // May have positions & offsets
-        posVector = (TermPositionVector) vector;
-        positions = posVector.size() > 0 && posVector.getTermPositions(0) != null;
-        offsets = posVector.size() > 0 && posVector.getOffsets(0) != null;
+
+      final TermsEnum termsEnum = fieldsEnum.terms();
+      final OffsetAttribute offsetAtt;
+
+      DocsAndPositionsEnum docsAndPositionsEnum = null;
+
+      if (termsEnum.next() != null) {
+        assert numTerms > 0;
+        docsAndPositionsEnum = termsEnum.docsAndPositions(null, null);
+        if (docsAndPositionsEnum != null) {
+          // has positions
+          positions = true;
+          if (docsAndPositionsEnum.attributes().hasAttribute(OffsetAttribute.class)) {
+            offsetAtt = docsAndPositionsEnum.attributes().getAttribute(OffsetAttribute.class);
+          } else {
+            offsetAtt = null;
+          }
+        } else {
+          positions = false;
+          offsetAtt = null;
+        }
       } else {
-        posVector = null;
-        positions = offsets = false;
+        // no terms in this field (hmm why is field present
+        // then...?)
+        assert numTerms == 0;
+        positions = false;
+        offsetAtt = null;
       }
       
-      startField(fieldInfo, numTerms, positions, offsets);
-      
-      final BytesRef[] terms = vectors[i].getTerms();
-      final int[] freqs = vectors[i].getTermFrequencies();
-      
-      for (int j = 0; j < numTerms; j++) {
-        startTerm(terms[j], freqs[j]);
-        
-        if (positions) {
-          final int[] pos = posVector.getTermPositions(j);
-          if (pos == null) {
-            throw new IllegalStateException("Trying to write positions that are null!");
+      startField(fieldInfo, (int) numTerms, positions, offsetAtt != null);
+
+      int[] startOffsets;
+      int[] endOffsets;
+
+      if (offsetAtt != null) {
+        startOffsets = new int[4];
+        endOffsets = new int[4];
+      } else {
+        startOffsets = null;
+        endOffsets = null;
+      }
+
+      long termCount = 1;
+
+      // NOTE: we already .next()'d the TermsEnum above, to
+      // peek @ first term to see if positions/offsets are
+      // present
+      while(true) {
+        final int freq = (int) termsEnum.totalTermFreq();
+        startTerm(termsEnum.term(), freq);
+
+        if (positions || offsetAtt != null) {
+          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
+          final int docID = docsAndPositionsEnum.nextDoc();
+          assert docID != DocsEnum.NO_MORE_DOCS;
+          assert docsAndPositionsEnum.freq() == freq;
+          if (positions && offsetAtt != null && startOffsets.length < freq) {
+            startOffsets = new int[ArrayUtil.oversize(freq, RamUsageEstimator.NUM_BYTES_INT)];
+            endOffsets = new int[ArrayUtil.oversize(freq, RamUsageEstimator.NUM_BYTES_INT)];
           }
-          assert pos.length == freqs[j];
-          for (int k = 0; k < pos.length; k++) {
-            addPosition(pos[k]);
+
+          for(int posUpto=0; posUpto<freq; posUpto++) {
+            final int pos = docsAndPositionsEnum.nextPosition();
+            if (positions) {
+              addPosition(pos);
+              if (offsetAtt != null) {
+                // Must buffer up offsets and write in 2nd
+                // pass, until we fix file format:
+                startOffsets[posUpto] = offsetAtt.startOffset();
+                endOffsets[posUpto] = offsetAtt.endOffset();
+              }
+            } else {
+              // Don't buffer, just add live:
+              addOffset(offsetAtt.startOffset(),
+                        offsetAtt.endOffset());
+            }
+          }
+
+          if (positions && offsetAtt != null) {
+            // 2nd pass to write offsets:
+            for(int posUpto=0; posUpto<freq; posUpto++) {
+              addOffset(startOffsets[posUpto],
+                        endOffsets[posUpto]);
+            }
           }
         }
         
-        if (offsets) {
-          final TermVectorOffsetInfo[] off = posVector.getOffsets(j);
-          if (off == null) {
-            throw new IllegalStateException("Trying to write offsets that are null!");
-          }
-          assert off.length == freqs[j];
-          for (int k = 0; k < off.length; k++) {
-            addOffset(off[k].getStartOffset(), off[k].getEndOffset());
-          }
+        if (termsEnum.next() == null) {
+          assert termCount == numTerms;
+          break;
         }
+        termCount++;
       }
     }
   }

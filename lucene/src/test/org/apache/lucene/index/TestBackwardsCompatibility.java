@@ -272,7 +272,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", expectedCount, hitCount);
     for(int i=0;i<hitCount;i++) {
       reader.document(hits[i].doc);
-      reader.getTermFreqVectors(hits[i].doc);
+      reader.getTermVectors(hits[i].doc);
     }
   }
 
@@ -311,9 +311,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           assertEquals("field with non-ascii name", f.stringValue());
         }
 
-        TermFreqVector tfv = reader.getTermFreqVector(i, "utf8");
+        Terms tfv = reader.getTermVectors(i).terms("utf8");
         assertNotNull("docID=" + i + " index=" + indexDir.getName(), tfv);
-        assertTrue(tfv instanceof TermPositionVector);
       } else
         // Only ID 7 is deleted
         assertEquals(7, i);

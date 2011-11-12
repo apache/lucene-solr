@@ -109,6 +109,11 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int getUniqueFieldCount() {
+      return fieldToTerms.size();
+    }
+
+    @Override
     public FieldsEnum iterator() {
       return new RAMFieldsEnum(this);
     }

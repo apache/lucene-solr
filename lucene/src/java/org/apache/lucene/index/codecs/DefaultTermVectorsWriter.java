@@ -17,12 +17,14 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -31,8 +33,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
 
 public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
@@ -247,7 +247,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
         
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        TermFreqVector[] vectors = reader.reader.getTermFreqVectors(docNum);
+        Fields vectors = reader.reader.getTermVectors(docNum);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         totalNumDocs++;
         mergeState.checkAbort.work(300);
@@ -277,7 +277,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
       for (int docNum = 0; docNum < maxDoc; docNum++) {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        TermFreqVector[] vectors = reader.reader.getTermFreqVectors(docNum);
+        Fields vectors = reader.reader.getTermVectors(docNum);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         mergeState.checkAbort.work(300);
       }

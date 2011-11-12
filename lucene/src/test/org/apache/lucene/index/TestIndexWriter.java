@@ -1063,13 +1063,23 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
-    int[] poss = tpv.getTermPositions(0);
-    assertEquals(1, poss.length);
-    assertEquals(100, poss[0]);
-    poss = tpv.getTermPositions(1);
-    assertEquals(1, poss.length);
-    assertEquals(101, poss[0]);
+    Terms tpv = r.getTermVectors(0).terms("field");
+    TermsEnum termsEnum = tpv.iterator();
+    assertNotNull(termsEnum.next());
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    assertNotNull(dpEnum);
+    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(1, dpEnum.freq());
+    assertEquals(100, dpEnum.nextPosition());
+
+    assertNotNull(termsEnum.next());
+    termsEnum.docsAndPositions(null, dpEnum);
+    assertNotNull(dpEnum);
+    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(1, dpEnum.freq());
+    assertEquals(101, dpEnum.nextPosition());
+    assertNull(termsEnum.next());
+
     r.close();
     dir.close();
   }

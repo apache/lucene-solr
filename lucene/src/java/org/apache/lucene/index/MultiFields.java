@@ -231,5 +231,10 @@ public final class MultiFields extends Fields {
 
     return result;
   }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return terms.size();
+  }
 }
 

@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.Set;
-import java.util.SortedSet;
 import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryField;
@@ -314,19 +312,6 @@ public class TestIndexReader extends LuceneTestCase
         writer.addDocument(doc);
     }
     writer.close();
-    IndexReader reader = IndexReader.open(d, false);
-    FieldSortedTermVectorMapper mapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-    reader.getTermFreqVector(0, mapper);
-    Map<String,SortedSet<TermVectorEntry>> map = mapper.getFieldToTerms();
-    assertTrue("map is null and it shouldn't be", map != null);
-    assertTrue("map Size: " + map.size() + " is not: " + 4, map.size() == 4);
-    Set<TermVectorEntry> set = map.get("termvector");
-    for (Iterator<TermVectorEntry> iterator = set.iterator(); iterator.hasNext();) {
-      TermVectorEntry entry =  iterator.next();
-      assertTrue("entry is null and it shouldn't be", entry != null);
-      if (VERBOSE) System.out.println("Entry: " + entry);
-    }
-    reader.close();
     d.close();
   }
 

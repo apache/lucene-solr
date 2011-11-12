@@ -641,7 +641,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             numDel++;
           else {
             reader.document(j);
-            reader.getTermFreqVectors(j);
+            reader.getTermVectors(j);
           }
         }
         assertEquals(1, numDel);
@@ -665,7 +665,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertNull(MultiFields.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
-        reader.getTermFreqVectors(j);
+        reader.getTermVectors(j);
       }
       reader.close();
       assertEquals(0, numDel);
@@ -755,7 +755,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           numDel++;
         else {
           reader.document(j);
-          reader.getTermFreqVectors(j);
+          reader.getTermVectors(j);
         }
       }
       reader.close();
@@ -778,7 +778,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertNull(MultiFields.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
-        reader.getTermFreqVectors(j);
+        reader.getTermVectors(j);
       }
       reader.close();
 

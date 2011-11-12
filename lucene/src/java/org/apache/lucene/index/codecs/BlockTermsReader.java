@@ -208,6 +208,11 @@ public class BlockTermsReader extends FieldsProducer {
     return fields.get(field);
   }
 
+  @Override
+  public int getUniqueFieldCount() {
+    return fields.size();
+  }
+
   // Iterates through all fields
   private class TermFieldsEnum extends FieldsEnum {
     final Iterator<FieldReader> it;

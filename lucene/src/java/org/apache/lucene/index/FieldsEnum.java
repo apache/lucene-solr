@@ -53,6 +53,8 @@ public abstract class FieldsEnum {
    *  null this method should not be called. This method
    *  will not return null. */
   public abstract TermsEnum terms() throws IOException;
+
+  // nocommit maybe allow getting Terms too
   
   public final static FieldsEnum[] EMPTY_ARRAY = new FieldsEnum[0];
 

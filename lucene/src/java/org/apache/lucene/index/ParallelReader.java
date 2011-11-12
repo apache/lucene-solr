@@ -196,9 +196,15 @@ public class ParallelReader extends IndexReader {
     public FieldsEnum iterator() throws IOException {
       return new ParallelFieldsEnum();
     }
+
     @Override
     public Terms terms(String field) throws IOException {
       return fields.get(field);
+    }
+
+    @Override
+    public int getUniqueFieldCount() throws IOException {
+      return fields.size();
     }
   }
   
@@ -362,49 +368,10 @@ public class ParallelReader extends IndexReader {
 
   // get all vectors
   @Override
-  public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    ArrayList<TermFreqVector> results = new ArrayList<TermFreqVector>();
-    for (final Map.Entry<String,IndexReader> e: fieldToReader.entrySet()) {
-
-      String field = e.getKey();
-      IndexReader reader = e.getValue();
-      TermFreqVector vector = reader.getTermFreqVector(n, field);
-      if (vector != null)
-        results.add(vector);
-    }
-    return results.toArray(new TermFreqVector[results.size()]);
-  }
-
-  @Override
-  public TermFreqVector getTermFreqVector(int n, String field)
-    throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-    return reader==null ? null : reader.getTermFreqVector(n, field);
-  }
-
-
-  @Override
-  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-    if (reader != null) {
-      reader.getTermFreqVector(docNumber, field, mapper); 
-    }
-  }
-
-  @Override
-  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-
-    for (final Map.Entry<String,IndexReader> e : fieldToReader.entrySet()) {
-
-      String field = e.getKey();
-      IndexReader reader = e.getValue();
-      reader.getTermFreqVector(docNumber, field, mapper);
-    }
-
+    // nocommit hmmm
+    return null;
   }
 
   @Override

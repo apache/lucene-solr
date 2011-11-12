@@ -1146,9 +1146,12 @@ public class CheckIndex {
       for (int j = 0; j < info.docCount; ++j) {
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
-          TermFreqVector[] tfv = reader.getTermFreqVectors(j);
+          Fields tfv = reader.getTermVectors(j);
           if (tfv != null) {
-            status.totVectors += tfv.length;
+            FieldsEnum fieldsEnum = tfv.iterator();
+            while(fieldsEnum.next() != null) {
+              status.totVectors++;
+            }
           }
         }
       }

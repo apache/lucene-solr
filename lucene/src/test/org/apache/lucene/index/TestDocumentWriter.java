@@ -287,13 +287,13 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(dir, true);
     // f1
-    TermFreqVector tfv1 = reader.getTermFreqVector(0, "f1");
+    Terms tfv1 = reader.getTermVectors(0).terms("f1");
     assertNotNull(tfv1);
-    assertEquals("the 'with_tv' setting should rule!",2,tfv1.getTerms().length);
+    assertEquals("the 'with_tv' setting should rule!",2,tfv1.getUniqueTermCount());
     // f2
-    TermFreqVector tfv2 = reader.getTermFreqVector(0, "f2");
+    Terms tfv2 = reader.getTermVectors(0).terms("f2");
     assertNotNull(tfv2);
-    assertEquals("the 'with_tv' setting should rule!",2,tfv2.getTerms().length);
+    assertEquals("the 'with_tv' setting should rule!",2,tfv2.getUniqueTermCount());
     reader.close();
   }
 

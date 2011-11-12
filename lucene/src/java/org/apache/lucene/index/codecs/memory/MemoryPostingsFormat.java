@@ -780,6 +780,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
       }
       
       @Override
+      public int getUniqueFieldCount() {
+        return fields.size();
+      }
+
+      @Override
       public void close() {
         // Drop ref to FST:
         for(TermsReader termsReader : fields.values()) {

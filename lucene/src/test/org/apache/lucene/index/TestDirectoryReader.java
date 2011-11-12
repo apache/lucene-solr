@@ -85,8 +85,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     Document newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
-    assertTrue(vector != null);
+    Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    assertNotNull(vector);
     TestSegmentReader.checkNorms(reader);
     reader.close();
   }

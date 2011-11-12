@@ -582,6 +582,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   @Override
+  public int getUniqueFieldCount() {
+    return -1;
+  }
+
+  @Override
   public void close() throws IOException {
     in.close();
   }
