@@ -55,8 +55,8 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
 
   private final String resourceDescription;
 
-  @Deprecated
   /** @deprecated please pass resourceDescription */
+  @Deprecated
   protected IndexInput() {
     this("anonymous IndexInput");
   }
