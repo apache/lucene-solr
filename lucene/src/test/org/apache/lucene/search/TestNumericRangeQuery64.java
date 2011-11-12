@@ -22,8 +22,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -118,35 +121,27 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     long lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
     NumericRangeQuery<Long> q = NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
     NumericRangeFilter<Long> f = NumericRangeFilter.newLongRange(field, precisionStep, lower, upper, true, true);
-    int lastTerms = 0;
     for (byte i=0; i<3; i++) {
       TopDocs topDocs;
-      int terms;
       String type;
-      q.clearTotalNumberOfTerms();
-      f.clearTotalNumberOfTerms();
       switch (i) {
         case 0:
           type = " (constant score filter rewrite)";
           q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
           topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
-          terms = q.getTotalNumberOfTerms();
           break;
         case 1:
           type = " (constant score boolean rewrite)";
           q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
           topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
-          terms = q.getTotalNumberOfTerms();
           break;
         case 2:
           type = " (filter)";
           topDocs = searcher.search(new MatchAllDocsQuery(), f, noDocs, Sort.INDEXORDER);
-          terms = f.getTotalNumberOfTerms();
           break;
         default:
           return;
       }
-      if (VERBOSE) System.out.println("Found "+terms+" distinct terms in range for field '"+field+"'"+type+".");
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
@@ -154,12 +149,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       assertEquals("First doc"+type, 2*distance+startOffset, Long.parseLong(doc.get(field)) );
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, Long.parseLong(doc.get(field)) );
-      if (i>0 && 
-          (searcher.getIndexReader().getSequentialSubReaders() == null || 
-           searcher.getIndexReader().getSequentialSubReaders().length == 1)) {
-        assertEquals("Distinct term number is equal for all query types", lastTerms, terms);
-      }
-      lastTerms = terms;
     }
   }
 
@@ -213,7 +202,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     long upper=(count-1)*distance + (distance/3) + startOffset;
     NumericRangeQuery<Long> q=NumericRangeQuery.newLongRange(field, precisionStep, null, upper, true, true);
     TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
-    if (VERBOSE) System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
@@ -259,7 +247,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     long lower=(count-1)*distance + (distance/3) +startOffset;
     NumericRangeQuery<Long> q=NumericRangeQuery.newLongRange(field, precisionStep, lower, null, true, true);
     TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
-    if (VERBOSE) System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in right open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
@@ -352,7 +339,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     String field="field"+precisionStep;
-    int termCountT=0,termCountC=0;
+    int totalTermCountT=0,totalTermCountC=0,termCountT,termCountC;
     int num = _TestUtil.nextInt(random, 10, 20);
     for (int i = 0; i < num; i++) {
       long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
@@ -370,44 +357,73 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCountT += tq.getTotalNumberOfTerms();
-      termCountC += cq.getTotalNumberOfTerms();
+      totalTermCountT += termCountT = countTerms(tq);
+      totalTermCountC += termCountC = countTerms(cq);
+      checkTermCounts(precisionStep, termCountT, termCountC);
       // test exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, false);
       cq=new TermRangeQuery(field, lowerBytes, upperBytes, false, false);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCountT += tq.getTotalNumberOfTerms();
-      termCountC += cq.getTotalNumberOfTerms();
+      totalTermCountT += termCountT = countTerms(tq);
+      totalTermCountC += termCountC = countTerms(cq);
+      checkTermCounts(precisionStep, termCountT, termCountC);
       // test left exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, true);
       cq=new TermRangeQuery(field, lowerBytes, upperBytes, false, true);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCountT += tq.getTotalNumberOfTerms();
-      termCountC += cq.getTotalNumberOfTerms();
+      totalTermCountT += termCountT = countTerms(tq);
+      totalTermCountC += termCountC = countTerms(cq);
+      checkTermCounts(precisionStep, termCountT, termCountC);
       // test right exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, false);
       cq=new TermRangeQuery(field, lowerBytes, upperBytes, true, false);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCountT += tq.getTotalNumberOfTerms();
-      termCountC += cq.getTotalNumberOfTerms();
+      totalTermCountT += termCountT = countTerms(tq);
+      totalTermCountC += termCountC = countTerms(cq);
+      checkTermCounts(precisionStep, termCountT, termCountC);
     }
-    if (precisionStep == Integer.MAX_VALUE && 
-        (searcher.getIndexReader().getSequentialSubReaders() == null || 
-         searcher.getIndexReader().getSequentialSubReaders().length == 1)) {
-      assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
-    } else if (VERBOSE) {
+    
+    checkTermCounts(precisionStep, totalTermCountT, totalTermCountC);
+    if (VERBOSE && precisionStep != Integer.MAX_VALUE) {
       System.out.println("Average number of terms during random search on '" + field + "':");
-      System.out.println(" Trie query: " + (((double)termCountT)/(num * 4)));
-      System.out.println(" Classical query: " + (((double)termCountC)/(num * 4)));
+      System.out.println(" Numeric query: " + (((double)totalTermCountT)/(num * 4)));
+      System.out.println(" Classical query: " + (((double)totalTermCountC)/(num * 4)));
     }
   }
   
+  private int countTerms(MultiTermQuery q) throws Exception {
+    final Terms terms = MultiFields.getTerms(reader, q.getField());
+    if (terms == null)
+      return 0;
+    final TermsEnum termEnum = q.getTermsEnum(terms);
+    assertNotNull(termEnum);
+    int count = 0;
+    BytesRef cur, last = null;
+    while ((cur = termEnum.next()) != null) {
+      count++;
+      if (last != null) {
+        assertTrue(last.compareTo(cur) < 0);
+      }
+      last = new BytesRef(cur);
+    } 
+    assertNull(termEnum.next());
+    return count;
+  }
+  
+  private void checkTermCounts(int precisionStep, int termCountT, int termCountC) {
+    if (precisionStep == Integer.MAX_VALUE) {
+      assertEquals("Number of terms should be equal for unlimited precStep", termCountC, termCountT);
+    } else {
+      assertTrue("Number of terms for NRQ should be <= compared to classical TRQ", termCountT <= termCountC);
+    }
+  }
+
   @Test
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(8);

@@ -136,9 +136,6 @@ public abstract class ReadTask extends PerfTask {
 
         final String printHitsField = getRunData().getConfig().get("print.hits.field", null);
         if (hits != null && printHitsField != null && printHitsField.length() > 0) {
-          if (q instanceof MultiTermQuery) {
-            System.out.println("MultiTermQuery term count = " + ((MultiTermQuery) q).getTotalNumberOfTerms());
-          }
           System.out.println("totalHits = " + hits.totalHits);
           System.out.println("maxDoc()  = " + reader.maxDoc());
           System.out.println("numDocs() = " + reader.numDocs());

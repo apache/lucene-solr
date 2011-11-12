@@ -125,7 +125,6 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
         addClause(result, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
       }
     }
-    query.incTotalNumberOfTerms(size);
     return result;
   }
 

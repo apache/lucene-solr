@@ -111,7 +111,6 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
       // Strip scores
       final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
-      query.incTotalNumberOfTerms(size);
       return result;
     }
   }

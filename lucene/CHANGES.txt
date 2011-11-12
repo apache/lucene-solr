@@ -730,6 +730,11 @@ API Changes
   deprecated. IndexCommit.isOptimized was replaced with
   getSegmentCount. (Robert Muir, Mike McCandless)
 
+* LUCENE-3205: Deprecated MultiTermQuery.getTotalNumerOfTerms() [and
+  related methods], as the numbers returned are not useful
+  for multi-segment indexes. They were only needed for tests of
+  NumericRangeQuery.  (Mike McCandless, Uwe Schindler)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
