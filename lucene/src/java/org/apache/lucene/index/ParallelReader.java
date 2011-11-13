@@ -132,7 +132,8 @@ public class ParallelReader extends IndexReader {
       if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
       }
-      this.fields.addField(field, reader);
+
+      this.fields.addField(field, MultiFields.getFields(reader).terms(field));
       this.perDocs.addField(field, reader);
     }
 
@@ -187,9 +188,8 @@ public class ParallelReader extends IndexReader {
   private class ParallelFields extends Fields {
     final HashMap<String,Terms> fields = new HashMap<String,Terms>();
 
-    public void addField(String field, IndexReader r) throws IOException {
-      Fields multiFields = MultiFields.getFields(r);
-      fields.put(field, multiFields.terms(field));
+    public void addField(String fieldName, Terms terms) throws IOException {
+      fields.put(fieldName, terms);
     }
 
     @Override
@@ -370,8 +370,16 @@ public class ParallelReader extends IndexReader {
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    // nocommit hmmm
-    return null;
+    ParallelFields fields = new ParallelFields();
+    for (Map.Entry<String,IndexReader> ent : fieldToReader.entrySet()) {
+      String fieldName = ent.getKey();
+      Terms vector = ent.getValue().getTermVector(docID, fieldName);
+      if (vector != null) {
+        fields.addField(fieldName, vector);
+      }
+    }
+
+    return fields;
   }
 
   @Override

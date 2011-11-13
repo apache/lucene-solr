@@ -28,6 +28,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
@@ -187,8 +188,11 @@ public abstract class TermVectorsWriter implements Closeable {
       // nocommit O(N^2) under here:
       // nocommit just cast to int right off....?  single
       // doc w/ > 2.1 B terms is surely crazy...?
-      // nocommit -- must null check here
-      final long numTerms = vectors.terms(fieldName).getUniqueTermCount();
+      final Terms terms = vectors.terms(fieldName);
+      if (terms == null) {
+        continue;
+      }
+      final long numTerms = terms.getUniqueTermCount();
 
       final boolean positions;
 

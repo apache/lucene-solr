@@ -252,7 +252,6 @@
 
           <packageset dir="contrib/demo/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
-          <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/misc/src/java"/>
           <packageset dir="contrib/sandbox/src/java"/>
@@ -268,7 +267,6 @@
           <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
           <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
-          <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Misc " packages="org.apache.lucene.misc*"/>
           <group title="contrib: Sandbox" packages="org.apache.lucene.sandbox*"/>
