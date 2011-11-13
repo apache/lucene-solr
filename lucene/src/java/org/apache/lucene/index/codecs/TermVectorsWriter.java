@@ -138,8 +138,8 @@ public abstract class TermVectorsWriter implements Closeable {
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
    *  {@link #startField(FieldInfo, int, boolean, boolean)}, 
-   *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int)},
-   *  {@link #addOffset(int, int)}, and {@link #finish(int)},
+   *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int, int, int)},
+   *  and {@link #finish(int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */

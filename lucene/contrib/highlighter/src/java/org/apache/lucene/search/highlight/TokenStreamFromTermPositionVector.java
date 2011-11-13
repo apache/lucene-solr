@@ -48,7 +48,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
   /**
    * Constructor.
    * 
-   * @param termPositionVector TermPositionVector that contains the data for
+   * @param vector Terms that contains the data for
    *        creating the TokenStream. Must have positions and offsets.
    */
   public TokenStreamFromTermPositionVector(
