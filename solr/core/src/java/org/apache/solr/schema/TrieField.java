@@ -60,6 +60,8 @@ public class TrieField extends FieldType {
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
   protected int precisionStep;     // normalized
   protected TrieTypes type;
+  protected Object missingValue;
+
 
   /**
    * Used for handling date types following the same semantics as DateField
@@ -125,16 +127,48 @@ public class TrieField extends FieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     field.checkSortability();
 
+    Object missingValue = null;
+    boolean sortMissingLast  = field.sortMissingLast();
+    boolean sortMissingFirst = field.sortMissingFirst();
+
     switch (type) {
       case INTEGER:
-        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);
+        if( sortMissingLast ) {
+          missingValue = top ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        }
+        else if( sortMissingFirst ) {
+          missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+        }
+        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top).setMissingValue(missingValue);
+
       case FLOAT:
-        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER, top);
+        if( sortMissingLast ) {
+          missingValue = top ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
+        }
+        else if( sortMissingFirst ) {
+          missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
+        }
+        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER, top).setMissingValue(missingValue);
+
       case DATE: // fallthrough
       case LONG:
-        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
+        if( sortMissingLast ) {
+          missingValue = top ? Long.MIN_VALUE : Long.MAX_VALUE;
+        }
+        else if( sortMissingFirst ) {
+          missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
+        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top).setMissingValue(missingValue);
+
       case DOUBLE:
-        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, top);
+        if( sortMissingLast ) {
+          missingValue = top ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+        }
+        else if( sortMissingFirst ) {
+          missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+        }
+        return new SortField( field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, top).setMissingValue(missingValue);
+
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
     }
@@ -439,10 +473,6 @@ class TrieDateFieldSource extends LongFieldSource {
 
   public TrieDateFieldSource(String field, FieldCache.LongParser parser) {
     super(field, parser);
-  }
-
-  public TrieDateFieldSource(String field) {
-    super(field);
   }
 
   @Override

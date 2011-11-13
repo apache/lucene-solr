@@ -75,8 +75,10 @@
     <fieldtype name="binary" class="solr.BinaryField"/>
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
-         currently supported on types that are sorted internally as strings.
-	       This includes "string","boolean","sint","slong","sfloat","sdouble","pdate"
+         currently supported on types that are sorted internally as strings
+         and on numeric types.
+	       This includes "string","boolean", and, as of 3.5 (and 4.x),
+	       int, float, long, date, double, including the "Trie" variants.
        - If sortMissingLast="true", then a sort on this field will cause documents
          without the field to come after documents with the field,
          regardless of the requested sort order (asc or desc).
@@ -157,8 +159,8 @@
 
     <!--
       Note:
-      These should only be used for compatibility with existing indexes (created with older Solr versions)
-      or if "sortMissingFirst" or "sortMissingLast" functionality is needed. Use Trie based fields instead.
+      These should only be used for compatibility with existing indexes (created with older Solr versions).
+      Use Trie based fields instead. As of Solr 3.5 and 4.x, Trie based fields support sortMissingFirst/Last
 
       Numeric field types that manipulate the value into
       a string value that isn't human-readable in its internal form,
@@ -581,7 +583,7 @@
    <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="true"/>
    <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
-
+   
    <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
 
    <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
