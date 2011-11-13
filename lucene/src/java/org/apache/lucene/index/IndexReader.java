@@ -803,11 +803,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
-  // nocommit javadoc
+  /** Retrieve term vectors for this document, or null if
+   *  term vectors were not indexed.  The returned Fields
+   *  instance acts like a single-document inverted index
+   *  (the docID will be 0). */
   abstract public Fields getTermVectors(int docID)
           throws IOException;
 
-  // nocommit javadoc
+  /** Retrieve term vector for this document and field, or
+   *  null if term vectors were not indexed.  The returned
+   *  Fields instance acts like a single-document inverted
+   *  index (the docID will be 0). */
   public Terms getTermVector(int docID, String field)
     throws IOException {
     Fields vectors = getTermVectors(docID);

@@ -54,7 +54,8 @@ public abstract class FieldsEnum {
    *  will not return null. */
   public abstract TermsEnum terms() throws IOException;
 
-  // nocommit maybe allow getting Terms too
+  // TODO: should we allow pulling Terms as well?  not just
+  // the iterator?
   
   public final static FieldsEnum[] EMPTY_ARRAY = new FieldsEnum[0];
 

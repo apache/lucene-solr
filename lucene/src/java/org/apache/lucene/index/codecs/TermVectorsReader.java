@@ -30,11 +30,13 @@ import org.apache.lucene.index.Fields;
  */
 public abstract class TermVectorsReader implements Cloneable,Closeable {
 
-  /** nocommit jdocs; returns null if TVs not in this
-   *  index.  If offsets are available they are in an {@link
-   *  OffsetAttribute} */
+  /** Returns term vectors for this document, or null if
+   *  term vectors were not indexed. If offsets are
+   *  available they are in an {@link OffsetAttribute}
+   *  available from the {@link DocsAndPositionsEnum}. */
   public abstract Fields get(int doc) throws IOException;
 
-  // nocommit really needed?
+  /** Create a clone that one caller at a time may use to
+   *  read term vectors. */
   public abstract TermVectorsReader clone();
 }

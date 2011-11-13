@@ -692,7 +692,9 @@ public class CheckIndex {
         if (field == null) {
           break;
         }
-        
+
+        // nocommit -- can we fix this!?
+        // assert fields.terms(field) != null;
         computedFieldCount++;
         
         final TermsEnum terms = fieldsEnum.terms();
@@ -1170,9 +1172,16 @@ public class CheckIndex {
 
             FieldsEnum fieldsEnum = tfv.iterator();
             String field = null;
+            String lastField = null;
             while((field = fieldsEnum.next()) != null) {
               status.totVectors++;
               tfvComputedFieldCount++;
+
+              if (lastField == null) {
+                lastField = field;
+              } else if (lastField.compareTo(field) > 0) {
+                throw new RuntimeException("vector fields are out of order: lastField=" + lastField + " field=" + field);
+              }
               
               Terms terms = tfv.terms(field);
               TermsEnum termsEnum = terms.iterator();
@@ -1205,8 +1214,8 @@ public class CheckIndex {
                   
                 final int doc = docsEnum.nextDoc();
                   
-                if (doc != j) {
-                  throw new RuntimeException("vector for doc " + j + " references another document: " + doc);
+                if (doc != 0) {
+                  throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
                 }
                   
                 final int tf = docsEnum.freq();

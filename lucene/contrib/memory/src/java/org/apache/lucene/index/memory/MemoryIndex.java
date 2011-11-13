@@ -1065,7 +1065,6 @@ public class MemoryIndex {
     
     @Override
     public Fields getTermVectors(int docID) {
-      // nocommit is this right?
       if (docID == 0) {
         return fields();
       } else {

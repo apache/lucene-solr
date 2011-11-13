@@ -20,6 +20,8 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -114,13 +116,13 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     try {
       String idxName = IndexFileNames.segmentFileName(segment, "", VECTORS_INDEX_EXTENSION);
       tvx = d.openInput(idxName, context);
-      format = checkValidFormat(tvx, idxName);
+      format = checkValidFormat(tvx);
       String fn = IndexFileNames.segmentFileName(segment, "", VECTORS_DOCUMENTS_EXTENSION);
       tvd = d.openInput(fn, context);
-      final int tvdFormat = checkValidFormat(tvd, fn);
+      final int tvdFormat = checkValidFormat(tvd);
       fn = IndexFileNames.segmentFileName(segment, "", VECTORS_FIELDS_EXTENSION);
       tvf = d.openInput(fn, context);
-      final int tvfFormat = checkValidFormat(tvf, fn);
+      final int tvfFormat = checkValidFormat(tvf);
 
       assert format == tvdFormat;
       assert format == tvfFormat;
@@ -218,7 +220,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     }
   }
 
-  private int checkValidFormat(IndexInput in, String fn) throws CorruptIndexException, IOException
+  private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
     if (format < FORMAT_MINIMUM)
@@ -241,13 +243,11 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   }
 
   private class TVFields extends Fields {
-    // nocommit make hashmap so .terms(String) is O(1)
     private final int[] fieldNumbers;
     private final long[] fieldFPs;
-    private final int docID;
+    private final Map<Integer,Integer> fieldNumberToIndex = new HashMap<Integer,Integer>();
 
     public TVFields(int docID) throws IOException {
-      this.docID = docID;
       seekTvx(docID);
       tvd.seek(tvx.readLong());
       
@@ -257,9 +257,9 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
         fieldNumbers = new int[fieldCount];
         fieldFPs = new long[fieldCount];
         for(int fieldUpto=0;fieldUpto<fieldCount;fieldUpto++) {
-          // nocommit i think this are already sorted
-          // correctly during write...?
-          fieldNumbers[fieldUpto] = tvd.readVInt();
+          final int fieldNumber = tvd.readVInt();
+          fieldNumbers[fieldUpto] = fieldNumber;
+          fieldNumberToIndex.put(fieldNumber, fieldUpto);
         }
 
         long position = tvx.readLong();
@@ -269,8 +269,9 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
           fieldFPs[fieldUpto] = position;
         }
       } else {
-        // nocommit: why do we write docs w/ 0 vectors!?
-        // and... can we return null (Fields) in this case...?
+        // TODO: we can improve writer here, eg write 0 into
+        // tvx file, so we know on first read from tvx that
+        // this doc has no TVs
         fieldNumbers = null;
         fieldFPs = null;
       }
@@ -295,7 +296,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
         public TermsEnum terms() throws IOException {
           tvf.seek(fieldFPs[fieldUpto-1]);
           final int numTerms = tvf.readVInt();
-          return new TVTermsEnum(docID, numTerms);
+          return new TVTermsEnum(numTerms);
         }
       };
     }
@@ -308,14 +309,13 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
         return null;
       }
 
-      for(int fieldUpto=0;fieldUpto<fieldNumbers.length;fieldUpto++) {
-        if (fieldInfo.number == fieldNumbers[fieldUpto]) {
-          return new TVTerms(docID, fieldFPs[fieldUpto]);
-        }
+      final Integer fieldIndex = fieldNumberToIndex.get(fieldInfo.number);
+      if (fieldIndex == null) {
+        // Term vectors were not indexed for this field
+        return null;
       }
 
-      // Field exists, but was not TVd for this doc
-      return null;
+      return new TVTerms(fieldFPs[fieldIndex]);
     }
 
     @Override
@@ -330,11 +330,9 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
   private class TVTerms extends Terms {
     private final int numTerms;
-    private final int docID;
     private final long tvfFPStart;
 
-    public TVTerms(int docID, long tvfFP) throws IOException {
-      this.docID = docID;
+    public TVTerms(long tvfFP) throws IOException {
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
       tvfFPStart = tvf.getFilePointer();
@@ -344,7 +342,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     public TermsEnum iterator() throws IOException {
       // nocommit -- to be "safe" we should clone tvf here...?
       tvf.seek(tvfFPStart);
-      return new TVTermsEnum(docID, numTerms);
+      return new TVTermsEnum(numTerms);
     }
 
     @Override
@@ -378,7 +376,6 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
   private class TVTermsEnum extends TermsEnum {
     private final int numTerms;
-    private final int docID;
     private int nextTerm;
     private int freq;
     private BytesRef lastTerm = new BytesRef();
@@ -392,9 +389,8 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     private int[] endOffsets;
 
     // NOTE: tvf is pre-positioned by caller
-    public TVTermsEnum(int docID, int numTerms) throws IOException {
+    public TVTermsEnum(int numTerms) throws IOException {
       this.numTerms = numTerms;
-      this.docID = docID;
     
       final byte bits = tvf.readByte();
       storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
@@ -497,7 +493,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       } else {
         docsEnum = new TVDocsEnum();
       }
-      docsEnum.reset(liveDocs, docID, freq);
+      docsEnum.reset(liveDocs, freq);
       return docsEnum;
     }
 
@@ -518,7 +514,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       } else {
         docsAndPositionsEnum = new TVDocsAndPositionsEnum(storeOffsets);
       }
-      docsAndPositionsEnum.reset(liveDocs, docID, positions, startOffsets, endOffsets);
+      docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets);
       return docsAndPositionsEnum;
     }
 
@@ -530,11 +526,10 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     }
   }
 
-  // nocommit not really useful?  you can get the freq from
-  // .totalTF from the TermsEnum...
+  // NOTE: sort of a silly class, since you can get the
+  // freq() already by TermsEnum.totalTermFreq
   private static class TVDocsEnum extends DocsEnum {
     private boolean didNext;
-    private int docID;
     private int freq;
     private Bits liveDocs;
 
@@ -545,14 +540,14 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int docID() {
-      return docID;
+      return 0;
     }
 
     @Override
     public int nextDoc() {
-      if (!didNext && (liveDocs == null || liveDocs.get(docID))) {
+      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
         didNext = true;
-        return docID;
+        return 0;
       } else {
         return NO_MORE_DOCS;
       }
@@ -560,16 +555,15 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int advance(int target) {
-      if (!didNext && target <= docID) {
+      if (!didNext && target == 0) {
         return nextDoc();
       } else {
         return NO_MORE_DOCS;
       }
     }
 
-    public void reset(Bits liveDocs, int docID, int freq) {
+    public void reset(Bits liveDocs, int freq) {
       this.liveDocs = liveDocs;
-      this.docID = docID;
       this.freq = freq;
       didNext = false;
     }
@@ -578,7 +572,6 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   private static class TVDocsAndPositionsEnum extends DocsAndPositionsEnum {
     private final OffsetAttribute offsetAtt;
     private boolean didNext;
-    private int docID;
     private int nextPos;
     private Bits liveDocs;
     private int[] positions;
@@ -609,14 +602,14 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int docID() {
-      return docID;
+      return 0;
     }
 
     @Override
     public int nextDoc() {
-      if (!didNext && (liveDocs == null || liveDocs.get(docID))) {
+      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
         didNext = true;
-        return docID;
+        return 0;
       } else {
         return NO_MORE_DOCS;
       }
@@ -624,16 +617,15 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int advance(int target) {
-      if (!didNext && target <= docID) {
+      if (!didNext && target == 0) {
         return nextDoc();
       } else {
         return NO_MORE_DOCS;
       }
     }
 
-    public void reset(Bits liveDocs, int docID, int[] positions, int[] startOffsets, int[] endOffsets) {
+    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets) {
       this.liveDocs = liveDocs;
-      this.docID = docID;
       this.positions = positions;
       this.startOffsets = startOffsets;
       this.endOffsets = endOffsets;
@@ -677,7 +669,9 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     if (tvx != null) {
       Fields fields = new TVFields(docID);
       if (fields.getUniqueFieldCount() == 0) {
-        // nocommit writer should write in this case!?
+        // TODO: we can improve writer here, eg write 0 into
+        // tvx file, so we know on first read from tvx that
+        // this doc has no TVs
         return null;
       } else {
         return fields;

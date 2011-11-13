@@ -185,14 +185,12 @@ public abstract class TermVectorsWriter implements Closeable {
       
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
 
-      // nocommit O(N^2) under here:
-      // nocommit just cast to int right off....?  single
-      // doc w/ > 2.1 B terms is surely crazy...?
       final Terms terms = vectors.terms(fieldName);
       if (terms == null) {
         continue;
       }
-      final long numTerms = terms.getUniqueTermCount();
+      final int numTerms = (int) terms.getUniqueTermCount();
+      assert numTerms >= 0;
 
       final boolean positions;
 
@@ -224,9 +222,9 @@ public abstract class TermVectorsWriter implements Closeable {
         offsetAtt = null;
       }
       
-      startField(fieldInfo, (int) numTerms, positions, offsetAtt != null);
+      startField(fieldInfo, numTerms, positions, offsetAtt != null);
 
-      long termCount = 1;
+      int termCount = 1;
 
       // NOTE: we already .next()'d the TermsEnum above, to
       // peek @ first term to see if positions/offsets are

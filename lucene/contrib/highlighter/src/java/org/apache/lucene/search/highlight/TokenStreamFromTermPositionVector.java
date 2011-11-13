@@ -58,9 +58,6 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     offsetAttribute = addAttribute(OffsetAttribute.class);
     final TermsEnum termsEnum = vector.iterator();
     BytesRef text;
-    // nocommit find all places where I "blindly" added
-    // calls to .getAttribute(OffsetAttr): these are wrong.
-    // instead i must check .hasAttr first
     DocsAndPositionsEnum dpEnum = null;
     while((text = termsEnum.next()) != null) {
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);

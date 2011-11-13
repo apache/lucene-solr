@@ -130,7 +130,6 @@ public class BlockTermsReader extends FieldsProducer {
       seekDir(in, dirOffset);
 
       final int numFields = in.readVInt();
-
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();

@@ -213,7 +213,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public String next() {
+      public String next() throws IOException {
         if (it.hasNext()) {
           current = it.next();
         } else {
