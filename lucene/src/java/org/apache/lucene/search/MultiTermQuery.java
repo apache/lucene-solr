@@ -64,7 +64,6 @@ import org.apache.lucene.util.TermContext;
 public abstract class MultiTermQuery extends Query {
   protected final String field;
   protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
-  transient int numberOfTerms = 0;
 
   /** Abstract class that defines how the query is rewritten. */
   public static abstract class RewriteMethod {
@@ -268,38 +267,6 @@ public abstract class MultiTermQuery extends Query {
    */
   protected final TermsEnum getTermsEnum(Terms terms) throws IOException {
     return getTermsEnum(terms, new AttributeSource());
-  }
-
-  /**
-   * Expert: Return the number of unique terms visited during execution of the query.
-   * If there are many of them, you may consider using another query type
-   * or reduce your total term count in index.
-   * <p>This method is not thread safe, be sure to only call it when no query is running!
-   * If you re-use the same query instance for another
-   * search, be sure to first reset the term counter
-   * with {@link #clearTotalNumberOfTerms}.
-   * <p>On single-segment indexes / no MultiReaders, you get the correct number of
-   * unique terms for the whole index. Use this number to compare different queries.
-   * For multi-segment indexes this number can also be achieved in
-   * non-constant-score mode. In constant-score mode you get the total number of
-   * terms seeked for all segments / sub-readers.
-   * @see #clearTotalNumberOfTerms
-   */
-  public int getTotalNumberOfTerms() {
-    return numberOfTerms;
-  }
-  
-  /**
-   * Expert: Resets the counting of unique terms.
-   * Do this before executing the query/filter.
-   * @see #getTotalNumberOfTerms
-   */
-  public void clearTotalNumberOfTerms() {
-    numberOfTerms = 0;
-  }
-  
-  protected void incTotalNumberOfTerms(int inc) {
-    numberOfTerms += inc;
   }
 
   /**

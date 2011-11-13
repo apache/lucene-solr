@@ -653,6 +653,14 @@ Changes in backwards compatibility policy
 * LUCENE-3541: Remove IndexInput's protected copyBuf. If you want to
   keep a buffer in your IndexInput, do this yourself in your implementation, 
   and be sure to do the right thing on clone()!  (Robert Muir)
+  
+* LUCENE-2822: TimeLimitingCollector now expects a counter clock instead of
+  relying on a private daemon thread. The global time limiting clock thread
+  has been exposed and is now lazily loaded and fully optional.
+  TimeLimitingCollector now supports setting clock baseline manually to include
+  prelude of a search. Previous versions set the baseline on construction time, 
+  now baseline is set once the first IndexReader is passed to the collector
+  unless set before. (Simon Willnauer)
 
 Changes in runtime behavior
 
@@ -712,6 +720,20 @@ Bug fixes
   
 * LUCENE-3548: Fix CharsRef#append to extend length of the existing char[]
   and presever existing chars. (Simon Willnauer) 
+
+API Changes
+
+* LUCENE-3454: Rename IndexWriter.optimize to forceMerge to discourage
+  use of this method since it is horribly costly and rarely justified
+  anymore.  MergePolicy.findMergesForOptimize was renamed to
+  findForcedMerges.  IndexReader.isOptimized was
+  deprecated. IndexCommit.isOptimized was replaced with
+  getSegmentCount. (Robert Muir, Mike McCandless)
+
+* LUCENE-3205: Deprecated MultiTermQuery.getTotalNumerOfTerms() [and
+  related methods], as the numbers returned are not useful
+  for multi-segment indexes. They were only needed for tests of
+  NumericRangeQuery.  (Mike McCandless, Uwe Schindler)
 
 New Features
 
