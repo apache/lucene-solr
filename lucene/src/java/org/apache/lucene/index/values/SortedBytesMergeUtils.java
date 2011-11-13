@@ -300,6 +300,11 @@ final class SortedBytesMergeUtils {
     }
 
     @Override
+    public PackedInts.Reader getDocToOrd() {
+      return null;
+    }
+
+    @Override
     public int getValueCount() {
       return 1;
     }

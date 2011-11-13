@@ -215,6 +215,11 @@ final class VarSortedBytesImpl {
     }
 
     @Override
+    public PackedInts.Reader getDocToOrd() {
+      return docToOrdIndex;
+    }
+
+    @Override
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
       try {
         final long offset = ordToOffsetIndex.get(ord);
