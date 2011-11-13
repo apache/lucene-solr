@@ -428,7 +428,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       }
       last = new BytesRef(cur);
     } 
-    assertNull(termEnum.next());
+    // LUCENE-3314: the results after next() already returned null are undefined,
+    // assertNull(termEnum.next());
     return count;
   }
   
