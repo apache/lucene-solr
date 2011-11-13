@@ -676,6 +676,7 @@ public class CheckIndex {
         infoStream.print("    test: terms, freq, prox...");
       }
 
+      int computedFieldCount = 0;
       final Fields fields = reader.fields();
       if (fields == null) {
         msg("OK [no fields/terms]");
@@ -691,6 +692,8 @@ public class CheckIndex {
         if (field == null) {
           break;
         }
+        
+        computedFieldCount++;
         
         final TermsEnum terms = fieldsEnum.terms();
         assert terms != null;
@@ -997,6 +1000,17 @@ public class CheckIndex {
           }
         }
       }
+      
+      int fieldCount = fields.getUniqueFieldCount();
+      
+      if (fieldCount != -1) {
+        if (fieldCount < 0) {
+          throw new RuntimeException("invalid fieldCount: " + fieldCount);
+        }
+        if (fieldCount != computedFieldCount) {
+          throw new RuntimeException("fieldCount mismatch " + fieldCount + " vs recomputed field count " + computedFieldCount);
+        }
+      }
 
       // for most implementations, this is boring (just the sum across all fields)
       // but codecs that don't work per-field like preflex actually implement this,
@@ -1250,7 +1264,6 @@ public class CheckIndex {
               tfvComputedTermCount += tfvComputedTermCountForField;
             }
             
-            // TODO: testTermIndex should check this stat too!
             int tfvUniqueFieldCount = tfv.getUniqueFieldCount();
             if (tfvUniqueFieldCount != -1 && tfvUniqueFieldCount != tfvComputedFieldCount) {
               throw new RuntimeException("vector field count for doc " + j + "=" + tfvUniqueFieldCount + " != recomputed uniqueFieldCount=" + tfvComputedFieldCount);
