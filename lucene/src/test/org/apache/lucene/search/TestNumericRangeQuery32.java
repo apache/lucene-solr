@@ -39,7 +39,7 @@ import org.junit.Test;
 
 public class TestNumericRangeQuery32 extends LuceneTestCase {
   // distance of entries
-  private static final int distance = 6666;
+  private static int distance;
   // shift the starting of the values to the left, to also have negative values:
   private static final int startOffset = - 1 << 15;
   // number of docs to generate for testing
@@ -52,6 +52,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     noDocs = atLeast(4096);
+    distance = (1 << 30) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -375,6 +376,21 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       System.out.println(" Numeric query: " + (((double)totalTermCountT)/(num * 4)));
       System.out.println(" Classical query: " + (((double)totalTermCountC)/(num * 4)));
     }
+  }
+  
+  @Test
+  public void testEmptyEnums() throws Exception {
+    int count=3000;
+    int lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
+    // test empty enum
+    assert lower < upper;
+    assertTrue(0 < countTerms(NumericRangeQuery.newIntRange("field4", 4, lower, upper, true, true)));
+    assertEquals(0, countTerms(NumericRangeQuery.newIntRange("field4", 4, upper, lower, true, true)));
+    // test empty enum outside of bounds
+    lower = distance*noDocs+startOffset;
+    upper = 2 * lower;
+    assert lower < upper;
+    assertEquals(0, countTerms(NumericRangeQuery.newIntRange("field4", 4, lower, upper, true, true)));
   }
   
   private int countTerms(MultiTermQuery q) throws Exception {
