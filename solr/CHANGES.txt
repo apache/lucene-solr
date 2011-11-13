@@ -183,6 +183,9 @@ New Features
     LMDirichletSimilarity: LM with Dirichlet smoothing
     LMJelinekMercerSimilarity: LM with Jelinek-Mercer smoothing
  (David Mark Nemeskey, Robert Muir)
+ 
+* SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
+  (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
 
 Optimizations
 ----------------------

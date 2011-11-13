@@ -26,107 +26,133 @@ import org.junit.Test;
 public class NumericFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-master.xml","schema-numeric.xml");
-  }    
-  
-  static String[] types = new String[] { "int", "long", "float", "double" };
-  
-  public static SolrInputDocument getDoc( String id, Integer number )
-  {
+    initCore("solrconfig-master.xml", "schema-numeric.xml");
+  }
+
+  static String[] types = new String[]{"int", "long", "float", "double", "date"};
+
+  public static SolrInputDocument getDoc(String id, Integer number, String date) {
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", id );
-    for( String t : types ) {
-      doc.addField( t, number );
-      doc.addField( t+"_last", number );
-      doc.addField( t+"_first", number );
+    doc.addField("id", id);
+    for (String t : types) {
+      if ("date".equals(t)) {
+        doc.addField(t, date);
+        doc.addField(t + "_last", date);
+        doc.addField(t + "_first", date);
+      } else {
+        doc.addField(t, number);
+        doc.addField(t + "_last", number);
+        doc.addField(t + "_first", number);
+      }
     }
     return doc;
   }
 
   @Test
-  public void testSortMissingFirstLast() 
-  {
+  public void testSortMissingFirstLast() {
     clearIndex();
-    
-    assertU(adoc("id", "M1" ));
-    assertU(adoc( getDoc( "+4",  4 ) ));
-    assertU(adoc( getDoc( "+5",  5 ) ));
-    assertU(adoc( getDoc( "-3", -3 ) ));
-    assertU(adoc("id", "M2" ));
-    assertU(commit());
 
+    assertU(adoc("id", "M1"));
+    assertU(adoc(getDoc("+4", 4, "2011-04-04T00:00:00Z")));
+    assertU(adoc(getDoc("+5", 5, "2011-05-05T00:00:00Z")));
+    assertU(adoc(getDoc("-3", -3, "2011-01-01T00:00:00Z")));
+    assertU(adoc("id", "M2"));
+    assertU(commit());
     // 'normal' sorting.  Missing Values are 0
     String suffix = "";
-    for( String t : types ) {
-      assertQ( "Sorting Asc: "+t+suffix,
-          req("fl", "id", "q", "*:*", "sort", (t+suffix)+" asc" ),
-              "//*[@numFound='5']",
-              "//result/doc[1]/str[@name='id'][.='-3']",
-              "//result/doc[2]/str[@name='id'][.='M1']",
-              "//result/doc[3]/str[@name='id'][.='M2']",
-              "//result/doc[4]/str[@name='id'][.='+4']",
-              "//result/doc[5]/str[@name='id'][.='+5']"
-      );
-      
-      assertQ( "Sorting Desc: "+t+suffix,
-          req("fl", "id", "q", "*:*", "sort", (t+suffix)+" desc" ),
-              "//*[@numFound='5']",
-              "//result/doc[1]/str[@name='id'][.='+5']",
-              "//result/doc[2]/str[@name='id'][.='+4']",
-              "//result/doc[3]/str[@name='id'][.='M1']",
-              "//result/doc[4]/str[@name='id'][.='M2']",
-              "//result/doc[5]/str[@name='id'][.='-3']"
-      );
+    for (String t : types) {
+      if ("date".equals(t)) {
+        assertQ("Sorting Asc: " + t + suffix,
+            req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
+            "//*[@numFound='5']",
+            "//result/doc[1]/str[@name='id'][.='M1']",
+            "//result/doc[2]/str[@name='id'][.='M2']",
+            "//result/doc[3]/str[@name='id'][.='-3']",
+            "//result/doc[4]/str[@name='id'][.='+4']",
+            "//result/doc[5]/str[@name='id'][.='+5']"
+        );
+
+        assertQ("Sorting Desc: " + t + suffix,
+            req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc"),
+            "//*[@numFound='5']",
+            "//result/doc[1]/str[@name='id'][.='+5']",
+            "//result/doc[2]/str[@name='id'][.='+4']",
+            "//result/doc[3]/str[@name='id'][.='-3']",
+            "//result/doc[4]/str[@name='id'][.='M1']",
+            "//result/doc[5]/str[@name='id'][.='M2']"
+        );
+      } else {
+        assertQ("Sorting Asc: " + t + suffix,
+            req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
+            "//*[@numFound='5']",
+            "//result/doc[1]/str[@name='id'][.='-3']",
+            "//result/doc[2]/str[@name='id'][.='M1']",
+            "//result/doc[3]/str[@name='id'][.='M2']",
+            "//result/doc[4]/str[@name='id'][.='+4']",
+            "//result/doc[5]/str[@name='id'][.='+5']"
+        );
+
+        assertQ("Sorting Desc: " + t + suffix,
+            req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc"),
+            "//*[@numFound='5']",
+            "//result/doc[1]/str[@name='id'][.='+5']",
+            "//result/doc[2]/str[@name='id'][.='+4']",
+            "//result/doc[3]/str[@name='id'][.='M1']",
+            "//result/doc[4]/str[@name='id'][.='M2']",
+            "//result/doc[5]/str[@name='id'][.='-3']"
+        );
+
+      }
     }
-    
-    
-    // sortMissingLast = true 
+
+
+    // sortMissingLast = true
     suffix = "_last";
-    for( String t : types ) {
-      assertQ( "Sorting Asc: "+t+suffix,
-          req("fl", "id", "q", "*:*", "sort", (t+suffix)+" asc" ),
-              "//*[@numFound='5']",
-              "//result/doc[1]/str[@name='id'][.='-3']",
-              "//result/doc[2]/str[@name='id'][.='+4']",
-              "//result/doc[3]/str[@name='id'][.='+5']",
-              "//result/doc[4]/str[@name='id'][.='M1']",
-              "//result/doc[5]/str[@name='id'][.='M2']"
+    for (String t : types) {
+      assertQ("Sorting Asc: " + t + suffix,
+          req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
+          "//*[@numFound='5']",
+          "//result/doc[1]/str[@name='id'][.='-3']",
+          "//result/doc[2]/str[@name='id'][.='+4']",
+          "//result/doc[3]/str[@name='id'][.='+5']",
+          "//result/doc[4]/str[@name='id'][.='M1']",
+          "//result/doc[5]/str[@name='id'][.='M2']"
       );
-      
+
       // This does not match
-      assertQ( "Sorting Desc: "+t+suffix,
-          req("fl", "id", "q", "*:*", "sort", (t+suffix)+" desc", "indent", "on" ),
-              "//*[@numFound='5']",
-              "//result/doc[1]/str[@name='id'][.='+5']",
-              "//result/doc[2]/str[@name='id'][.='+4']",
-              "//result/doc[3]/str[@name='id'][.='-3']",
-              "//result/doc[4]/str[@name='id'][.='M1']",
-              "//result/doc[5]/str[@name='id'][.='M2']"
+      assertQ("Sorting Desc: " + t + suffix,
+          req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc", "indent", "on"),
+          "//*[@numFound='5']",
+          "//result/doc[1]/str[@name='id'][.='+5']",
+          "//result/doc[2]/str[@name='id'][.='+4']",
+          "//result/doc[3]/str[@name='id'][.='-3']",
+          "//result/doc[4]/str[@name='id'][.='M1']",
+          "//result/doc[5]/str[@name='id'][.='M2']"
       );
     }
 
-    // sortMissingFirst = true 
+    // sortMissingFirst = true
     suffix = "_first";
-    for( String t : types ) {
-      assertQ( "Sorting Asc: "+t+suffix,
-          req("fl", "id", "q", "*:*", "sort", (t+suffix)+" asc", "indent", "on" ),
-              "//*[@numFound='5']",
-              "//result/doc[1]/str[@name='id'][.='M1']",
-              "//result/doc[2]/str[@name='id'][.='M2']",
-              "//result/doc[3]/str[@name='id'][.='-3']",
-              "//result/doc[4]/str[@name='id'][.='+4']",
-              "//result/doc[5]/str[@name='id'][.='+5']"
+    for (String t : types) {
+      assertQ("Sorting Asc: " + t + suffix,
+          req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc", "indent", "on"),
+          "//*[@numFound='5']",
+          "//result/doc[1]/str[@name='id'][.='M1']",
+          "//result/doc[2]/str[@name='id'][.='M2']",
+          "//result/doc[3]/str[@name='id'][.='-3']",
+          "//result/doc[4]/str[@name='id'][.='+4']",
+          "//result/doc[5]/str[@name='id'][.='+5']"
       );
-      
+
       // This does not match
-      assertQ( "Sorting Desc: "+t+suffix,
-          req("fl", "id", "q", "*:*", "sort", (t+suffix)+" desc", "indent", "on" ),
-              "//*[@numFound='5']",
-              "//result/doc[1]/str[@name='id'][.='M1']",
-              "//result/doc[2]/str[@name='id'][.='M2']",
-              "//result/doc[3]/str[@name='id'][.='+5']",
-              "//result/doc[4]/str[@name='id'][.='+4']",
-              "//result/doc[5]/str[@name='id'][.='-3']"
+      assertQ("Sorting Desc: " + t + suffix,
+          req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc", "indent", "on"),
+          "//*[@numFound='5']",
+          "//result/doc[1]/str[@name='id'][.='M1']",
+          "//result/doc[2]/str[@name='id'][.='M2']",
+          "//result/doc[3]/str[@name='id'][.='+5']",
+          "//result/doc[4]/str[@name='id'][.='+4']",
+          "//result/doc[5]/str[@name='id'][.='-3']"
       );
     }
   }
