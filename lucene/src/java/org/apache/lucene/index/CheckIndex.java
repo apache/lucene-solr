@@ -1143,6 +1143,8 @@ public class CheckIndex {
       }
 
       // TODO: maybe we can factor out testTermIndex and reuse here?
+      DocsEnum docs = null;
+      DocsAndPositionsEnum postings = null;
       final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
         if (liveDocs == null || liveDocs.get(j)) {
@@ -1173,13 +1175,55 @@ public class CheckIndex {
                 }
                 
                 long totalTermFreq = termsEnum.totalTermFreq();
-                if (totalTermFreq == -1) {
-                  tfvComputedSumTotalTermFreq = -1;
+                
+                if (totalTermFreq != -1 && totalTermFreq <= 0) {
+                  throw new RuntimeException("totalTermFreq: " + totalTermFreq + " is out of bounds");
+                }
+                
+                DocsEnum docsEnum;
+                DocsAndPositionsEnum dp = termsEnum.docsAndPositions(null, postings);
+                if (dp == null) {
+                  DocsEnum d = termsEnum.docs(null, docs);
+                  docsEnum = docs = d;
                 } else {
-                  if (totalTermFreq <= 0) {
-                    throw new RuntimeException("totalTermFreq: " + totalTermFreq + " is out of bounds");
+                  docsEnum = postings = dp;
+                }
+                  
+                final int doc = docsEnum.nextDoc();
+                  
+                if (doc != j) {
+                  throw new RuntimeException("vector for doc " + j + " references another document: " + doc);
+                }
+                  
+                final int tf = docsEnum.freq();
+                tfvComputedSumTotalTermFreq += tf;
+                
+                if (tf <= 0) {
+                  throw new RuntimeException("vector freq " + tf + " is out of bounds");
+                }
+                
+                if (totalTermFreq != -1 && totalTermFreq != tf) {
+                  throw new RuntimeException("vector totalTermFreq " + totalTermFreq + " != tf " + tf);
+                }
+                
+                if (dp != null) {
+                  int lastPosition = -1;
+                  for (int i = 0; i < tf; i++) {
+                    int pos = dp.nextPosition();
+                    if (pos != -1 && pos < 0) {
+                      throw new RuntimeException("vector position " + pos + " is out of bounds");
+                    }
+                    
+                    if (pos < lastPosition) {
+                      throw new RuntimeException("vector position " + pos + " < lastPos " + lastPosition);
+                    }
+                    
+                    lastPosition = pos;
                   }
-                  tfvComputedSumTotalTermFreq += totalTermFreq;
+                }
+                  
+                if (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                  throw new RuntimeException("vector for doc " + j + " references multiple documents!");
                 }
               }
               
