@@ -63,7 +63,7 @@ New Features
 * SOLR-1926: Add hl.q parameter. (koji)
 
 * SOLR-2881: Numeric types now support sortMissingFirst/Last. This includes Trie and date types
-  (Ryan McKinley, Mike McCandless, Erick Erickson)
+  (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
 
 Optimizations
 ----------------------
