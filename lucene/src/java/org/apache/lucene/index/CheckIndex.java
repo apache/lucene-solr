@@ -1150,7 +1150,7 @@ public class CheckIndex {
           Fields tfv = reader.getTermVectors(j);
           if (tfv != null) {
             int tfvComputedFieldCount = 0;
-            int tfvComputedTermCount = 0;
+            long tfvComputedTermCount = 0;
 
             FieldsEnum fieldsEnum = tfv.iterator();
             String field = null;
@@ -1160,9 +1160,50 @@ public class CheckIndex {
               
               Terms terms = tfv.terms(field);
               TermsEnum termsEnum = terms.iterator();
-              while (termsEnum.next() != null) {
-                tfvComputedTermCount++;
+              
+              long tfvComputedTermCountForField = 0;
+              long tfvComputedSumTotalTermFreq = 0;
+              
+              BytesRef term = null;
+              while ((term = termsEnum.next()) != null) {
+                tfvComputedTermCountForField++;
+                
+                if (termsEnum.docFreq() != 1) {
+                  throw new RuntimeException("vector docFreq for doc " + j + ", field " + field + ", term" + term + " != 1");
+                }
+                
+                long totalTermFreq = termsEnum.totalTermFreq();
+                if (totalTermFreq == -1) {
+                  tfvComputedSumTotalTermFreq = -1;
+                } else {
+                  if (totalTermFreq <= 0) {
+                    throw new RuntimeException("totalTermFreq: " + totalTermFreq + " is out of bounds");
+                  }
+                  tfvComputedSumTotalTermFreq += totalTermFreq;
+                }
               }
+              
+              long uniqueTermCount = terms.getUniqueTermCount();
+              if (uniqueTermCount != -1 && uniqueTermCount != tfvComputedTermCountForField) {
+                throw new RuntimeException("vector term count for doc " + j + ", field " + field + " = " + uniqueTermCount + " != recomputed term count=" + tfvComputedTermCountForField);
+              }
+              
+              int docCount = terms.getDocCount();
+              if (docCount != -1 && docCount != 1) {
+                throw new RuntimeException("vector doc count for doc " + j + ", field " + field + " = " + docCount + " != 1");
+              }
+              
+              long sumDocFreq = terms.getSumDocFreq();
+              if (sumDocFreq != -1 && sumDocFreq != tfvComputedTermCountForField) {
+                throw new RuntimeException("vector postings count for doc " + j + ", field " + field + " = " + sumDocFreq + " != recomputed postings count=" + tfvComputedTermCountForField);
+              }
+              
+              long sumTotalTermFreq = terms.getSumTotalTermFreq();
+              if (sumTotalTermFreq != -1 && sumTotalTermFreq != tfvComputedSumTotalTermFreq) {
+                throw new RuntimeException("vector sumTotalTermFreq for doc " + j + ", field " + field + " = " + sumTotalTermFreq + " != recomputed sumTotalTermFreq=" + tfvComputedSumTotalTermFreq);
+              }
+              
+              tfvComputedTermCount += tfvComputedTermCountForField;
             }
             
             // TODO: testTermIndex should check this stat too!
