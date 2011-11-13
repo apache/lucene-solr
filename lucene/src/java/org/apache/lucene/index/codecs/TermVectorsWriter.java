@@ -64,12 +64,10 @@ public abstract class TermVectorsWriter implements Closeable {
    *  vectors are enabled, this is called even if the document 
    *  has no vector fields, in this case <code>numVectorFields</code> 
    *  will be zero. */
-  // nocommit must we pass numVectorFields...
   public abstract void startDocument(int numVectorFields) throws IOException;
   
   /** Called before writing the terms of the field.
    *  {@link #startTerm(BytesRef, int)} will be called <code>numTerms</code> times. */
-  // nocommit must we pass numTerms...
   public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException;
   
   /** Adds a term and its term frequency <code>freq</code>.
@@ -134,7 +132,7 @@ public abstract class TermVectorsWriter implements Closeable {
     }
   }
   
-  /** Merges in the stored fields from the readers in 
+  /** Merges in the term vectors from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
    *  {@link #startField(FieldInfo, int, boolean, boolean)}, 
@@ -165,7 +163,11 @@ public abstract class TermVectorsWriter implements Closeable {
     return docCount;
   }
   
-  /** Safe (but, slowish) default method to write every vector field in the document */
+  /** Safe (but, slowish) default method to write every
+   *  vector field in the document.  This default
+   *  implementation requires that the vectors implement
+   *  both Fields.getUniqueFieldCount and
+   *  Terms.getUniqueTermCount. */
   protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       startDocument(0);
@@ -174,7 +176,7 @@ public abstract class TermVectorsWriter implements Closeable {
 
     final int numFields = vectors.getUniqueFieldCount();
     if (numFields == -1) {
-      throw new IllegalStateException("vectors.getUniqueFieldCount() returned -1");
+      throw new IllegalStateException("vectors.getUniqueFieldCount() must be implemented (it returned -1)");
     }
     startDocument(numFields);
     
@@ -190,7 +192,9 @@ public abstract class TermVectorsWriter implements Closeable {
         continue;
       }
       final int numTerms = (int) terms.getUniqueTermCount();
-      assert numTerms >= 0;
+      if (numTerms == -1) {
+        throw new IllegalStateException("vector.getUniqueTermCount() must be implemented (it returned -1)");
+      }
 
       final boolean positions;
 
