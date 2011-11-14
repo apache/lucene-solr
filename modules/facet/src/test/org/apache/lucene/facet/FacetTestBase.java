@@ -30,6 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
@@ -45,6 +46,8 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -66,14 +69,17 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 /** Base faceted search test. */
 public abstract class FacetTestBase extends LuceneTestCase {
   
+  /** Holds a search and taxonomy Directories pair. */
+  private static final class SearchTaxoDirPair {
+    Directory searchDir, taxoDir;
+    SearchTaxoDirPair() {}
+  }
+  
+  private static HashMap<Integer, SearchTaxoDirPair> dirsPerPartitionSize;
+  private static File TEST_DIR;
+  
   /** Documents text field. */
   protected static final String CONTENT_FIELD = "content";
-  
-  /** Directory for the index */
-  protected Directory indexDir;
-  
-  /** Directory for the taxonomy */
-  protected Directory taxoDir;
   
   /** taxonomy Reader for the test. */
   protected TaxonomyReader taxoReader;
@@ -83,6 +89,19 @@ public abstract class FacetTestBase extends LuceneTestCase {
   
   /** Searcher for the test. */
   protected IndexSearcher searcher;
+  
+  @BeforeClass
+  public static void beforeClassFacetTestBase() throws Exception {
+    TEST_DIR = _TestUtil.getTempDir("facets");
+    dirsPerPartitionSize = new HashMap<Integer, FacetTestBase.SearchTaxoDirPair>(); 
+  }
+  
+  @AfterClass
+  public static void afterClassFacetTestBase() throws Exception {
+    for (SearchTaxoDirPair pair : dirsPerPartitionSize.values()) {
+      IOUtils.close(pair.searchDir, pair.taxoDir);
+    }
+  }
   
   /** documents text (for the text field). */
   private static final String[] DEFAULT_CONTENT = {
@@ -122,34 +141,39 @@ public abstract class FacetTestBase extends LuceneTestCase {
   }
 
   /** Prepare index (in RAM/Disk) with some documents and some facets */
-  protected final void initIndex(int partitionSize, boolean onDisk) throws Exception {
+  protected final void initIndex(int partitionSize, boolean forceDisk) throws Exception {
     if (VERBOSE) {
-      System.out.println("Partition Size: " + partitionSize+"  onDisk: "+onDisk);
+      System.out.println("Partition Size: " + partitionSize+"  forceDisk: "+forceDisk);
     }
 
-    if (onDisk) {
-      File indexFile = _TestUtil.getTempDir("index");
-      indexDir = newFSDirectory(indexFile);
-      taxoDir = newFSDirectory(new File(indexFile,"facets"));
-    } else { 
-      indexDir = newDirectory();
-      taxoDir = newDirectory();
+    SearchTaxoDirPair pair = dirsPerPartitionSize.get(Integer.valueOf(partitionSize));
+    if (pair == null) {
+      pair = new SearchTaxoDirPair();
+      if (forceDisk) {
+        pair.searchDir = newFSDirectory(new File(TEST_DIR, "index"));
+        pair.taxoDir = newFSDirectory(new File(TEST_DIR, "taxo"));
+      } else {
+        pair.searchDir = newDirectory();
+        pair.taxoDir = newDirectory();
+      }
+      
+      RandomIndexWriter iw = new RandomIndexWriter(random, pair.searchDir, getIndexWriterConfig(getAnalyzer()));
+      TaxonomyWriter taxo = new DirectoryTaxonomyWriter(pair.taxoDir, OpenMode.CREATE);
+      
+      populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
+      
+      // commit changes (taxonomy prior to search index for consistency)
+      taxo.commit();
+      iw.commit();
+      taxo.close();
+      iw.close();
+      
+      dirsPerPartitionSize.put(Integer.valueOf(partitionSize), pair);
     }
     
-    RandomIndexWriter iw = new RandomIndexWriter(random, indexDir, getIndexWriterConfig(getAnalyzer()));
-    TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
-    
-    populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
-    
-    // commit changes (taxonomy prior to search index for consistency)
-    taxo.commit();
-    iw.commit();
-    taxo.close();
-    iw.close();
-    
     // prepare for searching
-    taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    indexReader = IndexReader.open(indexDir);
+    taxoReader = new DirectoryTaxonomyReader(pair.taxoDir);
+    indexReader = IndexReader.open(pair.searchDir);
     searcher = newSearcher(indexReader);
   }
   
@@ -207,16 +231,10 @@ public abstract class FacetTestBase extends LuceneTestCase {
   /** Close all indexes */
   protected void closeAll() throws Exception {
     // close and nullify everything
-    taxoReader.close();
+    IOUtils.close(taxoReader, indexReader, searcher);
     taxoReader = null;
-    indexReader.close();
     indexReader = null;
-    searcher.close();
     searcher = null;
-    indexDir.close();
-    indexDir = null;
-    taxoDir.close();
-    taxoDir = null;
   }
   
   /**
