@@ -44,7 +44,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private int[][] positions = new int[testTerms.length][];
   private Directory dir;
   private SegmentInfo seg;
-  private FieldInfos fieldInfos = new FieldInfos();
+  private FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
   private static int TERM_FREQ = 3;
 
   private class TestToken implements Comparable<TestToken> {
@@ -124,7 +124,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     seg = writer.newestSegment();
     writer.close();
 
-    fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    fieldInfos = seg.getFieldInfos(); //new FieldInfos(dir, IndexFileNames.segmentFileName(seg.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
   }
   
   @Override

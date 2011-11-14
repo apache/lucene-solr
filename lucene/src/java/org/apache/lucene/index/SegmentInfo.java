@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -198,8 +199,8 @@ public final class SegmentInfo implements Cloneable {
             "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE, false);
       }
       try {
-        fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name,
-            "", IndexFileNames.FIELD_INFOS_EXTENSION));
+        FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
+        fieldInfos = reader.read(dir0, name, IOContext.READONCE);
       } finally {
         if (dir != dir0) {
           dir0.close();

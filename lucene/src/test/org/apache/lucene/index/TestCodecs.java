@@ -249,7 +249,7 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final FieldInfos fieldInfos = new FieldInfos();
+    final FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
 
     final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
@@ -296,7 +296,7 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final FieldInfos fieldInfos = new FieldInfos();
+    final FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {

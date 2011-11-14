@@ -19,10 +19,12 @@ package org.apache.lucene.index.codecs.lucene40;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
@@ -43,6 +45,7 @@ public class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new DefaultStoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new DefaultTermVectorsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
+  private final FieldInfosFormat fieldInfosFormat = new DefaultFieldInfosFormat();
   private final SegmentInfosFormat infosFormat = new DefaultSegmentInfosFormat();
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -73,6 +76,11 @@ public class Lucene40Codec extends Codec {
   @Override
   public PostingsFormat postingsFormat() {
     return postingsFormat;
+  }
+  
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    return fieldInfosFormat;
   }
   
   @Override

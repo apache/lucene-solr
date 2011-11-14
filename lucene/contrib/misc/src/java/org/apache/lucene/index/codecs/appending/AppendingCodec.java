@@ -19,9 +19,11 @@ package org.apache.lucene.index.codecs.appending;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
@@ -47,6 +49,7 @@ public class AppendingCodec extends Codec {
   private final PostingsFormat postings = new AppendingPostingsFormat();
   private final SegmentInfosFormat infos = new AppendingSegmentInfosFormat();
   private final StoredFieldsFormat fields = new DefaultStoredFieldsFormat();
+  private final FieldInfosFormat fieldInfos = new DefaultFieldInfosFormat();
   private final TermVectorsFormat vectors = new DefaultTermVectorsFormat();
   private final DocValuesFormat docValues = new DefaultDocValuesFormat();
   
@@ -73,5 +76,10 @@ public class AppendingCodec extends Codec {
   @Override
   public SegmentInfosFormat segmentInfosFormat() {
     return infos;
+  }
+  
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    return fieldInfos;
   }
 }

@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -127,7 +128,8 @@ final class SegmentMerger {
       assert numMerged == mergeState.mergedDocCount;
     }
     // write FIS once merge is done. IDV might change types or drops fields
-    mergeState.fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
+    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
+    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
     return mergeState;
   }
 

@@ -35,6 +35,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -44,6 +46,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -550,7 +553,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // "content", and then set our expected file names below
       // accordingly:
       CompoundFileDirectory cfsReader = new CompoundFileDirectory(dir, "_0.cfs", newIOContext(random), false);
-      FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
+      FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
+      FieldInfos fieldInfos = infosReader.read(cfsReader, "_0", IOContext.READONCE);
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {
         if (fi.name.equals("content")) {

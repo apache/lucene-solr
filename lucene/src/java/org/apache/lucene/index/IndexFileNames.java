@@ -65,9 +65,6 @@ public final class IndexFileNames {
   /** Extension of deletes */
   public static final String DELETES_EXTENSION = "del";
 
-  /** Extension of field infos */
-  public static final String FIELD_INFOS_EXTENSION = "fnm";
-
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
 
@@ -84,7 +81,6 @@ public final class IndexFileNames {
   public static final String INDEX_EXTENSIONS[] = new String[] {
     COMPOUND_FILE_EXTENSION,
     COMPOUND_FILE_ENTRIES_EXTENSION,
-    FIELD_INFOS_EXTENSION,
     DELETES_EXTENSION,
     GEN_EXTENSION,
     NORMS_EXTENSION,
@@ -93,12 +89,7 @@ public final class IndexFileNames {
   };
 
   public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
-    FIELD_INFOS_EXTENSION,
     NORMS_EXTENSION
-  };
-  
-  static final String COMPOUND_EXTENSIONS_NOT_CODEC[] = new String[] {
-    FIELD_INFOS_EXTENSION,
   };
 
   /**

@@ -414,7 +414,7 @@ public class DocumentsWriterPerThread {
   private void doAfterFlush() throws IOException {
     segment = null;
     consumer.doAfterFlush();
-    fieldInfos = new FieldInfos(fieldInfos);
+    fieldInfos = FieldInfos.from(fieldInfos);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }

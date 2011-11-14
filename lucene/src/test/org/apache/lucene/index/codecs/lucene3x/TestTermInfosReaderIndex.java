@@ -40,11 +40,14 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
@@ -81,7 +84,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     String segment = r.getSegmentName();
     r.close();
 
-    FieldInfos fieldInfos = new FieldInfos(directory, IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
+    FieldInfos fieldInfos = infosReader.read(directory, segment, IOContext.READONCE);
     String segmentFileName = IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION);
     long tiiFileLength = directory.fileLength(segmentFileName);
     IndexInput input = directory.openInput(segmentFileName, newIOContext(random));

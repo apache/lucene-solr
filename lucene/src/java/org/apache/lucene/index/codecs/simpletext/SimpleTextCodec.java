@@ -19,8 +19,10 @@ package org.apache.lucene.index.codecs.simpletext;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
 import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
@@ -39,6 +41,8 @@ public final class SimpleTextCodec extends Codec {
   
   // nocommit: need a plain-text impl
   private final TermVectorsFormat vectorsFormat = new DefaultTermVectorsFormat();
+  // nocommit: need a plain-text impl
+  private final FieldInfosFormat fieldInfosFormat = new DefaultFieldInfosFormat();
   // TODO: need a plain-text impl
   private final DocValuesFormat docValues = new DefaultDocValuesFormat();
   
@@ -64,6 +68,11 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
+  }
+  
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    return fieldInfosFormat;
   }
 
   @Override

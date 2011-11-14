@@ -24,10 +24,12 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -52,6 +54,9 @@ public class Lucene3xCodec extends Codec {
   // TODO: this should really be a different impl
   private final TermVectorsFormat vectorsFormat = new DefaultTermVectorsFormat();
   
+  // TODO: this should really be a different impl
+  private final FieldInfosFormat fieldInfosFormat = new DefaultFieldInfosFormat();
+
   // TODO: this should really be a different impl
   // also if we want preflex to *really* be read-only it should throw exception for the writer?
   // this way IR.commit fails on delete/undelete/setNorm/etc ?
@@ -91,6 +96,11 @@ public class Lucene3xCodec extends Codec {
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
+  }
+  
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    return fieldInfosFormat;
   }
 
   @Override

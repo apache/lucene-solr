@@ -25,10 +25,13 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
+import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 
@@ -45,6 +48,7 @@ final class DocFieldProcessor extends DocConsumer {
 
   final DocFieldConsumer consumer;
   final StoredFieldsConsumer fieldsWriter;
+  final Codec codec;
 
   // Holds all fields seen in current doc
   DocFieldProcessorPerField[] fields = new DocFieldProcessorPerField[1];
@@ -61,6 +65,7 @@ final class DocFieldProcessor extends DocConsumer {
 
   public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
     this.docState = docWriter.docState;
+    this.codec = docWriter.codec;
     this.consumer = consumer;
     fieldsWriter = new StoredFieldsConsumer(docWriter);
   }
@@ -81,8 +86,8 @@ final class DocFieldProcessor extends DocConsumer {
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
-    final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
-    state.fieldInfos.write(state.directory, fileName);
+    FieldInfosWriter infosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
+    infosWriter.write(state.directory, state.segmentName, state.fieldInfos, IOContext.DEFAULT);
     for (DocValuesConsumerAndDocID consumers : docValues.values()) {
       consumers.docValuesConsumer.finish(state.numDocs);
     }
