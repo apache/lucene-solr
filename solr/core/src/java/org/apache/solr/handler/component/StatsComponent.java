@@ -18,12 +18,14 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.ShardParams;
@@ -177,7 +179,8 @@ class StatsInfo {
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     if (statsFs != null) {
       for (String field : statsFs) {
-        statsFields.put(field,new StatsValues());
+        SchemaField sf = rb.req.getSchema().getField(field);
+        statsFields.put(field, StatsValuesFactory.createStatsValues(sf));
       }
     }
   }
@@ -244,58 +247,60 @@ class SimpleStats {
   }
   
   public NamedList<?> getFieldCacheStats(String fieldName, String[] facet ) {
-    FieldType ft = searcher.getSchema().getFieldType(fieldName);
-
-    FieldCache.DocTermsIndex si = null;
+    SchemaField sf = searcher.getSchema().getField(fieldName);
+    
+    FieldCache.DocTermsIndex si;
     try {
       si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), fieldName);
     } 
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
     }
-    FieldFacetStats all = new FieldFacetStats( "all", si, ft, 0 );
-    StatsValues allstats = new StatsValues();
-    if ( all.nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
+    StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
+    final int nTerms = si.numOrd();
+    if ( nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
 
-    // don't worry about faceting if the no documents match...
-    int i=0;
-    final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
-    for( String f : facet ) {
-      ft = searcher.getSchema().getFieldType(f);
+    // don't worry about faceting if no documents match...
+    List<FieldFacetStats> facetStats = new ArrayList<FieldFacetStats>();
+    FieldCache.DocTermsIndex facetTermsIndex;
+    for( String facetField : facet ) {
+      SchemaField fsf = searcher.getSchema().getField(facetField);
+      FieldType facetFieldType = fsf.getType();
+
+      if (facetFieldType.isTokenized() || facetFieldType.isMultiValued()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Stats can only facet on single-valued fields, not: " + facetField
+          + "[" + facetFieldType + "]");
+        }
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
-      } 
-      catch (IOException e) {
-        throw new RuntimeException( "failed to open field cache for: "+f, e );
+        facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), facetField);
       }
-      finfo[i++] = new FieldFacetStats( f, si, ft, 0 );
+      catch (IOException e) {
+        throw new RuntimeException( "failed to open field cache for: "
+          + facetField, e );
+      }
+      facetStats.add(new FieldFacetStats(facetField, facetTermsIndex, sf, fsf, nTerms));
     }
-    final CharsRef spare = new CharsRef();
+    
     final BytesRef tempBR = new BytesRef();
     DocIterator iter = docs.iterator();
     while (iter.hasNext()) {
       int docID = iter.nextDoc();
-      BytesRef raw = all.getTermText(docID, tempBR);
-      Double v = null;
-      if( raw != null ) {
-        v = Double.parseDouble(all.ft.indexedToReadable(raw, spare).toString());
-        allstats.accumulate(v);
+      BytesRef raw = si.lookup(si.getOrd(docID), tempBR);
+      if( raw.length > 0 ) {
+        allstats.accumulate(raw);
+      } else {
+        allstats.missing();
       }
-      else {
-        allstats.missing++;
-      }
-      
-      // now check the facets
-      for( FieldFacetStats f : finfo ) {
-        f.facet(docID, v);
+
+      // now update the facets
+      for (FieldFacetStats f : facetStats) {
+        f.facet(docID, raw);
       }
     }
-    
-    if( finfo.length > 0 ) {
-      allstats.facets = new HashMap<String, Map<String,StatsValues>>();
-      for( FieldFacetStats f : finfo ) {
-        allstats.facets.put( f.name, f.facetStatsValues );
-      }
+
+    for (FieldFacetStats f : facetStats) {
+      allstats.addFacet(f.name, f.facetStatsValues);
     }
     return allstats.getStatsValues();
   }
