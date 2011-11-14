@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * {@link IndexDocValues} provides a dense per-document typed storage for fast
@@ -223,7 +224,7 @@ public abstract class IndexDocValues implements Closeable {
       return null;
     }
   }
-  
+
   /**
    * A sorted variant of {@link Source} for <tt>byte[]</tt> values per document.
    * <p>
@@ -256,6 +257,18 @@ public abstract class IndexDocValues implements Closeable {
 
     /** Returns value for specified ord. */
     public abstract BytesRef getByOrd(int ord, BytesRef bytesRef);
+
+    /**
+     * Returns the PackedInts.Reader impl that maps document to ord.
+     */
+    public abstract PackedInts.Reader getDocToOrd();
+    
+    /**
+     * Returns the comparator used to order the BytesRefs.
+     */
+    public Comparator<BytesRef> getComparator() {
+      return comparator;
+    }
 
     /**
      * Performs a lookup by value.
@@ -303,5 +316,99 @@ public abstract class IndexDocValues implements Closeable {
      * Returns the number of unique values in this sorted source
      */
     public abstract int getValueCount();
+  }
+
+  /** Returns a Source that always returns default (missing)
+   *  values for all documents. */
+  public static Source getDefaultSource(final ValueType type) {
+    return new Source(type) {
+      @Override
+      public long getInt(int docID) {
+        return 0;
+      }
+
+      @Override
+      public double getFloat(int docID) {
+        return 0.0;
+      }
+
+      @Override
+      public BytesRef getBytes(int docID, BytesRef ref) {
+        ref.length = 0;
+        return ref;
+      }
+    };
+  }
+
+  /** Returns a SortedSource that always returns default (missing)
+   *  values for all documents. */
+  public static SortedSource getDefaultSortedSource(final ValueType type, final int size) {
+
+    final PackedInts.Reader docToOrd = new PackedInts.Reader() {
+      @Override
+      public long get(int index) {
+        return 0;
+      }
+
+      @Override
+      public int getBitsPerValue() {
+        return 0;
+      }
+
+      @Override
+      public int size() {
+        return size;
+      }
+
+      @Override
+      public boolean hasArray() {
+        return false;
+      }
+
+      @Override
+      public Object getArray() {
+        return null;
+      }
+    };
+
+    return new SortedSource(type, BytesRef.getUTF8SortedAsUnicodeComparator()) {
+
+      @Override
+      public BytesRef getBytes(int docID, BytesRef ref) {
+        ref.length = 0;
+        return ref;
+      }
+
+      @Override
+      public int ord(int docID) {
+        return 0;
+      }
+
+      @Override
+      public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+        assert ord == 0;
+        bytesRef.length = 0;
+        return bytesRef;
+      }
+
+      @Override
+      public PackedInts.Reader getDocToOrd() {
+        return docToOrd;
+      }
+
+      @Override
+      public int getByValue(BytesRef value, BytesRef spare) {
+        if (value.length == 0) {
+          return 0;
+        } else {
+          return -1;
+        }
+      }
+
+      @Override
+        public int getValueCount() {
+        return 1;
+      }
+    };
   }
 }

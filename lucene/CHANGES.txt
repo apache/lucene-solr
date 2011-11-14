@@ -719,7 +719,7 @@ Bug fixes
   (Robert Muir)
   
 * LUCENE-3548: Fix CharsRef#append to extend length of the existing char[]
-  and presever existing chars. (Simon Willnauer) 
+  and preserve existing chars. (Simon Willnauer) 
 
 API Changes
 

@@ -145,33 +145,33 @@ public class FieldType implements IndexableFieldType {
       if (result.length() > 0)
         result.append(",");
       result.append("indexed");
-    }
-    if (tokenized()) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("tokenized");
-    }
-    if (storeTermVectors()) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("termVector");
-    }
-    if (storeTermVectorOffsets()) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("termVectorOffsets");
-    }
-    if (storeTermVectorPositions()) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("termVectorPosition");
-    }
-    if (omitNorms()) {
-      result.append(",omitNorms");
-    }
-    if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      result.append(",indexOptions=");
-      result.append(indexOptions);
+      if (tokenized()) {
+        if (result.length() > 0)
+          result.append(",");
+        result.append("tokenized");
+      }
+      if (storeTermVectors()) {
+        if (result.length() > 0)
+          result.append(",");
+        result.append("termVector");
+      }
+      if (storeTermVectorOffsets()) {
+        if (result.length() > 0)
+          result.append(",");
+        result.append("termVectorOffsets");
+      }
+      if (storeTermVectorPositions()) {
+        if (result.length() > 0)
+          result.append(",");
+        result.append("termVectorPosition");
+      }
+      if (omitNorms()) {
+        result.append(",omitNorms");
+      }
+      if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        result.append(",indexOptions=");
+        result.append(indexOptions);
+      }
     }
     
     return result.toString();

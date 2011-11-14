@@ -24,17 +24,19 @@ package org.apache.solr.handler.dataimport;
  */
 public class ThreadedContext extends ContextImpl{
   private DocBuilder.EntityRunner entityRunner;
+  private VariableResolverImpl resolver;
   private boolean limitedContext = false;
 
-  public ThreadedContext(DocBuilder.EntityRunner entityRunner, DocBuilder docBuilder) {
+  public ThreadedContext(DocBuilder.EntityRunner entityRunner, DocBuilder docBuilder, VariableResolverImpl resolver) {
     super(entityRunner.entity,
-            null,//to be fetched realtime
+    				resolver,
             null,
             null,
             docBuilder.session,
             null,
             docBuilder);
     this.entityRunner = entityRunner;
+    this.resolver = resolver;
   }
 
   @Override
@@ -45,7 +47,7 @@ public class ThreadedContext extends ContextImpl{
 
   @Override
   public Context getParentContext() {
-    ThreadedContext ctx = new ThreadedContext(entityRunner.parent, docBuilder);
+  	ThreadedContext ctx = new ThreadedContext(entityRunner.parent, docBuilder, resolver);
     ctx.limitedContext =  true;
     return ctx;
   }

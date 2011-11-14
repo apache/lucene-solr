@@ -195,6 +195,11 @@ class FixedSortedBytesImpl {
     }
 
     @Override
+    public PackedInts.Reader getDocToOrd() {
+      return docToOrdIndex;
+    }
+
+    @Override
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
       try {
         datIn.seek(basePointer + size * ord);

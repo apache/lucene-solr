@@ -18,10 +18,14 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.FieldCache.ByteParser;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -399,6 +403,8 @@ public abstract class FieldComparator<T> {
       final IndexDocValues docValues = context.reader.docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource(); 
+      } else {
+        currentReaderValues = IndexDocValues.getDefaultSource(ValueType.FLOAT_64);
       }
       return this;
     }
@@ -690,6 +696,8 @@ public abstract class FieldComparator<T> {
       IndexDocValues docValues = context.reader.docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource();
+      } else {
+        currentReaderValues = IndexDocValues.getDefaultSource(ValueType.FIXED_INTS_64);
       }
       return this;
     }
@@ -911,30 +919,53 @@ public abstract class FieldComparator<T> {
    *  than {@link TermValComparator}.  For very small
    *  result sets it may be slower. */
   public static final class TermOrdValComparator extends FieldComparator<BytesRef> {
-    /** @lucene.internal */
+    /* Ords for each slot.
+       @lucene.internal */
     final int[] ords;
-    /** @lucene.internal */
+
+    /* Values for each slot.
+       @lucene.internal */
     final BytesRef[] values;
-    /** @lucene.internal */
+
+    /* Which reader last copied a value into the slot. When
+       we compare two slots, we just compare-by-ord if the
+       readerGen is the same; else we must compare the
+       values (slower).
+       @lucene.internal */
     final int[] readerGen;
 
-    /** @lucene.internal */
+    /* Gen of current reader we are on.
+       @lucene.internal */
     int currentReaderGen = -1;
-    private DocTermsIndex termsIndex;
+
+    /* Current reader's doc ord/values.
+       @lucene.internal */
+    DocTermsIndex termsIndex;
+
     private final String field;
 
-    /** @lucene.internal */
+    /* Bottom slot, or -1 if queue isn't full yet
+       @lucene.internal */
     int bottomSlot = -1;
-    /** @lucene.internal */
+
+    /* Bottom ord (same as ords[bottomSlot] once bottomSlot
+       is set).  Cached for faster compares.
+       @lucene.internal */
     int bottomOrd;
-    /** @lucene.internal */
+
+    /* True if current bottom slot matches the current
+       reader.
+       @lucene.internal */
     boolean bottomSameReader;
-    /** @lucene.internal */
+
+    /* Bottom value (same as values[bottomSlot] once
+       bottomSlot is set).  Cached for faster compares.
+      @lucene.internal */
     BytesRef bottomValue;
-    /** @lucene.internal */
+
     final BytesRef tempBR = new BytesRef();
 
-    public TermOrdValComparator(int numHits, String field, int sortPos, boolean reversed) {
+    public TermOrdValComparator(int numHits, String field) {
       ords = new int[numHits];
       values = new BytesRef[numHits];
       readerGen = new int[numHits];
@@ -1325,6 +1356,396 @@ public abstract class FieldComparator<T> {
     }
   }
 
+  /** Sorts by field's natural Term sort order, using
+   *  ordinals; this is just like {@link
+   *  TermOrdValComparator} except it uses DocValues to
+   *  retrieve the sort ords saved during indexing. */
+  public static final class TermOrdValDocValuesComparator extends FieldComparator<BytesRef> {
+    /* Ords for each slot.
+       @lucene.internal */
+    final int[] ords;
+
+    /* Values for each slot.
+       @lucene.internal */
+    final BytesRef[] values;
+
+    /* Which reader last copied a value into the slot. When
+       we compare two slots, we just compare-by-ord if the
+       readerGen is the same; else we must compare the
+       values (slower).
+       @lucene.internal */
+    final int[] readerGen;
+
+    /* Gen of current reader we are on.
+       @lucene.internal */
+    int currentReaderGen = -1;
+
+    /* Current reader's doc ord/values.
+       @lucene.internal */
+    SortedSource termsIndex;
+
+    /* Comparator for comparing by value.
+       @lucene.internal */
+    Comparator<BytesRef> comp;
+
+    private final String field;
+
+    /* Bottom slot, or -1 if queue isn't full yet
+       @lucene.internal */
+    int bottomSlot = -1;
+
+    /* Bottom ord (same as ords[bottomSlot] once bottomSlot
+       is set).  Cached for faster compares.
+       @lucene.internal */
+    int bottomOrd;
+
+    /* True if current bottom slot matches the current
+       reader.
+       @lucene.internal */
+    boolean bottomSameReader;
+
+    /* Bottom value (same as values[bottomSlot] once
+       bottomSlot is set).  Cached for faster compares.
+      @lucene.internal */
+    BytesRef bottomValue;
+
+    /** @lucene.internal */
+    final BytesRef tempBR = new BytesRef();
+
+    public TermOrdValDocValuesComparator(int numHits, String field) {
+      ords = new int[numHits];
+      values = new BytesRef[numHits];
+      readerGen = new int[numHits];
+      this.field = field;
+    }
+
+    @Override
+    public int compare(int slot1, int slot2) {
+      if (readerGen[slot1] == readerGen[slot2]) {
+        return ords[slot1] - ords[slot2];
+      }
+
+      final BytesRef val1 = values[slot1];
+      final BytesRef val2 = values[slot2];
+      if (val1 == null) {
+        if (val2 == null) {
+          return 0;
+        }
+        return -1;
+      } else if (val2 == null) {
+        return 1;
+      }
+      return comp.compare(val1, val2);
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      throw new UnsupportedOperationException();
+    }
+
+    // TODO: would be nice to share these specialized impls
+    // w/ TermOrdValComparator
+
+    /** Base class for specialized (per bit width of the
+     * ords) per-segment comparator.  NOTE: this is messy;
+     * we do this only because hotspot can't reliably inline
+     * the underlying array access when looking up doc->ord
+     * @lucene.internal
+     */
+    abstract class PerSegmentComparator extends FieldComparator<BytesRef> {
+      
+      @Override
+      public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+        return TermOrdValDocValuesComparator.this.setNextReader(context);
+      }
+
+      @Override
+      public int compare(int slot1, int slot2) {
+        return TermOrdValDocValuesComparator.this.compare(slot1, slot2);
+      }
+
+      @Override
+      public void setBottom(final int bottom) {
+        TermOrdValDocValuesComparator.this.setBottom(bottom);
+      }
+
+      @Override
+      public BytesRef value(int slot) {
+        return TermOrdValDocValuesComparator.this.value(slot);
+      }
+
+      @Override
+      public int compareValues(BytesRef val1, BytesRef val2) {
+        assert val1 != null;
+        assert val2 != null;
+        return comp.compare(val1, val2);
+      }
+    }
+
+    // Used per-segment when bit width of doc->ord is 8:
+    private final class ByteOrdComparator extends PerSegmentComparator {
+      private final byte[] readerOrds;
+      private final SortedSource termsIndex;
+      private final int docBase;
+
+      public ByteOrdComparator(byte[] readerOrds, SortedSource termsIndex, int docBase) {
+        this.readerOrds = readerOrds;
+        this.termsIndex = termsIndex;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public int compareBottom(int doc) {
+        assert bottomSlot != -1;
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return bottomOrd - (readerOrds[doc]&0xFF);
+        } else {
+          // ord is only approx comparable: if they are not
+          // equal, we can use that; if they are equal, we
+          // must fallback to compare by value
+          final int order = readerOrds[doc]&0xFF;
+          final int cmp = bottomOrd - order;
+          if (cmp != 0) {
+            return cmp;
+          }
+
+          termsIndex.getByOrd(order, tempBR);
+          return comp.compare(bottomValue, tempBR);
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) {
+        final int ord = readerOrds[doc]&0xFF;
+        ords[slot] = ord;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.getByOrd(ord, values[slot]);
+        readerGen[slot] = currentReaderGen;
+      }
+    }
+
+    // Used per-segment when bit width of doc->ord is 16:
+    private final class ShortOrdComparator extends PerSegmentComparator {
+      private final short[] readerOrds;
+      private final SortedSource termsIndex;
+      private final int docBase;
+
+      public ShortOrdComparator(short[] readerOrds, SortedSource termsIndex, int docBase) {
+        this.readerOrds = readerOrds;
+        this.termsIndex = termsIndex;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public int compareBottom(int doc) {
+        assert bottomSlot != -1;
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return bottomOrd - (readerOrds[doc]&0xFFFF);
+        } else {
+          // ord is only approx comparable: if they are not
+          // equal, we can use that; if they are equal, we
+          // must fallback to compare by value
+          final int order = readerOrds[doc]&0xFFFF;
+          final int cmp = bottomOrd - order;
+          if (cmp != 0) {
+            return cmp;
+          }
+
+          termsIndex.getByOrd(order, tempBR);
+          return comp.compare(bottomValue, tempBR);
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) {
+        final int ord = readerOrds[doc]&0xFFFF;
+        ords[slot] = ord;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.getByOrd(ord, values[slot]);
+        readerGen[slot] = currentReaderGen;
+      }
+    }
+
+    // Used per-segment when bit width of doc->ord is 32:
+    private final class IntOrdComparator extends PerSegmentComparator {
+      private final int[] readerOrds;
+      private final SortedSource termsIndex;
+      private final int docBase;
+
+      public IntOrdComparator(int[] readerOrds, SortedSource termsIndex, int docBase) {
+        this.readerOrds = readerOrds;
+        this.termsIndex = termsIndex;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public int compareBottom(int doc) {
+        assert bottomSlot != -1;
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return bottomOrd - readerOrds[doc];
+        } else {
+          // ord is only approx comparable: if they are not
+          // equal, we can use that; if they are equal, we
+          // must fallback to compare by value
+          final int order = readerOrds[doc];
+          final int cmp = bottomOrd - order;
+          if (cmp != 0) {
+            return cmp;
+          }
+          termsIndex.getByOrd(order, tempBR);
+          return comp.compare(bottomValue, tempBR);
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) {
+        final int ord = readerOrds[doc];
+        ords[slot] = ord;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.getByOrd(ord, values[slot]);
+        readerGen[slot] = currentReaderGen;
+      }
+    }
+
+    // Used per-segment when bit width is not a native array
+    // size (8, 16, 32):
+    private final class AnyOrdComparator extends PerSegmentComparator {
+      private final PackedInts.Reader readerOrds;
+      private final int docBase;
+
+      public AnyOrdComparator(PackedInts.Reader readerOrds, int docBase) {
+        this.readerOrds = readerOrds;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public int compareBottom(int doc) {
+        assert bottomSlot != -1;
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return bottomOrd - (int) readerOrds.get(doc);
+        } else {
+          // ord is only approx comparable: if they are not
+          // equal, we can use that; if they are equal, we
+          // must fallback to compare by value
+          final int order = (int) readerOrds.get(doc);
+          final int cmp = bottomOrd - order;
+          if (cmp != 0) {
+            return cmp;
+          }
+          termsIndex.getByOrd(order, tempBR);
+          return comp.compare(bottomValue, tempBR);
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) {
+        final int ord = (int) readerOrds.get(doc);
+        ords[slot] = ord;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.getByOrd(ord, values[slot]);
+        readerGen[slot] = currentReaderGen;
+      }
+    }
+
+    @Override
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      final int docBase = context.docBase;
+
+      final IndexDocValues dv = context.reader.docValues(field);
+      if (dv == null) {
+        termsIndex = IndexDocValues.getDefaultSortedSource(ValueType.BYTES_VAR_SORTED, context.reader.maxDoc());
+      } else {
+        termsIndex = dv.getSource().asSortedSource();
+        if (termsIndex == null) {
+          termsIndex = IndexDocValues.getDefaultSortedSource(ValueType.BYTES_VAR_SORTED, context.reader.maxDoc());
+        }
+      }
+
+      comp = termsIndex.getComparator();
+
+      FieldComparator perSegComp = null;
+      final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
+      if (docToOrd.hasArray()) {
+        final Object arr = docToOrd.getArray();
+        assert arr != null;
+        if (arr instanceof byte[]) {
+          // 8 bit packed
+          perSegComp = new ByteOrdComparator((byte[]) arr, termsIndex, docBase);
+        } else if (arr instanceof short[]) {
+          // 16 bit packed
+          perSegComp = new ShortOrdComparator((short[]) arr, termsIndex, docBase);
+        } else if (arr instanceof int[]) {
+          // 32 bit packed
+          perSegComp = new IntOrdComparator((int[]) arr, termsIndex, docBase);
+        }
+      }
+
+      if (perSegComp == null) {
+        perSegComp = new AnyOrdComparator(docToOrd, docBase);
+      }
+        
+      currentReaderGen++;
+      if (bottomSlot != -1) {
+        perSegComp.setBottom(bottomSlot);
+      }
+
+      return perSegComp;
+    }
+    
+    @Override
+    public void setBottom(final int bottom) {
+      bottomSlot = bottom;
+
+      bottomValue = values[bottomSlot];
+      if (currentReaderGen == readerGen[bottomSlot]) {
+        bottomOrd = ords[bottomSlot];
+        bottomSameReader = true;
+      } else {
+        if (bottomValue == null) {
+          // 0 ord is null for all segments
+          assert ords[bottomSlot] == 0;
+          bottomOrd = 0;
+          bottomSameReader = true;
+          readerGen[bottomSlot] = currentReaderGen;
+        } else {
+          final int index = termsIndex.getByValue(bottomValue, tempBR);
+          if (index < 0) {
+            bottomOrd = -index - 2;
+            bottomSameReader = false;
+          } else {
+            bottomOrd = index;
+            // exact value match
+            bottomSameReader = true;
+            readerGen[bottomSlot] = currentReaderGen;            
+            ords[bottomSlot] = bottomOrd;
+          }
+        }
+      }
+    }
+
+    @Override
+    public BytesRef value(int slot) {
+      return values[slot];
+    }
+  }
+
   /** Sorts by field's natural Term sort order.  All
    *  comparisons are done using BytesRef.compareTo, which is
    *  slow for medium to large result sets but possibly
@@ -1406,6 +1827,74 @@ public abstract class FieldComparator<T> {
       } else if (val2 == null) {
         return 1;
       }
+      return val1.compareTo(val2);
+    }
+  }
+
+  /** Sorts by field's natural Term sort order.  All
+   *  comparisons are done using BytesRef.compareTo, which is
+   *  slow for medium to large result sets but possibly
+   *  very fast for very small results sets.  The BytesRef
+   *  values are obtained using {@link IndexReader#docValues}. */
+  public static final class TermValDocValuesComparator extends FieldComparator<BytesRef> {
+
+    private BytesRef[] values;
+    private Source docTerms;
+    private final String field;
+    private BytesRef bottom;
+    private final BytesRef tempBR = new BytesRef();
+
+    TermValDocValuesComparator(int numHits, String field) {
+      values = new BytesRef[numHits];
+      this.field = field;
+    }
+
+    @Override
+    public int compare(int slot1, int slot2) {
+      assert values[slot1] != null;
+      assert values[slot2] != null;
+      return values[slot1].compareTo(values[slot2]);
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      assert bottom != null;
+      return bottom.compareTo(docTerms.getBytes(doc, tempBR));
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      if (values[slot] == null) {
+        values[slot] = new BytesRef();
+      }
+      docTerms.getBytes(doc, values[slot]);
+    }
+
+    @Override
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      final IndexDocValues dv = context.reader.docValues(field);
+      if (dv != null) {
+        docTerms = dv.getSource();
+      } else {
+        docTerms = IndexDocValues.getDefaultSource(ValueType.BYTES_VAR_DEREF);
+      }
+      return this;
+    }
+    
+    @Override
+    public void setBottom(final int bottom) {
+      this.bottom = values[bottom];
+    }
+
+    @Override
+    public BytesRef value(int slot) {
+      return values[slot];
+    }
+
+    @Override
+    public int compareValues(BytesRef val1, BytesRef val2) {
+      assert val1 != null;
+      assert val2 != null;
       return val1.compareTo(val2);
     }
   }

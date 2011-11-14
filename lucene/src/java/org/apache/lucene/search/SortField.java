@@ -254,6 +254,7 @@ public class SortField {
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
+    String dv = useIndexValues ? " [dv]" : "";
     switch (type) {
       case SCORE:
         buffer.append("<score>");
@@ -264,11 +265,11 @@ public class SortField {
         break;
 
       case STRING:
-        buffer.append("<string: \"").append(field).append("\">");
+        buffer.append("<string" + dv + ": \"").append(field).append("\">");
         break;
 
       case STRING_VAL:
-        buffer.append("<string_val: \"").append(field).append("\">");
+        buffer.append("<string_val" + dv + ": \"").append(field).append("\">");
         break;
 
       case BYTE:
@@ -280,7 +281,7 @@ public class SortField {
         break;
 
       case INT:
-        buffer.append("<int: \"").append(field).append("\">");
+        buffer.append("<int" + dv + ": \"").append(field).append("\">");
         break;
 
       case LONG:
@@ -288,11 +289,11 @@ public class SortField {
         break;
 
       case FLOAT:
-        buffer.append("<float: \"").append(field).append("\">");
+        buffer.append("<float" + dv + ": \"").append(field).append("\">");
         break;
 
       case DOUBLE:
-        buffer.append("<double: \"").append(field).append("\">");
+        buffer.append("<double" + dv + ": \"").append(field).append("\">");
         break;
 
       case CUSTOM:
@@ -415,10 +416,18 @@ public class SortField {
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case STRING:
-      return new FieldComparator.TermOrdValComparator(numHits, field, sortPos, reverse);
+      if (useIndexValues) {
+        return new FieldComparator.TermOrdValDocValuesComparator(numHits, field);
+      } else {
+        return new FieldComparator.TermOrdValComparator(numHits, field);
+      }
 
     case STRING_VAL:
-      return new FieldComparator.TermValComparator(numHits, field);
+      if (useIndexValues) {
+        return new FieldComparator.TermValDocValuesComparator(numHits, field);
+      } else {
+        return new FieldComparator.TermValComparator(numHits, field);
+      }
 
     case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
