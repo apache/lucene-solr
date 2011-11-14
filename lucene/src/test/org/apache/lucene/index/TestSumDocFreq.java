@@ -66,7 +66,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     ir.close();
     
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.optimize();
+    w.forceMerge(1);
     w.close();
     
     ir = IndexReader.open(dir, true);

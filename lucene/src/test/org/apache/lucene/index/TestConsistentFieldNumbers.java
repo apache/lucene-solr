@@ -27,6 +27,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -76,7 +77,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       assertEquals("f4", fis2.fieldInfo(3).name);
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       sis = new SegmentInfos();
@@ -140,7 +141,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     assertEquals("f4", fis2.fieldInfo(3).name);
 
     writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     sis = new SegmentInfos();
@@ -250,9 +251,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
-          new LogByteSizeMergePolicy()));
-      writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
+          new LogByteSizeMergePolicy()).setInfoStream(new FailOnNonBulkMergesInfoStream()));
+      writer.forceMerge(1);
       writer.close();
 
       SegmentInfos sis = new SegmentInfos();
@@ -293,7 +293,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       writer.addDocument(d);
     }
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     SegmentInfos sis = new SegmentInfos();

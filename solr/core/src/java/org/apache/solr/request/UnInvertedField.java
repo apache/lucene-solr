@@ -29,11 +29,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.LongPriorityQueue;
 import org.apache.solr.util.PrimUtils;
 import org.apache.solr.handler.component.StatsValues;
+import org.apache.solr.handler.component.StatsValuesFactory;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.OpenBitSet;
@@ -461,7 +463,10 @@ public class UnInvertedField extends DocTermOrds {
     //functionality between the two and refactor code somewhat
     use.incrementAndGet();
 
-    StatsValues allstats = new StatsValues();
+    SchemaField sf = searcher.getSchema().getField(field);
+   // FieldType ft = sf.getType();
+
+    StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
 
 
     DocSet docs = baseDocs;
@@ -470,8 +475,6 @@ public class UnInvertedField extends DocTermOrds {
 
     if (baseSize <= 0) return allstats;
 
-    FieldType ft = searcher.getSchema().getFieldType(field);
-
     DocSet missing = docs.andNot( searcher.getDocSet(new TermRangeQuery(field, null, null, false, false)) );
 
     int i = 0;
@@ -479,14 +482,14 @@ public class UnInvertedField extends DocTermOrds {
     //Initialize facetstats, if facets have been passed in
     FieldCache.DocTermsIndex si;
     for (String f : facet) {
-      FieldType facet_ft = searcher.getSchema().getFieldType(f);
+      SchemaField facet_sf = searcher.getSchema().getField(f);
       try {
         si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
       }
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);
       }
-      finfo[i] = new FieldFacetStats(f, si, facet_ft, numTermsInField);
+      finfo[i] = new FieldFacetStats(f, si, sf, facet_sf, numTermsInField);
       i++;
     }
 
@@ -580,14 +583,12 @@ public class UnInvertedField extends DocTermOrds {
         }
       }
     }
-    final CharsRef charsRef = new CharsRef();
+    
     // add results in index order
     for (i = 0; i < numTermsInField; i++) {
       int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
       if (c == 0) continue;
-      String label = getReadableValue(getTermValue(te, i), ft, charsRef);
-      // TODO: we should avoid this re-parse
-      Double value = Double.parseDouble(label);
+      BytesRef value = getTermValue(te, i);
 
       allstats.accumulate(value, c);
       //as we've parsed the termnum into a value, lets also accumulate fieldfacet statistics
@@ -600,7 +601,6 @@ public class UnInvertedField extends DocTermOrds {
     allstats.addMissing(c);
 
     if (finfo.length > 0) {
-      allstats.facets = new HashMap<String, Map<String, StatsValues>>();
       for (FieldFacetStats f : finfo) {
         Map<String, StatsValues> facetStatsValues = f.facetStatsValues;
         FieldType facetType = searcher.getSchema().getFieldType(f.name);
@@ -609,7 +609,7 @@ public class UnInvertedField extends DocTermOrds {
           int missingCount = searcher.numDocs(new TermQuery(new Term(f.name, facetType.toInternal(termLabel))), missing);
           entry.getValue().addMissing(missingCount);
         }
-        allstats.facets.put(f.name, facetStatsValues);
+        allstats.addFacet(f.name, facetStatsValues);
       }
     }
 

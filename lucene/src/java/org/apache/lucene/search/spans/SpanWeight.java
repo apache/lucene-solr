@@ -27,7 +27,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeSet;
 
 /**
@@ -35,7 +36,7 @@ import java.util.TreeSet;
  */
 public class SpanWeight extends Weight {
   protected Similarity similarity;
-  protected Set<Term> terms;
+  protected Map<Term,TermContext> termContexts;
   protected SpanQuery query;
   protected Similarity.Stats stats;
 
@@ -44,15 +45,16 @@ public class SpanWeight extends Weight {
     this.similarity = searcher.getSimilarityProvider().get(query.getField());
     this.query = query;
     
-    terms=new TreeSet<Term>();
+    termContexts = new HashMap<Term,TermContext>();
+    TreeSet<Term> terms = new TreeSet<Term>();
     query.extractTerms(terms);
     final ReaderContext context = searcher.getTopReaderContext();
-    final TermContext states[] = new TermContext[terms.size()];
     final TermStatistics termStats[] = new TermStatistics[terms.size()];
     int i = 0;
     for (Term term : terms) {
-      states[i] = TermContext.build(context, term, true);
-      termStats[i] = searcher.termStatistics(term, states[i]);
+      TermContext state = TermContext.build(context, term, true);
+      termStats[i] = searcher.termStatistics(term, state);
+      termContexts.put(term, state);
       i++;
     }
     stats = similarity.computeStats(
@@ -77,7 +79,7 @@ public class SpanWeight extends Weight {
   @Override
   public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
       boolean topScorer, Bits acceptDocs) throws IOException {
-    return new SpanScorer(query.getSpans(context, acceptDocs), this, similarity.sloppyDocScorer(stats, query.getField(), context));
+    return new SpanScorer(query.getSpans(context, acceptDocs, termContexts), this, similarity.sloppyDocScorer(stats, query.getField(), context));
   }
 
   @Override

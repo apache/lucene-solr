@@ -69,7 +69,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
         }
 
         try {
-          DefaultFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+          DefaultStoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
         } finally {
           // If we opened the directory, close it
           if (dir != directory) dir.close();

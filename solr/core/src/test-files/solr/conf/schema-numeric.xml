@@ -35,36 +35,42 @@
     <fieldType name="int"          class="solr.TrieIntField"    precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float"        class="solr.TrieFloatField"  precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long"         class="solr.TrieLongField"   precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double"       class="solr.TrieDoubleField" precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>  
+    <fieldType name="date"         class="solr.TrieDateField"   precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double"       class="solr.TrieDoubleField" precisionStep="0" sortMissingLast="false" omitNorms="true" positionIncrementGap="0"/>
 
     <fieldType name="int_last"     class="solr.TrieIntField"    precisionStep="0" sortMissingLast="true" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float_last"   class="solr.TrieFloatField"  precisionStep="0" sortMissingLast="true" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long_last"    class="solr.TrieLongField"   precisionStep="0" sortMissingLast="true" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double_last"  class="solr.TrieDoubleField" precisionStep="0" sortMissingLast="true" omitNorms="true" positionIncrementGap="0"/>  
+    <fieldType name="date_last"    class="solr.TrieDateField"   precisionStep="0" sortMissingLast="true" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double_last"  class="solr.TrieDoubleField" precisionStep="0" sortMissingLast="true" omitNorms="true" positionIncrementGap="0"/>
 
     <fieldType name="int_first"    class="solr.TrieIntField"    precisionStep="0" sortMissingFirst="true" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float_first"  class="solr.TrieFloatField"  precisionStep="0" sortMissingFirst="true" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long_first"   class="solr.TrieLongField"   precisionStep="0" sortMissingFirst="true" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double_first" class="solr.TrieDoubleField" precisionStep="0" sortMissingFirst="true" omitNorms="true" positionIncrementGap="0"/>  
+    <fieldType name="date_first"   class="solr.TrieDateField"   precisionStep="0" sortMissingFirst="true" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double_first" class="solr.TrieDoubleField" precisionStep="0" sortMissingFirst="true" omitNorms="true" positionIncrementGap="0"/>
 
   </types>
-  
+
   <fields>
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-    
+
     <field name="int"          type="int"          indexed="true" stored="true" multiValued="false"/>
     <field name="float"        type="float"        indexed="true" stored="true" multiValued="false"/>
     <field name="long"         type="long"         indexed="true" stored="true" multiValued="false"/>
+    <field name="date"         type="date"         indexed="true" stored="true" multiValued="false"/>
     <field name="double"       type="double"       indexed="true" stored="true" multiValued="false"/>
-   
+
     <field name="int_last"     type="int_last"     indexed="true" stored="true" multiValued="false"/>
     <field name="float_last"   type="float_last"   indexed="true" stored="true" multiValued="false"/>
     <field name="long_last"    type="long_last"    indexed="true" stored="true" multiValued="false"/>
+    <field name="date_last"    type="date_last"    indexed="true" stored="true" multiValued="false"/>
     <field name="double_last"  type="double_last"  indexed="true" stored="true" multiValued="false"/>
-   
+
     <field name="int_first"    type="int_first"    indexed="true" stored="true" multiValued="false"/>
     <field name="float_first"  type="float_first"  indexed="true" stored="true" multiValued="false"/>
     <field name="long_first"   type="long_first"   indexed="true" stored="true" multiValued="false"/>
+    <field name="date_first"   type="date_first"   indexed="true" stored="true" multiValued="false"/>
     <field name="double_first" type="double_first" indexed="true" stored="true" multiValued="false"/>
    
   </fields>

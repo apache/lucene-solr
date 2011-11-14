@@ -18,9 +18,7 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -269,17 +267,9 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   private Document retrieveDocument(final SchemaField uniqueField, int doc) throws IOException {
-    FieldSelectorVisitor fieldSelectorVisitor = new FieldSelectorVisitor(new FieldSelector() {
-
-      public FieldSelectorResult accept(String fieldName) {
-        if (uniqueField.getName().equals(fieldName)) {
-          return FieldSelectorResult.LOAD_AND_BREAK;
-        }
-        return FieldSelectorResult.NO_LOAD;
-      }
-    });
-    rb.req.getSearcher().doc(doc, fieldSelectorVisitor);
-    return fieldSelectorVisitor.getDocument();
+    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(uniqueField.getName());
+    rb.req.getSearcher().doc(doc, visitor);
+    return visitor.getDocument();
   }
 
 }

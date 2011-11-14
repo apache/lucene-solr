@@ -33,7 +33,6 @@ import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,6 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
@@ -370,7 +370,7 @@ public class TestCodecs extends LuceneTestCase {
       assertEquals(2, results.length);
       assertEquals(0, results[0].doc);
 
-      writer.optimize();
+      writer.forceMerge(1);
 
       // optimise to merge the segments.
       results = this.search(writer, pq, 5);
@@ -609,7 +609,7 @@ public class TestCodecs extends LuceneTestCase {
 
     final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
     final Codec codec = Codec.getDefault();
-    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random));
+    final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random));
 
     final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
     Arrays.sort(fields);

@@ -19,12 +19,19 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 /** Matches spans containing a term. */
@@ -82,22 +89,46 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   @Override
-  public Spans getSpans(final AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final IndexReader reader = context.reader;
-    final DocsAndPositionsEnum postings = reader.termPositionsEnum(acceptDocs,
-                                                                   term.field(),
-                                                                   term.bytes());
+  public Spans getSpans(final AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
+    TermContext termContext = termContexts.get(term);
+    final TermState state;
+    if (termContext == null) {
+      // this happens with span-not query, as it doesn't include the NOT side in extractTerms()
+      // so we seek to the term now in this segment..., this sucks because its ugly mostly!
+      final Fields fields = context.reader.fields();
+      if (fields != null) {
+        final Terms terms = fields.terms(term.field());
+        if (terms != null) {
+          final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
+          if (termsEnum.seekExact(term.bytes(), true)) { 
+            state = termsEnum.termState();
+          } else {
+            state = null;
+          }
+        } else {
+          state = null;
+        }
+      } else {
+        state = null;
+      }
+    } else {
+      state = termContext.get(context.ord);
+    }
+    
+    if (state == null) { // term is not present in that reader
+      return TermSpans.EMPTY_TERM_SPANS;
+    }
+    
+    final TermsEnum termsEnum = context.reader.terms(term.field()).getThreadTermsEnum();
+    termsEnum.seekExact(term.bytes(), state);
+    
+    final DocsAndPositionsEnum postings = termsEnum.docsAndPositions(acceptDocs, null);
 
     if (postings != null) {
       return new TermSpans(postings, term);
     } else {
-      if (reader.termDocsEnum(reader.getLiveDocs(), term.field(), term.bytes()) != null) {
-        // term does exist, but has no positions
-        throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
-      } else {
-        // term does not exist
-        return TermSpans.EMPTY_TERM_SPANS;
-      }
+      // term does exist, but has no positions
+      throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
     }
   }
 }

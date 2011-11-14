@@ -17,14 +17,17 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -132,7 +135,7 @@ public class NearSpansUnordered extends Spans {
   }
 
 
-  public NearSpansUnordered(SpanNearQuery query, AtomicReaderContext context, Bits acceptDocs)
+  public NearSpansUnordered(SpanNearQuery query, AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts)
     throws IOException {
     this.query = query;
     this.slop = query.getSlop();
@@ -142,7 +145,7 @@ public class NearSpansUnordered extends Spans {
     subSpans = new Spans[clauses.length];    
     for (int i = 0; i < clauses.length; i++) {
       SpansCell cell =
-        new SpansCell(clauses[i].getSpans(context, acceptDocs), i);
+        new SpansCell(clauses[i].getSpans(context, acceptDocs, termContexts), i);
       ordered.add(cell);
       subSpans[i] = cell.spans;
     }

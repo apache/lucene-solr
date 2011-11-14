@@ -203,7 +203,7 @@ public class TestFieldsReader extends LuceneTestCase {
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       IndexReader reader = IndexReader.open(dir, true);
@@ -285,7 +285,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertEquals(numDocs, r.numDocs());
 
     for(IndexReader sub : r.getSequentialSubReaders()) {
-      final int[] ids = FieldCache.DEFAULT.getInts(sub, "id");
+      final int[] ids = FieldCache.DEFAULT.getInts(sub, "id", false);
       for(int docID=0;docID<sub.numDocs();docID++) {
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");

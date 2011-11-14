@@ -150,7 +150,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
-      return new PayloadNearSpanScorer(query.getSpans(context, acceptDocs), this,
+      return new PayloadNearSpanScorer(query.getSpans(context, acceptDocs, termContexts), this,
           similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
     }
     

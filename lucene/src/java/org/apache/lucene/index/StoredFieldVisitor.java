@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.store.IndexInput;
 
 /**
  * Expert: provides a low-level means of accessing the stored field
@@ -35,54 +34,39 @@ import org.apache.lucene.store.IndexInput;
  *
  * @lucene.experimental */
 
-public class StoredFieldVisitor {
-  /** Process a binary field.  Note that if you want to
-   *  skip the field you must seek the IndexInput
-   *  (e.g., call <code>in.seek(numUTF8Bytes + in.getFilePointer()</code>)
-   *
-   *  <p>Return true to stop loading fields. */
-  public boolean binaryField(FieldInfo fieldInfo, IndexInput in, int numBytes) throws IOException {
-    in.seek(in.getFilePointer() + numBytes);
-    return false;
+public abstract class StoredFieldVisitor {
+  /** Process a binary field. */
+  public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
   }
 
-  /** Process a string field by reading numUTF8Bytes.
-   *  Note that if you want to skip the field you must
-   *  seek the IndexInput as if you had read numBytes by
-   *  (e.g., call <code>in.seek(numUTF8Bytes + in.getFilePointer()</code>)
-   *
-   *  <p>Return true to stop loading fields. */
-  public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
-    in.seek(in.getFilePointer() + numUTF8Bytes);
-    return false;
+  /** Process a string field */
+  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
   }
 
-  /** Process a int numeric field.
-   *
-   *  <p>Return true to stop loading fields. */
-  public boolean intField(FieldInfo fieldInfo, int value) throws IOException {
-    return false;
+  /** Process a int numeric field. */
+  public void intField(FieldInfo fieldInfo, int value) throws IOException {
   }
 
-  /** Process a long numeric field.
-   *
-   *  <p>Return true to stop loading fields. */
-  public boolean longField(FieldInfo fieldInfo, long value) throws IOException {
-    return false;
+  /** Process a long numeric field. */
+  public void longField(FieldInfo fieldInfo, long value) throws IOException {
   }
 
-  /** Process a float numeric field.
-   *
-   *  <p>Return true to stop loading fields. */
-  public boolean floatField(FieldInfo fieldInfo, float value) throws IOException {
-    return false;
+  /** Process a float numeric field. */
+  public void floatField(FieldInfo fieldInfo, float value) throws IOException {
   }
 
-  /** Process a double numeric field.
-   *
-   *  <p>Return true to stop loading fields. */
-  public boolean doubleField(FieldInfo fieldInfo, double value) throws IOException {
-    return false;
+  /** Process a double numeric field. */
+  public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
+  }
+  
+  public abstract Status needsField(FieldInfo fieldInfo) throws IOException;
+  
+  public static enum Status {
+    /** yes, i want the field */
+    YES,
+    /** no, i do not */
+    NO,
+    /** stop loading fields for this document entirely */
+    STOP
   }
 }
-

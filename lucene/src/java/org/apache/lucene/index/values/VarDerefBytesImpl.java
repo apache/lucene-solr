@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
-import org.apache.lucene.index.values.DirectSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -128,12 +127,12 @@ class VarDerefBytesImpl {
 
   
   final static class DirectVarDerefSource extends DirectSource {
-    private final PackedInts.RandomAccessReaderIterator index;
+    private final PackedInts.Reader index;
 
     DirectVarDerefSource(IndexInput data, IndexInput index, ValueType type)
         throws IOException {
       super(data, type);
-      this.index = PackedInts.getRandomAccessReaderIterator(index);
+      this.index = PackedInts.getDirectReader(index);
     }
     
     @Override

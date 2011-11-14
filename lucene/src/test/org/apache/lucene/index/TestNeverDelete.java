@@ -49,7 +49,6 @@ public class TestNeverDelete extends LuceneTestCase {
                                                       .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     w.w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random, 5, 30));
 
-    w.w.setInfoStream(VERBOSE ? System.out : null);
     w.commit();
     Thread[] indexThreads = new Thread[random.nextInt(4)];
     final long stopTime = System.currentTimeMillis() + atLeast(1000);

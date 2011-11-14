@@ -17,19 +17,18 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.cache.IntValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.IntValues;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Obtains int field values from the {@link org.apache.lucene.search.FieldCache}
@@ -38,10 +37,16 @@ import java.util.Map;
  *
  */
 
-public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
+public class IntFieldSource extends FieldCacheSource {
+  final FieldCache.IntParser parser;
 
-  public IntFieldSource(IntValuesCreator creator) {
-    super(creator);
+  public IntFieldSource(String field) {
+    this(field, null);
+  }
+
+  public IntFieldSource(String field, FieldCache.IntParser parser) {
+    super(field);
+    this.parser = parser;
   }
 
   @Override
@@ -52,9 +57,8 @@ public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final IntValues vals = cache.getInts(readerContext.reader, field, creator);
-    final int[] arr = vals.values;
-    final Bits valid = vals.valid;
+    final int[] arr = cache.getInts(readerContext.reader, field, parser, true);
+    final Bits valid = cache.getDocsWithField(readerContext.reader, field);
     
     return new IntDocValues(this) {
       final MutableValueInt val = new MutableValueInt();
@@ -155,4 +159,18 @@ public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
       
     };
   }
+
+  public boolean equals(Object o) {
+    if (o.getClass() !=  IntFieldSource.class) return false;
+    IntFieldSource other = (IntFieldSource)o;
+    return super.equals(other)
+      && (this.parser==null ? other.parser==null :
+          this.parser.getClass() == other.parser.getClass());
+  }
+
+  public int hashCode() {
+    int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
+    h += super.hashCode();
+    return h;
+  };
 }

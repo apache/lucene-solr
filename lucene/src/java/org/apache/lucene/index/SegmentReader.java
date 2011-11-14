@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.codecs.FieldsReader;
+import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
@@ -47,7 +47,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   private SegmentInfo si;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
-  CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
+  CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
   volatile BitVector liveDocs;
@@ -74,9 +74,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /**
    * Sets the initial value 
    */
-  private class FieldsReaderLocal extends CloseableThreadLocal<FieldsReader> {
+  private class FieldsReaderLocal extends CloseableThreadLocal<StoredFieldsReader> {
     @Override
-    protected FieldsReader initialValue() {
+    protected StoredFieldsReader initialValue() {
       return core.getFieldsReaderOrig().clone();
     }
   }
@@ -368,7 +368,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     hasChanges = false;
   }
 
-  FieldsReader getFieldsReader() {
+  /** @lucene.internal */
+  public StoredFieldsReader getFieldsReader() {
     return fieldsReaderLocal.get();
   }
 

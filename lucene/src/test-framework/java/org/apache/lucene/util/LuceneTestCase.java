@@ -32,7 +32,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -41,17 +40,9 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xCodec;
-import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
-import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWPostingsFormat;
-import org.apache.lucene.index.codecs.pulsing.PulsingPostingsFormat;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -110,6 +101,8 @@ public abstract class LuceneTestCase extends Assert {
    * expected to print any messages.
    */
   public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
+  
+  public static final boolean INFOSTREAM = Boolean.parseBoolean(System.getProperty("tests.infostream", Boolean.toString(VERBOSE)));
 
   /** Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
@@ -139,6 +132,8 @@ public abstract class LuceneTestCase extends Assert {
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
   // tests)
+  /** Gets the codec to run tests with. */
+  public static final String TEST_CODEC = System.getProperty("tests.codec", "random");
   /** Gets the postingsFormat to run tests with. */
   public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
   /** Gets the locale to run tests with */
@@ -216,6 +211,8 @@ public abstract class LuceneTestCase extends Assert {
   // default codec
   private static Codec savedCodec;
   
+  private static InfoStream savedInfoStream;
+
   private static SimilarityProvider similarityProvider;
 
   private static Locale locale;
@@ -265,13 +262,30 @@ public abstract class LuceneTestCase extends Assert {
         System.out.println("Loaded postingsFormat: '" + postingsFormat + "': " + PostingsFormat.forName(postingsFormat).getClass().getName());
       }
     }
+    
+    savedInfoStream = InfoStream.getDefault();
+    if (INFOSTREAM) {
+      // consume random for consistency
+      random.nextBoolean();
+      InfoStream.setDefault(new PrintStreamInfoStream(System.out));
+    } else {
+      if (random.nextBoolean()) {
+        InfoStream.setDefault(new NullInfoStream());
+      }
+    }
 
     PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
     final Codec codec;
-    if ("Lucene3x".equals(TEST_POSTINGSFORMAT) || ("random".equals(TEST_POSTINGSFORMAT) && random.nextInt(4) == 0)) { // preflex-only setup
+    int randomVal = random.nextInt(10);
+    
+    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2)) { // preflex-only setup
       codec = new PreFlexRWCodec();
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9)) {
+      codec = new SimpleTextCodec();
+    } else if (!"random".equals(TEST_CODEC)) {
+      codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {
       codec = new RandomCodec(random, useNoMemoryExpensiveCodec);
     } else {
@@ -342,6 +356,7 @@ public abstract class LuceneTestCase extends Assert {
     
     String codecDescription = Codec.getDefault().toString();
     Codec.setDefault(savedCodec);
+    InfoStream.setDefault(savedInfoStream);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
     System.clearProperty("solr.solr.home");
@@ -1154,8 +1169,13 @@ public abstract class LuceneTestCase extends Assert {
     return d;
   }
 
-  /** Registers a temp file that will be deleted when tests are done. */
-  public static void registerTempFile(File tmpFile) {
+  /**
+   * Registers a temp directory that will be deleted when tests are done. This
+   * is used by {@link _TestUtil#getTempDir(String)} and
+   * {@link _TestUtil#unzip(File, File)}, so you should call these methods when
+   * possible.
+   */
+  static void registerTempDir(File tmpFile) {
     tempDirs.put(tmpFile.getAbsoluteFile(), Thread.currentThread().getStackTrace());
   }
   
@@ -1168,11 +1188,9 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File tmpFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
-        tmpFile.delete();
-        tmpFile.mkdir();
-        registerTempFile(tmpFile);
-        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile);
+        final File dir = _TestUtil.getTempDir("index");
+        dir.mkdirs(); // ensure it's created so we 'have' it.
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }
 
       // try empty ctor
@@ -1273,12 +1291,16 @@ public abstract class LuceneTestCase extends Assert {
   // extra params that were overridden needed to reproduce the command
   private static String reproduceWithExtraParams() {
     StringBuilder sb = new StringBuilder();
+    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
     if (!TEST_POSTINGSFORMAT.equals("random")) sb.append(" -Dtests.postingsformat=").append(TEST_POSTINGSFORMAT);
     if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
     if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
+    // TODO we can't randomize this yet (it drives ant crazy) but this makes tests reproduceable
+    // in case machines have different default charsets...
+    sb.append(" -Dargs=\"-Dfile.encoding=" + System.getProperty("file.encoding") + "\"");
     return sb.toString();
   }
 
@@ -1297,7 +1319,7 @@ public abstract class LuceneTestCase extends Assert {
       context = IOContext.READONCE;
       break;
     case 3:
-      context = new IOContext(new MergeInfo(randomNumDocs, size, true, false));
+      context = new IOContext(new MergeInfo(randomNumDocs, size, true, -1));
       break;
     case 4:
       context = new IOContext(new FlushInfo(randomNumDocs, size));

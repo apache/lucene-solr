@@ -163,7 +163,6 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;
       addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
-    query.incTotalNumberOfTerms(scoreTerms.length);
     return q;
   }
 

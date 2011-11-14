@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.TypePromoter;
 import org.apache.lucene.index.values.ValueType;

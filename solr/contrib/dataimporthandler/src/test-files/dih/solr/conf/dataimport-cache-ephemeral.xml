@@ -1,0 +1,32 @@
+<dataConfig>
+	<dataSource type="MockDataSource" />
+	<document>
+		<entity 
+			name="PARENT"
+			processor="SqlEntityProcessor"
+			cacheName="PARENT"
+			cachePk="id"			
+			query="SELECT * FROM PARENT"				
+		>
+			<entity
+				name="CHILD_1"
+				processor="SqlEntityProcessor"
+				cacheImpl="SortedMapBackedCache"
+				cacheName="CHILD"
+				cachePk="id"
+				cacheLookup="PARENT.id"
+				fieldNames="id,         child1a_mult_s, child1b_s"
+				fieldTypes="BIGDECIMAL, STRING,         STRING"
+				query="SELECT * FROM CHILD_1"				
+			/>
+			<entity
+				name="CHILD_2"
+				processor="SqlEntityProcessor"
+				cacheImpl="SortedMapBackedCache"
+				cachePk="id"
+				cacheLookup="PARENT.id"
+				query="SELECT * FROM CHILD_2"				
+			/>
+		</entity>
+	</document>
+</dataConfig>

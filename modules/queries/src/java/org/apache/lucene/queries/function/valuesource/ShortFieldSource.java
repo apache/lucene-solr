@@ -16,25 +16,30 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.queries.function.DocValues;
-import org.apache.lucene.search.cache.ShortValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.ShortValues;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.search.FieldCache;
 
 
 /**
  *
  *
  **/
-public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
+public class ShortFieldSource extends FieldCacheSource {
 
-  public ShortFieldSource(ShortValuesCreator creator) {
-    super(creator);
+  final FieldCache.ShortParser parser;
+
+  public ShortFieldSource(String field) {
+    this(field, null);
   }
 
+  public ShortFieldSource(String field, FieldCache.ShortParser parser) {
+    super(field);
+    this.parser = parser;
+  }
 
   @Override
   public String description() {
@@ -43,8 +48,7 @@ public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final ShortValues vals = cache.getShorts(readerContext.reader, field, creator);
-    final short[] arr = vals.values;
+    final short[] arr = cache.getShorts(readerContext.reader, field, parser, false);
     
     return new DocValues() {
       @Override
@@ -88,5 +92,20 @@ public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
       }
 
     };
+  }
+
+  public boolean equals(Object o) {
+    if (o.getClass() != ShortFieldSource.class) return false;
+    ShortFieldSource
+            other = (ShortFieldSource) o;
+    return super.equals(other)
+      && (this.parser == null ? other.parser == null :
+          this.parser.getClass() == other.parser.getClass());
+  }
+
+  public int hashCode() {
+    int h = parser == null ? Short.class.hashCode() : parser.getClass().hashCode();
+    h += super.hashCode();
+    return h;
   }
 }

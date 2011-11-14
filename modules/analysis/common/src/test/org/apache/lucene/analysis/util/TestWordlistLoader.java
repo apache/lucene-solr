@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.util;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -31,22 +29,22 @@ public class TestWordlistLoader extends LuceneTestCase {
 
   public void testWordlistLoading() throws IOException {
     String s = "ONE\n  two \nthree";
-    HashSet<String> wordSet1 = WordlistLoader.getWordSet(new StringReader(s));
+    CharArraySet wordSet1 = WordlistLoader.getWordSet(new StringReader(s), TEST_VERSION_CURRENT);
     checkSet(wordSet1);
-    HashSet<String> wordSet2 = WordlistLoader.getWordSet(new BufferedReader(new StringReader(s)));
+    CharArraySet wordSet2 = WordlistLoader.getWordSet(new BufferedReader(new StringReader(s)), TEST_VERSION_CURRENT);
     checkSet(wordSet2);
   }
 
   public void testComments() throws Exception {
     String s = "ONE\n  two \nthree\n#comment";
-    HashSet<String> wordSet1 = WordlistLoader.getWordSet(new StringReader(s), "#");
+    CharArraySet wordSet1 = WordlistLoader.getWordSet(new StringReader(s), "#", TEST_VERSION_CURRENT);
     checkSet(wordSet1);
     assertFalse(wordSet1.contains("#comment"));
     assertFalse(wordSet1.contains("comment"));
   }
 
 
-  private void checkSet(HashSet<String> wordset) {
+  private void checkSet(CharArraySet wordset) {
     assertEquals(3, wordset.size());
     assertTrue(wordset.contains("ONE"));		// case is not modified
     assertTrue(wordset.contains("two"));		// surrounding whitespace is removed
@@ -68,7 +66,7 @@ public class TestWordlistLoader extends LuceneTestCase {
       "   two   \n" + // stopword with leading/trailing space
       " three   four five \n" + // multiple stopwords
       "six seven | comment\n"; //multiple stopwords + comment
-    Set<String> wordset = WordlistLoader.getSnowballWordSet(new StringReader(s));
+    CharArraySet wordset = WordlistLoader.getSnowballWordSet(new StringReader(s), TEST_VERSION_CURRENT);
     assertEquals(7, wordset.size());
     assertTrue(wordset.contains("ONE"));
     assertTrue(wordset.contains("two"));

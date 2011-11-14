@@ -27,7 +27,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.cache.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

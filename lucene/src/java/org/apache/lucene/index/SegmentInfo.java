@@ -285,6 +285,8 @@ public final class SegmentInfo implements Cloneable {
    * store files otherwise.
    */
   public long sizeInBytes(boolean includeDocStores) throws IOException {
+    // TODO: based on how this is used, can't we just forget about all this docstore crap?
+    // its really an abstraction violation into the codec
     if (includeDocStores) {
       if (sizeInBytesWithStore != -1) {
         return sizeInBytesWithStore;
@@ -293,7 +295,7 @@ public final class SegmentInfo implements Cloneable {
       for (final String fileName : files()) {
         // We don't count bytes used by a shared doc store
         // against this segment
-        if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName)) {
+        if (docStoreOffset == -1 || !isDocStoreFile(fileName)) {
           sum += dir.fileLength(fileName);
         }
       }
@@ -305,7 +307,7 @@ public final class SegmentInfo implements Cloneable {
       }
       long sum = 0;
       for (final String fileName : files()) {
-        if (IndexFileNames.isDocStoreFile(fileName)) {
+        if (isDocStoreFile(fileName)) {
           continue;
         }
         sum += dir.fileLength(fileName);
@@ -313,6 +315,13 @@ public final class SegmentInfo implements Cloneable {
       sizeInBytesNoStore = sum;
       return sizeInBytesNoStore;
     }
+  }
+  
+  // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
+  private boolean isDocStoreFile(String fileName) throws IOException {
+    Set<String> docStoreFiles = new HashSet<String>();
+    codec.storedFieldsFormat().files(dir, this, docStoreFiles);
+    return IndexFileNames.isDocStoreFile(fileName) || docStoreFiles.contains(fileName);
   }
 
   public boolean getHasVectors() throws IOException {
@@ -634,11 +643,10 @@ public final class SegmentInfo implements Cloneable {
       // We are sharing doc stores (stored fields, term
       // vectors) with other segments
       assert docStoreSegment != null;
+      // TODO: push this out into preflex fieldsFormat?
       if (docStoreIsCompoundFile) {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
       } else {
-        fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
-        fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
         if (getHasVectors()) {
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
@@ -646,8 +654,6 @@ public final class SegmentInfo implements Cloneable {
         }
       }
     } else if (!useCompoundFile) {
-      fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
-      fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_EXTENSION));
       if (getHasVectors()) {
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));

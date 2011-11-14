@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -90,7 +91,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
   
   @Override
-  public Spans getSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public Spans getSpans(AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     throw new UnsupportedOperationException("Query should have been rewritten");
   }
 
@@ -157,6 +158,9 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     
       @Override
       protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost, TermContext states) {
+        // TODO: would be nice to not lose term-state here.
+        // we could add a hack option to SpanOrQuery, but the hack would only work if this is the top-level Span
+        // (if you put this thing in another span query, it would extractTerms/double-seek anyway)
         final SpanTermQuery q = new SpanTermQuery(term);
         q.setBoost(boost);
         topLevel.addClause(q);

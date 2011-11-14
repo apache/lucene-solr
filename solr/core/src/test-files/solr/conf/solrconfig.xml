@@ -324,6 +324,12 @@
       <str name="buildOnCommit">false</str>
     </lst>
     <lst name="spellchecker">
+      <str name="name">direct</str>
+      <str name="classname">DirectSolrSpellChecker</str>
+      <str name="field">lowerfilt</str>
+      <int name="minQueryLength">3</int>
+    </lst>
+    <lst name="spellchecker">
 			<str name="name">multipleFields</str>
 			<str name="field">lowerfilt1and2</str>
 			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
@@ -392,6 +398,17 @@
       <!-- exr = Extended Results -->
       <str name="spellcheck.extendedResults">false</str>
       <!--  The number of suggestions to return -->
+      <str name="spellcheck.count">1</str>
+    </lst>
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+  </requestHandler>
+    <requestHandler name="spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="spellcheck.dictionary">direct</str>
+      <str name="spellcheck.onlyMorePopular">false</str>
+      <str name="spellcheck.extendedResults">false</str>
       <str name="spellcheck.count">1</str>
     </lst>
     <arr name="last-components">

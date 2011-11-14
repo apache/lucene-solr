@@ -75,8 +75,8 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
 
   public abstract boolean isDeleted();
 
-  /** Returns true if this commit is an optimized index. */
-  public abstract boolean isOptimized();
+  /** Returns number of segments referenced by this commit. */
+  public abstract int getSegmentCount();
 
   /** Two IndexCommits are equal if both their Directory and versions are equal. */
   @Override

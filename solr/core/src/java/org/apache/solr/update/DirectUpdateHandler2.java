@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -312,7 +311,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       log.info("start "+cmd);
 
       if (cmd.optimize) {
-        writer.optimize(cmd.maxOptimizeSegments);
+        writer.forceMerge(cmd.maxOptimizeSegments);
       } else if (cmd.expungeDeletes) {
         writer.expungeDeletes();
       }

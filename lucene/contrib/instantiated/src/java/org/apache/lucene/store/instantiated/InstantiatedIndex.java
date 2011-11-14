@@ -96,7 +96,7 @@ public class InstantiatedIndex
    * Creates a new instantiated index that looks just like the index in a specific state as represented by a reader.
    *
    * @param sourceIndexReader the source index this new instantiated index will be copied from.
-   * @throws IOException if the source index is not optimized, or when accessing the source.
+   * @throws IOException if the source index is not single-segment, or when accessing the source.
    */
   public InstantiatedIndex(IndexReader sourceIndexReader) throws IOException {
     this(sourceIndexReader, null);
@@ -109,13 +109,13 @@ public class InstantiatedIndex
    *
    * @param sourceIndexReader the source index this new instantiated index will be copied from.
    * @param fields fields to be added, or null for all
-   * @throws IOException if the source index is not optimized, or when accessing the source.
+   * @throws IOException if the source index is not single-segment, or when accessing the source.
    */
   public InstantiatedIndex(IndexReader sourceIndexReader, Set<String> fields) throws IOException {
 
-    if (!sourceIndexReader.isOptimized()) {
-      System.out.println(("Source index is not optimized."));      
-      //throw new IOException("Source index is not optimized.");
+    if (sourceIndexReader.getSequentialSubReaders().length != 1) {
+      System.out.println(("Source index has more than one segment."));      
+      //throw new IOException("Source index has more than one segment.");
     }
 
 

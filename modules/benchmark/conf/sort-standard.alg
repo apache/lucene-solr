@@ -50,7 +50,7 @@ log.queries=true
       { "Populate"
         -CreateIndex
         { "MAddDocs" AddDoc(100) > : 500000
-        -Optimize
+        -ForcMerge(1)
         -CloseIndex
       }
     

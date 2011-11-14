@@ -77,7 +77,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       writer.addDocument(d1);
     }
     writer.commit();
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     IndexReader reader = getOnlySegmentReader(IndexReader.open(dir));

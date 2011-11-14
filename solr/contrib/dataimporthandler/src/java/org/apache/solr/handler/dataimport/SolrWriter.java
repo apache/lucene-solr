@@ -37,7 +37,7 @@ import java.util.Set;
  *
  * @since solr 1.3
  */
-public class SolrWriter implements DIHWriter {
+public class SolrWriter extends DIHWriterBase implements DIHWriter {
   private static final Logger log = LoggerFactory.getLogger(SolrWriter.class);
 
   static final String LAST_INDEX_KEY = "last_index_time";
@@ -159,5 +159,5 @@ public class SolrWriter implements DIHWriter {
 	@Override
 	public void init(Context context) {
 		/* NO-OP */		
-	}
+	}	
 }

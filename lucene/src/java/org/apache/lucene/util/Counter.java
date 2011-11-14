@@ -77,7 +77,7 @@ public abstract class Counter {
   }
 
   private final static class AtomicCounter extends Counter {
-    private AtomicLong count;
+    private final AtomicLong count = new AtomicLong();
 
     @Override
     public long addAndGet(long delta) {

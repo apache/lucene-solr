@@ -141,13 +141,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-  	boolean shardRequest = false;
-  	SolrParams params = options.customParams;
-  	if(params!=null)
-  	{
-  		shardRequest = "true".equals(params.get(ShardParams.IS_SHARD));
-  	}
-    SpellingResult result = new SpellingResult(options.tokens);
+  	SpellingResult result = new SpellingResult(options.tokens);
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
@@ -176,7 +170,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 	          term = new Term(field, suggestions[i]);
 	          result.add(token, suggestions[i], reader.docFreq(term));
 	        }
-        } else if(shardRequest) {
+        } else {
         	List<String> suggList = Collections.emptyList();
         	result.add(token, suggList);
         }
@@ -187,7 +181,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
             suggList = suggList.subList(0, options.count);
           }
           result.add(token, suggList);
-        } else if(shardRequest) {
+        } else {
         	List<String> suggList = Collections.emptyList();
         	result.add(token, suggList);
         }
@@ -222,6 +216,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   /*
   * @return the Accuracy used for the Spellchecker
   * */
+  @Override
   public float getAccuracy() {
     return accuracy;
   }
@@ -257,6 +252,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     return sourceLocation;
   }
 
+  @Override
   public StringDistance getStringDistance() {
     return sd;
   }

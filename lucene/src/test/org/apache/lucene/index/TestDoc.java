@@ -37,6 +37,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -198,16 +199,17 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
       SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
-      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, null, new FieldInfos(), Codec.getDefault(), context);
+      final Codec codec = Codec.getDefault();
+      SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new FieldInfos(), codec, context);
 
       merger.add(r1);
       merger.add(r2);
-      merger.merge();
+      MergeState mergeState = merger.merge();
       r1.close();
       r2.close();
-      final FieldInfos fieldInfos =  merger.fieldInfos();
+      final FieldInfos fieldInfos =  mergeState.fieldInfos;
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
-                                               false, merger.getCodec(), fieldInfos);
+                                               false, codec, fieldInfos);
       
       if (useCompoundFile) {
         Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info, newIOContext(random));

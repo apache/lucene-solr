@@ -104,7 +104,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     
     final IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
@@ -131,7 +131,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     for (int i=0; i<numThreads; i++)
       threads[i].join();
 
-    writer.optimize();
+    writer.forceMerge(1);
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     writer.close();

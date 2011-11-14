@@ -88,7 +88,6 @@ public class TestIndexReader extends LuceneTestCase
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random)).setOpenMode(
               OpenMode.APPEND).setMaxBufferedDocs(2));
-      writer.setInfoStream(VERBOSE ? System.out : null);
       for(int i=0;i<7;i++)
         addDocumentWithFields(writer);
       writer.close();
@@ -96,18 +95,18 @@ public class TestIndexReader extends LuceneTestCase
       IndexReader r3 = IndexReader.openIfChanged(r2);
       assertNotNull(r3);
       assertFalse(c.equals(r3.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().isOptimized());
+      assertFalse(r2.getIndexCommit().getSegmentCount() == 1 && !r2.hasDeletions());
       r3.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       r3 = IndexReader.openIfChanged(r2);
       assertNotNull(r3);
-      assertTrue(r3.getIndexCommit().isOptimized());
+      assertEquals(1, r3.getIndexCommit().getSegmentCount());
       r2.close();
       r3.close();
       d.close();
@@ -382,11 +381,11 @@ public class TestIndexReader extends LuceneTestCase
           assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
         }
         reader.close();
-        // force optimize
+        // force merge
 
 
         writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
         reader = IndexReader.open(dir, false);
         doc2 = reader.document(reader.maxDoc() - 1);
@@ -722,7 +721,7 @@ public class TestIndexReader extends LuceneTestCase
       // [incorrectly] hit a "docs out of order"
       // IllegalStateException because above out-of-bounds
       // deleteDocument corrupted the index:
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
       if (!gotException) {
         fail("delete of out-of-bounds doc number failed to hit exception");
@@ -847,7 +846,9 @@ public class TestIndexReader extends LuceneTestCase
       assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
       assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
       assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
-      assertEquals("Only one index is optimized.", index1.isOptimized(), index2.isOptimized());
+      if (!(index1 instanceof ParallelReader)) {
+        assertEquals("Single segment test differs.", index1.getSequentialSubReaders().length == 1, index2.getSequentialSubReaders().length == 1);
+      }
       
       // check field names
       Collection<String> fields1 = index1.getFieldNames(FieldOption.ALL);
@@ -971,19 +972,19 @@ public class TestIndexReader extends LuceneTestCase
       IndexReader r2 = IndexReader.openIfChanged(r);
       assertNotNull(r2);
       assertFalse(c.equals(r2.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().isOptimized());
+      assertFalse(r2.getIndexCommit().getSegmentCount() == 1);
       r2.close();
 
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       r2 = IndexReader.openIfChanged(r);
       assertNotNull(r2);
       assertNull(IndexReader.openIfChanged(r2));
-      assertTrue(r2.getIndexCommit().isOptimized());
+      assertEquals(1, r2.getIndexCommit().getSegmentCount());
 
       r.close();
       r2.close();
@@ -1033,7 +1034,7 @@ public class TestIndexReader extends LuceneTestCase
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND));
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       // Make sure reopen to a single segment is still readonly:
@@ -1142,7 +1143,7 @@ public class TestIndexReader extends LuceneTestCase
 
     // Open reader
     IndexReader r = getOnlySegmentReader(IndexReader.open(dir, false));
-    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    final int[] ints = FieldCache.DEFAULT.getInts(r, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
@@ -1150,7 +1151,7 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader r2 = (IndexReader) r.clone();
     r.close();
     assertTrue(r2 != r);
-    final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number");
+    final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number", false);
     r2.close();
 
     assertEquals(1, ints2.length);
@@ -1178,7 +1179,7 @@ public class TestIndexReader extends LuceneTestCase
     // Open reader1
     IndexReader r = IndexReader.open(dir, false);
     IndexReader r1 = getOnlySegmentReader(r);
-    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
@@ -1191,7 +1192,7 @@ public class TestIndexReader extends LuceneTestCase
     assertNotNull(r2);
     r.close();
     IndexReader sub0 = r2.getSequentialSubReaders()[0];
-    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number");
+    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
 
@@ -1363,7 +1364,6 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
-    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addDocument(new Document());
     writer.commit();
     writer.addDocument(new Document());

@@ -44,7 +44,6 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     RangeMergePolicy fsmp = new RangeMergePolicy(false);
     iwc.setMergePolicy(fsmp);
     IndexWriter writer = new IndexWriter(dir, iwc);
-    writer.setInfoStream(VERBOSE ? System.out : null);
     for (int x = 0; x < 5; x++) {
       writer.addDocument(DocHelper.createDocument(x, "1", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
@@ -268,8 +267,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos,
-        int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+    public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
+        int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
         throws CorruptIndexException, IOException {
       return null;
     }

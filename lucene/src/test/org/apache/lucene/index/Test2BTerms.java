@@ -168,7 +168,6 @@ public class Test2BTerms extends LuceneTestCase {
                                       .setMergePolicy(newLogMergePolicy(false, 10))
                                       .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
 
-      w.setInfoStream(VERBOSE ? System.out : null);
       MergePolicy mp = w.getConfig().getMergePolicy();
       if (mp instanceof LogByteSizeMergePolicy) {
         // 1 petabyte:
@@ -196,8 +195,8 @@ public class Test2BTerms extends LuceneTestCase {
       }
       savedTerms = ts.savedTerms;
 
-      System.out.println("TEST: optimize");
-      w.optimize();
+      System.out.println("TEST: full merge");
+      w.forceMerge(1);
       System.out.println("TEST: close writer");
       w.close();
     }

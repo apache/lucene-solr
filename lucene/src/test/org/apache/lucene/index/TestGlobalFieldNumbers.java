@@ -36,6 +36,7 @@ import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -98,9 +99,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       }
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new FailOnNonBulkMergesInfoStream()));
+      writer.forceMerge(1);
       writer.close();
       assertFNXFiles(dir, "_2.fnx");
 
@@ -139,9 +139,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertFNXFiles(dir, "_2.fnx");
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new FailOnNonBulkMergesInfoStream()));
+      writer.forceMerge(1);
       writer.close();
       assertFNXFiles(dir, "_2.fnx");
 
@@ -187,9 +186,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         assertFNXFiles(dir, "_2.fnx");
       }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      writer.optimize();
-      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new FailOnNonBulkMergesInfoStream()));
+      writer.forceMerge(1);
       writer.close();
       assertFNXFiles(dir, "_2.fnx");
       dir.close();
@@ -272,7 +270,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
     return dir;
   }
 
-  public void testOptimize() throws IOException {
+  public void testForceMerge() throws IOException {
     for (int i = 0; i < 2*RANDOM_MULTIPLIER; i++) {
       Set<String> fieldNames = new HashSet<String>();
       final int numFields = 2 + (TEST_NIGHTLY ? random.nextInt(200) : random.nextInt(20));
@@ -287,7 +285,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       FieldNumberBiMap globalFieldMap = writer.segmentInfos
           .getOrLoadGlobalFieldNumberMap(base);
       Set<Entry<String, Integer>> entries = globalFieldMap.entries();
-      writer.optimize();
+      writer.forceMerge(1);
       writer.commit();
       writer.close();
       Set<Entry<String, Integer>> afterOptmize = globalFieldMap.entries();
@@ -354,7 +352,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       IndexWriter w = new IndexWriter(base, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
           new LogByteSizeMergePolicy()));
-      w.optimize();
+      w.forceMerge(1);
       w.close();
       SegmentInfos sis = new SegmentInfos();
       sis.read(base);

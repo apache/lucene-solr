@@ -121,7 +121,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     writer.addDocument(doc);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     IndexReader reader = IndexReader.open(dir, null, true, 1);
     assertEquals(2, reader.numDocs());

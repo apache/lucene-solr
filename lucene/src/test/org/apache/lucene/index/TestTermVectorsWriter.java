@@ -315,7 +315,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
       document.add(termVectorField);
       writer.addDocument(document);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       IndexReader reader = IndexReader.open(dir, true);
@@ -333,7 +333,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
       Directory[] indexDirs = {new MockDirectoryWrapper(random, new RAMDirectory(dir, newIOContext(random)))};
       writer.addIndexes(indexDirs);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
     }
     dir.close();
@@ -369,7 +369,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       Field termVectorField = newField("termVector", "termVector", customType2);
       document.add(termVectorField);
       writer.addDocument(document);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       IndexReader reader = IndexReader.open(dir, true);
@@ -414,7 +414,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     for(int i=0;i<6;i++)
       writer.addDocument(document);
 
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -452,7 +452,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Make 2nd segment
     iw.commit();
 
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     dir.close();
   }
@@ -476,7 +476,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Make first segment
     iw.commit();
 
-    iw.optimize();
+    iw.forceMerge(1);
 
     FieldType customType2 = new FieldType(StringField.TYPE_UNSTORED);
     customType2.setStoreTermVectors(true);
@@ -484,7 +484,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.addDocument(document);
     // Make 2nd segment
     iw.commit();
-    iw.optimize();
+    iw.forceMerge(1);
 
     iw.close();
     dir.close();

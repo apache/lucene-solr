@@ -140,7 +140,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(spellOpts.tokens.iterator().next());
-    assertTrue("suggestions is not null and it should be", suggestions == null);
+    assertTrue("suggestions size should be 0", suggestions.size()==0);
 
     //test something that is spelled correctly
     spellOpts.tokens = queryConverter.convert("document");
@@ -215,7 +215,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(spellOpts.tokens.iterator().next());
-    assertTrue("suggestions is not null and it should be", suggestions == null);
+    assertTrue("suggestions size should be 0", suggestions.size()==0);
 
     spellOpts.tokens = queryConverter.convert("document");
     result = checker.getSuggestions(spellOpts);
@@ -293,7 +293,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
       doc.add(new Field("title", ALT_DOCS[i], TextField.TYPE_STORED));
       iw.addDocument(doc);
     }
-    iw.optimize();
+    iw.forceMerge(1);
     iw.close();
     dir.close();
     indexDir.mkdirs();
@@ -328,7 +328,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(spellOpts.tokens.iterator().next());
-    assertTrue("suggestions is not null and it should be", suggestions == null);
+    assertTrue("suggestions size should be 0", suggestions.size()==0);
 
     spellOpts.tokens = queryConverter.convert("Caroline");
     result = checker.getSuggestions(spellOpts);

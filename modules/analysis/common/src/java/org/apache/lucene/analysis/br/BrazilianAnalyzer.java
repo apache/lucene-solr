@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -64,9 +65,8 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
     
     static {
       try {
-        DEFAULT_STOP_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-            Version.LUCENE_CURRENT, WordlistLoader.getWordSet(BrazilianAnalyzer.class, 
-                DEFAULT_STOPWORD_FILE, "#"), false));
+        DEFAULT_STOP_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(BrazilianAnalyzer.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)

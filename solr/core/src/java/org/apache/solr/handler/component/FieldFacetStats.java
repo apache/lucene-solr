@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +39,8 @@ import java.util.Map;
 public class FieldFacetStats {
   public final String name;
   final FieldCache.DocTermsIndex si;
-  final FieldType ft;
+  final SchemaField facet_sf;
+  final SchemaField field_sf;
 
   final int startTermIndex;
   final int endTermIndex;
@@ -52,10 +54,11 @@ public class FieldFacetStats {
 
   private final BytesRef tempBR = new BytesRef();
 
-  public FieldFacetStats(String name, FieldCache.DocTermsIndex si, FieldType ft, int numStatsTerms) {
+  public FieldFacetStats(String name, FieldCache.DocTermsIndex si, SchemaField field_sf, SchemaField facet_sf, int numStatsTerms) {
     this.name = name;
     this.si = si;
-    this.ft = ft;
+    this.field_sf = field_sf;
+    this.facet_sf = facet_sf;
     this.numStatsTerms = numStatsTerms;
 
     startTermIndex = 1;
@@ -82,22 +85,22 @@ public class FieldFacetStats {
     }
   }
 
-  public boolean facet(int docID, Double v) {
+  public boolean facet(int docID, BytesRef v) {
     int term = si.getOrd(docID);
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
       final BytesRef br = si.lookup(term, tempBR);
-      String key = ft.indexedToReadable(br == null ? null : br.utf8ToString());
+      String key = (br == null)?null:facet_sf.getType().indexedToReadable(br.utf8ToString());
       StatsValues stats = facetStatsValues.get(key);
       if (stats == null) {
-        stats = new StatsValues();
+        stats = StatsValuesFactory.createStatsValues(field_sf);
         facetStatsValues.put(key, stats);
       }
 
-      if (v != null) {
+      if (v != null && v.length>0) {
         stats.accumulate(v);
       } else {
-        stats.missing++;
+        stats.missing();
         return false;
       }
       return true;
@@ -129,14 +132,14 @@ public class FieldFacetStats {
 
 
   //function to accumulate counts for statsTermNum to specified value
-  public boolean accumulateTermNum(int statsTermNum, Double value) {
+  public boolean accumulateTermNum(int statsTermNum, BytesRef value) {
     if (value == null) return false;
     for (Map.Entry<String, Integer> stringIntegerEntry : facetStatsTerms.get(statsTermNum).entrySet()) {
       Map.Entry pairs = (Map.Entry) stringIntegerEntry;
       String key = (String) pairs.getKey();
       StatsValues facetStats = facetStatsValues.get(key);
       if (facetStats == null) {
-        facetStats = new StatsValues();
+        facetStats = StatsValuesFactory.createStatsValues(field_sf);
         facetStatsValues.put(key, facetStats);
       }
       Integer count = (Integer) pairs.getValue();

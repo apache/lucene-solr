@@ -33,7 +33,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.*;
@@ -1054,9 +1053,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     Directory dir = newDirectory();
 
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.setDoRandomOptimizeAssert(false);
-    writer.w.setInfoStream(VERBOSE ? System.out : null);
-    writer.w.setInfoStream(null);
+    writer.setDoRandomForceMergeAssert(false);
 
     // writer.commit();
     // reader = IndexReader.open(dir);

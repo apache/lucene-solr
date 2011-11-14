@@ -492,7 +492,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
-    indexInfo.add("optimized", reader.isOptimized() );
+    indexInfo.add("segmentCount", reader.getSequentialSubReaders().length);
     indexInfo.add("current", reader.isCurrent() );
     indexInfo.add("hasDeletions", reader.hasDeletions() );
     indexInfo.add("directory", dir );

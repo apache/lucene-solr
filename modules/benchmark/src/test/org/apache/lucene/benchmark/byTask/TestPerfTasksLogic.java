@@ -77,7 +77,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "ResetSystemErase",
         "CreateIndex",
         "{ AddDoc } : 1000",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader",
         "{ CountingSearchTest } : 200",
@@ -114,7 +114,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "ResetSystemErase",
         "CreateIndex",
         "{ AddDoc } : 100",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader",
         "{ CountingSearchTest } : .5s",
@@ -137,7 +137,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "ResetSystemErase",
         "CreateIndex",
         "{ AddDoc } : 1000",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader",
         "{",
@@ -163,7 +163,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "ResetSystemErase",
         "CreateIndex",
         "{ AddDoc } : 100",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader(true)",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
@@ -202,7 +202,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "ResetSystemErase",
         "CreateIndex",
         "{ AddDoc } : 1000",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader(false)",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
@@ -240,7 +240,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "ResetSystemErase",
         "CreateIndex",
         "{ AddDoc } : 1000",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
@@ -277,7 +277,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "# ----- alg ",
         "CreateIndex",
         "{ AddDoc } : * ",
-        "Optimize",
+        "ForceMerge(1)",
         "CloseIndex",
         "OpenReader",
         "{ CountingSearchTest } : 100",
@@ -818,9 +818,9 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   }
   
   /**
-   * Test that we can call optimize(maxNumSegments).
+   * Test that we can call forceMerge(maxNumSegments).
    */
-  public void testOptimizeMaxNumSegments() throws Exception {
+  public void testForceMerge() throws Exception {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
@@ -841,7 +841,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "  ResetSystemErase",
         "  CreateIndex",
         "  { \"AddDocs\"  AddDoc > : * ",
-        "  Optimize(3)",
+        "  ForceMerge(3)",
         "  CloseIndex()",
         "} : 2",
     };

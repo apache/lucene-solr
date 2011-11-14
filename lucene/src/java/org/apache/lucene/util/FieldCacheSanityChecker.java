@@ -119,6 +119,13 @@ public final class FieldCacheSanityChecker {
       final CacheEntry item = cacheEntries[i];
       final Object val = item.getValue();
 
+      // It's OK to have dup entries, where one is eg
+      // float[] and the other is the Bits (from
+      // getDocWithField())
+      if (val instanceof Bits) {
+        continue;
+      }
+
       if (val instanceof FieldCache.CreationPlaceholder)
         continue;
 
@@ -208,7 +215,7 @@ public final class FieldCacheSanityChecker {
       
       if (seen.contains(rf)) continue;
 
-      List<Object> kids = getAllDescendentReaderKeys(rf.readerKey);
+      List<Object> kids = getAllDescendantReaderKeys(rf.readerKey);
       for (Object kidKey : kids) {
         ReaderField kid = new ReaderField(kidKey, rf.fieldName);
         
@@ -266,7 +273,7 @@ public final class FieldCacheSanityChecker {
    * the hierarchy of subReaders building up a list of the objects 
    * returned by obj.getFieldCacheKey()
    */
-  private List<Object> getAllDescendentReaderKeys(Object seed) {
+  private List<Object> getAllDescendantReaderKeys(Object seed) {
     List<Object> all = new ArrayList<Object>(17); // will grow as we iter
     all.add(seed);
     for (int i = 0; i < all.size(); i++) {

@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -123,9 +124,16 @@ public abstract class FlushPolicy {
         }
       }
     }
-    assert writer.get().message(
-        "set largest ram consuming thread pending on lower watermark");
+    assert assertMessage("set largest ram consuming thread pending on lower watermark");
     return maxRamUsingThreadState;
+  }
+  
+  private boolean assertMessage(String s) {
+    InfoStream infoStream = writer.get().infoStream;
+    if (infoStream != null) {
+      infoStream.message("FP", s);
+    }
+    return true;
   }
 
 }

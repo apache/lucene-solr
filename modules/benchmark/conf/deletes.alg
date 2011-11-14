@@ -58,7 +58,7 @@ CloseIndex
 { "Populate"
     OpenIndex
     { AddDoc(10) > : 200000
-    Optimize
+    ForcMerge(1)
     CloseIndex
 > 
 

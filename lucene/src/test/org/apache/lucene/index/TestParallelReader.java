@@ -144,64 +144,6 @@ public class TestParallelReader extends LuceneTestCase {
     dir2.close();
   }
 
-  public void testIsOptimized() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
-    
-    // add another document to ensure that the indexes are not optimized
-    IndexWriter modifier = new IndexWriter(
-        dir1,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    Document d = new Document();
-    d.add(newField("f1", "v1", TextField.TYPE_STORED));
-    modifier.addDocument(d);
-    modifier.close();
-
-    modifier = new IndexWriter(
-        dir2,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    d = new Document();
-    d.add(newField("f2", "v2", TextField.TYPE_STORED));
-    modifier.addDocument(d);
-    modifier.close();
-
-    
-    ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    assertFalse(pr.isOptimized());
-    pr.close();
-    
-    modifier = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    modifier.optimize();
-    modifier.close();
-    
-    pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    // just one of the two indexes are optimized
-    assertFalse(pr.isOptimized());
-    pr.close();
-
-    
-    modifier = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    modifier.optimize();
-    modifier.close();
-    
-    pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    // now both indexes are optimized
-    assertTrue(pr.isOptimized());
-    pr.close();
-    dir1.close();
-    dir2.close();
-  }
-
   private void queryTest(Query query) throws IOException {
     ScoreDoc[] parallelHits = parallel.search(query, null, 1000).scoreDocs;
     ScoreDoc[] singleHits = single.search(query, null, 1000).scoreDocs;

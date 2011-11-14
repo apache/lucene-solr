@@ -17,15 +17,35 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
  * @lucene.internal */
 public final class IOUtils {
-
+  
+  /**
+   * UTF-8 charset string
+   * @see Charset#forName(String)
+   */
+  public static final String UTF_8 = "UTF-8";
+  
+  /**
+   * UTF-8 {@link Charset} instance to prevent repeated
+   * {@link Charset#forName(String)} lookups
+   */
+  public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
   private IOUtils() {} // no instance
 
   /**
@@ -220,5 +240,84 @@ public final class IOUtils {
       }
     }
   }
+  
+  /**
+   * Wrapping the given {@link InputStream} in a reader using a {@link CharsetDecoder}.
+   * Unlike Java's defaults this reader will throw an exception if your it detects 
+   * the read charset doesn't match the expected {@link Charset}. 
+   * <p>
+   * Decoding readers are useful to load configuration files, stopword lists or synonym files
+   * to detect character set problems. However, its not recommended to use as a common purpose 
+   * reader.
+   * 
+   * @param stream the stream to wrap in a reader
+   * @param charSet the expected charset
+   * @return a wrapping reader
+   */
+  public static Reader getDecodingReader(InputStream stream, Charset charSet) {
+    final CharsetDecoder charSetDecoder = charSet.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT);
+    return new BufferedReader(new InputStreamReader(stream, charSetDecoder));
+  }
+  
+  /**
+   * Opens a Reader for the given {@link File} using a {@link CharsetDecoder}.
+   * Unlike Java's defaults this reader will throw an exception if your it detects 
+   * the read charset doesn't match the expected {@link Charset}. 
+   * <p>
+   * Decoding readers are useful to load configuration files, stopword lists or synonym files
+   * to detect character set problems. However, its not recommended to use as a common purpose 
+   * reader.
+   * @param file the file to open a reader on
+   * @param charSet the expected charset
+   * @return a reader to read the given file
+   */
+  public static Reader getDecodingReader(File file, Charset charSet) throws IOException {
+    FileInputStream stream = null;
+    boolean success = false;
+    try {
+      stream = new FileInputStream(file);
+      final Reader reader = getDecodingReader(stream, charSet);
+      success = true;
+      return reader;
+
+    } finally {
+      if (!success) {
+        IOUtils.close(stream);
+      }
+    }
+  }
+
+  /**
+   * Opens a Reader for the given resource using a {@link CharsetDecoder}.
+   * Unlike Java's defaults this reader will throw an exception if your it detects 
+   * the read charset doesn't match the expected {@link Charset}. 
+   * <p>
+   * Decoding readers are useful to load configuration files, stopword lists or synonym files
+   * to detect character set problems. However, its not recommended to use as a common purpose 
+   * reader.
+   * @param clazz the class used to locate the resource
+   * @param resource the resource name to load
+   * @param charSet the expected charset
+   * @return a reader to read the given file
+   * 
+   */
+  public static Reader getDecodingReader(Class<?> clazz, String resource, Charset charSet) throws IOException {
+    InputStream stream = null;
+    boolean success = false;
+    try {
+      stream = clazz
+      .getResourceAsStream(resource);
+      final Reader reader = getDecodingReader(stream, charSet);
+      success = true;
+      return reader;
+    } finally {
+      if (!success) {
+        IOUtils.close(stream);
+      }
+    }
+  }
+
 
 }

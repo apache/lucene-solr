@@ -30,8 +30,7 @@ import org.apache.lucene.util.SetOnce;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
- * primitive merge operations to be used for overall merge
- * and optimize operations.</p>
+ * primitive merge operations.</p>
  * 
  * <p>Whenever the segments in an index have been altered by
  * {@link IndexWriter}, either the addition of a newly
@@ -42,8 +41,8 @@ import org.apache.lucene.util.SetOnce;
  * merges that are now required.  This method returns a
  * {@link MergeSpecification} instance describing the set of
  * merges that should be done, or null if no merges are
- * necessary.  When IndexWriter.optimize is called, it calls
- * {@link #findMergesForOptimize} and the MergePolicy should
+ * necessary.  When IndexWriter.forceMerge is called, it calls
+ * {@link #findForcedMerges(SegmentInfos,int,Map)} and the MergePolicy should
  * then return the necessary merges.</p>
  *
  * <p>Note that the policy can return more than one merge at
@@ -69,11 +68,10 @@ public abstract class MergePolicy implements java.io.Closeable {
   public static class OneMerge {
 
     SegmentInfo info;               // used by IndexWriter
-    boolean optimize;               // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
     boolean isExternal;             // used by IndexWriter
-    int maxNumSegmentsOptimize;     // used by IndexWriter
+    int maxNumSegments = -1;        // used by IndexWriter
     public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
     List<BitVector> readerLiveDocs;   // used by IndexWriter
@@ -160,8 +158,8 @@ public abstract class MergePolicy implements java.io.Closeable {
       }
       if (info != null)
         b.append(" into ").append(info.name);
-      if (optimize)
-        b.append(" [optimize]");
+      if (maxNumSegments != -1)
+        b.append(" [maxNumSegments=" + maxNumSegments + "]");
       if (aborted) {
         b.append(" [ABORTED]");
       }
@@ -193,7 +191,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     }
     
     public MergeInfo getMergeInfo() {
-      return new MergeInfo(totalDocCount, estimatedMergeBytes, isExternal, optimize);
+      return new MergeInfo(totalDocCount, estimatedMergeBytes, isExternal, maxNumSegments);
     }    
   }
 
@@ -290,9 +288,9 @@ public abstract class MergePolicy implements java.io.Closeable {
       throws CorruptIndexException, IOException;
 
   /**
-   * Determine what set of merge operations is necessary in order to optimize
-   * the index. {@link IndexWriter} calls this when its
-   * {@link IndexWriter#optimize()} method is called. This call is always
+   * Determine what set of merge operations is necessary in
+   * order to merge to <= the specified segment count. {@link IndexWriter} calls this when its
+   * {@link IndexWriter#forceMerge} method is called. This call is always
    * synchronized on the {@link IndexWriter} instance so only one thread at a
    * time will call this method.
    * 
@@ -301,17 +299,17 @@ public abstract class MergePolicy implements java.io.Closeable {
    * @param maxSegmentCount
    *          requested maximum number of segments in the index (currently this
    *          is always 1)
-   * @param segmentsToOptimize
+   * @param segmentsToMerge
    *          contains the specific SegmentInfo instances that must be merged
    *          away. This may be a subset of all
    *          SegmentInfos.  If the value is True for a
    *          given SegmentInfo, that means this segment was
    *          an original segment present in the
-   *          to-be-optimized index; else, it was a segment
+   *          to-be-merged index; else, it was a segment
    *          produced by a cascaded merge.
    */
-  public abstract MergeSpecification findMergesForOptimize(
-          SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+  public abstract MergeSpecification findForcedMerges(
+          SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToMerge)
       throws CorruptIndexException, IOException;
 
   /**

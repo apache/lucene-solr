@@ -585,8 +585,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocIterator di = dl.iterator();    
     Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy
-    assertTrue( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
-    assertFalse( ((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
+    assertTrue( (d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
+    assertFalse( (d.getField("title")).getClass().getSimpleName().equals("LazyField"));
     req.close();
   } 
             

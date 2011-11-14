@@ -16,13 +16,12 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
-import org.apache.lucene.search.cache.ByteValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.ByteValues;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.search.FieldCache;
 
 /**
  * Obtains int field values from the {@link org.apache.lucene.search.FieldCache}
@@ -32,10 +31,17 @@ import java.util.Map;
  *
  */
 
-public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
+public class ByteFieldSource extends FieldCacheSource {
 
-  public ByteFieldSource(ByteValuesCreator creator) {
-    super(creator);
+  private FieldCache.ByteParser parser;
+
+  public ByteFieldSource(String field) {
+    this(field, null);
+  }
+
+  public ByteFieldSource(String field, FieldCache.ByteParser parser) {
+    super(field);
+    this.parser = parser;
   }
 
   @Override
@@ -45,8 +51,7 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final ByteValues vals = cache.getBytes(readerContext.reader, field, creator);
-    final byte[] arr = vals.values;
+    final byte[] arr = cache.getBytes(readerContext.reader, field, parser, false);
     
     return new DocValues() {
       @Override
@@ -95,5 +100,20 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
       }
 
     };
+  }
+
+  public boolean equals(Object o) {
+    if (o.getClass() != ByteFieldSource.class) return false;
+    ByteFieldSource
+            other = (ByteFieldSource) o;
+    return super.equals(other)
+      && (this.parser == null ? other.parser == null :
+          this.parser.getClass() == other.parser.getClass());
+  }
+
+  public int hashCode() {
+    int h = parser == null ? Byte.class.hashCode() : parser.getClass().hashCode();
+    h += super.hashCode();
+    return h;
   }
 }

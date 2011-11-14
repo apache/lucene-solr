@@ -73,7 +73,8 @@ public class TestFSTs extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    dir.close();
+    // can be null if we force simpletext (funky, some kind of bug in test runner maybe)
+    if (dir != null) dir.close();
     super.tearDown();
   }
 
@@ -1027,7 +1028,6 @@ public class TestFSTs extends LuceneTestCase {
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
-    writer.setInfoStream(VERBOSE ? System.out : null);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
     Document doc;
     int docCount = 0;
@@ -1461,7 +1461,7 @@ public class TestFSTs extends LuceneTestCase {
         w.addDocument(doc);
       }
 
-      //w.optimize();
+      //w.forceMerge(1);
 
       // turn writer into reader:
       final IndexReader r = w.getReader();
@@ -1567,8 +1567,6 @@ public class TestFSTs extends LuceneTestCase {
 
     RandomIndexWriter w = new RandomIndexWriter(random, dir,
                                                 newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
-    w.w.setInfoStream(VERBOSE ? System.out : null);
-
     Document doc = new Document();
     Field f = newField("field", "", StringField.TYPE_UNSTORED);
     doc.add(f);

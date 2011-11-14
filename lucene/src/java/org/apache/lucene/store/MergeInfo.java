@@ -17,7 +17,7 @@ package org.apache.lucene.store;
  */
 
 /**
- * <p>A MergeInfo provides information required for a MERGE context and other optimization operations.
+ * <p>A MergeInfo provides information required for a MERGE context.
  *  It is used as part of an {@link IOContext} in case of MERGE context.</p>
  */
 
@@ -29,7 +29,7 @@ public class MergeInfo {
   
   public final boolean isExternal;
   
-  public final boolean optimize;
+  public final int mergeMaxNumSegments;
   
 
   /**
@@ -40,11 +40,11 @@ public class MergeInfo {
    * 
    */
 
-  public MergeInfo(int totalDocCount, long estimatedMergeBytes, boolean isExternal, boolean optimize) {
+  public MergeInfo(int totalDocCount, long estimatedMergeBytes, boolean isExternal, int mergeMaxNumSegments) {
     this.totalDocCount = totalDocCount;
     this.estimatedMergeBytes = estimatedMergeBytes;
     this.isExternal = isExternal;
-    this.optimize = optimize;
+    this.mergeMaxNumSegments = mergeMaxNumSegments;
   }
 
 
@@ -55,7 +55,7 @@ public class MergeInfo {
     result = prime * result
         + (int) (estimatedMergeBytes ^ (estimatedMergeBytes >>> 32));
     result = prime * result + (isExternal ? 1231 : 1237);
-    result = prime * result + (optimize ? 1231 : 1237);
+    result = prime * result + mergeMaxNumSegments;
     result = prime * result + totalDocCount;
     return result;
   }
@@ -73,7 +73,7 @@ public class MergeInfo {
       return false;
     if (isExternal != other.isExternal)
       return false;
-    if (optimize != other.optimize)
+    if (mergeMaxNumSegments != other.mergeMaxNumSegments)
       return false;
     if (totalDocCount != other.totalDocCount)
       return false;
@@ -84,6 +84,6 @@ public class MergeInfo {
   public String toString() {
     return "MergeInfo [totalDocCount=" + totalDocCount
         + ", estimatedMergeBytes=" + estimatedMergeBytes + ", isExternal="
-        + isExternal + ", optimize=" + optimize + "]";
+        + isExternal + ", mergeMaxNumSegments=" + mergeMaxNumSegments + "]";
   }
 }

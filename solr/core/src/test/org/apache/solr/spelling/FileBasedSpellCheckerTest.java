@@ -175,7 +175,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(spellOpts.tokens.iterator().next());
-    assertTrue("suggestions is not null and it should be", suggestions == null);
+    assertTrue("suggestions size should be 0", suggestions.size()==0);
     searcher.decref();
   }
 }

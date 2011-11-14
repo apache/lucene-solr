@@ -68,7 +68,7 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     doc = new Document();
     doc.add(newField("field", "first auto update", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(directory, true);
@@ -98,14 +98,14 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
     writerA.addDocument(lDoc);
-    writerA.optimize();
+    writerA.forceMerge(1);
     writerA.close();
 
     // creating second index writer
     IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
     writerB.addDocument(lDoc2);
-    writerB.optimize();
+    writerB.forceMerge(1);
     writerB.close();
   }
 }

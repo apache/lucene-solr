@@ -24,10 +24,10 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsFormat;
@@ -45,7 +45,7 @@ public class Lucene3xCodec extends Codec {
   private final PostingsFormat postingsFormat = new Lucene3xPostingsFormat();
   
   // TODO: this should really be a different impl
-  private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
+  private final StoredFieldsFormat fieldsFormat = new DefaultStoredFieldsFormat();
   
   // TODO: this should really be a different impl
   // also if we want preflex to *really* be read-only it should throw exception for the writer?
@@ -79,7 +79,7 @@ public class Lucene3xCodec extends Codec {
   }
 
   @Override
-  public FieldsFormat fieldsFormat() {
+  public StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;
   }
 

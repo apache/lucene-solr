@@ -17,13 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -45,6 +42,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -234,10 +232,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
     writer.commit();
 
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
-
     IndexerThread thread = new IndexerThread(0, writer);
     thread.run();
     if (thread.failure != null) {
@@ -277,10 +271,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     writer.commit();
-
-    if (VERBOSE) {
-      writer.setInfoStream(System.out);
-    }
 
     final int NUM_THREADS = 4;
 
@@ -363,7 +353,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionDocumentsWriterInit() throws IOException {
     Directory dir = newDirectory();
     MockIndexWriter2 w = new MockIndexWriter2(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
@@ -382,7 +371,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionJustBeforeFlush() throws IOException {
     Directory dir = newDirectory();
     MockIndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
-    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
@@ -607,7 +595,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
-      writer.setInfoStream(VERBOSE ? System.out : null);
 
       // don't allow a sudden merge to clean up the deleted
       // doc below:
@@ -667,7 +654,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       reader = IndexReader.open(dir, true);
@@ -781,7 +768,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
-      writer.optimize();
+      writer.forceMerge(1);
       writer.close();
 
       reader = IndexReader.open(dir, true);
@@ -937,7 +924,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
-  public void testOptimizeExceptions() throws IOException {
+  public void testForceMergeExceptions() throws IOException {
     Directory startDir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(100);
@@ -955,13 +942,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergeScheduler(new ConcurrentMergeScheduler());
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       w = new IndexWriter(dir, conf);
-      w.setInfoStream(VERBOSE ? System.out : null);
       dir.setRandomIOExceptionRate(0.5);
       try {
-        w.optimize();
+        w.forceMerge(1);
       } catch (IOException ioe) {
         if (ioe.getCause() == null)
-          fail("optimize threw IOException without root cause");
+          fail("forceMerge threw IOException without root cause");
       }
       dir.setRandomIOExceptionRate(0);
       w.close();
@@ -976,18 +962,19 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final List<Throwable> thrown = new ArrayList<Throwable>();
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir,
-        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))) {
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setInfoStream(new InfoStream() {
         @Override
-        public void message(final String message) {
+        public void message(String component, final String message) {
           if (message.startsWith("now flush at close") && 0 == thrown.size()) {
             thrown.add(null);
             throw new OutOfMemoryError("fake OOME at " + message);
           }
         }
-      };
 
-    // need to set an info stream so message is called
-    writer.setInfoStream(new PrintStream(new ByteArrayOutputStream()));
+        @Override
+        public void close() throws IOException {}
+      }));
+
     try {
       writer.close();
       fail("OutOfMemoryError expected");

@@ -120,7 +120,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       addDoc(writer, "ccc ccc ccc ccc");
       
     // assure that we deal with a single segment  
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     IndexReader reader = IndexReader.open(dir, null, true, indexDivisor);

@@ -49,7 +49,6 @@ public class TestIndexReaderOnDiskFull extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     if (VERBOSE) {
       System.out.println("TEST: create initial index");
-      writer.setInfoStream(System.out);
     }
     for(int i=0;i<157;i++) {
       Document d = new Document();

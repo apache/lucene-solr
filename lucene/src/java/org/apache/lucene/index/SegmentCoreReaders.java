@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.FieldsReader;
+import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -55,7 +55,7 @@ final class SegmentCoreReaders {
   
   private final SegmentReader owner;
   
-  FieldsReader fieldsReaderOrig;
+  StoredFieldsReader fieldsReaderOrig;
   TermVectorsReader termVectorsReaderOrig;
   CompoundFileDirectory cfsReader;
   CompoundFileDirectory storeCFSReader;
@@ -110,7 +110,7 @@ final class SegmentCoreReaders {
     return termVectorsReaderOrig;
   }
   
-  synchronized FieldsReader getFieldsReaderOrig() {
+  synchronized StoredFieldsReader getFieldsReaderOrig() {
     return fieldsReaderOrig;
   }
   
@@ -166,14 +166,8 @@ final class SegmentCoreReaders {
       }
       
       final String storesSegment = si.getDocStoreSegment();
-      fieldsReaderOrig = si.getCodec().fieldsFormat().fieldsReader(storeDir, storesSegment, fieldInfos, context,
-          si.getDocStoreOffset(), si.docCount);
-      
-      // Verify two sources of "maxDoc" agree:
-      if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
-        throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
-      }
-      
+      fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(storeDir, si, fieldInfos, context);
+ 
       if (si.getHasVectors()) { // open term vector files only as needed
         termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
       }

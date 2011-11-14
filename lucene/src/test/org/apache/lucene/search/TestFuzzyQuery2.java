@@ -91,8 +91,6 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
 
-    writer.w.setInfoStream(VERBOSE ? System.out : null);
-    
     Document doc = new Document();
     Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
@@ -174,7 +172,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(dir);

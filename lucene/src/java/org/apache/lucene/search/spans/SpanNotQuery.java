@@ -22,11 +22,13 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /** Removes matches which overlap with another SpanQuery. */
@@ -76,12 +78,12 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+  public Spans getSpans(final AtomicReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
     return new Spans() {
-        private Spans includeSpans = include.getSpans(context, acceptDocs);
+        private Spans includeSpans = include.getSpans(context, acceptDocs, termContexts);
         private boolean moreInclude = true;
 
-        private Spans excludeSpans = exclude.getSpans(context, acceptDocs);
+        private Spans excludeSpans = exclude.getSpans(context, acceptDocs, termContexts);
         private boolean moreExclude = excludeSpans.next();
 
         @Override

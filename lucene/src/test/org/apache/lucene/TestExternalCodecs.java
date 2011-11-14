@@ -25,11 +25,9 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.*;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
-import org.apache.lucene.util.Bits;
 
 /* Intentionally outside of oal.index to verify fully
    external codecs work fine */
@@ -68,7 +66,6 @@ public class TestExternalCodecs extends LuceneTestCase {
         setCodec(new CustomPerFieldCodec()).
             setMergePolicy(newLogMergePolicy(3))
     );
-    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     // uses default codec:
     doc.add(newField("field1", "this field uses the standard codec as the test", TextField.TYPE_UNSTORED));
@@ -105,7 +102,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       System.out.println("\nTEST: now delete 2nd doc");
     }
     w.deleteDocuments(new Term("id", "44"));
-    w.optimize();
+    w.forceMerge(1);
     r = IndexReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());

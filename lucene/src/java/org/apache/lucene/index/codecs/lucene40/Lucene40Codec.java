@@ -19,17 +19,17 @@ package org.apache.lucene.index.codecs.lucene40;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldsFormat;
+import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 
 /**
  * Implements the Lucene 4.0 index format, with configurable per-field postings formats
- * and using {@link DefaultFieldsFormat} for stored fields and {@link
+ * and using {@link DefaultStoredFieldsFormat} for stored fields and {@link
  * DefaultDocValuesFormat} for doc values.
  *
  * @lucene.experimental
@@ -38,7 +38,7 @@ import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
 public class Lucene40Codec extends Codec {
-  private final FieldsFormat fieldsFormat = new DefaultFieldsFormat();
+  private final StoredFieldsFormat fieldsFormat = new DefaultStoredFieldsFormat();
   private final DocValuesFormat docValuesFormat = new DefaultDocValuesFormat();
   private final SegmentInfosFormat infosFormat = new DefaultSegmentInfosFormat();
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
@@ -53,7 +53,7 @@ public class Lucene40Codec extends Codec {
   }
   
   @Override
-  public FieldsFormat fieldsFormat() {
+  public StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;
   }
 

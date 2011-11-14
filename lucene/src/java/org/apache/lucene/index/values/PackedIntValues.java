@@ -186,7 +186,7 @@ class PackedIntValues {
         input = (IndexInput) datIn.clone();
         
         if (values == null) {
-          source = new PackedIntsSource(input);
+          source = new PackedIntsSource(input, false);
         } else {
           source = values.newFromInput(input, numDocs);
         }
@@ -214,7 +214,7 @@ class PackedIntValues {
 
     @Override
     public Source getDirectSource() throws IOException {
-      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource((IndexInput) datIn.clone(), 8, ValueType.FIXED_INTS_64) : new DirectPackedIntsSource((IndexInput) datIn.clone());
+      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource((IndexInput) datIn.clone(), 8, ValueType.FIXED_INTS_64) : new PackedIntsSource((IndexInput) datIn.clone(), true);
     }
   }
 
@@ -224,11 +224,18 @@ class PackedIntValues {
     private final long defaultValue;
     private final PackedInts.Reader values;
 
-    public PackedIntsSource(IndexInput dataIn) throws IOException {
+    public PackedIntsSource(IndexInput dataIn, boolean direct) throws IOException {
       super(ValueType.VAR_INTS);
       minValue = dataIn.readLong();
       defaultValue = dataIn.readLong();
-      values = PackedInts.getReader(dataIn);
+      values = direct ? PackedInts.getDirectReader(dataIn) : PackedInts.getReader(dataIn);
+    }
+    
+    @Override
+    public BytesRef getBytes(int docID, BytesRef ref) {
+      ref.grow(8);
+      ref.copy(getInt(docID));
+      return ref;
     }
 
     @Override
@@ -239,42 +246,6 @@ class PackedIntValues {
       assert docID >= 0;
       final long value = values.get(docID);
       return value == defaultValue ? 0 : minValue + value;
-    }
-  }
-
-  private static final class DirectPackedIntsSource extends Source {
-    private final PackedInts.RandomAccessReaderIterator ints;
-    private long minValue;
-    private final long defaultValue;
-
-    private DirectPackedIntsSource(IndexInput dataIn)
-        throws IOException {
-      super(ValueType.VAR_INTS);
-      minValue = dataIn.readLong();
-      defaultValue = dataIn.readLong();
-      this.ints = PackedInts.getRandomAccessReaderIterator(dataIn);
-    }
-
-    @Override
-    public double getFloat(int docID) {
-      return getInt(docID);
-    }
-
-    @Override
-    public BytesRef getBytes(int docID, BytesRef ref) {
-      ref.grow(8);
-      ref.copy(getInt(docID));
-      return ref;
-    }
-
-    @Override
-    public long getInt(int docID) {
-      try {
-      final long val = ints.get(docID);
-      return val == defaultValue ? 0 : minValue + val;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 

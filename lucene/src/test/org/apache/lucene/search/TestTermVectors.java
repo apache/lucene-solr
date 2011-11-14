@@ -366,7 +366,6 @@ public class TestTermVectors extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
-    writer.w.setInfoStream(VERBOSE ? System.out : null);
     if (VERBOSE) {
       System.out.println("TEST: now add non-vectors");
     }
@@ -515,22 +514,22 @@ public class TestTermVectors extends LuceneTestCase {
     r.close();
   }
   
-  public void testOptimizeAddDocs() throws Exception {
+  public void testFullMergeAddDocs() throws Exception {
     Directory target = newDirectory();
     IndexWriter writer = createWriter(target);
-    // with maxBufferedDocs=2, this results in two segments, so that optimize
+    // with maxBufferedDocs=2, this results in two segments, so that forceMerge
     // actually does something.
     for (int i = 0; i < 4; i++) {
       writer.addDocument(createDoc());
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     verifyIndex(target);
     target.close();
   }
 
-  public void testOptimizeAddIndexesDir() throws Exception {
+  public void testFullMergeAddIndexesDir() throws Exception {
     Directory[] input = new Directory[] { newDirectory(), newDirectory() };
     Directory target = newDirectory();
     
@@ -540,7 +539,7 @@ public class TestTermVectors extends LuceneTestCase {
     
     IndexWriter writer = createWriter(target);
     writer.addIndexes(input);
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     verifyIndex(target);
@@ -548,7 +547,7 @@ public class TestTermVectors extends LuceneTestCase {
     IOUtils.close(target, input[0], input[1]);
   }
   
-  public void testOptimizeAddIndexesReader() throws Exception {
+  public void testFullMergeAddIndexesReader() throws Exception {
     Directory[] input = new Directory[] { newDirectory(), newDirectory() };
     Directory target = newDirectory();
     
@@ -562,7 +561,7 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addIndexes(r);
       r.close();
     }
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
     
     verifyIndex(target);

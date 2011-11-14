@@ -109,12 +109,12 @@ public class IndexFiles {
       indexDocs(writer, docDir);
 
       // NOTE: if you want to maximize search performance,
-      // you can optionally call optimize here.  This can be
-      // a costly operation, so generally it's only worth
-      // it when your index is relatively static (ie you're
-      // done adding documents to it):
+      // you can optionally call forceMerge here.  This can be
+      // a terribly costly operation, so generally it's only
+      // worth it when your index is relatively static (ie
+      // you're done adding documents to it):
       //
-      // writer.optimize();
+      // writer.forceMerge(1);
 
       writer.close();
 

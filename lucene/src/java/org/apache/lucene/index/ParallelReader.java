@@ -477,23 +477,6 @@ public class ParallelReader extends IndexReader {
     return true;
   }
 
-  /**
-   * Checks recursively if all subindexes are optimized 
-   */
-  @Override
-  public boolean isOptimized() {
-    ensureOpen();
-    for (final IndexReader reader : readers) {
-      if (!reader.isOptimized()) {
-        return false;
-      }
-    }
-    
-    // all subindexes are optimized
-    return true;
-  }
-
-  
   /** Not implemented.
    * @throws UnsupportedOperationException
    */

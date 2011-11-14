@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum;
@@ -103,8 +104,8 @@ public abstract class TermsConsumer {
         if (postingsEnumIn != null) {
           postingsEnum.reset(postingsEnumIn);
           // set PayloadProcessor
-          if (mergeState.hasPayloadProcessorProvider) {
-            for (int i = 0; i < mergeState.readerCount; i++) {
+          if (mergeState.payloadProcessorProvider != null) {
+            for (int i = 0; i < mergeState.readers.size(); i++) {
               if (mergeState.dirPayloadProcessor[i] != null) {
                 mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
               }

@@ -74,8 +74,11 @@
     <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
     <fieldtype name="binary" class="solr.BinaryField"/>
 
-    <!--  sortMissingLast and sortMissingFirst attributes are optional attributes
-          that control how fields are sorted when values are missing.
+    <!-- sortMissingLast and sortMissingFirst attributes are optional attributes are
+         currently supported on types that are sorted internally as strings
+         and on numeric types.
+	     This includes "string","boolean", and, as of 3.5 (and 4.x),
+	     int, float, long, date, double, including the "Trie" variants.
        - If sortMissingLast="true", then a sort on this field will cause documents
          without the field to come after documents with the field,
          regardless of the requested sort order (asc or desc).
@@ -141,7 +144,8 @@
     <!--
       Note:
       These should only be used for compatibility with existing indexes (created with lucene or older Solr versions).
-
+      Use Trie based fields instead. As of Solr 3.5 and 4.x, Trie based fields support sortMissingFirst/Last
+      
       Plain numeric field types that store and index the text
       value verbatim (and hence don't correctly support range queries, since the
       lexicographic ordering isn't equal to the numeric ordering)

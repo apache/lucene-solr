@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -31,6 +32,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
@@ -118,16 +120,16 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final AtomicReaderContext context, Bits acceptDocs) throws IOException {
+  public Spans getSpans(final AtomicReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
     if (clauses.size() == 0)                      // optimize 0-clause case
-      return new SpanOrQuery(getClauses()).getSpans(context, acceptDocs);
+      return new SpanOrQuery(getClauses()).getSpans(context, acceptDocs, termContexts);
 
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return clauses.get(0).getSpans(context, acceptDocs);
+      return clauses.get(0).getSpans(context, acceptDocs, termContexts);
 
     return inOrder
-            ? (Spans) new NearSpansOrdered(this, context, acceptDocs, collectPayloads)
-            : (Spans) new NearSpansUnordered(this, context, acceptDocs);
+            ? (Spans) new NearSpansOrdered(this, context, acceptDocs, termContexts, collectPayloads)
+            : (Spans) new NearSpansUnordered(this, context, acceptDocs, termContexts);
   }
 
   @Override

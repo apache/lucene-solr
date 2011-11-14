@@ -108,8 +108,6 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
             setMergeScheduler(new SerialMergeScheduler())
     );
 
-    writer.setInfoStream(VERBOSE ? System.out : null);
-
     for (int i = 0; i < 250; i++) {
       addDoc(writer);
       checkInvariants(writer);

@@ -79,16 +79,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
 /*
   // These are only needed for the special upgrade test to verify
-  // that also optimized indexes are correctly upgraded by IndexUpgrader.
+  // that also single-segment indexes are correctly upgraded by IndexUpgrader.
   // You don't need them to be build for non-3.1 (the test is happy with just one
   // "old" segment format, version is unimportant:
   
-  public void testCreateOptimizedCFS() throws IOException {
-    createIndex("index.optimized.cfs", true, true);
+  public void testCreateSingleSegmentCFS() throws IOException {
+    createIndex("index.singlesegment.cfs", true, true);
   }
 
-  public void testCreateOptimizedNoCFS() throws IOException {
-    createIndex("index.optimized.nocfs", false, true);
+  public void testCreateSingleSegmentNoCFS() throws IOException {
+    createIndex("index.singlesegment.nocfs", false, true);
   }
 
 */  
@@ -118,8 +118,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                      "29.nocfs",
   };
   
-  final String[] oldOptimizedNames = {"31.optimized.cfs",
-                                      "31.optimized.nocfs",
+  final String[] oldSingleSegmentNames = {"31.optimized.cfs",
+                                          "31.optimized.nocfs",
   };
   
   /** This test checks that *only* IndexFormatTooOldExceptions are thrown when you open and operate on too old indexes! */
@@ -180,7 +180,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  public void testOptimizeOldIndex() throws Exception {
+  public void testFullyMergeOldIndex() throws Exception {
     for(int i=0;i<oldNames.length;i++) {
       if (VERBOSE) {
         System.out.println("\nTEST: index=" + oldNames[i]);
@@ -191,8 +191,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      w.setInfoStream(VERBOSE ? System.out : null);
-      w.optimize();
+      w.forceMerge(1);
       w.close();
       
       dir.close();
@@ -351,7 +350,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = newFSDirectory(oldIndexDir);
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.setInfoStream(VERBOSE ? System.out : null);
     // add 10 docs
     for(int i=0;i<10;i++) {
       addDoc(writer, 35+i);
@@ -395,9 +393,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doTestHits(hits, 43, searcher.getIndexReader());
     searcher.close();
 
-    // optimize
+    // fully merge
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     searcher = new IndexSearcher(dir, true);
@@ -441,9 +439,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doTestHits(hits, 33, searcher.getIndexReader());
     searcher.close();
 
-    // optimize
+    // fully merge
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-    writer.optimize();
+    writer.forceMerge(1);
     writer.close();
 
     searcher = new IndexSearcher(dir, true);
@@ -457,7 +455,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public File createIndex(String dirName, boolean doCFS, boolean optimized) throws IOException {
+  public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
     _TestUtil.rmDir(indexDir);
@@ -474,12 +472,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       addDoc(writer, i);
     }
     assertEquals("wrong doc count", 35, writer.maxDoc());
-    if (optimized) {
-      writer.optimize();
+    if (fullyMerged) {
+      writer.forceMerge(1);
     }
     writer.close();
 
-    if (!optimized) {
+    if (!fullyMerged) {
       // open fresh writer so we get no prx file in the added segment
       mp = new LogByteSizeMergePolicy();
       mp.setUseCompoundFile(doCFS);
@@ -710,12 +708,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding into field cache
-      int[] fci = FieldCache.DEFAULT.getInts(searcher.getIndexReader(), "trieInt");
+      int[] fci = FieldCache.DEFAULT.getInts(searcher.getIndexReader(), "trieInt", false);
       for (int val : fci) {
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      long[] fcl = FieldCache.DEFAULT.getLongs(searcher.getIndexReader(), "trieLong");
+      long[] fcl = FieldCache.DEFAULT.getLongs(searcher.getIndexReader(), "trieLong", false);
       for (long val : fcl) {
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
@@ -745,9 +743,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testUpgradeOldIndex() throws Exception {
-    List<String> names = new ArrayList<String>(oldNames.length + oldOptimizedNames.length);
+    List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
-    names.addAll(Arrays.asList(oldOptimizedNames));
+    names.addAll(Arrays.asList(oldSingleSegmentNames));
     for(String name : names) {
       if (VERBOSE) {
         System.out.println("testUpgradeOldIndex: index=" +name);
@@ -756,7 +754,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       _TestUtil.unzip(getDataFile("index." + name + ".zip"), oldIndxeDir);
       Directory dir = newFSDirectory(oldIndxeDir);
 
-      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false)
         .upgrade();
 
       checkAllSegmentsUpgraded(dir);
@@ -766,16 +764,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void testUpgradeOldOptimizedIndexWithAdditions() throws Exception {
-    for (String name : oldOptimizedNames) {
+  public void testUpgradeOldSingleSegmentIndexWithAdditions() throws Exception {
+    for (String name : oldSingleSegmentNames) {
       if (VERBOSE) {
-        System.out.println("testUpgradeOldOptimizedIndexWithAdditions: index=" +name);
+        System.out.println("testUpgradeOldSingleSegmentIndexWithAdditions: index=" +name);
       }
       File oldIndxeDir = _TestUtil.getTempDir(name);
       _TestUtil.unzip(getDataFile("index." + name + ".zip"), oldIndxeDir);
       Directory dir = newFSDirectory(oldIndxeDir);
 
-      assertEquals("Original index must be optimized", 1, getNumberOfSegments(dir));
+      assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
 
       // create a bunch of dummy segments
       int id = 40;
@@ -793,19 +791,19 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         w.close(false);
       }
       
-      // add dummy segments (which are all in current version) to optimized index
+      // add dummy segments (which are all in current
+      // version) to single segment index
       MergePolicy mp = random.nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
       IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
-      w.setInfoStream(VERBOSE ? System.out : null);
       w.addIndexes(ramDir);
       w.close(false);
       
       // determine count of segments in modified index
       final int origSegCount = getNumberOfSegments(dir);
       
-      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false)
         .upgrade();
 
       final int segCount = checkAllSegmentsUpgraded(dir);

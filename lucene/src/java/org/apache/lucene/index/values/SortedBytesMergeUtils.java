@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.codecs.MergeState;
-import org.apache.lucene.index.codecs.MergeState.IndexReaderAndLiveDocs;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.MergeState.IndexReaderAndLiveDocs;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.IndexOutput;
@@ -297,6 +297,11 @@ final class SortedBytesMergeUtils {
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
       bytesRef.copy(missingValue);
       return bytesRef;
+    }
+
+    @Override
+    public PackedInts.Reader getDocToOrd() {
+      return null;
     }
 
     @Override

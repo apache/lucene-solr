@@ -184,7 +184,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     while (td.nextDoc() != td.NO_MORE_DOCS) ret += td.docID();
 
     // really a dummy assert to ensure that we got some docs and to ensure that
-    // nothing is optimized out.
+    // nothing is eliminated by hotspot
     assertTrue(ret > 0);
     readers1[0].close();
     readers1[1].close();

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
@@ -181,7 +182,7 @@ public class NIOFSDirectory extends FSDirectory {
       long pos = getFilePointer() + off;
       
       if (pos + len > end) {
-        throw new IOException("read past EOF: " + this);
+        throw new EOFException("read past EOF (resource: " + this + ")");
       }
 
       try {

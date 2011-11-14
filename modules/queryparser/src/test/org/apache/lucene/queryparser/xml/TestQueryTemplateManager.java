@@ -145,7 +145,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     for (String docFieldValue : docFieldValues) {
       w.addDocument(getDocumentFromString(docFieldValue));
     }
-    w.optimize();
+    w.forceMerge(1);
     w.close();
     searcher = new IndexSearcher(dir, true);
 

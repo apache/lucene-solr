@@ -232,7 +232,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
 
     // NOTE: intentional insanity!!
-    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id");
+    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
@@ -362,7 +362,6 @@ public class TestTermsEnum extends LuceneTestCase {
     */
 
     final RandomIndexWriter w = new RandomIndexWriter(random, d, iwc);
-    w.w.setInfoStream(VERBOSE ? System.out : null);
     for(String term : terms) {
       Document doc = new Document();
       Field f = newField(FIELD, term, StringField.TYPE_UNSTORED);
@@ -504,7 +503,6 @@ public class TestTermsEnum extends LuceneTestCase {
   public void testZeroTerms() throws Exception {
     d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, d);
-    w.w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "one two three", TextField.TYPE_UNSTORED));
     doc = new Document();
@@ -512,7 +510,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.addDocument(doc);
     w.commit();
     w.deleteDocuments(new Term("field", "one"));
-    w.optimize();
+    w.forceMerge(1);
     IndexReader r = w.getReader();
     w.close();
     assertEquals(1, r.numDocs());

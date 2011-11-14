@@ -336,6 +336,7 @@ public class DocBuilder {
       // Make sure that documents are not re-created
     }
     deletedKeys = null;
+    writer.setDeltaKeys(allPks);
 
     statusMessages.put("Total Changed Documents", allPks.size());
     VariableResolverImpl vri = getVariableResolver();
@@ -428,7 +429,7 @@ public class DocBuilder {
       for (int i = 0; i < threads; i++) {
         entityProcessorWrapper.add(new ThreadedEntityProcessorWrapper(entityProcessor, DocBuilder.this, this, getVariableResolver()));
       }
-      context = new ThreadedContext(this, DocBuilder.this);
+      context = new ThreadedContext(this, DocBuilder.this, getVariableResolver());
     }
 
 
@@ -557,7 +558,6 @@ public class DocBuilder {
           }
         }
       } finally {
-        epw.destroy();
         currentEntityProcWrapper.remove();
         Context.CURRENT_CONTEXT.remove();
       }
@@ -590,10 +590,35 @@ public class DocBuilder {
     }
   }
 
+  private void resetEntity(DataConfig.Entity entity) {
+    entity.initalized = false;
+    if (entity.entities != null) {
+      for (DataConfig.Entity child : entity.entities) {
+        resetEntity(child);
+      }
+    }
+  }
+  
+  private void buildDocument(VariableResolverImpl vr, DocWrapper doc,
+      Map<String,Object> pk, DataConfig.Entity entity, boolean isRoot,
+      ContextImpl parentCtx) {
+    List<EntityProcessorWrapper> entitiesToDestroy = new ArrayList<EntityProcessorWrapper>();
+    try {
+      buildDocument(vr, doc, pk, entity, isRoot, parentCtx, entitiesToDestroy);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    } finally {
+      for (EntityProcessorWrapper entityWrapper : entitiesToDestroy) {
+        entityWrapper.destroy();
+      }
+      resetEntity(entity);
+    }
+  }
+
   @SuppressWarnings("unchecked")
   private void buildDocument(VariableResolverImpl vr, DocWrapper doc,
                              Map<String, Object> pk, DataConfig.Entity entity, boolean isRoot,
-                             ContextImpl parentCtx) {
+                             ContextImpl parentCtx, List<EntityProcessorWrapper> entitiesToDestroy) {
 
     EntityProcessorWrapper entityProcessor = getEntityProcessor(entity);
 
@@ -602,6 +627,10 @@ public class DocBuilder {
             session, parentCtx, this);
     entityProcessor.init(ctx);
     Context.CURRENT_CONTEXT.set(ctx);
+    if (!entity.initalized) {
+      entitiesToDestroy.add(entityProcessor);
+      entity.initalized = true;
+    }
     
     if (requestParameters.start > 0) {
       getDebugLogger().log(DIHLogLevels.DISABLE_LOGGING, null, null);
@@ -666,7 +695,7 @@ public class DocBuilder {
             vr.addNamespace(entity.name, arow);
             for (DataConfig.Entity child : entity.entities) {
               buildDocument(vr, doc,
-                  child.isDocRoot ? pk : null, child, false, ctx);
+                  child.isDocRoot ? pk : null, child, false, ctx, entitiesToDestroy);
             }
             vr.removeNamespace(entity.name);
           }
@@ -729,7 +758,6 @@ public class DocBuilder {
       if (verboseDebug) {
         getDebugLogger().log(DIHLogLevels.END_ENTITY, null, null);
       }
-      entityProcessor.destroy();
     }
   }
 
