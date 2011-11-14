@@ -41,6 +41,10 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     _fields = new LinkedHashMap<String,SolrInputField>();
   }
   
+  public SolrInputDocument(Map<String,SolrInputField> fields) {
+    _fields = fields;
+  }
+  
   /**
    * Remove all fields and boosts from the document
    */
