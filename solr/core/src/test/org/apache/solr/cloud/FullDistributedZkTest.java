@@ -463,9 +463,15 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
 
     // this should trigger a recovery phase on deadShard
+
     deadShard.start(true);
+
     
+    // kill the other shard3 replica
+    JettySolrRunner deadShard3 = killShard("shard3", 0);
     
+    // should fail
+    //query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
     
     // Thread.sleep(10000000000L);
     if (DEBUG) {

@@ -61,7 +61,8 @@ public class CloudState {
 	public CloudState(Set<String> liveNodes,
 			Map<String, Map<String, Slice>> collectionStates) {
 		this.liveNodes = liveNodes;
-		this.collectionStates = collectionStates;
+		this.collectionStates = new HashMap<String, Map<String, Slice>>(collectionStates.size());
+		this.collectionStates.putAll(collectionStates);
 	}
 
 	public Slice getSlice(String collection, String slice) {

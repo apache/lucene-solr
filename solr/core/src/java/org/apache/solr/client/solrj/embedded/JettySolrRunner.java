@@ -51,6 +51,16 @@ public class JettySolrRunner {
 
   private boolean waitOnSolr = false;
 
+  private int lastPort;
+
+  private String shards;
+
+  private String dataDir;
+  
+  private volatile boolean startedBefore = false;
+
+  private String solrHome;
+
   public JettySolrRunner(String solrHome, String context, int port) {
     this.init(solrHome, context, port);
   }
@@ -63,6 +73,7 @@ public class JettySolrRunner {
   private void init(String solrHome, String context, int port) {
     this.context = context;
     server = new Server(port);
+    this.solrHome = solrHome;
     server.setStopAtShutdown(true);
     System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
@@ -93,15 +104,17 @@ public class JettySolrRunner {
       }
 
       public void lifeCycleStarted(LifeCycle arg0) {
-        System.setProperty("hostPort", Integer.toString(getLocalPort()));
-        if (solrConfigFilename != null)
-          System.setProperty("solrconfig", solrConfigFilename);
+        lastPort = getLocalPort();
+        System.out.println("start on port:" + lastPort);
+        System.setProperty("hostPort", Integer.toString(lastPort));
+        if (solrConfigFilename != null) System.setProperty("solrconfig",
+            solrConfigFilename);
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*",
             Handler.REQUEST);
-        if (solrConfigFilename != null)
-          System.clearProperty("solrconfig");
-
+        if (solrConfigFilename != null) System.clearProperty("solrconfig");
+        
         System.clearProperty("solr.solr.home");
+        
       }
 
       public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
@@ -122,6 +135,20 @@ public class JettySolrRunner {
   }
 
   public void start(boolean waitForSolr) throws Exception {
+    // if started before, make a new server
+    if (startedBefore) {
+      init(solrHome, context, lastPort);
+    } else {
+      startedBefore = true;
+    }
+    
+    if( dataDir != null) {
+      System.setProperty("solr.data.dir", dataDir);
+    }
+    if(shards != null) {
+      System.setProperty("shard", shards);
+    }
+    
     if (!server.isRunning()) {
       server.start();
     }
@@ -134,6 +161,9 @@ public class JettySolrRunner {
         }
       }
     }
+    
+    System.clearProperty("shard");
+    System.clearProperty("solr.data.dir");
   }
 
   public void stop() throws Exception {
@@ -180,6 +210,16 @@ public class JettySolrRunner {
     } catch (Exception ex) {
       ex.printStackTrace();
     }
+  }
+
+  public void setShards(String shardList) {
+     this.shards = shardList;
+    
+  }
+
+  public void setDataDir(String dataDir) {
+    this.dataDir = dataDir;
+    
   }
 }
 

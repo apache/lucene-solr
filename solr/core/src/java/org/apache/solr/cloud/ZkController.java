@@ -21,11 +21,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -485,17 +488,36 @@ public final class ZkController {
 						+ stat.getVersion());
 				CloudState state = CloudState.load(data);
 				Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
-				if (slices != null && slices.containsKey(shardZkNodeName)) {
-				  // TODO: we where already registered - go into recovery mode
-				  System.out.println("RECOVERY");
+        
+				boolean recover = false;
+        if (slices != null) {
+			    Set<String> nodes = new HashSet<String>();
+		
+			    for (Slice s : slices.values()) {
+			      System.out.println("add slice: "+ s.getName());
+			      for (String node : s.getShards().keySet()) {
+			        System.out.println("add node: "+ node);
+			        nodes.add(node);
+			      }
+			    }
+			    System.out.println("print recovery:" + nodes + " name: " + shardZkNodeName);
+          if (nodes.contains(shardZkNodeName)) {
+            // TODO: we where already registered - go into recovery mode
+            System.out.println("RECOVERY");
+            recover = true;
+          }
 				}
-				
+				// we need a new copy to modify
+        state = new CloudState(state.getLiveNodes(), state.getCollectionStates());
 				state.addSlice(cloudDesc.getCollectionName(), slice);
 
 				try {
 					zkClient.setData(ZkStateReader.CLUSTER_STATE,
 							CloudState.store(state), stat.getVersion());
 					updated = true;
+					if (recover) {
+					  System.out.println("do recovery");
+					}
 				} catch (KeeperException e) {
 					if (e.code() != Code.BADVERSION) {
 						throw e;
