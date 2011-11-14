@@ -431,7 +431,7 @@ public class SolrZkClient {
     if (data != null) {
       try {
         String dataString = new String(data, "UTF-8");
-        if (!path.endsWith(".txt") && !path.endsWith(".xml")) {
+        if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
           string.append(dent + "DATA:\n" + dent + "    "
               + dataString.replaceAll("\n", "\n" + dent + "    ") + NEWL);
         } else {

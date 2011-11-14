@@ -41,7 +41,7 @@ public class ZkStateReader {
   public static final String NODE_NAME = "node_name";
   public static final String ROLES_PROP = "roles";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
-  public static final String CLUSTER_STATE = "/clusterstate";
+  public static final String CLUSTER_STATE = "/clusterstate.xml";
   
   private volatile CloudState cloudState = new CloudState();
 
