@@ -15,6 +15,9 @@ package org.apache.solr.handler.dataimport;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.common.SolrInputDocument;
 
 /**
@@ -89,5 +92,14 @@ public interface DIHWriter {
 	 * @param context
 	 */
 	public void init(Context context) ;
+
+	
+	/**
+	 * <p>
+	 *  Specify the keys to be modified by a delta update (required by writers that can store duplicate keys)
+	 * </p>
+	 * @param deltaKeys
+	 */
+	public void setDeltaKeys(Set<Map<String, Object>> deltaKeys) ;
 
 }
