@@ -44,15 +44,7 @@ public class TestIOUtils extends LuceneTestCase {
   }
 
   public void testSuppressedExceptions() {
-    boolean isJava7 = true;
-    try {
-      // this class only exists in Java 7:
-      Class.forName("java.lang.AutoCloseable");
-    } catch (ClassNotFoundException cnfe) {
-      isJava7 = false;
-    }
-    
-    if (!isJava7) {
+    if (!Constants.JRE_IS_MINIMUM_JAVA7) {
       System.err.println("WARNING: TestIOUtils.testSuppressedExceptions: Full test coverage only with Java 7, as suppressed exception recording is not supported before.");
     }
     
@@ -71,7 +63,7 @@ public class TestIOUtils extends LuceneTestCase {
         System.out.println("TestIOUtils.testSuppressedExceptions: Thrown Exception stack trace:");
         System.out.println(trace);
       }
-      if (isJava7) {
+      if (Constants.JRE_IS_MINIMUM_JAVA7) {
         assertTrue("Stack trace does not contain first suppressed Exception: " + trace,
           trace.contains("java.io.IOException: TEST-IO-EXCEPTION-1"));
         assertTrue("Stack trace does not contain second suppressed Exception: " + trace,
@@ -97,7 +89,7 @@ public class TestIOUtils extends LuceneTestCase {
         System.out.println("TestIOUtils.testSuppressedExceptions: Thrown Exception stack trace:");
         System.out.println(trace);
       }
-      if (isJava7) {
+      if (Constants.JRE_IS_MINIMUM_JAVA7) {
         assertTrue("Stack trace does not contain suppressed Exception: " + trace,
           trace.contains("java.io.IOException: TEST-IO-EXCEPTION-2"));
       }
