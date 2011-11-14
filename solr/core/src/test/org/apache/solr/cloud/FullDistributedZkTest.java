@@ -417,7 +417,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // TMP: try adding a doc with CloudSolrServer
     CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
     server.setDefaultCollection(DEFAULT_COLLECTION);
-    long numFound1 = server.query(new SolrQuery("*:*")).getResults().getNumFound();
+    SolrQuery query = new SolrQuery("*:*");
+    query.add("distrib", "true");
+    long numFound1 = server.query(query).getResults().getNumFound();
     
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1001);
@@ -431,7 +433,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     commit();
     
-    long numFound2 = server.query(new SolrQuery("*:*")).getResults().getNumFound();
+    long numFound2 = server.query(query).getResults().getNumFound();
     
     // lets just check that the one doc since last commit made it in...
     //TODO this sometimes fails - need to dig up what missed/messed up part causes it
