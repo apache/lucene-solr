@@ -83,9 +83,6 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
     }
   }
   
-  public static final int NO = -1;          // e.g. no norms; no deletes;
-  public static final int YES = 1;          // e.g. have norms; have deletes;
-
   /** Save a single segment's info. */
   private void writeInfo(IndexOutput output, SegmentInfo si) throws IOException {
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
@@ -103,7 +100,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
 
     Map<Integer,Long> normGen = si.getNormGen();
     if (normGen == null) {
-      output.writeInt(NO);
+      output.writeInt(SegmentInfo.NO);
     } else {
       output.writeInt(normGen.size());
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
@@ -112,7 +109,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
       }
     }
 
-    output.writeByte((byte) (si.getUseCompoundFile() ? YES : NO));
+    output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
     output.writeInt(si.getDelCount());
     output.writeByte((byte) (si.getHasProxInternal()));
     output.writeString(si.getCodec().getName());
