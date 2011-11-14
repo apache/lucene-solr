@@ -46,7 +46,8 @@ public final class Constants {
 
   /** @deprecated With Lucene 4.0, we are always on Java 6 */
   @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA6 = true;
+  public static final boolean JRE_IS_MINIMUM_JAVA6 =
+    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
 
   public static final boolean JRE_IS_64BIT;  
   public static final boolean JRE_IS_MINIMUM_JAVA7;
