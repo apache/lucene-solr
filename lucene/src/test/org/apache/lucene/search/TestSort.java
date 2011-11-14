@@ -25,20 +25,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.values.ValueType;
@@ -1218,6 +1219,16 @@ public class TestSort extends LuceneTestCase {
   // make sure the documents returned by the search match the expected list
   private void assertMatches(String msg, IndexSearcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
+
+    for(SortField sortField : sort.getSort()) {
+      if (sortField.getUseIndexValues() && sortField.getType() == SortField.Type.STRING) {
+        if (searcher.getIndexReader() instanceof SlowMultiReaderWrapper) {
+          // Cannot use STRING DocValues sort with SlowMultiReaderWrapper
+          return;
+        }
+      }
+    }
+
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
     TopDocs hits = searcher.search(query, null, Math.max(1, expectedResult.length()), sort);
     ScoreDoc[] result = hits.scoreDocs;
