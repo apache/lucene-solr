@@ -681,7 +681,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               url = shard;
             }
             
-            // TODO: allow shard syntax to use : to specify replicas
             SolrServer server = new CommonsHttpSolrServer(url, client);
             sreq.ursp = server.request(sreq.ureq);
           

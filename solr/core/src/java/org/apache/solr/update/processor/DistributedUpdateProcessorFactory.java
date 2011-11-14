@@ -176,7 +176,8 @@ public class DistributedUpdateProcessorFactory extends
       replicasUrl.append(replicaUrl);
     }
 
-    params.add("self", self);
+    // we don't currently use self - it does not yet work with the | notation anyhow
+    //params.add("self", self);
     params.add("shards", replicasUrl.toString());
   }
   

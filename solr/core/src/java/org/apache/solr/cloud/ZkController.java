@@ -138,8 +138,6 @@ public final class ZkController {
           public void command() {
             try {
               // we need to create all of our lost watches
-//              zkStateReader.makeCollectionsNodeWatches();
-//              zkStateReader.makeShardsWatches(true);
               createEphemeralLiveNode();
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -486,7 +484,12 @@ public final class ZkController {
 				log.info("Attempting to update /clusterstate version "
 						+ stat.getVersion());
 				CloudState state = CloudState.load(data);
-
+				Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
+				if (slices != null && slices.containsKey(shardZkNodeName)) {
+				  // TODO: we where already registered - go into recovery mode
+				  System.out.println("RECOVERY");
+				}
+				
 				state.addSlice(cloudDesc.getCollectionName(), slice);
 
 				try {

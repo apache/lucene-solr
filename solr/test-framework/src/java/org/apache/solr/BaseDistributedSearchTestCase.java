@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
@@ -69,6 +70,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected JettySolrRunner controlJetty;
   protected List<SolrServer> clients = new ArrayList<SolrServer>();
   protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
+  
   protected String context = "/solr";
   protected String shards;
   protected String[] shardsArr;
@@ -310,7 +312,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void commit() throws Exception {
     controlClient.commit();
-    for (SolrServer client : clients) client.commit();
+    for (SolrServer client : clients) {
+      try {
+        client.commit();
+      } catch (SolrServerException e) {
+        // we might have killed a server on purpose in the test
+        log.warn("", e);
+      }
+    }
   }
 
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
@@ -322,12 +331,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void query(Object... q) throws Exception {
+    
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
     }
-
+    System.out.println("Q:" + params);
     final QueryResponse controlRsp = controlClient.query(params);
 
     setDistributedParams(params);
@@ -377,6 +387,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static String compare(NamedList a, NamedList b, int flags, Map<String, Integer> handle) {
+    System.out.println("resp a:" + a);
+    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
 
     int posa = 0, posb = 0;
