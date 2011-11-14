@@ -199,6 +199,9 @@ Changes in backwards compatibility policy
   as these are no longer used by the scoring system. See MIGRATE.txt for more
   details.  (Robert Muir)
   
+* LUCENE-3533: Removed SpanFilters, they created large lists of objects and 
+  did not scale. (Robert Muir)
+  
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -42,6 +43,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.TermContext;
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
@@ -247,16 +249,21 @@ public class WeightedSpanTermExtractor {
     List<PositionSpan> spanPositions = new ArrayList<PositionSpan>();
 
     for (final String field : fieldNames) {
-
-      AtomicReaderContext context = getLeafContextForField(field);
-      Bits acceptDocs = context.reader.getLiveDocs();
-      final Spans spans;
+      final SpanQuery q;
       if (mustRewriteQuery) {
-        spans = queries.get(field).getSpans(context, acceptDocs);
+        q = queries.get(field);
       } else {
-        spans = spanQuery.getSpans(context, acceptDocs);
+        q = spanQuery;
       }
-
+      AtomicReaderContext context = getLeafContextForField(field);
+      Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
+      TreeSet<Term> extractedTerms = new TreeSet<Term>();
+      q.extractTerms(extractedTerms);
+      for (Term term : extractedTerms) {
+        termContexts.put(term, TermContext.build(context, term, true));
+      }
+      Bits acceptDocs = context.reader.getLiveDocs();
+      final Spans spans = q.getSpans(context, acceptDocs, termContexts);
 
       // collect span positions
       while (spans.next()) {
