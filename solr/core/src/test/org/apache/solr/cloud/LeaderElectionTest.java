@@ -134,6 +134,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     int leaderThread = Integer.parseInt(getLeader());
     
     // whoever the leader is, should be the n_0 seq
+    // TODO: seen this fail by seq being -1
     assertEquals(0, threads.get(leaderThread).seq);
     
     // kill n_0, 1, 3 and 4

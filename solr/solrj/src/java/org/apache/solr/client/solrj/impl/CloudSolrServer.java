@@ -31,7 +31,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
@@ -119,11 +118,6 @@ public class CloudSolrServer extends SolrServer {
     CloudState cloudState = zkStateReader.getCloudState();
 
     String collection = request.getParams().get("collection", defaultCollection);
-    
-    if (request instanceof UpdateRequest) {
-      // hack to kind of let updates work - should be fixed more completely
-      return updateRequest(cloudState, collection, request);
-    }
 
     // TODO: allow multiple collections to be specified via comma separated list
 
@@ -155,39 +149,6 @@ public class CloudSolrServer extends SolrServer {
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, urlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
     return rsp.getResponse();
-  }
-
-  private NamedList<Object> updateRequest(CloudState cloudState,
-      String collection, SolrRequest request) throws SolrServerException, IOException {
-    // TODO: prefer updating to the leader
-
-    Map<String,Slice> slices = cloudState.getSlices(collection);
-    Set<String> liveNodes = cloudState.getLiveNodes();
-
-    // IDEA: have versions on various things... like a global cloudState version
-    // or shardAddressVersion (which only changes when the shards change)
-    // to allow caching.
-
-    // build a map of unique nodes
-    // TODO: allow filtering by group, role, etc
-    Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
-    List<String> urlList = new ArrayList<String>();
-    for (Slice slice : slices.values()) {
-      for (ZkNodeProps nodeProps : slice.getShards().values()) {
-        String node = nodeProps.get(ZkStateReader.NODE_NAME);
-        if (!liveNodes.contains(node)) continue;
-        if (nodes.put(node, nodeProps) == null) {
-          String url = nodeProps.get(ZkStateReader.URL_PROP);
-          urlList.add(url);
-        }
-      }
-    }
-
-
-    // lets update to a server that is up...
-    CommonsHttpSolrServer server = new CommonsHttpSolrServer(urlList.get(0));
-    NamedList<Object> rsp = server.request(request);
-    return rsp;
   }
 
   public void close() {

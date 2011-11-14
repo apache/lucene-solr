@@ -60,6 +60,7 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.Request;
 
 // NOT mt-safe... create a new processor for each add thread
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
@@ -522,6 +523,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
   
   void checkResponses(boolean block) {
+
+    int expectedResponses = pending == null ? 0 : pending.size();
+    int failed = 0;
     while (pending != null && pending.size() > 0) {
       try {
         Future<Request> future = block ? completionService.take()
@@ -531,9 +535,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         
         try {
           Request sreq = future.get();
+          System.out.println("RSP:" + sreq.rspCode);
+          // TODO: this was != 0, but a success seemed to come back as -1 in some cases - need to track this down - MM
+          // changed it while trying to make requests return success if half or more replicas got it
           if (sreq.rspCode != 0) {
             // error during request
-            
+            failed++;
             // use the first exception encountered
             if (rsp.getException() == null) {
               Exception e = sreq.exception;
@@ -564,6 +571,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
             "interrupted waiting for shard update response", e);
       }
+    }
+    
+    System.out.println("check failed rate:" + failed + " " + expectedResponses / 2);
+    if (failed <= (expectedResponses / 2)) {
+      // don't fail if half or more where fine
+      rsp.setException(null);
     }
   }
   
@@ -635,6 +648,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
   
   static class Request {
+    // TODO: we may need to look at deep cloning this?
     String shard;
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
@@ -671,29 +685,34 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       Callable<Request> task = new Callable<Request>() {
         @Override
         public Request call() throws Exception {
-          
+          Request clonedRequest = new Request();
+          clonedRequest.shard = sreq.shard;
+          clonedRequest.ureq = sreq.ureq;
+
           try {
             // TODO: what about https?
             String url;
             if (!shard.startsWith("http://")) {
-              url = "http://" + sreq.shard;
+              url = "http://" + shard;
             } else {
               url = shard;
             }
-            
+            System.out.println("URL:" + url);
             SolrServer server = new CommonsHttpSolrServer(url, client);
-            sreq.ursp = server.request(sreq.ureq);
-          
+            clonedRequest.ursp = server.request(clonedRequest.ureq);
+            
             // currently no way to get the request body.
           } catch (Exception e) {
-            sreq.exception = e;
+            e.printStackTrace(System.out);
+            clonedRequest.exception = e;
             if (e instanceof SolrException) {
-              sreq.rspCode = ((SolrException) e).code();
+              clonedRequest.rspCode = ((SolrException) e).code();
             } else {
-              sreq.rspCode = -1;
+              clonedRequest.rspCode = -1;
             }
           }
-          return sreq;
+          System.out.println("RSPFirst:" + clonedRequest.rspCode);
+          return clonedRequest;
         }
       };
       
