@@ -28,6 +28,9 @@ import org.apache.solr.request.SolrQueryRequest;
     protected final SolrQueryRequest req;
     protected final String commandName;
     protected long version;
+    protected int flags;
+
+    public static int REPLAY = 0x00000001;     // update command is from replaying a log.
 
     public UpdateCommand(String commandName, SolrQueryRequest req) {
       this.req = req;
@@ -44,5 +47,13 @@ import org.apache.solr.request.SolrQueryRequest;
     }
     public void setVersion(long version) {
       this.version = version;
+    }
+
+    public void setFlags(int flags) {
+      this.flags = flags;
+    }
+
+    public int getFlags() {
+      return flags;
     }
   }

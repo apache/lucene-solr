@@ -55,6 +55,15 @@ public class FastInputStream extends InputStream implements DataInput {
     return buf[pos++] & 0xff;     
   }
 
+  public int peek() throws IOException {
+    if (pos >= end) {
+      refill();
+      if (pos >= end) return -1;
+    }
+    return buf[pos] & 0xff;
+  }
+
+
   public int readUnsignedByte() throws IOException {
     if (pos >= end) {
       refill();

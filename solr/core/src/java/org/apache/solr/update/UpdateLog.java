@@ -23,9 +23,12 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /** @lucene.experimental */
 public abstract class UpdateLog implements PluginInfoInitialized {
-  public static final int ADD = 0x00;
-  public static final int DELETE = 0x01;
-  public static final int DELETE_BY_QUERY = 0x02;
+  public enum SyncLevel { NONE, FLUSH, FSYNC }
+
+  public static final int ADD = 0x01;
+  public static final int DELETE = 0x02;
+  public static final int DELETE_BY_QUERY = 0x03;
+  public static final int COMMIT = 0x04;
 
   public abstract void init(UpdateHandler uhandler, SolrCore core);
   public abstract void add(AddUpdateCommand cmd);
@@ -39,4 +42,6 @@ public abstract class UpdateLog implements PluginInfoInitialized {
   public abstract Long lookupVersion(BytesRef indexedId);
   public abstract void close();
   public abstract VersionInfo getVersionInfo();
+  public abstract void finish(SyncLevel syncLevel);
+  public abstract boolean recoverFromLog();
 }

@@ -20,19 +20,20 @@ package org.apache.solr.update;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /** @lucene.experimental */
 class NullUpdateLog extends UpdateLog {
@@ -90,6 +91,16 @@ class NullUpdateLog extends UpdateLog {
   public VersionInfo getVersionInfo() {
     return null;
   }
+
+  @Override
+  public void finish(SyncLevel synclevel) {
+  }
+
+  @Override
+  public boolean recoverFromLog() {
+    return false;
+  }
+
 }
 
 /** @lucene.experimental */
@@ -125,6 +136,11 @@ public class FSUpdateLog extends UpdateLog {
   private String lastDataDir;
 
   private VersionInfo versionInfo;
+
+  private SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
+
+  private volatile UpdateHandler uhandler;    // a core reload can change this reference!
+
   @Override
   public VersionInfo getVersionInfo() {
     return versionInfo;
@@ -140,6 +156,8 @@ public class FSUpdateLog extends UpdateLog {
       dataDir = core.getDataDir();
     }
 
+    this.uhandler = uhandler;
+
     if (dataDir.equals(lastDataDir)) {
       // on a normal reopen, we currently shouldn't have to do anything
       return;
@@ -151,6 +169,8 @@ public class FSUpdateLog extends UpdateLog {
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
     versionInfo = new VersionInfo(uhandler, 256);
+
+    recoverFromLog();  // TODO: is this too early?
   }
 
   static class LogPtr {
@@ -389,6 +409,52 @@ public class FSUpdateLog extends UpdateLog {
     return null;
   }
 
+  @Override
+  public void finish(SyncLevel syncLevel) {
+    if (syncLevel == null) {
+      syncLevel = defaultSyncLevel;
+    }
+    if (syncLevel == SyncLevel.NONE) {
+      return;
+    }
+
+    TransactionLog currLog;
+    synchronized (this) {
+      currLog = tlog;
+      if (currLog == null) return;
+      currLog.incref();
+    }
+
+    try {
+      tlog.finish(syncLevel);
+    } finally {
+      currLog.decref();
+    }
+  }
+
+  @Override
+  public boolean recoverFromLog() {
+    if (tlogFiles.length == 0) return false;
+    TransactionLogReader tlogReader = null;
+    try {
+      tlogReader = new TransactionLogReader( new File(tlogDir, tlogFiles[tlogFiles.length-1]) );
+      boolean completed = tlogReader.completed();
+      if (completed) {
+        return true;
+      }
+
+      recoveryExecutor.execute(new LogReplayer(tlogReader));
+      return true;
+
+    } catch (Exception ex) {
+      // an error during recovery
+      uhandler.log.warn("Exception during recovery", ex);
+      if (tlogReader != null) tlogReader.close();
+    }
+
+    return false;
+  }
+
 
   private void ensureLog() {
     if (tlog == null) {
@@ -409,307 +475,112 @@ public class FSUpdateLog extends UpdateLog {
     }
   }
 
+  // TODO: do we let the log replayer run across core reloads?
+  class LogReplayer implements Runnable {
+    TransactionLogReader tlogReader;
+    public LogReplayer(TransactionLogReader tlogReader) {
+      this.tlogReader = tlogReader;
+    }
+
+    @Override
+    public void run() {
+      uhandler.core.log.warn("Starting log replay " + tlogReader);
+
+      SolrParams params = new ModifiableSolrParams();
+      long commitVersion = 0;
+
+      for(;;) {
+        Object o = tlogReader.readNext();
+        if (o == null) break;
+
+        // create a new request each time since the update handler and core could change
+        SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
+
+        // TODO: race?  This core could close on us if it was reloaded
+
+        try {
+
+          // should currently be a List<Oper,Ver,Doc/Id>
+          List entry = (List)o;
+
+          int oper = (Integer)entry.get(0);
+          long version = (Long) entry.get(1);
+
+          switch (oper) {
+            case UpdateLog.ADD:
+            {
+              // byte[] idBytes = (byte[]) entry.get(2);
+              SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
+              AddUpdateCommand cmd = new AddUpdateCommand(req);
+              // cmd.setIndexedId(new BytesRef(idBytes));
+              cmd.solrDoc = sdoc;
+              cmd.setVersion(version);
+              cmd.setFlags(UpdateCommand.REPLAY);
+              uhandler.addDoc(cmd);
+              break;
+            }
+            case UpdateLog.DELETE:
+            {
+              byte[] idBytes = (byte[]) entry.get(2);
+              DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+              cmd.setVersion(version);
+              cmd.setFlags(UpdateCommand.REPLAY);
+              uhandler.delete(cmd);
+              break;
+            }
+
+            case UpdateLog.DELETE_BY_QUERY:
+            {
+              // TODO
+              break;
+            }
+
+            case UpdateLog.COMMIT:
+            {
+              // TODO
+              commitVersion = version;
+              break;
+            }
+
+            default:
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
+          }
+        } catch (IOException ex) {
+
+        } catch (ClassCastException cl) {
+          uhandler.log.warn("Corrupt log", cl);
+          // would be caused by a corrupt transaction log
+        } catch (Exception ex) {
+          uhandler.log.warn("Exception replaying log", ex);
+
+          // something wrong with the request?
+        }
+      }
+      tlogReader.close();
+
+      SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
+      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+      cmd.setVersion(commitVersion);
+      cmd.softCommit = false;
+      cmd.waitSearcher = false;
+      cmd.setFlags(UpdateCommand.REPLAY);
+      try {
+        uhandler.commit(cmd);
+      } catch (IOException ex) {
+        uhandler.log.error("Replay exception: final commit.", ex);
+      }
+      tlogReader.delete();
+
+      uhandler.core.log.warn("Ending log replay " + tlogReader);
+
+    }
+  }
+
+
+  static ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+      1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
 
 }
 
 
-/**
- *  Log Format: List{Operation, Version, ...}
- *  ADD, VERSION, DOC
- *  DELETE, VERSION, ID_BYTES
- *  DELETE_BY_QUERY, VERSION, String
- *
- *  TODO: keep two files, one for [operation, version, id] and the other for the actual
- *  document data.  That way we could throw away document log files more readily
- *  while retaining the smaller operation log files longer (and we can retrieve
- *  the stored fields from the latest documents from the index).
- *
- *  This would require keeping all source fields stored of course.
- *
- *  This would also allow to not log document data for requests with commit=true
- *  in them (since we know that if the request succeeds, all docs will be committed)
- *
- */
-class TransactionLog {
-
-  long id;
-  File tlogFile;
-  RandomAccessFile raf;
-  FileChannel channel;
-  OutputStream os;
-  FastOutputStream fos;
-  InputStream is;
-  long start;
-
-  volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
-
-  AtomicInteger refcount = new AtomicInteger(1);
-  Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
-  List<String> globalStringList = new ArrayList<String>();
-
-  // write a BytesRef as a byte array
-  JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
-    @Override
-    public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      if (o instanceof BytesRef) {
-        BytesRef br = (BytesRef)o;
-        codec.writeByteArray(br.bytes, br.offset, br.length);
-        return null;
-      }
-      return o;
-    }
-  };
-
-  public class LogCodec extends JavaBinCodec {
-    public LogCodec() {
-      super(resolver);
-    }
-
-    @Override
-    public void writeExternString(String s) throws IOException {
-      if (s == null) {
-        writeTag(NULL);
-        return;
-      }
-
-      // no need to synchronize globalStringMap - it's only updated before the first record is written to the log
-      Integer idx = globalStringMap.get(s);
-      if (idx == null) {
-        // write a normal string
-        writeStr(s);
-      } else {
-        // write the extern string
-        writeTag(EXTERN_STRING, idx);
-      }
-    }
-
-    @Override
-    public String readExternString(FastInputStream fis) throws IOException {
-      int idx = readSize(fis);
-      if (idx != 0) {// idx != 0 is the index of the extern string
-      // no need to synchronize globalStringList - it's only updated before the first record is written to the log
-        return globalStringList.get(idx - 1);
-      } else {// idx == 0 means it has a string value
-        // this shouldn't happen with this codec subclass.
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Corrupt transaction log");
-      }
-    }
-
-
-  }
-
-  public long writeData(Object o) {
-    LogCodec codec = new LogCodec();
-    try {
-      long pos = start + fos.size();   // if we had flushed, this should be equal to channel.position()
-      codec.init(fos);
-      codec.writeVal(o);
-      return pos;
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  TransactionLog(File tlogFile, Collection<String> globalStrings) {
-    try {
-      this.tlogFile = tlogFile;
-      raf = new RandomAccessFile(this.tlogFile, "rw");
-      start = raf.length();
-      // System.out.println("###start= "+start);
-      channel = raf.getChannel();
-      os = Channels.newOutputStream(channel);
-      fos = FastOutputStream.wrap(os);
-      addGlobalStrings(globalStrings);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  private void addGlobalStrings(Collection<String> strings) {
-    if (strings == null) return;
-    int origSize = globalStringMap.size();
-    for (String s : strings) {
-      Integer idx = null;
-      if (origSize > 0) {
-        idx = globalStringMap.get(s);
-      }
-      if (idx != null) continue;  // already in list
-      globalStringList.add(s);
-      globalStringMap.put(s, globalStringList.size());
-    }
-    assert globalStringMap.size() == globalStringList.size();
-  }
-
-  Collection<String> getGlobalStrings() {
-    synchronized (fos) {
-      return new ArrayList<String>(globalStringList);
-    }
-  }
-
-  private void writeLogHeader(LogCodec codec) throws IOException {
-    NamedList header = new NamedList<Object>();
-    header.add("SOLR_TLOG",1); // a magic string + version number?
-    header.add("strings",globalStringList);
-    codec.marshal(header, fos);
-  }
-
-
-  public long write(AddUpdateCommand cmd) {
-    LogCodec codec = new LogCodec();
-    synchronized (fos) {
-      try {
-        long pos = start + fos.size();   // if we had flushed, this should be equal to channel.position()
-        SolrInputDocument sdoc = cmd.getSolrInputDocument();
-
-        if (pos == 0) { // TODO: needs to be changed if we start writing a header first
-          addGlobalStrings(sdoc.getFieldNames());
-          pos = start + fos.size();
-        }
-
-        /***
-        System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
-         if (pos != fos.size()) {
-          throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
-        }
-         ***/
-
-        codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.ADD);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
-        // fos.flushBuffer();  // flush later
-
-
-
-        return pos;
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    }
-  }
-
-  public long writeDelete(DeleteUpdateCommand cmd) {
-    LogCodec codec = new LogCodec();
-    synchronized (fos) {
-      try {
-        long pos = start + fos.size();   // if we had flushed, this should be equal to channel.position()
-        if (pos == 0) {
-          writeLogHeader(codec);
-          pos = start + fos.size();
-        }
-        codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.DELETE);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        BytesRef br = cmd.getIndexedId();
-        codec.writeByteArray(br.bytes, br.offset, br.length);
-        // fos.flushBuffer();  // flush later
-        return pos;
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    }
-  }
-
-  public long writeDeleteByQuery(DeleteUpdateCommand cmd) {
-    LogCodec codec = new LogCodec();
-    synchronized (fos) {
-      try {
-        long pos = start + fos.size();   // if we had flushed, this should be equal to channel.position()
-        if (pos == 0) {
-          writeLogHeader(codec);
-          pos = start + fos.size();
-        }
-        codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeStr(cmd.query);
-        // fos.flushBuffer();  // flush later
-        return pos;
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    }
-  }
-
-  /* This method is thread safe */
-  public Object lookup(long pos) {
-    try {
-      // make sure any unflushed buffer has been flushed
-      synchronized (fos) {
-        // TODO: optimize this by keeping track of what we have flushed up to
-        fos.flushBuffer();
-        /***
-         System.out.println("###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
-        if (fos.size() != raf.length() || pos >= fos.size() ) {
-          throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
-        }
-        ***/
-      }
-
-      ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
-      LogCodec codec = new LogCodec();
-      return codec.readVal(fis);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  public void incref() {
-    refcount.incrementAndGet();
-  }
-
-  public void decref() {
-    if (refcount.decrementAndGet() == 0) {
-      close();
-    }
-  }
-
-
-  private void close() {
-    try {
-      fos.flush();
-      fos.close();
-      if (deleteOnClose) {
-        tlogFile.delete();
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  public String toString() {
-    return tlogFile.toString();
-  }
-
-}
-
-
-class ChannelFastInputStream extends FastInputStream {
-  FileChannel ch;
-  long chPosition;
-
-  public ChannelFastInputStream(FileChannel ch, long chPosition) {
-    super(null);
-    this.ch = ch;
-    this.chPosition = chPosition;
-  }
-
-  @Override
-  public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-    ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
-    int ret = ch.read(bb, chPosition);
-    if (ret >= 0) {
-      chPosition += ret;
-    }
-    return ret;
-  }
-
-  @Override
-  public void close() throws IOException {
-    ch.close();
-  }
-}
 

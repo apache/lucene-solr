@@ -91,6 +91,10 @@ public class AddUpdateCommand extends UpdateCommand {
      return indexedId;
    }
 
+   public void setIndexedId(BytesRef idBytes) {
+     this.indexedId = indexedId;
+   }
+
    public String getPrintableId() {
      IndexSchema schema = req.getSchema();
      SchemaField sf = schema.getUniqueKeyField();
