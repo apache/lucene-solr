@@ -38,6 +38,7 @@ public abstract class Terms {
 
   /** Returns an iterator that will step through all
    *  terms. This method will not return null.*/
+  // nocommit add reuse required param
   public abstract TermsEnum iterator() throws IOException;
 
   /** Returns a TermsEnum that iterates over all terms that

@@ -108,7 +108,9 @@ public class TestSurrogates extends LuceneTestCase {
       String field;
       int termCount = 0;
       while((field = fieldsEnum.next()) != null) {
-        TermsEnum termsEnum = fieldsEnum.terms();
+        Terms terms = fieldsEnum.terms();
+        assertNotNull(terms);
+        TermsEnum termsEnum = terms.iterator();
         BytesRef text;
         BytesRef lastText = null;
         while((text = termsEnum.next()) != null) {

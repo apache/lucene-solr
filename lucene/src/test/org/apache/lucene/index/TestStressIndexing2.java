@@ -395,7 +395,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
           DocsEnum dEnum = null;
           while ((field=fieldsEnum.next()) != null) {
             System.out.println("    " + field + ":");
-            TermsEnum termsEnum2 = fieldsEnum.terms();
+            Terms terms3 = fieldsEnum.terms();
+            assertNotNull(terms3);
+            TermsEnum termsEnum2 = terms3.iterator();
             BytesRef term2;
             while((term2 = termsEnum2.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
@@ -427,7 +429,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
           DocsEnum dEnum = null;
           while ((field=fieldsEnum.next()) != null) {
             System.out.println("    " + field + ":");
-            TermsEnum termsEnum2 = fieldsEnum.terms();
+            Terms terms3 = fieldsEnum.terms();
+            assertNotNull(terms3);
+            TermsEnum termsEnum2 = terms3.iterator();
             BytesRef term2;
             while((term2 = termsEnum2.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
@@ -482,7 +486,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
           if (field1 == null) {
             break;
           } else {
-            termsEnum1 = fields1.terms();
+            Terms terms = fields1.terms();
+            if (terms == null) {
+              continue;
+            }
+            termsEnum1 = terms.iterator();
           }
         }
         term1 = termsEnum1.next();
@@ -512,7 +520,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
           if (field2 == null) {
             break;
           } else {
-            termsEnum2 = fields2.terms();
+            Terms terms = fields2.terms();
+            if (terms == null) {
+              continue;
+            }
+            termsEnum2 = terms.iterator();
           }
         }
         term2 = termsEnum2.next();
@@ -593,8 +605,14 @@ public class TestStressIndexing2 extends LuceneTestCase {
       String field2 = fieldsEnum2.next();
       assertEquals(field1, field2);
 
-      TermsEnum termsEnum1 = fieldsEnum1.terms();
-      TermsEnum termsEnum2 = fieldsEnum2.terms();
+      Terms terms1 = fieldsEnum1.terms();
+      assertNotNull(terms1);
+      TermsEnum termsEnum1 = terms1.iterator();
+
+      Terms terms2 = fieldsEnum2.terms();
+      assertNotNull(terms2);
+      TermsEnum termsEnum2 = terms2.iterator();
+
       DocsAndPositionsEnum dpEnum1 = null;
       DocsAndPositionsEnum dpEnum2 = null;
       DocsEnum dEnum1 = null;

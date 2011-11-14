@@ -293,10 +293,8 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
         }
 
         @Override
-        public TermsEnum terms() throws IOException {
-          tvf.seek(fieldFPs[fieldUpto-1]);
-          final int numTerms = tvf.readVInt();
-          return new TVTermsEnum(numTerms);
+        public Terms terms() throws IOException {
+          return TVFields.this.terms(fieldInfos.fieldName(fieldNumbers[fieldUpto-1]));
         }
       };
     }
@@ -333,6 +331,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     private final long tvfFPStart;
 
     public TVTerms(long tvfFP) throws IOException {
+      // nocommit -- to be "safe" we should clone tvf here...?
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
       tvfFPStart = tvf.getFilePointer();

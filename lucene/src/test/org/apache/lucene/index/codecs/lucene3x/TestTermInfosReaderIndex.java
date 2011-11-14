@@ -38,6 +38,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.search.IndexSearcher;
@@ -140,13 +141,15 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     FieldsEnum fieldsEnum = MultiFields.getFields(reader).iterator();
     String field;
     while((field = fieldsEnum.next()) != null) {
-      TermsEnum terms = fieldsEnum.terms();
-      while (terms.next() != null) {
+      Terms terms = fieldsEnum.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator();
+      while (termsEnum.next() != null) {
         if (sample.size() >= size) {
           int pos = random.nextInt(size);
-          sample.set(pos, new Term(field, terms.term()));
+          sample.set(pos, new Term(field, termsEnum.term()));
         } else {
-          sample.add(new Term(field, terms.term()));
+          sample.add(new Term(field, termsEnum.term()));
         }
       }
     }

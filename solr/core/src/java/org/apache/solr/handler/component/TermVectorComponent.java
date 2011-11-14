@@ -19,7 +19,6 @@ import org.apache.lucene.index.StoredFieldVisitor.Status;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -256,7 +255,10 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         final FieldsEnum fieldsEnum = vectors.iterator();
         String field;
         while((field = fieldsEnum.next()) != null) {
-          mapOneVector(docNL, allFields, reader, docId, fieldsEnum.terms(), field);
+          Terms terms = fieldsEnum.terms();
+          if (terms != null) {
+            mapOneVector(docNL, allFields, reader, docId, terms.iterator(), field);
+          }
         }
       }
     }

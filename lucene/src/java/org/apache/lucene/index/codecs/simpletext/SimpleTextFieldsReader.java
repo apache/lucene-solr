@@ -87,8 +87,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      return SimpleTextFieldsReader.this.terms(current).iterator();
+    public Terms terms() throws IOException {
+      return SimpleTextFieldsReader.this.terms(current);
     }
   }
 

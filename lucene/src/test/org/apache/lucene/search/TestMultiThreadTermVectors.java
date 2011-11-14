@@ -180,7 +180,9 @@ class MultiThreadTermVectorsReader implements Runnable {
   private void verifyVectors(Fields vectors, int num) throws IOException {
     FieldsEnum fieldsEnum = vectors.iterator();
     while(fieldsEnum.next() != null) {
-      verifyVector(fieldsEnum.terms(), num);
+      Terms terms = fieldsEnum.terms();
+      assert terms != null;
+      verifyVector(terms.iterator(), num);
     }
   }
 

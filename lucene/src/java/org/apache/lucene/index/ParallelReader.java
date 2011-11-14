@@ -131,10 +131,9 @@ public class ParallelReader extends IndexReader {
     for (final String field : fields) {               // update fieldToReader map
       if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
+        this.fields.addField(field, MultiFields.getFields(reader).terms(field));
+        this.perDocs.addField(field, reader);
       }
-
-      this.fields.addField(field, MultiFields.getFields(reader).terms(field));
-      this.perDocs.addField(field, reader);
     }
 
     if (!ignoreStoredFields)
@@ -152,7 +151,6 @@ public class ParallelReader extends IndexReader {
 
   private class ParallelFieldsEnum extends FieldsEnum {
     String currentField;
-    IndexReader currentReader;
     Iterator<String> keys;
 
     ParallelFieldsEnum() {
@@ -163,23 +161,15 @@ public class ParallelReader extends IndexReader {
     public String next() throws IOException {
       if (keys.hasNext()) {
         currentField = keys.next();
-        currentReader = fieldToReader.get(currentField);
       } else {
         currentField = null;
-        currentReader = null;
       }
       return currentField;
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      assert currentReader != null;
-      Terms terms = MultiFields.getTerms(currentReader, currentField);
-      if (terms != null) {
-        return terms.iterator();
-      } else {
-        return TermsEnum.EMPTY;
-      }
+    public Terms terms() throws IOException {
+      return ParallelReader.this.fields.terms(currentField);
     }
 
   }

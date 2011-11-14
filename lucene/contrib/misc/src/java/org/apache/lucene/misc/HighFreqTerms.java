@@ -131,8 +131,10 @@ public class HighFreqTerms {
       while (true) {
         field = fieldsEnum.next();
         if (field != null) {
-          TermsEnum terms = fieldsEnum.terms();
-          fillQueue(terms, tiq, field);
+          Terms terms = fieldsEnum.terms();
+          if (terms != null) {
+            fillQueue(terms.iterator(), tiq, field);
+          }
         } else {
           break;
         }

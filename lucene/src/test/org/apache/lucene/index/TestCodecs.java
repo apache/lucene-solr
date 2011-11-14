@@ -264,7 +264,10 @@ public class TestCodecs extends LuceneTestCase {
 
     final FieldsEnum fieldsEnum = reader.iterator();
     assertNotNull(fieldsEnum.next());
-    final TermsEnum termsEnum = fieldsEnum.terms();
+    final Terms terms2 = fieldsEnum.terms();
+    assertNotNull(terms2);
+
+    final TermsEnum termsEnum = terms2.iterator();
 
     DocsEnum docsEnum = null;
     for(int i=0;i<NUM_TERMS;i++) {

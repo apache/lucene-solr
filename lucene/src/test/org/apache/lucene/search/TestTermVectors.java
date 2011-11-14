@@ -128,7 +128,9 @@ public class TestTermVectors extends LuceneTestCase {
       assertEquals(3, v.terms(expectedFields[i]).getUniqueTermCount());
 
       DocsAndPositionsEnum dpEnum = null;
-      TermsEnum termsEnum = fieldsEnum.terms();
+      Terms terms = fieldsEnum.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator();
       assertEquals("content", termsEnum.next().utf8ToString());
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
@@ -261,10 +263,13 @@ public class TestTermVectors extends LuceneTestCase {
     
     DocsEnum docs = null;
     while(fields.next() != null) {
-      TermsEnum terms = fields.terms();
-      while(terms.next() != null) {
-        String text = terms.term().utf8ToString();
-        docs = terms.docs(MultiFields.getLiveDocs(knownSearcher.reader), docs);
+      Terms terms = fields.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator();
+
+      while (termsEnum.next() != null) {
+        String text = termsEnum.term().utf8ToString();
+        docs = termsEnum.docs(MultiFields.getLiveDocs(knownSearcher.reader), docs);
         
         while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int docId = docs.docID();
@@ -279,11 +284,11 @@ public class TestTermVectors extends LuceneTestCase {
           //float coord = sim.coord()
           //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
           assertNotNull(vector);
-          TermsEnum termsEnum = vector.iterator();
+          TermsEnum termsEnum2 = vector.iterator();
 
-          while(termsEnum.next() != null) {
-            if (text.equals(termsEnum.term().utf8ToString())) {
-              assertEquals(freq, termsEnum.totalTermFreq());
+          while(termsEnum2.next() != null) {
+            if (text.equals(termsEnum2.term().utf8ToString())) {
+              assertEquals(freq, termsEnum2.totalTermFreq());
             }
           }
         }

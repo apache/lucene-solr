@@ -233,8 +233,8 @@ public class BlockTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum terms() throws IOException {
-      return current.iterator();
+    public Terms terms() throws IOException {
+      return current;
     }
   }
 

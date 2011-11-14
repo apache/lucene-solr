@@ -779,85 +779,85 @@ public class MemoryIndex {
     public ReaderContext getTopReaderContext() {
       return readerInfos;
     }
+
+    private class MemoryFields extends Fields {
+      @Override
+      public FieldsEnum iterator() {
+        return new FieldsEnum() {
+          int upto = -1;
+
+          @Override
+          public String next() {
+            upto++;
+            if (upto >= sortedFields.length) {
+              return null;
+            }
+            return sortedFields[upto].getKey();
+          }
+
+          @Override
+          public Terms terms() {
+            return MemoryFields.this.terms(sortedFields[upto].getKey());
+          }
+        };
+      }
+
+      @Override
+      public Terms terms(final String field) {
+        int i = Arrays.binarySearch(sortedFields, field, termComparator);
+        if (i < 0) {
+          return null;
+        } else {
+          final Info info = getInfo(i);
+          info.sortTerms();
+
+          return new Terms() {
+            @Override 
+            public TermsEnum iterator() {
+              return new MemoryTermsEnum(info);
+            }
+
+            @Override
+            public Comparator<BytesRef> getComparator() {
+              return BytesRef.getUTF8SortedAsUnicodeComparator();
+            }
+
+            @Override
+            public long getUniqueTermCount() {
+              return info.sortedTerms.length;
+            }
+
+            @Override
+            public long getSumTotalTermFreq() {
+              return info.getSumTotalTermFreq();
+            }
+
+            @Override
+            public long getSumDocFreq() throws IOException {
+              // each term has df=1
+              return info.sortedTerms.length;
+            }
+
+            @Override
+            public int getDocCount() throws IOException {
+              return info.sortedTerms.length > 0 ? 1 : 0;
+            }
+              
+              
+          };
+        }
+      }
+
+      @Override
+      public int getUniqueFieldCount() {
+        return sortedFields.length;
+      }
+    }
   
     @Override
     public Fields fields() {
-
       sortFields();
-
-      return new Fields() {
-        @Override
-        public FieldsEnum iterator() {
-          return new FieldsEnum() {
-            int upto = -1;
-
-            @Override
-            public String next() {
-              upto++;
-              if (upto >= sortedFields.length) {
-                return null;
-              }
-              return sortedFields[upto].getKey();
-            }
-
-            @Override
-            public TermsEnum terms() {
-              return new MemoryTermsEnum(sortedFields[upto].getValue());
-            }
-          };
-        }
-
-        @Override
-        public Terms terms(final String field) {
-          int i = Arrays.binarySearch(sortedFields, field, termComparator);
-          if (i < 0) {
-            return null;
-          } else {
-            final Info info = getInfo(i);
-            info.sortTerms();
-
-            return new Terms() {
-              @Override 
-              public TermsEnum iterator() {
-                return new MemoryTermsEnum(info);
-              }
-
-              @Override
-              public Comparator<BytesRef> getComparator() {
-                return BytesRef.getUTF8SortedAsUnicodeComparator();
-              }
-
-              @Override
-              public long getUniqueTermCount() {
-                return info.sortedTerms.length;
-              }
-
-              @Override
-              public long getSumTotalTermFreq() {
-                return info.getSumTotalTermFreq();
-              }
-
-              @Override
-              public long getSumDocFreq() throws IOException {
-                // each term has df=1
-                return info.sortedTerms.length;
-              }
-
-              @Override
-              public int getDocCount() throws IOException {
-                return info.sortedTerms.length > 0 ? 1 : 0;
-              }
-              
-              
-            };
-          }
-        }
-
-        @Override
-        public int getUniqueFieldCount() {
-          return sortedFields.length;
-        }
-      };
+      return new MemoryFields();
     }
 
     private class MemoryTermsEnum extends TermsEnum {

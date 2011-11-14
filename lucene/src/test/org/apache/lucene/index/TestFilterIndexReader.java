@@ -65,8 +65,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       @Override
-      public TermsEnum terms() throws IOException {
-        return new TestTermsEnum(super.terms());
+      public Terms terms() throws IOException {
+        return new TestTerms(super.terms());
       }
     }
 

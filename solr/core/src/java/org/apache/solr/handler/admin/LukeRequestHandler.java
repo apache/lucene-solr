@@ -485,9 +485,12 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (fields != null) {
         FieldsEnum fieldsEnum = fields.iterator();
         while(fieldsEnum.next() != null) {
-          TermsEnum termsEnum = fieldsEnum.terms();
-          while(termsEnum.next() != null) {
-            numTerms++;
+          Terms terms = fieldsEnum.terms();
+          if (terms != null) {
+            TermsEnum termsEnum = terms.iterator();
+            while(termsEnum.next() != null) {
+              numTerms++;
+            }
           }
         }
       }
@@ -639,7 +642,11 @@ public class LukeRequestHandler extends RequestHandlerBase
       String field;
       while((field = fieldsEnum.next()) != null) {
 
-        TermsEnum termsEnum = fieldsEnum.terms();
+        Terms terms = fieldsEnum.terms();
+        if (terms == null) {
+          continue;
+        }
+        TermsEnum termsEnum = terms.iterator();
         BytesRef text;
         while((text = termsEnum.next()) != null) {
           String t = text.utf8ToChars(spare).toString();

@@ -187,8 +187,9 @@ public abstract class TermVectorsWriter implements Closeable {
       
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
 
-      final Terms terms = vectors.terms(fieldName);
+      final Terms terms = fieldsEnum.terms();
       if (terms == null) {
+        // FieldsEnum shouldn't lie...
         continue;
       }
       final int numTerms = (int) terms.getUniqueTermCount();
@@ -198,8 +199,9 @@ public abstract class TermVectorsWriter implements Closeable {
 
       final boolean positions;
 
-      final TermsEnum termsEnum = fieldsEnum.terms();
       final OffsetAttribute offsetAtt;
+
+      final TermsEnum termsEnum = terms.iterator();
 
       DocsAndPositionsEnum docsAndPositionsEnum = null;
 

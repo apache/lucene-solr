@@ -305,8 +305,8 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum terms() {
-      return new RAMTermsEnum(postings.fieldToTerms.get(current));
+    public Terms terms() {
+      return postings.fieldToTerms.get(current);
     }
   }
 

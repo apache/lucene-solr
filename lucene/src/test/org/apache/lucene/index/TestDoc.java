@@ -232,7 +232,9 @@ public class TestDoc extends LuceneTestCase {
       FieldsEnum fis = reader.fields().iterator();
       String field = fis.next();
       while(field != null)  {
-        TermsEnum tis = fis.terms();
+        Terms terms = fis.terms();
+        assertNotNull(terms);
+        TermsEnum tis = terms.iterator();
         while(tis.next() != null) {
 
           out.print("  term=" + field + ":" + tis.term());

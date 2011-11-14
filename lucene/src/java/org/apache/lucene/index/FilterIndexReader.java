@@ -134,7 +134,7 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
+    public Terms terms() throws IOException {
       return in.terms();
     }
   }

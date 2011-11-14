@@ -34,7 +34,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsFormat;
@@ -224,13 +223,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public TermsEnum terms() throws IOException {
-        final Terms terms = fields.get(current).terms(current);
-        if (terms != null) {
-          return terms.iterator();
-        } else {
-          return TermsEnum.EMPTY;
-        }
+      public Terms terms() throws IOException {
+        return fields.get(current).terms(current);
       }
     }
 

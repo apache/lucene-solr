@@ -768,8 +768,9 @@ public class MemoryPostingsFormat extends PostingsFormat {
             return current.field.name;
           }
 
-          public TermsEnum terms() {
-            return current.iterator();
+          @Override
+          public Terms terms() {
+            return current;
           }
         };
       }

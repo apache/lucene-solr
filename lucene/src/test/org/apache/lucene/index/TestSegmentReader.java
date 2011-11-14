@@ -121,9 +121,11 @@ public class TestSegmentReader extends LuceneTestCase {
     FieldsEnum fields = MultiFields.getFields(reader).iterator();
     String field;
     while((field = fields.next()) != null) {
-      TermsEnum terms = fields.terms();
-      while(terms.next() != null) {
-        BytesRef term = terms.term();
+      Terms terms = fields.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator();
+      while(termsEnum.next() != null) {
+        BytesRef term = termsEnum.term();
         assertTrue(term != null);
         String fieldValue = (String) DocHelper.nameValues.get(field);
         assertTrue(fieldValue.indexOf(term.utf8ToString()) != -1);

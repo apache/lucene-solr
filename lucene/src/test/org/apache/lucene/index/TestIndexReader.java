@@ -899,8 +899,17 @@ public class TestIndexReader extends LuceneTestCase
       Bits liveDocs = MultiFields.getLiveDocs(index1);
       while((field1=fenum1.next()) != null) {
         assertEquals("Different fields", field1, fenum2.next());
-        TermsEnum enum1 = fenum1.terms();
-        TermsEnum enum2 = fenum2.terms();
+        Terms terms1 = fenum1.terms();
+        if (terms1 == null) {
+          assertNull(fenum2.terms());
+          continue;
+        }
+        TermsEnum enum1 = terms1.iterator();
+
+        Terms terms2 = fenum2.terms();
+        assertNotNull(terms2);
+        TermsEnum enum2 = terms2.iterator();
+
         while(enum1.next() != null) {
           assertEquals("Different terms", enum1.term(), enum2.next());
           DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null);

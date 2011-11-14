@@ -199,12 +199,13 @@ public class Lucene3xFields extends FieldsProducer {
 
   private class PreFlexFieldsEnum extends FieldsEnum {
     final Iterator<FieldInfo> it;
-    private final PreTermsEnum termsEnum;
+    // nocommit cleanup
+    //private final PreTermsEnum termsEnum;
     FieldInfo current;
 
     public PreFlexFieldsEnum() throws IOException {
       it = fields.values().iterator();
-      termsEnum = new PreTermsEnum();
+      //termsEnum = new PreTermsEnum();
     }
 
     @Override
@@ -218,9 +219,10 @@ public class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      termsEnum.reset(current);
-      return termsEnum;
+    public Terms terms() throws IOException {
+      return Lucene3xFields.this.terms(current.name);
+      //termsEnum.reset(current);
+      //return termsEnum;
     }
   }
   
