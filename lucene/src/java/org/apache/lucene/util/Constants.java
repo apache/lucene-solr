@@ -28,12 +28,6 @@ public final class Constants {
 
   /** The value of <tt>System.getProperty("java.version")<tt>. **/
   public static final String JAVA_VERSION = System.getProperty("java.version");
-  /** True iff this is Java version 1.1. */
-  public static final boolean JAVA_1_1 = JAVA_VERSION.startsWith("1.1.");
-  /** True iff this is Java version 1.2. */
-  public static final boolean JAVA_1_2 = JAVA_VERSION.startsWith("1.2.");
-  /** True iff this is Java version 1.3. */
-  public static final boolean JAVA_1_3 = JAVA_VERSION.startsWith("1.3.");
  
   /** The value of <tt>System.getProperty("os.name")<tt>. **/
   public static final String OS_NAME = System.getProperty("os.name");
@@ -50,11 +44,16 @@ public final class Constants {
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
-  // NOTE: this logic may not be correct; if you know of a
-  // more reliable approach please raise it on java-dev!
-  public static final boolean JRE_IS_64BIT;
+  /** @deprecated With Lucene 4.0, we are always on Java 6 */
+  @Deprecated
+  public static final boolean JRE_IS_MINIMUM_JAVA6 = true;
+
+  public static final boolean JRE_IS_64BIT;  
+  public static final boolean JRE_IS_MINIMUM_JAVA7;
   static {
-    String x = System.getProperty("sun.arch.data.model");
+    // NOTE: this logic may not be correct; if you know of a
+    // more reliable approach please raise it on java-dev!
+    final String x = System.getProperty("sun.arch.data.model");
     if (x != null) {
       JRE_IS_64BIT = x.indexOf("64") != -1;
     } else {
@@ -64,6 +63,15 @@ public final class Constants {
         JRE_IS_64BIT = false;
       }
     }
+    
+    // this method only exists in Java 7:
+    boolean v7 = true;
+    try {
+      Throwable.class.getMethod("getSuppressed");
+    } catch (NoSuchMethodException nsme) {
+      v7 = false;
+    }
+    JRE_IS_MINIMUM_JAVA7 = v7;
   }
 
   // this method prevents inlining the final version constant in compiled classes,

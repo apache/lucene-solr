@@ -735,6 +735,9 @@ API Changes
   for multi-segment indexes. They were only needed for tests of
   NumericRangeQuery.  (Mike McCandless, Uwe Schindler)
 
+* LUCENE-3574: Deprecate outdated constants in org.apache.lucene.util.Constants
+  and add new ones for Java 6 and Java 7.  (Uwe Schindler)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).
