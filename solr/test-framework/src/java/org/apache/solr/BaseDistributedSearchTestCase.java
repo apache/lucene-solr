@@ -387,8 +387,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static String compare(NamedList a, NamedList b, int flags, Map<String, Integer> handle) {
-    System.out.println("resp a:" + a);
-    System.out.println("resp b:" + b);
+//    System.out.println("resp a:" + a);
+//    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
 
     int posa = 0, posb = 0;
