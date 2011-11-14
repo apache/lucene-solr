@@ -5,7 +5,10 @@ import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
@@ -15,8 +18,6 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnsafeByteArrayOutputStream;
 import org.apache.lucene.util.encoding.DGapIntEncoder;
@@ -24,6 +25,7 @@ import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.SortingIntEncoder;
 import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
 import org.apache.lucene.util.encoding.VInt8IntEncoder;
+import org.junit.Test;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -134,8 +136,6 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     Directory dir = newDirectory();
     DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
-    DataTokenStream dts2 = new DataTokenStream("2",new SortingIntEncoder(
-        new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
     // this test requires that no payloads ever be randomly present!
     final Analyzer noPayloadsAnalyzer = new Analyzer() {
       @Override
@@ -147,28 +147,15 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, noPayloadsAnalyzer).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
-      dts.setIdx(i);
       Document doc = new Document();
-      if (i==0 || i == 2) {
-        doc.add(new TextField("f", dts)); // only docs 0 & 2 have payloads!
+      if (i == 0) {
+        dts.setIdx(i);
+        doc.add(new TextField("f", dts)); // only doc 0 has payloads!
+      } else {
+        doc.add(new TextField("f", "1"));
       }
-      dts2.setIdx(i);
-      doc.add(new TextField("f", dts2));
       writer.addDocument(doc);
       writer.commit();
-    }
-
-    // add more documents to expose the bug.
-    // for some reason, this bug is not exposed unless these additional documents are added.
-    for (int i = 0; i < 10; ++i) {
-      Document d = new Document();
-      dts.setIdx(2);
-      d.add(new TextField("f", dts2));
-      writer.addDocument(d);
-      if (i %10 == 0) {
-        writer.commit();
-      }
-      
     }
 
     IndexReader reader = writer.getReader();
@@ -176,7 +163,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
 
     CategoryListIterator cli = new PayloadIntDecodingIterator(reader, new Term(
         "f","1"), dts.encoder.createMatchingDecoder());
-    cli.init();
+    assertTrue("Failed to initialize payload iterator", cli.init());
     int totalCats = 0;
     for (int i = 0; i < data.length; i++) {
       // doc no. i
@@ -186,21 +173,19 @@ public class CategoryListIteratorTest extends LuceneTestCase {
       }
       boolean hasDoc = cli.skipTo(i);
       if (hasDoc) {
-        assertTrue("Document "+i+" must not have a payload!", i==0 || i==2 );
+        assertTrue("Document " + i + " must not have a payload!", i == 0);
         long cat;
         while ((cat = cli.nextCategory()) < Integer.MAX_VALUE) {
           assertTrue("expected category not found: " + cat, values.contains((int) cat));
           ++totalCats;
         }
       } else {
-        assertFalse("Document "+i+" must have a payload!", i==0 || i==2 );
+        assertFalse("Document " + i + " must have a payload!", i == 0);
       }
 
     }
-    assertEquals("Wrong number of total categories!", 4, totalCats);
+    assertEquals("Wrong number of total categories!", 2, totalCats);
 
-    // Ok.. went through the first 4 docs, now lets try the 6th doc (docid 5)
-    assertFalse("Doc #6 (docid=5) should not have a payload!",cli.skipTo(5));
     reader.close();
     dir.close();
   }
