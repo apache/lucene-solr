@@ -33,6 +33,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -197,7 +198,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testReader() throws IOException {
-    DefaultTermVectorsReader reader = new DefaultTermVectorsReader(dir, seg, fieldInfos, newIOContext(random));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -216,7 +217,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testPositionReader() throws IOException {
-    DefaultTermVectorsReader reader = new DefaultTermVectorsReader(dir, seg, fieldInfos, newIOContext(random));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
     BytesRef[] terms;
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
@@ -269,7 +270,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testOffsetReader() throws IOException {
-    DefaultTermVectorsReader reader = new DefaultTermVectorsReader(dir, seg, fieldInfos, newIOContext(random));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator(null);
@@ -311,9 +312,9 @@ public class TestTermVectorsReader extends LuceneTestCase {
    * Make sure exceptions and bad params are handled appropriately
    */
   public void testBadParams() throws IOException {
-    DefaultTermVectorsReader reader = null;
+    TermVectorsReader reader = null;
     try {
-      reader = new DefaultTermVectorsReader(dir, seg, fieldInfos, newIOContext(random));
+      reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
       //Bad document number, good field number
       reader.get(50);
       fail();
@@ -322,7 +323,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     } finally {
       reader.close();
     }
-    reader = new DefaultTermVectorsReader(dir, seg, fieldInfos, newIOContext(random));
+    reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
     //good document number, bad field
     Terms vector = reader.get(0).terms("f50");
     assertNull(vector);
