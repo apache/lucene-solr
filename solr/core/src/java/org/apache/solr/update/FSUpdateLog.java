@@ -426,7 +426,9 @@ public class FSUpdateLog extends UpdateLog {
     }
 
     try {
-      tlog.finish(syncLevel);
+      if (tlog != null) {
+        tlog.finish(syncLevel);
+      }
     } finally {
       currLog.decref();
     }

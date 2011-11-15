@@ -128,6 +128,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // It gives the current 'replicateable' index version
    if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
+      
+      // this is only set after commit or optimize or something - if it's not set,
+      // just use the most recent
+      if (commitPoint == null) {
+        commitPoint = req.getSearcher().getIndexReader().getIndexCommit();
+      }
+      
       if (commitPoint != null && replicationEnabled.get()) {
         //
         // There is a race condition here.  The commit point may be changed / deleted by the time
@@ -281,7 +288,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
       }
-      tempSnapPuller.fetchLatestIndex(core);
+      tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool("force", false));
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {

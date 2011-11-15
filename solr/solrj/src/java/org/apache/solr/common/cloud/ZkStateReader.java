@@ -320,4 +320,38 @@ public class ZkStateReader {
 
 	}
   
+  // TODO: do this with cloud state or something along those lines
+  public String getLeader(String collection, String shard) throws Exception {
+    
+    String url = null;
+    int tries = 30;
+    while (true) {
+      if (!zkClient
+          .exists("/collections/" + collection + "/leader_elect/" + shard + "/leader")) {
+        if (tries-- == 0) {
+          throw new RuntimeException("No registered leader was found");
+        }
+        Thread.sleep(1000);
+        continue;
+      }
+      String leaderPath = "/collections/" + collection + "/leader_elect/" + shard + "/leader";
+      List<String> leaderChildren = zkClient.getChildren(
+          leaderPath, null);
+      if (leaderChildren.size() > 0) {
+        String leader = leaderChildren.get(0);
+        byte[] data = zkClient.getData(leaderPath + "/" + leader, null, null);
+        ZkNodeProps props = new ZkNodeProps();
+        props.load(data);
+        url = props.get(ZkStateReader.URL_PROP);
+        break;
+      } else {
+        if (tries-- == 0) {
+          throw new RuntimeException("No registered leader was found");
+        }
+        Thread.sleep(1000);
+      }
+    }
+    return url;
+  }
+  
 }

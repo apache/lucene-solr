@@ -43,7 +43,7 @@ public class CoreDescriptor {
     this.coreContainer = coreContainer;
     this.name = name;
     
-    if(coreContainer.getZkController() != null) {
+    if(coreContainer != null && coreContainer.getZkController() != null) {
       this.cloudDesc = new CloudDescriptor();
       // cloud collection defaults to core name
       cloudDesc.setCollectionName(name.isEmpty() ? coreContainer.getDefaultCoreName() : name);

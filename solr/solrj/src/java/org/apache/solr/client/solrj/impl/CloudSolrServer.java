@@ -115,6 +115,8 @@ public class CloudSolrServer extends SolrServer {
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
     connect();
 
+    // TODO: if you can hash here, you could favor the shard leader
+    
     CloudState cloudState = zkStateReader.getCloudState();
 
     String collection = request.getParams().get("collection", defaultCollection);

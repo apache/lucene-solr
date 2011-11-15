@@ -233,7 +233,19 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     ureq.setParam("update.chain", "distrib-update-chain");
-    System.out.println("set update.chain on req");
+    ureq.process(client);
+  }
+  
+  protected void index_specific(SolrServer client, Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    for (int i = 0; i < fields.length; i += 2) {
+      doc.addField((String) (fields[i]), fields[i + 1]);
+    }
+    controlClient.add(doc);
+
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.add(doc);
+    ureq.setParam("update.chain", "distrib-update-chain");
     ureq.process(client);
   }
   
@@ -406,12 +418,19 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     JettySolrRunner deadShard = killShard("shard2", 0);
     JettySolrRunner deadShard2 = killShard("shard3", 1);
     
-    // TODO: test indexing after killing shards - smart solrj client should not
-    // care at all
+    // ensure shard is dead
+    try {
+      index_specific(shardToClient.get("shard2").get(0), id, 999, i1, 107, t1,
+        "specific doc!");
+      fail("This server should be down and this update should have failed");
+    } catch (SolrServerException e) {
+      // expected..
+    }
     
     // try to index to a living shard at shard2
-    index_specific(3, id,1000, i1, 107 ,t1,"specific doc!");
-    
+    index_specific(shardToClient.get("shard2").get(1), id, 1000, i1, 107, t1,
+        "specific doc!");
+
     commit();
     
     // TMP: try adding a doc with CloudSolrServer
@@ -436,7 +455,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     long numFound2 = server.query(query).getResults().getNumFound();
     
     // lets just check that the one doc since last commit made it in...
-    //TODO this sometimes fails - need to dig up what missed/messed up part causes it
     assertEquals(numFound1 + 1, numFound2);
     
     // test debugging
@@ -465,7 +483,20 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // this should trigger a recovery phase on deadShard
 
     deadShard.start(true);
+    
+    List<SolrServer> shard2Clients = shardToClient.get("shard2");
+    System.out.println("shard2_1 port:" + ((CommonsHttpSolrServer)shard2Clients.get(0)).getBaseURL());
+    System.out.println("shard2_2 port:" + ((CommonsHttpSolrServer)shard2Clients.get(1)).getBaseURL());
+    
+    // wait a bit for replication
+    Thread.sleep(5000);
+    
 
+    // if we properly recovered, we should now have the couple missing docs that
+    // came in while shard was down
+    assertEquals(shard2Clients.get(0).query(new SolrQuery("*:*")).getResults()
+        .getNumFound(), shard2Clients.get(1).query(new SolrQuery("*:*"))
+        .getResults().getNumFound());
     
     // kill the other shard3 replica
     JettySolrRunner deadShard3 = killShard("shard3", 0);

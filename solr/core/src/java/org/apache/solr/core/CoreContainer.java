@@ -510,27 +510,9 @@ public class CoreContainer
       core.getCoreDescriptor().name = name;
     }
 
-    if (zkController != null) {
-      try {
-        zkController.register(core.getName(), core.getCoreDescriptor().getCloudDescriptor());
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      } catch (KeeperException e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      } catch (IOException e) {
-        log.error("", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-      }
-    }
-
     if( old == null || old == core) {
       log.info( "registering core: "+name );
+      registerInZk(core);
       return null;
     }
     else {
@@ -538,10 +520,29 @@ public class CoreContainer
       if (!returnPrevNotClosed) {
         old.close();
       }
+      registerInZk(core);
       return old;
     }
   }
 
+
+  private void registerInZk(SolrCore core) {
+    if (zkController != null) {
+      try {
+        zkController.register(core.getName(), core.getCoreDescriptor(), core.getCoreDescriptor().getCloudDescriptor());
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      } catch (Exception e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      }
+    }
+  }
 
   /**
    * Registers a SolrCore descriptor in the registry using the core's name.

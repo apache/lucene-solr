@@ -19,9 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,6 +31,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.CreateMode;
@@ -149,25 +150,21 @@ public final class ZkController {
                   .getCurrentDescriptors();
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
-                  register(descriptor.getName(),
+                  register(descriptor.getName(), descriptor,
                       descriptor.getCloudDescriptor());
                 }
               }
 
-            } catch (KeeperException e) {
-              log.error("", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                  "", e);
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
               log.error("", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                  "", e);
-            } catch (IOException e) {
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            } catch (Exception e) {
               log.error("", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                  "", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
             }
 
           }
@@ -404,24 +401,48 @@ public final class ZkController {
    * @param coreName
    * @param cloudDesc
    * @return
-   * @throws IOException
-   * @throws KeeperException
-   * @throws InterruptedException
+   * @throws Exception 
    */
-  public String register(String coreName, final CloudDescriptor cloudDesc) throws IOException,
-      KeeperException, InterruptedException {
+  public String register(String coreName, final CoreDescriptor desc, final CloudDescriptor cloudDesc) throws Exception {
     String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
     final String collection = cloudDesc.getCollectionName();
     
+    byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
+        null, null);
+    log.info("Attempting to update /" + ZkStateReader.CLUSTER_STATE + " version "
+        + null);
+    CloudState state = CloudState.load(data);
+    
+    boolean recover = false;
+    Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
+    String shardZkNodeName = getNodeName() + "_" + coreName;
+    if (slices != null) {
+      Map<String,String> nodes = new HashMap<String,String>();
+
+      for (Slice s : slices.values()) {
+        System.out.println("add slice: "+ s.getName());
+        for (String node : s.getShards().keySet()) {
+          System.out.println("add node: "+ node);
+          nodes.put(node, s.getName());
+        }
+      }
+      System.out.println("print recovery:" + nodes + " name: " + shardZkNodeName);
+      if (nodes.containsKey(shardZkNodeName)) {
+        // TODO: we where already registered - go into recovery mode
+        cloudDesc.setShardId(nodes.get(shardZkNodeName));
+        recover = true;
+      }
+    }
+    
+    // TODO: we should check if its recovery before this, so that we avoid getting a new shardId
     String shardId = cloudDesc.getShardId();
-    if (shardId == null) {
+    if (shardId == null && !recover) {
       shardId = assignShard.assignShard(collection, numShards);
       cloudDesc.setShardId(shardId);
     }
     
-    String shardZkNodeName = getNodeName() + "_" + coreName;
 
     if (log.isInfoEnabled()) {
         log.info("Register shard - core:" + coreName + " address:"
@@ -430,7 +451,7 @@ public final class ZkController {
     
     leaderElector.setupForSlice(shardId, collection);
     
-    ZkNodeProps props = addToZk(cloudDesc, shardUrl, shardZkNodeName);
+    ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, recover);
     
     // leader election
     doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
@@ -438,10 +459,9 @@ public final class ZkController {
   }
 
 
-  ZkNodeProps addToZk(final CloudDescriptor cloudDesc, String shardUrl,
-      final String shardZkNodeName)
-      throws KeeperException, InterruptedException,
-      UnsupportedEncodingException, IOException {
+  ZkNodeProps addToZk(String collection, final CoreDescriptor desc, final CloudDescriptor cloudDesc, String shardUrl,
+      final String shardZkNodeName, boolean recover)
+      throws Exception {
     ZkNodeProps props = new ZkNodeProps();
     props.put(ZkStateReader.URL_PROP, shardUrl);
     
@@ -456,7 +476,7 @@ public final class ZkController {
 		boolean persisted = false;
 		Stat stat = zkClient.exists(ZkStateReader.CLUSTER_STATE, null);
 		if (stat == null) {
-			log.info("/clusterstate does not exist, attempting to create");
+			log.info("/" + ZkStateReader.CLUSTER_STATE + " does not exist, attempting to create");
 			try {
 				CloudState state = new CloudState();
 
@@ -466,7 +486,7 @@ public final class ZkController {
 						CloudState.store(state), Ids.OPEN_ACL_UNSAFE,
 						CreateMode.PERSISTENT);
 				persisted = true;
-				log.info("/clusterstate created");
+				log.info("/" + ZkStateReader.CLUSTER_STATE);
 			} catch (KeeperException e) {
 				if (e.code() != Code.NODEEXISTS) {
 					// If this node exists, no big deal
@@ -484,29 +504,11 @@ public final class ZkController {
 
 				byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
 						null, stat);
-				log.info("Attempting to update /clusterstate version "
+				log.info("Attempting to update /" + ZkStateReader.CLUSTER_STATE + " version "
 						+ stat.getVersion());
 				CloudState state = CloudState.load(data);
-				Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
+				// our second state read - should only need one (see register)
         
-				boolean recover = false;
-        if (slices != null) {
-			    Set<String> nodes = new HashSet<String>();
-		
-			    for (Slice s : slices.values()) {
-			      System.out.println("add slice: "+ s.getName());
-			      for (String node : s.getShards().keySet()) {
-			        System.out.println("add node: "+ node);
-			        nodes.add(node);
-			      }
-			    }
-			    System.out.println("print recovery:" + nodes + " name: " + shardZkNodeName);
-          if (nodes.contains(shardZkNodeName)) {
-            // TODO: we where already registered - go into recovery mode
-            System.out.println("RECOVERY");
-            recover = true;
-          }
-				}
 				// we need a new copy to modify
         state = new CloudState(state.getLiveNodes(), state.getCollectionStates());
 				state.addSlice(cloudDesc.getCollectionName(), slice);
@@ -517,12 +519,40 @@ public final class ZkController {
 					updated = true;
 					if (recover) {
 					  System.out.println("do recovery");
+					  // start buffer updates to tran log
+					  // and do recovery - either replay via realtime get 
+					  // or full index replication
+            System.out.println("RECOVERY");
+            // seems we cannot do this here since we are not fully running - 
+            // we need to trigger a recovery that happens later
+            System.out.println("shard is:" + cloudDesc.getShardId());
+            String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
+            System.out.println("leader url: "+ leaderUrl);
+            System.out.println("shard url: "+ shardUrl);
+            if (!leaderUrl.equals(shardUrl)) {
+              // if we are the leader, either we are trying to recover faster
+              // then our ephemeral timed out or we are the only node
+              
+              ModifiableSolrParams params = new ModifiableSolrParams();
+              params.set("command", "fetchindex");
+              params.set("force", true); // force replication regardless of
+                                         // versions
+              params.set("masterUrl", leaderUrl + "replication");
+              QueryRequest req = new QueryRequest(params);
+              req.setPath("/replication");
+              System.out.println("Make replication call to:" + leaderUrl);
+              System.out.println("params:" + params);
+              // we need to use embedded cause http is not up yet anyhow
+              EmbeddedSolrServer server = new EmbeddedSolrServer(
+                  desc.getCoreContainer(), desc.getName());
+              server.request(req);
+            }
 					}
 				} catch (KeeperException e) {
 					if (e.code() != Code.BADVERSION) {
 						throw e;
 					}
-					log.info("Failed to update /clusterstate, retrying");
+					log.info("Failed to update /" + ZkStateReader.CLUSTER_STATE + ", retrying");
 				}
 
 			}

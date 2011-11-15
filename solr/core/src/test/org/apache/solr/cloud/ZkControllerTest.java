@@ -179,17 +179,17 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cloudDesc.setCollectionName("collection1");
       zkController.createCollectionZkNode(cloudDesc);
      
-      String shard1 = zkController.register("core1", cloudDesc);
+      String shard1 = zkController.register("core1", new CoreDescriptor(null, "core1", "instanceDir"), cloudDesc);
       cloudDesc.setShardId(null);
-      String shard2 = zkController.register("core2", cloudDesc);
+      String shard2 = zkController.register("core2", new CoreDescriptor(null, "core2", "instanceDir"), cloudDesc);
       cloudDesc.setShardId(null);
-      String shard3 = zkController.register("core3", cloudDesc);
+      String shard3 = zkController.register("core3", new CoreDescriptor(null, "core3", "instanceDir"), cloudDesc);
       cloudDesc.setShardId(null);
-      String shard4 = zkController.register("core4", cloudDesc);
+      String shard4 = zkController.register("core4", new CoreDescriptor(null, "core4", "instanceDir"), cloudDesc);
       cloudDesc.setShardId(null);
-      String shard5 = zkController.register("core5", cloudDesc);
+      String shard5 = zkController.register("core5", new CoreDescriptor(null, "core5", "instanceDir"), cloudDesc);
       cloudDesc.setShardId(null);
-      String shard6 = zkController.register("core6", cloudDesc);
+      String shard6 = zkController.register("core6", new CoreDescriptor(null, "core6", "instanceDir"), cloudDesc);
       cloudDesc.setShardId(null);
 
       assertEquals("shard1", shard1);

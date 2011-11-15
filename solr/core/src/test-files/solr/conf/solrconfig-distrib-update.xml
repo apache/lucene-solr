@@ -37,6 +37,10 @@
 			multipartUploadLimitInKB="2048" />
 		<httpCaching never304="true" />
 	</requestDispatcher>
+	
+	<requestHandler name="/replication" class="solr.ReplicationHandler">
+
+    </requestHandler>
 
     <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
 

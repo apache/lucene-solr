@@ -243,7 +243,7 @@ public class SnapPuller {
   @SuppressWarnings("unchecked")
   boolean successfulInstall = false;
 
-  boolean fetchLatestIndex(SolrCore core) throws IOException {
+  boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException {
     replicationStartTime = System.currentTimeMillis();
     try {
       //get the current 'replicateable' index version in the master
@@ -256,7 +256,7 @@ public class SnapPuller {
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
-      if (latestVersion == 0L) {
+      if (latestVersion == 0L && !force) {
         //there is nothing to be replicated
         return false;
       }
