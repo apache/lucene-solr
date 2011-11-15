@@ -86,7 +86,7 @@ public class DuplicateFilter extends Filter {
       return bits;
     }
 
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.iterator(null);
     DocsEnum docs = null;
     while (true) {
       BytesRef currTerm = termsEnum.next();
@@ -124,7 +124,7 @@ public class DuplicateFilter extends Filter {
       return bits;
     }
 
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.iterator(null);
     DocsEnum docs = null;
     while (true) {
       BytesRef currTerm = termsEnum.next();

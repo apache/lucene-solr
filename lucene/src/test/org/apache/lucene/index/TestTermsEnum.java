@@ -62,7 +62,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
 
     final List<BytesRef> terms = new ArrayList<BytesRef>();
-    final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator();
+    final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator(null);
     BytesRef term;
     while((term = termsEnum.next()) != null) {
       terms.add(new BytesRef(term));
@@ -485,7 +485,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, docFreq(r, "xx"));
     assertEquals(1, docFreq(r, "aa4"));
 
-    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
+    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator(null);
     while(te.next() != null) {
       //System.out.println("TEST: next term=" + te.term().utf8ToString());
     }
@@ -517,7 +517,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, r.maxDoc());
     Terms terms = MultiFields.getTerms(r, "field");
     if (terms != null) {
-      assertNull(terms.iterator().next());
+      assertNull(terms.iterator(null).next());
     }
     r.close();
     d.close();
@@ -617,7 +617,7 @@ public class TestTermsEnum extends LuceneTestCase {
         System.out.println("  " + t.utf8ToString() + " " + t);
       }
     }
-    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
+    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator(null);
 
     final int END_LOC = -validTerms.length-1;
     

@@ -736,7 +736,7 @@ public final class MoreLikeThis {
    * @param vector List of terms and their frequencies for a doc/field
    */
   private void addTermFrequencies(Map<String, Int> termFreqMap, Terms vector) throws IOException {
-    final TermsEnum termsEnum = vector.iterator();
+    final TermsEnum termsEnum = vector.iterator(null);
     final CharsRef spare = new CharsRef();
     BytesRef text;
     while((text = termsEnum.next()) != null) {

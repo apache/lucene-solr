@@ -71,6 +71,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
  
   @Override
   public void startDocument(int numVectorFields) throws IOException {
+    lastFieldName = null;
     this.numVectorFields = numVectorFields;
     tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
@@ -82,9 +83,12 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   private long fps[] = new long[10]; // pointers to the tvf before writing each field 
   private int fieldCount = 0;        // number of fields we have written so far for this document
   private int numVectorFields = 0;   // total number of fields we will write for this document
-  
+  private String lastFieldName;
+
   @Override
   public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets) throws IOException {
+    assert lastFieldName == null || info.name.compareTo(lastFieldName) > 0: "fieldName=" + info.name + " lastFieldName=" + lastFieldName;
+    lastFieldName = info.name;
     this.positions = positions;
     this.offsets = offsets;
     lastTerm.length = 0;

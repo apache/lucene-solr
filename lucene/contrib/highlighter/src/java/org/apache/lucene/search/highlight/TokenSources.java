@@ -124,7 +124,7 @@ public class TokenSources {
   }
 
   private static boolean hasPositions(Terms vector) throws IOException {
-    final TermsEnum termsEnum = vector.iterator();
+    final TermsEnum termsEnum = vector.iterator(null);
     if (termsEnum.next() != null) {
       DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
       if (dpEnum != null) {
@@ -207,14 +207,14 @@ public class TokenSources {
       }
     }
     // code to reconstruct the original sequence of Tokens
-    TermsEnum termsEnum = tpv.iterator();
+    TermsEnum termsEnum = tpv.iterator(null);
     int totalTokens = 0;
     while(termsEnum.next() != null) {
       totalTokens += (int) termsEnum.totalTermFreq();
     }
     Token tokensInOriginalOrder[] = new Token[totalTokens];
     ArrayList<Token> unsortedTokens = null;
-    termsEnum = tpv.iterator();
+    termsEnum = tpv.iterator(null);
     BytesRef text;
     DocsAndPositionsEnum dpEnum = null;
     while ((text = termsEnum.next()) != null) {

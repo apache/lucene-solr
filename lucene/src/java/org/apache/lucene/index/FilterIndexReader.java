@@ -76,8 +76,8 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      return in.iterator();
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
+      return in.iterator(reuse);
     }
 
     @Override

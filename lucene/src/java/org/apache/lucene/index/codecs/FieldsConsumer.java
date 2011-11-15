@@ -51,7 +51,7 @@ public abstract class FieldsConsumer implements Closeable {
       Terms terms = fieldsEnum.terms();
       if (terms != null) {
         final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
-        termsConsumer.merge(mergeState, terms.iterator());
+        termsConsumer.merge(mergeState, terms.iterator(null));
       }
     }
   }

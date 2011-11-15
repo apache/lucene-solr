@@ -37,9 +37,11 @@ public abstract class Terms {
   private final CloseableThreadLocal<TermsEnum> threadEnums = new CloseableThreadLocal<TermsEnum>();
 
   /** Returns an iterator that will step through all
-   *  terms. This method will not return null.*/
-  // nocommit add reuse required param
-  public abstract TermsEnum iterator() throws IOException;
+   *  terms. This method will not return null.  If you have
+   *  a previous TermsEnum, for example from a different
+   *  field, you can pass it for possible reuse if the
+   *  implementation can do so. */
+  public abstract TermsEnum iterator(TermsEnum reuse) throws IOException;
 
   /** Returns a TermsEnum that iterates over all terms that
    *  are accepted by the provided {@link
@@ -60,9 +62,9 @@ public abstract class Terms {
       throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
     }
     if (startTerm == null) {
-      return new AutomatonTermsEnum(iterator(), compiled);
+      return new AutomatonTermsEnum(iterator(null), compiled);
     } else {
-      return new AutomatonTermsEnum(iterator(), compiled) {
+      return new AutomatonTermsEnum(iterator(null), compiled) {
         @Override
         protected BytesRef nextSeekTerm(BytesRef term) throws IOException {
           if (term == null) {
@@ -202,7 +204,7 @@ public abstract class Terms {
   public TermsEnum getThreadTermsEnum() throws IOException {
     TermsEnum termsEnum = threadEnums.get();
     if (termsEnum == null) {
-      termsEnum = iterator();
+      termsEnum = iterator(null);
       threadEnums.set(termsEnum);
     }
     return termsEnum;

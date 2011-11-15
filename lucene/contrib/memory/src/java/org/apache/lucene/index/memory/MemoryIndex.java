@@ -813,7 +813,7 @@ public class MemoryIndex {
 
           return new Terms() {
             @Override 
-            public TermsEnum iterator() {
+            public TermsEnum iterator(TermsEnum reuse) {
               return new MemoryTermsEnum(info);
             }
 

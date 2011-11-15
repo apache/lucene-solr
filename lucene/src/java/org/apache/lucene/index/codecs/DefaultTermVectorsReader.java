@@ -331,17 +331,24 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     private final long tvfFPStart;
 
     public TVTerms(long tvfFP) throws IOException {
-      // nocommit -- to be "safe" we should clone tvf here...?
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
       tvfFPStart = tvf.getFilePointer();
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      // nocommit -- to be "safe" we should clone tvf here...?
-      tvf.seek(tvfFPStart);
-      return new TVTermsEnum(numTerms);
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
+      TVTermsEnum termsEnum;
+      if (reuse instanceof TVTermsEnum) {
+        termsEnum = (TVTermsEnum) reuse;
+        if (!termsEnum.canReuse(tvf)) {
+          termsEnum = new TVTermsEnum();
+        }
+      } else {
+        termsEnum = new TVTermsEnum();
+      }
+      termsEnum.reset(numTerms, tvfFPStart);
+      return termsEnum;
     }
 
     @Override
@@ -374,28 +381,45 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   }
 
   private class TVTermsEnum extends TermsEnum {
-    private final int numTerms;
+    private final IndexInput origTVF;
+    private final IndexInput tvf;
+    private int numTerms;
     private int nextTerm;
     private int freq;
     private BytesRef lastTerm = new BytesRef();
     private BytesRef term = new BytesRef();
-    private final boolean storePositions;
-    private final boolean storeOffsets;
-    private final long tvfFP;
+    private boolean storePositions;
+    private boolean storeOffsets;
+    private long tvfFP;
 
     private int[] positions;
     private int[] startOffsets;
     private int[] endOffsets;
 
     // NOTE: tvf is pre-positioned by caller
-    public TVTermsEnum(int numTerms) throws IOException {
+    public TVTermsEnum() throws IOException {
+      this.origTVF = DefaultTermVectorsReader.this.tvf;
+      tvf = (IndexInput) origTVF.clone();
+
+      // nocommit not needed?
+      // tvf.seek(origTVF.getFilePointer());
+    }
+
+    public boolean canReuse(IndexInput tvf) {
+      return tvf == origTVF;
+    }
+
+    public void reset(int numTerms, long tvfFPStart) throws IOException {
       this.numTerms = numTerms;
-    
+      nextTerm = 0;
+      tvf.seek(tvfFPStart);
       final byte bits = tvf.readByte();
       storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
       storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
-      
-      tvfFP = tvf.getFilePointer();
+      tvfFP = 1+tvfFPStart;
+      positions = null;
+      startOffsets = null;
+      endOffsets = null;
     }
 
     // NOTE: slow!  (linear scan)
@@ -627,6 +651,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       this.liveDocs = liveDocs;
       this.positions = positions;
       this.startOffsets = startOffsets;
+      assert (offsetAtt != null) == (startOffsets != null);
       this.endOffsets = endOffsets;
       didNext = false;
       nextPos = 0;

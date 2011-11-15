@@ -456,7 +456,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
 
@@ -916,8 +916,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         for(int idx=0;idx<=target.length;idx++) {
 
-          boolean lastIsSubBlock = false;
-
           while (true) {
             final int savePos = currentFrame.suffixesReader.getPosition();
             final int saveStartBytePos = currentFrame.startBytePos;
@@ -952,7 +950,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
                     return;
                   }
                 }
-                lastIsSubBlock = isSubBlock;
                 continue;
               } else if (cmp == 0) {
                 //if (DEBUG) System.out.println("  return term=" + brToString(term));

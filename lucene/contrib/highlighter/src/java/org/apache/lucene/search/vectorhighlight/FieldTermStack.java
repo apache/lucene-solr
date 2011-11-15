@@ -91,7 +91,7 @@ public class FieldTermStack {
     }
 
     final CharsRef spare = new CharsRef();
-    final TermsEnum termsEnum = vector.iterator();
+    final TermsEnum termsEnum = vector.iterator(null);
     DocsAndPositionsEnum dpEnum = null;
     BytesRef text;
     while ((text = termsEnum.next()) != null) {

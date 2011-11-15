@@ -85,7 +85,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         assertEquals("field1", f);
 
         Terms terms = fe.terms();
-        TermsEnum te = terms.iterator();
+        TermsEnum te = terms.iterator(null);
 
         assertEquals("brown", te.next().utf8ToString());
         DocsEnum td = te.docs(liveDocs, null);
@@ -122,7 +122,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         assertEquals("field2", f);
         terms = fe.terms();
         assertNotNull(terms);
-        te = terms.iterator();
+        te = terms.iterator(null);
 
         assertEquals("brown", te.next().utf8ToString());
         td = te.docs(liveDocs, td);
@@ -159,7 +159,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         assertEquals("field3", f);
         terms = fe.terms();
         assertNotNull(terms);
-        te = terms.iterator();
+        te = terms.iterator(null);
 
         assertEquals("dog", te.next().utf8ToString());
         td = te.docs(liveDocs, td);

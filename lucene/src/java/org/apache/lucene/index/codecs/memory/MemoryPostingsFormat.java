@@ -723,7 +723,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum iterator(TermsEnum reuse) {
       return new FSTTermsEnum(field, fst);
     }
 

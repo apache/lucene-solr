@@ -234,7 +234,7 @@ public class TestDoc extends LuceneTestCase {
       while(field != null)  {
         Terms terms = fis.terms();
         assertNotNull(terms);
-        TermsEnum tis = terms.iterator();
+        TermsEnum tis = terms.iterator(null);
         while(tis.next() != null) {
 
           out.print("  term=" + field + ":" + tis.term());

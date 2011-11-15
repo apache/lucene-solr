@@ -693,7 +693,9 @@ public class CheckIndex {
           break;
         }
 
-        // nocommit -- can we fix this!?
+        // TODO: really the codec should not return a field
+        // from FieldsEnum if it has to Terms... but we do
+        // this today:
         // assert fields.terms(field) != null;
         computedFieldCount++;
         
@@ -702,7 +704,7 @@ public class CheckIndex {
           continue;
         }
 
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
 
         boolean hasOrd = true;
         final long termCountStart = status.termCount;
@@ -911,7 +913,7 @@ public class CheckIndex {
           // docs got deleted and then merged away):
           // make sure TermsEnum is empty:
           final Terms fieldTerms2 = fieldsEnum.terms();
-          if (fieldTerms2 != null && fieldTerms2.iterator().next() != null) {
+          if (fieldTerms2 != null && fieldTerms2.iterator(null).next() != null) {
             throw new RuntimeException("Fields.terms(field=" + field + ") returned null yet the field appears to have terms");
           }
         } else {
@@ -1159,6 +1161,7 @@ public class CheckIndex {
   private Status.TermVectorStatus testTermVectors(SegmentInfo info, SegmentReader reader, NumberFormat format) {
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     
+    TermsEnum termsEnum = null;
     try {
       if (infoStream != null) {
         infoStream.print("    test: term vectors........");
@@ -1186,11 +1189,11 @@ public class CheckIndex {
               if (lastField == null) {
                 lastField = field;
               } else if (lastField.compareTo(field) > 0) {
-                throw new RuntimeException("vector fields are out of order: lastField=" + lastField + " field=" + field);
+                throw new RuntimeException("vector fields are out of order: lastField=" + lastField + " field=" + field + " doc=" + j);
               }
               
               Terms terms = tfv.terms(field);
-              TermsEnum termsEnum = terms.iterator();
+              termsEnum = terms.iterator(termsEnum);
               
               long tfvComputedTermCountForField = 0;
               long tfvComputedSumTotalTermFreq = 0;

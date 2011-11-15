@@ -225,7 +225,7 @@ public class Test2BTerms extends LuceneTestCase {
 
   private List<BytesRef> findTerms(IndexReader r) throws IOException {
     System.out.println("TEST: findTerms");
-    final TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator();
+    final TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
     final List<BytesRef> savedTerms = new ArrayList<BytesRef>();
     int nextSave = _TestUtil.nextInt(random, 500000, 1000000);
     BytesRef term;
@@ -243,7 +243,7 @@ public class Test2BTerms extends LuceneTestCase {
     System.out.println("TEST: run " + terms.size() + " terms on reader=" + r);
     IndexSearcher s = new IndexSearcher(r);
     Collections.shuffle(terms);
-    TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
     boolean failed = false;
     for(int iter=0;iter<10*terms.size();iter++) {
       final BytesRef term = terms.get(random.nextInt(terms.size()));

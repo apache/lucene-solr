@@ -117,7 +117,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      TermsEnum te = MultiFields.getTerms(reader, "field").iterator();
+      TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
       ArrayList<BytesRef> unsortedTerms = new ArrayList<BytesRef>(terms);
       Collections.shuffle(unsortedTerms, random);
 
@@ -140,7 +140,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   /** mixes up seek and next for all terms */
   public void testSeekingAndNexting() throws Exception {
     for (int i = 0; i < numIterations; i++) {
-      TermsEnum te = MultiFields.getTerms(reader, "field").iterator();
+      TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
 
       for (BytesRef term : terms) {
         int c = random.nextInt(3);

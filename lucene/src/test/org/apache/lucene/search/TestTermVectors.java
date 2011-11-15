@@ -130,7 +130,7 @@ public class TestTermVectors extends LuceneTestCase {
       DocsAndPositionsEnum dpEnum = null;
       Terms terms = fieldsEnum.terms();
       assertNotNull(terms);
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
       assertEquals("content", termsEnum.next().utf8ToString());
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
@@ -166,7 +166,7 @@ public class TestTermVectors extends LuceneTestCase {
       assertNotNull(vectors);
       assertEquals(1, vectors.getUniqueFieldCount());
       
-      TermsEnum termsEnum = vectors.terms("field").iterator();
+      TermsEnum termsEnum = vectors.terms("field").iterator(null);
       assertNotNull(termsEnum.next());
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       OffsetAttribute offsetAtt = dpEnum == null ? null : dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -265,7 +265,7 @@ public class TestTermVectors extends LuceneTestCase {
     while(fields.next() != null) {
       Terms terms = fields.terms();
       assertNotNull(terms);
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
 
       while (termsEnum.next() != null) {
         String text = termsEnum.term().utf8ToString();
@@ -284,7 +284,7 @@ public class TestTermVectors extends LuceneTestCase {
           //float coord = sim.coord()
           //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
           assertNotNull(vector);
-          TermsEnum termsEnum2 = vector.iterator();
+          TermsEnum termsEnum2 = vector.iterator(null);
 
           while(termsEnum2.next() != null) {
             if (text.equals(termsEnum2.term().utf8ToString())) {
@@ -312,7 +312,7 @@ public class TestTermVectors extends LuceneTestCase {
     assertNotNull(vector);
     //System.out.println("Vector: " + vector);
     assertEquals(10, vector.getUniqueTermCount());
-    TermsEnum termsEnum = vector.iterator();
+    TermsEnum termsEnum = vector.iterator(null);
     while(termsEnum.next() != null) {
       String term = termsEnum.term().utf8ToString();
       //System.out.println("Term: " + term);
@@ -430,7 +430,7 @@ public class TestTermVectors extends LuceneTestCase {
     Terms vector = vectors.terms("field");
     assertNotNull(vector);
     assertEquals(1, vector.getUniqueTermCount());
-    TermsEnum termsEnum = vector.iterator();
+    TermsEnum termsEnum = vector.iterator(null);
     assertNotNull(termsEnum.next());
     assertEquals("one", termsEnum.term().utf8ToString());
     assertEquals(5, termsEnum.totalTermFreq());

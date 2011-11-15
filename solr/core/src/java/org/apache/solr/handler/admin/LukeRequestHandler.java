@@ -269,7 +269,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           Terms v = reader.getTermVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
-            final TermsEnum termsEnum = v.iterator();
+            final TermsEnum termsEnum = v.iterator(null);
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               final int freq = (int) termsEnum.totalTermFreq();
@@ -487,7 +487,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         while(fieldsEnum.next() != null) {
           Terms terms = fieldsEnum.terms();
           if (terms != null) {
-            TermsEnum termsEnum = terms.iterator();
+            TermsEnum termsEnum = terms.iterator(null);
             while(termsEnum.next() != null) {
               numTerms++;
             }
@@ -646,7 +646,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         if (terms == null) {
           continue;
         }
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.iterator(null);
         BytesRef text;
         while((text = termsEnum.next()) != null) {
           String t = text.utf8ToChars(spare).toString();

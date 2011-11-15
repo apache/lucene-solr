@@ -644,7 +644,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     	_TestUtil.unzip(getDataFile("index." + oldNames[i] + ".zip"), oldIndexDir);
       Directory dir = newFSDirectory(oldIndexDir);
       IndexReader r = IndexReader.open(dir);
-      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator();
+      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator(null);
       BytesRef t = terms.next();
       assertNotNull(t);
 

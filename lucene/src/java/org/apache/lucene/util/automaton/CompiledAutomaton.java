@@ -198,13 +198,13 @@ public class CompiledAutomaton {
     case NONE:
       return TermsEnum.EMPTY;
     case ALL:
-      return terms.iterator();
+      return terms.iterator(null);
     case SINGLE:
-      return new SingleTermsEnum(terms.iterator(), term);
+      return new SingleTermsEnum(terms.iterator(null), term);
     case PREFIX:
       // TODO: this is very likely faster than .intersect,
       // but we should test and maybe cutover
-      return new PrefixTermsEnum(terms.iterator(), term);
+      return new PrefixTermsEnum(terms.iterator(null), term);
     case NORMAL:
       return terms.intersect(this, null);
     default:

@@ -677,7 +677,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // executed we're safe, because we only iterate as long as there are next()
     // terms.
     if (terms != null) {
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
       Bits liveDocs = MultiFields.getLiveDocs(reader);
       DocsEnum docsEnum = null;
       while (termsEnum.next() != null) {
@@ -751,7 +751,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // TODO (Facet): can this then go segment-by-segment and avoid MultiDocsEnum etc?
     Terms terms = MultiFields.getTerms(mainreader, Consts.FULL);
     assert terms != null; // TODO (Facet): explicit check / throw exception?
-    TermsEnum mainte = terms.iterator();
+    TermsEnum mainte = terms.iterator(null);
     DocsEnum mainde = null;
 
     IndexReader[] otherreaders = new IndexReader[taxonomies.length];
@@ -761,7 +761,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       otherreaders[i] = IndexReader.open(taxonomies[i]);
       terms = MultiFields.getTerms(otherreaders[i], Consts.FULL);
       assert terms != null; // TODO (Facet): explicit check / throw exception?
-      othertes[i] = terms.iterator();
+      othertes[i] = terms.iterator(null);
       // Also tell the ordinal maps their expected sizes:
       ordinalMaps[i].setSize(otherreaders[i].numDocs());
     }

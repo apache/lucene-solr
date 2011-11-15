@@ -56,7 +56,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     termAttribute = addAttribute(CharTermAttribute.class);
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
     offsetAttribute = addAttribute(OffsetAttribute.class);
-    final TermsEnum termsEnum = vector.iterator();
+    final TermsEnum termsEnum = vector.iterator(null);
     BytesRef text;
     DocsAndPositionsEnum dpEnum = null;
     while((text = termsEnum.next()) != null) {

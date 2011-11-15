@@ -523,7 +523,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       if (fst != null) {
         return new SimpleTextTermsEnum(fst, indexOptions);
       } else {

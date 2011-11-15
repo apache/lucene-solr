@@ -147,7 +147,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     while((field = fieldsEnum.next()) != null) {
       Terms terms = fieldsEnum.terms();
       assertNotNull(terms);
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
       while (termsEnum.next() != null) {
         if (sample.size() >= size) {
           int pos = random.nextInt(size);

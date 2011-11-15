@@ -117,7 +117,7 @@ public class HighFreqTerms {
       }
       Terms terms = fields.terms(field);
       if (terms != null) {
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.iterator(null);
         tiq = new TermStatsQueue(numTerms);
         fillQueue(termsEnum, tiq, field);
       }
@@ -133,7 +133,7 @@ public class HighFreqTerms {
         if (field != null) {
           Terms terms = fieldsEnum.terms();
           if (terms != null) {
-            fillQueue(terms.iterator(), tiq, field);
+            fillQueue(terms.iterator(null), tiq, field);
           }
         } else {
           break;
@@ -187,7 +187,7 @@ public class HighFreqTerms {
       return 0;
     }
 
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.iterator(null);
     if (termsEnum.seekCeil(termText) != TermsEnum.SeekStatus.FOUND) {
       return 0;
     }

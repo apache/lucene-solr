@@ -527,7 +527,7 @@ public class TestPayloads extends LuceneTestCase {
         }
         writer.close();
         IndexReader reader = IndexReader.open(dir, true);
-        TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator();
+        TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
         Bits liveDocs = MultiFields.getLiveDocs(reader);
         DocsAndPositionsEnum tp = null;
         while (terms.next() != null) {

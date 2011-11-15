@@ -62,7 +62,7 @@ public class LuceneDictionary implements Dictionary {
       try {
         final Terms terms = MultiFields.getTerms(reader, field);
         if (terms != null) {
-          termsEnum = terms.iterator();
+          termsEnum = terms.iterator(null);
           pendingTerm = termsEnum.next();
         }
       } catch (IOException e) {

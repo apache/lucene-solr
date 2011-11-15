@@ -305,7 +305,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     // very strange: java.lang.Number itsself is not Comparable, but all subclasses used here are
     return (min != null && max != null && ((Comparable<T>) min).compareTo(max) > 0) ?
       TermsEnum.EMPTY :
-      new NumericRangeTermsEnum(terms.iterator());
+      new NumericRangeTermsEnum(terms.iterator(null));
   }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */

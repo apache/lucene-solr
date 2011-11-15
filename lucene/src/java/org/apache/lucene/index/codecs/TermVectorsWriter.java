@@ -182,10 +182,14 @@ public abstract class TermVectorsWriter implements Closeable {
     
     final FieldsEnum fieldsEnum = vectors.iterator();
     String fieldName;
+    String lastFieldName = null;
 
     while((fieldName = fieldsEnum.next()) != null) {
       
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
+
+      assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
+      lastFieldName = fieldName;
 
       final Terms terms = fieldsEnum.terms();
       if (terms == null) {
@@ -201,7 +205,7 @@ public abstract class TermVectorsWriter implements Closeable {
 
       final OffsetAttribute offsetAtt;
 
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.iterator(null);
 
       DocsAndPositionsEnum docsAndPositionsEnum = null;
 

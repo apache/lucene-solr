@@ -74,7 +74,7 @@ public class TermsFilter extends Filter {
         if (termsC == null) {
           return result;
         }
-        termsEnum = termsC.iterator();
+        termsEnum = termsC.iterator(null);
         lastField = term.field();
       }
 

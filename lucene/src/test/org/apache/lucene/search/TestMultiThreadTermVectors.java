@@ -173,7 +173,7 @@ class MultiThreadTermVectorsReader implements Runnable {
       Terms vector = reader.getTermVectors(docId).terms("field");
       timeElapsed += System.currentTimeMillis()-start;
       
-      verifyVector(vector.iterator(), docId);
+      verifyVector(vector.iterator(null), docId);
     }
   }
   
@@ -182,7 +182,7 @@ class MultiThreadTermVectorsReader implements Runnable {
     while(fieldsEnum.next() != null) {
       Terms terms = fieldsEnum.terms();
       assert terms != null;
-      verifyVector(terms.iterator(), num);
+      verifyVector(terms.iterator(null), num);
     }
   }
 

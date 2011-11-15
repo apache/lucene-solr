@@ -110,7 +110,7 @@ public class TestSurrogates extends LuceneTestCase {
       while((field = fieldsEnum.next()) != null) {
         Terms terms = fieldsEnum.terms();
         assertNotNull(terms);
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.iterator(null);
         BytesRef text;
         BytesRef lastText = null;
         while((text = termsEnum.next()) != null) {
@@ -164,7 +164,7 @@ public class TestSurrogates extends LuceneTestCase {
       // seek to it
       TermsEnum te = tes.get(field);
       if (te == null) {
-        te = MultiFields.getTerms(reader, field).iterator();
+        te = MultiFields.getTerms(reader, field).iterator(null);
         tes.put(field, te);
       }
 
@@ -229,7 +229,7 @@ public class TestSurrogates extends LuceneTestCase {
           // term does not exist:
           TermsEnum te = tes.get(field);
           if (te == null) {
-            te = MultiFields.getTerms(reader, field).iterator();
+            te = MultiFields.getTerms(reader, field).iterator(null);
             tes.put(field, te);
           }
 

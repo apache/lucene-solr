@@ -226,6 +226,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
     };
 
+    TermsEnum termsEnum = null;
+
     while (iter.hasNext()) {
       Integer docId = iter.next();
       NamedList<Object> docNL = new NamedList<Object>();
@@ -246,7 +248,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           final String field = entry.getKey();
           final Terms vector = reader.getTermVector(docId, field);
           if (vector != null) {
-            mapOneVector(docNL, entry.getValue(), reader, docId, vector.iterator(), field);
+            termsEnum = vector.iterator(termsEnum);
+            mapOneVector(docNL, entry.getValue(), reader, docId, vector.iterator(termsEnum), field);
           }
         }
       } else {
@@ -257,7 +260,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         while((field = fieldsEnum.next()) != null) {
           Terms terms = fieldsEnum.terms();
           if (terms != null) {
-            mapOneVector(docNL, allFields, reader, docId, terms.iterator(), field);
+            termsEnum = terms.iterator(termsEnum);
+            mapOneVector(docNL, allFields, reader, docId, termsEnum, field);
           }
         }
       }
@@ -390,7 +394,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     try {
       Terms terms = MultiFields.getTerms(reader, field);
       if (terms != null) {
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.iterator(null);
         if (termsEnum.seekExact(term, true)) {
           result = termsEnum.docFreq();
         }

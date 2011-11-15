@@ -155,7 +155,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum iterator(TermsEnum reuse) {
       return new RAMTermsEnum(RAMOnlyPostingsFormat.RAMField.this);
     }
 

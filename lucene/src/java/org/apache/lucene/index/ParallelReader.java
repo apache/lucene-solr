@@ -152,8 +152,10 @@ public class ParallelReader extends IndexReader {
   private class ParallelFieldsEnum extends FieldsEnum {
     String currentField;
     Iterator<String> keys;
+    private final Fields fields;
 
-    ParallelFieldsEnum() {
+    ParallelFieldsEnum(Fields fields) {
+      this.fields = fields;
       keys = fieldToReader.keySet().iterator();
     }
 
@@ -169,7 +171,7 @@ public class ParallelReader extends IndexReader {
 
     @Override
     public Terms terms() throws IOException {
-      return ParallelReader.this.fields.terms(currentField);
+      return fields.terms(currentField);
     }
 
   }
@@ -184,7 +186,7 @@ public class ParallelReader extends IndexReader {
 
     @Override
     public FieldsEnum iterator() throws IOException {
-      return new ParallelFieldsEnum();
+      return new ParallelFieldsEnum(this);
     }
 
     @Override

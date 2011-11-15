@@ -123,7 +123,7 @@ public class TestSegmentReader extends LuceneTestCase {
     while((field = fields.next()) != null) {
       Terms terms = fields.terms();
       assertNotNull(terms);
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
       while(termsEnum.next() != null) {
         BytesRef term = termsEnum.term();
         assertTrue(term != null);
@@ -193,7 +193,7 @@ public class TestSegmentReader extends LuceneTestCase {
     Terms result = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(result);
     assertEquals(3, result.getUniqueTermCount());
-    TermsEnum termsEnum = result.iterator();
+    TermsEnum termsEnum = result.iterator(null);
     while(termsEnum.next() != null) {
       String term = termsEnum.term().utf8ToString();
       int freq = (int) termsEnum.totalTermFreq();

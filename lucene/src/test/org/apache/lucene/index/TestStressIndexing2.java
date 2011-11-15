@@ -323,7 +323,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                  MultiFields.getFields(r2).terms(idField) == null);
       return;
     }
-    final TermsEnum termsEnum = terms1.iterator();
+    final TermsEnum termsEnum = terms1.iterator(null);
 
     final Bits liveDocs1 = MultiFields.getLiveDocs(r1);
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
@@ -397,7 +397,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             System.out.println("    " + field + ":");
             Terms terms3 = fieldsEnum.terms();
             assertNotNull(terms3);
-            TermsEnum termsEnum2 = terms3.iterator();
+            TermsEnum termsEnum2 = terms3.iterator(null);
             BytesRef term2;
             while((term2 = termsEnum2.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
@@ -431,7 +431,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             System.out.println("    " + field + ":");
             Terms terms3 = fieldsEnum.terms();
             assertNotNull(terms3);
-            TermsEnum termsEnum2 = terms3.iterator();
+            TermsEnum termsEnum2 = terms3.iterator(null);
             BytesRef term2;
             while((term2 = termsEnum2.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
@@ -490,7 +490,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             if (terms == null) {
               continue;
             }
-            termsEnum1 = terms.iterator();
+            termsEnum1 = terms.iterator(null);
           }
         }
         term1 = termsEnum1.next();
@@ -524,7 +524,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             if (terms == null) {
               continue;
             }
-            termsEnum2 = terms.iterator();
+            termsEnum2 = terms.iterator(null);
           }
         }
         term2 = termsEnum2.next();
@@ -607,11 +607,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       Terms terms1 = fieldsEnum1.terms();
       assertNotNull(terms1);
-      TermsEnum termsEnum1 = terms1.iterator();
+      TermsEnum termsEnum1 = terms1.iterator(null);
 
       Terms terms2 = fieldsEnum2.terms();
       assertNotNull(terms2);
-      TermsEnum termsEnum2 = terms2.iterator();
+      TermsEnum termsEnum2 = terms2.iterator(null);
 
       DocsAndPositionsEnum dpEnum1 = null;
       DocsAndPositionsEnum dpEnum2 = null;
@@ -630,8 +630,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
         if (dpEnum1 != null) {
           assertNotNull(dpEnum2);
           int docID1 = dpEnum1.nextDoc();
-          int docID2 = dpEnum2.nextDoc();
+          dpEnum2.nextDoc();
           // docIDs are not supposed to be equal
+          //int docID2 = dpEnum2.nextDoc();
           //assertEquals(docID1, docID2);
           assertTrue(docID1 != DocsEnum.NO_MORE_DOCS);
           
@@ -666,8 +667,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
           assertNotNull(dEnum1);
           assertNotNull(dEnum2);
           int docID1 = dEnum1.nextDoc();
-          int docID2 = dEnum2.nextDoc();
+          dEnum2.nextDoc();
           // docIDs are not supposed to be equal
+          //int docID2 = dEnum2.nextDoc();
           //assertEquals(docID1, docID2);
           assertTrue(docID1 != DocsEnum.NO_MORE_DOCS);
           int freq1 = dEnum1.freq();

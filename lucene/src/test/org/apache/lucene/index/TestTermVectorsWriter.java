@@ -62,7 +62,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = IndexReader.open(dir, true);
     Terms vector = r.getTermVectors(0).terms("field");
     assertNotNull(vector);
-    TermsEnum termsEnum = vector.iterator();
+    TermsEnum termsEnum = vector.iterator(null);
     assertNotNull(termsEnum.next());
     assertEquals("", termsEnum.term().utf8ToString());
 
@@ -120,7 +120,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -157,7 +157,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -198,7 +198,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -236,7 +236,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -275,7 +275,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -326,7 +326,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -373,7 +373,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
+    TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
@@ -561,7 +561,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
     customType.setStoreTermVectors(true);
-    Field termVectorField = newField("termVector", "termVector", customType2);
     document.add(newField("tvtest", "a b c", customType));
     iw.addDocument(document);
     // Make 2nd segment
@@ -580,7 +579,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Document document = new Document();
     FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
     customType.setStoreTermVectors(true);
-    Field termVectorField = newField("termVector", "termVector", customType);
     document.add(newField("tvtest", "a b c", customType));
     iw.addDocument(document);
     iw.commit();

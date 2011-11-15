@@ -373,7 +373,7 @@ class BufferedDeletesStream {
         currentField = term.field();
         Terms terms = fields.terms(currentField);
         if (terms != null) {
-          termsEnum = terms.iterator();
+          termsEnum = terms.iterator(null);
         } else {
           termsEnum = null;
         }

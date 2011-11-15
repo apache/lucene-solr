@@ -192,7 +192,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
       assertEquals(testTerms.length, vector.getUniqueTermCount());
-      TermsEnum termsEnum = vector.iterator();
+      TermsEnum termsEnum = vector.iterator(null);
       for (int i = 0; i < testTerms.length; i++) {
         final BytesRef text = termsEnum.next();
         assertNotNull(text);
@@ -211,7 +211,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     assertEquals(testTerms.length, vector.getUniqueTermCount());
-    TermsEnum termsEnum = vector.iterator();
+    TermsEnum termsEnum = vector.iterator(null);
     DocsAndPositionsEnum dpEnum = null;
     for (int i = 0; i < testTerms.length; i++) {
       final BytesRef text = termsEnum.next();
@@ -246,7 +246,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     Terms freqVector = reader.get(0).terms(testFields[1]); //no pos, no offset
     assertNotNull(freqVector);
     assertEquals(testTerms.length, freqVector.getUniqueTermCount());
-    termsEnum = freqVector.iterator();
+    termsEnum = freqVector.iterator(null);
     assertNotNull(termsEnum);
     for (int i = 0; i < testTerms.length; i++) {
       final BytesRef text = termsEnum.next();
@@ -262,7 +262,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     DefaultTermVectorsReader reader = new DefaultTermVectorsReader(dir, seg, fieldInfos, newIOContext(random));
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
-    TermsEnum termsEnum = vector.iterator();
+    TermsEnum termsEnum = vector.iterator(null);
     assertNotNull(termsEnum);
     assertEquals(testTerms.length, vector.getUniqueTermCount());
     DocsAndPositionsEnum dpEnum = null;

@@ -154,7 +154,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Terms terms = MultiFields.getTerms(indexReader, field);
       CharsRef spare = new CharsRef();
       if (terms != null) {
-        TermsEnum te = terms.iterator();
+        TermsEnum te = terms.iterator(null);
         BytesRef text;
         while ((text = te.next()) != null) {
           if (te.docFreq() > maxDocFreq) {
