@@ -203,7 +203,7 @@ public abstract class TermVectorsWriter implements Closeable {
 
       final boolean positions;
 
-      final OffsetAttribute offsetAtt;
+      OffsetAttribute offsetAtt;
 
       final TermsEnum termsEnum = terms.iterator(null);
 
@@ -244,7 +244,16 @@ public abstract class TermVectorsWriter implements Closeable {
         startTerm(termsEnum.term(), freq);
 
         if (positions || offsetAtt != null) {
-          docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
+          DocsAndPositionsEnum dp = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
+          // TODO: add startOffset()/endOffset() to d&pEnum... this is insanity
+          if (dp != docsAndPositionsEnum) {
+            // producer didnt reuse, must re-pull attributes
+            if (offsetAtt != null) {
+              assert dp.attributes().hasAttribute(OffsetAttribute.class);
+              offsetAtt = dp.attributes().getAttribute(OffsetAttribute.class);
+            }
+          }
+          docsAndPositionsEnum = dp;
           final int docID = docsAndPositionsEnum.nextDoc();
           assert docID != DocsEnum.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
