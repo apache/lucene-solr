@@ -16,7 +16,22 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.TimeZone;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
+
 
 /**
  * Statistics Component Test
@@ -134,6 +149,59 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
   }
 
+  public void testFieldStatisticsResultsStringField() throws Exception {
+    SolrCore core = h.getCore();
+    assertU(adoc("id", "1", "active_s", "string1"));
+    assertU(adoc("id", "2", "active_s", "string2"));
+    assertU(adoc("id", "3", "active_s", "string3"));
+    assertU(adoc("id", "4"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "active_s");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test string statistics values", req,
+            "//str[@name='min'][.='string1']",
+            "//str[@name='max'][.='string3']",
+            "//long[@name='count'][.='3']",
+            "//long[@name='missing'][.='1']");
+  }
+
+  public void testFieldStatisticsResultsDateField() throws Exception {
+    SolrCore core = h.getCore();
+
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    String date1 = dateFormat.format(new Date(123456789)) + "Z";
+    String date2 = dateFormat.format(new Date(987654321)) + "Z";
+
+    assertU(adoc("id", "1", "active_dt", date1));
+    assertU(adoc("id", "2", "active_dt", date2));
+    assertU(adoc("id", "3"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "active_dt");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test date statistics values", req,
+            "//long[@name='count'][.='2']",
+            "//long[@name='missing'][.='1']",
+            "//date[@name='min'][.='1970-01-02T10:17:36Z']",
+            "//date[@name='max'][.='1970-01-12T10:20:54Z']",
+            "//date[@name='sum'][.='1970-01-13T20:38:30Z']",
+            "//date[@name='mean'][.='1970-01-07T10:19:15Z']");
+  }
+
+
 
   public void doTestFieldStatisticsMissingResult(String f) throws Exception {
     assertU(adoc("id", "1", f, "-10"));
@@ -160,8 +228,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "3", f, "30", "active_s", "false"));
     assertU(adoc("id", "4", f, "40", "active_s", "false"));
     assertU(commit());
-
-    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
+    
+    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s","indent","true")
             , "//lst[@name='true']/double[@name='min'][.='10.0']"
             , "//lst[@name='true']/double[@name='max'][.='20.0']"
             , "//lst[@name='true']/double[@name='sum'][.='30.0']"

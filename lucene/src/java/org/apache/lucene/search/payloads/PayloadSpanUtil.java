@@ -20,8 +20,11 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -41,6 +44,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
 
 /**
  * Experimental class to get set of payloads for most standard Lucene queries.
@@ -174,9 +178,15 @@ public class PayloadSpanUtil {
 
   private void getPayloads(Collection<byte []> payloads, SpanQuery query)
       throws IOException {
+    Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
+    TreeSet<Term> terms = new TreeSet<Term>();
+    query.extractTerms(terms);
+    for (Term term : terms) {
+      termContexts.put(term, TermContext.build(context, term, true));
+    }
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
     for (AtomicReaderContext atomicReaderContext : leaves) {
-      final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader.getLiveDocs());
+      final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader.getLiveDocs(), termContexts);
       while (spans.next() == true) {
         if (spans.isPayloadAvailable()) {
           Collection<byte[]> payload = spans.getPayload();

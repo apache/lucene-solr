@@ -281,19 +281,6 @@ final class JustCompileSearch {
     }
   }
 
-  static final class JustCompileSpanFilter extends SpanFilter {
-
-    @Override
-    public SpanFilterResult bitSpans(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-      return null;
-    }    
-  }
-
   static final class JustCompileTopDocsCollector extends TopDocsCollector<ScoreDoc> {
 
     protected JustCompileTopDocsCollector(PriorityQueue<ScoreDoc> pq) {

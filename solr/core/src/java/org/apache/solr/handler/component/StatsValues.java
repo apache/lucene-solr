@@ -19,141 +19,62 @@
 package org.apache.solr.handler.component;
 
 
-import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 
+/**
+ * StatsValue defines the interface for the collection of statistical values about fields and facets.
+ */
+public interface StatsValues {
 
-/** 2/11/2009 - Moved out of StatsComponent to allow open access to UnInvertedField
- * StatsValues is a utility to accumulate statistics on a set of values
- *
- * </p>
- * @see org.apache.solr.handler.component.StatsComponent
- *
-*/
+  /**
+   * Accumulate the values based on those in the given NamedList
+   *
+   * @param stv NamedList whose values will be used to accumulate the current values
+   */
+  void accumulate(NamedList stv);
 
-public class StatsValues {
-  private static final String FACETS = "facets";
-  double min;
-  double max;
-  double sum;
-  double sumOfSquares;
-  long count;
-  long missing;
-  
-  // facetField   facetValue
-  public Map<String, Map<String,StatsValues>> facets;
-  
-  public StatsValues() {
-    reset();
-  }
+  /**
+   * Accumulate the values based on the given value
+   *
+   * @param value Value to use to accumulate the current values
+   */
+  void accumulate(BytesRef value);
 
-  public void accumulate(NamedList stv){
-    min = Math.min(min, (Double)stv.get("min"));
-    max = Math.max(max, (Double)stv.get("max"));
-    sum += (Double)stv.get("sum");
-    count += (Long)stv.get("count");
-    missing += (Long)stv.get("missing");
-    sumOfSquares += (Double)stv.get("sumOfSquares");
-    
-    NamedList f = (NamedList)stv.get( FACETS );
-    if( f != null ) {
-      if( facets == null ) {
-        facets = new HashMap<String, Map<String,StatsValues>>();
-      }
-      
-      for( int i=0; i< f.size(); i++ ) {
-        String field = f.getName(i);
-        NamedList vals = (NamedList)f.getVal( i );
-        Map<String,StatsValues> addTo = facets.get( field );
-        if( addTo == null ) {
-          addTo = new HashMap<String,StatsValues>();
-          facets.put( field, addTo );
-        }
-        for( int j=0; j< vals.size(); j++ ) {
-          String val = vals.getName(j);
-          StatsValues vvals = addTo.get( val );
-          if( vvals == null ) {
-            vvals = new StatsValues();
-            addTo.put( val, vvals );
-          }
-          vvals.accumulate( (NamedList)vals.getVal( j ) );
-        }
-      }
-    }
-  }
+  /**
+   * Accumulate the values based on the given value
+   *
+   * @param value Value to use to accumulate the current values
+   * @param count number of times to accumulate this value
+   */
+  void accumulate(BytesRef value, int count);
 
-  public void accumulate(double v){
-    sumOfSquares += (v*v); // for std deviation
-    min = Math.min(min, v);
-    max = Math.max(max, v);
-    sum += v;
-    count++;
-  }
-  
-  public void accumulate(double v, int c){
-    sumOfSquares += (v*v*c); // for std deviation
-    min = Math.min(min, v);
-    max = Math.max(max, v);
-    sum += v*c;
-    count+= c;
-  }
+  /**
+   * Updates the statistics when a document is missing a value
+   */
+  void missing();
 
-  public void addMissing(int c){
-	missing += c;
-  }
-  
-  public double getAverage(){
-    return sum / count;
-  }
-  
-  public double getStandardDeviation()
-  {
-    if( count <= 1.0D ) 
-      return 0.0D;
-    
-    return Math.sqrt( ( ( count * sumOfSquares ) - ( sum * sum ) )
-                      / ( count * ( count - 1.0D ) ) );  
-  }
+  /**
+   * Updates the statistics when multiple documents are missing a value
+   *
+   * @param count number of times to count a missing value
+   */
+  void addMissing(int count);
 
-  public long getCount()
-  {
-	return count;
-  }
-  
-  public void reset(){
-    min = Double.MAX_VALUE;
-    max = -1.0*Double.MAX_VALUE;
-    sum = count = missing = 0;
-    sumOfSquares = 0;
-    facets = null;
-  }
-  
-  public NamedList<?> getStatsValues(){
-    NamedList<Object> res = new SimpleOrderedMap<Object>();
-    res.add("min", min);
-    res.add("max", max);
-    res.add("sum", sum);
-    res.add("count", count);
-    res.add("missing", missing);
-    res.add("sumOfSquares", sumOfSquares );
-    res.add("mean", getAverage());
-    res.add( "stddev", getStandardDeviation() );
-    
-    // add the facet stats
-    if( facets != null && facets.size() > 0 ) {
-      NamedList<NamedList<?>> nl = new SimpleOrderedMap<NamedList<?>>();
-      for( Map.Entry<String, Map<String,StatsValues>> entry : facets.entrySet() ) {
-        NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<NamedList<?>>();
-        nl.add( entry.getKey(), nl2 );
-        for( Map.Entry<String, StatsValues> e2 : entry.getValue().entrySet() ) {
-          nl2.add( e2.getKey(), e2.getValue().getStatsValues() );
-        }
-      }
-      res.add( FACETS, nl );
-    }
-    return res;
-  }
+   /**
+   * Adds the facet statistics for the facet with the given name
+   *
+   * @param facetName Name of the facet
+   * @param facetValues Facet statistics on a per facet value basis
+   */
+  void addFacet(String facetName, Map<String, StatsValues> facetValues);
+
+  /**
+   * Translates the values into a NamedList representation
+   *
+   * @return NamedList representation of the current values
+   */
+  NamedList<?> getStatsValues();
 }
