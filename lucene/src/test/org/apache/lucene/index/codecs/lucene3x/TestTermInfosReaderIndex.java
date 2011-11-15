@@ -84,7 +84,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     String segment = r.getSegmentName();
     r.close();
 
-    FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
+    FieldInfosReader infosReader = new PreFlexRWCodec().fieldInfosFormat().getFieldInfosReader();
     FieldInfos fieldInfos = infosReader.read(directory, segment, IOContext.READONCE);
     String segmentFileName = IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION);
     long tiiFileLength = directory.fileLength(segmentFileName);
