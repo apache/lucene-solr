@@ -65,6 +65,9 @@ New Features
 * SOLR-2881: Numeric types now support sortMissingFirst/Last. This includes Trie and date types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
 
+* SOLR-1023: StatsComponent now supports date fields and string fields.
+  (Chris Male, Mark Holland, Gunnlaugur Thor Briem, Ryan McKinley)
+
 Optimizations
 ----------------------
 
