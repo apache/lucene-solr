@@ -1,11 +1,5 @@
 package org.apache.lucene.index.codecs;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.StoredFieldVisitor;
-
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -21,6 +15,12 @@ import org.apache.lucene.index.StoredFieldVisitor;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.StoredFieldVisitor;
 
 /**
  * Codec API for reading stored fields:
