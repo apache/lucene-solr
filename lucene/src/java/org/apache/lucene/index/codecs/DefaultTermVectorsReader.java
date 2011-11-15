@@ -397,9 +397,6 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     public TVTermsEnum() throws IOException {
       this.origTVF = DefaultTermVectorsReader.this.tvf;
       tvf = (IndexInput) origTVF.clone();
-
-      // nocommit not needed?
-      // tvf.seek(origTVF.getFilePointer());
     }
 
     public boolean canReuse(IndexInput tvf) {
