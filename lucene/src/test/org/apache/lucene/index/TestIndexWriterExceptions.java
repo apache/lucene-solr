@@ -901,6 +901,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     
     for (FailOnlyInCommit failure : failures) {
       MockDirectoryWrapper dir = newDirectory();
+      dir.setFailOnCreateOutput(false);
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
@@ -1302,20 +1303,17 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
+
       StackTraceElement[] trace = new Exception().getStackTrace();
-      boolean failOnInit = false;
-      boolean failOnfinish = false;
+      boolean fail = false;
       for (int i = 0; i < trace.length; i++) {
-        if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
-          failOnInit = true;
-        if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
-          failOnfinish = true;
+        if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
+          fail = true;
+        }
       }
       
-      if (failOnInit) {
-        throw new RuntimeException(EXC_MSG + " fail on init");
-      } else if (failOnfinish) {
-        throw new RuntimeException(EXC_MSG + " fail on finishDoc");
+      if (fail) {
+        throw new RuntimeException(EXC_MSG);
       }
     }
   }

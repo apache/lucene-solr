@@ -211,6 +211,8 @@ public class TestTransactions extends LuceneTestCase {
     dir2.setPreventDoubleWrite(false);
     dir1.failOn(new RandomFailure());
     dir2.failOn(new RandomFailure());
+    dir1.setFailOnOpenInput(false);
+    dir2.setFailOnOpenInput(false);
 
     initIndex(dir1);
     initIndex(dir2);
