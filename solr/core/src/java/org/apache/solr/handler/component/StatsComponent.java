@@ -18,10 +18,13 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.ShardParams;
@@ -177,7 +180,8 @@ class StatsInfo {
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     if (statsFs != null) {
       for (String field : statsFs) {
-        statsFields.put(field,new StatsValues());
+        FieldType ft = rb.req.getSchema().getFieldType(field);
+        statsFields.put(field, StatsValuesFactory.createStatsValues(ft));
       }
     }
   }
@@ -246,56 +250,60 @@ class SimpleStats {
   public NamedList getFieldCacheStats(String fieldName, String[] facet ) {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
 
-    FieldCache.StringIndex si = null;
+    FieldCache.StringIndex si;
     try {
       si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), fieldName);
     } 
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
     }
-    FieldFacetStats all = new FieldFacetStats( "all", si, ft, 0 );
-    StatsValues allstats = new StatsValues();
-    if ( all.nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
+    StatsValues allstats = StatsValuesFactory.createStatsValues(ft);
+    final int nTerms = si.lookup.length - 1;
+    if ( nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
 
-    // don't worry about faceting if the no documents match...
-    int i=0;
-    final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
-    for( String f : facet ) {
-      ft = searcher.getSchema().getFieldType(f);
+    // don't worry about faceting if no documents match...
+    List<FieldFacetStats> facetStats = new ArrayList<FieldFacetStats>();
+    FieldCache.StringIndex facetTermsIndex;
+    for( String facetField : facet ) {
+      FieldType facetFieldType = searcher.getSchema().getFieldType(facetField);
+
+      if (facetFieldType.isTokenized() || facetFieldType.isMultiValued()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Stats can only facet on single-valued fields, not: " + facetField
+          + "[" + facetFieldType + "]");
+        }
       try {
-        si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
-      } 
-      catch (IOException e) {
-        throw new RuntimeException( "failed to open field cache for: "+f, e );
+        facetTermsIndex = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), facetField);
       }
-      finfo[i++] = new FieldFacetStats( f, si, ft, 0 );
+      catch (IOException e) {
+        throw new RuntimeException( "failed to open field cache for: "
+          + facetField, e );
+      }
+      facetStats.add(new FieldFacetStats(facetField, facetTermsIndex, facetFieldType, nTerms, ft));
     }
     
     
     DocIterator iter = docs.iterator();
     while (iter.hasNext()) {
       int docID = iter.nextDoc();
-      String raw = all.getTermText(docID);
-      Double v = null;
+      String raw = si.lookup[si.order[docID]];
+      String v;
       if( raw != null ) {
-        v = Double.parseDouble( all.ft.indexedToReadable(raw) );
-        allstats.accumulate( v );
+        v = ft.indexedToReadable(raw);
+        allstats.accumulate(v);
+      } else {
+        v = null;
+        allstats.missing();
       }
-      else {
-        allstats.missing++;
-      }
-      
-      // now check the facets
-      for( FieldFacetStats f : finfo ) {
+
+      // now update the facets
+      for (FieldFacetStats f : facetStats) {
         f.facet(docID, v);
       }
     }
-    
-    if( finfo.length > 0 ) {
-      allstats.facets = new HashMap<String, Map<String,StatsValues>>();
-      for( FieldFacetStats f : finfo ) {
-        allstats.facets.put( f.name, f.facetStatsValues );
-      }
+
+    for (FieldFacetStats f : facetStats) {
+      allstats.addFacet(f.name, f.facetStatsValues);
     }
     return allstats.getStatsValues();
   }

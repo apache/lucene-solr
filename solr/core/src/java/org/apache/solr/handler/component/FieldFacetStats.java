@@ -38,6 +38,7 @@ public class FieldFacetStats {
   public final String name;
   final FieldCache.StringIndex si;
   final FieldType ft;
+  final FieldType statFieldType;
 
   final String[] terms;
   final int[] termNum;
@@ -52,11 +53,12 @@ public class FieldFacetStats {
 
   final List<HashMap<String, Integer>> facetStatsTerms;
 
-  public FieldFacetStats(String name, FieldCache.StringIndex si, FieldType ft, int numStatsTerms) {
+  public FieldFacetStats(String name, FieldCache.StringIndex si, FieldType facetFieldType, int numStatsTerms, FieldType statFieldType) {
     this.name = name;
     this.si = si;
-    this.ft = ft;
+    this.ft = facetFieldType;
     this.numStatsTerms = numStatsTerms;
+    this.statFieldType = statFieldType;
 
     terms = si.lookup;
     termNum = si.order;
@@ -80,20 +82,20 @@ public class FieldFacetStats {
   }
 
 
-  public boolean facet(int docID, Double v) {
+  public boolean facet(int docID, String v) {
     int term = termNum[docID];
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
       String key = ft.indexedToReadable(terms[term]);
       StatsValues stats = facetStatsValues.get(key);
       if (stats == null) {
-        stats = new StatsValues();
+        stats = StatsValuesFactory.createStatsValues(statFieldType);
         facetStatsValues.put(key, stats);
       }
       if (v != null) {
         stats.accumulate(v);
       } else {
-        stats.missing++;
+        stats.missing();
         return false;
       }
       return true;
@@ -124,14 +126,14 @@ public class FieldFacetStats {
 
 
   //function to accumulate counts for statsTermNum to specified value
-  public boolean accumulateTermNum(int statsTermNum, Double value) {
+  public boolean accumulateTermNum(int statsTermNum, String value) {
     if (value == null) return false;
     for (Map.Entry<String, Integer> stringIntegerEntry : facetStatsTerms.get(statsTermNum).entrySet()) {
       Map.Entry pairs = (Map.Entry) stringIntegerEntry;
       String key = (String) pairs.getKey();
       StatsValues facetStats = facetStatsValues.get(key);
       if (facetStats == null) {
-        facetStats = new StatsValues();
+        facetStats = StatsValuesFactory.createStatsValues(statFieldType);
         facetStatsValues.put(key, facetStats);
       }
       Integer count = (Integer) pairs.getValue();

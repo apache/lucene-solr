@@ -34,6 +34,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.handler.component.StatsValues;
+import org.apache.solr.handler.component.StatsValuesFactory;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.util.PrimUtils;
@@ -668,7 +669,9 @@ public class UnInvertedField {
     //functionality between the two and refactor code somewhat
     use.incrementAndGet();
 
-    StatsValues allstats = new StatsValues();
+    FieldType ft = searcher.getSchema().getFieldType(field);
+
+    StatsValues allstats = StatsValuesFactory.createStatsValues(ft);
 
 
     DocSet docs = baseDocs;
@@ -676,8 +679,6 @@ public class UnInvertedField {
     int maxDoc = searcher.maxDoc();
 
     if (baseSize <= 0) return allstats;
-
-    FieldType ft = searcher.getSchema().getFieldType(field);
 
     DocSet missing = docs.andNot( searcher.getDocSet(new TermRangeQuery(field, null, null, false, false)) );
 
@@ -693,7 +694,7 @@ public class UnInvertedField {
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);
       }
-      finfo[i] = new FieldFacetStats(f, si, facet_ft, numTermsInField);
+      finfo[i] = new FieldFacetStats(f, si, facet_ft, numTermsInField, ft);
       i++;
     }
 
@@ -793,7 +794,7 @@ public class UnInvertedField {
     for (i = 0; i < numTermsInField; i++) {
       int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
       if (c == 0) continue;
-      Double value = Double.parseDouble(ft.indexedToReadable(getTermText(te, i)));
+      String value = ft.indexedToReadable(getTermText(te, i));
       allstats.accumulate(value, c);
       //as we've parsed the termnum into a value, lets also accumulate fieldfacet statistics
       for (FieldFacetStats f : finfo) {
@@ -806,7 +807,6 @@ public class UnInvertedField {
     allstats.addMissing(c);
 
     if (finfo.length > 0) {
-      allstats.facets = new HashMap<String, Map<String, StatsValues>>();
       for (FieldFacetStats f : finfo) {
         Map<String, StatsValues> facetStatsValues = f.facetStatsValues;
         FieldType facetType = searcher.getSchema().getFieldType(f.name);
@@ -815,7 +815,7 @@ public class UnInvertedField {
           int missingCount = searcher.numDocs(new TermQuery(new Term(f.name, facetType.toInternal(termLabel))), missing);
           entry.getValue().addMissing(missingCount);
         }
-        allstats.facets.put(f.name, facetStatsValues);
+        allstats.addFacet(f.name, facetStatsValues);
       }
     }
 
