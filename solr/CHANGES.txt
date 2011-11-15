@@ -393,6 +393,9 @@ New Features
 
 * SOLR-1926: Add hl.q parameter. (koji)
 
+* SOLR-1023: StatsComponent now supports date fields and string fields.
+  (Chris Male, Mark Holland, Gunnlaugur Thor Briem, Ryan McKinley)
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
