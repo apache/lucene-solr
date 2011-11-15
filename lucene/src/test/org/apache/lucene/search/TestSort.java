@@ -1216,13 +1216,29 @@ public class TestSort extends LuceneTestCase {
     assertMatches( null, searcher, query, sort, expectedResult );
   }
 
+  private static boolean hasSlowMultiReaderWrapper(IndexReader r) {
+    if (r instanceof SlowMultiReaderWrapper) {
+      return true;
+    } else {
+      IndexReader[] subReaders = r.getSequentialSubReaders();
+      if (subReaders != null) {
+        for (IndexReader subReader : subReaders) {
+          if (hasSlowMultiReaderWrapper(subReader)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   // make sure the documents returned by the search match the expected list
   private void assertMatches(String msg, IndexSearcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
 
     for(SortField sortField : sort.getSort()) {
       if (sortField.getUseIndexValues() && sortField.getType() == SortField.Type.STRING) {
-        if (searcher.getIndexReader() instanceof SlowMultiReaderWrapper) {
+        if (hasSlowMultiReaderWrapper(searcher.getIndexReader())) {
           // Cannot use STRING DocValues sort with SlowMultiReaderWrapper
           return;
         }
