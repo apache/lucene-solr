@@ -1216,4 +1216,51 @@ public class TestAddIndexes extends LuceneTestCase {
     toAdd.close();
   }
 
+  // LUCENE-3575
+  public void testFieldNamesChanged() throws IOException {
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, d1);
+    Document doc = new Document();
+    doc.add(newField("f1", "doc1 field1", StringField.TYPE_STORED));
+    doc.add(newField("id", "1", StringField.TYPE_STORED));
+    //doc.add(newField("f7", "doc1 field7", StringField.TYPE_STORED));
+    w.addDocument(doc);
+    IndexReader r1 = w.getReader();
+    w.close();
+
+    Directory d2 = newDirectory();
+    w = new RandomIndexWriter(random, d2);
+    doc = new Document();
+    doc.add(newField("f2", "doc2 field2", StringField.TYPE_STORED));
+    doc.add(newField("id", "2", StringField.TYPE_STORED));
+    //doc.add(newField("f7", "doc2 field7", StringField.TYPE_STORED));
+    w.addDocument(doc);
+    IndexReader r2 = w.getReader();
+    w.close();
+
+    Directory d3 = newDirectory();
+    w = new RandomIndexWriter(random, d3);
+    w.addIndexes(r1, r2);
+    r1.close();
+    d1.close();
+    r2.close();
+    d2.close();
+
+    IndexReader r3 = w.getReader();
+    w.close();
+    System.out.println("r1=" + r1);
+    System.out.println("r2=" + r2);
+    System.out.println("r3=" + r3);
+    assertEquals(2, r3.numDocs());
+    for(int docID=0;docID<2;docID++) {
+      Document d = r3.document(docID);
+      if (d.get("id").equals("1")) {
+        assertEquals("doc1 field1", d.get("f1"));
+      } else {
+        assertEquals("doc2 field2", d.get("f2"));
+      }
+    }
+    r3.close();
+    d3.close();
+  } 
 }

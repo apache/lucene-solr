@@ -193,7 +193,10 @@ final class SegmentMerger {
         boolean same = true;
         FieldInfos segmentFieldInfos = segmentReader.fieldInfos();
         for (FieldInfo fi : segmentFieldInfos) {
-          same = mergeState.fieldInfos.fieldName(fi.number).equals(fi.name);
+          if (!mergeState.fieldInfos.fieldName(fi.number).equals(fi.name)) {
+            same = false;
+            break;
+          }
         }
         if (same) {
           mergeState.matchingSegmentReaders[i] = segmentReader;
