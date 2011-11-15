@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -180,10 +182,18 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void test() throws IOException {
     //Check to see the files were created properly in setup
-    // TODO: fix this or at least add 'or' simpletext's extension
-    assumeFalse("test makes assumptions about filenames", Codec.getDefault().getName().equals("SimpleText"));
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg.name, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION)));
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg.name, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION)));
+    IndexReader reader = IndexReader.open(dir);
+    for (IndexReader r : reader.getSequentialSubReaders()) {
+      SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
+      assertTrue(s.getHasVectors());
+      Set<String> files = new HashSet<String>();
+      s.getCodec().termVectorsFormat().files(dir, s, files);
+      assertFalse(files.isEmpty());
+      for (String file : files) {
+        assertTrue(dir.fileExists(file));
+      }
+    }
+    reader.close();
   }
 
   public void testReader() throws IOException {

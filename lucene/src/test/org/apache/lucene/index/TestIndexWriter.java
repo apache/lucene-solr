@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -1742,14 +1744,16 @@ public class TestIndexWriter extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
 
     assertNoUnreferencedFiles(dir, "no tv files");
-    String[] files = dir.listAll();
-    // TODO: this check should use codec's files()
-    for(String file : files) {
-      assertTrue(!file.endsWith(DefaultTermVectorsReader.VECTORS_FIELDS_EXTENSION));
-      assertTrue(!file.endsWith(DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION));
-      assertTrue(!file.endsWith(DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
+    IndexReader r0 = IndexReader.open(dir);
+    for (IndexReader r : r0.getSequentialSubReaders()) {
+      SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
+      assertFalse(s.getHasVectors());
+      Set<String> files = new HashSet<String>();
+      s.getCodec().termVectorsFormat().files(dir, s, files);
+      assertTrue(files.isEmpty());
     }
-
+    
+    r0.close();
     dir.close();
   }
 

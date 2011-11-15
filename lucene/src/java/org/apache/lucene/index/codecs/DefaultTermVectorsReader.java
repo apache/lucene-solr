@@ -68,16 +68,13 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
   
   /** Extension of vectors fields file */
-  // TODO: make pkg-private after we remove/refactor fileExists check in SI or drop 3.x support
-  public static final String VECTORS_FIELDS_EXTENSION = "tvf";
+  static final String VECTORS_FIELDS_EXTENSION = "tvf";
 
   /** Extension of vectors documents file */
-  // TODO: make pkg-private after we remove/refactor fileExists check in SI or drop 3.x support
-  public static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
+  static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
 
   /** Extension of vectors index file */
-  // TODO: make pkg-private after we remove/refactor fileExists check in SI or drop 3.x support
-  public static final String VECTORS_INDEX_EXTENSION = "tvx";
+  static final String VECTORS_INDEX_EXTENSION = "tvx";
 
   private FieldInfos fieldInfos;
 
