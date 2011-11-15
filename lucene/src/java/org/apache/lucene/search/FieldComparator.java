@@ -1670,11 +1670,17 @@ public abstract class FieldComparator<T> {
 
       final IndexDocValues dv = context.reader.docValues(field);
       if (dv == null) {
+        // This may mean entire segment had no docs with
+        // this DV field; use default field value (empty
+        // byte[]) in this case:
         termsIndex = IndexDocValues.getDefaultSortedSource(ValueType.BYTES_VAR_SORTED, context.reader.maxDoc());
       } else {
         termsIndex = dv.getSource().asSortedSource();
         if (termsIndex == null) {
-          termsIndex = IndexDocValues.getDefaultSortedSource(ValueType.BYTES_VAR_SORTED, context.reader.maxDoc());
+          // This means segment has doc values, but they are
+          // not able to provide a sorted source; consider
+          // this a hard error:
+          throw new IllegalStateException("DocValues exist for field \"" + field + "\", but not as a sorted source: type=" + dv.getSource().type() + " reader=" + context.reader);
         }
       }
 
