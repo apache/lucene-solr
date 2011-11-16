@@ -1223,7 +1223,6 @@ public class TestAddIndexes extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("f1", "doc1 field1", StringField.TYPE_STORED));
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    //doc.add(newField("f7", "doc1 field7", StringField.TYPE_STORED));
     w.addDocument(doc);
     IndexReader r1 = w.getReader();
     w.close();
@@ -1233,7 +1232,6 @@ public class TestAddIndexes extends LuceneTestCase {
     doc = new Document();
     doc.add(newField("f2", "doc2 field2", StringField.TYPE_STORED));
     doc.add(newField("id", "2", StringField.TYPE_STORED));
-    //doc.add(newField("f7", "doc2 field7", StringField.TYPE_STORED));
     w.addDocument(doc);
     IndexReader r2 = w.getReader();
     w.close();
@@ -1248,9 +1246,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     IndexReader r3 = w.getReader();
     w.close();
-    System.out.println("r1=" + r1);
-    System.out.println("r2=" + r2);
-    System.out.println("r3=" + r3);
     assertEquals(2, r3.numDocs());
     for(int docID=0;docID<2;docID++) {
       Document d = r3.document(docID);
