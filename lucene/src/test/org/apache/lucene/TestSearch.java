@@ -99,7 +99,8 @@ public class TestSearch extends LuceneTestCase {
       }
       writer.close();
 
-      Searcher searcher = new IndexSearcher(directory, true);
+      IndexReader reader = IndexReader.open(directory);
+      IndexSearcher searcher = new IndexSearcher(reader);
 
       String[] queries = {
         "a b",
@@ -132,6 +133,7 @@ public class TestSearch extends LuceneTestCase {
         }
       }
       searcher.close();
+      reader.close();
       directory.close();
   }
 

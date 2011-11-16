@@ -86,7 +86,8 @@ public class SearchFiles {
       }
     }
     
-    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(index)));
+    IndexReader reader = IndexReader.open(FSDirectory.open(new File(index)));
+    IndexSearcher searcher = new IndexSearcher(reader);
     Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_31);
 
     BufferedReader in = null;
@@ -131,6 +132,7 @@ public class SearchFiles {
       }
     }
     searcher.close();
+    reader.close();
   }
 
   /**

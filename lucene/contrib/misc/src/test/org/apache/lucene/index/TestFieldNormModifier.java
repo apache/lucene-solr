@@ -116,7 +116,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
   
   public void testGoodCases() throws Exception {
     
-    IndexSearcher searcher = new IndexSearcher(store, true);
+    IndexReader reader = IndexReader.open(store);
+    IndexSearcher searcher = new IndexSearcher(reader);
     final float[] scores = new float[NUM_DOCS];
     float lastScore = 0.0f;
     
@@ -143,6 +144,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
       }
     });
     searcher.close();
+    reader.close();
     
     lastScore = Float.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -156,7 +158,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
     fnm.reSetNorms("field");
     
     // new norm (with default similarity) should put longer docs first
-    searcher = new IndexSearcher(store, true);
+    reader = IndexReader.open(store);
+    searcher = new IndexSearcher(reader);
     searcher.search(new TermQuery(new Term("field", "word")),  new Collector() {
       private int docBase = 0;
       private Scorer scorer;
@@ -178,6 +181,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
       }
     });
     searcher.close();
+    reader.close();
     
     lastScore = 0.0f;
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -204,7 +208,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
 
     
     // verify that we still get documents in the same order as originally
-    IndexSearcher searcher = new IndexSearcher(store, true);
+    IndexReader reader = IndexReader.open(store);
+    IndexSearcher searcher = new IndexSearcher(reader);
     final float[] scores = new float[NUM_DOCS];
     float lastScore = 0.0f;
     
@@ -230,6 +235,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
       }
     });
     searcher.close();
+    reader.close();
     
     lastScore = scores[0];
     for (int i = 0; i < NUM_DOCS; i++) {

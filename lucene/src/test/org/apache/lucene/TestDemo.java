@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -57,7 +58,8 @@ public class TestDemo extends LuceneTestCase {
     iwriter.close();
     
     // Now search the index:
-    IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
+    IndexReader ireader = IndexReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fieldname", analyzer);
     Query query = parser.parse("text");
@@ -74,6 +76,7 @@ public class TestDemo extends LuceneTestCase {
     assertEquals(1, isearcher.search(query, null, 1).totalHits);
 
     isearcher.close();
+    ireader.close();
     directory.close();
   }
 }

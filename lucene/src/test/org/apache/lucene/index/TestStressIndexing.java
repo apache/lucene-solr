@@ -102,8 +102,12 @@ public class TestStressIndexing extends LuceneTestCase {
 
     @Override
     public void doWork() throws Throwable {
-      for (int i=0; i<100; i++)
-        (new IndexSearcher(directory, true)).close();
+      for (int i=0; i<100; i++) {
+        IndexReader ir = IndexReader.open(directory, true);
+        IndexSearcher is = new IndexSearcher(ir);
+        is.close();
+        ir.close();
+      }
       count += 100;
     }
   }

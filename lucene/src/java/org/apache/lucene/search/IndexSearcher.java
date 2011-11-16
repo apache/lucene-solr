@@ -86,7 +86,9 @@ public class IndexSearcher extends Searcher {
    * @param path directory where IndexReader will be opened
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated use {@link IndexSearcher#IndexSearcher(IndexReader)} instead.
    */
+  @Deprecated
   public IndexSearcher(Directory path) throws CorruptIndexException, IOException {
     this(IndexReader.open(path, true), true, null);
   }
@@ -101,7 +103,9 @@ public class IndexSearcher extends Searcher {
    * will be opened readOnly
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link IndexSearcher#IndexSearcher(IndexReader)} instead.
    */
+  @Deprecated
   public IndexSearcher(Directory path, boolean readOnly) throws CorruptIndexException, IOException {
     this(IndexReader.open(path, readOnly), true, null);
   }

@@ -682,7 +682,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
       assertEquals(2*(N+1)+1, policy.numOnInit);
       assertEquals(2*(N+2) - (wasFullyMerged ? 1:0), policy.numOnCommit);
 
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader rwReader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(rwReader);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
       assertEquals(176, hits.length);
 
@@ -693,6 +694,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 176;
       searcher.close();
+      rwReader.close();
       for(int i=0;i<N+1;i++) {
         try {
           IndexReader reader = IndexReader.open(dir, true);
@@ -793,7 +795,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
       assertEquals(3*(N+1), policy.numOnInit);
       assertEquals(3*(N+1)+1, policy.numOnCommit);
 
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader rwReader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(rwReader);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
       assertEquals(0, hits.length);
 
@@ -803,6 +806,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 0;
+      
+      searcher.close();
+      rwReader.close();
 
       for(int i=0;i<N+1;i++) {
         try {

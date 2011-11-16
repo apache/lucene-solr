@@ -227,7 +227,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
             new MaxPayloadFunction(), false);
 
-    IndexSearcher theSearcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    IndexSearcher theSearcher = new IndexSearcher(reader);
     theSearcher.setSimilarity(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -262,6 +263,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       count++;
     }
     theSearcher.close();
+    reader.close();
   }
 
   public void testNoMatch() throws Exception {

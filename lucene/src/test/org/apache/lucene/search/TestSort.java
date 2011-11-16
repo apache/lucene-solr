@@ -174,7 +174,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     //writer.forceMerge(1);
     //System.out.println(writer.getSegmentCount());
     writer.close();
-    return new IndexSearcher (indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    return new IndexSearcher (reader);
   }
   
   public String getRandomNumberString(int num, int low, int high) {
@@ -407,6 +408,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
       System.out.println("topn field1(field2)(docID):" + buff);
     }
     assertFalse("Found sort results out of order", fail);
+    searcher.getIndexReader().close();
     searcher.close();
   }
   
@@ -1222,9 +1224,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
         new SortField("string", SortField.STRING),
         SortField.FIELD_DOC );
     // this should not throw AIOOBE or RuntimeEx
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), null, 500, sort);
     searcher.close();
+    reader.close();
     indexStore.close();
   }
 

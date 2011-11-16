@@ -284,7 +284,8 @@ public class TestOmitTf extends LuceneTestCase {
     /*
      * Verify the index
      */         
-    Searcher searcher = new IndexSearcher(dir, true);
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);
@@ -389,7 +390,8 @@ public class TestOmitTf extends LuceneTestCase {
                     });
     assertTrue(15 == CountingHitCollector.getCount());
         
-    searcher.close();     
+    searcher.close(); 
+    reader.close();
     dir.close();
   }
      

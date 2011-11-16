@@ -81,7 +81,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(ramDir, true);
+    IndexReader reader = IndexReader.open(ramDir);
+    IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -98,6 +99,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     searcher.close();
+    reader.close();
   }
  
   public void testFarsiRangeQueryCollating(Analyzer analyzer, String firstBeg, 
@@ -116,7 +118,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
                       Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(ramDir, true);
+    IndexReader reader = IndexReader.open(ramDir);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     Query query = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -126,6 +129,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, hits.length);
     searcher.close();
+    reader.close();
   }
 
   public void testFarsiTermRangeQuery(Analyzer analyzer, String firstBeg,
@@ -226,7 +230,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     }
     writer.forceMerge(1);
     writer.close();
-    Searcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     Sort sort = new Sort();
     Query queryX = new TermQuery(new Term ("contents", "x"));
@@ -243,6 +248,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     sort.setSort(new SortField("Denmark", SortField.STRING));
     assertMatches(searcher, queryY, sort, dkResult);
+    searcher.close();
+    reader.close();
   }
     
   // Make sure the documents returned by the search match the expected list

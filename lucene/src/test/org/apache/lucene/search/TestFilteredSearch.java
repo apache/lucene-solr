@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
@@ -77,11 +78,13 @@ public class TestFilteredSearch extends LuceneTestCase {
       booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);
      
      
-      IndexSearcher indexSearcher = new IndexSearcher(directory, true);
+      IndexReader reader = IndexReader.open(directory);
+      IndexSearcher indexSearcher = new IndexSearcher(reader);
       filter.setDocBases(indexSearcher.getIndexReader());
       ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
       assertEquals("Number of matched documents", 1, hits.length);
       indexSearcher.close();
+      reader.close();
     }
     catch (IOException e) {
       fail(e.getMessage());

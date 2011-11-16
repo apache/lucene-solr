@@ -112,7 +112,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
     query = qp.parse("\"very long\"");
-    searcher = new IndexSearcher(ramDir, true);
+    searcher = new IndexSearcher(reader);
     TopDocs hits = searcher.search(query, 10);
     
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
@@ -304,7 +304,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testSpanRegexQuery() throws Exception {
     query = new SpanOrQuery(new SpanQuery [] {
         new SpanRegexQuery(new Term(FIELD_NAME, "ken.*")) });
-    searcher = new IndexSearcher(ramDir, true);
+    searcher = new IndexSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
 
@@ -328,7 +328,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testRegexQuery() throws Exception {
     query = new RegexQuery(new Term(FIELD_NAME, "ken.*"));
-    searcher = new IndexSearcher(ramDir, true);
+    searcher = new IndexSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
 
@@ -353,7 +353,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testNumericRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
     query = NumericRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, 6, true, true);
-    searcher = new IndexSearcher(ramDir, true);
+    searcher = new IndexSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
 
@@ -689,7 +689,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     query = new WildcardQuery(new Term(FIELD_NAME, "ken*"));
     ((WildcardQuery)query).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
-    searcher = new IndexSearcher(ramDir, true);
+    searcher = new IndexSearcher(reader);
     // can't rewrite ConstantScore if you want to highlight it -
     // it rewrites to ConstantScoreQuery which cannot be highlighted
     // query = unReWrittenQuery.rewrite(reader);
@@ -1208,7 +1208,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights = 0;
         // test to show how rewritten query can still be used
         if (searcher != null) searcher.close();
-        searcher = new IndexSearcher(ramDir, true);
+        searcher = new IndexSearcher(reader);
         Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
         QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
@@ -1631,7 +1631,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String q = "t_text1:random";
     QueryParser parser = new QueryParser(TEST_VERSION_CURRENT,  "t_text1", a );
     Query query = parser.parse( q );
-    IndexSearcher searcher = new IndexSearcher( dir, true );
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher searcher = new IndexSearcher(reader);
     // This scorer can return negative idf -> null fragment
     Scorer scorer = new QueryTermScorer( query, searcher.getIndexReader(), "t_text1" );
     // This scorer doesn't use idf (patch version)
@@ -1646,6 +1647,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       assertEquals("more <B>random</B> words for second field", result);
     }
     searcher.close();
+    reader.close();
   }
 
   /*
@@ -1692,7 +1694,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void doSearching(Query unReWrittenQuery) throws Exception {
     if (searcher != null) searcher.close();
-    searcher = new IndexSearcher(ramDir, true);
+    searcher = new IndexSearcher(reader);
     // for any multi-term queries to work (prefix, wildcard, range,fuzzy etc)
     // you must use a rewritten query!
     query = unReWrittenQuery.rewrite(reader);
