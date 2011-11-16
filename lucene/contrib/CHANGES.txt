@@ -70,6 +70,9 @@ API Changes
    Analyzer should be configured at instantiation.  Deprecated PerFieldAnalyzerWrapper.addAnalyzer
    since it also prevents reuse.  Analyzers per field should be configured at instantiation.
    (Chris Male)
+   
+ * LUCENE-3579: DirectoryTaxonomyWriter throws AlreadyClosedException if it was
+   closed, but any of its API methods are called. (Shai Erera)
 
 Bug Fixes
 

@@ -29,6 +29,7 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NativeFSLockFactory;
@@ -113,6 +114,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * objects you create for the same directory.
    */
   public void setDelimiter(char delimiter) {
+    ensureOpen();
     this.delimiter = delimiter;
   }
 
@@ -285,6 +287,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @return Number of cache bytes in memory, for CL2O only; zero otherwise.
    */
   public int getCacheMemoryUsage() {
+    ensureOpen();
     if (this.cache == null || !(this.cache instanceof Cl2oTaxonomyWriterCache)) {
       return 0;
     }
@@ -394,8 +397,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   // potentially even trigger a lengthy merge) locks out other addCategory()
   // calls - even those which could immediately return a cached value.
   // We definitely need to fix this situation!
-  public synchronized int addCategory(CategoryPath categoryPath)
-  throws IOException {
+  public synchronized int addCategory(CategoryPath categoryPath) throws IOException {
+    ensureOpen();
     // If the category is already in the cache and/or the taxonomy, we
     // should return its existing ordinal:
     int res = findCategory(categoryPath);
@@ -444,6 +447,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return id;
   }
 
+  /**
+   * Verifies that this instance wasn't closed, or throws
+   * {@link AlreadyClosedException} if it is.
+   */
+  protected final void ensureOpen() {
+    if (indexWriter == null) {
+      throw new AlreadyClosedException("The taxonomy writer has already been closed");
+    }
+  }
+  
   // Note that the methods calling addCategoryDocument() are synchornized,
   // so this method is effectively synchronized as well, but we'll add
   // synchronized to be on the safe side, and we can reuse class-local objects
@@ -560,6 +573,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link TaxonomyWriter#commit()}
    */ 
   public synchronized void commit() throws CorruptIndexException, IOException {
+    ensureOpen();
     indexWriter.commit();
     refreshReader();
   }
@@ -570,6 +584,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link TaxonomyWriter#commit(Map)}. 
    */
   public synchronized void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
+    ensureOpen();
     indexWriter.commit(commitUserData);
     refreshReader();
   }
@@ -579,6 +594,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link IndexWriter#prepareCommit}.
    */
   public synchronized void prepareCommit() throws CorruptIndexException, IOException {
+    ensureOpen();
     indexWriter.prepareCommit();
   }
 
@@ -587,6 +603,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link IndexWriter#prepareCommit(Map)}
    */
   public synchronized void prepareCommit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
+    ensureOpen();
     indexWriter.prepareCommit(commitUserData);
   }
   
@@ -602,6 +619,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * automatically (including the root, which always get ordinal 0).
    */
   synchronized public int getSize() {
+    ensureOpen();
     return indexWriter.maxDoc();
   }
 
@@ -629,8 +647,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * method. 
    */
   public void setCacheMissesUntilFill(int i) {
+    ensureOpen();
     cacheMissesUntilFill = i;
   }
+  
   private int cacheMissesUntilFill = 11;
 
   private boolean perhapsFillCache() throws IOException {
@@ -702,6 +722,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return parentArray;
   }
   public int getParent(int ordinal) throws IOException {
+    ensureOpen();
     // Note: the following if() just enforces that a user can never ask
     // for the parent of a nonexistant category - even if the parent array
     // was allocated bigger than it really needs to be.
@@ -729,6 +750,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * and does not need to be commit()ed before this call. 
    */
   public void addTaxonomies(Directory[] taxonomies, OrdinalMap[] ordinalMaps) throws IOException {
+    ensureOpen();
     // To prevent us stepping on the rest of this class's decisions on when
     // to open a reader, and when not, we'll be opening a new reader instead
     // of using the existing "reader" object:
@@ -986,9 +1008,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return null;
   }
 
+  /**
+   * Rollback changes to the taxonomy writer and closes the instance. Following
+   * this method the instance becomes unusable (calling any of its API methods
+   * will yield an {@link AlreadyClosedException}).
+   */
   public void rollback() throws IOException {
+    ensureOpen();
     indexWriter.rollback();
-    refreshReader();
+    // since IndexWriter.rollback() closes the IW instance, we should close too.
+    close();
   }
   
 }
