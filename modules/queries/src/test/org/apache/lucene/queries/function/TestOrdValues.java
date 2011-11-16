@@ -18,6 +18,7 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
 import org.apache.lucene.queries.function.valuesource.ReverseOrdFieldSource;
@@ -62,7 +63,8 @@ public class TestOrdValues extends FunctionTestSetup {
 
   // Test that queries based on reverse/ordFieldScore scores correctly
   private void doTestRank(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir, true);
+    IndexReader r = IndexReader.open(dir);
+    IndexSearcher s = new IndexSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -91,6 +93,7 @@ public class TestOrdValues extends FunctionTestSetup {
       prevID = resID;
     }
     s.close();
+    r.close();
   }
 
   /**
@@ -112,7 +115,8 @@ public class TestOrdValues extends FunctionTestSetup {
 
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
   private void doTestExactScore(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir, true);
+    IndexReader r = IndexReader.open(dir);
+    IndexSearcher s = new IndexSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -136,6 +140,7 @@ public class TestOrdValues extends FunctionTestSetup {
       assertTrue("id of result " + i + " shuould be " + expectedId + " != " + score, expectedId.equals(id));
     }
     s.close();
+    r.close();
   }
   
   // LUCENE-1250

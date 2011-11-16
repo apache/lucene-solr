@@ -143,7 +143,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
     try {
-      softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
 
       if (cmd.overwrite) {
         Term updateTerm;
@@ -171,12 +170,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         // allow duplicates
         writer.addDocument(cmd.getLuceneDocument());
       }
-      commitTracker.addedDocument( cmd.commitWithin );
       // Add to the transaction log *after* successfully adding to the index, if there was no error.
       // This ordering ensures that if we log it, it's definitely been added to the the index.
       // This also ensures that if a commit sneaks in-between, that we know everything in a particular
       // log version was definitely committed.
       ulog.add(cmd);
+
+      softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
+      commitTracker.addedDocument( cmd.commitWithin );
 
       rc = 1;
     } finally {

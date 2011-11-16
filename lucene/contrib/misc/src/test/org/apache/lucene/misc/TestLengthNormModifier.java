@@ -135,7 +135,8 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	float lastScore = 0.0f;
 	
 	// default similarity should put docs with shorter length first
-  searcher = new IndexSearcher(store, false);
+	IndexReader reader = IndexReader.open(store, false);
+  searcher = new IndexSearcher(reader);
   searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
     private int docBase = 0;
     private Scorer scorer;
@@ -157,6 +158,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
     }
   });
   searcher.close();
+  reader.close();
 	
 	lastScore = Float.MAX_VALUE;
 	for (int i = 0; i < NUM_DOCS; i++) {
@@ -183,7 +185,8 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	fnm.reSetNorms("field");
 
 	// new norm (with default similarity) should put longer docs first
-	searcher = new IndexSearcher(store, false);
+	reader = IndexReader.open(store, false);
+	searcher = new IndexSearcher(reader);
 	searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
       private int docBase = 0;
       private Scorer scorer;
@@ -205,6 +208,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
       }
     });
     searcher.close();
+    reader.close();
 	
 	lastScore = 0.0f;
 	for (int i = 0; i < NUM_DOCS; i++) {

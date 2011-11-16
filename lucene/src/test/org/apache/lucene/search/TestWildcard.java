@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -67,7 +68,8 @@ public class TestWildcard
    */
   public void testTermWithoutWildcard() throws IOException {
       Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
-      IndexSearcher searcher = new IndexSearcher(indexStore, true);
+      IndexReader reader = IndexReader.open(indexStore);
+      IndexSearcher searcher = new IndexSearcher(reader);
 
       MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
       assertMatches(searcher, wq, 1);
@@ -96,6 +98,7 @@ public class TestWildcard
       assertTrue(q instanceof ConstantScoreQuery);
       assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       searcher.close();
+      reader.close();
       indexStore.close();
   }
   
@@ -104,7 +107,8 @@ public class TestWildcard
    */
   public void testEmptyTerm() throws IOException {
     Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
     wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
@@ -113,6 +117,7 @@ public class TestWildcard
     assertTrue(q instanceof BooleanQuery);
     assertEquals(0, ((BooleanQuery) q).clauses().size());
     searcher.close();
+    reader.close();
     indexStore.close();
   }
   
@@ -123,7 +128,8 @@ public class TestWildcard
    */
   public void testPrefixTerm() throws IOException {
     Directory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
@@ -135,6 +141,7 @@ public class TestWildcard
     assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
     searcher.close();
+    reader.close();
     indexStore.close();
   }
 
@@ -145,7 +152,8 @@ public class TestWildcard
       throws IOException {
     Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
     Query query1 = new TermQuery(new Term("body", "metal"));
     Query query2 = new WildcardQuery(new Term("body", "metal*"));
     Query query3 = new WildcardQuery(new Term("body", "m*tal"));
@@ -174,6 +182,7 @@ public class TestWildcard
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal")), 1);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal*")), 2);
     searcher.close();
+    reader.close();
     indexStore.close();
   }
 
@@ -186,7 +195,8 @@ public class TestWildcard
       throws IOException {
     Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals", "mXtals", "mXtXls"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
     Query query2 = new WildcardQuery(new Term("body", "metal?"));
     Query query3 = new WildcardQuery(new Term("body", "metals?"));
@@ -201,6 +211,7 @@ public class TestWildcard
     assertMatches(searcher, query5, 0);
     assertMatches(searcher, query6, 1); // Query: 'meta??' matches 'metals' not 'metal'
     searcher.close();
+    reader.close();
     indexStore.close();
   }
 
@@ -210,7 +221,8 @@ public class TestWildcard
   public void testEscapes() throws Exception {
     Directory indexStore = getIndexStore("field", 
         new String[]{"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    IndexReader reader = IndexReader.open(indexStore);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     // without escape: matches foo??bar, fooCDbar, foo*bar, and fooSOMETHINGbar
     WildcardQuery unescaped = new WildcardQuery(new Term("field", "foo*bar"));
@@ -233,6 +245,7 @@ public class TestWildcard
     assertMatches(searcher, atEnd, 1);
     
     searcher.close();
+    reader.close();
     indexStore.close();
   }
   
@@ -347,7 +360,8 @@ public class TestWildcard
     }
     iw.close();
     
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher searcher = new IndexSearcher(reader);
     
     // test queries that must find all
     for (Query q : matchAll) {
@@ -386,6 +400,7 @@ public class TestWildcard
     }
 
     searcher.close();
+    reader.close();
     dir.close();
   }
 }

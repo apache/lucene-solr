@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,6 +43,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
       new DocData("jackson waits tom", "4") };
 
   private IndexSearcher searcher;
+  private IndexReader reader;
 
   String defaultFieldName = "name";
 
@@ -120,12 +122,14 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
       w.addDocument(doc);
     }
     w.close();
-    searcher = new IndexSearcher(rd, true);
+    reader = IndexReader.open(rd);
+    searcher = new IndexSearcher(reader);
   }
 
   @Override
   public void tearDown() throws Exception {
     searcher.close();
+    reader.close();
     rd.close();
     super.tearDown();
   }

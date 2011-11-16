@@ -38,6 +38,7 @@ import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -140,7 +141,8 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     tasks.addTask(new CloseIndexTask(runData));
     tasks.doLogic();
     
-    IndexSearcher searcher = new IndexSearcher(runData.getDirectory(), true);
+    IndexReader reader = IndexReader.open(runData.getDirectory());
+    IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
     assertEquals(numAdds, td.totalHits);
     assertNotNull(td.scoreDocs[0]);
@@ -151,6 +153,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     assertEquals("Wrong field value", storedField, searcher.doc(0).get(storedField));
 
     searcher.close();
+    reader.close();
   }
   
   /* Tests LineDocSource with a bzip2 input stream. */

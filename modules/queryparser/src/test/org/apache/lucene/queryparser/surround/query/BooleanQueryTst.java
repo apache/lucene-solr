@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.surround.query;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Collector;
@@ -121,11 +122,13 @@ public class BooleanQueryTst {
     /* if (verbose) System.out.println("Lucene: " + query.toString()); */
 
     TestCollector tc = new TestCollector();
-    IndexSearcher searcher = new IndexSearcher(dBase.getDb(), true);
+    IndexReader reader = IndexReader.open(dBase.getDb());
+    IndexSearcher searcher = new IndexSearcher(reader);
     try {
       searcher.search(query, tc);
     } finally {
       searcher.close();
+      reader.close();
     }
     tc.checkNrHits();
   }

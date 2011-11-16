@@ -428,6 +428,8 @@ Bug Fixes
 * SOLR-2861: Fix extremely rare race condition on commit that can result
   in a NPE (yonik)
 
+* SOLR-2813: Fix HTTP error codes returned when requests contain strings that
+  can not be parsed as numbers for Trie fields. (Jeff Crump and hossman)
 
  Other Changes
 ----------------------

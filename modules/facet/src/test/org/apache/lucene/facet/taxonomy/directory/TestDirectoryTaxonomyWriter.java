@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
@@ -83,6 +84,37 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     assertTrue("wrong value extracted from commit data", 
         "1 2 3".equals(readUserCommitData.get("testing")));
     r.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testRollback() throws Exception {
+    // Verifies that if callback is called, DTW is closed.
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
+    dtw.addCategory(new CategoryPath("a"));
+    dtw.rollback();
+    try {
+      dtw.addCategory(new CategoryPath("a"));
+      fail("should not have succeeded to add a category following rollback.");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    dir.close();
+  }
+  
+  @Test
+  public void testEnsureOpen() throws Exception {
+    // verifies that an exception is thrown if DTW was closed
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
+    dtw.close();
+    try {
+      dtw.addCategory(new CategoryPath("a"));
+      fail("should not have succeeded to add a category following close.");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
     dir.close();
   }
   
