@@ -500,7 +500,7 @@ public class SpellChecker implements java.io.Closeable {
           protected void add(int base, IndexReader r) throws IOException {
             Terms terms = r.terms(F_WORD);
             if (terms != null)
-              termsEnums.add(terms.iterator());
+              termsEnums.add(terms.iterator(null));
           }
         }.run();
       }

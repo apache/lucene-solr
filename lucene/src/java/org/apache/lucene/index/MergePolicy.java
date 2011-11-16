@@ -173,7 +173,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     public long totalBytesSize() throws IOException {
       long total = 0;
       for (SegmentInfo info : segments) {
-        total += info.sizeInBytes(true);
+        total += info.sizeInBytes();
       }
       return total;
     }

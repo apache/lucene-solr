@@ -121,9 +121,11 @@ public class TestSegmentReader extends LuceneTestCase {
     FieldsEnum fields = MultiFields.getFields(reader).iterator();
     String field;
     while((field = fields.next()) != null) {
-      TermsEnum terms = fields.terms();
-      while(terms.next() != null) {
-        BytesRef term = terms.term();
+      Terms terms = fields.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator(null);
+      while(termsEnum.next() != null) {
+        BytesRef term = termsEnum.term();
         assertTrue(term != null);
         String fieldValue = (String) DocHelper.nameValues.get(field);
         assertTrue(fieldValue.indexOf(term.utf8ToString()) != -1);
@@ -188,20 +190,19 @@ public class TestSegmentReader extends LuceneTestCase {
   }
   
   public void testTermVectors() throws IOException {
-    TermFreqVector result = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
-    assertTrue(result != null);
-    BytesRef [] terms = result.getTerms();
-    int [] freqs = result.getTermFrequencies();
-    assertTrue(terms != null && terms.length == 3 && freqs != null && freqs.length == 3);
-    for (int i = 0; i < terms.length; i++) {
-      String term = terms[i].utf8ToString();
-      int freq = freqs[i];
+    Terms result = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    assertNotNull(result);
+    assertEquals(3, result.getUniqueTermCount());
+    TermsEnum termsEnum = result.iterator(null);
+    while(termsEnum.next() != null) {
+      String term = termsEnum.term().utf8ToString();
+      int freq = (int) termsEnum.totalTermFreq();
       assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);
       assertTrue(freq > 0);
     }
 
-    TermFreqVector [] results = reader.getTermFreqVectors(0);
+    Fields results = reader.getTermVectors(0);
     assertTrue(results != null);
-    assertTrue("We do not have 3 term freq vectors, we have: " + results.length, results.length == 3);      
+    assertEquals("We do not have 3 term freq vectors", 3, results.getUniqueFieldCount());      
   }    
 }

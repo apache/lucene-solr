@@ -48,7 +48,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    fieldInfos = new FieldInfos();
+    fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
     DocHelper.setupDoc(testDoc);
     _TestUtil.add(testDoc, fieldInfos);
     dir = newDirectory();

@@ -333,7 +333,7 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         try {
           while(true) {
@@ -406,7 +406,7 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         try {
           while(true) {
@@ -505,7 +505,7 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         try {
           while(true) {
@@ -574,7 +574,7 @@ class FieldCacheImpl implements FieldCache {
           // Fast case: all docs have this field:
           return new Bits.MatchAllBits(maxDoc);
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         while(true) {
           final BytesRef term = termsEnum.next();
@@ -655,7 +655,7 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         try {
           while(true) {
@@ -743,7 +743,7 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         try {
           while(true) {
@@ -832,7 +832,7 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         try {
           while(true) {
@@ -1128,7 +1128,7 @@ class FieldCacheImpl implements FieldCache {
       int termOrd = 1;
 
       if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
 
         while(true) {
@@ -1253,7 +1253,7 @@ class FieldCacheImpl implements FieldCache {
 
       if (terms != null) {
         int termCount = 0;
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.iterator(null);
         DocsEnum docs = null;
         while(true) {
           if (termCount++ == termCountHardLimit) {

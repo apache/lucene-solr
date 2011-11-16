@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
@@ -72,8 +73,8 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   /** Extension of stored fields index file */
   public static final String FIELDS_INDEX_EXTENSION = "fdx";
 
-  private Directory directory;
-  private String segment;
+  private final Directory directory;
+  private final String segment;
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
@@ -118,20 +119,19 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
+    
     try {
       directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
+    
     try {
       directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
   }
 
-  public final void writeField(int fieldNumber, IndexableField field) throws IOException {
-    fieldsStream.writeVInt(fieldNumber);
+  public final void writeField(FieldInfo info, IndexableField field) throws IOException {
+    fieldsStream.writeVInt(info.number);
     int bits = 0;
     final BytesRef bytes;
     final String string;

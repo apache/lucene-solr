@@ -196,7 +196,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
   
   protected long sizeBytes(SegmentInfo info) throws IOException {
-    long byteSize = info.sizeInBytes(true);
+    long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
       double delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));

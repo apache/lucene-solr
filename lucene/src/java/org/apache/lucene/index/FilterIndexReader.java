@@ -58,6 +58,11 @@ public class FilterIndexReader extends IndexReader {
     public Terms terms(String field) throws IOException {
       return in.terms(field);
     }
+
+    @Override
+    public int getUniqueFieldCount() throws IOException {
+      return in.getUniqueFieldCount();
+    }
   }
 
   /** Base class for filtering {@link Terms}
@@ -70,8 +75,8 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      return in.iterator();
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
+      return in.iterator(reuse);
     }
 
     @Override
@@ -128,7 +133,7 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
+    public Terms terms() throws IOException {
       return in.terms();
     }
   }
@@ -316,30 +321,10 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
-  public TermFreqVector[] getTermFreqVectors(int docNumber)
+  public Fields getTermVectors(int docID)
           throws IOException {
     ensureOpen();
-    return in.getTermFreqVectors(docNumber);
-  }
-
-  @Override
-  public TermFreqVector getTermFreqVector(int docNumber, String field)
-          throws IOException {
-    ensureOpen();
-    return in.getTermFreqVector(docNumber, field);
-  }
-
-
-  @Override
-  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    in.getTermFreqVector(docNumber, field, mapper);
-  }
-
-  @Override
-  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    in.getTermFreqVector(docNumber, mapper);
+    return in.getTermVectors(docID);
   }
 
   @Override

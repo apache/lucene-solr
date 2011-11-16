@@ -101,7 +101,7 @@ public class SlowCollatedTermRangeQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
     
-    TermsEnum tenum = terms.iterator();
+    TermsEnum tenum = terms.iterator(null);
 
     if (lowerTerm == null && upperTerm == null) {
       return tenum;

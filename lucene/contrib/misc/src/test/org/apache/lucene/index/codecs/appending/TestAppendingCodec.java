@@ -130,7 +130,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     Fields fields = MultiFields.getFields(reader);
     Terms terms = fields.terms("f");
     assertNotNull(terms);
-    TermsEnum te = terms.iterator();
+    TermsEnum te = terms.iterator(null);
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("quick")));
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("brown")));
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("fox")));

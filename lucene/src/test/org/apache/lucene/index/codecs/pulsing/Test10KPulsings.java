@@ -35,13 +35,10 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsBaseFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Ignore;
 
 /**
  * Pulses 10k terms/docs, 
@@ -82,7 +79,7 @@ public class Test10KPulsings extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
 
-    TermsEnum te = MultiFields.getTerms(ir, "field").iterator();
+    TermsEnum te = MultiFields.getTerms(ir, "field").iterator(null);
     DocsEnum de = null;
     
     for (int i = 0; i < 10050; i++) {
@@ -140,7 +137,7 @@ public class Test10KPulsings extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
 
-    TermsEnum te = MultiFields.getTerms(ir, "field").iterator();
+    TermsEnum te = MultiFields.getTerms(ir, "field").iterator(null);
     DocsEnum de = null;
     
     for (int i = 0; i < 10050; i++) {

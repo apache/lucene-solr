@@ -57,7 +57,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     IndexReader segment = ir.getSequentialSubReaders()[0];
     DocsEnum reuse = null;
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
-    TermsEnum te = segment.terms("foo").iterator();
+    TermsEnum te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
       reuse = te.docs(null, reuse);
       allEnums.put(reuse, true);
@@ -67,7 +67,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     
     allEnums.clear();
     DocsAndPositionsEnum posReuse = null;
-    te = segment.terms("foo").iterator();
+    te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
       posReuse = te.docsAndPositions(null, posReuse);
       allEnums.put(posReuse, true);
@@ -99,7 +99,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     IndexReader segment = ir.getSequentialSubReaders()[0];
     DocsEnum reuse = null;
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
-    TermsEnum te = segment.terms("foo").iterator();
+    TermsEnum te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
       reuse = te.docs(null, reuse);
       allEnums.put(reuse, true);
@@ -109,7 +109,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     
     allEnums.clear();
     DocsAndPositionsEnum posReuse = null;
-    te = segment.terms("foo").iterator();
+    te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
       posReuse = te.docsAndPositions(null, posReuse);
       allEnums.put(posReuse, true);

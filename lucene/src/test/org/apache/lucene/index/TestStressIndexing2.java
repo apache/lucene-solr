@@ -24,11 +24,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.lucene.util.*;
 
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -36,6 +36,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.*;
 
 public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields=4;
@@ -322,7 +323,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                  MultiFields.getFields(r2).terms(idField) == null);
       return;
     }
-    final TermsEnum termsEnum = terms1.iterator();
+    final TermsEnum termsEnum = terms1.iterator(null);
 
     final Bits liveDocs1 = MultiFields.getLiveDocs(r1);
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
@@ -382,24 +383,79 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       try {
         // verify term vectors are equivalent        
-        verifyEquals(r1.getTermFreqVectors(id1), r2.getTermFreqVectors(id2));
+        verifyEquals(r1.getTermVectors(id1), r2.getTermVectors(id2));
       } catch (Throwable e) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2);
-        TermFreqVector[] tv1 = r1.getTermFreqVectors(id1);
+        Fields tv1 = r1.getTermVectors(id1);
         System.out.println("  d1=" + tv1);
-        if (tv1 != null)
-          for(int i=0;i<tv1.length;i++)
-            System.out.println("    " + i + ": " + tv1[i]);
+        if (tv1 != null) {
+          FieldsEnum fieldsEnum = tv1.iterator();
+          String field;
+          DocsAndPositionsEnum dpEnum = null;
+          DocsEnum dEnum = null;
+          while ((field=fieldsEnum.next()) != null) {
+            System.out.println("    " + field + ":");
+            Terms terms3 = fieldsEnum.terms();
+            assertNotNull(terms3);
+            TermsEnum termsEnum2 = terms3.iterator(null);
+            BytesRef term2;
+            while((term2 = termsEnum2.next()) != null) {
+              System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
+              dpEnum = termsEnum2.docsAndPositions(null, dpEnum);
+              if (dpEnum != null) {
+                assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+                final int freq = dpEnum.freq();
+                System.out.println("        doc=" + dpEnum.docID() + " freq=" + freq);
+                for(int posUpto=0;posUpto<freq;posUpto++) {
+                  System.out.println("          pos=" + dpEnum.nextPosition());
+                }
+              } else {
+                dEnum = termsEnum2.docs(null, dEnum);
+                assertNotNull(dEnum);
+                assertTrue(dEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+                final int freq = dEnum.freq();
+                System.out.println("        doc=" + dEnum.docID() + " freq=" + freq);
+              }
+            }
+          }
+        }
         
-        TermFreqVector[] tv2 = r2.getTermFreqVectors(id2);
+        Fields tv2 = r2.getTermVectors(id2);
         System.out.println("  d2=" + tv2);
-        if (tv2 != null)
-          for(int i=0;i<tv2.length;i++)
-            System.out.println("    " + i + ": " + tv2[i]);
+        if (tv2 != null) {
+          FieldsEnum fieldsEnum = tv2.iterator();
+          String field;
+          DocsAndPositionsEnum dpEnum = null;
+          DocsEnum dEnum = null;
+          while ((field=fieldsEnum.next()) != null) {
+            System.out.println("    " + field + ":");
+            Terms terms3 = fieldsEnum.terms();
+            assertNotNull(terms3);
+            TermsEnum termsEnum2 = terms3.iterator(null);
+            BytesRef term2;
+            while((term2 = termsEnum2.next()) != null) {
+              System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
+              dpEnum = termsEnum2.docsAndPositions(null, dpEnum);
+              if (dpEnum != null) {
+                assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+                final int freq = dpEnum.freq();
+                System.out.println("        doc=" + dpEnum.docID() + " freq=" + freq);
+                for(int posUpto=0;posUpto<freq;posUpto++) {
+                  System.out.println("          pos=" + dpEnum.nextPosition());
+                }
+              } else {
+                dEnum = termsEnum2.docs(null, dEnum);
+                assertNotNull(dEnum);
+                assertTrue(dEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+                final int freq = dEnum.freq();
+                System.out.println("        doc=" + dEnum.docID() + " freq=" + freq);
+              }
+            }
+          }
+        }
         
         throw e;
       }
-
     }
 
     //System.out.println("TEST: done match id");
@@ -430,7 +486,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
           if (field1 == null) {
             break;
           } else {
-            termsEnum1 = fields1.terms();
+            Terms terms = fields1.terms();
+            if (terms == null) {
+              continue;
+            }
+            termsEnum1 = terms.iterator(null);
           }
         }
         term1 = termsEnum1.next();
@@ -460,7 +520,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
           if (field2 == null) {
             break;
           } else {
-            termsEnum2 = fields2.terms();
+            Terms terms = fields2.terms();
+            if (terms == null) {
+              continue;
+            }
+            termsEnum2 = terms.iterator(null);
           }
         }
         term2 = termsEnum2.next();
@@ -527,62 +591,98 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
 
-  public static void verifyEquals(TermFreqVector[] d1, TermFreqVector[] d2) {
+  public static void verifyEquals(Fields d1, Fields d2) throws IOException {
     if (d1 == null) {
-      assertTrue(d2 == null);
+      assertTrue(d2 == null || d2.getUniqueFieldCount() == 0);
       return;
     }
     assertTrue(d2 != null);
 
-    assertEquals(d1.length, d2.length);
-    for(int i=0;i<d1.length;i++) {
-      TermFreqVector v1 = d1[i];
-      TermFreqVector v2 = d2[i];
-      if (v1 == null || v2 == null)
-        System.out.println("v1=" + v1 + " v2=" + v2 + " i=" + i + " of " + d1.length);
-      assertEquals(v1.size(), v2.size());
-      int numTerms = v1.size();
-      BytesRef[] terms1 = v1.getTerms();
-      BytesRef[] terms2 = v2.getTerms();
-      int[] freq1 = v1.getTermFrequencies();
-      int[] freq2 = v2.getTermFrequencies();
-      for(int j=0;j<numTerms;j++) {
-        if (!terms1[j].equals(terms2[j]))
-          assertEquals(terms1[j], terms2[j]);
-        assertEquals(freq1[j], freq2[j]);
-      }
-      if (v1 instanceof TermPositionVector) {
-        assertTrue(v2 instanceof TermPositionVector);
-        TermPositionVector tpv1 = (TermPositionVector) v1;
-        TermPositionVector tpv2 = (TermPositionVector) v2;
-        for(int j=0;j<numTerms;j++) {
-          int[] pos1 = tpv1.getTermPositions(j);
-          int[] pos2 = tpv2.getTermPositions(j);
-          if (pos1 == null) {
-            assertNull(pos2);
+    FieldsEnum fieldsEnum1 = d1.iterator();
+    FieldsEnum fieldsEnum2 = d2.iterator();
+    String field1;
+    while ((field1 = fieldsEnum1.next()) != null) {
+      String field2 = fieldsEnum2.next();
+      assertEquals(field1, field2);
+
+      Terms terms1 = fieldsEnum1.terms();
+      assertNotNull(terms1);
+      TermsEnum termsEnum1 = terms1.iterator(null);
+
+      Terms terms2 = fieldsEnum2.terms();
+      assertNotNull(terms2);
+      TermsEnum termsEnum2 = terms2.iterator(null);
+
+      DocsAndPositionsEnum dpEnum1 = null;
+      DocsAndPositionsEnum dpEnum2 = null;
+      DocsEnum dEnum1 = null;
+      DocsEnum dEnum2 = null;
+      
+      BytesRef term1;
+      while ((term1 = termsEnum1.next()) != null) {
+        BytesRef term2 = termsEnum2.next();
+        assertEquals(term1, term2);
+        assertEquals(termsEnum1.totalTermFreq(),
+                     termsEnum2.totalTermFreq());
+        
+        dpEnum1 = termsEnum1.docsAndPositions(null, dpEnum1);
+        dpEnum2 = termsEnum2.docsAndPositions(null, dpEnum2);
+        if (dpEnum1 != null) {
+          assertNotNull(dpEnum2);
+          int docID1 = dpEnum1.nextDoc();
+          dpEnum2.nextDoc();
+          // docIDs are not supposed to be equal
+          //int docID2 = dpEnum2.nextDoc();
+          //assertEquals(docID1, docID2);
+          assertTrue(docID1 != DocsEnum.NO_MORE_DOCS);
+          
+          int freq1 = dpEnum1.freq();
+          int freq2 = dpEnum2.freq();
+          assertEquals(freq1, freq2);
+          OffsetAttribute offsetAtt1 = dpEnum1.attributes().hasAttribute(OffsetAttribute.class) ? dpEnum1.attributes().getAttribute(OffsetAttribute.class) : null;
+          OffsetAttribute offsetAtt2 = dpEnum2.attributes().hasAttribute(OffsetAttribute.class) ? dpEnum2.attributes().getAttribute(OffsetAttribute.class) : null;
+
+          if (offsetAtt1 != null) {
+            assertNotNull(offsetAtt2);
           } else {
-            assertNotNull(pos1);
-            assertNotNull(pos2);
-            assertEquals(pos1.length, pos2.length);
-            TermVectorOffsetInfo[] offsets1 = tpv1.getOffsets(j);
-            TermVectorOffsetInfo[] offsets2 = tpv2.getOffsets(j);
-            if (offsets1 == null)
-              assertTrue(offsets2 == null);
-            else
-              assertTrue(offsets2 != null);
-            for(int k=0;k<pos1.length;k++) {
-              assertEquals(pos1[k], pos2[k]);
-              if (offsets1 != null) {
-                assertEquals(offsets1[k].getStartOffset(),
-                             offsets2[k].getStartOffset());
-                assertEquals(offsets1[k].getEndOffset(),
-                             offsets2[k].getEndOffset());
-              }
+            assertNull(offsetAtt2);
+          }
+
+          for(int posUpto=0;posUpto<freq1;posUpto++) {
+            int pos1 = dpEnum1.nextPosition();
+            int pos2 = dpEnum2.nextPosition();
+            assertEquals(pos1, pos2);
+            if (offsetAtt1 != null) {
+              assertEquals(offsetAtt1.startOffset(),
+                           offsetAtt2.startOffset());
+              assertEquals(offsetAtt1.endOffset(),
+                           offsetAtt2.endOffset());
             }
           }
+          assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum1.nextDoc());
+          assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum2.nextDoc());
+        } else {
+          dEnum1 = termsEnum1.docs(null, dEnum1);
+          dEnum2 = termsEnum2.docs(null, dEnum2);
+          assertNotNull(dEnum1);
+          assertNotNull(dEnum2);
+          int docID1 = dEnum1.nextDoc();
+          dEnum2.nextDoc();
+          // docIDs are not supposed to be equal
+          //int docID2 = dEnum2.nextDoc();
+          //assertEquals(docID1, docID2);
+          assertTrue(docID1 != DocsEnum.NO_MORE_DOCS);
+          int freq1 = dEnum1.freq();
+          int freq2 = dEnum2.freq();
+          assertEquals(freq1, freq2);
+          assertEquals(DocsEnum.NO_MORE_DOCS, dEnum1.nextDoc());
+          assertEquals(DocsEnum.NO_MORE_DOCS, dEnum2.nextDoc());
         }
       }
+
+      assertNull(termsEnum2.next());
     }
+    assertNull(fieldsEnum2.next());
   }
 
   private class IndexingThread extends Thread {

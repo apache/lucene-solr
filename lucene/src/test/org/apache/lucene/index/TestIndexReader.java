@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.Set;
-import java.util.SortedSet;
 import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryField;
@@ -314,19 +312,6 @@ public class TestIndexReader extends LuceneTestCase
         writer.addDocument(doc);
     }
     writer.close();
-    IndexReader reader = IndexReader.open(d, false);
-    FieldSortedTermVectorMapper mapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-    reader.getTermFreqVector(0, mapper);
-    Map<String,SortedSet<TermVectorEntry>> map = mapper.getFieldToTerms();
-    assertTrue("map is null and it shouldn't be", map != null);
-    assertTrue("map Size: " + map.size() + " is not: " + 4, map.size() == 4);
-    Set<TermVectorEntry> set = map.get("termvector");
-    for (Iterator<TermVectorEntry> iterator = set.iterator(); iterator.hasNext();) {
-      TermVectorEntry entry =  iterator.next();
-      assertTrue("entry is null and it shouldn't be", entry != null);
-      if (VERBOSE) System.out.println("Entry: " + entry);
-    }
-    reader.close();
     d.close();
   }
 
@@ -914,8 +899,17 @@ public class TestIndexReader extends LuceneTestCase
       Bits liveDocs = MultiFields.getLiveDocs(index1);
       while((field1=fenum1.next()) != null) {
         assertEquals("Different fields", field1, fenum2.next());
-        TermsEnum enum1 = fenum1.terms();
-        TermsEnum enum2 = fenum2.terms();
+        Terms terms1 = fenum1.terms();
+        if (terms1 == null) {
+          assertNull(fenum2.terms());
+          continue;
+        }
+        TermsEnum enum1 = terms1.iterator(null);
+
+        Terms terms2 = fenum2.terms();
+        assertNotNull(terms2);
+        TermsEnum enum2 = terms2.iterator(null);
+
         while(enum1.next() != null) {
           assertEquals("Different terms", enum1.term(), enum2.next());
           DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null);

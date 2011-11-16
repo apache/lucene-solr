@@ -28,12 +28,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.StringHelper;
 
@@ -45,9 +43,11 @@ import org.apache.lucene.util.StringHelper;
  */
 public final class SegmentInfo implements Cloneable {
   // TODO: remove with hasVector and hasProx
-  private static final int CHECK_FIELDINFO = -2;
-  static final int NO = -1;          // e.g. no norms; no deletes;
-  static final int YES = 1;          // e.g. have norms; have deletes;
+  public static final int CHECK_FIELDINFO = -2;
+  
+  // TODO: remove these from this class, for now this is the representation
+  public static final int NO = -1;          // e.g. no norms; no deletes;
+  public static final int YES = 1;          // e.g. have norms; have deletes;
   static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
   public String name;				  // unique name in dir
@@ -167,100 +167,30 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /**
-   * Construct a new SegmentInfo instance by reading a
-   * previously saved SegmentInfo from input.
+   * Construct a new complete SegmentInfo instance from input.
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
-   *
-   * @param dir directory to load from
-   * @param format format of the segments info file
-   * @param input input handle to read segment info from
    */
-  public SegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
+  public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
+      String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
+      int delCount, int hasProx, Codec codec, Map<String,String> diagnostics, int hasVectors) {
     this.dir = dir;
-    if (format <= DefaultSegmentInfosWriter.FORMAT_3_1) {
-      version = input.readString();
-    }
-    name = input.readString();
-    docCount = input.readInt();
-    delGen = input.readLong();
-    docStoreOffset = input.readInt();
-    if (docStoreOffset != -1) {
-      docStoreSegment = input.readString();
-      docStoreIsCompoundFile = input.readByte() == YES;
-    } else {
-      docStoreSegment = name;
-      docStoreIsCompoundFile = false;
-    }
-
-    if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
-      // pre-4.0 indexes write a byte if there is a single norms file
-      byte b = input.readByte();
-      assert 1 == b;
-    }
-
-    int numNormGen = input.readInt();
-    if (numNormGen == NO) {
-      normGen = null;
-    } else {
-      normGen = new HashMap<Integer, Long>();
-      for(int j=0;j<numNormGen;j++) {
-        int fieldNumber = j;
-        if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-          fieldNumber = input.readInt();
-        }
-
-        normGen.put(fieldNumber, input.readLong());
-      }
-    }
-    isCompoundFile = input.readByte() == YES;
-
-    delCount = input.readInt();
-    assert delCount <= docCount;
-
-    hasProx = input.readByte();
-
-    
-    // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
-    // note: if the codec is not available: Codec.forName will throw an exception.
-    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-      codec = Codec.forName(input.readString());
-    } else {
-      codec = Codec.forName("Lucene3x");
-    }
-    diagnostics = input.readStringStringMap();
-
-    if (format <= DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte();
-    } else {
-      final String storesSegment;
-      final String ext;
-      final boolean isCompoundFile;
-      if (docStoreOffset != -1) {
-        storesSegment = docStoreSegment;
-        isCompoundFile = docStoreIsCompoundFile;
-        ext = IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
-      } else {
-        storesSegment = name;
-        isCompoundFile = getUseCompoundFile();
-        ext = IndexFileNames.COMPOUND_FILE_EXTENSION;
-      }
-      final Directory dirToTest;
-      if (isCompoundFile) {
-        dirToTest = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE, false);
-      } else {
-        dirToTest = dir;
-      }
-      try {
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION)) ? YES : NO;
-      } finally {
-        if (isCompoundFile) {
-          dirToTest.close();
-        }
-      }
-    }
+    this.version = version;
+    this.name = name;
+    this.docCount = docCount;
+    this.delGen = delGen;
+    this.docStoreOffset = docStoreOffset;
+    this.docStoreSegment = docStoreSegment;
+    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    this.normGen = normGen;
+    this.isCompoundFile = isCompoundFile;
+    this.delCount = delCount;
+    this.hasProx = hasProx;
+    this.codec = codec;
+    this.diagnostics = diagnostics;
+    this.hasVectors = hasVectors;
   }
-  
+
   synchronized void loadFieldInfos(Directory dir, boolean checkCompoundFile) throws IOException {
     if (fieldInfos == null) {
       Directory dir0 = dir;
@@ -269,8 +199,8 @@ public final class SegmentInfo implements Cloneable {
             "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE, false);
       }
       try {
-        fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name,
-            "", IndexFileNames.FIELD_INFOS_EXTENSION));
+        FieldInfosReader reader = codec.fieldInfosFormat().getFieldInfosReader();
+        fieldInfos = reader.read(dir0, name, IOContext.READONCE);
       } finally {
         if (dir != dir0) {
           dir0.close();
@@ -280,11 +210,23 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /**
+   * Returns total size in bytes of all of files used by this segment
+   */
+  public long sizeInBytes() throws IOException {
+    return sizeInBytes(true);
+  }
+  
+  /**
    * Returns total size in bytes of all of files used by this segment (if
    * {@code includeDocStores} is true), or the size of all files except the
    * store files otherwise.
+   * <p>
+   * NOTE: includeDocStores=false should only be used for debugging.
+   * Theoretically a codec could combine its files however it wants (after-
+   * the-fact or something), and this calculation is not particularly
+   * efficient.
    */
-  public long sizeInBytes(boolean includeDocStores) throws IOException {
+  long sizeInBytes(boolean includeDocStores) throws IOException {
     // TODO: based on how this is used, can't we just forget about all this docstore crap?
     // its really an abstraction violation into the codec
     if (includeDocStores) {
@@ -317,11 +259,17 @@ public final class SegmentInfo implements Cloneable {
     }
   }
   
-  // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
-  private boolean isDocStoreFile(String fileName) throws IOException {
+  Set<String> codecDocStoreFiles() throws IOException {
     Set<String> docStoreFiles = new HashSet<String>();
     codec.storedFieldsFormat().files(dir, this, docStoreFiles);
-    return IndexFileNames.isDocStoreFile(fileName) || docStoreFiles.contains(fileName);
+    codec.termVectorsFormat().files(dir, this, docStoreFiles);
+    return docStoreFiles;
+  }
+
+  // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
+  private boolean isDocStoreFile(String fileName) throws IOException {
+    Set<String> docStoreFiles = codecDocStoreFiles();
+    return fileName.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION) || docStoreFiles.contains(fileName);
   }
 
   public boolean getHasVectors() throws IOException {
@@ -551,41 +499,6 @@ public final class SegmentInfo implements Cloneable {
     this.docStoreSegment = docStoreSegment;
   }
 
-  /** Save this segment's info. */
-  public void write(IndexOutput output)
-    throws IOException {
-    assert delCount <= docCount: "delCount=" + delCount + " docCount=" + docCount + " segment=" + name;
-    // Write the Lucene version that created this segment, since 3.1
-    output.writeString(version);
-    output.writeString(name);
-    output.writeInt(docCount);
-    output.writeLong(delGen);
-
-    output.writeInt(docStoreOffset);
-    if (docStoreOffset != -1) {
-      output.writeString(docStoreSegment);
-      output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
-    }
-
-
-    if (normGen == null) {
-      output.writeInt(NO);
-    } else {
-      output.writeInt(normGen.size());
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        output.writeInt(entry.getKey());
-        output.writeLong(entry.getValue());
-      }
-    }
-
-    output.writeByte((byte) (isCompoundFile ? YES : NO));
-    output.writeInt(delCount);
-    output.writeByte((byte) (hasProx));
-    output.writeString(codec.getName());
-    output.writeStringStringMap(diagnostics);
-    output.writeByte((byte) (hasVectors));
-  }
-
   public boolean getHasProx() throws IOException {
     return hasProx == CHECK_FIELDINFO ? getFieldInfos().hasProx() : hasProx == YES;
   }
@@ -599,7 +512,7 @@ public final class SegmentInfo implements Cloneable {
     this.codec = codec;
   }
 
-  Codec getCodec() {
+  public Codec getCodec() {
     return codec;
   }
 
@@ -646,18 +559,6 @@ public final class SegmentInfo implements Cloneable {
       // TODO: push this out into preflex fieldsFormat?
       if (docStoreIsCompoundFile) {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
-      } else {
-        if (getHasVectors()) {
-          fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-          fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-          fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-        }
-      }
-    } else if (!useCompoundFile) {
-      if (getHasVectors()) {
-        fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-        fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-        fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
       }
     }
 
@@ -794,5 +695,28 @@ public final class SegmentInfo implements Cloneable {
 
   void setBufferedDeletesGen(long v) {
     bufferedDeletesGen = v;
+  }
+  
+  /** @lucene.internal */
+  public long getDelGen() {
+    return delGen;
+  }
+  
+  /** @lucene.internal */
+  public Map<Integer,Long> getNormGen() {
+    return normGen;
+  }
+  
+  // TODO: clean up this SI/FI stuff here
+  /** returns the 'real' value for hasProx (doesn't consult fieldinfos) 
+   * @lucene.internal */
+  public int getHasProxInternal() {
+    return hasProx;
+  }
+  
+  /** returns the 'real' value for hasVectors (doesn't consult fieldinfos) 
+   * @lucene.internal */
+  public int getHasVectorsInternal() {
+    return hasVectors;
   }
 }

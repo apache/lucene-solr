@@ -278,7 +278,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         for(int j=0;j<reader.maxDoc();j++) {
           if (delDocs == null || !delDocs.get(j)) {
             reader.document(j);
-            reader.getTermFreqVectors(j);
+            reader.getTermVectors(j);
           }
         }
         reader.close();

@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Query;
@@ -2177,7 +2178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     setDiagnostics(newSegment, "flush");
     
-    IOContext context = new IOContext(new FlushInfo(newSegment.docCount, newSegment.sizeInBytes(true)));
+    IOContext context = new IOContext(new FlushInfo(newSegment.docCount, newSegment.sizeInBytes()));
 
     boolean success = false;
     try {
@@ -2409,7 +2410,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                 && versionComparator.compare(info.getVersion(), "3.1") >= 0;
           }
           
-          IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(true), true, -1));
+          IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(), true, -1));
           
           if (createCFS) {
             copySegmentIntoCFS(info, newSegName, context);
@@ -2498,7 +2499,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        merger.createCompoundFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), info, context);
+        createCompoundFile(directory, IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), MergeState.CheckAbort.NONE, info, context);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
@@ -2572,10 +2573,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       newDsName = segName;
     }
     
+    Set<String> codecDocStoreFiles = info.codecDocStoreFiles();
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;
-      if (IndexFileNames.isDocStoreFile(file)) {
+      if (codecDocStoreFiles.contains(file) || file.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
         if (dsFilesCopied.contains(newFileName)) {
           continue;
@@ -3412,7 +3414,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final int delCount = numDeletedDocs(info);
         assert delCount <= info.docCount;
         final double delRatio = ((double) delCount)/info.docCount;
-        merge.estimatedMergeBytes += info.sizeInBytes(true) * (1.0 - delRatio);
+        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
       }
     }
 
@@ -3614,7 +3616,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (infoStream != null) {
             infoStream.message("IW", "create compound file " + compoundFileName);
           }
-          merger.createCompoundFile(compoundFileName, merge.info, new IOContext(merge.getMergeInfo()));
+          createCompoundFile(directory, compoundFileName, checkAbort, merge.info, new IOContext(merge.getMergeInfo()));
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -3663,7 +3665,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       if (infoStream != null) {
-        infoStream.message("IW", String.format("merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes(true)/1024./1024., merge.estimatedMergeBytes/1024/1024.));
+        infoStream.message("IW", String.format("merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes()/1024./1024., merge.estimatedMergeBytes/1024/1024.));
       }
 
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
@@ -4059,5 +4061,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   public PayloadProcessorProvider getPayloadProcessorProvider() {
     ensureOpen();
     return payloadProcessorProvider;
+  }
+  
+  /**
+   * NOTE: this method creates a compound file for all files returned by
+   * info.files(). While, generally, this may include separate norms and
+   * deletion files, this SegmentInfo must not reference such files when this
+   * method is called, because they are not allowed within a compound file.
+   */
+  static final Collection<String> createCompoundFile(Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
+          throws IOException {
+
+    // Now merge all added files
+    Collection<String> files = info.files();
+    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
+    try {
+      for (String file : files) {
+        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
+                  : ".del file is not allowed in .cfs: " + file;
+        assert !IndexFileNames.isSeparateNormsFile(file) 
+                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
+        directory.copy(cfsDir, file, file, context);
+        checkAbort.work(directory.fileLength(file));
+      }
+    } finally {
+      cfsDir.close();
+    }
+
+    return files;
   }
 }

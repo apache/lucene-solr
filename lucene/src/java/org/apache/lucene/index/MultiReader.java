@@ -204,33 +204,10 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    int i = readerIndex(n);        // find segment num
-    return subReaders[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
-  }
-
-  @Override
-  public TermFreqVector getTermFreqVector(int n, String field)
-      throws IOException {
-    ensureOpen();
-    int i = readerIndex(n);        // find segment num
-    return subReaders[i].getTermFreqVector(n - starts[i], field);
-  }
-
-
-  @Override
-  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    int i = readerIndex(docNumber);        // find segment num
-    subReaders[i].getTermFreqVector(docNumber - starts[i], field, mapper);
-  }
-
-  @Override
-  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    int i = readerIndex(docNumber);        // find segment num
-    subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
+    int i = readerIndex(docID);        // find segment num
+    return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to segment
   }
 
   @Override

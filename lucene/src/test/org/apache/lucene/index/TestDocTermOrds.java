@@ -314,7 +314,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: verify prefix=" + (prefixRef==null ? "null" : prefixRef.utf8ToString()));
       System.out.println("TEST: all TERMS:");
-      TermsEnum allTE = MultiFields.getTerms(r, "field").iterator();
+      TermsEnum allTE = MultiFields.getTerms(r, "field").iterator(null);
       int ord = 0;
       while(allTE.next() != null) {
         System.out.println("  ord=" + (ord++) + " term=" + allTE.term().utf8ToString());
@@ -329,7 +329,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       } else {
         Terms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
-          TermsEnum termsEnum = terms.iterator();
+          TermsEnum termsEnum = terms.iterator(null);
           TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef, false);
           if (result != TermsEnum.SeekStatus.END) {
             assertFalse("term=" + termsEnum.term().utf8ToString() + " matches prefix=" + prefixRef.utf8ToString(), termsEnum.term().startsWith(prefixRef));

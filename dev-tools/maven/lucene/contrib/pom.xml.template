@@ -33,7 +33,6 @@
   <modules>
     <module>demo</module>
     <module>highlighter</module>
-    <module>instantiated</module>
     <module>memory</module>
     <module>misc</module>
     <module>sandbox</module>

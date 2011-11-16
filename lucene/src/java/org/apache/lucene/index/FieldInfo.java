@@ -51,12 +51,15 @@ public final class FieldInfo {
     DOCS_AND_FREQS_AND_POSITIONS 
   };
 
-  FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
+  /**
+   * @lucene.experimental
+   */
+  public FieldInfo(String name, boolean isIndexed, int number, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
             boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {
-    name = na;
-    isIndexed = tk;
-    number = nu;
+    this.name = name;
+    this.isIndexed = isIndexed;
+    this.number = number;
     this.docValues = docValues;
     if (isIndexed) {
       this.storeTermVector = storeTermVector;

@@ -45,12 +45,12 @@ final class StoredFieldsConsumer {
 
   private int numStoredFields;
   private IndexableField[] storedFields;
-  private int[] fieldNumbers;
+  private FieldInfo[] fieldInfos;
 
   public void reset() {
     numStoredFields = 0;
     storedFields = new IndexableField[1];
-    fieldNumbers = new int[1];
+    fieldInfos = new FieldInfo[1];
   }
 
   public void startDocument() {
@@ -116,7 +116,7 @@ final class StoredFieldsConsumer {
     if (fieldsWriter != null && numStoredFields > 0) {
       fieldsWriter.startDocument(numStoredFields);
       for (int i = 0; i < numStoredFields; i++) {
-        fieldsWriter.writeField(fieldNumbers[i], storedFields[i]);
+        fieldsWriter.writeField(fieldInfos[i], storedFields[i]);
       }
       lastDocID++;
     }
@@ -131,14 +131,14 @@ final class StoredFieldsConsumer {
       IndexableField[] newArray = new IndexableField[newSize];
       System.arraycopy(storedFields, 0, newArray, 0, numStoredFields);
       storedFields = newArray;
-    }
-
-    if (numStoredFields == fieldNumbers.length) {
-      fieldNumbers = ArrayUtil.grow(fieldNumbers);
+      
+      FieldInfo[] newInfoArray = new FieldInfo[newSize];
+      System.arraycopy(fieldInfos, 0, newInfoArray, 0, numStoredFields);
+      fieldInfos = newInfoArray;
     }
 
     storedFields[numStoredFields] = field;
-    fieldNumbers[numStoredFields] = fieldInfo.number;
+    fieldInfos[numStoredFields] = fieldInfo;
     numStoredFields++;
 
     assert docState.testPoint("StoredFieldsWriterPerThread.processFields.writeField");

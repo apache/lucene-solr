@@ -803,58 +803,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
-  /**
-   * Return an array of term frequency vectors for the specified document.
-   * The array contains a vector for each vectorized field in the document.
-   * Each vector contains terms and frequencies for all terms in a given vectorized field.
-   * If no such fields existed, the method returns null. The term vectors that are
-   * returned may either be of type {@link TermFreqVector}
-   * or of type {@link TermPositionVector} if
-   * positions or offsets have been stored.
-   * 
-   * @param docNumber document for which term frequency vectors are returned
-   * @return array of term frequency vectors. May be null if no term vectors have been
-   *  stored for the specified document.
-   * @throws IOException if index cannot be accessed
-   */
-  abstract public TermFreqVector[] getTermFreqVectors(int docNumber)
+  /** Retrieve term vectors for this document, or null if
+   *  term vectors were not indexed.  The returned Fields
+   *  instance acts like a single-document inverted index
+   *  (the docID will be 0). */
+  abstract public Fields getTermVectors(int docID)
           throws IOException;
 
-
-  /**
-   * Return a term frequency vector for the specified document and field. The
-   * returned vector contains terms and frequencies for the terms in
-   * the specified field of this document, if the field had the storeTermVector
-   * flag set. If termvectors had been stored with positions or offsets, a 
-   * {@link TermPositionVector} is returned.
-   * 
-   * @param docNumber document for which the term frequency vector is returned
-   * @param field field for which the term frequency vector is returned.
-   * @return term frequency vector May be null if field does not exist in the specified
-   * document or term vector was not stored.
-   * @throws IOException if index cannot be accessed
-   */
-  abstract public TermFreqVector getTermFreqVector(int docNumber, String field)
-          throws IOException;
-
-  /**
-   * Load the Term Vector into a user-defined data structure instead of relying on the parallel arrays of
-   * the {@link TermFreqVector}.
-   * @param docNumber The number of the document to load the vector for
-   * @param field The name of the field to load
-   * @param mapper The {@link TermVectorMapper} to process the vector.  Must not be null
-   * @throws IOException if term vectors cannot be accessed or if they do not exist on the field and doc. specified.
-   * 
-   */
-  abstract public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException;
-
-  /**
-   * Map all the term vectors for all fields in a Document
-   * @param docNumber The number of the document to load the vector for
-   * @param mapper The {@link TermVectorMapper} to process the vector.  Must not be null
-   * @throws IOException if term vectors cannot be accessed or if they do not exist on the field and doc. specified.
-   */
-  abstract public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException;
+  /** Retrieve term vector for this document and field, or
+   *  null if term vectors were not indexed.  The returned
+   *  Fields instance acts like a single-document inverted
+   *  index (the docID will be 0). */
+  public Terms getTermVector(int docID, String field)
+    throws IOException {
+    Fields vectors = getTermVectors(docID);
+    if (vectors == null) {
+      return null;
+    }
+    return vectors.terms(field);
+  }
 
   /**
    * Returns <code>true</code> if an index exists at the specified directory.

@@ -87,8 +87,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      return SimpleTextFieldsReader.this.terms(current).iterator();
+    public Terms terms() throws IOException {
+      return SimpleTextFieldsReader.this.terms(current);
     }
   }
 
@@ -523,7 +523,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       if (fst != null) {
         return new SimpleTextTermsEnum(fst, indexOptions);
       } else {
@@ -579,6 +579,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
       termsCache.put(field, terms);
     }
     return terms;
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return -1;
   }
 
   @Override

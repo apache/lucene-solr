@@ -80,7 +80,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     // this TermEnum gives "piccadilly", "pie" and "pizza".
     String prefix = "pi";
-    TermsEnum te = MultiFields.getFields(reader).terms("body").iterator();
+    TermsEnum te = MultiFields.getFields(reader).terms("body").iterator(null);
     te.seekCeil(new BytesRef(prefix));
     do {
       String s = te.term().utf8ToString();
@@ -587,4 +587,3 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
 }
-

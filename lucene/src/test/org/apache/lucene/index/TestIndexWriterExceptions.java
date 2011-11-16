@@ -535,7 +535,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         boolean sawAppend = false;
         boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if ("org.apache.lucene.index.FreqProxTermsWriterPerField".equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName()))
+          if (FreqProxTermsWriterPerField.class.getName().equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName()))
             sawAppend = true;
           if ("flush".equals(trace[i].getMethodName()))
             sawFlush = true;
@@ -641,7 +641,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             numDel++;
           else {
             reader.document(j);
-            reader.getTermFreqVectors(j);
+            reader.getTermVectors(j);
           }
         }
         assertEquals(1, numDel);
@@ -665,7 +665,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertNull(MultiFields.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
-        reader.getTermFreqVectors(j);
+        reader.getTermVectors(j);
       }
       reader.close();
       assertEquals(0, numDel);
@@ -755,7 +755,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           numDel++;
         else {
           reader.document(j);
-          reader.getTermFreqVectors(j);
+          reader.getTermVectors(j);
         }
       }
       reader.close();
@@ -778,7 +778,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertNull(MultiFields.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
-        reader.getTermFreqVectors(j);
+        reader.getTermVectors(j);
       }
       reader.close();
 
@@ -794,7 +794,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if (doFail && "org.apache.lucene.store.MockDirectoryWrapper".equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
+          if (doFail && MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
             didFail = true;
             throw new IOException("now failing on purpose during sync");
           }
@@ -868,11 +868,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       boolean isDelete = false;
       boolean isInGlobalFieldMap = false;
       for (int i = 0; i < trace.length; i++) {
-        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
+        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
           isCommit = true;
-        if ("org.apache.lucene.store.MockDirectoryWrapper".equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
           isDelete = true;
-        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName()))
+        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName()))
           isInGlobalFieldMap = true;
           
       }
@@ -901,6 +901,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     
     for (FailOnlyInCommit failure : failures) {
       MockDirectoryWrapper dir = newDirectory();
+      dir.setFailOnCreateOutput(false);
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
@@ -1302,20 +1303,17 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
+
       StackTraceElement[] trace = new Exception().getStackTrace();
-      boolean failOnInit = false;
-      boolean failOnfinish = false;
+      boolean fail = false;
       for (int i = 0; i < trace.length; i++) {
-        if ("org.apache.lucene.index.TermVectorsTermsWriter".equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
-          failOnInit = true;
-        if ("org.apache.lucene.index.TermVectorsTermsWriter".equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
-          failOnfinish = true;
+        if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
+          fail = true;
+        }
       }
       
-      if (failOnInit) {
-        throw new RuntimeException(EXC_MSG + " fail on init");
-      } else if (failOnfinish) {
-        throw new RuntimeException(EXC_MSG + " fail on finishDoc");
+      if (fail) {
+        throw new RuntimeException(EXC_MSG);
       }
     }
   }

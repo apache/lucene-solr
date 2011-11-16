@@ -67,7 +67,7 @@ public class TestStressAdvance extends LuceneTestCase {
           bDocIDs.add(docID);
         }
       }
-      final TermsEnum te = r.getSequentialSubReaders()[0].fields().terms("field").iterator();
+      final TermsEnum te = r.getSequentialSubReaders()[0].fields().terms("field").iterator(null);
       
       DocsEnum de = null;
       for(int iter2=0;iter2<10;iter2++) {

@@ -15,23 +15,25 @@
  */
 package org.apache.lucene.queries.mlt;
 
+import java.io.*;
+import java.util.*;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
-
-import java.io.*;
-import java.util.*;
 
 
 /**
@@ -701,7 +703,13 @@ public final class MoreLikeThis {
   public PriorityQueue<Object[]> retrieveTerms(int docNum) throws IOException {
     Map<String, Int> termFreqMap = new HashMap<String, Int>();
     for (String fieldName : fieldNames) {
-      TermFreqVector vector = ir.getTermFreqVector(docNum, fieldName);
+      final Fields vectors = ir.getTermVectors(docNum);
+      final Terms vector;
+      if (vectors != null) {
+        vector = vectors.terms(fieldName);
+      } else {
+        vector = null;
+      }
 
       // field does not store term vector info
       if (vector == null) {
@@ -716,7 +724,6 @@ public final class MoreLikeThis {
       } else {
         addTermFrequencies(termFreqMap, vector);
       }
-
     }
 
     return createQueue(termFreqMap);
@@ -728,24 +735,25 @@ public final class MoreLikeThis {
    * @param termFreqMap a Map of terms and their frequencies
    * @param vector List of terms and their frequencies for a doc/field
    */
-  private void addTermFrequencies(Map<String, Int> termFreqMap, TermFreqVector vector) {
-    BytesRef[] terms = vector.getTerms();
-    int freqs[] = vector.getTermFrequencies();
+  private void addTermFrequencies(Map<String, Int> termFreqMap, Terms vector) throws IOException {
+    final TermsEnum termsEnum = vector.iterator(null);
     final CharsRef spare = new CharsRef();
-    for (int j = 0; j < terms.length; j++) {
-      final String term = terms[j].utf8ToChars(spare).toString();
-
+    BytesRef text;
+    while((text = termsEnum.next()) != null) {
+      final String term = text.utf8ToChars(spare).toString();
       if (isNoiseWord(term)) {
         continue;
       }
+      final int freq = (int) termsEnum.totalTermFreq();
+
       // increment frequency
       Int cnt = termFreqMap.get(term);
       if (cnt == null) {
         cnt = new Int();
         termFreqMap.put(term, cnt);
-        cnt.x = freqs[j];
+        cnt.x = freq;
       } else {
-        cnt.x += freqs[j];
+        cnt.x += freq;
       }
     }
   }

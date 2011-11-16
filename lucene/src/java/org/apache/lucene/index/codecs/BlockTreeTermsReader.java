@@ -19,11 +19,8 @@ package org.apache.lucene.index.codecs;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.io.Writer;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -221,6 +218,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
     return fields.get(field);
   }
 
+  @Override
+  public int getUniqueFieldCount() {
+    return fields.size();
+  }
+
   // Iterates through all fields
   private class TermFieldsEnum extends FieldsEnum {
     final Iterator<FieldReader> it;
@@ -242,8 +244,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum terms() throws IOException {
-      return current.iterator();
+    public Terms terms() throws IOException {
+      return current;
     }
   }
 
@@ -454,7 +456,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
 
@@ -914,8 +916,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         for(int idx=0;idx<=target.length;idx++) {
 
-          boolean lastIsSubBlock = false;
-
           while (true) {
             final int savePos = currentFrame.suffixesReader.getPosition();
             final int saveStartBytePos = currentFrame.startBytePos;
@@ -950,7 +950,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
                     return;
                   }
                 }
-                lastIsSubBlock = isSubBlock;
                 continue;
               } else if (cmp == 0) {
                 //if (DEBUG) System.out.println("  return term=" + brToString(term));

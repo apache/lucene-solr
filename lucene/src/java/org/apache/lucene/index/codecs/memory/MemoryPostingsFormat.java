@@ -723,7 +723,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum iterator(TermsEnum reuse) {
       return new FSTTermsEnum(field, fst);
     }
 
@@ -768,8 +768,9 @@ public class MemoryPostingsFormat extends PostingsFormat {
             return current.field.name;
           }
 
-          public TermsEnum terms() {
-            return current.iterator();
+          @Override
+          public Terms terms() {
+            return current;
           }
         };
       }
@@ -779,6 +780,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
         return fields.get(field);
       }
       
+      @Override
+      public int getUniqueFieldCount() {
+        return fields.size();
+      }
+
       @Override
       public void close() {
         // Drop ref to FST:

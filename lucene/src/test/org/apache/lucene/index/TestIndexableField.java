@@ -288,33 +288,31 @@ public class TestIndexableField extends LuceneTestCase {
         
         if (indexed) {
           final boolean tv = counter % 2 == 1 && fieldID != 9;
-          final TermFreqVector tfv = r.getTermFreqVector(docID, name);
           if (tv) {
+            final Terms tfv = r.getTermVectors(docID).terms(name);
             assertNotNull(tfv);
-            assertTrue(tfv instanceof TermPositionVector);
-            final TermPositionVector tpv = (TermPositionVector) tfv;
-            final BytesRef[] terms = tpv.getTerms();
-            assertEquals(2, terms.length);
-            assertEquals(new BytesRef(""+counter), terms[0]);
-            assertEquals(new BytesRef("text"), terms[1]);
+            TermsEnum termsEnum = tfv.iterator(null);
+            assertEquals(new BytesRef(""+counter), termsEnum.next());
+            assertEquals(1, termsEnum.totalTermFreq());
+            DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+            assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+            assertEquals(1, dpEnum.freq());
+            assertEquals(1, dpEnum.nextPosition());
 
-            final int[] freqs = tpv.getTermFrequencies();
-            assertEquals(2, freqs.length);
-            assertEquals(1, freqs[0]);
-            assertEquals(1, freqs[1]);
+            assertEquals(new BytesRef("text"), termsEnum.next());
+            assertEquals(1, termsEnum.totalTermFreq());
+            dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+            assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+            assertEquals(1, dpEnum.freq());
+            assertEquals(0, dpEnum.nextPosition());
 
-            int[] positions = tpv.getTermPositions(0);
-            assertEquals(1, positions.length);
-            assertEquals(1, positions[0]);
-
-            positions = tpv.getTermPositions(1);
-            assertEquals(1, positions.length);
-            assertEquals(0, positions[0]);
+            assertNull(termsEnum.next());
 
             // TODO: offsets
             
           } else {
-            assertNull(tfv);
+            Fields vectors = r.getTermVectors(docID);
+            assertTrue(vectors == null || vectors.terms(name) == null);
           }
 
           if (numeric) {

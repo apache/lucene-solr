@@ -130,7 +130,6 @@ public class BlockTermsReader extends FieldsProducer {
       seekDir(in, dirOffset);
 
       final int numFields = in.readVInt();
-
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
@@ -208,6 +207,11 @@ public class BlockTermsReader extends FieldsProducer {
     return fields.get(field);
   }
 
+  @Override
+  public int getUniqueFieldCount() {
+    return fields.size();
+  }
+
   // Iterates through all fields
   private class TermFieldsEnum extends FieldsEnum {
     final Iterator<FieldReader> it;
@@ -229,8 +233,8 @@ public class BlockTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum terms() throws IOException {
-      return current.iterator();
+    public Terms terms() throws IOException {
+      return current;
     }
   }
 
@@ -263,7 +267,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
 

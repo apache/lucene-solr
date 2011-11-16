@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -38,7 +37,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -163,6 +161,11 @@ public class Lucene3xFields extends FieldsProducer {
   }
 
   @Override
+  public int getUniqueFieldCount() {
+    return preTerms.size();
+  }
+
+  @Override
   public long getUniqueTermCount() throws IOException {
     return getTermsDict().size();
   }
@@ -196,12 +199,10 @@ public class Lucene3xFields extends FieldsProducer {
 
   private class PreFlexFieldsEnum extends FieldsEnum {
     final Iterator<FieldInfo> it;
-    private final PreTermsEnum termsEnum;
     FieldInfo current;
 
     public PreFlexFieldsEnum() throws IOException {
       it = fields.values().iterator();
-      termsEnum = new PreTermsEnum();
     }
 
     @Override
@@ -215,9 +216,8 @@ public class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      termsEnum.reset(current);
-      return termsEnum;
+    public Terms terms() throws IOException {
+      return Lucene3xFields.this.terms(current.name);
     }
   }
   
@@ -228,7 +228,7 @@ public class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {    
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {    
       PreTermsEnum termsEnum = new PreTermsEnum();
       termsEnum.reset(fieldInfo);
       return termsEnum;

@@ -78,11 +78,11 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
-  public TermsEnum iterator() throws IOException {
+  public TermsEnum iterator(TermsEnum reuse) throws IOException {
 
     final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
     for(int i=0;i<subs.length;i++) {
-      final TermsEnum termsEnum = subs[i].iterator();
+      final TermsEnum termsEnum = subs[i].iterator(null);
       if (termsEnum != null) {
         termsEnums.add(new MultiTermsEnum.TermsEnumIndex(termsEnum, i));
       }

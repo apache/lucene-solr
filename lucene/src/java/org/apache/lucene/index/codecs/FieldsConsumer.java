@@ -17,14 +17,14 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.TermsEnum;
-
-import java.io.IOException;
-import java.io.Closeable;
+import org.apache.lucene.index.Terms;
 
 /** Abstract API that consumes terms, doc, freq, prox and
  *  payloads postings.  Concrete implementations of this
@@ -48,10 +48,10 @@ public abstract class FieldsConsumer implements Closeable {
     while((field = fieldsEnum.next()) != null) {
       mergeState.fieldInfo = mergeState.fieldInfos.fieldInfo(field);
       assert mergeState.fieldInfo != null : "FieldInfo for field is null: "+ field;
-      TermsEnum terms = fieldsEnum.terms();
+      Terms terms = fieldsEnum.terms();
       if (terms != null) {
         final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
-        termsConsumer.merge(mergeState, terms);
+        termsConsumer.merge(mergeState, terms.iterator(null));
       }
     }
   }

@@ -38,9 +38,10 @@ import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -50,7 +51,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache;
@@ -485,10 +486,14 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
-      TermsEnum terms = fields.terms();
+      Terms terms = fields.terms();
+      if (terms == null) {
+        continue;
+      }
+      TermsEnum termsEnum = terms.iterator(null);
       DocsEnum docs = null;
-      while(terms.next() != null) {
-        docs = terms.docs(MultiFields.getLiveDocs(reader), docs);
+      while(termsEnum.next() != null) {
+        docs = termsEnum.docs(MultiFields.getLiveDocs(reader), docs);
         while(docs.nextDoc() != docs.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }
@@ -775,9 +780,9 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = IndexReader.open(dir, true);
-    TermFreqVector [] tfv = reader.getTermFreqVectors(0);
+    Fields tfv = reader.getTermVectors(0);
     assertNotNull(tfv);
-    assertTrue(tfv.length > 0);
+    assertTrue(tfv.getUniqueFieldCount() > 0);
     reader.close();
   }
 

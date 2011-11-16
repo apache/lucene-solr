@@ -90,7 +90,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     
     @Override
     protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-      return new SimplePrefixTermsEnum(terms.iterator(), prefix);
+      return new SimplePrefixTermsEnum(terms.iterator(null), prefix);
     }
 
     private class SimplePrefixTermsEnum extends FilteredTermsEnum {

@@ -93,7 +93,7 @@ public class SrndTruncQuery extends SimpleTerm {
     if (terms != null) {
       Matcher matcher = pattern.matcher("");
       try {
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.iterator(null);
 
         TermsEnum.SeekStatus status = termsEnum.seekCeil(prefixRef);
         BytesRef text;

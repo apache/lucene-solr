@@ -18,6 +18,8 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
@@ -50,6 +52,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
 
   /** This must always point to the most recent file format.
    * whenever you add a new format, make it 1 smaller (negative version logic)! */
+  // TODO: move this, as its currently part of required preamble
   public static final int FORMAT_CURRENT = FORMAT_4_0;
   
   /** This must always point to the first supported file format. */
@@ -68,7 +71,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
       out.writeLong(infos.getGlobalFieldMapVersion());
       out.writeInt(infos.size()); // write infos
       for (SegmentInfo si : infos) {
-        si.write(out);
+        writeInfo(out, si);
       }
       out.writeStringStringMap(infos.getUserData());
       success = true;
@@ -78,6 +81,40 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
         IOUtils.closeWhileHandlingException(out);
       }
     }
+  }
+  
+  /** Save a single segment's info. */
+  private void writeInfo(IndexOutput output, SegmentInfo si) throws IOException {
+    assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
+    // Write the Lucene version that created this segment, since 3.1
+    output.writeString(si.getVersion());
+    output.writeString(si.name);
+    output.writeInt(si.docCount);
+    output.writeLong(si.getDelGen());
+
+    output.writeInt(si.getDocStoreOffset());
+    if (si.getDocStoreOffset() != -1) {
+      output.writeString(si.getDocStoreSegment());
+      output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
+    }
+
+    Map<Integer,Long> normGen = si.getNormGen();
+    if (normGen == null) {
+      output.writeInt(SegmentInfo.NO);
+    } else {
+      output.writeInt(normGen.size());
+      for (Entry<Integer,Long> entry : normGen.entrySet()) {
+        output.writeInt(entry.getKey());
+        output.writeLong(entry.getValue());
+      }
+    }
+
+    output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
+    output.writeInt(si.getDelCount());
+    output.writeByte((byte) (si.getHasProxInternal()));
+    output.writeString(si.getCodec().getName());
+    output.writeStringStringMap(si.getDiagnostics());
+    output.writeByte((byte) (si.getHasVectorsInternal()));
   }
   
   protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)

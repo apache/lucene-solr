@@ -103,7 +103,7 @@ public class TermRangeQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
     
-    TermsEnum tenum = terms.iterator();
+    TermsEnum tenum = terms.iterator(null);
     
     if ((lowerTerm == null || (includeLower && lowerTerm.length == 0)) && upperTerm == null) {
       return tenum;

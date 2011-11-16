@@ -32,6 +32,11 @@ Changes in backwards compatibility policy
     now specify the skipDocs explicitly (typically this will be the
     deleted docs, but in general you can provide any Bits).
 
+  - The term vectors APIs (TermFreqVector, TermPositionVector, 
+    TermVectorMapper) have been removed in favor of the above
+    flexible indexing APIs, presenting a single-document inverted
+    index of the document from the term vectors.
+
   - MultiReader ctor now throws IOException
 
   - Directory.copy/Directory.copyTo now copies all files (not just

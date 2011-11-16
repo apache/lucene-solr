@@ -35,6 +35,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -44,6 +46,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -272,7 +275,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", expectedCount, hitCount);
     for(int i=0;i<hitCount;i++) {
       reader.document(hits[i].doc);
-      reader.getTermFreqVectors(hits[i].doc);
+      reader.getTermVectors(hits[i].doc);
     }
   }
 
@@ -311,9 +314,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           assertEquals("field with non-ascii name", f.stringValue());
         }
 
-        TermFreqVector tfv = reader.getTermFreqVector(i, "utf8");
+        Terms tfv = reader.getTermVectors(i).terms("utf8");
         assertNotNull("docID=" + i + " index=" + indexDir.getName(), tfv);
-        assertTrue(tfv instanceof TermPositionVector);
       } else
         // Only ID 7 is deleted
         assertEquals(7, i);
@@ -564,7 +566,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // "content", and then set our expected file names below
       // accordingly:
       CompoundFileDirectory cfsReader = new CompoundFileDirectory(dir, "_0.cfs", newIOContext(random), false);
-      FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
+      FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
+      FieldInfos fieldInfos = infosReader.read(cfsReader, "_0", IOContext.READONCE);
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {
         if (fi.name.equals("content")) {
@@ -654,7 +657,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     	_TestUtil.unzip(getDataFile("index." + oldNames[i] + ".zip"), oldIndexDir);
       Directory dir = newFSDirectory(oldIndexDir);
       IndexReader r = IndexReader.open(dir);
-      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator();
+      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator(null);
       BytesRef t = terms.next();
       assertNotNull(t);
 

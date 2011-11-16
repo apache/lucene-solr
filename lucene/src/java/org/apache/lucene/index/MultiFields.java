@@ -193,7 +193,8 @@ public final class MultiFields extends Fields {
     if (fieldsEnums.size() == 0) {
       return FieldsEnum.EMPTY;
     } else {
-      return new MultiFieldsEnum(fieldsEnums.toArray(FieldsEnum.EMPTY_ARRAY),
+      return new MultiFieldsEnum(this,
+                                 fieldsEnums.toArray(FieldsEnum.EMPTY_ARRAY),
                                  fieldsSlices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
     }
   }
@@ -230,6 +231,11 @@ public final class MultiFields extends Fields {
     }
 
     return result;
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return terms.size();
   }
 }
 

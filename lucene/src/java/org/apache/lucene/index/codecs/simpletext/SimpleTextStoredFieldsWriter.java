@@ -19,6 +19,7 @@ package org.apache.lucene.index.codecs.simpletext;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
@@ -87,9 +88,9 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   @Override
-  public void writeField(int fieldNumber, IndexableField field) throws IOException {
+  public void writeField(FieldInfo info, IndexableField field) throws IOException {
     write(FIELD);
-    write(Integer.toString(fieldNumber));
+    write(Integer.toString(info.number));
     newLine();
     
     write(NAME);

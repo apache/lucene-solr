@@ -45,10 +45,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -782,80 +779,85 @@ public class MemoryIndex {
     public ReaderContext getTopReaderContext() {
       return readerInfos;
     }
+
+    private class MemoryFields extends Fields {
+      @Override
+      public FieldsEnum iterator() {
+        return new FieldsEnum() {
+          int upto = -1;
+
+          @Override
+          public String next() {
+            upto++;
+            if (upto >= sortedFields.length) {
+              return null;
+            }
+            return sortedFields[upto].getKey();
+          }
+
+          @Override
+          public Terms terms() {
+            return MemoryFields.this.terms(sortedFields[upto].getKey());
+          }
+        };
+      }
+
+      @Override
+      public Terms terms(final String field) {
+        int i = Arrays.binarySearch(sortedFields, field, termComparator);
+        if (i < 0) {
+          return null;
+        } else {
+          final Info info = getInfo(i);
+          info.sortTerms();
+
+          return new Terms() {
+            @Override 
+            public TermsEnum iterator(TermsEnum reuse) {
+              return new MemoryTermsEnum(info);
+            }
+
+            @Override
+            public Comparator<BytesRef> getComparator() {
+              return BytesRef.getUTF8SortedAsUnicodeComparator();
+            }
+
+            @Override
+            public long getUniqueTermCount() {
+              return info.sortedTerms.length;
+            }
+
+            @Override
+            public long getSumTotalTermFreq() {
+              return info.getSumTotalTermFreq();
+            }
+
+            @Override
+            public long getSumDocFreq() throws IOException {
+              // each term has df=1
+              return info.sortedTerms.length;
+            }
+
+            @Override
+            public int getDocCount() throws IOException {
+              return info.sortedTerms.length > 0 ? 1 : 0;
+            }
+              
+              
+          };
+        }
+      }
+
+      @Override
+      public int getUniqueFieldCount() {
+        return sortedFields.length;
+      }
+    }
   
     @Override
     public Fields fields() {
-
       sortFields();
-
-      return new Fields() {
-        @Override
-        public FieldsEnum iterator() {
-          return new FieldsEnum() {
-            int upto = -1;
-
-            @Override
-            public String next() {
-              upto++;
-              if (upto >= sortedFields.length) {
-                return null;
-              }
-              return sortedFields[upto].getKey();
-            }
-
-            @Override
-            public TermsEnum terms() {
-              return new MemoryTermsEnum(sortedFields[upto].getValue());
-            }
-          };
-        }
-
-        @Override
-        public Terms terms(final String field) {
-          int i = Arrays.binarySearch(sortedFields, field, termComparator);
-          if (i < 0) {
-            return null;
-          } else {
-            final Info info = getInfo(i);
-            info.sortTerms();
-
-            return new Terms() {
-              @Override 
-              public TermsEnum iterator() {
-                return new MemoryTermsEnum(info);
-              }
-
-              @Override
-              public Comparator<BytesRef> getComparator() {
-                return BytesRef.getUTF8SortedAsUnicodeComparator();
-              }
-
-              @Override
-              public long getUniqueTermCount() {
-                return info.sortedTerms.length;
-              }
-
-              @Override
-              public long getSumTotalTermFreq() {
-                return info.getSumTotalTermFreq();
-              }
-
-              @Override
-              public long getSumDocFreq() throws IOException {
-                // each term has df=1
-                return info.sortedTerms.length;
-              }
-
-              @Override
-              public int getDocCount() throws IOException {
-                return info.sortedTerms.length > 0 ? 1 : 0;
-              }
-              
-              
-            };
-          }
-        }
-      };
+      return new MemoryFields();
     }
 
     private class MemoryTermsEnum extends TermsEnum {
@@ -1062,128 +1064,12 @@ public class MemoryIndex {
     }
     
     @Override
-    public TermFreqVector[] getTermFreqVectors(int docNumber) {
-      if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
-      TermFreqVector[] vectors = new TermFreqVector[fields.size()];
-//      if (vectors.length == 0) return null;
-      Iterator<String> iter = fields.keySet().iterator();
-      for (int i=0; i < vectors.length; i++) {
-        vectors[i] = getTermFreqVector(docNumber, iter.next());
+    public Fields getTermVectors(int docID) {
+      if (docID == 0) {
+        return fields();
+      } else {
+        return null;
       }
-      return vectors;
-    }
-
-      @Override
-      public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException
-      {
-          if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
-
-    //      if (vectors.length == 0) return null;
-          for (final String fieldName : fields.keySet())
-          {
-            getTermFreqVector(docNumber, fieldName, mapper);
-          }
-      }
-
-      @Override
-      public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException
-      {
-        if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVector");
-        final Info info = getInfo(field);
-          if (info == null){
-              return;
-          }
-          info.sortTerms();
-          mapper.setExpectations(field, info.sortedTerms.length, stride != 1, true);
-          for (int i = info.sortedTerms.length; --i >=0;){
-
-              ArrayIntList positions = info.sortedTerms[i].getValue();
-              int size = positions.size();
-              org.apache.lucene.index.TermVectorOffsetInfo[] offsets =
-                new org.apache.lucene.index.TermVectorOffsetInfo[size / stride];
-
-              for (int k=0, j=1; j < size; k++, j += stride) {
-                int start = positions.get(j);
-                int end = positions.get(j+1);
-                offsets[k] = new org.apache.lucene.index.TermVectorOffsetInfo(start, end);
-              }
-              mapper.map(info.sortedTerms[i].getKey(),
-                         numPositions(info.sortedTerms[i].getValue()),
-                         offsets, (info.sortedTerms[i].getValue()).toArray(stride));
-          }
-      }
-
-      @Override
-      public TermFreqVector getTermFreqVector(int docNumber, final String fieldName) {
-      if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVector");
-      final Info info = getInfo(fieldName);
-      if (info == null) return null; // TODO: or return empty vector impl???
-      info.sortTerms();
-      
-      return new TermPositionVector() { 
-  
-        private final Map.Entry<BytesRef,ArrayIntList>[] sortedTerms = info.sortedTerms;
-        
-        public String getField() {
-          return fieldName;
-        }
-  
-        public int size() {
-          return sortedTerms.length;
-        }
-  
-        public BytesRef[] getTerms() {
-          BytesRef[] terms = new BytesRef[sortedTerms.length];
-          for (int i=sortedTerms.length; --i >= 0; ) {
-            terms[i] = sortedTerms[i].getKey();
-          }
-          return terms;
-        }
-  
-        public int[] getTermFrequencies() {
-          int[] freqs = new int[sortedTerms.length];
-          for (int i=sortedTerms.length; --i >= 0; ) {
-            freqs[i] = numPositions(sortedTerms[i].getValue());
-          }
-          return freqs;
-        }
-  
-        public int indexOf(BytesRef term) {
-          int i = Arrays.binarySearch(sortedTerms, term, termComparator);
-          return i >= 0 ? i : -1;
-        }
-  
-        public int[] indexesOf(BytesRef[] terms, int start, int len) {
-          int[] indexes = new int[len];
-          for (int i=0; i < len; i++) {
-            indexes[i] = indexOf(terms[start++]);
-          }
-          return indexes;
-        }
-        
-        // lucene >= 1.4.3
-        public int[] getTermPositions(int index) {
-          return sortedTerms[index].getValue().toArray(stride);
-        } 
-        
-        // lucene >= 1.9 (remove this method for lucene-1.4.3)
-        public org.apache.lucene.index.TermVectorOffsetInfo[] getOffsets(int index) {
-          if (stride == 1) return null; // no offsets stored
-          
-          ArrayIntList positions = sortedTerms[index].getValue();
-          int size = positions.size();
-          org.apache.lucene.index.TermVectorOffsetInfo[] offsets = 
-            new org.apache.lucene.index.TermVectorOffsetInfo[size / stride];
-          
-          for (int i=0, j=1; j < size; i++, j += stride) {
-            int start = positions.get(j);
-            int end = positions.get(j+1);
-            offsets[i] = new org.apache.lucene.index.TermVectorOffsetInfo(start, end);
-          }
-          return offsets;
-        }
-
-      };
     }
 
     private SimilarityProvider getSimilarityProvider() {

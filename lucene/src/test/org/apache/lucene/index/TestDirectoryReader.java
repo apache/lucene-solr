@@ -85,8 +85,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     Document newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
-    assertTrue(vector != null);
+    Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    assertNotNull(vector);
     TestSegmentReader.checkNorms(reader);
     reader.close();
   }
@@ -165,14 +165,14 @@ public class TestDirectoryReader extends LuceneTestCase {
     MultiReader mr3 = new MultiReader(readers2);
 
     // test mixing up TermDocs and TermEnums from different readers.
-    TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator();
+    TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator(null);
     te2.seekCeil(new BytesRef("wow"));
     DocsEnum td = MultiFields.getTermDocsEnum(mr2,
                                               MultiFields.getLiveDocs(mr2),
                                               "body",
                                               te2.term());
 
-    TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator();
+    TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator(null);
     te3.seekCeil(new BytesRef("wow"));
     td = te3.docs(MultiFields.getLiveDocs(mr3),
                   td);

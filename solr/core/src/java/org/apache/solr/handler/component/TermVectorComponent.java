@@ -8,16 +8,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFieldVisitor.Status;
-import org.apache.lucene.index.TermVectorMapper;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -225,12 +226,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
     };
 
-    TVMapper mapper = new TVMapper(reader);
-    mapper.fieldOptions = allFields; //this will only stay set if fieldOptions.isEmpty() (in other words, only if the user didn't set any fields)
+    TermsEnum termsEnum = null;
+
     while (iter.hasNext()) {
       Integer docId = iter.next();
       NamedList<Object> docNL = new NamedList<Object>();
-      mapper.docNL = docNL;
       termVectors.add("doc-" + docId, docNL);
 
       if (keyField != null) {
@@ -245,12 +245,91 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
       if (!fieldOptions.isEmpty()) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
-          mapper.fieldOptions = entry.getValue();
-          reader.getTermFreqVector(docId, entry.getKey(), mapper);
+          final String field = entry.getKey();
+          final Terms vector = reader.getTermVector(docId, field);
+          if (vector != null) {
+            termsEnum = vector.iterator(termsEnum);
+            mapOneVector(docNL, entry.getValue(), reader, docId, vector.iterator(termsEnum), field);
+          }
         }
       } else {
-        //deal with all fields by using the allFieldMapper
-        reader.getTermFreqVector(docId, mapper);
+        // extract all fields
+        final Fields vectors = reader.getTermVectors(docId);
+        final FieldsEnum fieldsEnum = vectors.iterator();
+        String field;
+        while((field = fieldsEnum.next()) != null) {
+          Terms terms = fieldsEnum.terms();
+          if (terms != null) {
+            termsEnum = terms.iterator(termsEnum);
+            mapOneVector(docNL, allFields, reader, docId, termsEnum, field);
+          }
+        }
+      }
+    }
+  }
+
+  private void mapOneVector(NamedList<Object> docNL, FieldOptions fieldOptions, IndexReader reader, int docID, TermsEnum termsEnum, String field) throws IOException {
+    NamedList<Object> fieldNL = new NamedList<Object>();
+    docNL.add(field, fieldNL);
+
+    BytesRef text;
+    DocsAndPositionsEnum dpEnum = null;
+    while((text = termsEnum.next()) != null) {
+      String term = text.utf8ToString();
+      NamedList<Object> termInfo = new NamedList<Object>();
+      fieldNL.add(term, termInfo);
+      final int freq = (int) termsEnum.totalTermFreq();
+      if (fieldOptions.termFreq == true) {
+        termInfo.add("tf", freq);
+      }
+
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+
+      boolean usePositions = false;
+      boolean useOffsets = false;
+      OffsetAttribute offsetAtt = null;
+      if (dpEnum != null) {
+        dpEnum.nextDoc();
+        usePositions = fieldOptions.positions;
+        if (fieldOptions.offsets && dpEnum.attributes().hasAttribute(OffsetAttribute.class)) {
+          useOffsets = true;
+          offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
+        }
+      }
+
+      NamedList<Number> theOffsets = null;
+      if (useOffsets) {
+        theOffsets = new NamedList<Number>();
+        termInfo.add("offsets", theOffsets);
+      }
+
+      NamedList<Integer> positionsNL = null;
+
+      if (usePositions || theOffsets != null) {
+        for (int i = 0; i < freq; i++) {
+          final int pos = dpEnum.nextPosition();
+          if (usePositions && pos >= 0) {
+            if (positionsNL == null) {
+              positionsNL = new NamedList<Integer>();
+              termInfo.add("positions", positionsNL);
+            }
+            positionsNL.add("position", pos);
+          }
+
+          if (theOffsets != null) {
+            theOffsets.add("start", offsetAtt.startOffset());
+            theOffsets.add("end", offsetAtt.endOffset());
+          }
+        }
+      }
+
+      if (fieldOptions.docFreq) {
+        termInfo.add("df", getDocFreq(reader, field, text));
+      }
+
+      if (fieldOptions.tfIdf) {
+        double tfIdfVal = ((double) freq) / getDocFreq(reader, field, text);
+        termInfo.add("tf-idf", tfIdfVal);
       }
     }
   }
@@ -310,90 +389,20 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     return result;
   }
 
-  private static class TVMapper extends TermVectorMapper {
-    private IndexReader reader;
-    private NamedList<Object> docNL;
-
-    //needs to be set for each new field
-    FieldOptions fieldOptions;
-
-    //internal vars not passed in by construction
-    private boolean useOffsets, usePositions;
-    //private Map<String, Integer> idfCache;
-    private NamedList<Object> fieldNL;
-    private String field;
-
-
-    public TVMapper(IndexReader reader) {
-      this.reader = reader;
-    }
-
-    @Override
-    public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
-      NamedList<Object> termInfo = new NamedList<Object>();
-      fieldNL.add(term.utf8ToString(), termInfo);
-      if (fieldOptions.termFreq == true) {
-        termInfo.add("tf", frequency);
-      }
-      if (useOffsets) {
-        NamedList<Number> theOffsets = new NamedList<Number>();
-        termInfo.add("offsets", theOffsets);
-        for (int i = 0; i < offsets.length; i++) {
-          TermVectorOffsetInfo offset = offsets[i];
-          theOffsets.add("start", offset.getStartOffset());
-          theOffsets.add("end", offset.getEndOffset());
+  private static int getDocFreq(IndexReader reader, String field, BytesRef term) {
+    int result = 1;
+    try {
+      Terms terms = MultiFields.getTerms(reader, field);
+      if (terms != null) {
+        TermsEnum termsEnum = terms.iterator(null);
+        if (termsEnum.seekExact(term, true)) {
+          result = termsEnum.docFreq();
         }
       }
-      if (usePositions) {
-        NamedList<Integer> positionsNL = new NamedList<Integer>();
-        for (int i = 0; i < positions.length; i++) {
-          positionsNL.add("position", positions[i]);
-        }
-        termInfo.add("positions", positionsNL);
-      }
-      if (fieldOptions.docFreq) {
-        termInfo.add("df", getDocFreq(term));
-      }
-      if (fieldOptions.tfIdf) {
-        double tfIdfVal = ((double) frequency) / getDocFreq(term);
-        termInfo.add("tf-idf", tfIdfVal);
-      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-
-    private int getDocFreq(BytesRef term) {
-      int result = 1;
-      try {
-        Terms terms = MultiFields.getTerms(reader, field);
-        if (terms != null) {
-          TermsEnum termsEnum = terms.iterator();
-          if (termsEnum.seekExact(term, true)) {
-            result = termsEnum.docFreq();
-          }
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return result;
-    }
-
-    @Override
-    public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-      this.field = field;
-      useOffsets = storeOffsets && fieldOptions.offsets;
-      usePositions = storePositions && fieldOptions.positions;
-      fieldNL = new NamedList<Object>();
-      docNL.add(field, fieldNL);
-    }
-
-    @Override
-    public boolean isIgnoringPositions() {
-      return !fieldOptions.positions;  // if we are not interested in positions, then return true telling Lucene to skip loading them
-    }
-
-    @Override
-    public boolean isIgnoringOffsets() {
-      return !fieldOptions.offsets;  //  if we are not interested in offsets, then return true telling Lucene to skip loading them
-    }
+    return result;
   }
 
   @Override

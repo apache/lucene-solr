@@ -32,7 +32,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -133,7 +132,7 @@ public class TokenSourcesTest extends LuceneTestCase {
             new QueryScorer(query));
         final TokenStream tokenStream = TokenSources
             .getTokenStream(
-                (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
+                indexReader.getTermVector(0, FIELD),
                 false);
         assertEquals("<B>the fox</B> did not jump",
             highlighter.getBestFragment(tokenStream, TEXT));
@@ -182,7 +181,7 @@ public class TokenSourcesTest extends LuceneTestCase {
             new QueryScorer(query));
         final TokenStream tokenStream = TokenSources
             .getTokenStream(
-                (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
+                indexReader.getTermVector(0, FIELD),
                 false);
         assertEquals("<B>the fox</B> did not jump",
             highlighter.getBestFragment(tokenStream, TEXT));
@@ -230,7 +229,7 @@ public class TokenSourcesTest extends LuceneTestCase {
             new QueryScorer(phraseQuery));
         final TokenStream tokenStream = TokenSources
             .getTokenStream(
-                (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
+                indexReader.getTermVector(0, FIELD),
                 false);
         assertEquals("<B>the fox</B> did not jump",
             highlighter.getBestFragment(tokenStream, TEXT));
@@ -279,7 +278,7 @@ public class TokenSourcesTest extends LuceneTestCase {
             new QueryScorer(phraseQuery));
         final TokenStream tokenStream = TokenSources
             .getTokenStream(
-                (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
+                indexReader.getTermVector(0, FIELD),
                 false);
         assertEquals("<B>the fox</B> did not jump",
             highlighter.getBestFragment(tokenStream, TEXT));
