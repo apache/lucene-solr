@@ -120,6 +120,14 @@ public interface TaxonomyReader extends Closeable {
    * faceted search, the taxonomy reader's refresh() should be called only after
    * a reopen() of the main index.
    * <P>
+   * Refreshing the taxonomy might fail in some cases, for example 
+   * if the taxonomy was recreated since this instance was opened or last refreshed.
+   * In this case an {@link InconsistentTaxonomyException} is thrown,
+   * suggesting that in order to obtain up-to-date taxonomy data a new
+   * {@link TaxonomyReader} should be opened. Note: This {@link TaxonomyReader} 
+   * instance remains unchanged and usable in this case, and the application can
+   * continue to use it, and should still {@link #close()} when no longer needed.  
+   * <P>
    * It should be noted that refresh() is similar in purpose to
    * IndexReader.reopen(), but the two methods behave differently. refresh()
    * refreshes the existing TaxonomyReader object, rather than opening a new one
@@ -129,8 +137,9 @@ public interface TaxonomyReader extends Closeable {
    * of the taxonomy open - refreshing the taxonomy to the newest data and using
    * this new snapshots in all threads (whether new or old) is fine. This saves
    * us needing to keep multiple copies of the taxonomy open in memory.
+   * @return true if anything has changed, false otherwise. 
    */
-  public void refresh() throws IOException;
+  public boolean refresh() throws IOException, InconsistentTaxonomyException;
   
   /**
    * getParent() returns the ordinal of the parent category of the category

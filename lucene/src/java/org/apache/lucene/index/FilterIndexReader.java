@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -441,6 +440,11 @@ public class FilterIndexReader extends IndexReader {
     return in.getTopReaderContext();
   }
 
+  @Override
+  public Map<String, String> getCommitUserData() { 
+    return in.getCommitUserData();
+  }
+  
   @Override
   public Fields fields() throws IOException {
     ensureOpen();

@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
@@ -83,6 +84,14 @@ import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
  */
 public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
+  /**
+   * Property name of user commit data that contains the creation time of a taxonomy index.
+   * <p>
+   * Applications making use of {@link TaxonomyWriter#commit(Map)} should not use this
+   * particular property name. 
+   */
+  public static final String INDEX_CREATE_TIME = "index.create.time";
+  
   private IndexWriter indexWriter;
   private int nextID;
   private char delimiter = Consts.DEFAULT_DELIMITER;
@@ -105,6 +114,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private IndexReader reader;
   private int cacheMisses;
 
+  /**
+   * When a taxonomy is created, we mark that its create time should be committed in the 
+   * next commit.
+   */
+  private String taxoIndexCreateTime = null;
+  
   /**
    * setDelimiter changes the character that the taxonomy uses in its internal
    * storage as a delimiter between category components. Do not use this
@@ -172,6 +187,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   throws CorruptIndexException, LockObtainFailedException,
   IOException {
 
+    if (!IndexReader.indexExists(directory) || openMode==OpenMode.CREATE) {
+      taxoIndexCreateTime = Long.toString(System.nanoTime());
+    }
+    
     indexWriter = openIndexWriter(directory, openMode);
     reader = null;
 
@@ -280,10 +299,17 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void close() throws CorruptIndexException, IOException {
     if (indexWriter != null) {
-      indexWriter.close();
-      indexWriter = null;
+      if (taxoIndexCreateTime != null) {
+        indexWriter.commit(combinedCommitData(null));
+        taxoIndexCreateTime = null;
+      }
+      doClose();
     }
-
+  }
+  
+  private void doClose() throws CorruptIndexException, IOException {
+    indexWriter.close();
+    indexWriter = null;
     closeResources();
   }
 
@@ -584,10 +610,27 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void commit() throws CorruptIndexException, IOException {
     ensureOpen();
-    indexWriter.commit();
+    if (taxoIndexCreateTime != null) {
+      indexWriter.commit(combinedCommitData(null));
+      taxoIndexCreateTime = null;
+    } else {
+      indexWriter.commit();
+    }
     refreshReader();
   }
 
+  /**
+   * Combine original user data with that of the taxonomy creation time
+   */
+  private Map<String,String> combinedCommitData(Map<String,String> userData) {
+    Map<String,String> m = new HashMap<String, String>();
+    if (userData != null) {
+      m.putAll(userData);
+    }
+    m.put(INDEX_CREATE_TIME, taxoIndexCreateTime);
+    return m;
+  }
+  
   /**
    * Like commit(), but also store properties with the index. These properties
    * are retrievable by {@link DirectoryTaxonomyReader#getCommitUserData}.
@@ -596,7 +639,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
     ensureOpen();
-    indexWriter.commit(commitUserData);
+    if (taxoIndexCreateTime != null) {
+      indexWriter.commit(combinedCommitData(commitUserData));
+      taxoIndexCreateTime = null;
+    } else {
+      indexWriter.commit(commitUserData);
+    }
     refreshReader();
   }
   
@@ -607,7 +655,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void prepareCommit() throws CorruptIndexException, IOException {
     ensureOpen();
-    indexWriter.prepareCommit();
+    if (taxoIndexCreateTime != null) {
+      indexWriter.prepareCommit(combinedCommitData(null));
+      taxoIndexCreateTime = null;
+    } else {
+      indexWriter.prepareCommit();
+    }
   }
 
   /**
@@ -617,7 +670,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void prepareCommit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
     ensureOpen();
-    indexWriter.prepareCommit(commitUserData);
+    if (taxoIndexCreateTime != null) {
+      indexWriter.prepareCommit(combinedCommitData(commitUserData));
+      taxoIndexCreateTime = null;
+    } else {
+      indexWriter.prepareCommit(commitUserData);
+    }
   }
   
   /**
@@ -1037,10 +1095,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * will yield an {@link AlreadyClosedException}).
    */
   @Override
-  public void rollback() throws IOException {
+  public synchronized void rollback() throws IOException {
     ensureOpen();
     indexWriter.rollback();
-    close();
+    doClose();
   }
   
 }
