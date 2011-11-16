@@ -205,6 +205,15 @@ public class DocumentBuilder {
     }
   }
   
+  private static String getID( SolrInputDocument doc, IndexSchema schema )
+  {
+    String id = "";
+    SchemaField sf = schema.getUniqueKeyField();
+    if( sf != null ) {
+      id = "[doc="+doc.getFieldValue( sf.getName() )+"] ";
+    }
+    return id;
+  }
 
   /**
    * Convert a SolrInputDocument to a lucene Document.
@@ -234,91 +243,93 @@ public class DocumentBuilder {
       
       // Make sure it has the correct number
       if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
-        String id = "";
-        SchemaField sf = schema.getUniqueKeyField();
-        if( sf != null ) {
-          id = "["+doc.getFieldValue( sf.getName() )+"] ";
-        }
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+id+"multiple values encountered for non multiValued field " + 
+            "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +field.getValue() );
       }
       
 
       // load each field value
       boolean hasField = false;
-      for( Object v : field ) {
-        if( v == null ) {
-          continue;
-        }
-        String val = null;
-        hasField = true;
-        boolean isBinaryField = false;
-        if (sfield != null && sfield.getType() instanceof BinaryField) {
-          isBinaryField = true;
-          BinaryField binaryField = (BinaryField) sfield.getType();
-          Fieldable f = binaryField.createField(sfield,v,boost);
-          if(f != null){
-            out.add(f);
+      try {
+        for( Object v : field ) {
+          if( v == null ) {
+            continue;
           }
-          used = true;
-        } else {
-          // TODO!!! HACK -- date conversion
-          if (sfield != null && v instanceof Date && sfield.getType() instanceof DateField) {
-            DateField df = (DateField) sfield.getType();
-            val = df.toInternal((Date) v) + 'Z';
-          } else if (v != null) {
-            val = v.toString();
-          }
-
-          if (sfield != null) {
-            used = true;
-            addField(out, sfield, val, boost);
-          }
-        }
-
-        // Check if we should copy this field to any other fields.
-        // This could happen whether it is explicit or not.
-        List<CopyField> copyFields = schema.getCopyFieldsList(name);
-        for (CopyField cf : copyFields) {
-          SchemaField destinationField = cf.getDestination();
-          // check if the copy field is a multivalued or not
-          if (!destinationField.multiValued() && out.get(destinationField.getName()) != null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "ERROR: multiple values encountered for non multiValued copy field " +
-                            destinationField.getName() + ": " + val);
-          }
-
-          used = true;
-          //Don't worry about poly fields here
-          Fieldable [] fields = null;
-          if (isBinaryField) {
-            if (destinationField.getType() instanceof BinaryField) {
-              BinaryField binaryField = (BinaryField) destinationField.getType();
-              //TODO: safe to assume that binary fields only create one?
-              fields = new Fieldable[]{binaryField.createField(destinationField, v, boost)};
-            }
-          } else {
-            fields = destinationField.createFields(cf.getLimitedValue(val), boost);
-          }
-          if (fields != null) { // null fields are not added
-            for (Fieldable f : fields) {
+          String val = null;
+          hasField = true;
+          boolean isBinaryField = false;
+          if (sfield != null && sfield.getType() instanceof BinaryField) {
+            isBinaryField = true;
+            BinaryField binaryField = (BinaryField) sfield.getType();
+            Fieldable f = binaryField.createField(sfield,v,boost);
+            if(f != null){
               out.add(f);
             }
+            used = true;
+          } else {
+            // TODO!!! HACK -- date conversion
+            if (sfield != null && v instanceof Date && sfield.getType() instanceof DateField) {
+              DateField df = (DateField) sfield.getType();
+              val = df.toInternal((Date) v) + 'Z';
+            } else if (v != null) {
+              val = v.toString();
+            }
+  
+            if (sfield != null) {
+              used = true;
+              addField(out, sfield, val, boost);
+            }
           }
+  
+          // Check if we should copy this field to any other fields.
+          // This could happen whether it is explicit or not.
+          List<CopyField> copyFields = schema.getCopyFieldsList(name);
+          for (CopyField cf : copyFields) {
+            SchemaField destinationField = cf.getDestination();
+            // check if the copy field is a multivalued or not
+            if (!destinationField.multiValued() && out.get(destinationField.getName()) != null) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                      "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
+                              destinationField.getName() + ": " + val);
+            }
+  
+            used = true;
+            //Don't worry about poly fields here
+            Fieldable [] fields = null;
+            if (isBinaryField) {
+              if (destinationField.getType() instanceof BinaryField) {
+                BinaryField binaryField = (BinaryField) destinationField.getType();
+                //TODO: safe to assume that binary fields only create one?
+                fields = new Fieldable[]{binaryField.createField(destinationField, v, boost)};
+              }
+            } else {
+              fields = destinationField.createFields(cf.getLimitedValue(val), boost);
+            }
+            if (fields != null) { // null fields are not added
+              for (Fieldable f : fields) {
+                out.add(f);
+              }
+            }
+          }
+          
+          // In lucene, the boost for a given field is the product of the 
+          // document boost and *all* boosts on values of that field. 
+          // For multi-valued fields, we only want to set the boost on the
+          // first field.
+          boost = 1.0f; 
         }
-        
-        // In lucene, the boost for a given field is the product of the 
-        // document boost and *all* boosts on values of that field. 
-        // For multi-valued fields, we only want to set the boost on the
-        // first field.
-        boost = 1.0f; 
+      }
+      catch( Exception ex ) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: "+getID(doc, schema)+"Error adding field '" + 
+              field.getName() + "'='" +field.getValue()+"'", ex );
       }
       
       // make sure the field was used somehow...
       if( !used && hasField ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" +
-                name + "'");
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: "+getID(doc, schema)+"unknown field '" +name + "'");
       }
     }
     
@@ -331,8 +342,7 @@ public class DocumentBuilder {
           addField(out, field, field.getDefaultValue(), 1.0f);
         } 
         else {
-          String id = schema.printableUniqueKey( out );
-          String msg = "Document ["+id+"] missing required field: " + field.getName();
+          String msg = getID(doc, schema) + "missing required field: " + field.getName();
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, msg );
         }
       }
