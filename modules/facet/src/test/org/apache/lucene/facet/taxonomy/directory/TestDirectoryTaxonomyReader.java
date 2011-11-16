@@ -1,10 +1,17 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
+import java.util.Random;
+
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -59,6 +66,36 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     dir.close();
   }
   
+  /**
+   * Test the boolean returned by TR.refresh
+   * @throws Exception
+   */
+  @Test
+  public void testReaderRefreshResult() throws Exception {
+    Directory dir = null;
+    DirectoryTaxonomyWriter ltw = null;
+    DirectoryTaxonomyReader ltr = null;
+    
+    try {
+      dir = newDirectory();
+      ltw = new DirectoryTaxonomyWriter(dir);
+      
+      ltw.addCategory(new CategoryPath("a"));
+      ltw.commit();
+      
+      ltr = new DirectoryTaxonomyReader(dir);
+      assertFalse("Nothing has changed",ltr.refresh());
+      
+      ltw.addCategory(new CategoryPath("b"));
+      ltw.commit();
+      
+      assertTrue("changes were committed",ltr.refresh());
+      assertFalse("Nothing has changed",ltr.refresh());
+    } finally {
+      IOUtils.close(ltw, ltr, dir);
+    }
+  }
+  
   @Test
   public void testAlreadyClosed() throws Exception {
     Directory dir = newDirectory();
@@ -75,6 +112,70 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
       // good!
     }
     dir.close();
+  }
+  
+  /**
+   * recreating a taxonomy should work well with a freshly opened taxonomy reader 
+   */
+  @Test
+  public void testFreshReadRecreatedTaxonomy() throws Exception {
+    doTestReadRecreatedTaxono(random, true);
+  }
+  
+  /**
+   * recreating a taxonomy should work well with a refreshed taxonomy reader 
+   */
+  @Test
+  public void testRefreshReadRecreatedTaxonomy() throws Exception {
+    doTestReadRecreatedTaxono(random, false);
+  }
+  
+  private void doTestReadRecreatedTaxono(Random random, boolean closeReader) throws Exception {
+    Directory dir = null;
+    TaxonomyWriter tw = null;
+    TaxonomyReader tr = null;
+    
+    // prepare a few categories
+    int  n = 10;
+    CategoryPath[] cp = new CategoryPath[n];
+    for (int i=0; i<n; i++) {
+      cp[i] = new CategoryPath("a", Integer.toString(i));
+    }
+    
+    try {
+      dir = newDirectory();
+      
+      tw = new DirectoryTaxonomyWriter(dir);
+      tw.addCategory(new CategoryPath("a"));
+      tw.close();
+      
+      tr = new DirectoryTaxonomyReader(dir);
+      int baseNumcategories = tr.getSize();
+      
+      for (int i=0; i<n; i++) {
+        int k = random.nextInt(n);
+        tw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE);
+        for (int j=0; j<=k; j++) {
+          tw.addCategory(new CategoryPath(cp[j]));
+        }
+        tw.close();
+        if (closeReader) {
+          tr.close();
+          tr = new DirectoryTaxonomyReader(dir);
+        } else {
+          try {
+            tr.refresh();
+            fail("Expected InconsistentTaxonomyException");
+          } catch (InconsistentTaxonomyException e) {
+            tr.close();
+            tr = new DirectoryTaxonomyReader(dir);
+          }
+        }
+        assertEquals("Wrong #categories in taxonomy (i="+i+", k="+k+")", baseNumcategories + 1 + k, tr.getSize());
+      }
+    } finally {
+      IOUtils.close(tr, tw, dir);
+    }
   }
   
 }

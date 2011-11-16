@@ -779,6 +779,12 @@ example) so a thread which is in the middle of a search needs to continue using 
 <code>TaxonomyReader</code>, however, we are guaranteed that existing categories are never deleted or modified - 
 the only thing that can happen is that new categories are added. Since search threads do not care if new categories 
 are added in the middle of a search, there is no reason to keep around the old object, and the new one suffices.
+<br><b>However</b>, if the taxonomy index was recreated since the <code>TaxonomyReader</code> was opened or
+refreshed, this assumption (that categories are forevr) no longer holds, and <code>refresh()</code> will 
+throw an <code>InconsistentTaxonomyException</code>, guiding the application to open 
+a new <code>TaxonomyReader</code> for up-to-date taxonomy data. (Old one can
+be closed as soon as it is no more used.)
+
 
 </body>
 </html>
