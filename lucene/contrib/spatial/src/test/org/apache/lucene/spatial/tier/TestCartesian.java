@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -191,7 +192,8 @@ public class TestCartesian extends LuceneTestCase {
 
 
   public void testAntiM() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    searcher = new IndexSearcher(reader);
 
     final double miles = 2800.0;
         // Hawaii
@@ -259,10 +261,12 @@ public class TestCartesian extends LuceneTestCase {
       lastDistance = geo_distance;
     }
     searcher.close();
+    reader.close();
   }
 
   public void testPoleFlipping() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    searcher = new IndexSearcher(reader);
 
     final double miles = 3500.0;
     lat = 41.6032207;
@@ -329,10 +333,12 @@ public class TestCartesian extends LuceneTestCase {
       lastDistance = geo_distance;
     }
     searcher.close();
+    reader.close();
   }
   
   public void testRange() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    searcher = new IndexSearcher(reader);
 
     final double[] milesToTest = new double[] {6.0, 0.5, 0.001, 0.0};
     final int[] expected = new int[] {7, 1, 0, 0};
@@ -399,12 +405,14 @@ public class TestCartesian extends LuceneTestCase {
       }
     }
     searcher.close();
+    reader.close();
   }
   
   
   
   public void testGeoHashRange() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    searcher = new IndexSearcher(reader);
 	    
     final double[] milesToTest = new double[] {6.0, 0.5, 0.001, 0.0};
     final int[] expected = new int[] {7, 1, 0, 0};
@@ -469,5 +477,6 @@ public class TestCartesian extends LuceneTestCase {
       }
     }
     searcher.close();
+    reader.close();
   }
 }

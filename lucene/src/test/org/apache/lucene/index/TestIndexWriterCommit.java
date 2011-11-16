@@ -51,22 +51,26 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       writer.close();
 
       Term searchTerm = new Term("content", "aaa");
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("first number of hits", 14, hits.length);
       searcher.close();
+      reader.close();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      reader = IndexReader.open(dir, true);
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       for(int i=0;i<3;i++) {
         for(int j=0;j<11;j++) {
           TestIndexWriter.addDoc(writer);
         }
-        searcher = new IndexSearcher(dir, false);
+        IndexReader r = IndexReader.open(dir, false);
+        searcher = new IndexSearcher(r);
         hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
         assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
         searcher.close();
+        r.close();
         assertTrue("reader should have still been current", reader.isCurrent());
       }
 
@@ -74,10 +78,12 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       writer.close();
       assertFalse("reader should not be current now", reader.isCurrent());
 
-      searcher = new IndexSearcher(dir, false);
+      IndexReader r = IndexReader.open(dir, false);
+      searcher = new IndexSearcher(r);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("reader did not see changes after writer was closed", 47, hits.length);
       searcher.close();
+      r.close();
       reader.close();
       dir.close();
   }
@@ -99,10 +105,12 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     writer.close();
 
     Term searchTerm = new Term("content", "aaa");
-    IndexSearcher searcher = new IndexSearcher(dir, false);
+    IndexReader reader = IndexReader.open(dir, false);
+    IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("first number of hits", 14, hits.length);
     searcher.close();
+    reader.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
       .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
@@ -112,20 +120,24 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // Delete all docs:
     writer.deleteDocuments(searchTerm);
 
-    searcher = new IndexSearcher(dir, false);
+    reader = IndexReader.open(dir, false);
+    searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
     searcher.close();
+    reader.close();
 
     // Now, close the writer:
     writer.rollback();
 
     TestIndexWriter.assertNoUnreferencedFiles(dir, "unreferenced files remain after rollback()");
 
-    searcher = new IndexSearcher(dir, false);
+    reader = IndexReader.open(dir, false);
+    searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("saw changes after writer.abort", 14, hits.length);
     searcher.close();
+    reader.close();
 
     // Now make sure we can re-open the index, add docs,
     // and all is good:
@@ -140,17 +152,21 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       for(int j=0;j<17;j++) {
         TestIndexWriter.addDoc(writer);
       }
-      searcher = new IndexSearcher(dir, false);
+      IndexReader r = IndexReader.open(dir, false);
+      searcher = new IndexSearcher(r);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
       searcher.close();
+      r.close();
     }
 
     writer.close();
-    searcher = new IndexSearcher(dir, false);
+    IndexReader r = IndexReader.open(dir, false);
+    searcher = new IndexSearcher(r);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("didn't see changes after close", 218, hits.length);
     searcher.close();
+    r.close();
 
     dir.close();
   }

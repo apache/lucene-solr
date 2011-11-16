@@ -452,10 +452,12 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       writer.close();
 
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
       assertEquals(300, hits.length);
       searcher.close();
+      reader.close();
 
       dir.close();
     }
@@ -482,10 +484,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
       Term searchTerm = new Term("field", "aaa");
 
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(10, hits.length);
       searcher.close();
+      reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
@@ -503,12 +507,14 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.addDocument(doc);
       }
       writer.close();
-      searcher = new IndexSearcher(dir, false);
+      reader = IndexReader.open(dir, false);
+      searcher = new IndexSearcher(reader);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(27, hits.length);
       searcher.close();
+      reader.close();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      reader = IndexReader.open(dir, true);
       reader.close();
 
       dir.close();
@@ -578,15 +584,16 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       writer.close();
       Term searchTerm = new Term("content", "aaa");
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
       searcher.close();
+      reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE));
       writer.close();
-      searcher.close();
       dir.close();
     }
 
@@ -985,7 +992,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.commit();
 
-    IndexSearcher s = new IndexSearcher(dir, false);
+    IndexReader r = IndexReader.open(dir, false);
+    IndexSearcher s = new IndexSearcher(r);
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
     pq.add(new Term("field", "b"));
@@ -1008,6 +1016,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     s.close();
+    r.close();
     dir.close();
   }
 

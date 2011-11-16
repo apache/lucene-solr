@@ -27,6 +27,7 @@ import java.util.Date;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -85,7 +86,8 @@ public class SearchFiles {
       }
     }
     
-    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(index)));
+    IndexReader reader = IndexReader.open(FSDirectory.open(new File(index)));
+    IndexSearcher searcher = new IndexSearcher(reader);
     Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
 
     BufferedReader in = null;
@@ -130,6 +132,7 @@ public class SearchFiles {
       }
     }
     searcher.close();
+    reader.close();
   }
 
   /**

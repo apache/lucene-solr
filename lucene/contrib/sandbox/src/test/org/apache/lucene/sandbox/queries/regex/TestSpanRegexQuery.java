@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -71,7 +72,8 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    IndexSearcher searcher = new IndexSearcher(reader);
     SpanQuery srq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "aut.*")));
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,
@@ -79,6 +81,7 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     int numHits = searcher.search(sfq, null, 1000).totalHits;
     assertEquals(1, numHits);
     searcher.close();
+    reader.close();
     directory.close();
   }
   

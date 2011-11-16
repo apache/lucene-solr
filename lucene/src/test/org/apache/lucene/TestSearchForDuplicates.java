@@ -98,7 +98,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       writer.close();
 
       // try a search without OR
-      IndexSearcher searcher = new IndexSearcher(directory, true);
+      IndexReader reader = IndexReader.open(directory);
+      IndexSearcher searcher = new IndexSearcher(reader);
 
       Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));
       out.println("Query: " + query.toString(PRIORITY_FIELD));
@@ -117,7 +118,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher.close();
 
       // try a new search with OR
-      searcher = new IndexSearcher(directory, true);
+      searcher = new IndexSearcher(reader);
       hits = null;
 
       BooleanQuery booleanQuery = new BooleanQuery();
@@ -130,6 +131,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       checkHits(hits, MAX_DOCS, searcher);
 
       searcher.close();
+      reader.close();
       directory.close();
   }
 

@@ -45,6 +45,7 @@ public class TestBoolean2 extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexSearcher bigSearcher;
   private static IndexReader reader;
+  private static IndexReader littleReader;
   private static int NUM_EXTRA_DOCS = 6000;
 
   public static final String field = "field";
@@ -62,7 +63,8 @@ public class TestBoolean2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    littleReader = IndexReader.open(directory);
+    searcher = new IndexSearcher(littleReader);
 
     // Make big index
     dir2 = new MockDirectoryWrapper(random, new RAMDirectory(directory, IOContext.DEFAULT));
@@ -101,11 +103,13 @@ public class TestBoolean2 extends LuceneTestCase {
   public static void afterClass() throws Exception {
     searcher.close();
     reader.close();
+    littleReader.close();
     dir2.close();
     directory.close();
     bigSearcher.close();
     searcher = null;
     reader = null;
+    littleReader = null;
     dir2 = null;
     directory = null;
     bigSearcher = null;

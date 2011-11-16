@@ -41,7 +41,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.SimilarityProvider;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -76,7 +75,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public class IndexSearcher implements Closeable {
   final IndexReader reader; // package private for testing!
-  private boolean closeReader;
   
   // NOTE: these members might change in incompatible ways
   // in the next release
@@ -105,34 +103,9 @@ public class IndexSearcher implements Closeable {
   /** The SimilarityProvider implementation used by this searcher. */
   private SimilarityProvider similarityProvider = defaultProvider;
 
-  /** Creates a searcher searching the index in the named
-   *  directory, with readOnly=true
-   * @param path directory where IndexReader will be opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public IndexSearcher(Directory path) throws CorruptIndexException, IOException {
-    this(IndexReader.open(path, true), true, null);
-  }
-
-  /** Creates a searcher searching the index in the named
-   *  directory.  You should pass readOnly=true, since it
-   *  gives much better concurrent performance, unless you
-   *  intend to do write operations (delete documents or
-   *  change norms) with the underlying IndexReader.
-   * @param path directory where IndexReader will be opened
-   * @param readOnly if true, the underlying IndexReader
-   * will be opened readOnly
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public IndexSearcher(Directory path, boolean readOnly) throws CorruptIndexException, IOException {
-    this(IndexReader.open(path, readOnly), true, null);
-  }
-
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
-    this(r, false, null);
+    this(r, null);
   }
 
   /** Runs searches for each segment separately, using the
@@ -147,7 +120,7 @@ public class IndexSearcher implements Closeable {
    * 
    * @lucene.experimental */
   public IndexSearcher(IndexReader r, ExecutorService executor) {
-    this(r, false, executor);
+    this(r.getTopReaderContext(), executor);
   }
 
   /**
@@ -167,7 +140,12 @@ public class IndexSearcher implements Closeable {
    * @lucene.experimental
    */
   public IndexSearcher(ReaderContext context, ExecutorService executor) {
-    this(context, false, executor);
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
+    reader = context.reader;
+    this.executor = executor;
+    this.readerContext = context;
+    leafContexts = ReaderUtil.leaves(context);
+    this.leafSlices = executor == null ? null : slices(leafContexts);
   }
 
   /**
@@ -178,22 +156,7 @@ public class IndexSearcher implements Closeable {
    * @lucene.experimental
    */
   public IndexSearcher(ReaderContext context) {
-    this(context, (ExecutorService) null);
-  }
-  
-  // convenience ctor for other IR based ctors
-  private IndexSearcher(IndexReader reader, boolean closeReader, ExecutorService executor) {
-    this(reader.getTopReaderContext(), closeReader, executor);
-  }
-
-  private IndexSearcher(ReaderContext context, boolean closeReader, ExecutorService executor) {
-    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
-    reader = context.reader;
-    this.executor = executor;
-    this.closeReader = closeReader;
-    this.readerContext = context;
-    leafContexts = ReaderUtil.leaves(context);
-    this.leafSlices = executor == null ? null : slices(leafContexts);
+    this(context, null);
   }
   
   /**
@@ -236,17 +199,8 @@ public class IndexSearcher implements Closeable {
     return similarityProvider;
   }
 
-  /**
-   * Note that the underlying IndexReader is not closed, if
-   * IndexSearcher was constructed with IndexSearcher(IndexReader r).
-   * If the IndexReader was supplied implicitly by specifying a directory, then
-   * the IndexReader is closed.
-   */
   @Override
   public void close() throws IOException {
-    if (closeReader) {
-      reader.close();
-    }
   }
   
   /** @lucene.internal */

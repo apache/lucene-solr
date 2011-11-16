@@ -741,6 +741,9 @@ API Changes
 * LUCENE-3574: Deprecate outdated constants in org.apache.lucene.util.Constants
   and add new ones for Java 6 and Java 7.  (Uwe Schindler)
 
+* LUCENE-3571: Deprecate IndexSearcher(Directory). Use the constructors
+  that take IndexReader instead.  (Robert Muir)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).

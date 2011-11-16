@@ -27,6 +27,7 @@ import java.io.Writer;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
@@ -829,11 +830,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(1, files.length);
     File snapDir = files[0];
     Directory dir = new SimpleFSDirectory(snapDir.getAbsoluteFile());
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
 
     assertEquals(nDocs, hits.totalHits);
     searcher.close();
+    reader.close();
     dir.close();
     AbstractSolrTestCase.recurseDelete(snapDir); // clean up the snap dir
   }

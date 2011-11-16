@@ -419,9 +419,6 @@ public class CheckHits {
    * @see ExplanationAsserter
    */
   public static class ExplanationAssertingSearcher extends IndexSearcher {
-    public ExplanationAssertingSearcher(Directory d) throws IOException {
-      super(d, true);
-    }
     public ExplanationAssertingSearcher(IndexReader r) throws IOException {
       super(r);
     }

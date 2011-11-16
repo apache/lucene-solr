@@ -232,7 +232,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
             new MaxPayloadFunction(), false);
 
-    IndexSearcher theSearcher = new IndexSearcher(directory, true);
+    IndexReader reader = IndexReader.open(directory);
+    IndexSearcher theSearcher = new IndexSearcher(reader);
     theSearcher.setSimilarityProvider(new DefaultSimilarityProvider() {
       @Override
       public Similarity get(String field) {
@@ -271,6 +272,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       count++;
     }
     theSearcher.close();
+    reader.close();
   }
 
   public void testNoMatch() throws Exception {

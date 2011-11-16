@@ -288,7 +288,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
     
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexReader r = IndexReader.open(dir);
+    IndexSearcher s = new IndexSearcher(r);
     
     Query q=NumericRangeQuery.newIntRange("int", null, null, true, true);
     TopDocs topDocs = s.search(q, 10);
@@ -315,6 +316,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
 
     s.close();
+    r.close();
     dir.close();
   }
   
