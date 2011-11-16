@@ -189,7 +189,7 @@ public abstract class Terms {
   /**
    * Returns a thread-private {@link TermsEnum} instance. Obtaining
    * {@link TermsEnum} from this method might be more efficient than using
-   * {@link #iterator()} directly since this method doesn't necessarily create a
+   * {@link #iterator(TermsEnum)} directly since this method doesn't necessarily create a
    * new {@link TermsEnum} instance.
    * <p>
    * NOTE: {@link TermsEnum} instances obtained from this method must not be

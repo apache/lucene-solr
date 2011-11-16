@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute; // javadocs
+import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
 import org.apache.lucene.index.Fields;
 
 /**

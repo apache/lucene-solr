@@ -500,7 +500,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   /**
    * Returns <code>true</code> iff this instance is not backed by a
    * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap}. Instances read from a directory via
-   * {@link FieldInfos#FieldInfos(Directory, String)} will always be read-only
+   * {@link FieldInfos#FieldInfos(FieldInfo[], boolean, boolean, boolean)} will always be read-only
    * since no {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} is supplied, otherwise 
    * <code>false</code>.
    */
