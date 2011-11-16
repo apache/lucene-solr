@@ -152,6 +152,10 @@ public class RandomIndexWriter implements Closeable {
     w.addIndexes(dirs);
   }
   
+  public void addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
+    w.addIndexes(readers);
+  }
+
   public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     w.deleteDocuments(term);
   }
