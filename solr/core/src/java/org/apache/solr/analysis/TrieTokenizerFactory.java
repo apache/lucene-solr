@@ -89,24 +89,29 @@ final class TrieTokenizer extends Tokenizer {
       this.startOfs = correctOffset(0);
       this.endOfs = correctOffset(len);
       String v = new String(buf, 0, len);
-      switch (type) {
-        case INTEGER:
-          ts.setIntValue(Integer.parseInt(v));
-          break;
-        case FLOAT:
-          ts.setFloatValue(Float.parseFloat(v));
-          break;
-        case LONG:
-          ts.setLongValue(Long.parseLong(v));
-          break;
-        case DOUBLE:
-          ts.setDoubleValue(Double.parseDouble(v));
-          break;
-        case DATE:
-          ts.setLongValue(dateField.parseMath(null, v).getTime());
-          break;
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
+      try {
+        switch (type) {
+          case INTEGER:
+            ts.setIntValue(Integer.parseInt(v));
+            break;
+          case FLOAT:
+            ts.setFloatValue(Float.parseFloat(v));
+            break;
+          case LONG:
+            ts.setLongValue(Long.parseLong(v));
+            break;
+          case DOUBLE:
+            ts.setDoubleValue(Double.parseDouble(v));
+            break;
+          case DATE:
+            ts.setLongValue(dateField.parseMath(null, v).getTime());
+            break;
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
+        }
+      } catch (NumberFormatException nfe) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                                "Invalid Number: " + v);
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieIndexTokenizer", e);
