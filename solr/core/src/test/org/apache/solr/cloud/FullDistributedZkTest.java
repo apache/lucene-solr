@@ -412,7 +412,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // TODO: this is failing because the counts per shard don't add up to the control - distrib total
     // counts do match, so the same doc (same id) must be on different shards.
     // our hash is not stable yet in distrib update proc
-    //assertDocCounts();
+    assertDocCounts();
 
     // kill a shard
     JettySolrRunner deadShard = killShard("shard2", 0);
