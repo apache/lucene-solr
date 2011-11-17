@@ -547,6 +547,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   // freq() already by TermsEnum.totalTermFreq
   private static class TVDocsEnum extends DocsEnum {
     private boolean didNext;
+    private int doc = -1;
     private int freq;
     private Bits liveDocs;
 
@@ -557,16 +558,16 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int docID() {
-      return 0;
+      return doc;
     }
 
     @Override
     public int nextDoc() {
       if (!didNext && (liveDocs == null || liveDocs.get(0))) {
         didNext = true;
-        return 0;
+        return (doc = 0);
       } else {
-        return NO_MORE_DOCS;
+        return (doc = NO_MORE_DOCS);
       }
     }
 
@@ -575,13 +576,14 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       if (!didNext && target == 0) {
         return nextDoc();
       } else {
-        return NO_MORE_DOCS;
+        return (doc = NO_MORE_DOCS);
       }
     }
 
     public void reset(Bits liveDocs, int freq) {
       this.liveDocs = liveDocs;
       this.freq = freq;
+      this.doc = -1;
       didNext = false;
     }
   }
@@ -589,6 +591,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   private static class TVDocsAndPositionsEnum extends DocsAndPositionsEnum {
     private final OffsetAttribute offsetAtt;
     private boolean didNext;
+    private int doc = -1;
     private int nextPos;
     private Bits liveDocs;
     private int[] positions;
@@ -619,16 +622,16 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int docID() {
-      return 0;
+      return doc;
     }
 
     @Override
     public int nextDoc() {
       if (!didNext && (liveDocs == null || liveDocs.get(0))) {
         didNext = true;
-        return 0;
+        return (doc = 0);
       } else {
-        return NO_MORE_DOCS;
+        return (doc = NO_MORE_DOCS);
       }
     }
 
@@ -637,7 +640,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       if (!didNext && target == 0) {
         return nextDoc();
       } else {
-        return NO_MORE_DOCS;
+        return (doc = NO_MORE_DOCS);
       }
     }
 
@@ -647,6 +650,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       this.startOffsets = startOffsets;
       assert (offsetAtt != null) == (startOffsets != null);
       this.endOffsets = endOffsets;
+      this.doc = -1;
       didNext = false;
       nextPos = 0;
     }

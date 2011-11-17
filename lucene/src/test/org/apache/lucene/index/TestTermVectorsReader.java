@@ -34,6 +34,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.index.codecs.TermVectorsReader;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -215,6 +216,33 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     reader.close();
   }
+  
+  public void testDocsEnum() throws IOException {
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
+    for (int j = 0; j < 5; j++) {
+      Terms vector = reader.get(j).terms(testFields[0]);
+      assertNotNull(vector);
+      assertEquals(testTerms.length, vector.getUniqueTermCount());
+      TermsEnum termsEnum = vector.iterator(null);
+      DocsEnum docsEnum = null;
+      for (int i = 0; i < testTerms.length; i++) {
+        final BytesRef text = termsEnum.next();
+        assertNotNull(text);
+        String term = text.utf8ToString();
+        //System.out.println("Term: " + term);
+        assertEquals(testTerms[i], term);
+        
+        docsEnum = termsEnum.docs(null, docsEnum);
+        assertNotNull(docsEnum);
+        int doc = docsEnum.docID();
+        assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue(docsEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
+      }
+      assertNull(termsEnum.next());
+    }
+    reader.close();
+  }
 
   public void testPositionReader() throws IOException {
     TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random));
@@ -233,6 +261,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertNotNull(dpEnum);
+      int doc = dpEnum.docID();
+      assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
@@ -241,6 +271,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
 
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      doc = dpEnum.docID();
+      assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
       assertNotNull(dpEnum);
       final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
