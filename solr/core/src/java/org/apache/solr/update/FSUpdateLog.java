@@ -209,6 +209,9 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void add(AddUpdateCommand cmd) {
+    // don't log if we are replaying from another log
+    if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
+
     synchronized (this) {
       ensureLog();
       long pos = tlog.write(cmd);
@@ -220,6 +223,9 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void delete(DeleteUpdateCommand cmd) {
+    // don't log if we are replaying from another log
+    if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
+
     BytesRef br = cmd.getIndexedId();
 
     synchronized (this) {
@@ -235,6 +241,9 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) {
+    // don't log if we are replaying from another log
+    if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
+
     synchronized (this) {
       ensureLog();
       // TODO: how to support realtime-get, optimistic concurrency, or anything else in this case?
@@ -517,7 +526,7 @@ public class FSUpdateLog extends UpdateLog {
               // cmd.setIndexedId(new BytesRef(idBytes));
               cmd.solrDoc = sdoc;
               cmd.setVersion(version);
-              cmd.setFlags(UpdateCommand.REPLAY);
+              cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
               uhandler.addDoc(cmd);
               break;
             }
@@ -526,7 +535,7 @@ public class FSUpdateLog extends UpdateLog {
               byte[] idBytes = (byte[]) entry.get(2);
               DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
               cmd.setVersion(version);
-              cmd.setFlags(UpdateCommand.REPLAY);
+              cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
               uhandler.delete(cmd);
               break;
             }

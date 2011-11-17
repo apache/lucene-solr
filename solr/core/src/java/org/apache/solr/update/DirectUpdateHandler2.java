@@ -143,8 +143,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
     try {
-      commitTracker.addedDocument( cmd.commitWithin );
-      softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
+      if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+        commitTracker.addedDocument( cmd.commitWithin );
+        softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
+      }
 
       if (cmd.overwrite) {
         Term updateTerm;
@@ -207,13 +209,15 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     // SolrCore.verbose("deleteDocuments",deleteTerm,"DONE");
 
     ulog.delete(cmd);
- 
-    if (commitTracker.getTimeUpperBound() > 0) {
-      commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
-    } 
-    
-    if (softCommitTracker.getTimeUpperBound() > 0) {
-      softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
+
+    if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+      if (commitTracker.getTimeUpperBound() > 0) {
+        commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+      }
+
+      if (softCommitTracker.getTimeUpperBound() > 0) {
+        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
+      }
     }
   }
 

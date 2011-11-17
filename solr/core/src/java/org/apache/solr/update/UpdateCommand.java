@@ -30,7 +30,8 @@ import org.apache.solr.request.SolrQueryRequest;
     protected long version;
     protected int flags;
 
-    public static int REPLAY = 0x00000001;     // update command is from replaying a log.
+    public static int REPLAY = 0x00000001; // update command is from replaying a log.
+    public static int IGNORE_AUTOCOMMIT = 0x00000002; // this update should not count toward triggering of autocommits.
 
     public UpdateCommand(String commandName, SolrQueryRequest req) {
       this.req = req;
