@@ -273,7 +273,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     int limit;                                    // number of docs in this posting
     int ord;                                      // how many docs we've read
-    int doc;                                      // doc we last read
+    int doc = -1;                                 // doc we last read
+    int accum;                                    // accumulator for doc deltas
     int freq;                                     // freq we last read
 
     Bits liveDocs;
@@ -306,7 +307,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       limit = termState.docFreq;
       assert limit > 0;
       ord = 0;
-      doc = 0;
+      doc = -1;
+      accum = 0;
       // if (DEBUG) System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
 
       skipped = false;
@@ -329,9 +331,9 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         final int code = freqIn.readVInt();
         // if (DEBUG) System.out.println("      code=" + code);
         if (omitTF) {
-          doc += code;
+          accum += code;
         } else {
-          doc += code >>> 1;              // shift off low bit
+          accum += code >>> 1;              // shift off low bit
           if ((code & 1) != 0) {          // if low bit is set
             freq = 1;                     // freq is one
           } else {
@@ -339,13 +341,13 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           }
         }
 
-        if (liveDocs == null || liveDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           break;
         }
       }
 
       //if (DEBUG) System.out.println("    stpr.nextDoc return doc=" + doc);
-      return doc;
+      return (doc = accum);
     }
 
     @Override
@@ -360,9 +362,9 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         // manually inlined call to next() for speed
         final int code = freqIn.readVInt();
         if (omitTF) {
-          doc += code;
+          accum += code;
         } else {
-          doc += code >>> 1;              // shift off low bit
+          accum += code >>> 1;              // shift off low bit
           if ((code & 1) != 0) {          // if low bit is set
             freq = 1;                     // freq is one
           } else {
@@ -370,8 +372,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           }
         }
 
-        if (liveDocs == null || liveDocs.get(doc)) {
-          docs[i] = doc;
+        if (liveDocs == null || liveDocs.get(accum)) {
+          docs[i] = doc = accum;
           freqs[i] = freq;
           ++i;
         }
@@ -422,7 +424,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           // Skipper moved
 
           ord = newOrd;
-          doc = skipper.getDoc();
+          doc = accum = skipper.getDoc();
           freqIn.seek(skipper.getFreqPointer());
         }
       }
@@ -444,7 +446,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     int limit;                                    // number of docs in this posting
     int ord;                                      // how many docs we've read
-    int doc;                                      // doc we last read
+    int doc = -1;                                 // doc we last read
+    int accum;                                    // accumulator for doc deltas
     int freq;                                     // freq we last read
     int position;
 
@@ -482,7 +485,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       assert limit > 0;
 
       ord = 0;
-      doc = 0;
+      doc = -1;
+      accum = 0;
       position = 0;
 
       skipped = false;
@@ -510,7 +514,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         // Decode next doc/freq pair
         final int code = freqIn.readVInt();
 
-        doc += code >>> 1;              // shift off low bit
+        accum += code >>> 1;              // shift off low bit
         if ((code & 1) != 0) {          // if low bit is set
           freq = 1;                     // freq is one
         } else {
@@ -518,7 +522,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         }
         posPendingCount += freq;
 
-        if (liveDocs == null || liveDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           break;
         }
       }
@@ -526,7 +530,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       position = 0;
 
       // if (DEBUG) System.out.println("  return doc=" + doc);
-      return doc;
+      return (doc = accum);
     }
 
     @Override
@@ -572,7 +576,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         if (newOrd > ord) {
           // Skipper moved
           ord = newOrd;
-          doc = skipper.getDoc();
+          doc = accum = skipper.getDoc();
           freqIn.seek(skipper.getFreqPointer());
           lazyProxPointer = skipper.getProxPointer();
           posPendingCount = 0;
@@ -636,7 +640,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     int limit;                                    // number of docs in this posting
     int ord;                                      // how many docs we've read
-    int doc;                                      // doc we last read
+    int doc = -1;                                 // doc we last read
+    int accum;                                    // accumulator for doc deltas
     int freq;                                     // freq we last read
     int position;
 
@@ -679,7 +684,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
       limit = termState.docFreq;
       ord = 0;
-      doc = 0;
+      doc = -1;
+      accum = 0;
       position = 0;
 
       skipped = false;
@@ -707,7 +713,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         // Decode next doc/freq pair
         final int code = freqIn.readVInt();
 
-        doc += code >>> 1;              // shift off low bit
+        accum += code >>> 1;              // shift off low bit
         if ((code & 1) != 0) {          // if low bit is set
           freq = 1;                     // freq is one
         } else {
@@ -715,7 +721,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         }
         posPendingCount += freq;
 
-        if (liveDocs == null || liveDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           break;
         }
       }
@@ -723,7 +729,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       position = 0;
 
       //System.out.println("StandardR.D&PE nextDoc seg=" + segment + " return doc=" + doc);
-      return doc;
+      return (doc = accum);
     }
 
     @Override
@@ -769,7 +775,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         if (newOrd > ord) {
           // Skipper moved
           ord = newOrd;
-          doc = skipper.getDoc();
+          doc = accum = skipper.getDoc();
           freqIn.seek(skipper.getFreqPointer());
           lazyProxPointer = skipper.getProxPointer();
           posPendingCount = 0;

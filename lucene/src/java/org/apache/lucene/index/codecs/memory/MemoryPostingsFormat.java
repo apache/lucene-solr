@@ -273,7 +273,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     private Bits liveDocs;
     private int docUpto;
-    private int docID;
+    private int docID = -1;
+    private int accum;
     private int freq;
     private int payloadLen;
     private int numDocs;
@@ -295,7 +296,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
       in.reset(buffer, 0, bufferIn.length - bufferIn.offset);
       System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length - bufferIn.offset);
       this.liveDocs = liveDocs;
-      docID = 0;
+      docID = -1;
+      accum = 0;
       docUpto = 0;
       payloadLen = 0;
       this.numDocs = numDocs;
@@ -314,12 +316,12 @@ public class MemoryPostingsFormat extends PostingsFormat {
         }
         docUpto++;
         if (indexOptions == IndexOptions.DOCS_ONLY) {
-          docID += in.readVInt();
+          accum += in.readVInt();
           freq = 1;
         } else {
           final int code = in.readVInt();
-          docID += code >>> 1;
-          if (VERBOSE) System.out.println("  docID=" + docID + " code=" + code);
+          accum += code >>> 1;
+          if (VERBOSE) System.out.println("  docID=" + accum + " code=" + code);
           if ((code & 1) != 0) {
             freq = 1;
           } else {
@@ -343,9 +345,9 @@ public class MemoryPostingsFormat extends PostingsFormat {
           }
         }
 
-        if (liveDocs == null || liveDocs.get(docID)) {
-          if (VERBOSE) System.out.println("    return docID=" + docID + " freq=" + freq);
-          return docID;
+        if (liveDocs == null || liveDocs.get(accum)) {
+          if (VERBOSE) System.out.println("    return docID=" + accum + " freq=" + freq);
+          return (docID = accum);
         }
       }
     }
@@ -380,7 +382,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     private Bits liveDocs;
     private int docUpto;
-    private int docID;
+    private int docID = -1;
+    private int accum;
     private int freq;
     private int numDocs;
     private int posPending;
@@ -412,7 +415,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
       in.reset(buffer, 0, bufferIn.length - bufferIn.offset);
       System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length - bufferIn.offset);
       this.liveDocs = liveDocs;
-      docID = 0;
+      docID = -1;
+      accum = 0;
       docUpto = 0;
       payload.bytes = buffer;
       payloadLength = 0;
@@ -436,7 +440,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
         docUpto++;
         
         final int code = in.readVInt();
-        docID += code >>> 1;
+        accum += code >>> 1;
         if ((code & 1) != 0) {
           freq = 1;
         } else {
@@ -444,11 +448,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
           assert freq > 0;
         }
 
-        if (liveDocs == null || liveDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           pos = 0;
           posPending = freq;
-          if (VERBOSE) System.out.println("    return docID=" + docID + " freq=" + freq);
-          return docID;
+          if (VERBOSE) System.out.println("    return docID=" + accum + " freq=" + freq);
+          return (docID = accum);
         }
 
         // Skip positions

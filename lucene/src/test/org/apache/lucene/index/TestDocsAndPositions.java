@@ -22,10 +22,13 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -331,5 +334,50 @@ public class TestDocsAndPositions extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-
+  
+  public void testDocsEnumStart() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    doc.add(newField("foo", "bar", StringField.TYPE_UNSTORED));
+    writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
+    IndexReader r = getOnlySegmentReader(reader);
+    DocsEnum disi = r.termDocsEnum(null, "foo", new BytesRef("bar"));
+    int docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    
+    // now reuse and check again
+    disi = r.terms("foo").docs(null, new BytesRef("bar"), disi);
+    docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    writer.close();
+    r.close();
+    dir.close();
+  }
+  
+  public void testDocsAndPositionsEnumStart() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
+    writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
+    IndexReader r = getOnlySegmentReader(reader);
+    DocsAndPositionsEnum disi = r.termPositionsEnum(null, "foo", new BytesRef("bar"));
+    int docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    
+    // now reuse and check again
+    disi = r.terms("foo").docsAndPositions(null, new BytesRef("bar"), disi);
+    docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    writer.close();
+    r.close();
+    dir.close();
+  }
 }

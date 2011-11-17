@@ -257,7 +257,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private final IndexOptions indexOptions;
     private final boolean storePayloads;
     private Bits liveDocs;
-    private int docID;
+    private int docID = -1;
+    private int accum;
     private int freq;
     private int payloadLength;
 
@@ -279,7 +280,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       }
       System.arraycopy(termState.postings, 0, postingsBytes, 0, termState.postingsSize);
       postings.reset(postingsBytes, 0, termState.postingsSize);
-      docID = 0;
+      docID = -1;
+      accum = 0;
       payloadLength = 0;
       freq = 1;
       this.liveDocs = liveDocs;
@@ -302,9 +304,9 @@ public class PulsingPostingsReader extends PostingsReaderBase {
         final int code = postings.readVInt();
         //System.out.println("  read code=" + code);
         if (indexOptions == IndexOptions.DOCS_ONLY) {
-          docID += code;
+          accum += code;
         } else {
-          docID += code >>> 1;              // shift off low bit
+          accum += code >>> 1;              // shift off low bit
           if ((code & 1) != 0) {          // if low bit is set
             freq = 1;                     // freq is one
           } else {
@@ -332,8 +334,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
           }
         }
 
-        if (liveDocs == null || liveDocs.get(docID)) {
-          return docID;
+        if (liveDocs == null || liveDocs.get(accum)) {
+          return (docID = accum);
         }
       }
     }
@@ -365,7 +367,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private final boolean storePayloads;
 
     private Bits liveDocs;
-    private int docID;
+    private int docID = -1;
+    private int accum;
     private int freq;
     private int posPending;
     private int position;
@@ -394,7 +397,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       this.liveDocs = liveDocs;
       payloadLength = 0;
       posPending = 0;
-      docID = 0;
+      docID = -1;
+      accum = 0;
       //System.out.println("PR d&p reset storesPayloads=" + storePayloads + " bytes=" + bytes.length + " this=" + this);
       return this;
     }
@@ -414,7 +418,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
         }
 
         final int code = postings.readVInt();
-        docID += code >>> 1;            // shift off low bit
+        accum += code >>> 1;            // shift off low bit
         if ((code & 1) != 0) {          // if low bit is set
           freq = 1;                     // freq is one
         } else {
@@ -422,10 +426,10 @@ public class PulsingPostingsReader extends PostingsReaderBase {
         }
         posPending = freq;
 
-        if (liveDocs == null || liveDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           //System.out.println("  return docID=" + docID + " freq=" + freq);
           position = 0;
-          return docID;
+          return (docID = accum);
         }
       }
     }

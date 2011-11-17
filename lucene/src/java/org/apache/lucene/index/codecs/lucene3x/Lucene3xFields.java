@@ -994,6 +994,7 @@ public class Lucene3xFields extends FieldsProducer {
     public PreDocsEnum reset(SegmentTermEnum termEnum, Bits liveDocs) throws IOException {
       docs.setLiveDocs(liveDocs);
       docs.seek(termEnum);
+      docID = -1;
       return this;
     }
 
@@ -1050,6 +1051,7 @@ public class Lucene3xFields extends FieldsProducer {
     public DocsAndPositionsEnum reset(SegmentTermEnum termEnum, Bits liveDocs) throws IOException {
       pos.setLiveDocs(liveDocs);
       pos.seek(termEnum);
+      docID = -1;
       return this;
     }
 

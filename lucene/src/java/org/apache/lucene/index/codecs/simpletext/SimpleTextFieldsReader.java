@@ -314,7 +314,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private class SimpleTextDocsAndPositionsEnum extends DocsAndPositionsEnum {
     private final IndexInput inStart;
     private final IndexInput in;
-    private int docID;
+    private int docID = -1;
     private int tf;
     private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
@@ -336,6 +336,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs) {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
+      docID = -1;
       return this;
     }
 

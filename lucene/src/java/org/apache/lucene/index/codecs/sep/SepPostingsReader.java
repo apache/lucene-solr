@@ -312,7 +312,8 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   class SepDocsEnum extends DocsEnum {
     int docFreq;
-    int doc;
+    int doc = -1;
+    int accum;
     int count;
     int freq;
     long freqStart;
@@ -376,7 +377,8 @@ public class SepPostingsReader extends PostingsReaderBase {
       // NOTE: unused if docFreq < skipMinimum:
       skipFP = termState.skipFP;
       count = 0;
-      doc = 0;
+      doc = -1;
+      accum = 0;
       skipped = false;
 
       return this;
@@ -394,18 +396,18 @@ public class SepPostingsReader extends PostingsReaderBase {
 
         // Decode next doc
         //System.out.println("decode docDelta:");
-        doc += docReader.next();
+        accum += docReader.next();
           
         if (!omitTF) {
           //System.out.println("decode freq:");
           freq = freqReader.next();
         }
 
-        if (liveDocs == null || liveDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           break;
         }
       }
-      return doc;
+      return (doc = accum);
     }
 
     @Override
@@ -420,14 +422,14 @@ public class SepPostingsReader extends PostingsReaderBase {
         count++;
         // manually inlined call to next() for speed
         //System.out.println("decode doc");
-        doc += docReader.next();
+        accum += docReader.next();
         if (!omitTF) {
           //System.out.println("decode freq");
           freq = freqReader.next();
         }
 
-        if (liveDocs == null || liveDocs.get(doc)) {
-          docs[i] = doc;
+        if (liveDocs == null || liveDocs.get(accum)) {
+          docs[i] = doc = accum;
           freqs[i] = freq;
           //System.out.println("  docs[" + i + "]=" + doc + " count=" + count + " dF=" + docFreq);
           i++;
@@ -488,7 +490,7 @@ public class SepPostingsReader extends PostingsReaderBase {
           }
           skipper.getDocIndex().seek(docReader);
           count = newCount;
-          doc = skipper.getDoc();
+          doc = accum = skipper.getDoc();
         }
       }
         
@@ -505,7 +507,8 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   class SepDocsAndPositionsEnum extends DocsAndPositionsEnum {
     int docFreq;
-    int doc;
+    int doc = -1;
+    int accum;
     int count;
     int freq;
     long freqStart;
@@ -572,7 +575,8 @@ public class SepPostingsReader extends PostingsReaderBase {
 
       docFreq = termState.docFreq;
       count = 0;
-      doc = 0;
+      doc = -1;
+      accum = 0;
       pendingPosCount = 0;
       pendingPayloadBytes = 0;
       skipped = false;
@@ -595,20 +599,20 @@ public class SepPostingsReader extends PostingsReaderBase {
 
         // Decode next doc
         //System.out.println("  sep d&p read doc");
-        doc += docReader.next();
+        accum += docReader.next();
 
         //System.out.println("  sep d&p read freq");
         freq = freqReader.next();
 
         pendingPosCount += freq;
 
-        if (liveDocs == null || liveDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(accum)) {
           break;
         }
       }
 
       position = 0;
-      return doc;
+      return (doc = accum);
     }
 
     @Override
@@ -668,7 +672,7 @@ public class SepPostingsReader extends PostingsReaderBase {
           posIndex.set(skipper.getPosIndex());
           posSeekPending = true;
           count = newCount;
-          doc = skipper.getDoc();
+          doc = accum = skipper.getDoc();
           //System.out.println("    moved to doc=" + doc);
           //payloadIn.seek(skipper.getPayloadPointer());
           payloadFP = skipper.getPayloadPointer();
