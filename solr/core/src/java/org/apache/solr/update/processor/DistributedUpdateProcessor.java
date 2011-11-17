@@ -47,7 +47,6 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -60,7 +59,6 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.update.processor.DistributedUpdateProcessor.Request;
 
 // NOT mt-safe... create a new processor for each add thread
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
@@ -85,12 +83,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final UpdateRequestProcessor next;;
   private final SchemaField idField;
   
-  private List<String> shards;
+  //private List<String> shards;
   private final List<AddUpdateCommand>[] adds;
   private final List<DeleteUpdateCommand>[] deletes;
   
   String selfStr;
-  int self;
+
   int maxBufferedAddsPerServer = 10;
   int maxBufferedDeletesPerServer = 100;
 
@@ -108,42 +106,39 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private CharsRef scratch;
   private final boolean isLeader;
   private boolean forwardToLeader;
+  private volatile String shardStr;
   
   public DistributedUpdateProcessor(String shardStr, SolrQueryRequest req,
       SolrQueryResponse rsp, DistributedUpdateProcessorFactory factory,
       boolean isLeader, boolean forwardToLeader, UpdateRequestProcessor next) {
     super(next);
+    this.shardStr = shardStr;
     this.factory = factory;
     this.rsp = rsp;
     this.next = next;
     this.idField = req.getSchema().getUniqueKeyField();
-    
-    shards = factory.shards;
+
     
     String selfStr = req.getParams().get("self", factory.selfStr);
-
-    if (shardStr != null) {
-      shards = StrUtils.splitSmart(shardStr, ",", true);
-    }
     
-    self = -1;
-    if (shards != null) {
-      for (int i = 0; i < shards.size(); i++) {
-        if (shards.get(i).equals(selfStr)) {
-          self = i;
-          break;
-        }
-      }
-    }
+//    self = -1;
+//    if (shards != null) {
+//      for (int i = 0; i < shards.size(); i++) {
+//        if (shards.get(i).equals(selfStr)) {
+//          self = i;
+//          break;
+//        }
+//      }
+//    }
+//    
+//    if (shards == null) {
+//      shards = new ArrayList<String>(1);
+//      shards.add("self");
+//      self = 0;
+//    }
     
-    if (shards == null) {
-      shards = new ArrayList<String>(1);
-      shards.add("self");
-      self = 0;
-    }
-    
-    adds = new List[shards.size()];
-    deletes = new List[shards.size()];
+    adds = new List[1];
+    deletes = new List[1];
     
     // version init
     this.isLeader = isLeader;
@@ -162,15 +157,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   }
 
-  private int getSlot(String id) {
-    return (id.hashCode() >>> 1) % shards.size();
-  }
+//  private int getSlot(String id) {
+//    return (id.hashCode() >>> 1) % shards.size();
+//  }
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     
     versionAdd(cmd);
     
+//    String shardStr = null;
+//    this.shardStr = shardStr;
     distribAdd(cmd);
     
     if (returnVersions && rsp != null) {
@@ -274,7 +271,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void distribAdd(AddUpdateCommand cmd) throws IOException {
-    if (shards == null) {
+    if (shardStr == null) {
       super.processAdd(cmd);
       return;
     }
@@ -288,14 +285,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
     String id = field.getFirstValue().toString();
-    int slot = getSlot(id);
-    if (slot == self) {
-      if (next != null) next.processAdd(cmd);
-      return;
-    }
+//    int slot = getSlot(id);
+//    if (slot == self) {
+//      if (next != null) next.processAdd(cmd);
+//      return;
+//    }
     
     // make sure any pending deletes are flushed
-    flushDeletes(slot, 1, null);
+    flushDeletes(0, 1, null);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -309,14 +306,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // clone.indexedId = cmd.indexedId;
     // clone.doc = cmd.doc;
     
-    List<AddUpdateCommand> alist = adds[slot];
+    List<AddUpdateCommand> alist = adds[0];
     if (alist == null) {
       alist = new ArrayList<AddUpdateCommand>(2);
-      adds[slot] = alist;
+      adds[0] = alist;
     }
     alist.add(clone);
     
-    flushAdds(slot, maxBufferedAddsPerServer, null);
+    flushAdds(0, maxBufferedAddsPerServer, null);
   }
   
   // TODO: this is brittle
@@ -327,26 +324,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return c;
   }
   
-  private void doDelete(int slot, DeleteUpdateCommand cmd) throws IOException {
-    if (slot == self) {
-      if (self >= 0) next.processDelete(cmd);
-      return;
-    }
+  private void doDelete(DeleteUpdateCommand cmd) throws IOException {
     
-    flushAdds(slot, 1, null);
+    flushAdds(0, 1, null);
     
-    List<DeleteUpdateCommand> dlist = deletes[slot];
+    List<DeleteUpdateCommand> dlist = deletes[0];
     if (dlist == null) {
       dlist = new ArrayList<DeleteUpdateCommand>(2);
-      deletes[slot] = dlist;
+      deletes[0] = dlist;
     }
     dlist.add(clone(cmd));
     
-    flushDeletes(slot, maxBufferedDeletesPerServer, null);
+    flushDeletes(0, maxBufferedDeletesPerServer, null);
   }
   
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+//    String shardStr = null;
+//    this.shardStr = shardStr;
+    
     versionDelete(cmd);
     
     distribDelete(cmd);
@@ -440,31 +436,32 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void distribDelete(DeleteUpdateCommand cmd) throws IOException {
-    if (shards == null) {
+    if (shardStr == null) {
       super.processDelete(cmd);
       return;
     }
     checkResponses(false);
     
     if (cmd.id != null) {
-      doDelete(getSlot(cmd.id), cmd);
+      doDelete(cmd);
     } else if (cmd.query != null) {
       // query must be broadcast to all
       for (int slot = 0; slot < deletes.length; slot++) {
-        if (slot == self) continue;
-        doDelete(slot, cmd);
+        doDelete(cmd);
       }
-      doDelete(self, cmd);
+      doDelete(cmd);
     }
   }
   
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    distribCommit(cmd);
+    String shardStr = null;
+    // nocommit: make everyone commit?
+    distribCommit(cmd, shardStr);
   }
 
-  private void distribCommit(CommitUpdateCommand cmd) throws IOException {
-    if (shards == null) {
+  private void distribCommit(CommitUpdateCommand cmd, String shardStr) throws IOException {
+    if (shardStr == null) {
       super.processCommit(cmd);
       return;
     }
@@ -475,8 +472,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // and this solution will lead to commits happening closer together.
     checkResponses(true);
     
-    for (int slot = 0; slot < shards.size(); slot++) {
-      if (slot == self) continue;
+    for (int slot = 0; slot < 1; slot++) {
       // piggyback on any outstanding adds or deletes if possible.
       if (flushAdds(slot, 1, cmd)) continue;
       if (flushDeletes(slot, 1, cmd)) continue;
@@ -494,9 +490,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // nocommit: we add the right update chain - we should add the current one?
       ureq.getParams().add("update.chain", "distrib-update-chain");
       addCommit(ureq, cmd);
-      submit(slot, ureq);
+      submit(ureq);
     }
-    if (next != null && self >= 0) next.processCommit(cmd);
+    //if (next != null && shardStr == null) next.processCommit(cmd);
     
     // if the command wanted to block until everything was committed,
     // then do that here.
@@ -508,18 +504,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void finish() throws IOException {
-    if (shards == null) {
-      super.finish();
-      return;
-    }
-    for (int slot = 0; slot < shards.size(); slot++) {
-      if (slot == self) continue;
-      // piggyback on any outstanding adds or deletes if possible.
-      flushAdds(slot, 1, null);
-      flushDeletes(slot, 1, null);
-    }
+
+    // piggyback on any outstanding adds or deletes if possible.
+    flushAdds(0, 1, null);
+    flushDeletes(0, 1, null);
+
     checkResponses(true);
-    if (next != null && self >= 0) next.finish();
+    if (next != null && shardStr == null) next.finish();
   }
   
   void checkResponses(boolean block) {
@@ -536,8 +527,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           Request sreq = future.get();
           System.out.println("RSP:" + sreq.rspCode);
-          // TODO: this was != 0, but a success seemed to come back as -1 in some cases - need to track this down - MM
-          // changed it while trying to make requests return success if half or more replicas got it
           if (sreq.rspCode != 0) {
             // error during request
             failed++;
@@ -610,7 +599,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     adds[slot] = null;
-    submit(slot, ureq);
+    submit(ureq);
     return true;
   }
   
@@ -643,7 +632,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     deletes[slot] = null;
-    submit(slot, ureq);
+    submit(ureq);
     return true;
   }
   
@@ -656,9 +645,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Exception exception;
   }
   
-  void submit(int slot, UpdateRequestExt ureq) {
+  void submit(UpdateRequestExt ureq) {
     Request sreq = new Request();
-    sreq.shard = shards.get(slot);
+    sreq.shard = shardStr;
     sreq.ureq = ureq;
     submit(sreq);
   }
