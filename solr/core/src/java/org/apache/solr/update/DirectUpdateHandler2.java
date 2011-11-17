@@ -54,7 +54,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
-public class DirectUpdateHandler2 extends UpdateHandler {
+public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser {
   protected SolrCoreState solrCoreState;
   protected final Lock commitLock = new ReentrantLock();
 
@@ -467,11 +467,26 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     numDocsPending.set(0);
 
-    solrCoreState.decref();
-    
-    log.info("closed " + this);
+    solrCoreState.decref(this);
   }
 
+  // IndexWriterCloser interface method - called from solrCoreState.decref(this)
+  @Override
+  public void closeWriter(IndexWriter writer) throws IOException {
+    if (writer == null) return;
+    commitLock.lock();
+    try {
+      writer.close();
+      // if the writer hits an exception, it's OK (and perhaps desirable)
+      // to not close the ulog?
+
+      // Closing the log currently deletes the log file.
+      // If this changes, we should record this as a "commit".
+      ulog.close();
+    } finally {
+      commitLock.unlock();
+    }
+  }
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
@@ -551,7 +566,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   @Override
   public void decref() {
     try {
-      solrCoreState.decref();
+      solrCoreState.decref(this);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "", e, false);
     }

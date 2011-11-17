@@ -50,10 +50,12 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   }
 
   @Override
-  public synchronized void decref() throws IOException {
+  public synchronized void decref(IndexWriterCloser closer) throws IOException {
     refCnt--;
     if (refCnt == 0) {
-      if (indexWriter != null) {
+      if (closer != null) {
+        closer.closeWriter(indexWriter);
+      } else if (indexWriter != null) {
         indexWriter.close();
       }
       directoryFactory.close();
