@@ -53,7 +53,7 @@ public class SpellCheckResponse {
 				for (Object o : collationInfo) {
 					if (o instanceof String) {
 						collations.add(new Collation()
-								.setCollationQueryString((String) sugg.getVal(i)));
+								.setCollationQueryString((String) o));
 					} else if (o instanceof NamedList) {
 						NamedList expandedCollation = (NamedList) o;
 						String collationQuery = (String) expandedCollation

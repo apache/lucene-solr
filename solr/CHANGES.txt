@@ -108,6 +108,10 @@ Bug Fixes
 * SOLR-2829: Fix problem with false-positives due to incorrect
   equals methods. (Yonik Seeley, Hossman, Erick Erickson. 
   Marc Tinnemeyer caught the bug)
+  
+* SOLR-2902: List of collations are wrong parsed in SpellCheckResponse causing
+  a wrong number of collation results in the response.
+  (Bastiaan Verhoef, James Dyer via Simon Willnauer)
 
  Other Changes
 ----------------------
