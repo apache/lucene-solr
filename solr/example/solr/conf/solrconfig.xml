@@ -279,7 +279,7 @@
 
     <!-- AutoCommit
 
-         Perform a <commit/> automatically under certain conditions.
+         Perform a hard commit automatically under certain conditions.
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents. 
 
@@ -288,32 +288,23 @@
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
 
-         maxTime - Maximum amount of time that is allowed to pass
+         maxTime - Maximum amount of time in ms that is allowed to pass
                    since a document was added before automaticly
                    triggering a new commit. 
       -->
     <!--
        <autoCommit> 
-         <maxDocs>10000</maxDocs>
-         <maxTime>1000</maxTime> 
+         <maxTime>60000</maxTime> 
        </autoCommit>
       -->
 
-    <!-- SoftAutoCommit
-
-         Perform a 'soft' commit automatically under certain conditions.
-         This commit avoids ensuring that data is synched to disk.
-
-         maxDocs - Maximum number of documents to add since the last
-                   soft commit before automaticly triggering a new soft commit.
-
-         maxTime - Maximum amount of time in ms that is allowed to pass
-                   since a document was added before automaticly
-                   triggering a new soft commit. 
+    <!-- softAutoCommit is like autoCommit except it causes a
+         'soft' commit which only ensures that changes are visible
+         but does not ensure that data is synced to disk.  This is
+         faster and more near-realtime friendly than a hard commit.
       -->
      <!--
        <autoSoftCommit> 
-         <maxDocs>10000</maxDocs>
          <maxTime>1000</maxTime> 
        </autoSoftCommit>
       -->
