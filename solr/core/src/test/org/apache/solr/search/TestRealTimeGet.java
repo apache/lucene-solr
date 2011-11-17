@@ -723,8 +723,11 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
-    DocsEnum docs = terms.docs(MultiFields.getLiveDocs(r), termBytes, null);
-    if (docs == null) return -1;
+    final TermsEnum termsEnum = terms.iterator(null);
+    if (!termsEnum.seekExact(termBytes, false)) {
+      return -1;
+    }
+    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null);
     int id = docs.nextDoc();
     if (id != DocIdSetIterator.NO_MORE_DOCS) {
       int next = docs.nextDoc();

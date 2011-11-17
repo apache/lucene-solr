@@ -46,7 +46,6 @@ public final class TermContext {
 
   //public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
-
   /**
    * Creates an empty {@link TermContext} from a {@link ReaderContext}
    */
@@ -94,7 +93,7 @@ public final class TermContext {
       if (fields != null) {
         final Terms terms = fields.terms(field);
         if (terms != null) {
-          final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
+          final TermsEnum termsEnum = terms.iterator(null);
           if (termsEnum.seekExact(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
             //if (DEBUG) System.out.println("    found");

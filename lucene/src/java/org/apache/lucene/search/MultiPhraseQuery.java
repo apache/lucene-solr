@@ -20,20 +20,23 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.Bits;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -134,6 +137,7 @@ public class MultiPhraseQuery extends Query {
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.Stats stats;
+    private final Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
@@ -144,7 +148,11 @@ public class MultiPhraseQuery extends Query {
       ArrayList<TermStatistics> allTermStats = new ArrayList<TermStatistics>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          TermContext termContext = TermContext.build(context, term, true);
+          TermContext termContext = termContexts.get(term);
+          if (termContext == null) {
+            termContext = TermContext.build(context, term, true);
+            termContexts.put(term, termContext);
+          }
           allTermStats.add(searcher.termStatistics(term, termContext));
         }
       }
@@ -174,6 +182,14 @@ public class MultiPhraseQuery extends Query {
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
+      final Terms fieldTerms = reader.terms(field);
+      if (fieldTerms == null) {
+        return null;
+      }
+
+      // Reuse single TermsEnum below:
+      final TermsEnum termsEnum = fieldTerms.iterator(null);
+
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);
 
@@ -181,31 +197,43 @@ public class MultiPhraseQuery extends Query {
         int docFreq;
 
         if (terms.length > 1) {
-          postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, reader, terms);
+          postingsEnum = new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum);
 
           // coarse -- this overcounts since a given doc can
-          // have more than one terms:
+          // have more than one term:
           docFreq = 0;
           for(int termIdx=0;termIdx<terms.length;termIdx++) {
-            docFreq += reader.docFreq(terms[termIdx]);
+            final Term term = terms[termIdx];
+            TermState termState = termContexts.get(term).get(context.ord);
+            if (termState == null) {
+              // Term not in reader
+              continue;
+            }
+            termsEnum.seekExact(term.bytes(), termState);
+            docFreq += termsEnum.docFreq();
+          }
+
+          if (docFreq == 0) {
+            // None of the terms are in this reader
+            return null;
           }
         } else {
           final Term term = terms[0];
-          postingsEnum = reader.termPositionsEnum(liveDocs,
-                                                  term.field(),
-                                                  term.bytes());
+          TermState termState = termContexts.get(term).get(context.ord);
+          if (termState == null) {
+            // Term not in reader
+            return null;
+          }
+          termsEnum.seekExact(term.bytes(), termState);
+          postingsEnum = termsEnum.docsAndPositions(liveDocs, null);
 
           if (postingsEnum == null) {
-            if (reader.termDocsEnum(liveDocs, term.field(), term.bytes()) != null) {
-              // term does exist, but has no positions
-              throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
-            } else {
-              // term does not exist
-              return null;
-            }
+            // term does exist, but has no positions
+            assert termsEnum.docs(liveDocs, null) != null: "termstate found but no term exists in reader";
+            throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
-          docFreq = reader.docFreq(term.field(), term.bytes());
+          docFreq = termsEnum.docFreq();
         }
 
         postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms[0]);
@@ -437,20 +465,22 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private DocsQueue _queue;
   private IntQueue _posList;
 
-  public UnionDocsAndPositionsEnum(Bits liveDocs, IndexReader indexReader, Term[] terms) throws IOException {
+  public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
     for (int i = 0; i < terms.length; i++) {
-      DocsAndPositionsEnum postings = indexReader.termPositionsEnum(liveDocs,
-                                                                    terms[i].field(),
-                                                                    terms[i].bytes());
-      if (postings != null) {
-        docsEnums.add(postings);
-      } else {
-        if (indexReader.termDocsEnum(liveDocs, terms[i].field(), terms[i].bytes()) != null) {
-          // term does exist, but has no positions
-          throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + terms[i].text() + ")");
-        }
+      final Term term = terms[i];
+      TermState termState = termContexts.get(term).get(context.ord);
+      if (termState == null) {
+        // Term doesn't exist in reader
+        continue;
       }
+      termsEnum.seekExact(term.bytes(), termState);
+      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null);
+      if (postings == null) {
+        // term does exist, but has no positions
+        throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
+      }
+      docsEnums.add(postings);
     }
 
     _queue = new DocsQueue(docsEnums);

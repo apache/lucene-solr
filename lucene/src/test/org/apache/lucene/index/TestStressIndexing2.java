@@ -342,6 +342,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       return;
     }
     Terms terms2 = fields.terms(idField);
+    TermsEnum termsEnum2 = terms2.iterator(null);
 
     DocsEnum termDocs1 = null;
     DocsEnum termDocs2 = null;
@@ -354,7 +355,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
 
       termDocs1 = termsEnum.docs(liveDocs1, termDocs1);
-      termDocs2 = terms2.docs(liveDocs2, term, termDocs2);
+      if (termsEnum2.seekExact(term, false)) {
+        termDocs2 = termsEnum2.docs(liveDocs2, termDocs2);
+      } else {
+        termDocs2 = null;
+      }
 
       if (termDocs1.nextDoc() == DocsEnum.NO_MORE_DOCS) {
         // This doc is deleted and wasn't replaced
@@ -397,11 +402,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
             System.out.println("    " + field + ":");
             Terms terms3 = fieldsEnum.terms();
             assertNotNull(terms3);
-            TermsEnum termsEnum2 = terms3.iterator(null);
+            TermsEnum termsEnum3 = terms3.iterator(null);
             BytesRef term2;
-            while((term2 = termsEnum2.next()) != null) {
-              System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
-              dpEnum = termsEnum2.docsAndPositions(null, dpEnum);
+            while((term2 = termsEnum3.next()) != null) {
+              System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
+              dpEnum = termsEnum3.docsAndPositions(null, dpEnum);
               if (dpEnum != null) {
                 assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
                 final int freq = dpEnum.freq();
@@ -410,7 +415,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                   System.out.println("          pos=" + dpEnum.nextPosition());
                 }
               } else {
-                dEnum = termsEnum2.docs(null, dEnum);
+                dEnum = termsEnum3.docs(null, dEnum);
                 assertNotNull(dEnum);
                 assertTrue(dEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
                 final int freq = dEnum.freq();
@@ -431,11 +436,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
             System.out.println("    " + field + ":");
             Terms terms3 = fieldsEnum.terms();
             assertNotNull(terms3);
-            TermsEnum termsEnum2 = terms3.iterator(null);
+            TermsEnum termsEnum3 = terms3.iterator(null);
             BytesRef term2;
-            while((term2 = termsEnum2.next()) != null) {
-              System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum2.totalTermFreq());
-              dpEnum = termsEnum2.docsAndPositions(null, dpEnum);
+            while((term2 = termsEnum3.next()) != null) {
+              System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
+              dpEnum = termsEnum3.docsAndPositions(null, dpEnum);
               if (dpEnum != null) {
                 assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
                 final int freq = dpEnum.freq();
@@ -444,7 +449,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                   System.out.println("          pos=" + dpEnum.nextPosition());
                 }
               } else {
-                dEnum = termsEnum2.docs(null, dEnum);
+                dEnum = termsEnum3.docs(null, dEnum);
                 assertNotNull(dEnum);
                 assertTrue(dEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
                 final int freq = dEnum.freq();
@@ -467,7 +472,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
     String field1=null, field2=null;
     TermsEnum termsEnum1 = null;
-    TermsEnum termsEnum2 = null;
+    termsEnum2 = null;
     DocsEnum docs1=null, docs2=null;
 
     // pack both doc and freq into single element for easy sorting

@@ -447,7 +447,7 @@ public class TestOmitTf extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     Terms terms = MultiFields.getTerms(ir, "foo");
-    assertEquals(-1, terms.totalTermFreq(new BytesRef("bar")));
+    assertEquals(-1, MultiFields.totalTermFreq(ir, "foo", new BytesRef("bar")));
     assertEquals(-1, terms.getSumTotalTermFreq());
     ir.close();
     dir.close();

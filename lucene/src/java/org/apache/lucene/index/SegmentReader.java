@@ -36,7 +36,6 @@ import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.StringHelper;
 
@@ -471,17 +470,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public Fields fields() throws IOException {
     ensureOpen();
     return core.fields;
-  }
-
-  @Override
-  public int docFreq(String field, BytesRef term) throws IOException {
-    ensureOpen();
-    Terms terms = core.fields.terms(field);
-    if (terms != null) {
-      return terms.docFreq(term);
-    } else {
-      return 0;
-    }
   }
 
   @Override

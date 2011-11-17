@@ -991,7 +991,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
     if (terms == null) {
       return 0;
     }
-    return terms.docFreq(term);
+    final TermsEnum termsEnum = terms.iterator(null);
+    if (termsEnum.seekExact(term, true)) {
+      return termsEnum.docFreq();
+    } else {
+      return 0;
+    }
   }
 
   /** Returns the number of documents containing the term
@@ -1008,7 +1013,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
     if (terms == null) {
       return 0;
     }
-    return terms.totalTermFreq(term);
+    final TermsEnum termsEnum = terms.iterator(null);
+    if (termsEnum.seekExact(term, true)) {
+      return termsEnum.totalTermFreq();
+    } else {
+      return 0;
+    }
   }
 
   /** This may return null if the field does not exist.*/
@@ -1027,15 +1037,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
-    if (fields == null) {
-      return null;
+    if (fields != null) {
+      final Terms terms = fields.terms(field);
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator(null);
+        if (termsEnum.seekExact(term, true)) {
+          return termsEnum.docs(liveDocs, null);
+        }
+      }
     }
-    final Terms terms = fields.terms(field);
-    if (terms != null) {
-      return terms.docs(liveDocs, term, null);
-    } else {
-      return null;
-    }
+    return null;
   }
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
@@ -1046,15 +1057,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
-    if (fields == null) {
-      return null;
+    if (fields != null) {
+      final Terms terms = fields.terms(field);
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator(null);
+        if (termsEnum.seekExact(term, true)) {
+          return termsEnum.docsAndPositions(liveDocs, null);
+        }
+      }
     }
-    final Terms terms = fields.terms(field);
-    if (terms != null) {
-      return terms.docsAndPositions(liveDocs, term, null);
-    } else {
-      return null;
-    }
+    return null;
   }
   
   /**
@@ -1066,15 +1078,15 @@ public abstract class IndexReader implements Cloneable,Closeable {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
-    if (fields == null) {
-      return null;
+    if (fields != null) {
+      final Terms terms = fields.terms(field);
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator(null);
+        termsEnum.seekExact(term, state);
+        return termsEnum.docs(liveDocs, null);
+      }
     }
-    final Terms terms = fields.terms(field);
-    if (terms != null) {
-      return terms.docs(liveDocs, term, state, null);
-    } else {
-      return null;
-    }
+    return null;
   }
   
   /**
@@ -1086,15 +1098,15 @@ public abstract class IndexReader implements Cloneable,Closeable {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
-    if (fields == null) {
-      return null;
+    if (fields != null) {
+      final Terms terms = fields.terms(field);
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator(null);
+        termsEnum.seekExact(term, state);
+        return termsEnum.docsAndPositions(liveDocs, null);
+      }
     }
-    final Terms terms = fields.terms(field);
-    if (terms != null) {
-      return terms.docsAndPositions(liveDocs, term, state, null);
-    } else {
-      return null;
-    }
+    return null;
   }
 
 

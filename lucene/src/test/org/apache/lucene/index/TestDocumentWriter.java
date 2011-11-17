@@ -199,7 +199,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
-    DocsAndPositionsEnum termPositions = reader.fields().terms("f1").docsAndPositions(reader.getLiveDocs(), new BytesRef("a"), null);
+    DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     int freq = termPositions.freq();
     assertEquals(3, freq);
@@ -243,18 +243,18 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
-    DocsAndPositionsEnum termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getLiveDocs(), new BytesRef("term1"), null);
+    DocsAndPositionsEnum termPositions = reader.termPositionsEnum(reader.getLiveDocs(), "preanalyzed", new BytesRef("term1"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
 
-    termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getLiveDocs(), new BytesRef("term2"), null);
+    termPositions = reader.termPositionsEnum(reader.getLiveDocs(), "preanalyzed", new BytesRef("term2"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
     
-    termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getLiveDocs(), new BytesRef("term3"), null);
+    termPositions = reader.termPositionsEnum(reader.getLiveDocs(), "preanalyzed", new BytesRef("term3"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());

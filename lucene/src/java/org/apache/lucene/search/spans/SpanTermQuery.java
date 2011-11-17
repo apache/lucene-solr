@@ -17,7 +17,6 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Term;
@@ -26,7 +25,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -99,7 +97,7 @@ public class SpanTermQuery extends SpanQuery {
       if (fields != null) {
         final Terms terms = fields.terms(term.field());
         if (terms != null) {
-          final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
+          final TermsEnum termsEnum = terms.iterator(null);
           if (termsEnum.seekExact(term.bytes(), true)) { 
             state = termsEnum.termState();
           } else {
@@ -119,7 +117,7 @@ public class SpanTermQuery extends SpanQuery {
       return TermSpans.EMPTY_TERM_SPANS;
     }
     
-    final TermsEnum termsEnum = context.reader.terms(term.field()).getThreadTermsEnum();
+    final TermsEnum termsEnum = context.reader.terms(term.field()).iterator(null);
     termsEnum.seekExact(term.bytes(), state);
     
     final DocsAndPositionsEnum postings = termsEnum.docsAndPositions(acceptDocs, null);

@@ -85,21 +85,6 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public int docFreq(BytesRef text) throws IOException {
-      return in.docFreq(text);
-    }
-
-    @Override
-    public DocsEnum docs(Bits liveDocs, BytesRef text, DocsEnum reuse) throws IOException {
-      return in.docs(liveDocs, text, reuse);
-    }
-
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
-      return in.docsAndPositions(liveDocs, text, reuse);
-    }
-
-    @Override
     public long getUniqueTermCount() throws IOException {
       return in.getUniqueTermCount();
     }

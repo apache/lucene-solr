@@ -59,7 +59,17 @@ public class TFValueSource extends TermFreqValueSource {
 
       public void reset() throws IOException {
         // no one should call us for deleted docs?
-        docs = terms==null ? null : terms.docs(null, indexedBytes, null);
+        if (terms != null) {
+          final TermsEnum termsEnum = terms.iterator(null);
+          if (termsEnum.seekExact(indexedBytes, false)) {
+            docs = termsEnum.docs(null, null);
+          } else {
+            docs = null;
+          }
+        } else {
+          docs = null;
+        }
+
         if (docs == null) {
           docs = new DocsEnum() {
             @Override

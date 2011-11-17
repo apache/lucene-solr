@@ -349,7 +349,9 @@ public class TestDocsAndPositions extends LuceneTestCase {
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
-    disi = r.terms("foo").docs(null, new BytesRef("bar"), disi);
+    TermsEnum te = r.terms("foo").iterator(null);
+    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    disi = te.docs(null, disi);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -372,7 +374,9 @@ public class TestDocsAndPositions extends LuceneTestCase {
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
-    disi = r.terms("foo").docsAndPositions(null, new BytesRef("bar"), disi);
+    TermsEnum te = r.terms("foo").iterator(null);
+    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    disi = te.docsAndPositions(null, disi);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

@@ -1340,13 +1340,12 @@ public class TestIndexReader extends LuceneTestCase
     writer.addDocument(d);
     IndexReader r = writer.getReader();
     writer.close();
-    Terms terms = MultiFields.getTerms(r, "f");
     try {
       // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
-      Assume.assumeTrue(terms.totalTermFreq(new BytesRef("b")) != -1);
-      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
-      assertEquals(2, terms.totalTermFreq(new BytesRef("a")));
-      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+      Assume.assumeTrue(MultiFields.totalTermFreq(r, "f", new BytesRef("b")) != -1);
+      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
+      assertEquals(2, MultiFields.totalTermFreq(r, "f", new BytesRef("a")));
+      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
     } finally {
       r.close();
       dir.close();
