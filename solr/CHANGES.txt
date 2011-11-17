@@ -434,6 +434,10 @@ Bug Fixes
 
 * SOLR-2813: Fix HTTP error codes returned when requests contain strings that
   can not be parsed as numbers for Trie fields. (Jeff Crump and hossman)
+  
+* SOLR-2902: List of collations are wrong parsed in SpellCheckResponse causing
+  a wrong number of collation results in the response.
+  (Bastiaan Verhoef, James Dyer via Simon Willnauer)
 
  Other Changes
 ----------------------
