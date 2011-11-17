@@ -76,7 +76,18 @@ public class AssertingIndexSearcher extends IndexSearcher {
       @Override
       public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
           boolean topScorer, Bits acceptDocs) throws IOException {
-        return w.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+        Scorer scorer = w.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+        if (scorer != null) {
+          // check that scorer obeys disi contract for docID() before next()/advance
+          try {
+            int docid = scorer.docID();
+            assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS;
+          } catch (UnsupportedOperationException ignored) {
+            // from a top-level BS1
+            assert topScorer;
+          }
+        }
+        return scorer;
       }
 
       @Override
