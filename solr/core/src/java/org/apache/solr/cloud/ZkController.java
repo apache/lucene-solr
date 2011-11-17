@@ -99,6 +99,11 @@ public final class ZkController {
   private int numShards;
 
   public static void main(String[] args) throws Exception {
+    // start up a tmp zk server first
+    SolrZkServer zkServer = new SolrZkServer("true", null, "example/solr", args[2]);
+    zkServer.parseConfig();
+    zkServer.start();
+    Thread.sleep(5000);
     ZkController zkController = new ZkController(args[0], 15000, 5000, args[1], args[2], args[3], -1, new CurrentCoreDescriptorProvider() {
       
       @Override
@@ -109,6 +114,8 @@ public final class ZkController {
     });
     
     zkController.uploadConfigDir(new File(args[4]), args[5]);
+    
+    zkServer.stop();
   }
 
 
@@ -542,6 +549,10 @@ public final class ZkController {
               req.setPath("/replication");
               System.out.println("Make replication call to:" + leaderUrl);
               System.out.println("params:" + params);
+              
+              // if we want to buffer updates while recovering, this
+              // will have to trigger later - http is not yet up
+              
               // we need to use embedded cause http is not up yet anyhow
               EmbeddedSolrServer server = new EmbeddedSolrServer(
                   desc.getCoreContainer(), desc.getName());
