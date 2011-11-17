@@ -50,15 +50,31 @@ class PreFlexFieldsWriter extends FieldsConsumer {
                                    state.fieldInfos,
                                    state.termIndexInterval);
 
-    final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
-    freqOut = state.directory.createOutput(freqFile, state.context);
-    totalNumDocs = state.numDocs;
+    boolean success = false;
+    try {
+      final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.FREQ_EXTENSION);
+      freqOut = state.directory.createOutput(freqFile, state.context);
+      totalNumDocs = state.numDocs;
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(termsOut);
+      }
+    }
 
-    if (state.fieldInfos.hasProx()) {
-      final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION);
-      proxOut = state.directory.createOutput(proxFile, state.context);
-    } else {
-      proxOut = null;
+    success = false;
+    try {
+      if (state.fieldInfos.hasProx()) {
+        final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", Lucene3xPostingsFormat.PROX_EXTENSION);
+        proxOut = state.directory.createOutput(proxFile, state.context);
+      } else {
+        proxOut = null;
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(termsOut, freqOut);
+      }
     }
 
     skipListWriter = new DefaultSkipListWriter(termsOut.skipInterval,

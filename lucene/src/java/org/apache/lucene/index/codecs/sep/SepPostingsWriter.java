@@ -151,7 +151,6 @@ public final class SepPostingsWriter extends PostingsWriterBase {
       if (!success) {
         IOUtils.closeWhileHandlingException(docOut, skipOut, freqOut, posOut, payloadOut);
       }
-
     }
   }
 

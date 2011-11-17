@@ -26,8 +26,8 @@ import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
@@ -36,6 +36,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 /** @lucene.experimental */
 public final class Lucene40PostingsWriter extends PostingsWriterBase {
@@ -92,14 +93,22 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     // this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
-    if (state.fieldInfos.hasProx()) {
-      // At least one field does not omit TF, so create the
-      // prox file
-      fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION);
-      proxOut = state.directory.createOutput(fileName, state.context);
-    } else {
-      // Every field omits TF so we will write no prox file
-      proxOut = null;
+    boolean success = false;
+    try {
+      if (state.fieldInfos.hasProx()) {
+        // At least one field does not omit TF, so create the
+        // prox file
+        fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION);
+        proxOut = state.directory.createOutput(fileName, state.context);
+      } else {
+        // Every field omits TF so we will write no prox file
+        proxOut = null;
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(freqOut);
+      }
     }
 
     totalNumDocs = state.numDocs;

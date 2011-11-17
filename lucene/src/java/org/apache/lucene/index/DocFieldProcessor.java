@@ -112,12 +112,8 @@ final class DocFieldProcessor extends DocConsumer {
         field = next;
       }
     }
-    try {
-      IOUtils.closeWhileHandlingException(perDocConsumers.values());
-      // TODO add abort to PerDocConsumer!
-    } catch (IOException e) {
-      // ignore on abort!
-    }
+    IOUtils.closeWhileHandlingException(perDocConsumers.values());
+    // TODO add abort to PerDocConsumer!
     
     try {
       fieldsWriter.abort();
