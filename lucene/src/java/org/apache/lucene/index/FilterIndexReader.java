@@ -280,6 +280,11 @@ public class FilterIndexReader extends IndexReader {
     return in.getSequentialSubReaders();
   }
 
+  @Override
+  public Map<String, String> getCommitUserData() { 
+    return in.getCommitUserData();
+  }
+  
   /** If the subclass of FilteredIndexReader modifies the
    *  contents of the FieldCache, you must override this
    *  method to provide a different key */

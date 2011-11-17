@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
@@ -326,7 +327,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
   // Note that refresh() is synchronized (it is the only synchronized
   // method in this class) to ensure that it never gets called concurrently
   // with itself.
-  public synchronized void refresh() throws IOException {
+  public synchronized boolean refresh() throws IOException, InconsistentTaxonomyException {
     ensureOpen();
     /*
      * Since refresh() can be a lengthy operation, it is very important that we
@@ -342,7 +343,24 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     // no other thread can be writing at this time (this method is the
     // only possible writer, and it is "synchronized" to avoid this case).
     IndexReader r2 = IndexReader.openIfChanged(indexReader);
-    if (r2 != null) {
+    if (r2 == null) {
+    	return false; // no changes, nothing to do
+    } 
+    
+    // validate that a refresh is valid at this point, i.e. that the taxonomy 
+    // was not recreated since this reader was last opened or refresshed.
+    String t1 = indexReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
+    String t2 = r2.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
+    if (t1==null) {
+    	if (t2!=null) {
+    		r2.close();
+    		throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2);
+    	}
+    } else if (!t1.equals(t2)) {
+    	r2.close();
+    	throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2+"  !=  "+t1);
+    }
+    
       IndexReader oldreader = indexReader;
       // we can close the old searcher, but need to synchronize this
       // so that we don't close it in the middle that another routine
@@ -385,8 +403,8 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
           i.remove();
         }
       }
+      return true;
     }
-  }
 
   public void close() throws IOException {
     if (!closed) {

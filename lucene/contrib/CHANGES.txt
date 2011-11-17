@@ -73,6 +73,11 @@ API Changes
    
  * LUCENE-3579: DirectoryTaxonomyWriter throws AlreadyClosedException if it was
    closed, but any of its API methods are called. (Shai Erera)
+   
+ * LUCENE-3573: TaxonomyReader.refresh() signature was modified from void to 
+   boolean, now returning an indication if any change was detected. It 
+   throws a new InconsistentTaxonomyException if the taxonomy was recreated
+   since TaxonomyReader was last opened or refreshed. (Doron Cohen)     
 
 Bug Fixes
 
@@ -112,6 +117,12 @@ Bug Fixes
    
  * LUCENE-3542: Group expanded query terms to preserve parent boolean operator
    in StandartQueryParser. (Simon Willnauer) 
+
+ * LUCENE-3573: TaxonomyReader.refresh() was broken in case that the taxonomy was 
+   recreated since the taxonomy reader was last refreshed or opened. TR.refresh()
+   now detects this situation and throws an InconsistentTaxonomyException. 
+   When obtaining such an exception the application should open a new taxonomy 
+   reader. Old taxonomy reader should be closed, once not more used.  (Doron Cohen)
 
 API Changes
  
