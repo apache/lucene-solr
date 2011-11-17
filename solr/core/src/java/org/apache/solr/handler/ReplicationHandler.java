@@ -126,7 +126,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     // This command does not give the current index version of the master
     // It gives the current 'replicateable' index version
-   if (command.equals(CMD_INDEX_VERSION)) {
+    if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
       if (commitPoint != null && replicationEnabled.get()) {
         //
@@ -202,10 +202,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
-   } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
-     replicationEnabled.set(false);
-     rsp.add(STATUS, OK_STATUS);
-   }
+    } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
+      replicationEnabled.set(false);
+      rsp.add(STATUS, OK_STATUS);
+    }
   }
 
   private List<NamedList<Object>> getCommits() {
@@ -296,16 +296,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
+      int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP, Integer.MAX_VALUE);
       IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
       IndexCommit indexCommit = delPolicy.getLatestCommit();
-
+      
       if(indexCommit == null) {
         indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
       }
-
+      
       // small race here before the commit point is saved
-      new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, this);
-
+      new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, numberToKeep, this);
+      
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
       rsp.add("exception", e);
@@ -354,7 +355,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.add("status", "unable to get file names for given indexversion");
       rsp.add("exception", e);
       LOG.warn("Unable to get file names for indexCommit version: "
-              + version, e);
+               + version, e);
     }
     rsp.add(CMD_GET_FILE_LIST, result);
     if (confFileNameAlias.size() < 1)
@@ -1146,4 +1147,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String OK_STATUS = "OK";
 
   public static final String NEXT_EXECUTION_AT = "nextExecutionAt";
+  
+  public static final String NUMBER_BACKUPS_TO_KEEP = "numberToKeep";
 }

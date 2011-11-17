@@ -396,6 +396,10 @@ New Features
 * SOLR-1023: StatsComponent now supports date fields and string fields.
   (Chris Male, Mark Holland, Gunnlaugur Thor Briem, Ryan McKinley)
 
+* SOLR-2578: ReplicationHandler's backup command now supports a 'numberToKeep' 
+  param that can be used to delete all but the most recent N backups.
+  (James Dyer via hossman)
+
 Optimizations
 ----------------------
 

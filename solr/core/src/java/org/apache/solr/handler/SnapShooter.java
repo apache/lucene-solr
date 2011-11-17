@@ -22,9 +22,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
@@ -59,19 +64,23 @@ public class SnapShooter {
     }
     lockFactory = new SimpleFSLockFactory(snapDir);
   }
-
+  
   void createSnapAsync(final IndexCommit indexCommit, final ReplicationHandler replicationHandler) {
+    createSnapAsync(indexCommit, Integer.MAX_VALUE, replicationHandler);
+  }
+
+  void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, final ReplicationHandler replicationHandler) {
     replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getVersion());
 
     new Thread() {
       @Override
       public void run() {
-        createSnapshot(indexCommit, replicationHandler);
+        createSnapshot(indexCommit, numberToKeep, replicationHandler);
       }
     }.start();
   }
 
-  void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
+  void createSnapshot(final IndexCommit indexCommit, int numberToKeep, ReplicationHandler replicationHandler) {
 
     NamedList<Object> details = new NamedList<Object>();
     details.add("startTime", new Date().toString());
@@ -79,6 +88,9 @@ public class SnapShooter {
     String directoryName = null;
     Lock lock = null;
     try {
+      if(numberToKeep<Integer.MAX_VALUE) {
+        deleteOldBackups(numberToKeep);
+      }
       SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.US);
       directoryName = "snapshot." + fmt.format(new Date());
       lock = lockFactory.makeLock(directoryName + ".lock");
@@ -100,8 +112,8 @@ public class SnapShooter {
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
-        replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getVersion());   
-        replicationHandler.snapShootDetails = details;
+      replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getVersion());   
+      replicationHandler.snapShootDetails = details;
       if (lock != null) {
         try {
           lock.release();
@@ -109,6 +121,46 @@ public class SnapShooter {
           LOG.error("Unable to release snapshoot lock: " + directoryName + ".lock");
         }
       }
+    }
+  }
+  private void deleteOldBackups(int numberToKeep) {
+    File[] files = new File(snapDir).listFiles();
+    List<OldBackupDirectory> dirs = new ArrayList<OldBackupDirectory>();
+    for(File f : files) {
+      OldBackupDirectory obd = new OldBackupDirectory(f);
+      if(obd.dir != null) {
+        dirs.add(obd);
+      }
+    }
+    Collections.sort(dirs);
+    int i=1;
+    for(OldBackupDirectory dir : dirs) {
+      if( i > numberToKeep-1 ) {
+        SnapPuller.delTree(dir.dir);
+      }
+    }   
+  }
+  private class OldBackupDirectory implements Comparable<OldBackupDirectory>{
+    File dir;
+    Date timestamp;
+    final Pattern dirNamePattern = Pattern.compile("^snapshot[.](.*)$");
+    
+    OldBackupDirectory(File dir) {
+      if(dir.isDirectory()) {
+        Matcher m = dirNamePattern.matcher(dir.getName());
+        if(m.find()) {
+          try {
+            this.dir = dir;
+            this.timestamp = new SimpleDateFormat(DATE_FMT).parse(m.group(1));
+          } catch(Exception e) {
+            this.dir = null;
+            this.timestamp = null;
+          }
+        }
+      }
+    }
+    public int compareTo(OldBackupDirectory that) {
+      return that.timestamp.compareTo(this.timestamp);
     }
   }
 
@@ -135,7 +187,7 @@ public class SnapShooter {
     }
     
     public void copyFile(File source, File destination, boolean preserveFileDate)
-        throws IOException {
+      throws IOException {
       // check source exists
       if (!source.exists()) {
         String message = "File " + source + " does not exist";
@@ -185,7 +237,7 @@ public class SnapShooter {
 
       if (source.length() != destination.length()) {
         String message = "Failed to copy full contents from " + source + " to "
-            + destination;
+          + destination;
         throw new IOException(message);
       }
 
