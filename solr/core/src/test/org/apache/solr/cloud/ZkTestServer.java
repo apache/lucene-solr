@@ -40,9 +40,12 @@ import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkTestServer {
-
+  private static Logger log = LoggerFactory.getLogger(ZkTestServer.class);
+  
   protected final ZKServerMain zkServer = new ZKServerMain();
 
   private String zkDir;
@@ -175,6 +178,7 @@ public class ZkTestServer {
   }
 
   public void run() throws InterruptedException {
+    log.info("STARTING ZK TEST SERVER");
     // we don't call super.setUp
     zooThread = new Thread() {
       
