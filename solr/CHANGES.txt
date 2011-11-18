@@ -109,6 +109,8 @@ New Features
   as results. 
   (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl, 
   Arul Kalaipandian, hossman)
+  SOLR-2037: Thanks to SOLR-1566, documents boosted by the QueryElevationComponent
+  can be marked as boosted.  (gsingers, ryan, yonik)
 
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
