@@ -319,7 +319,7 @@ public abstract class MergePolicy implements java.io.Closeable {
    * @param segmentInfos
    *          the total set of segments in the index
    */
-  public abstract MergeSpecification findMergesToExpungeDeletes(
+  public abstract MergeSpecification findForcedDeletesMerges(
       SegmentInfos segmentInfos) throws CorruptIndexException, IOException;
 
   /**

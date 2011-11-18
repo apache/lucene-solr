@@ -32,7 +32,7 @@ public class TestNoMergePolicy extends LuceneTestCase {
     MergePolicy mp = NoMergePolicy.NO_COMPOUND_FILES;
     assertNull(mp.findMerges(null));
     assertNull(mp.findForcedMerges(null, 0, null));
-    assertNull(mp.findMergesToExpungeDeletes(null));
+    assertNull(mp.findForcedDeletesMerges(null));
     assertFalse(mp.useCompoundFile(null, null));
     mp.close();
   }

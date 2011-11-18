@@ -27,7 +27,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestTieredMergePolicy extends LuceneTestCase {
 
-  public void testExpungeDeletes() throws Exception {
+  public void testForceMergeDeletes() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     TieredMergePolicy tmp = newTieredMergePolicy();
@@ -35,7 +35,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     conf.setMaxBufferedDocs(4);
     tmp.setMaxMergeAtOnce(100);
     tmp.setSegmentsPerTier(100);
-    tmp.setExpungeDeletesPctAllowed(30.0);
+    tmp.setForceMergeDeletesPctAllowed(30.0);
     IndexWriter w = new IndexWriter(dir, conf);
     for(int i=0;i<80;i++) {
       Document doc = new Document();
@@ -49,16 +49,16 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       System.out.println("\nTEST: delete docs");
     }
     w.deleteDocuments(new Term("content", "0"));
-    w.expungeDeletes();
+    w.forceMergeDeletes();
 
     assertEquals(80, w.maxDoc());
     assertEquals(60, w.numDocs());
 
     if (VERBOSE) {
-      System.out.println("\nTEST: expunge2");
+      System.out.println("\nTEST: forceMergeDeletes2");
     }
-    tmp.setExpungeDeletesPctAllowed(10.0);
-    w.expungeDeletes();
+    tmp.setForceMergeDeletesPctAllowed(10.0);
+    w.forceMergeDeletes();
     assertEquals(60, w.maxDoc());
     assertEquals(60, w.numDocs());
     w.close();
@@ -107,12 +107,12 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     }
   }
 
-  public void testExpungeMaxSegSize() throws Exception {
+  public void testForceMergeDeletesMaxSegSize() throws Exception {
     final Directory dir = newDirectory();
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     final TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setMaxMergedSegmentMB(0.01);
-    tmp.setExpungeDeletesPctAllowed(0.0);
+    tmp.setForceMergeDeletesPctAllowed(0.0);
     conf.setMergePolicy(tmp);
 
     final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);
@@ -139,7 +139,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     assertEquals(numDocs-1, r.numDocs());
     r.close();
 
-    w.expungeDeletes();
+    w.forceMergeDeletes();
 
     r = w.getReader();
     assertEquals(numDocs-1, r.maxDoc());

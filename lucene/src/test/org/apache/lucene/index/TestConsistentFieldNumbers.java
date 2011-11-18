@@ -245,7 +245,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         writer.deleteDocuments(new Term("f1", "d1"));
         // nuke the first segment entirely so that the segment with gaps is
         // loaded first!
-        writer.expungeDeletes();
+        writer.forceMergeDeletes();
         writer.close();
       }
 

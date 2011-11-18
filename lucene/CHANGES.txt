@@ -749,6 +749,12 @@ API Changes
 * LUCENE-3571: Deprecate IndexSearcher(Directory). Use the constructors
   that take IndexReader instead.  (Robert Muir)
 
+* LUCENE-3577: Rename IndexWriter.expungeDeletes to forceMergeDeletes,
+  and revamped the javadocs, to discourage
+  use of this method since it is horribly costly and rarely
+  justified.  MergePolicy.findMergesToExpungeDeletes was renamed to
+  findForcedDeletesMerges. (Robert Muir, Mike McCandless)
+
 New Features
 
 * LUCENE-3448: Added FixedBitSet.and(other/DISI), andNot(other/DISI).

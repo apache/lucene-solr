@@ -313,7 +313,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if (cmd.optimize) {
         writer.forceMerge(cmd.maxOptimizeSegments);
       } else if (cmd.expungeDeletes) {
-        writer.expungeDeletes();
+        writer.forceMergeDeletes();
       }
 
       if (!cmd.softCommit) {

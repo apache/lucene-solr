@@ -330,12 +330,12 @@ public class RandomIndexWriter implements Closeable {
   private boolean doRandomForceMerge = true;
   private boolean doRandomForceMergeAssert = true;
 
-  public void expungeDeletes(boolean doWait) throws IOException {
-    w.expungeDeletes(doWait);
+  public void forceMergeDeletes(boolean doWait) throws IOException {
+    w.forceMergeDeletes(doWait);
   }
 
-  public void expungeDeletes() throws IOException {
-    w.expungeDeletes();
+  public void forceMergeDeletes() throws IOException {
+    w.forceMergeDeletes();
   }
 
   public void setDoRandomForceMerge(boolean v) {
