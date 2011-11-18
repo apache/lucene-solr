@@ -82,7 +82,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   public FullDistributedZkTest() {
     fixShardCount = true;
     shardCount = 6;
-    
     // TODO: for now, turn off stress because it uses regular clients, and we 
     // need the cloud client because we kill servers
     stress = 0;
@@ -265,7 +264,10 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
    */
   @Override
   public void doTest() throws Exception {
-
+    handle.clear();
+    handle.put("QTime", SKIPVAL);
+    handle.put("timestamp", SKIPVAL);
+    
     del("*:*");
     
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
@@ -308,10 +310,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     commit();
     
     assertDocCounts();
-    
-    handle.clear();
-    handle.put("QTime", SKIPVAL);
-    handle.put("timestamp", SKIPVAL);
+    query("q", "*:*", "sort", "n_tl1 desc");
 
     // random value sort
     for (String f : fieldNames) {
@@ -394,6 +393,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     query("q","*:*", "rows",0, "facet","true", "facet.field","{!key='a b/c \\' \\} foo'}"+t1,"facet.limit",5, "facet.shard.limit",5);
     handle.remove("facet_fields");
 
+    //query("q", "*:*");
 
     // index the same document to two shards and make sure things
     // don't blow up.
@@ -414,6 +414,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // our hash is not stable yet in distrib update proc
     assertDocCounts();
 
+    //query("q", "*:*");
+    
     // kill a shard
     JettySolrRunner deadShard = killShard("shard2", 0);
     JettySolrRunner deadShard2 = killShard("shard3", 1);
@@ -433,6 +435,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     commit();
     
+    //query("q", "*:*");
+    
     // TMP: try adding a doc with CloudSolrServer
     CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
     server.setDefaultCollection(DEFAULT_COLLECTION);
@@ -451,6 +455,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     ureq.process(server);
     
     commit();
+    
+    //query("q", "*:*");
     
     long numFound2 = server.query(query).getResults().getNumFound();
     
@@ -499,10 +505,16 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         .getResults().getNumFound());
     
     // kill the other shard3 replica
-    JettySolrRunner deadShard3 = killShard("shard3", 0);
+   // JettySolrRunner deadShard3 = killShard("shard3", 0);
     
     // should fail
     //query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+    
+    // we can't do this here - we have killed a shard
+    // assertDocCounts();
+    
+    // TODO: why is this failing with no servers hosting shard?
+    //query("q", "*:*");
     
     // Thread.sleep(10000000000L);
     if (DEBUG) {
