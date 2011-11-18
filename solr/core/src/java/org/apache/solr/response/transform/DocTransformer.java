@@ -20,16 +20,41 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
+ * A DocTransformer can add, remove or alter a Document before it is written out to the Response.  For instance, there are implementations
+ * that can put explanations inline with a document, add constant values and mark items as being artificially boosted (see {@link org.apache.solr.handler.component.QueryElevationComponent})
+ *
+ * <p/>
  * New instance for each request
  *
+ * @see TransformerFactory
  *
  */
 public abstract class DocTransformer
 {
+  /**
+   *
+   * @return The name of the transformer
+   */
   public abstract String getName();
+
+  /**
+   * This is called before transform and sets
+   * @param context The {@link org.apache.solr.response.transform.TransformContext} stores information about the current state of things in Solr that may be
+   * useful for doing transformations.
+   */
   public void setContext( TransformContext context ) {}
+
+  /**
+   * This is where implementations do the actual work
+   *
+   *
+   * @param doc The document to alter
+   * @param docid The Lucene internal doc id
+   * @throws IOException
+   */
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
 
   @Override

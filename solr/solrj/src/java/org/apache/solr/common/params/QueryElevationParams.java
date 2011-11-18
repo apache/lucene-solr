@@ -27,4 +27,11 @@ public interface QueryElevationParams {
   String ENABLE = "enableElevation";
   String EXCLUSIVE = "exclusive";
   String FORCE_ELEVATION = "forceElevation";
+  /**
+   * The name of the field that editorial results will be written out as when using the QueryElevationComponent, which
+   * automatically configures the EditorialMarkerFactory.  The default name is "elevated"
+   * <br/>
+   * See http://wiki.apache.org/solr/DocTransformers
+   */
+  String EDITORIAL_MARKER_FIELD_NAME = "editorialMarkerFieldName";
 }

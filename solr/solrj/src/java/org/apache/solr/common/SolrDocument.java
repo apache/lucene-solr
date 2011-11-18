@@ -275,7 +275,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   public Set<Entry<String, Object>> entrySet() {
     return _fields.entrySet();
   }
-
+  //TODO: Shouldn't the input parameter here be a String?  The _fields map requires a String.
   public Object get(Object key) {
     return _fields.get(key);
   }
