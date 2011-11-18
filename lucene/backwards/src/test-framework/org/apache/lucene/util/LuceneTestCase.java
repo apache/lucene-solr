@@ -25,11 +25,13 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
@@ -45,9 +47,9 @@ import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -867,7 +869,17 @@ public abstract class LuceneTestCase extends Assert {
     }
     tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
-    tmp.setExpungeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+
+    // LUCENE-3577:
+    //tmp.setExpungeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+    try {
+      Class<?> clazz = Class.forName("org.apache.lucene.index.TieredMergePolicy");
+      Method m = clazz.getMethod("setForceMergeDeletesPctAllowed", double.class);
+      m.invoke(tmp, 0.0 + r.nextDouble() * 30.0);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
     tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);

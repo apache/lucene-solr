@@ -126,8 +126,8 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
-    return base.findMergesToExpungeDeletes(segmentInfos);
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
+    return base.findForcedDeletesMerges(segmentInfos);
   }
   
   @Override

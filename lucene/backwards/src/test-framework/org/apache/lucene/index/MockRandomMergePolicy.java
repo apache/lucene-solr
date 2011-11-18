@@ -98,6 +98,12 @@ public class MockRandomMergePolicy extends MergePolicy {
     return mergeSpec;
   }
 
+  public MergeSpecification findForcedDeletesMerges(
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+    throws CorruptIndexException, IOException {
+    return findMergesToExpungeDeletes(segmentInfos);
+  }
+
   @Override
   public MergeSpecification findMergesToExpungeDeletes(
       SegmentInfos segmentInfos)

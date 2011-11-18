@@ -403,7 +403,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         writer.forceMerge(cmd.maxOptimizeSegments);
       } else if (cmd.expungeDeletes) {
         openWriter();
-        writer.expungeDeletes();
+        writer.forceMergeDeletes();
       }
       
       closeWriter();

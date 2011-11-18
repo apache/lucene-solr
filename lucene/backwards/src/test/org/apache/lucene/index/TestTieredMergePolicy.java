@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.lang.reflect.Method;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,7 +36,14 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     conf.setMaxBufferedDocs(4);
     tmp.setMaxMergeAtOnce(100);
     tmp.setSegmentsPerTier(100);
-    tmp.setExpungeDeletesPctAllowed(30.0);
+    try {
+      Class<?> clazz = Class.forName("org.apache.lucene.index.TieredMergePolicy");
+      Method m = clazz.getMethod("setForceMergeDeletesPctAllowed", double.class);
+      m.invoke(tmp, 30.0);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    //tmp.setExpungeDeletesPctAllowed(30.0);
     IndexWriter w = new IndexWriter(dir, conf);
     w.setInfoStream(VERBOSE ? System.out : null);
     for(int i=0;i<80;i++) {
@@ -57,7 +66,14 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: expunge2");
     }
-    tmp.setExpungeDeletesPctAllowed(10.0);
+    try {
+      Class<?> clazz = Class.forName("org.apache.lucene.index.TieredMergePolicy");
+      Method m = clazz.getMethod("setForceMergeDeletesPctAllowed", double.class);
+      m.invoke(tmp, 10.0);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    //tmp.setExpungeDeletesPctAllowed(10.0);
     w.expungeDeletes();
     assertEquals(60, w.maxDoc());
     assertEquals(60, w.numDocs());

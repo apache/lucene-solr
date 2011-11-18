@@ -63,7 +63,7 @@ public final class NoMergePolicy extends MergePolicy {
       throws CorruptIndexException, IOException { return null; }
 
   @Override
-  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos)
       throws CorruptIndexException, IOException { return null; }
 
   @Override
