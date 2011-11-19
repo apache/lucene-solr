@@ -26,12 +26,28 @@ import java.io.StringReader;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /** Base class for all Benchmark unit tests. */
 public abstract class BenchmarkTestCase extends LuceneTestCase {
+  private static File WORKDIR;
+  
+  @BeforeClass
+  public static void beforeClassBenchmarkTestCase() throws Exception {
+    WORKDIR = _TestUtil.getTempDir("benchmark");
+    WORKDIR.delete();
+    WORKDIR.mkdirs();
+  }
+  
+  @AfterClass
+  public static void afterClassBenchmarkTestCase() throws Exception {
+    WORKDIR = null;
+  }
   
   public File getWorkDir() {
-    return TEMP_DIR;
+    return WORKDIR;
   }
   
   /** Copy a resource into the workdir */
