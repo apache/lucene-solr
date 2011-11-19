@@ -18,13 +18,18 @@ package org.apache.solr.update.processor;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.lang.NullArgumentException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.cloud.HashPartitioner;
+import org.apache.solr.cloud.HashPartitioner.Range;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
@@ -76,6 +81,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final SchemaField idField;
   
   private final SolrCmdDistributor cmdDistrib;
+
+  private HashPartitioner hp;
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -103,18 +110,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     System.out.println("hash:" + hash);
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
-    String shardId = getShard(hash); // get the right shard based on the hash...
+    CloudState cloudState = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getCloudState();
+    
+    String collection = coreDesc.getCloudDescriptor().getCollectionName();
+    String shardId = getShard(hash, collection, cloudState); // get the right shard based on the hash...
 
     // if we are in zk mode...
     if (coreDesc.getCoreContainer().getZkController() != null) {
       // the leader is...
       // TODO: if there is no leader, wait and look again
       // TODO: we are reading the leader from zk every time - we should cache
-      // this and watch for changes??
-     
-      String collection = coreDesc.getCloudDescriptor().getCollectionName();
+      // this and watch for changes?? Just pull it from ZkController cluster state probably?
 
-      
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       
       String leaderNode = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
@@ -178,15 +185,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
   
-  private String getShard(int hash) {
-    if (hash < -715827884) {
-      return "shard1";
-    } else if (hash < 715827881) {
-      return "shard2";
-    } else {
-      return "shard3";
+  private String getShard(int hash, String collection, CloudState cloudState) {
+    // nocommit: we certainly don't want to do this every update request...
+    // get the shard names
+    Map<String,Slice> slices = cloudState.getSlices(collection);
+    Set<String> shards = slices.keySet();
+    List<String> shardList = new ArrayList<String>();
+    shardList.addAll(shards);
+    Collections.sort(shardList);
+    hp = new HashPartitioner();
+    List<Range> ranges = hp.partitionRange(shards.size());
+    int cnt = 0;
+    for (Range range : ranges) {
+      if (hash < range.max) {
+        return shardList.get(cnt);
+      }
+      cnt++;
     }
-      
+    
+    throw new IllegalStateException("The HashPartitioner failed");
   }
 
   @Override
