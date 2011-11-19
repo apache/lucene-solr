@@ -103,13 +103,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     System.out.println("hash:" + hash);
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
-    
     String shardId = getShard(hash); // get the right shard based on the hash...
-    
-    
-    // TODO: first thing we actually have to do here is get a hash so we can send to the right shard...
-    // to do that, most of this likely has to move
-    
+
     // if we are in zk mode...
     if (coreDesc.getCoreContainer().getZkController() != null) {
       // the leader is...
@@ -143,9 +138,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               .getCoreContainer().getZkController().getNodeName();
           String shardZkNodeName = nodeName + "_" + req.getCore().getName();
 
-          System.out.println("params:" + params);
           if (params.getBool(SEEN_LEADER, false)) {
-            // we got a version, just go local - add no shards param
+            // we got a version, just go local - set no shardStr
             
             // still mark if i am the leader though
             if (shardZkNodeName.equals(leader)) {
@@ -164,7 +158,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             System.out.println("mark leader seen");
           } else {
             // I need to forward onto the leader...
-            // first I must hash...
             shardStr = leaderUrl;
             forwardToLeader  = true;
           }
@@ -201,7 +194,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     int hash = hash(cmd);
     
     setupRequest(hash);
-    versionAdd(cmd, hash);
+    
+    if (!forwardToLeader) {
+      versionAdd(cmd, hash);
+    }
+
+    
     if (shardStr != null) {
       cmdDistrib.distribAdd(cmd, shardStr);
     } else {
@@ -235,11 +233,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
 
     System.out.println("leader? " + isLeader);
-    if (forwardToLeader) {
-      // TODO: forward update to the leader
-      System.out.println("forward to leader");
-      return;
-    }
+
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -303,14 +297,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   }
   
-  // TODO: this is brittle
-  private DeleteUpdateCommand clone(DeleteUpdateCommand cmd) {
-    DeleteUpdateCommand c = new DeleteUpdateCommand(req);
-    c.id = cmd.id;
-    c.query = cmd.query;
-    return c;
-  }
-  
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     int hash = 0;
@@ -322,8 +308,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     setupRequest(hash);
     
-    versionDelete(cmd, hash);
-    
+    if (!forwardToLeader) {
+      versionDelete(cmd, hash);
+    }
+
     if (shardStr != null) {
       cmdDistrib.distribDelete(cmd, shardStr);
     } else {
@@ -357,18 +345,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-
-    if (forwardToLeader) {
-      return;
-    }
-
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
 
     // Find the version
     String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
     Long versionOnUpdate = versionOnUpdateS == null ? null : Long.parseLong(versionOnUpdateS);
-
 
     VersionBucket bucket = vinfo.bucket(hash);
     synchronized (bucket) {
@@ -442,17 +424,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       replicasUrl.append(replicaUrl);
     }
 
-    // we don't currently use self - it does not yet work with the | notation anyhow
-    //params.add("self", self);
     return replicasUrl.toString();
   }
   
-  // TODO: move this to AddUpdateCommand/DeleteUpdateCommand and cache it? And make the hash pluggable of course.
+  // TODO: move this to AddUpdateCommand/DeleteUpdateCommand and cache it? And
+  // make the hash pluggable of course.
   // The hash also needs to be pluggable
   private int hash(AddUpdateCommand cmd) {
     BytesRef br = cmd.getIndexedId();
     return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
   }
+  
   private int hash(DeleteUpdateCommand cmd) {
     BytesRef br = cmd.getIndexedId();
     return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
