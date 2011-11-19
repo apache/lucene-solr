@@ -242,7 +242,7 @@ public final class NumericUtils {
    * @see #sortableLongToDouble
    */
   public static long doubleToSortableLong(double val) {
-    long f = Double.doubleToRawLongBits(val);
+    long f = Double.doubleToLongBits(val);
     if (f<0) f ^= 0x7fffffffffffffffL;
     return f;
   }
@@ -264,7 +264,7 @@ public final class NumericUtils {
    * @see #sortableIntToFloat
    */
   public static int floatToSortableInt(float val) {
-    int f = Float.floatToRawIntBits(val);
+    int f = Float.floatToIntBits(val);
     if (f<0) f ^= 0x7fffffff;
     return f;
   }

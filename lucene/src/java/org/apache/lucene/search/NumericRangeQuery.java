@@ -23,6 +23,7 @@ import java.util.LinkedList;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -154,15 +155,14 @@ import org.apache.lucene.util.ToStringUtils;
  **/
 public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
-  private NumericRangeQuery(final String field, final int precisionStep, final int valSize,
+  private NumericRangeQuery(final String field, final int precisionStep, final DataType dataType,
     T min, T max, final boolean minInclusive, final boolean maxInclusive
   ) {
     super(field);
-    assert (valSize == 32 || valSize == 64);
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
     this.precisionStep = precisionStep;
-    this.valSize = valSize;
+    this.dataType = dataType;
     this.min = min;
     this.max = max;
     this.minInclusive = minInclusive;
@@ -172,14 +172,16 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     // hits too many terms, so set to CONSTANT_SCORE_FILTER right off
     // (especially as the FilteredTermsEnum is costly if wasted only for AUTO tests because it
     // creates new enums from IndexReader for each sub-range)
-    switch (valSize) {
-      case 64:
+    switch (dataType) {
+      case LONG:
+      case DOUBLE:
         setRewriteMethod( (precisionStep > 6) ?
           CONSTANT_SCORE_FILTER_REWRITE : 
           CONSTANT_SCORE_AUTO_REWRITE_DEFAULT
         );
         break;
-      case 32:
+      case INT:
+      case FLOAT:
         setRewriteMethod( (precisionStep > 8) ?
           CONSTANT_SCORE_FILTER_REWRITE : 
           CONSTANT_SCORE_AUTO_REWRITE_DEFAULT
@@ -187,7 +189,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
         break;
       default:
         // should never happen
-        throw new IllegalArgumentException("valSize must be 32 or 64");
+        throw new IllegalArgumentException("Invalid numeric DataType");
     }
     
     // shortcut if upper bound == lower bound
@@ -206,7 +208,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Long> newLongRange(final String field, final int precisionStep,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Long>(field, precisionStep, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Long>(field, precisionStep, DataType.LONG, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -219,7 +221,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Long> newLongRange(final String field,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Long>(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Long>(field, NumericUtils.PRECISION_STEP_DEFAULT, DataType.LONG, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -232,7 +234,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Integer> newIntRange(final String field, final int precisionStep,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Integer>(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Integer>(field, precisionStep, DataType.INT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -245,7 +247,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Integer> newIntRange(final String field,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Integer>(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Integer>(field, NumericUtils.PRECISION_STEP_DEFAULT, DataType.INT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -258,7 +260,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Double> newDoubleRange(final String field, final int precisionStep,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Double>(field, precisionStep, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Double>(field, precisionStep, DataType.DOUBLE, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -271,7 +273,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Double> newDoubleRange(final String field,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Double>(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Double>(field, NumericUtils.PRECISION_STEP_DEFAULT, DataType.DOUBLE, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -284,7 +286,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Float> newFloatRange(final String field, final int precisionStep,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Float>(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Float>(field, precisionStep, DataType.FLOAT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -297,7 +299,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Float> newFloatRange(final String field,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Float>(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Float>(field, NumericUtils.PRECISION_STEP_DEFAULT, DataType.FLOAT, min, max, minInclusive, maxInclusive);
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -366,9 +368,20 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   }
 
   // members (package private, to be also fast accessible by NumericRangeTermEnum)
-  final int precisionStep, valSize;
+  final int precisionStep;
+  final DataType dataType;
   final T min, max;
   final boolean minInclusive,maxInclusive;
+
+  // used to handle float/double infinity correcty
+  static final long LONG_NEGATIVE_INFINITY =
+    NumericUtils.doubleToSortableLong(Double.NEGATIVE_INFINITY);
+  static final long LONG_POSITIVE_INFINITY =
+    NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
+  static final int INT_NEGATIVE_INFINITY =
+    NumericUtils.floatToSortableInt(Float.NEGATIVE_INFINITY);
+  static final int INT_POSITIVE_INFINITY =
+    NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
 
   /**
    * Subclass of FilteredTermsEnum for enumerating all terms that match the
@@ -389,14 +402,17 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
     NumericRangeTermsEnum(final TermsEnum tenum) throws IOException {
       super(tenum);
-      switch (valSize) {
-        case 64: {
+      switch (dataType) {
+        case LONG:
+        case DOUBLE: {
           // lower
-          long minBound = Long.MIN_VALUE;
-          if (min instanceof Long) {
-            minBound = min.longValue();
-          } else if (min instanceof Double) {
-            minBound = NumericUtils.doubleToSortableLong(min.doubleValue());
+          long minBound;
+          if (dataType == DataType.LONG) {
+            minBound = (min == null) ? Long.MIN_VALUE : min.longValue();
+          } else {
+            assert dataType == DataType.DOUBLE;
+            minBound = (min == null) ? LONG_NEGATIVE_INFINITY
+              : NumericUtils.doubleToSortableLong(min.doubleValue());
           }
           if (!minInclusive && min != null) {
             if (minBound == Long.MAX_VALUE) break;
@@ -404,11 +420,13 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
           }
           
           // upper
-          long maxBound = Long.MAX_VALUE;
-          if (max instanceof Long) {
-            maxBound = max.longValue();
-          } else if (max instanceof Double) {
-            maxBound = NumericUtils.doubleToSortableLong(max.doubleValue());
+          long maxBound;
+          if (dataType == DataType.LONG) {
+            maxBound = (max == null) ? Long.MAX_VALUE : max.longValue();
+          } else {
+            assert dataType == DataType.DOUBLE;
+            maxBound = (max == null) ? LONG_POSITIVE_INFINITY
+              : NumericUtils.doubleToSortableLong(max.doubleValue());
           }
           if (!maxInclusive && max != null) {
             if (maxBound == Long.MIN_VALUE) break;
@@ -425,13 +443,16 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
           break;
         }
           
-        case 32: {
+        case INT:
+        case FLOAT: {
           // lower
-          int minBound = Integer.MIN_VALUE;
-          if (min instanceof Integer) {
-            minBound = min.intValue();
-          } else if (min instanceof Float) {
-            minBound = NumericUtils.floatToSortableInt(min.floatValue());
+          int minBound;
+          if (dataType == DataType.INT) {
+            minBound = (min == null) ? Integer.MIN_VALUE : min.intValue();
+          } else {
+            assert dataType == DataType.FLOAT;
+            minBound = (min == null) ? INT_NEGATIVE_INFINITY
+              : NumericUtils.floatToSortableInt(min.floatValue());
           }
           if (!minInclusive && min != null) {
             if (minBound == Integer.MAX_VALUE) break;
@@ -439,11 +460,13 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
           }
           
           // upper
-          int maxBound = Integer.MAX_VALUE;
-          if (max instanceof Integer) {
-            maxBound = max.intValue();
-          } else if (max instanceof Float) {
-            maxBound = NumericUtils.floatToSortableInt(max.floatValue());
+          int maxBound;
+          if (dataType == DataType.INT) {
+            maxBound = (max == null) ? Integer.MAX_VALUE : max.intValue();
+          } else {
+            assert dataType == DataType.FLOAT;
+            maxBound = (max == null) ? INT_POSITIVE_INFINITY
+              : NumericUtils.floatToSortableInt(max.floatValue());
           }
           if (!maxInclusive && max != null) {
             if (maxBound == Integer.MIN_VALUE) break;
@@ -462,7 +485,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
           
         default:
           // should never happen
-          throw new IllegalArgumentException("valSize must be 32 or 64");
+          throw new IllegalArgumentException("Invalid numeric DataType");
       }
 
       termComp = getComparator();

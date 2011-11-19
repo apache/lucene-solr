@@ -22,7 +22,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
@@ -32,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.TestNumericUtils; // NaN arrays
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -271,7 +271,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   @Test
   public void testInfiniteValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+      newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));
     doc.add(new NumericField("int").setIntValue(Integer.MIN_VALUE));
@@ -286,6 +287,13 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     doc.add(new NumericField("float").setFloatValue(0.0f));
     doc.add(new NumericField("int").setIntValue(0));
     writer.addDocument(doc);
+    
+    for (float f : TestNumericUtils.FLOAT_NANs) {
+      doc = new Document();
+      doc.add(new NumericField("float").setFloatValue(f));
+      writer.addDocument(doc);
+    }
+    
     writer.close();
     
     IndexReader r = IndexReader.open(dir);
@@ -314,6 +322,18 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     q=NumericRangeQuery.newFloatRange("float", null, null, false, false);
     topDocs = s.search(q, 10);
     assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newFloatRange("float", Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newFloatRange("float", Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 1,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newFloatRange("float", Float.NaN, Float.NaN, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", TestNumericUtils.FLOAT_NANs.length,  topDocs.scoreDocs.length );
 
     s.close();
     r.close();

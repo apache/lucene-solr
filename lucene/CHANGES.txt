@@ -729,6 +729,13 @@ Bug fixes
 * LUCENE-3548: Fix CharsRef#append to extend length of the existing char[]
   and preserve existing chars. (Simon Willnauer) 
 
+* LUCENE-3582: Normalize NaN values in NumericUtils.floatToSortableInt() /
+  NumericUtils.doubleToSortableLong(), so this is consistent with stored
+  fields. Also fix NumericRangeQuery to not falsely hit NaNs on half-open
+  ranges (one bound is null). Because of normalization, NumericRangeQuery
+  can now be used to hit NaN values by creating a query with
+  upper == lower == NaN (inclusive).  (Dawid Weiss, Uwe Schindler)
+
 API Changes
 
 * LUCENE-3454: Rename IndexWriter.optimize to forceMerge to discourage
