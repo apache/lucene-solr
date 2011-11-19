@@ -25,7 +25,7 @@ import java.io.*;
 public class FastOutputStream extends OutputStream implements DataOutput {
   private final OutputStream out;
   private final byte[] buf;
-  private long written;  // how many bytes written
+  private long written;  // how many bytes written to the underlying stream
   private int pos;
 
   public FastOutputStream(OutputStream w) {
@@ -191,4 +191,17 @@ public class FastOutputStream extends OutputStream implements DataOutput {
   public long size() {
     return written + pos;
   }
+
+  /** Returns the number of bytes actually written to the underlying OutputStream, not including
+   * anything currently buffered by this class itself.
+   */
+  public long written() {
+    return written;
+  }
+
+  /** Resets the count returned by written() */
+  public void setWritten(long written) {
+    this.written = written;
+  }
+
 }

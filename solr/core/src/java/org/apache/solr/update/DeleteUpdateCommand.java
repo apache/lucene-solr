@@ -55,6 +55,9 @@ public class DeleteUpdateCommand extends UpdateCommand {
     return indexedId;
   }
 
+  public void setIndexedId(BytesRef indexedId) {
+    this.indexedId = indexedId;
+  }
 
   @Override
   public String toString() {

@@ -20,9 +20,13 @@ package org.apache.solr.update;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** @lucene.experimental */
 public abstract class UpdateLog implements PluginInfoInitialized {
+  public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
+
   public enum SyncLevel { NONE, FLUSH, FSYNC }
 
   public static final int ADD = 0x01;

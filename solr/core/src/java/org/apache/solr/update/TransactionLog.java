@@ -23,12 +23,14 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.zookeeper.Transaction;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -57,14 +59,15 @@ public class TransactionLog {
   RandomAccessFile raf;
   FileChannel channel;
   OutputStream os;
-  FastOutputStream fos;
-  InputStream is;
+  FastOutputStream fos;    // all accesses to this stream should be synchronized on "this"
 
   volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
   List<String> globalStringList = new ArrayList<String>();
+
+  CountDownLatch latch;  // if set, used to signal that we just added another log record
 
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
@@ -130,21 +133,51 @@ public class TransactionLog {
   }
 
   TransactionLog(File tlogFile, Collection<String> globalStrings) {
+    this(tlogFile, globalStrings, false);
+  }
+
+  TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
     try {
       this.tlogFile = tlogFile;
       raf = new RandomAccessFile(this.tlogFile, "rw");
       long start = raf.length();
-      assert start==0;
-      if (start > 0) {
-        raf.setLength(0);
-      }
-      // System.out.println("###start= "+start);
       channel = raf.getChannel();
       os = Channels.newOutputStream(channel);
       fos = FastOutputStream.wrap(os);
-      addGlobalStrings(globalStrings);
+
+      if (openExisting) {
+        if (start > 0) {
+          readHeader(null);
+          fos.setWritten(start);    // reflect that we aren't starting at the beginning
+        } else {
+          addGlobalStrings(globalStrings);
+        }
+      } else {
+        assert start==0;
+        if (start > 0) {
+          raf.setLength(0);
+        }
+        addGlobalStrings(globalStrings);
+      }
+
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  private void readHeader(FastInputStream fis) throws IOException {
+    // read existing header
+    fis = fis != null ? fis : new ChannelFastInputStream(channel, 0);
+    LogCodec codec = new LogCodec();
+    Map header = (Map)codec.unmarshal(fis);
+    // needed to read other records
+
+    synchronized (this) {
+      globalStringList = (List<String>)header.get("strings");
+      globalStringMap = new HashMap<String, Integer>(globalStringList.size());
+      for (int i=0; i<globalStringList.size(); i++) {
+        globalStringMap.put( globalStringList.get(i), i+1);
+      }
     }
   }
 
@@ -205,7 +238,7 @@ public class TransactionLog {
         // fos.flushBuffer();  // flush later
 
 
-
+        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -229,6 +262,7 @@ public class TransactionLog {
         BytesRef br = cmd.getIndexedId();
         codec.writeByteArray(br.bytes, br.offset, br.length);
         // fos.flushBuffer();  // flush later
+        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -251,6 +285,7 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(cmd.query);
         // fos.flushBuffer();  // flush later
+        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -274,10 +309,17 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are the last in the file
         // fos.flushBuffer();  // flush later
+        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+    }
+  }
+
+  private void endWrite() {
+    if (latch != null) {
+      latch.countDown();
     }
   }
 
@@ -306,7 +348,10 @@ public class TransactionLog {
   }
 
   public void incref() {
-    refcount.incrementAndGet();
+    int result = refcount.incrementAndGet();
+    if (result <= 1) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "incref on a closed log: " + this);
+    }
   }
 
   public void decref() {
@@ -350,11 +395,106 @@ public class TransactionLog {
     return tlogFile.toString();
   }
 
+  /** Returns a reader that can be used while a log is still in use.
+   * Currently only *one* log may be outstanding, and that log may only
+   * be used from a single thread. */
+  public LogReader getReader() {
+    return new LogReader();
+  }
+
+
+
+  public class LogReader {
+    ChannelFastInputStream fis = new ChannelFastInputStream(channel, 0);
+    private LogCodec codec = new LogCodec();
+
+    public LogReader() {
+      incref();
+    }
+
+    /** Returns the next object from the log.  If this log is being concurrently written
+     * to, and you wish to block until a new record is available, then pass in a latch
+     * to use.
+     *
+     * @param latch The latch to use to block, waiting for the next log record
+     * @return The log record, or null if EOF
+     * @throws IOException
+     */
+    public Object next(CountDownLatch latch) throws IOException, InterruptedException {
+      long pos = fis.position();
+
+      synchronized (TransactionLog.this) {
+        if (pos >= fos.size()) {
+          // we caught up.
+          TransactionLog.this.latch = latch;
+
+
+          // TODO: how to prevent a race between catching up and
+          // switching to "active"... need higher level coordination?
+          // Probably since updating this log is normally done after
+          // updating the index.  Perhaps more than one phase...
+          // 1) next() returns null
+          // 2) replayer sets flag to "almost active" and updates start going to the index
+          // 3) replayer continues calling next() to get any records that were added inbetween.
+          // This *still* doesn't work since a thread that skipped adding to the index could
+          // be delayed, next() could return null, and *then* the thread would write to the
+          // log.
+          // TODO: may need to utilize a read-write lock around all the updates (this
+          // may be needed for deleteByQuery anyway)
+          return null;
+        }
+
+        fos.flushBuffer();
+      }
+
+      if (TransactionLog.this.latch != null) {
+        TransactionLog.this.latch.await();
+
+        synchronized (TransactionLog.this) {
+          TransactionLog.this.latch = null;
+          if (fis.position() >= fos.size()) {
+            // still EOF... someone else must have tripped the latch.
+            return null;
+          }
+          fos.flushBuffer();
+        }
+
+      }
+
+      if (pos == 0) {
+        readHeader(fis);
+
+        // shouldn't currently happen - header and first record are currently written at the same time
+        synchronized (TransactionLog.this) {
+          if (fis.position() >= fos.size()) {
+            return null;
+          }
+        }
+      }
+
+      return codec.readVal(fis);
+    }
+
+    public void close() {
+      decref();
+    }
+
+    @Override
+    public String toString() {
+      synchronized (TransactionLog.this) {
+        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+      }
+    }
+
+  }
+
 }
+
+
 
 class ChannelFastInputStream extends FastInputStream {
   FileChannel ch;
-  long chPosition;
+  private long chPosition;
 
   public ChannelFastInputStream(FileChannel ch, long chPosition) {
     super(null);
@@ -377,5 +517,4 @@ class ChannelFastInputStream extends FastInputStream {
     ch.close();
   }
 }
-
 

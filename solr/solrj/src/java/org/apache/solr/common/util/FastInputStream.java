@@ -27,6 +27,7 @@ public class FastInputStream extends InputStream implements DataInput {
   private final byte[] buf;
   private int pos;
   private int end;
+  private long readFromStream; // number of bytes read from the underlying inputstream
 
   public FastInputStream(InputStream in) {
   // use default BUFSIZE of BufferedOutputStream so if we wrap that
@@ -73,7 +74,13 @@ public class FastInputStream extends InputStream implements DataInput {
   }
 
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-    return in.read(target, offset, len);
+    int ret =  in.read(target, offset, len);
+    if (ret > 0) readFromStream += ret;
+    return ret;
+  }
+
+  public long position() {
+    return readFromStream - (end - pos);
   }
 
   public void refill() throws IOException {

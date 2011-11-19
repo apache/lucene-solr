@@ -446,21 +446,16 @@ public class FSUpdateLog extends UpdateLog {
   @Override
   public boolean recoverFromLog() {
     if (tlogFiles.length == 0) return false;
-    TransactionLogReader tlogReader = null;
+    TransactionLog oldTlog = null;     // todo - change name
     try {
-      tlogReader = new TransactionLogReader( new File(tlogDir, tlogFiles[tlogFiles.length-1]) );
-      boolean completed = tlogReader.completed();
-      if (completed) {
-        return true;
-      }
-
-      recoveryExecutor.execute(new LogReplayer(tlogReader));
+      oldTlog = new TransactionLog( new File(tlogDir, tlogFiles[tlogFiles.length-1]), null, true );
+      recoveryExecutor.execute(new LogReplayer(oldTlog));
       return true;
 
     } catch (Exception ex) {
       // an error during recovery
-      uhandler.log.warn("Exception during recovery", ex);
-      if (tlogReader != null) tlogReader.close();
+      log.warn("Exception during recovery", ex);
+      if (oldTlog != null) oldTlog.decref();
     }
 
     return false;
@@ -486,22 +481,38 @@ public class FSUpdateLog extends UpdateLog {
     }
   }
 
+
+
   // TODO: do we let the log replayer run across core reloads?
   class LogReplayer implements Runnable {
-    TransactionLogReader tlogReader;
-    public LogReplayer(TransactionLogReader tlogReader) {
-      this.tlogReader = tlogReader;
+    TransactionLog tlog;
+    TransactionLog.LogReader tlogReader;
+
+
+    public LogReplayer(TransactionLog tlog) {
+      this.tlog = tlog;
     }
 
     @Override
     public void run() {
       uhandler.core.log.warn("Starting log replay " + tlogReader);
 
+      tlogReader = tlog.getReader();
+
       SolrParams params = new ModifiableSolrParams();
       long commitVersion = 0;
 
       for(;;) {
-        Object o = tlogReader.readNext();
+        Object o = null;
+
+        try {
+          o = tlogReader.next(null);
+        } catch (InterruptedException e) {
+          SolrException.log(log,e);
+        } catch (IOException e) {
+          SolrException.log(log,e);
+        }
+
         if (o == null) break;
 
         // create a new request each time since the update handler and core could change
@@ -529,11 +540,15 @@ public class FSUpdateLog extends UpdateLog {
               cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
               uhandler.addDoc(cmd);
               break;
+
+              // TODO: updates need to go through versioning code for handing reorders? (for replicas at least,
+              // depending on how they recover.
             }
             case UpdateLog.DELETE:
             {
               byte[] idBytes = (byte[]) entry.get(2);
               DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+              cmd.setIndexedId(new BytesRef(idBytes));
               cmd.setVersion(version);
               cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
               uhandler.delete(cmd);
@@ -542,13 +557,18 @@ public class FSUpdateLog extends UpdateLog {
 
             case UpdateLog.DELETE_BY_QUERY:
             {
-              // TODO
+              String query = (String)entry.get(2);
+              DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+              cmd.query = query;
+              cmd.setVersion(version);
+              cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
+              uhandler.delete(cmd);
               break;
             }
 
             case UpdateLog.COMMIT:
             {
-              // TODO
+              // currently we don't log commits
               commitVersion = version;
               break;
             }
@@ -559,15 +579,16 @@ public class FSUpdateLog extends UpdateLog {
         } catch (IOException ex) {
 
         } catch (ClassCastException cl) {
-          uhandler.log.warn("Corrupt log", cl);
+          log.warn("Corrupt log", cl);
           // would be caused by a corrupt transaction log
         } catch (Exception ex) {
-          uhandler.log.warn("Exception replaying log", ex);
+          log.warn("Exception replaying log", ex);
 
           // something wrong with the request?
         }
       }
       tlogReader.close();
+      tlog.decref();
 
       SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
@@ -578,15 +599,13 @@ public class FSUpdateLog extends UpdateLog {
       try {
         uhandler.commit(cmd);
       } catch (IOException ex) {
-        uhandler.log.error("Replay exception: final commit.", ex);
+        log.error("Replay exception: final commit.", ex);
       }
-      tlogReader.delete();
 
-      uhandler.core.log.warn("Ending log replay " + tlogReader);
+      log.warn("Ending log replay " + tlogReader);
 
     }
   }
-
 
   static ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
       1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
