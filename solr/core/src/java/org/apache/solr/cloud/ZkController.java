@@ -21,12 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -418,7 +416,7 @@ public final class ZkController {
     
     byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, null);
-    log.info("Attempting to update /" + ZkStateReader.CLUSTER_STATE + " version "
+    log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
         + null);
     CloudState state = CloudState.load(data);
     
@@ -443,7 +441,6 @@ public final class ZkController {
       }
     }
     
-    // TODO: we should check if its recovery before this, so that we avoid getting a new shardId
     String shardId = cloudDesc.getShardId();
     if (shardId == null && !recover) {
       shardId = assignShard.assignShard(collection, numShards);
@@ -483,7 +480,7 @@ public final class ZkController {
 		boolean persisted = false;
 		Stat stat = zkClient.exists(ZkStateReader.CLUSTER_STATE, null);
 		if (stat == null) {
-			log.info("/" + ZkStateReader.CLUSTER_STATE + " does not exist, attempting to create");
+			log.info(ZkStateReader.CLUSTER_STATE + " does not exist, attempting to create");
 			try {
 				CloudState state = new CloudState();
 
@@ -493,7 +490,7 @@ public final class ZkController {
 						CloudState.store(state), Ids.OPEN_ACL_UNSAFE,
 						CreateMode.PERSISTENT);
 				persisted = true;
-				log.info("/" + ZkStateReader.CLUSTER_STATE);
+				log.info(ZkStateReader.CLUSTER_STATE);
 			} catch (KeeperException e) {
 				if (e.code() != Code.NODEEXISTS) {
 					// If this node exists, no big deal
@@ -511,7 +508,7 @@ public final class ZkController {
 
 				byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
 						null, stat);
-				log.info("Attempting to update /" + ZkStateReader.CLUSTER_STATE + " version "
+				log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
 						+ stat.getVersion());
 				CloudState state = CloudState.load(data);
 				// our second state read - should only need one (see register)
@@ -525,6 +522,7 @@ public final class ZkController {
 							CloudState.store(state), stat.getVersion());
 					updated = true;
 					if (recover) {
+					  // nocommit: joke code
 					  System.out.println("do recovery");
 					  // start buffer updates to tran log
 					  // and do recovery - either replay via realtime get 
@@ -563,7 +561,7 @@ public final class ZkController {
 					if (e.code() != Code.BADVERSION) {
 						throw e;
 					}
-					log.info("Failed to update /" + ZkStateReader.CLUSTER_STATE + ", retrying");
+					log.info("Failed to update " + ZkStateReader.CLUSTER_STATE + ", retrying");
 				}
 
 			}
