@@ -254,7 +254,9 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>double</code>
    * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a>.
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * by setting the min or max value to <code>null</code>.
+   * {@link Double#NaN} will never match a half-open range, to hit {@code NaN} use a query
+   * with {@code min == max == Double.NaN}.  By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
   public static NumericRangeQuery<Double> newDoubleRange(final String field, final int precisionStep,
@@ -267,7 +269,9 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>double</code>
    * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * by setting the min or max value to <code>null</code>.
+   * {@link Double#NaN} will never match a half-open range, to hit {@code NaN} use a query
+   * with {@code min == max == Double.NaN}.  By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
   public static NumericRangeQuery<Double> newDoubleRange(final String field,
@@ -280,7 +284,9 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>float</code>
    * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a>.
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * by setting the min or max value to <code>null</code>.
+   * {@link Float#NaN} will never match a half-open range, to hit {@code NaN} use a query
+   * with {@code min == max == Float.NaN}.  By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
   public static NumericRangeQuery<Float> newFloatRange(final String field, final int precisionStep,
@@ -293,7 +299,9 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>float</code>
    * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * by setting the min or max value to <code>null</code>.
+   * {@link Float#NaN} will never match a half-open range, to hit {@code NaN} use a query
+   * with {@code min == max == Float.NaN}.  By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
   public static NumericRangeQuery<Float> newFloatRange(final String field,
