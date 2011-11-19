@@ -19,9 +19,18 @@ package org.apache.solr.common.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
@@ -432,6 +441,11 @@ public class SolrZkClient {
       try {
         String dataString = new String(data, "UTF-8");
         if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
+          if (path.endsWith(".xml")) {
+            // this is the cluster state in xml format - lets pretty print
+            dataString = prettyPrint(dataString);
+          }
+          
           string.append(dent + "DATA:\n" + dent + "    "
               + dataString.replaceAll("\n", "\n" + dent + "    ") + NEWL);
         } else {
@@ -463,6 +477,26 @@ public class SolrZkClient {
     StringBuilder sb = new StringBuilder();
     printLayout("/", 0, sb);
     System.out.println(sb.toString());
+  }
+  
+  public static String prettyPrint(String input, int indent) {
+    try {
+      Source xmlInput = new StreamSource(new StringReader(input));
+      StringWriter stringWriter = new StringWriter();
+      StreamResult xmlOutput = new StreamResult(stringWriter);
+      TransformerFactory transformerFactory = TransformerFactory.newInstance();
+      transformerFactory.setAttribute("indent-number", indent);
+      Transformer transformer = transformerFactory.newTransformer();
+      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+      transformer.transform(xmlInput, xmlOutput);
+      return xmlOutput.getWriter().toString();
+    } catch (Exception e) {
+      throw new RuntimeException("Problem pretty printing XML", e);
+    }
+  }
+  
+  private static String prettyPrint(String input) {
+    return prettyPrint(input, 2);
   }
 
   /**
