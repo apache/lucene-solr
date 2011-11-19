@@ -30,13 +30,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher; // javadocs
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.SearcherWarmer;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -63,6 +62,25 @@ public class NRTManager implements Closeable {
   private final List<WaitingListener> waitingListeners = new CopyOnWriteArrayList<WaitingListener>();
   private final ReentrantLock reopenLock = new ReentrantLock();
   private final Condition newGeneration = reopenLock.newCondition();
+
+  /**
+   * Create new NRTManager.
+   * 
+   *  @param writer IndexWriter to open near-real-time
+   *         readers
+   *  @param warmer optional {@link SearcherWarmer}.  Pass
+   *         null if you don't require the searcher to warmed
+   *         before going live.  If this is non-null then a
+   *         merged segment warmer is installed on the
+   *         provided IndexWriter's config.
+   *
+   *  <p><b>NOTE</b>: the provided {@link SearcherWarmer} is
+   *  not invoked for the initial searcher; you should
+   *  warm it yourself if necessary.
+   */
+  public NRTManager(IndexWriter writer, SearcherWarmer warmer) throws IOException {
+    this(writer, null, warmer, true);
+  }
 
   /**
    * Create new NRTManager.
@@ -156,8 +174,26 @@ public class NRTManager implements Closeable {
     return indexingGen.get();
   }
 
+  public long deleteDocuments(Term... terms) throws IOException {
+    writer.deleteDocuments(terms);
+    // Return gen as of when indexing finished:
+    return indexingGen.get();
+  }
+
   public long deleteDocuments(Query q) throws IOException {
     writer.deleteDocuments(q);
+    // Return gen as of when indexing finished:
+    return indexingGen.get();
+  }
+
+  public long deleteDocuments(Query... queries) throws IOException {
+    writer.deleteDocuments(queries);
+    // Return gen as of when indexing finished:
+    return indexingGen.get();
+  }
+
+  public long deleteAll() throws IOException {
+    writer.deleteAll();
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
@@ -182,6 +218,18 @@ public class NRTManager implements Closeable {
 
   public long addDocuments(Collection<Document> docs) throws IOException {
     writer.addDocuments(docs);
+    // Return gen as of when indexing finished:
+    return indexingGen.get();
+  }
+
+  public long addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
+    writer.addIndexes(dirs);
+    // Return gen as of when indexing finished:
+    return indexingGen.get();
+  }
+
+  public long addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
+    writer.addIndexes(readers);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
