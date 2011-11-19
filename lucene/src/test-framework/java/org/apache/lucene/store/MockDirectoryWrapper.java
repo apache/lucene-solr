@@ -160,8 +160,7 @@ public class MockDirectoryWrapper extends Directory {
   @Override
   public synchronized void sync(Collection<String> names) throws IOException {
     maybeYield();
-    for (String name : names)
-      maybeThrowDeterministicException();
+    maybeThrowDeterministicException();
     if (crashed)
       throw new IOException("cannot sync after crash");
     unSyncedFiles.removeAll(names);
@@ -356,9 +355,18 @@ public class MockDirectoryWrapper extends Directory {
     return new HashSet<String>(openFilesDeleted);
   }
 
+  private boolean failOnCreateOutput = true;
+
+  public void setFailOnCreateOutput(boolean v) {
+    failOnCreateOutput = v;
+  }
+
   @Override
   public synchronized IndexOutput createOutput(String name) throws IOException {
     maybeYield();
+    if (failOnCreateOutput) {
+      maybeThrowDeterministicException();
+    }
     if (crashed)
       throw new IOException("cannot createOutput after crash");
     init();
@@ -420,9 +428,18 @@ public class MockDirectoryWrapper extends Directory {
     openFileHandles.put(c, new RuntimeException("unclosed Index" + (input ? "Input" : "Output") + ": " + name));
   }
   
+  private boolean failOnOpenInput = true;
+
+  public void setFailOnOpenInput(boolean v) {
+    failOnOpenInput = v;
+  }
+
   @Override
   public synchronized IndexInput openInput(String name) throws IOException {
     maybeYield();
+    if (failOnOpenInput) {
+      maybeThrowDeterministicException();
+    }
     if (!delegate.fileExists(name))
       throw new FileNotFoundException(name);
 

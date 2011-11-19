@@ -839,6 +839,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // LUCENE-1214
   public void testExceptionsDuringCommit() throws Throwable {
     MockDirectoryWrapper dir = newDirectory();
+    dir.setFailOnCreateOutput(false);
     FailOnlyInCommit failure = new FailOnlyInCommit();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
