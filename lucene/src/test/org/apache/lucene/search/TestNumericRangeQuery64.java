@@ -22,12 +22,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.TestNumericUtils; // NaN arrays
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
 
@@ -287,8 +287,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   @Test
   public void testInfiniteValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+      newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
     doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));
@@ -303,6 +303,13 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     doc.add(new NumericField("double").setDoubleValue(0.0));
     doc.add(new NumericField("long").setLongValue(0L));
     writer.addDocument(doc);
+    
+    for (double d : TestNumericUtils.DOUBLE_NANs) {
+      doc = new Document();
+      doc.add(new NumericField("double").setDoubleValue(d));
+      writer.addDocument(doc);
+    }
+    
     writer.close();
     
     IndexReader r = IndexReader.open(dir);
@@ -331,6 +338,18 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     q=NumericRangeQuery.newDoubleRange("double", null, null, false, false);
     topDocs = s.search(q, 10);
     assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newDoubleRange("double", Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newDoubleRange("double", Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 1,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newDoubleRange("double", Double.NaN, Double.NaN, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", TestNumericUtils.DOUBLE_NANs.length,  topDocs.scoreDocs.length );
 
     s.close();
     r.close();
