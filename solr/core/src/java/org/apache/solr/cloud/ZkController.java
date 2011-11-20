@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -419,10 +420,57 @@ public final class ZkController {
     log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
         + null);
     CloudState state = CloudState.load(data);
+    String shardZkNodeName = getNodeName() + "_" + coreName;
     
+    boolean recover = getIsRecover(cloudDesc, state, shardZkNodeName);
+    
+    String shardId = cloudDesc.getShardId();
+    if (shardId == null && !recover) {
+      shardId = assignShard.assignShard(collection, numShards);
+      cloudDesc.setShardId(shardId);
+    }
+    
+    if (log.isInfoEnabled()) {
+        log.info("Register shard - core:" + coreName + " address:"
+            + shardUrl);
+      }
+    
+    leaderElector.setupForSlice(shardId, collection);
+    
+    ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName);
+    
+    // leader election
+    doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
+    
+    String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
+    
+    System.out.println("leader url: "+ leaderUrl);
+    System.out.println("shard url: "+ shardUrl);
+    boolean iamleader = false;
+    if (leaderUrl.equals(shardUrl)) {
+      iamleader = true;
+    } else {
+      // we are not the leader, so catch up with recovery
+      recover = true;
+    }
+    
+    if (recover) {
+      if (desc.getCoreContainer() != null) {
+        doRecovery(collection, desc, cloudDesc, iamleader);
+      } else {
+        log.warn("For some odd reason a SolrCore is trying to recover but does not have access to a CoreContainer - skipping recovery.");
+      }
+    }
+
+    return shardId;
+  }
+
+
+  private boolean getIsRecover(final CloudDescriptor cloudDesc,
+      CloudState state, String shardZkNodeName) {
     boolean recover = false;
     Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
-    String shardZkNodeName = getNodeName() + "_" + coreName;
+
     if (slices != null) {
       Map<String,String> nodes = new HashMap<String,String>();
 
@@ -440,31 +488,12 @@ public final class ZkController {
         recover = true;
       }
     }
-    
-    String shardId = cloudDesc.getShardId();
-    if (shardId == null && !recover) {
-      shardId = assignShard.assignShard(collection, numShards);
-      cloudDesc.setShardId(shardId);
-    }
-    
-
-    if (log.isInfoEnabled()) {
-        log.info("Register shard - core:" + coreName + " address:"
-            + shardUrl);
-      }
-    
-    leaderElector.setupForSlice(shardId, collection);
-    
-    ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, recover);
-    
-    // leader election
-    doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
-    return shardId;
+    return recover;
   }
 
 
   ZkNodeProps addToZk(String collection, final CoreDescriptor desc, final CloudDescriptor cloudDesc, String shardUrl,
-      final String shardZkNodeName, boolean recover)
+      final String shardZkNodeName)
       throws Exception {
     ZkNodeProps props = new ZkNodeProps();
     props.put(ZkStateReader.URL_PROP, shardUrl);
@@ -521,42 +550,6 @@ public final class ZkController {
 					zkClient.setData(ZkStateReader.CLUSTER_STATE,
 							CloudState.store(state), stat.getVersion());
 					updated = true;
-					if (recover) {
-					  // nocommit: joke code
-					  System.out.println("do recovery");
-					  // start buffer updates to tran log
-					  // and do recovery - either replay via realtime get 
-					  // or full index replication
-            System.out.println("RECOVERY");
-            // seems we cannot do this here since we are not fully running - 
-            // we need to trigger a recovery that happens later
-            System.out.println("shard is:" + cloudDesc.getShardId());
-            String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
-            System.out.println("leader url: "+ leaderUrl);
-            System.out.println("shard url: "+ shardUrl);
-            if (!leaderUrl.equals(shardUrl)) {
-              // if we are the leader, either we are trying to recover faster
-              // then our ephemeral timed out or we are the only node
-              
-              ModifiableSolrParams params = new ModifiableSolrParams();
-              params.set("command", "fetchindex");
-              params.set("force", true); // force replication regardless of
-                                         // versions
-              params.set("masterUrl", leaderUrl + "replication");
-              QueryRequest req = new QueryRequest(params);
-              req.setPath("/replication");
-              System.out.println("Make replication call to:" + leaderUrl);
-              System.out.println("params:" + params);
-              
-              // if we want to buffer updates while recovering, this
-              // will have to trigger later - http is not yet up
-              
-              // we need to use embedded cause http is not up yet anyhow
-              EmbeddedSolrServer server = new EmbeddedSolrServer(
-                  desc.getCoreContainer(), desc.getName());
-              server.request(req);
-            }
-					}
 				} catch (KeeperException e) {
 					if (e.code() != Code.BADVERSION) {
 						throw e;
@@ -567,6 +560,46 @@ public final class ZkController {
 			}
 		}
     return props;
+  }
+
+
+  private void doRecovery(String collection, final CoreDescriptor desc,
+      final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
+      SolrServerException, IOException {
+    // nocommit: joke code
+    System.out.println("do recovery");
+    // start buffer updates to tran log
+    // and do recovery - either replay via realtime get 
+    // or full index replication
+
+    // seems perhaps we cannot do this here since we are not fully running - 
+    // we need to trigger a recovery that happens later
+    System.out.println("shard is:" + cloudDesc.getShardId());
+    
+    String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
+    
+    if (!iamleader) {
+      // if we are the leader, either we are trying to recover faster
+      // then our ephemeral timed out or we are the only node
+      
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("command", "fetchindex");
+      params.set("force", true); // force replication regardless of
+                                 // versions
+      params.set("masterUrl", leaderUrl + "replication");
+      QueryRequest req = new QueryRequest(params);
+      req.setPath("/replication");
+      System.out.println("Make replication call to:" + leaderUrl);
+      System.out.println("params:" + params);
+      
+      // if we want to buffer updates while recovering, this
+      // will have to trigger later - http is not yet up
+      
+      // we need to use embedded cause http is not up yet anyhow
+      EmbeddedSolrServer server = new EmbeddedSolrServer(
+          desc.getCoreContainer(), desc.getName());
+      server.request(req);
+    }
   }
 
   private void doLeaderElectionProcess(String shardId,

@@ -20,10 +20,13 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -39,6 +42,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
 /**
@@ -66,10 +70,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   String invalidField="ignore_exception__invalid_field_not_in_schema";
   private static final int sliceCount = 3;
   
+  protected volatile CloudSolrServer cloudClient;
   
   protected Map<SolrServer,ZkNodeProps> clientToInfo = new HashMap<SolrServer,ZkNodeProps>();
   protected Map<String,List<SolrServer>> shardToClient = new HashMap<String,List<SolrServer>>();
   protected Map<String,List<JettySolrRunner>> shardToJetty = new HashMap<String,List<JettySolrRunner>>();
+  private AtomicInteger i = new AtomicInteger(0);
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -85,19 +91,44 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // TODO: for now, turn off stress because it uses regular clients, and we 
     // need the cloud client because we kill servers
     stress = 0;
+    
+    
+  }
+  
+  private void initCloudClient() {
+    // use the distributed solrj client
+    if (cloudClient == null) {
+      synchronized(this) {
+        try {
+          CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
+          server.setDefaultCollection(DEFAULT_COLLECTION);
+          cloudClient = server;
+        } catch (MalformedURLException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
   }
   
   @Override
-  protected void createServers(int numShards) throws Exception {
+  protected void createServers(int numServers) throws Exception {
     System.setProperty("collection", "control_collection");
     controlJetty = createJetty(testDir, testDir + "/control/data", "control_shard");
     System.clearProperty("collection");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
+    createJettys(numServers);
+  }
+
+  private void createJettys(int numJettys) throws Exception,
+      InterruptedException, TimeoutException, IOException, KeeperException,
+      URISyntaxException {
+    List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
+    List<SolrServer> clients = new ArrayList<SolrServer>();
     StringBuilder sb = new StringBuilder();
-    for (int i = 1; i <= numShards; i++) {
+    for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + i, null, "solrconfig-distrib-update.xml");
+      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + this.i.incrementAndGet(), null, "solrconfig-distrib-update.xml");
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);
@@ -168,10 +199,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       
     }
     
+    this.jettys.addAll(jettys);
+    this.clients.addAll(clients);
     // build the shard string
-    for (int i = 1; i <= numShards/2; i++) {
-      JettySolrRunner j = jettys.get(i);
-      JettySolrRunner j2 = jettys.get(i + (numShards/2 - 1));
+    for (int i = 1; i <= numJettys/2; i++) {
+      JettySolrRunner j = this.jettys.get(i);
+      JettySolrRunner j2 = this.jettys.get(i + (numJettys/2 - 1));
       if (sb.length() > 0) sb.append(',');
       sb.append("localhost:").append(j.getLocalPort()).append(context);
       sb.append("|localhost:").append(j2.getLocalPort()).append(context);
@@ -266,6 +299,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
    */
   @Override
   public void doTest() throws Exception {
+    initCloudClient();
+    
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
@@ -420,7 +455,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     // kill a shard
     JettySolrRunner deadShard = killShard("shard2", 0);
-    JettySolrRunner deadShard2 = killShard("shard3", 1);
+    //JettySolrRunner deadShard2 = killShard("shard3", 1);
     
     // ensure shard is dead
     try {
@@ -492,9 +527,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     deadShard.start(true);
     
-    List<SolrServer> shard2Clients = shardToClient.get("shard2");
-    System.out.println("shard2_1 port:" + ((CommonsHttpSolrServer)shard2Clients.get(0)).getBaseURL());
-    System.out.println("shard2_2 port:" + ((CommonsHttpSolrServer)shard2Clients.get(1)).getBaseURL());
+    List<SolrServer> s2c = shardToClient.get("shard2");
+    System.out.println("shard2_1 port:" + ((CommonsHttpSolrServer)s2c.get(0)).getBaseURL());
+    System.out.println("shard2_2 port:" + ((CommonsHttpSolrServer)s2c.get(1)).getBaseURL());
     
     // wait a bit for replication
     Thread.sleep(5000);
@@ -502,8 +537,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     // if we properly recovered, we should now have the couple missing docs that
     // came in while shard was down
-    assertEquals(shard2Clients.get(0).query(new SolrQuery("*:*")).getResults()
-        .getNumFound(), shard2Clients.get(1).query(new SolrQuery("*:*"))
+    assertEquals(s2c.get(0).query(new SolrQuery("*:*")).getResults()
+        .getNumFound(), s2c.get(1).query(new SolrQuery("*:*"))
         .getResults().getNumFound());
     
     // kill the other shard3 replica
@@ -512,10 +547,22 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // should fail
     //query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
     
-    // we can't do this here - we have killed a shard
-    //assertDocCounts();
-    
     query("q", "*:*", "sort", "n_tl1 desc");
+    
+    // test adding another replica to a shard - it should do a recovery/replication to pick up the index from the leader
+    createJettys(1);
+    
+    // new server should be part of first shard
+    // how man docs are on the new shard?
+    for (SolrServer client : shardToClient.get("shard1")) {
+      System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+    // wait a bit for replication
+    Thread.sleep(5000);
+    // assert the new server has the same number of docs as another server in that shard
+    assertEquals(shardToClient.get("shard1").get(0).query(new SolrQuery("*:*")).getResults().getNumFound(), shardToClient.get("shard1").get(2).query(new SolrQuery("*:*")).getResults().getNumFound());
+    
+    assertDocCounts();
     
     // Thread.sleep(10000000000L);
     if (DEBUG) {
@@ -567,31 +614,18 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       System.out.println("docs:" + count + "\n\n");
       clientCount += count;
     }
-    assertEquals("Doc Counts do not add up", controlCount, clientCount / (shardCount / sliceCount));
+    SolrQuery query = new SolrQuery("*:*");
+    query.add("distrib", "true");
+    assertEquals("Doc Counts do not add up", controlCount, cloudClient.query(query).getResults().getNumFound());
   }
 
-  volatile CloudSolrServer solrj;
-
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
-
-    // use the distributed solrj client
-    if (solrj == null) {
-      synchronized(this) {
-        try {
-          CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
-          server.setDefaultCollection(DEFAULT_COLLECTION);
-          solrj = server;
-        } catch (MalformedURLException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }
-
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {  
+    
     if (r.nextBoolean())
       params.set("collection",DEFAULT_COLLECTION);
 
-    QueryResponse rsp = solrj.query(params);
+    QueryResponse rsp = cloudClient.query(params);
     return rsp;
   }
   

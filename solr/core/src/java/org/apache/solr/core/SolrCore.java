@@ -561,7 +561,7 @@ public final class SolrCore implements SolrInfoMBean {
     if (updateHandler == null) {
       initDirectoryFactory();
     } else {
-      directoryFactory = updateHandler.getIndexWriterProvider().getDirectoryFactory();
+      directoryFactory = updateHandler.getSolrCoreState().getDirectoryFactory();
     }
     
     initIndex();

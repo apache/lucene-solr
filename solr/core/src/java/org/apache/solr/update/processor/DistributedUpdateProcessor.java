@@ -247,10 +247,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     System.out.println("LeaderParam:"
         + req.getParams().get(SEEN_LEADER));
-
-
     System.out.println("leader? " + isLeader);
-
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -264,8 +261,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } else {
       // TODO: check for the version in the request params (this will be for user provided versions and optimistic concurrency only)
     }
-
-
 
     VersionBucket bucket = vinfo.bucket(hash);
     synchronized (bucket) {
@@ -285,9 +280,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           cmd.setVersion(version);
           cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
           bucket.updateHighest(version);
-          System.out.println("add version field to doc");
+          System.out.println("add version field to doc:" + version);
         } else {
           // The leader forwarded us this update.
+          System.out.println("got version from leader:" + versionOnUpdate);
           cmd.setVersion(versionOnUpdate);
 
           // if we aren't the leader, then we need to check that updates were not re-ordered

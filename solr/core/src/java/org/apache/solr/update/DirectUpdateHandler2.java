@@ -559,7 +559,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     return "DirectUpdateHandler2" + getStatistics();
   }
   
-  public SolrCoreState getIndexWriterProvider() {
+  public SolrCoreState getSolrCoreState() {
     return solrCoreState;
   }
 

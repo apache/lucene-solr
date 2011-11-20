@@ -172,12 +172,16 @@ public class SnapPuller {
 
   /**
    * Gets the latest commit version and generation from the master
+   * @param force 
    */
   @SuppressWarnings("unchecked")
-  NamedList getLatestVersion() throws IOException {
+  NamedList getLatestVersion(boolean force) throws IOException {
     PostMethod post = new PostMethod(masterUrl);
     post.addParameter(COMMAND, CMD_INDEX_VERSION);
     post.addParameter("wt", "javabin");
+    if (force) {
+      post.addParameter(ReplicationHandler.FORCE, "true");
+    }
     return getNamedListResponse(post);
   }
 
@@ -249,7 +253,7 @@ public class SnapPuller {
       //get the current 'replicateable' index version in the master
       NamedList response = null;
       try {
-        response = getLatestVersion();
+        response = getLatestVersion(force);
       } catch (Exception e) {
         LOG.error("Master at: " + masterUrl + " is not available. Index fetch failed. Exception: " + e.getMessage());
         return false;
@@ -269,7 +273,7 @@ public class SnapPuller {
         if (searcherRefCounted != null)
           searcherRefCounted.decref();
       }
-      if (commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
+      if (!force && commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
         //master and slave are alsready in sync just return
         LOG.info("Slave in sync with master.");
         return false;
@@ -324,7 +328,7 @@ public class SnapPuller {
           }
           if (successfulInstall) {
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
-            doCommit();
+            doCommit(isFullCopyNeeded);
           }
         }
         replicationStartTime = 0;
@@ -469,7 +473,7 @@ public class SnapPuller {
     return sb;
   }
 
-  private void doCommit() throws IOException {
+  private void doCommit(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     try {
@@ -478,7 +482,7 @@ public class SnapPuller {
       solrCore.getUpdateHandler().newIndexWriter();
       solrCore.getSearcher(true, false, null);
       
-      replicationHandler.refreshCommitpoint();
+      replicationHandler.refreshCommitpoint(isFullCopyNeeded);
     } finally {
       req.close();
     }

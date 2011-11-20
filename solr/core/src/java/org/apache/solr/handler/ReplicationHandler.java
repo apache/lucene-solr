@@ -81,6 +81,8 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
+  static final String FORCE = "force";
+  
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
 
@@ -118,6 +120,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
     final SolrParams solrParams = req.getParams();
+    boolean force = solrParams.getBool(FORCE, false);
     String command = solrParams.get(COMMAND);
     if (command == null) {
       rsp.add(STATUS, OK_STATUS);
@@ -131,8 +134,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       
       // this is only set after commit or optimize or something - if it's not set,
       // just use the most recent
-      if (commitPoint == null) {
-        commitPoint = req.getSearcher().getIndexReader().getIndexCommit();
+      if (commitPoint == null || force) {
+        commitPoint = core.getDeletionPolicy().getLatestCommit();
+        indexCommitPoint = commitPoint;
       }
       
       if (commitPoint != null && replicationEnabled.get()) {
@@ -143,6 +147,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         // the CMD_GET_FILE_LIST command.
         //
         core.getDeletionPolicy().setReserveDuration(commitPoint.getVersion(), reserveCommitDuration);
+        System.out.println("return version: " + commitPoint.getVersion());
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
@@ -288,7 +293,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
       }
-      tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool("force", false));
+      tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool(FORCE, false));
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {
@@ -353,7 +358,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Collection<String> files = new HashSet<String>(commit.getFileNames());
       for (String fileName : files) {
         if(fileName.endsWith(".lock")) continue;
-        File file = new File(core.getIndexDir(), fileName);
+        // use new dir in case we are replicating from a full index replication
+        // and have not yet reloaded the core
+        File file = new File(core.getNewIndexDir(), fileName);
         Map<String, Object> fileMeta = getFileInfo(file);
         result.add(fileMeta);
       }
@@ -763,9 +770,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
 
-  void refreshCommitpoint() {
+  void refreshCommitpoint(boolean force) {
     IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
+    System.out.println("refresh commit point to:" + commitPoint.getVersion());
+    if(force || replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
       indexCommitPoint = commitPoint;
     }
   }
@@ -1022,7 +1030,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           file = new File(core.getResourceLoader().getConfigDir(), cfileName);
         } else {
           //else read from the indexdirectory
-          file = new File(core.getIndexDir(), fileName);
+          // use new dir in case we are replicating from a full index replication
+          // and have not yet reloaded the core
+          file = new File(core.getNewIndexDir(), fileName);
         }
         if (file.exists() && file.canRead()) {
           inputStream = new FileInputStream(file);
