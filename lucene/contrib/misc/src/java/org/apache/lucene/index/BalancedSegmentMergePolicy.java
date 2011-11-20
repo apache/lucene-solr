@@ -57,7 +57,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   
   @Override
   protected long size(SegmentInfo info) throws IOException {
-    long byteSize = info.sizeInBytes(true);
+    long byteSize = info.sizeInBytes();
     float delRatio = (info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.docCount));
     return (info.docCount <= 0 ?  byteSize : (long)((1.0f - delRatio) * byteSize));
   }
@@ -243,7 +243,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   }
   
   @Override
-  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos infos)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos infos)
     throws CorruptIndexException, IOException {
     final int numSegs = infos.size();
     final int numLargeSegs = (numSegs < _numLargeSegments ? numSegs : _numLargeSegments);
@@ -254,7 +254,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
       // it does not clone all metadata, but LogMerge does not need it
       final SegmentInfos smallSegments = new SegmentInfos();
       smallSegments.rollbackSegmentInfos(infos.asList().subList(numLargeSegs, numSegs));
-      spec = super.findMergesToExpungeDeletes(smallSegments);
+      spec = super.findForcedDeletesMerges(smallSegments);
     }
     
     if(spec == null) spec = new MergeSpecification();

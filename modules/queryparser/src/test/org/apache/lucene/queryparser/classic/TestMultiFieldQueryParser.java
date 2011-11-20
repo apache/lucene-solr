@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
@@ -290,10 +291,12 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
       new MultiFieldQueryParser(TEST_VERSION_CURRENT, new String[] {"body"}, analyzer);
     mfqp.setDefaultOperator(QueryParser.Operator.AND);
     Query q = mfqp.parse("the footest");
-    IndexSearcher is = new IndexSearcher(ramDir, true);
+    IndexReader ir = IndexReader.open(ramDir);
+    IndexSearcher is = new IndexSearcher(ir);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     is.close();
+    ir.close();
     ramDir.close();
   }
   

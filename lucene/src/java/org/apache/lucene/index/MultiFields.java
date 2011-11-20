@@ -156,10 +156,12 @@ public final class MultiFields extends Fields {
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
-      return terms.docs(liveDocs, term, null);
-    } else {
-      return null;
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(term, true)) {
+        return termsEnum.docs(liveDocs, null);
+      }
     }
+    return null;
   }
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
@@ -170,10 +172,12 @@ public final class MultiFields extends Fields {
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
-      return terms.docsAndPositions(liveDocs, term, null);
-    } else {
-      return null;
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(term, true)) {
+        return termsEnum.docsAndPositions(liveDocs, null);
+      }
     }
+    return null;
   }
 
   public MultiFields(Fields[] subs, ReaderUtil.Slice[] subSlices) {
@@ -193,7 +197,8 @@ public final class MultiFields extends Fields {
     if (fieldsEnums.size() == 0) {
       return FieldsEnum.EMPTY;
     } else {
-      return new MultiFieldsEnum(fieldsEnums.toArray(FieldsEnum.EMPTY_ARRAY),
+      return new MultiFieldsEnum(this,
+                                 fieldsEnums.toArray(FieldsEnum.EMPTY_ARRAY),
                                  fieldsSlices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
     }
   }
@@ -230,6 +235,22 @@ public final class MultiFields extends Fields {
     }
 
     return result;
+  }
+
+  public static long totalTermFreq(IndexReader r, String field, BytesRef text) throws IOException {
+    final Terms terms = getTerms(r, field);
+    if (terms != null) {
+      final TermsEnum termsEnum = terms.iterator(null);
+      if (termsEnum.seekExact(text, true)) {
+        return termsEnum.totalTermFreq();
+      }
+    }
+    return 0;
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return terms.size();
   }
 }
 

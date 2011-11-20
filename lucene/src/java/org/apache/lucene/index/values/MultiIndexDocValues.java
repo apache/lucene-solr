@@ -169,6 +169,7 @@ public class MultiIndexDocValues extends IndexDocValues {
     }
   }
 
+  // TODO: this is dup of IndexDocValues.getDefaultSource()?
   private static class EmptySource extends Source {
 
     public EmptySource(ValueType type) {

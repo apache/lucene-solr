@@ -25,6 +25,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 

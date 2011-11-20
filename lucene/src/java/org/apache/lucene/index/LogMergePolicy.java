@@ -196,7 +196,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
   
   protected long sizeBytes(SegmentInfo info) throws IOException {
-    long byteSize = info.sizeInBytes(true);
+    long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
       double delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
@@ -417,18 +417,18 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
 
   /**
-   * Finds merges necessary to expunge all deletes from the
+   * Finds merges necessary to force-merge all deletes from the
    * index.  We simply merge adjacent segments that have
    * deletes, up to mergeFactor at a time.
    */ 
   @Override
-  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos)
       throws CorruptIndexException, IOException {
     final List<SegmentInfo> segments = segmentInfos.asList();
     final int numSegments = segments.size();
 
     if (verbose())
-      message("findMergesToExpungeDeletes: " + numSegments + " segments");
+      message("findForcedDeleteMerges: " + numSegments + " segments");
 
     MergeSpecification spec = new MergeSpecification();
     int firstSegmentWithDeletions = -1;

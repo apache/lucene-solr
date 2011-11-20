@@ -190,7 +190,7 @@ public final class IOUtils {
    * @param objects
    *          objects to call <tt>close()</tt> on
    */
-  public static void closeWhileHandlingException(Closeable... objects) throws IOException {
+  public static void closeWhileHandlingException(Closeable... objects) {
     for (Closeable object : objects) {
       try {
         if (object != null) {
@@ -204,7 +204,7 @@ public final class IOUtils {
   /**
    * @see #closeWhileHandlingException(Closeable...)
    */
-  public static void closeWhileHandlingException(Iterable<? extends Closeable> objects) throws IOException {
+  public static void closeWhileHandlingException(Iterable<? extends Closeable> objects) {
     for (Closeable object : objects) {
       try {
         if (object != null) {

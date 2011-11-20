@@ -43,6 +43,22 @@ public abstract class StringHelper {
         return i;
     return len;
   }
+  
+  /**
+   * Compares two byte[] arrays, element by element, and returns the
+   * number of elements common to both arrays.
+   *
+   * @param bytes1 The first byte[] to compare
+   * @param bytes2 The second byte[] to compare
+   * @return The number of common elements.
+   */
+  public static int bytesDifference(byte[] bytes1, int off1, int len1, byte[] bytes2, int off2, int len2) {
+    int len = len1 < len2 ? len1 : len2;
+    for (int i = 0; i < len; i++)
+      if (bytes1[i+off1] != bytes2[i+off2])
+        return i;
+    return len;
+  }
 
   private StringHelper() {
   }

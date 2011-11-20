@@ -74,7 +74,7 @@ public class DocumentsWriterPerThread {
 
     // Build up indexing chain:
 
-      final TermsHashConsumer termVectorsWriter = new TermVectorsTermsWriter(documentsWriterPerThread);
+      final TermsHashConsumer termVectorsWriter = new TermVectorsConsumer(documentsWriterPerThread);
       final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
 
       final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
@@ -414,7 +414,7 @@ public class DocumentsWriterPerThread {
   private void doAfterFlush() throws IOException {
     segment = null;
     consumer.doAfterFlush();
-    fieldInfos = new FieldInfos(fieldInfos);
+    fieldInfos = FieldInfos.from(fieldInfos);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }

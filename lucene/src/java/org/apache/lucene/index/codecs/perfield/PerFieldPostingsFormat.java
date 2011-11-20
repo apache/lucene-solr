@@ -34,7 +34,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsFormat;
@@ -213,7 +212,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public String next() {
+      public String next() throws IOException {
         if (it.hasNext()) {
           current = it.next();
         } else {
@@ -224,13 +223,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public TermsEnum terms() throws IOException {
-        final Terms terms = fields.get(current).terms(current);
-        if (terms != null) {
-          return terms.iterator();
-        } else {
-          return TermsEnum.EMPTY;
-        }
+      public Terms terms() throws IOException {
+        return fields.get(current).terms(current);
       }
     }
 
@@ -245,6 +239,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       return fieldsProducer == null ? null : fieldsProducer.terms(field);
     }
     
+    @Override
+    public int getUniqueFieldCount() {
+      return fields.size();
+    }
+
     @Override
     public void close() throws IOException {
       IOUtils.close(formats.values());

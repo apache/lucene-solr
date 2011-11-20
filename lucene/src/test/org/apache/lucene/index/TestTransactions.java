@@ -37,8 +37,9 @@ public class TestTransactions extends LuceneTestCase {
   private class RandomFailure extends MockDirectoryWrapper.Failure {
     @Override
     public void eval(MockDirectoryWrapper dir) throws IOException {
-      if (TestTransactions.doFail && random.nextInt() % 10 <= 3)
+      if (TestTransactions.doFail && random.nextInt() % 10 <= 3) {
         throw new IOException("now failing randomly but on purpose");
+      }
     }
   }
 
@@ -211,6 +212,8 @@ public class TestTransactions extends LuceneTestCase {
     dir2.setPreventDoubleWrite(false);
     dir1.failOn(new RandomFailure());
     dir2.failOn(new RandomFailure());
+    dir1.setFailOnOpenInput(false);
+    dir2.setFailOnOpenInput(false);
 
     initIndex(dir1);
     initIndex(dir2);

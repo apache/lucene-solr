@@ -131,9 +131,9 @@ public class ParallelReader extends IndexReader {
     for (final String field : fields) {               // update fieldToReader map
       if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
+        this.fields.addField(field, MultiFields.getFields(reader).terms(field));
+        this.perDocs.addField(field, reader);
       }
-      this.fields.addField(field, reader);
-      this.perDocs.addField(field, reader);
     }
 
     if (!ignoreStoredFields)
@@ -151,10 +151,11 @@ public class ParallelReader extends IndexReader {
 
   private class ParallelFieldsEnum extends FieldsEnum {
     String currentField;
-    IndexReader currentReader;
     Iterator<String> keys;
+    private final Fields fields;
 
-    ParallelFieldsEnum() {
+    ParallelFieldsEnum(Fields fields) {
+      this.fields = fields;
       keys = fieldToReader.keySet().iterator();
     }
 
@@ -162,23 +163,15 @@ public class ParallelReader extends IndexReader {
     public String next() throws IOException {
       if (keys.hasNext()) {
         currentField = keys.next();
-        currentReader = fieldToReader.get(currentField);
       } else {
         currentField = null;
-        currentReader = null;
       }
       return currentField;
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      assert currentReader != null;
-      Terms terms = MultiFields.getTerms(currentReader, currentField);
-      if (terms != null) {
-        return terms.iterator();
-      } else {
-        return TermsEnum.EMPTY;
-      }
+    public Terms terms() throws IOException {
+      return fields.terms(currentField);
     }
 
   }
@@ -187,18 +180,23 @@ public class ParallelReader extends IndexReader {
   private class ParallelFields extends Fields {
     final HashMap<String,Terms> fields = new HashMap<String,Terms>();
 
-    public void addField(String field, IndexReader r) throws IOException {
-      Fields multiFields = MultiFields.getFields(r);
-      fields.put(field, multiFields.terms(field));
+    public void addField(String fieldName, Terms terms) throws IOException {
+      fields.put(fieldName, terms);
     }
 
     @Override
     public FieldsEnum iterator() throws IOException {
-      return new ParallelFieldsEnum();
+      return new ParallelFieldsEnum(this);
     }
+
     @Override
     public Terms terms(String field) throws IOException {
       return fields.get(field);
+    }
+
+    @Override
+    public int getUniqueFieldCount() throws IOException {
+      return fields.size();
     }
   }
   
@@ -362,49 +360,18 @@ public class ParallelReader extends IndexReader {
 
   // get all vectors
   @Override
-  public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    ArrayList<TermFreqVector> results = new ArrayList<TermFreqVector>();
-    for (final Map.Entry<String,IndexReader> e: fieldToReader.entrySet()) {
-
-      String field = e.getKey();
-      IndexReader reader = e.getValue();
-      TermFreqVector vector = reader.getTermFreqVector(n, field);
-      if (vector != null)
-        results.add(vector);
-    }
-    return results.toArray(new TermFreqVector[results.size()]);
-  }
-
-  @Override
-  public TermFreqVector getTermFreqVector(int n, String field)
-    throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-    return reader==null ? null : reader.getTermFreqVector(n, field);
-  }
-
-
-  @Override
-  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-    if (reader != null) {
-      reader.getTermFreqVector(docNumber, field, mapper); 
-    }
-  }
-
-  @Override
-  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
-    ensureOpen();
-
-    for (final Map.Entry<String,IndexReader> e : fieldToReader.entrySet()) {
-
-      String field = e.getKey();
-      IndexReader reader = e.getValue();
-      reader.getTermFreqVector(docNumber, field, mapper);
+    ParallelFields fields = new ParallelFields();
+    for (Map.Entry<String,IndexReader> ent : fieldToReader.entrySet()) {
+      String fieldName = ent.getKey();
+      Terms vector = ent.getValue().getTermVector(docID, fieldName);
+      if (vector != null) {
+        fields.addField(fieldName, vector);
+      }
     }
 
+    return fields;
   }
 
   @Override

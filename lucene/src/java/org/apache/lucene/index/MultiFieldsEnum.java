@@ -47,12 +47,14 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   private final MultiTermsEnum terms;
   private final MultiIndexDocValues docValues;
 
+  private final Fields fields;
 
   private String currentField;
 
   /** The subs array must be newly initialized FieldsEnum
    *  (ie, {@link FieldsEnum#next} has not been called. */
-  public MultiFieldsEnum(FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
+  public MultiFieldsEnum(MultiFields fields, FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
+    this.fields = fields;
     terms = new MultiTermsEnum(subSlices);
     queue = new FieldMergeQueue(subs.length);
     docValues = new MultiIndexDocValues();
@@ -107,20 +109,9 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   }
 
   @Override
-  public TermsEnum terms() throws IOException {
-    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
-    for(int i=0;i<numTop;i++) {
-      final TermsEnum terms = top[i].fields.terms();
-      if (terms != null) {
-        termsEnums.add(new MultiTermsEnum.TermsEnumIndex(terms, top[i].index));
-      }
-    }
-
-    if (termsEnums.size() == 0) {
-      return TermsEnum.EMPTY;
-    } else {
-      return terms.reset(termsEnums.toArray(MultiTermsEnum.TermsEnumIndex.EMPTY_ARRAY));
-    }
+  public Terms terms() throws IOException {
+    // Ask our parent MultiFields:
+    return fields.terms(currentField);
   }
 
   public final static class FieldsEnumWithSlice {

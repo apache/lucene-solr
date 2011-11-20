@@ -99,7 +99,8 @@ public class TestSearch extends LuceneTestCase {
       }
       writer.close();
 
-      IndexSearcher searcher = new IndexSearcher(directory, true);
+      IndexReader reader = IndexReader.open(directory);
+      IndexSearcher searcher = new IndexSearcher(reader);
 
       ScoreDoc[] hits = null;
 
@@ -122,6 +123,7 @@ public class TestSearch extends LuceneTestCase {
         }
       }
       searcher.close();
+      reader.close();
       directory.close();
   }
 

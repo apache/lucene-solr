@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -339,11 +340,13 @@ public class TestLockFactory extends LuceneTestCase {
         }
         @Override
         public void run() {
+            IndexReader reader = null;
             IndexSearcher searcher = null;
             Query query = new TermQuery(new Term("content", "aaa"));
             for(int i=0;i<this.numIteration;i++) {
                 try{
-                    searcher = new IndexSearcher(dir, false);
+                    reader = IndexReader.open(dir, false);
+                    searcher = new IndexSearcher(reader);
                 } catch (Exception e) {
                     hitException = true;
                     System.out.println("Stress Test Index Searcher: create hit unexpected exception: " + e.toString());
@@ -361,6 +364,7 @@ public class TestLockFactory extends LuceneTestCase {
                 // System.out.println(hits.length() + " total results");
                 try {
                   searcher.close();
+                  reader.close();
                 } catch (IOException e) {
                   hitException = true;
                   System.out.println("Stress Test Index Searcher: close hit unexpected exception: " + e.toString());

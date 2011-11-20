@@ -222,7 +222,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
       throws IOException {
     Fields fields = MultiFields.getFields(reader);
     Terms cterms = fields.terms(term.field);
-    TermsEnum ctermsEnum = cterms.iterator();
+    TermsEnum ctermsEnum = cterms.iterator(null);
     if (ctermsEnum.seekExact(new BytesRef(term.text()), false)) {
       DocsEnum docsEnum = ctermsEnum.docs(bits, null);
       return toArray(docsEnum);
@@ -274,7 +274,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public MergeSpecification findMergesToExpungeDeletes(
+    public MergeSpecification findForcedDeletesMerges(
         SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
       return null;
     }

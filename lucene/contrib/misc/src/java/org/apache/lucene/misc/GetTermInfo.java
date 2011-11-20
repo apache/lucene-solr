@@ -21,9 +21,7 @@ import java.io.File;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 
 /*
  * Utility to get document frequency and total number of occurrences (sum of the tf for each doc)  of a term. 
@@ -50,10 +48,9 @@ public class GetTermInfo {
   
   public static void getTermInfo(Directory dir, String field, BytesRef termtext) throws Exception {
     IndexReader reader = IndexReader.open(dir);
-    Terms terms =MultiFields.getTerms(reader, field);
     long totalTF = HighFreqTerms.getTotalTermFreq(reader, field, termtext);
     System.out.printf("%s:%s \t totalTF = %,d \t doc freq = %,d \n",
-        field, termtext.utf8ToString(), totalTF, terms.docFreq(termtext)); 
+         field, termtext.utf8ToString(), totalTF, reader.docFreq(field, termtext)); 
   }
    
   private static void usage() {

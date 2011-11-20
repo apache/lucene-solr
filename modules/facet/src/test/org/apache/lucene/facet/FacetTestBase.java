@@ -282,7 +282,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
         continue;
       }
       Bits liveDocs = MultiFields.getLiveDocs(indexReader);
-      TermsEnum te = terms.iterator();
+      TermsEnum te = terms.iterator(null);
       DocsEnum de = null;
       while (te.next() != null) {
         de = te.docs(liveDocs, de);

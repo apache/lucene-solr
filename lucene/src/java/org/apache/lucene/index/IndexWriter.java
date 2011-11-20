@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Query;
@@ -1731,7 +1732,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return false;
   }
 
-  /** Just like {@link #expungeDeletes()}, except you can
+  /** Just like {@link #forceMergeDeletes()}, except you can
    *  specify whether the call should block until the
    *  operation completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
@@ -1746,19 +1747,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * then any thread still running this method might hit a
    * {@link MergePolicy.MergeAbortedException}.
    */
-  public void expungeDeletes(boolean doWait)
+  public void forceMergeDeletes(boolean doWait)
     throws CorruptIndexException, IOException {
     ensureOpen();
 
     flush(true, true);
 
     if (infoStream != null)
-      infoStream.message("IW", "expungeDeletes: index now " + segString());
+      infoStream.message("IW", "forceMergeDeletes: index now " + segString());
 
     MergePolicy.MergeSpecification spec;
 
     synchronized(this) {
-      spec = mergePolicy.findMergesToExpungeDeletes(segmentInfos);
+      spec = mergePolicy.findForcedDeletesMerges(segmentInfos);
       if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++)
@@ -1775,7 +1776,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         while(running) {
 
           if (hitOOM) {
-            throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot complete expungeDeletes");
+            throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot complete forceMergeDeletes");
           }
 
           // Check each merge that MergePolicy asked us to
@@ -1807,29 +1808,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
 
-  /** Requests an expungeDeletes operation, by invoking
-   *  {@link MergePolicy#findMergesToExpungeDeletes}.
-   *  The MergePolicy determines what merges should be done.
-   *  For example, the default {@link TieredMergePolicy}
-   *  will only expunge deletes from a segment if the
-   *  percentage of deleted docs is over 10%.
+  /**
+   *  Forces merging of all segments that have deleted
+   *  documents.  The actual merges to be executed are
+   *  determined by the {@link MergePolicy}.  For example,
+   *  the default {@link TieredMergePolicy} will only
+   *  pick a segment if the percentage of
+   *  deleted docs is over 10%.
    *
-   *  <p>When an index
-   *  has many document deletions (or updates to existing
-   *  documents), it's best to either call forceMerge or
-   *  expungeDeletes to remove all unused data in the index
-   *  associated with the deleted documents.  To see how
+   *  <p>This is often a horribly costly operation; rarely
+   *  is it warranted.</p>
+   *
+   *  <p>To see how
    *  many deletions you have pending in your index, call
-   *  {@link IndexReader#numDeletedDocs}
-   *  This saves disk space and memory usage while
-   *  searching.  expungeDeletes should be somewhat faster
-   *  than forceMerge since it does not insist on reducing the
-   *  index to a single segment (though, this depends on the
-   *  {@link MergePolicy}; see {@link
-   *  MergePolicy#findMergesToExpungeDeletes}.). Note that
-   *  this call does not first commit any buffered
-   *  documents, so you must do so yourself if necessary.
-   *  See also {@link #expungeDeletes(boolean)}
+   *  {@link IndexReader#numDeletedDocs}.</p>
    *
    *  <p><b>NOTE</b>: this method first flushes a new
    *  segment (if there are indexed documents), and applies
@@ -1839,8 +1831,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  you should immediately close the writer.  See <a
    *  href="#OOME">above</a> for details.</p>
    */
-  public void expungeDeletes() throws CorruptIndexException, IOException {
-    expungeDeletes(true);
+  public void forceMergeDeletes() throws CorruptIndexException, IOException {
+    forceMergeDeletes(true);
   }
 
   /**
@@ -2041,7 +2033,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p>NOTE: this method will forcefully abort all merges
    *    in progress.  If other threads are running {@link
    *    #forceMerge}, {@link #addIndexes(IndexReader[])} or
-   *    {@link #expungeDeletes} methods, they may receive
+   *    {@link #forceMergeDeletes} methods, they may receive
    *    {@link MergePolicy.MergeAbortedException}s.
    */
   public synchronized void deleteAll() throws IOException {
@@ -2177,7 +2169,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     setDiagnostics(newSegment, "flush");
     
-    IOContext context = new IOContext(new FlushInfo(newSegment.docCount, newSegment.sizeInBytes(true)));
+    IOContext context = new IOContext(new FlushInfo(newSegment.docCount, newSegment.sizeInBytes()));
 
     boolean success = false;
     try {
@@ -2409,7 +2401,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                 && versionComparator.compare(info.getVersion(), "3.1") >= 0;
           }
           
-          IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(true), true, -1));
+          IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(), true, -1));
           
           if (createCFS) {
             copySegmentIntoCFS(info, newSegName, context);
@@ -2498,7 +2490,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        merger.createCompoundFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), info, context);
+        createCompoundFile(directory, IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), MergeState.CheckAbort.NONE, info, context);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
@@ -2572,10 +2564,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       newDsName = segName;
     }
     
+    Set<String> codecDocStoreFiles = info.codecDocStoreFiles();
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;
-      if (IndexFileNames.isDocStoreFile(file)) {
+      if (codecDocStoreFiles.contains(file) || file.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
         if (dsFilesCopied.contains(newFileName)) {
           continue;
@@ -3412,7 +3405,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final int delCount = numDeletedDocs(info);
         assert delCount <= info.docCount;
         final double delRatio = ((double) delCount)/info.docCount;
-        merge.estimatedMergeBytes += info.sizeInBytes(true) * (1.0 - delRatio);
+        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
       }
     }
 
@@ -3614,7 +3607,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (infoStream != null) {
             infoStream.message("IW", "create compound file " + compoundFileName);
           }
-          merger.createCompoundFile(compoundFileName, merge.info, new IOContext(merge.getMergeInfo()));
+          createCompoundFile(directory, compoundFileName, checkAbort, merge.info, new IOContext(merge.getMergeInfo()));
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -3663,7 +3656,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       if (infoStream != null) {
-        infoStream.message("IW", String.format("merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes(true)/1024./1024., merge.estimatedMergeBytes/1024/1024.));
+        infoStream.message("IW", String.format("merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes()/1024./1024., merge.estimatedMergeBytes/1024/1024.));
       }
 
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
@@ -4059,5 +4052,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   public PayloadProcessorProvider getPayloadProcessorProvider() {
     ensureOpen();
     return payloadProcessorProvider;
+  }
+  
+  /**
+   * NOTE: this method creates a compound file for all files returned by
+   * info.files(). While, generally, this may include separate norms and
+   * deletion files, this SegmentInfo must not reference such files when this
+   * method is called, because they are not allowed within a compound file.
+   */
+  static final Collection<String> createCompoundFile(Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
+          throws IOException {
+
+    // Now merge all added files
+    Collection<String> files = info.files();
+    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
+    try {
+      for (String file : files) {
+        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
+                  : ".del file is not allowed in .cfs: " + file;
+        assert !IndexFileNames.isSeparateNormsFile(file) 
+                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
+        directory.copy(cfsDir, file, file, context);
+        checkAbort.work(directory.fileLength(file));
+      }
+    } finally {
+      cfsDir.close();
+    }
+
+    return files;
   }
 }

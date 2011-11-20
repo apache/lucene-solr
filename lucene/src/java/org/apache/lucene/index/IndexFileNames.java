@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.regex.Pattern;
 
-import org.apache.lucene.index.codecs.PostingsFormat;  // for javadocs
+import org.apache.lucene.index.codecs.Codec;  // for javadocs
 
 // TODO: put all files under codec and remove all the static extensions here
 
@@ -33,7 +33,7 @@ import org.apache.lucene.index.codecs.PostingsFormat;  // for javadocs
  * {@link #segmentFileName(String, String, String) segmentFileName}).
  *
  * <p><b>NOTE</b>: extensions used by codecs are not
- * listed here.  You must interact with the {@link PostingsFormat}
+ * listed here.  You must interact with the {@link Codec}
  * directly.
  *
  * @lucene.internal
@@ -53,15 +53,6 @@ public final class IndexFileNames {
   /** Extension of norms file */
   public static final String NORMS_EXTENSION = "nrm";
 
-  /** Extension of vectors fields file */
-  public static final String VECTORS_FIELDS_EXTENSION = "tvf";
-
-  /** Extension of vectors documents file */
-  public static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
-
-  /** Extension of vectors index file */
-  public static final String VECTORS_INDEX_EXTENSION = "tvx";
-
   /** Extension of compound file */
   public static final String COMPOUND_FILE_EXTENSION = "cfs";
   
@@ -73,9 +64,6 @@ public final class IndexFileNames {
 
   /** Extension of deletes */
   public static final String DELETES_EXTENSION = "del";
-
-  /** Extension of field infos */
-  public static final String FIELD_INFOS_EXTENSION = "fnm";
 
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
@@ -93,37 +81,15 @@ public final class IndexFileNames {
   public static final String INDEX_EXTENSIONS[] = new String[] {
     COMPOUND_FILE_EXTENSION,
     COMPOUND_FILE_ENTRIES_EXTENSION,
-    FIELD_INFOS_EXTENSION,
     DELETES_EXTENSION,
-    VECTORS_INDEX_EXTENSION,
-    VECTORS_DOCUMENTS_EXTENSION,
-    VECTORS_FIELDS_EXTENSION,
     GEN_EXTENSION,
     NORMS_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
     GLOBAL_FIELD_NUM_MAP_EXTENSION,
   };
 
-  public static final String[] STORE_INDEX_EXTENSIONS = new String[] {
-    VECTORS_INDEX_EXTENSION,
-    VECTORS_FIELDS_EXTENSION,
-    VECTORS_DOCUMENTS_EXTENSION,
-  };
-
   public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
-    FIELD_INFOS_EXTENSION,
     NORMS_EXTENSION
-  };
-  
-  static final String COMPOUND_EXTENSIONS_NOT_CODEC[] = new String[] {
-    FIELD_INFOS_EXTENSION,
-  };
-  
-  /** File extensions for term vector support */
-  public static final String VECTOR_EXTENSIONS[] = new String[] {
-    VECTORS_INDEX_EXTENSION,
-    VECTORS_DOCUMENTS_EXTENSION,
-    VECTORS_FIELDS_EXTENSION
   };
 
   /**
@@ -154,21 +120,6 @@ public final class IndexFileNames {
       }
       return res.toString();
     }
-  }
-
-  /**
-   * Returns true if the provided filename is one of the doc store files (ends
-   * with an extension in {@link #STORE_INDEX_EXTENSIONS}).
-   */
-  // TODO: this method is stupid.
-  public static boolean isDocStoreFile(String fileName) {
-    if (fileName.endsWith(COMPOUND_FILE_STORE_EXTENSION))
-      return true;
-    for (String ext : STORE_INDEX_EXTENSIONS) {
-      if (fileName.endsWith(ext))
-        return true;
-    }
-    return false;
   }
 
   /**

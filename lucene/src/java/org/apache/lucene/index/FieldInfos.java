@@ -31,7 +31,6 @@ import java.util.Map.Entry;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.CodecUtil;
@@ -185,57 +184,27 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final FieldNumberBiMap globalFieldNumbers;
   
-  // First used in 2.9; prior to 2.9 there was no format header
-  public static final int FORMAT_START = -2;
-  // First used in 3.4: omit only positional information
-  public static final int FORMAT_OMIT_POSITIONS = -3;
-  // per-field codec support, records index values for fields
-  public static final int FORMAT_FLEX = -4;
-
-  // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_FLEX;
-  
-  static final int FORMAT_MINIMUM = FORMAT_START;
-  
-  static final byte IS_INDEXED = 0x1;
-  static final byte STORE_TERMVECTOR = 0x2;
-  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x4;
-  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
-  static final byte OMIT_NORMS = 0x10;
-  static final byte STORE_PAYLOADS = 0x20;
-  static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
-  static final byte OMIT_POSITIONS = -128;
-
-  private int format;
   private boolean hasFreq; // only set if readonly
   private boolean hasProx; // only set if readonly
   private boolean hasVectors; // only set if readonly
   private long version; // internal use to track changes
-  
 
   /**
-   * Creates a new {@link FieldInfos} instance with a private
-   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} 
-   * <p>
-   * Note: this ctor should not be used during indexing use
-   * {@link FieldInfos#FieldInfos(FieldInfos)} or
-   * {@link FieldInfos#FieldInfos(FieldNumberBiMap)}
-   * instead.
-   */
-  public FieldInfos() {
-    this(new FieldNumberBiMap());
-  }
-  
-  /**
-   * Creates a new {@link FieldInfo} instance from the given instance. If the given instance is
-   * read-only this instance will be read-only too.
+   * Creates a new read-only FieldInfos: only public to be accessible
+   * from the codecs package
    * 
-   * @see #isReadOnly()
+   * @lucene.internal
    */
-  FieldInfos(FieldInfos other) {
-    this(other.globalFieldNumbers);
+  public FieldInfos(FieldInfo[] infos, boolean hasFreq, boolean hasProx, boolean hasVectors) {
+    this(null);
+    this.hasFreq = hasFreq;
+    this.hasProx = hasProx;
+    this.hasVectors = hasVectors;
+    for (FieldInfo info : infos) {
+      putInternal(info);
+    }
   }
-  
+
   /**
    * Creates a new FieldInfos instance with the given {@link FieldNumberBiMap}. 
    * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
@@ -243,26 +212,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   FieldInfos(FieldNumberBiMap globalFieldNumbers) {
     this.globalFieldNumbers = globalFieldNumbers;
-  }
-
-  /**
-   * Construct a FieldInfos object using the directory and the name of the file
-   * IndexInput. 
-   * <p>
-   * Note: The created instance will be read-only
-   * 
-   * @param d The directory to open the IndexInput from
-   * @param name The name of the file to open the IndexInput from in the Directory
-   * @throws IOException
-   */
-  public FieldInfos(Directory d, String name) throws IOException {
-    this((FieldNumberBiMap)null); // use null here to make this FIs Read-Only
-    final IndexInput input = d.openInput(name, IOContext.READONCE);
-    try {
-      read(input, name);
-    } finally {
-      input.close();
-    }
   }
   
   /**
@@ -293,7 +242,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   @Override
   synchronized public Object clone() {
     FieldInfos fis = new FieldInfos(globalFieldNumbers);
-    fis.format = format;
     fis.hasFreq = hasFreq;
     fis.hasProx = hasProx;
     fis.hasVectors = hasVectors;
@@ -549,19 +497,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return false;
   }
 
-  public void write(Directory d, String name) throws IOException {
-    IndexOutput output = d.createOutput(name, IOContext.READONCE);
-    try {
-      write(output);
-    } finally {
-      output.close();
-    }
-  }
-  
   /**
    * Returns <code>true</code> iff this instance is not backed by a
    * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap}. Instances read from a directory via
-   * {@link FieldInfos#FieldInfos(Directory, String)} will always be read-only
+   * {@link FieldInfos#FieldInfos(FieldInfo[], boolean, boolean, boolean)} will always be read-only
    * since no {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} is supplied, otherwise 
    * <code>false</code>.
    */
@@ -571,182 +510,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   
   synchronized final long getVersion() {
     return version;
-  }
-
-  public void write(IndexOutput output) throws IOException {
-    output.writeVInt(FORMAT_CURRENT);
-    output.writeVInt(size());
-    for (FieldInfo fi : this) {
-      assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
-      byte bits = 0x0;
-      if (fi.isIndexed) bits |= IS_INDEXED;
-      if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
-      if (fi.storePositionWithTermVector) bits |= STORE_POSITIONS_WITH_TERMVECTOR;
-      if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
-      if (fi.omitNorms) bits |= OMIT_NORMS;
-      if (fi.storePayloads) bits |= STORE_PAYLOADS;
-      if (fi.indexOptions == IndexOptions.DOCS_ONLY)
-        bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-      else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS)
-        bits |= OMIT_POSITIONS;
-      output.writeString(fi.name);
-      output.writeInt(fi.number);
-      output.writeByte(bits);
-
-      final byte b;
-
-      if (fi.docValues == null) {
-        b = 0;
-      } else {
-        switch(fi.docValues) {
-        case VAR_INTS:
-          b = 1;
-          break;
-        case FLOAT_32:
-          b = 2;
-          break;
-        case FLOAT_64:
-          b = 3;
-          break;
-        case BYTES_FIXED_STRAIGHT:
-          b = 4;
-          break;
-        case BYTES_FIXED_DEREF:
-          b = 5;
-          break;
-        case BYTES_VAR_STRAIGHT:
-          b = 6;
-          break;
-        case BYTES_VAR_DEREF:
-          b = 7;
-          break;
-        case FIXED_INTS_16:
-          b = 8;
-          break;
-        case FIXED_INTS_32:
-          b = 9;
-          break;
-        case FIXED_INTS_64:
-          b = 10;
-          break;
-        case FIXED_INTS_8:
-          b = 11;
-          break;
-        case BYTES_FIXED_SORTED:
-          b = 12;
-          break;
-        case BYTES_VAR_SORTED:
-          b = 13;
-          break;
-        default:
-          throw new IllegalStateException("unhandled indexValues type " + fi.docValues);
-        }
-      }
-      output.writeByte(b);
-    }
-  }
-
-  private void read(IndexInput input, String fileName) throws IOException {
-    format = input.readVInt();
-
-    if (format > FORMAT_MINIMUM) {
-      throw new IndexFormatTooOldException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
-    }
-    if (format < FORMAT_CURRENT) {
-      throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, FORMAT_CURRENT);
-    }
-
-    final int size = input.readVInt(); //read in the size
-
-    for (int i = 0; i < size; i++) {
-      String name = input.readString();
-      final int fieldNumber = format <= FORMAT_FLEX? input.readInt():i;
-      byte bits = input.readByte();
-      boolean isIndexed = (bits & IS_INDEXED) != 0;
-      boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
-      boolean storePositionsWithTermVector = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-      boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
-      boolean omitNorms = (bits & OMIT_NORMS) != 0;
-      boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
-      final IndexOptions indexOptions;
-      if ((bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
-        indexOptions = IndexOptions.DOCS_ONLY;
-      } else if ((bits & OMIT_POSITIONS) != 0) {
-        if (format <= FORMAT_OMIT_POSITIONS) {
-          indexOptions = IndexOptions.DOCS_AND_FREQS;
-        } else {
-          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format + " (resource: " + input + ")");
-        }
-      } else {
-        indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      }
-
-      // LUCENE-3027: past indices were able to write
-      // storePayloads=true when omitTFAP is also true,
-      // which is invalid.  We correct that, here:
-      if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-        storePayloads = false;
-      }
-      hasVectors |= storeTermVector;
-      hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
-      ValueType docValuesType = null;
-      if (format <= FORMAT_FLEX) {
-        final byte b = input.readByte();
-        switch(b) {
-        case 0:
-          docValuesType = null;
-          break;
-        case 1:
-          docValuesType = ValueType.VAR_INTS;
-          break;
-        case 2:
-          docValuesType = ValueType.FLOAT_32;
-          break;
-        case 3:
-          docValuesType = ValueType.FLOAT_64;
-          break;
-        case 4:
-          docValuesType = ValueType.BYTES_FIXED_STRAIGHT;
-          break;
-        case 5:
-          docValuesType = ValueType.BYTES_FIXED_DEREF;
-          break;
-        case 6:
-          docValuesType = ValueType.BYTES_VAR_STRAIGHT;
-          break;
-        case 7:
-          docValuesType = ValueType.BYTES_VAR_DEREF;
-          break;
-        case 8:
-          docValuesType = ValueType.FIXED_INTS_16;
-          break;
-        case 9:
-          docValuesType = ValueType.FIXED_INTS_32;
-          break;
-        case 10:
-          docValuesType = ValueType.FIXED_INTS_64;
-          break;
-        case 11:
-          docValuesType = ValueType.FIXED_INTS_8;
-          break;
-        case 12:
-          docValuesType = ValueType.BYTES_FIXED_SORTED;
-          break;
-        case 13:
-          docValuesType = ValueType.BYTES_VAR_SORTED;
-          break;
-        
-        default:
-          throw new IllegalStateException("unhandled indexValues type " + b);
-        }
-      }
-      addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
-    }
-
-    if (input.getFilePointer() != input.length()) {
-      throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-    }    
   }
   
   /**
@@ -782,5 +545,15 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
 
     return false;
+  }
+  
+  /**
+   * Creates a new {@link FieldInfo} instance from the given instance. If the given instance is
+   * read-only this instance will be read-only too.
+   * 
+   * @see #isReadOnly()
+   */
+  static FieldInfos from(FieldInfos other) {
+    return new FieldInfos(other.globalFieldNumbers);
   }
 }

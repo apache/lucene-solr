@@ -61,7 +61,8 @@ public class TestSetNorm extends LuceneTestCase {
     // check that searches are ordered by this boost
     final float[] scores = new float[4];
 
-    IndexSearcher is = new IndexSearcher(store, true);
+    IndexReader ir = IndexReader.open(store);
+    IndexSearcher is = new IndexSearcher(ir);
     is.search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
@@ -85,6 +86,7 @@ public class TestSetNorm extends LuceneTestCase {
          }
        });
     is.close();
+    ir.close();
     float lastScore = 0.0f;
 
     for (int i = 0; i < 4; i++) {

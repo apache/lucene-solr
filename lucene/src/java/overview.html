@@ -61,7 +61,8 @@ to check if the results are what we expect):</p>
     iwriter.close();
     
     // Now search the index:
-    IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
+    IndexReader ireader = IndexReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser("fieldname", analyzer);
     Query query = parser.parse("text");
@@ -73,6 +74,7 @@ to check if the results are what we expect):</p>
       assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
     }
     isearcher.close();
+    ireader.close();
     directory.close();</pre>
 <!-- =       END of automatically generated HTML code       = -->
 <!-- ======================================================== -->

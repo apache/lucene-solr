@@ -127,7 +127,7 @@ public class FieldNormModifier {
         if (fields != null) {
           Terms terms = fields.terms(field);
           if (terms != null) {
-            TermsEnum termsEnum = terms.iterator();
+            TermsEnum termsEnum = terms.iterator(null);
             DocsEnum docs = null;
             while(termsEnum.next() != null) {
               docs = termsEnum.docs(liveDocs, docs);

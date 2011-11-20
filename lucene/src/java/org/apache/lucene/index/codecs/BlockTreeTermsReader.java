@@ -18,12 +18,8 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.io.Writer;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -197,9 +193,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     try {
       IOUtils.close(in, postingsReader);
     } finally { 
-      for(FieldReader field : fields.values()) {
-        field.close();
-      }
       // Clear so refs to terms index is GCable even if
       // app hangs onto us:
       fields.clear();
@@ -219,6 +212,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public Terms terms(String field) throws IOException {
     return fields.get(field);
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return fields.size();
   }
 
   // Iterates through all fields
@@ -242,8 +240,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum terms() throws IOException {
-      return current.iterator();
+    public Terms terms() throws IOException {
+      return current;
     }
   }
 
@@ -390,7 +388,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   final Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
   final BytesRef NO_OUTPUT = fstOutputs.getNoOutput();
 
-  public final class FieldReader extends Terms implements Closeable {
+  public final class FieldReader extends Terms {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long sumTotalTermFreq;
@@ -449,12 +447,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     @Override
-    public void close() {
-      super.close();
-    }
-    
-    @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
 
@@ -742,7 +735,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
       }
 
-      private final BytesRef savedStartTerm;
+      private BytesRef savedStartTerm;
       
       // TODO: in some cases we can filter by length?  eg
       // regexp foo*bar must be at least length 6 bytes
@@ -782,12 +775,18 @@ public class BlockTreeTermsReader extends FieldsProducer {
         f.load(rootCode);
 
         // for assert:
-        savedStartTerm = startTerm == null ? null : new BytesRef(startTerm);
+        assert setSavedStartTerm(startTerm);
 
         currentFrame = f;
         if (startTerm != null) {
           seekToStartTerm(startTerm);
         }
+      }
+
+      // only for assert:
+      private boolean setSavedStartTerm(BytesRef startTerm) {
+        savedStartTerm = startTerm == null ? null : new BytesRef(startTerm);
+        return true;
       }
 
       @Override
@@ -914,8 +913,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         for(int idx=0;idx<=target.length;idx++) {
 
-          boolean lastIsSubBlock = false;
-
           while (true) {
             final int savePos = currentFrame.suffixesReader.getPosition();
             final int saveStartBytePos = currentFrame.startBytePos;
@@ -950,7 +947,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
                     return;
                   }
                 }
-                lastIsSubBlock = isSubBlock;
                 continue;
               } else if (cmp == 0) {
                 //if (DEBUG) System.out.println("  return term=" + brToString(term));
@@ -1164,7 +1160,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
     // Iterates through terms in this field
     private final class SegmentTermsEnum extends TermsEnum {
-      private final IndexInput in;
+      private IndexInput in;
 
       private Frame[] stack;
       private final Frame staticFrame;
@@ -1183,28 +1179,20 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       final BytesRef term = new BytesRef();
 
-      @SuppressWarnings("unchecked") private FST.Arc<BytesRef>[] arcs = new FST.Arc[5];      
+      @SuppressWarnings("unchecked") private FST.Arc<BytesRef>[] arcs = new FST.Arc[1];
 
       public SegmentTermsEnum() throws IOException {
         //if (DEBUG) System.out.println("BTTR.init seg=" + segment);
-        in = (IndexInput) BlockTreeTermsReader.this.in.clone();
-        stack = new Frame[5];
-        for(int stackOrd=0;stackOrd<stack.length;stackOrd++) {
-          stack[stackOrd] = new Frame(stackOrd);
-        }
+        stack = new Frame[0];
+        
         // Used to hold seek by TermState, or cached seek
         staticFrame = new Frame(-1);
 
+        // Init w/ root block; don't use index since it may
+        // not (and need not) have been loaded
         for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
           arcs[arcIdx] = new FST.Arc<BytesRef>();
         }
-
-        // Init w/ root block; don't use index since it may
-        // not (and need not) have been loaded
-        //final FST.Arc<BytesRef> arc = index.getFirstArc(arcs[0]);
-
-        // Empty string prefix must have an output in the index!
-        //assert arc.isFinal();
 
         currentFrame = staticFrame;
         final FST.Arc<BytesRef> arc;
@@ -1215,8 +1203,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         } else {
           arc = null;
         }
-        currentFrame = pushFrame(arc, rootCode, 0);
-        currentFrame.loadBlock();
+        currentFrame = staticFrame;
+        //currentFrame = pushFrame(arc, rootCode, 0);
+        //currentFrame.loadBlock();
         validIndexPrefix = 0;
         // if (DEBUG) {
         //   System.out.println("init frame state " + currentFrame.ord);
@@ -1225,6 +1214,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         //System.out.println();
         // computeBlockStats().print(System.out);
+      }
+
+      private void initIndexInput() {
+        if (this.in == null) {
+          this.in = (IndexInput) BlockTreeTermsReader.this.in.clone();
+        }
       }
 
       /** Runs next() through the entire terms dict,
@@ -1976,6 +1971,20 @@ public class BlockTreeTermsReader extends FieldsProducer {
       @Override
       public BytesRef next() throws IOException {
 
+        if (in == null) {
+          // Fresh TermsEnum; seek to first term:
+          final FST.Arc<BytesRef> arc;
+          if (index != null) {
+            arc = index.getFirstArc(arcs[0]);
+            // Empty string prefix must have an output in the index!
+            assert arc.isFinal();
+          } else {
+            arc = null;
+          }
+          currentFrame = pushFrame(arc, rootCode, 0);
+          currentFrame.loadBlock();
+        }
+
         targetBeforeCurrentLength = currentFrame.ord;
 
         assert !eof;
@@ -2242,6 +2251,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
            not pay the price of decoding metadata they won't
            use. */
         void loadBlock() throws IOException {
+
+          // Clone the IndexInput lazily, so that consumers
+          // that just pull a TermsEnum to
+          // seekExact(TermState) don't pay this cost:
+          initIndexInput();
 
           if (nextEnt != -1) {
             // Already loaded

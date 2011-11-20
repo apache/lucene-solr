@@ -406,7 +406,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
      * @throws IOException
      */
     public LinearFuzzyTermsEnum() throws IOException {
-      super(terms.iterator());
+      super(terms.iterator(null));
 
       this.text = new int[termLength - realPrefixLength];
       System.arraycopy(termText, realPrefixLength, text, 0, text.length);

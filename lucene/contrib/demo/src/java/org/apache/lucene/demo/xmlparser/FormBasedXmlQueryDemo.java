@@ -38,6 +38,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.xml.CorePlusExtensionsParser;
@@ -145,6 +146,8 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
     writer.close();
 
     //open searcher
-    searcher = new IndexSearcher(rd, true);
+    // this example never closes it reader!
+    IndexReader reader = IndexReader.open(rd);
+    searcher = new IndexSearcher(reader);
   }
 }

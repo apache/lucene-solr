@@ -7,6 +7,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.util.BitSet;
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -39,8 +40,10 @@ public class TestScorerPerf extends LuceneTestCase {
   BitSet[] sets;
   Term[] terms;
   IndexSearcher s;
+  IndexReader r;
   Directory d;
 
+  // TODO: this should be setUp()....
   public void createDummySearcher() throws Exception {
       // Create a dummy index with nothing in it.
     // This could possibly fail if Lucene starts checking for docid ranges...
@@ -48,7 +51,8 @@ public class TestScorerPerf extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     iw.addDocument(new Document());
     iw.close();
-    s = new IndexSearcher(d, true);
+    r = IndexReader.open(d);
+    s = new IndexSearcher(r);
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
@@ -320,6 +324,7 @@ public class TestScorerPerf extends LuceneTestCase {
     doConjunctions(atLeast(10000), atLeast(5));
     doNestedConjunctions(atLeast(10000), atLeast(3), atLeast(3));
     s.close();
+    r.close();
     d.close();
   }
 

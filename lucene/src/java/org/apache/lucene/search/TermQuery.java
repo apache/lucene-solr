@@ -23,7 +23,6 @@ import java.util.Set;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
@@ -41,13 +40,13 @@ import org.apache.lucene.util.ToStringUtils;
   */
 public class TermQuery extends Query {
   private final Term term;
-  private int docFreq;
-  private transient TermContext perReaderTermState;
+  private final int docFreq;
+  private final TermContext perReaderTermState;
 
   final class TermWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.Stats stats;
-    private transient TermContext termStates;
+    private final TermContext termStates;
 
     public TermWeight(IndexSearcher searcher, TermContext termStates)
       throws IOException {
@@ -108,7 +107,7 @@ public class TermQuery extends Query {
         return null;
       }
       //System.out.println("LD=" + reader.getLiveDocs() + " set?=" + (reader.getLiveDocs() != null ? reader.getLiveDocs().get(0) : "null"));
-      final TermsEnum termsEnum = context.reader.terms(term.field()).getThreadTermsEnum();
+      final TermsEnum termsEnum = context.reader.terms(term.field()).iterator(null);
       termsEnum.seekExact(term.bytes(), state);
       return termsEnum;
     }
@@ -116,8 +115,7 @@ public class TermQuery extends Query {
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
       // only called from assert
       //System.out.println("TQ.termNotInReader reader=" + reader + " term=" + field + ":" + bytes.utf8ToString());
-      final Terms terms = reader.terms(field);
-      return terms == null || terms.docFreq(bytes) == 0;
+      return reader.docFreq(field, bytes) == 0;
     }
     
     @Override

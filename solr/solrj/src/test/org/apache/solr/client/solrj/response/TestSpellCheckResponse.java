@@ -150,7 +150,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     assertTrue("name:(+faith +hope +love)".equals(response.getCollatedResult()) || "name:(+faith +hope +loaves)".equals(response.getCollatedResult()));
     
     List<Collation> collations = response.getCollatedResults();
-    assertTrue(collations.size()==2);
+    assertEquals(2, collations.size());
     for(Collation collation : collations)
     {
     	assertTrue("name:(+faith +hope +love)".equals(collation.getCollationQueryString()) || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));
@@ -174,7 +174,20 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     			fail("Original Word Should have been either fauth, home or loane.");
     		}	    	
     	}
-    	
+    }
+    
+    query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
+    response = request.process(server).getSpellCheckResponse();
+    {
+      collations = response.getCollatedResults();
+      assertEquals(2, collations.size());
+      String collation1 = collations.get(0).getCollationQueryString();
+      String collation2 = collations.get(1).getCollationQueryString();
+      assertFalse(collation1 + " equals " + collation2, 
+          collation1.equals(collation2));
+      for(Collation collation : collations) {
+        assertTrue("name:(+faith +hope +love)".equals(collation.getCollationQueryString()) || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));  
+      }      
     }
     
   }

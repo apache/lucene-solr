@@ -23,14 +23,10 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
 import org.apache.solr.common.params.QueryElevationParams;
+import org.apache.solr.response.transform.EditorialMarkerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +99,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     final BooleanClause[] exclude;
     final BooleanQuery include;
     final Map<BytesRef,Integer> priority;
+    final Set<String> ids;
     
     // use singletons so hashCode/equals on Sort will just work
     final FieldComparatorSource comparatorSource;
@@ -111,12 +108,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     {
       this.text = qstr;
       this.analyzed = getAnalyzedQuery( this.text );
+      this.ids = new HashSet<String>();
       
       this.include = new BooleanQuery();
       this.include.setBoost( 0 );
       this.priority = new HashMap<BytesRef, Integer>();
       int max = elevate.size()+5;
       for( String id : elevate ) {
+        ids.add(id);
         TermQuery tq = new TermQuery( new Term( idField, id ) );
         include.add( tq, BooleanClause.Occur.SHOULD );
         this.priority.put( new BytesRef(id), max-- );
@@ -161,7 +160,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using StrField" );
     }
     idField = sf.getName();
-    
+    //register the EditorialMarkerFactory
+    EditorialMarkerFactory factory = new EditorialMarkerFactory();
+    String markerName = initArgs.get(QueryElevationParams.EDITORIAL_MARKER_FIELD_NAME, "elevated");
+    if (markerName == null || markerName.equals("") == true){
+      markerName = "elevated";
+    }
+    core.addTransformerFactory(markerName, factory);
     forceElevation = initArgs.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
     try {
       synchronized( elevationCache ) {
@@ -357,6 +362,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     
     if( booster != null ) {
+      rb.req.getContext().put("BOOSTED", booster.ids);
+      
       // Change the query to insert forced documents
       if (exclusive == true){
         //we only want these results

@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  *  field.  It stores these tokens in a hash table, and
  *  allocates separate byte streams per token.  Consumers of
  *  this class, eg {@link FreqProxTermsWriter} and {@link
- *  TermVectorsTermsWriter}, write their own byte streams
+ *  TermVectorsConsumer}, write their own byte streams
  *  under each term.
  */
 final class TermsHash extends InvertedDocConsumer {

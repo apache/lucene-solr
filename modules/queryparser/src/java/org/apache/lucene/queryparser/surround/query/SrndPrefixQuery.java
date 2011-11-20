@@ -60,7 +60,7 @@ public class SrndPrefixQuery extends SimpleTerm {
     /* inspired by PrefixQuery.rewrite(): */
     Terms terms = MultiFields.getTerms(reader, fieldName);
     if (terms != null) {
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
 
       boolean skip = false;
       TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(getPrefix()));

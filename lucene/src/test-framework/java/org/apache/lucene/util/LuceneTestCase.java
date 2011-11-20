@@ -157,8 +157,6 @@ public abstract class LuceneTestCase extends Assert {
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
-  private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
-
   /**
    * A random multiplier which you should use when writing random tests:
    * multiply it by the number of iterations
@@ -955,7 +953,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
-    tmp.setExpungeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+    tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
     tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);

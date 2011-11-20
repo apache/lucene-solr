@@ -19,22 +19,21 @@ package org.apache.lucene.index.codecs.appending;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
+import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 
 /**
  * This codec extends {@link Lucene40Codec} to work on append-only outputs, such
  * as plain output streams and append-only filesystems.
- *
- * <p>Note: compound file format feature is not compatible with
- * this codec.  You must call both
- * LogMergePolicy.setUseCompoundFile(false) and
- * LogMergePolicy.setUseCompoundDocStore(false) to disable
- * compound file format.</p>
+ * 
  * @lucene.experimental
  */
 public class AppendingCodec extends Codec {
@@ -45,6 +44,8 @@ public class AppendingCodec extends Codec {
   private final PostingsFormat postings = new AppendingPostingsFormat();
   private final SegmentInfosFormat infos = new AppendingSegmentInfosFormat();
   private final StoredFieldsFormat fields = new DefaultStoredFieldsFormat();
+  private final FieldInfosFormat fieldInfos = new DefaultFieldInfosFormat();
+  private final TermVectorsFormat vectors = new DefaultTermVectorsFormat();
   private final DocValuesFormat docValues = new DefaultDocValuesFormat();
   
   @Override
@@ -56,6 +57,11 @@ public class AppendingCodec extends Codec {
   public StoredFieldsFormat storedFieldsFormat() {
     return fields;
   }
+  
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return vectors;
+  }
 
   @Override
   public DocValuesFormat docValuesFormat() {
@@ -65,5 +71,10 @@ public class AppendingCodec extends Codec {
   @Override
   public SegmentInfosFormat segmentInfosFormat() {
     return infos;
+  }
+  
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    return fieldInfos;
   }
 }

@@ -239,10 +239,12 @@ public final class NumericUtils {
    * The value is converted by getting their IEEE 754 floating-point &quot;double format&quot;
    * bit layout and then some bits are swapped, to be able to compare the result as long.
    * By this the precision is not reduced, but the value can easily used as a long.
+   * The sort order (including {@link Double#NaN}) is defined by
+   * {@link Double#compareTo}; {@code NaN} is greater than positive infinity.
    * @see #sortableLongToDouble
    */
   public static long doubleToSortableLong(double val) {
-    long f = Double.doubleToRawLongBits(val);
+    long f = Double.doubleToLongBits(val);
     if (f<0) f ^= 0x7fffffffffffffffL;
     return f;
   }
@@ -261,10 +263,12 @@ public final class NumericUtils {
    * The value is converted by getting their IEEE 754 floating-point &quot;float format&quot;
    * bit layout and then some bits are swapped, to be able to compare the result as int.
    * By this the precision is not reduced, but the value can easily used as an int.
+   * The sort order (including {@link Float#NaN}) is defined by
+   * {@link Float#compareTo}; {@code NaN} is greater than positive infinity.
    * @see #sortableIntToFloat
    */
   public static int floatToSortableInt(float val) {
-    int f = Float.floatToRawIntBits(val);
+    int f = Float.floatToIntBits(val);
     if (f<0) f ^= 0x7fffffff;
     return f;
   }

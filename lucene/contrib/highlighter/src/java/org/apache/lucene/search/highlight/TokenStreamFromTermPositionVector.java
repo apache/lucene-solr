@@ -27,8 +27,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 
@@ -47,31 +48,42 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
   /**
    * Constructor.
    * 
-   * @param termPositionVector TermPositionVector that contains the data for
+   * @param vector Terms that contains the data for
    *        creating the TokenStream. Must have positions and offsets.
    */
   public TokenStreamFromTermPositionVector(
-      final TermPositionVector termPositionVector) {
+      final Terms vector) throws IOException {
     termAttribute = addAttribute(CharTermAttribute.class);
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
     offsetAttribute = addAttribute(OffsetAttribute.class);
-    final BytesRef[] terms = termPositionVector.getTerms();
-    for (int i = 0; i < terms.length; i++) {
-      final TermVectorOffsetInfo[] offsets = termPositionVector.getOffsets(i);
-      final int[] termPositions = termPositionVector.getTermPositions(i);
-      for (int j = 0; j < termPositions.length; j++) {
+    final TermsEnum termsEnum = vector.iterator(null);
+    BytesRef text;
+    DocsAndPositionsEnum dpEnum = null;
+    while((text = termsEnum.next()) != null) {
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum.nextDoc();
+      final int freq = dpEnum.freq();
+      final OffsetAttribute offsetAtt;
+      if (dpEnum.attributes().hasAttribute(OffsetAttribute.class)) {
+        offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
+      } else {
+        offsetAtt = null;
+      }
+      for (int j = 0; j < freq; j++) {
+        int pos = dpEnum.nextPosition();
         Token token;
-        if (offsets != null) {
-          token = new Token(terms[i].utf8ToString(),
-              offsets[j].getStartOffset(), offsets[j].getEndOffset());
+        if (offsetAtt != null) {
+          token = new Token(text.utf8ToString(),
+                            offsetAtt.startOffset(),
+                            offsetAtt.endOffset());
         } else {
           token = new Token();
-          token.setEmpty().append(terms[i].utf8ToString());
+          token.setEmpty().append(text.utf8ToString());
         }
         // Yes - this is the position, not the increment! This is for
         // sorting. This value
         // will be corrected before use.
-        token.setPositionIncrement(termPositions[j]);
+        token.setPositionIncrement(pos);
         this.positionedTokens.add(token);
       }
     }

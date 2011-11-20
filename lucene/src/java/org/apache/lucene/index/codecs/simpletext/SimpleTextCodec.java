@@ -19,11 +19,12 @@ package org.apache.lucene.index.codecs.simpletext;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
 
 /**
  * plain text index format.
@@ -34,11 +35,11 @@ import org.apache.lucene.index.codecs.StoredFieldsFormat;
 public final class SimpleTextCodec extends Codec {
   private final PostingsFormat postings = new SimpleTextPostingsFormat();
   private final StoredFieldsFormat storedFields = new SimpleTextStoredFieldsFormat();
-  
+  private final SegmentInfosFormat segmentInfos = new SimpleTextSegmentInfosFormat();
+  private final FieldInfosFormat fieldInfosFormat = new SimpleTextFieldInfosFormat();
+  private final TermVectorsFormat vectorsFormat = new SimpleTextTermVectorsFormat();
   // TODO: need a plain-text impl
   private final DocValuesFormat docValues = new DefaultDocValuesFormat();
-  // TODO: need a plain-text impl
-  private final SegmentInfosFormat segmentInfos = new DefaultSegmentInfosFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -57,6 +58,16 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFields;
+  }
+  
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return vectorsFormat;
+  }
+  
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    return fieldInfosFormat;
   }
 
   @Override

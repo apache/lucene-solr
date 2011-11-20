@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
@@ -130,7 +129,6 @@ public class BlockTermsReader extends FieldsProducer {
       seekDir(in, dirOffset);
 
       final int numFields = in.readVInt();
-
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
@@ -182,14 +180,8 @@ public class BlockTermsReader extends FieldsProducer {
         }
       }
     } finally {
-      try {
-        if (postingsReader != null) {
-          postingsReader.close();
-        }
-      } finally {
-        for(FieldReader field : fields.values()) {
-          field.close();
-        }
+      if (postingsReader != null) {
+        postingsReader.close();
       }
     }
   }
@@ -206,6 +198,11 @@ public class BlockTermsReader extends FieldsProducer {
   @Override
   public Terms terms(String field) throws IOException {
     return fields.get(field);
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return fields.size();
   }
 
   // Iterates through all fields
@@ -229,12 +226,12 @@ public class BlockTermsReader extends FieldsProducer {
     }
     
     @Override
-    public TermsEnum terms() throws IOException {
-      return current.iterator();
+    public Terms terms() throws IOException {
+      return current;
     }
   }
 
-  private class FieldReader extends Terms implements Closeable {
+  private class FieldReader extends Terms {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
@@ -258,12 +255,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public void close() {
-      super.close();
-    }
-    
-    @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return new SegmentTermsEnum();
     }
 

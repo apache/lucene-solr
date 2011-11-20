@@ -47,12 +47,19 @@ public abstract class FieldsEnum {
    * null when there are no more fields.*/
   public abstract String next() throws IOException;
 
-  /** Get {@link TermsEnum} for the current field.  You
-   *  should not call {@link #next} until you're done using
-   *  this {@link TermsEnum}.  After {@link #next} returns
-   *  null this method should not be called. This method
-   *  will not return null. */
-  public abstract TermsEnum terms() throws IOException;
+  // TODO: would be nice to require/fix all impls so they
+  // never return null here... we have to fix the writers to
+  // never write 0-terms fields... or maybe allow a non-null
+  // Terms instance in just this case
+
+  /** Get {@link Terms} for the current field.  After {@link #next} returns
+   *  null this method should not be called. This method may
+   *  return null in some cases, which means the provided
+   *  field does not have any terms. */
+  public abstract Terms terms() throws IOException;
+
+  // TODO: should we allow pulling Terms as well?  not just
+  // the iterator?
   
   public final static FieldsEnum[] EMPTY_ARRAY = new FieldsEnum[0];
 
@@ -65,7 +72,7 @@ public abstract class FieldsEnum {
     }
 
     @Override
-    public TermsEnum terms() {
+    public Terms terms() {
       throw new IllegalStateException("this method should never be called");
     }
   };

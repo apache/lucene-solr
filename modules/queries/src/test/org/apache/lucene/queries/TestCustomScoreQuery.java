@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
 /**
@@ -198,7 +199,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     final Query q = new CustomExternalQuery(q1);
     log(q);
 
-    IndexSearcher s = new IndexSearcher(dir, true);
+    IndexReader r = IndexReader.open(dir);
+    IndexSearcher s = new IndexSearcher(r);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
     for(int i=0;i<N_DOCS;i++) {
@@ -207,11 +209,13 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       assertEquals("doc=" + doc, (float) 1+(4*doc) % N_DOCS, score, 0.0001);
     }
     s.close();
+    r.close();
   }
   
   @Test
   public void testRewrite() throws Exception {
-    final IndexSearcher s = new IndexSearcher(dir, true);
+    IndexReader r = IndexReader.open(dir);
+    final IndexSearcher s = new IndexSearcher(r);
 
     Query q = new TermQuery(new Term(TEXT_FIELD, "first"));
     CustomScoreQuery original = new CustomScoreQuery(q);
@@ -229,13 +233,15 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     assertEquals(s.search(q,1).totalHits, s.search(rewritten,1).totalHits);
     
     s.close();
+    r.close();
   }
   
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestCustomScore(ValueSource valueSource, double dboost) throws Exception {
     float boost = (float) dboost;
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
-    IndexSearcher s = new IndexSearcher(dir, true);
+    IndexReader r = IndexReader.open(dir);
+    IndexSearcher s = new IndexSearcher(r);
 
     // regular (boolean) query.
     BooleanQuery q1 = new BooleanQuery();
@@ -285,6 +291,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
         h1, h2CustomNeutral, h3CustomMul, h4CustomAdd, h5CustomMulAdd,
         q1, q2CustomNeutral, q3CustomMul, q4CustomAdd, q5CustomMulAdd);
     s.close();
+    r.close();
   }
 
   // verify results are as expected.

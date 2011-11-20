@@ -286,7 +286,8 @@ public class TestOmitTf extends LuceneTestCase {
     /*
      * Verify the index
      */         
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarityProvider(new SimpleSimilarityProvider());
         
     Term a = new Term("noTf", term);
@@ -400,7 +401,8 @@ public class TestOmitTf extends LuceneTestCase {
                     });
     assertEquals(15, CountingHitCollector.getCount());
         
-    searcher.close();     
+    searcher.close(); 
+    reader.close();
     dir.close();
   }
      
@@ -445,7 +447,7 @@ public class TestOmitTf extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     Terms terms = MultiFields.getTerms(ir, "foo");
-    assertEquals(-1, terms.totalTermFreq(new BytesRef("bar")));
+    assertEquals(-1, MultiFields.totalTermFreq(ir, "foo", new BytesRef("bar")));
     assertEquals(-1, terms.getSumTotalTermFreq());
     ir.close();
     dir.close();

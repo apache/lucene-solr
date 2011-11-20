@@ -45,7 +45,7 @@ public class PrefixQuery extends MultiTermQuery {
   
   @Override  
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    TermsEnum tenum = terms.iterator();
+    TermsEnum tenum = terms.iterator(null);
     
     if (prefix.bytes().length == 0) {
       // no prefix -- match all terms for this field:

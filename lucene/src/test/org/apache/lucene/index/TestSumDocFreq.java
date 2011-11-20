@@ -92,7 +92,7 @@ public class TestSumDocFreq extends LuceneTestCase {
       }
       
       long computedSumDocFreq = 0;
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.iterator(null);
       while (termsEnum.next() != null) {
         computedSumDocFreq += termsEnum.docFreq();
       }

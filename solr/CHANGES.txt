@@ -109,6 +109,8 @@ New Features
   as results. 
   (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl, 
   Arul Kalaipandian, hossman)
+  SOLR-2037: Thanks to SOLR-1566, documents boosted by the QueryElevationComponent
+  can be marked as boosted.  (gsingers, ryan, yonik)
 
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
@@ -189,9 +191,6 @@ New Features
 
 Optimizations
 ----------------------
-
-* SOLR-2742: SolrJ: Provide commitWithinMs as optional parameter for all add() methods,
-  making the feature more conveniently accessible for developers (janhoy)
 
 * SOLR-1875: Per-segment field faceting for single valued string fields.
   Enable with facet.method=fcs, control the number of threads used with
@@ -393,6 +392,22 @@ New Features
 
 * SOLR-1926: Add hl.q parameter. (koji)
 
+* SOLR-2881: Numeric types now support sortMissingFirst/Last. This includes Trie and date types
+  (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
+
+* SOLR-1023: StatsComponent now supports date fields and string fields.
+  (Chris Male, Mark Holland, Gunnlaugur Thor Briem, Ryan McKinley)
+
+* SOLR-2578: ReplicationHandler's backup command now supports a 'numberToKeep' 
+  param that can be used to delete all but the most recent N backups.
+  (James Dyer via hossman)
+
+Optimizations
+----------------------
+
+* SOLR-2742: SolrJ: Provide commitWithinMs as optional parameter for all add() methods,
+  making the feature more conveniently accessible for developers (janhoy)
+
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
@@ -419,6 +434,12 @@ Bug Fixes
 * SOLR-2861: Fix extremely rare race condition on commit that can result
   in a NPE (yonik)
 
+* SOLR-2813: Fix HTTP error codes returned when requests contain strings that
+  can not be parsed as numbers for Trie fields. (Jeff Crump and hossman)
+  
+* SOLR-2902: List of collations are wrong parsed in SpellCheckResponse causing
+  a wrong number of collation results in the response.
+  (Bastiaan Verhoef, James Dyer via Simon Willnauer)
 
  Other Changes
 ----------------------

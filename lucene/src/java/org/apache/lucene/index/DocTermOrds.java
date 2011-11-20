@@ -200,7 +200,7 @@ public class DocTermOrds {
       //System.out.println("GET normal enum");
       final Terms terms = MultiFields.getTerms(reader, field);
       if (terms != null) {
-        return terms.iterator();
+        return terms.iterator(null);
       } else {
         return null;
       }
@@ -234,7 +234,7 @@ public class DocTermOrds {
       return;
     }
 
-    final TermsEnum te = terms.iterator();
+    final TermsEnum te = terms.iterator(null);
     final BytesRef seekStart = termPrefix != null ? termPrefix : new BytesRef();
     //System.out.println("seekStart=" + seekStart.utf8ToString());
     if (te.seekCeil(seekStart) == TermsEnum.SeekStatus.END) {
@@ -644,7 +644,7 @@ public class DocTermOrds {
     public OrdWrappedTermsEnum(IndexReader reader) throws IOException {
       this.reader = reader;
       assert indexedTermsArray != null;
-      termsEnum = MultiFields.getTerms(reader, field).iterator();
+      termsEnum = MultiFields.getTerms(reader, field).iterator(null);
     }
 
     @Override

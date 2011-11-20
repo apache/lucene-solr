@@ -13,6 +13,8 @@ Changes in Runtime Behavior
    provide an analyzer that returns 1 from the offsetGap method.
    (Mike McCandless)
 
+ * LUCENE-2621: Removed contrib/instantiated.  (Robert Muir)
+
 Build
 
  * LUCENE-2845: Moved contrib/benchmark to modules.

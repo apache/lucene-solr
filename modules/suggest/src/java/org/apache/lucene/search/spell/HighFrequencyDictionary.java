@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.BytesRef;
 
@@ -64,7 +63,7 @@ public class HighFrequencyDictionary implements Dictionary {
       try {
         Terms terms = MultiFields.getTerms(reader, field);
         if (terms != null) {
-          termsEnum = terms.iterator();
+          termsEnum = terms.iterator(null);
         }
         minNumDocs = (int)(thresh * (float)reader.numDocs());
       } catch (IOException e) {

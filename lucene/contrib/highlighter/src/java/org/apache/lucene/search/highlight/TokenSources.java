@@ -32,10 +32,11 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -69,12 +70,14 @@ public class TokenSources {
       String field, Document doc, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
-    TermFreqVector tfv = reader.getTermFreqVector(docId, field);
-    if (tfv != null) {
-      if (tfv instanceof TermPositionVector) {
-        ts = getTokenStream((TermPositionVector) tfv);
+    Fields vectors = reader.getTermVectors(docId);
+    if (vectors != null) {
+      Terms vector = vectors.terms(field);
+      if (vector != null) {
+        ts = getTokenStream(vector);
       }
     }
+
     // No token info stored so fall back to analyzing raw content
     if (ts == null) {
       ts = getTokenStream(doc, field, analyzer);
@@ -99,12 +102,14 @@ public class TokenSources {
       String field, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
-    TermFreqVector tfv = reader.getTermFreqVector(docId, field);
-    if (tfv != null) {
-      if (tfv instanceof TermPositionVector) {
-        ts = getTokenStream((TermPositionVector) tfv);
+    Fields vectors = reader.getTermVectors(docId);
+    if (vectors != null) {
+      Terms vector = vectors.terms(field);
+      if (vector != null) {
+        ts = getTokenStream(vector);
       }
     }
+
     // No token info stored so fall back to analyzing raw content
     if (ts == null) {
       ts = getTokenStream(reader, docId, field, analyzer);
@@ -112,10 +117,25 @@ public class TokenSources {
     return ts;
   }
 
-  public static TokenStream getTokenStream(TermPositionVector tpv) {
+  public static TokenStream getTokenStream(Terms vector) throws IOException {
     // assumes the worst and makes no assumptions about token position
     // sequences.
-    return getTokenStream(tpv, false);
+    return getTokenStream(vector, false);
+  }
+
+  private static boolean hasPositions(Terms vector) throws IOException {
+    final TermsEnum termsEnum = vector.iterator(null);
+    if (termsEnum.next() != null) {
+      DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+      if (dpEnum != null) {
+        int pos = dpEnum.nextPosition();
+        if (pos >= 0) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -144,9 +164,10 @@ public class TokenSources {
    *        numbers have no overlaps or gaps. If looking to eek out the last
    *        drops of performance, set to true. If in doubt, set to false.
    */
-  public static TokenStream getTokenStream(TermPositionVector tpv,
-      boolean tokenPositionsGuaranteedContiguous) {
-    if (!tokenPositionsGuaranteedContiguous && tpv.getTermPositions(0) != null) {
+  public static TokenStream getTokenStream(Terms tpv,
+      boolean tokenPositionsGuaranteedContiguous) 
+  throws IOException {
+    if (!tokenPositionsGuaranteedContiguous && hasPositions(tpv)) {
       return new TokenStreamFromTermPositionVector(tpv);
     }
 
@@ -186,56 +207,57 @@ public class TokenSources {
       }
     }
     // code to reconstruct the original sequence of Tokens
-    BytesRef[] terms = tpv.getTerms();
-    int[] freq = tpv.getTermFrequencies();
+    TermsEnum termsEnum = tpv.iterator(null);
     int totalTokens = 0;
-    for (int t = 0; t < freq.length; t++) {
-      totalTokens += freq[t];
+    while(termsEnum.next() != null) {
+      totalTokens += (int) termsEnum.totalTermFreq();
     }
     Token tokensInOriginalOrder[] = new Token[totalTokens];
     ArrayList<Token> unsortedTokens = null;
-    for (int t = 0; t < freq.length; t++) {
-      TermVectorOffsetInfo[] offsets = tpv.getOffsets(t);
-      if (offsets == null) {
+    termsEnum = tpv.iterator(null);
+    BytesRef text;
+    DocsAndPositionsEnum dpEnum = null;
+    while ((text = termsEnum.next()) != null) {
+
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      if (dpEnum == null || (!dpEnum.attributes().hasAttribute(OffsetAttribute.class))) {
         throw new IllegalArgumentException(
             "Required TermVector Offset information was not found");
       }
 
-      int[] pos = null;
-      if (tokenPositionsGuaranteedContiguous) {
-        // try get the token position info to speed up assembly of tokens into
-        // sorted sequence
-        pos = tpv.getTermPositions(t);
-      }
-      if (pos == null) {
-        // tokens NOT stored with positions or not guaranteed contiguous - must
-        // add to list and sort later
-        if (unsortedTokens == null) {
-          unsortedTokens = new ArrayList<Token>();
-        }
-        for (int tp = 0; tp < offsets.length; tp++) {
-          Token token = new Token(terms[t].utf8ToString(),
-              offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
+      final String term = text.utf8ToString();
+
+      final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
+      dpEnum.nextDoc();
+      final int freq = dpEnum.freq();
+      for(int posUpto=0;posUpto<freq;posUpto++) {
+        final int pos = dpEnum.nextPosition();
+        final Token token = new Token(term,
+                                      offsetAtt.startOffset(),
+                                      offsetAtt.endOffset());
+        if (tokenPositionsGuaranteedContiguous && pos != -1) {
+          // We have positions stored and a guarantee that the token position
+          // information is contiguous
+
+          // This may be fast BUT wont work if Tokenizers used which create >1
+          // token in same position or
+          // creates jumps in position numbers - this code would fail under those
+          // circumstances
+
+          // tokens stored with positions - can use this to index straight into
+          // sorted array
+          tokensInOriginalOrder[pos] = token;
+        } else {
+          // tokens NOT stored with positions or not guaranteed contiguous - must
+          // add to list and sort later
+          if (unsortedTokens == null) {
+            unsortedTokens = new ArrayList<Token>();
+          }
           unsortedTokens.add(token);
-        }
-      } else {
-        // We have positions stored and a guarantee that the token position
-        // information is contiguous
-
-        // This may be fast BUT wont work if Tokenizers used which create >1
-        // token in same position or
-        // creates jumps in position numbers - this code would fail under those
-        // circumstances
-
-        // tokens stored with positions - can use this to index straight into
-        // sorted array
-        for (int tp = 0; tp < pos.length; tp++) {
-          Token token = new Token(terms[t].utf8ToString(),
-              offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
-          tokensInOriginalOrder[pos[tp]] = token;
         }
       }
     }
+
     // If the field has been stored without position data we must perform a sort
     if (unsortedTokens != null) {
       tokensInOriginalOrder = unsortedTokens.toArray(new Token[unsortedTokens
@@ -253,18 +275,25 @@ public class TokenSources {
 
   public static TokenStream getTokenStream(IndexReader reader, int docId,
       String field) throws IOException {
-    TermFreqVector tfv = reader.getTermFreqVector(docId, field);
-    if (tfv == null) {
+
+    Fields vectors = reader.getTermVectors(docId);
+    if (vectors == null) {
       throw new IllegalArgumentException(field + " in doc #" + docId
           + "does not have any term position data stored");
     }
-    if (tfv instanceof TermPositionVector) {
-      TermPositionVector tpv = (TermPositionVector) reader.getTermFreqVector(
-          docId, field);
-      return getTokenStream(tpv);
+
+    Terms vector = vectors.terms(field);
+    if (vector == null) {
+      throw new IllegalArgumentException(field + " in doc #" + docId
+          + "does not have any term position data stored");
     }
-    throw new IllegalArgumentException(field + " in doc #" + docId
-        + "does not have any term position data stored");
+
+    if (!hasPositions(vector)) {
+      throw new IllegalArgumentException(field + " in doc #" + docId
+          + "does not have any term position data stored");
+    }
+    
+    return getTokenStream(vector);
   }
 
   // convenience method

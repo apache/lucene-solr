@@ -18,24 +18,24 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.ArrayList;
+import java.util.Set;
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -222,27 +222,32 @@ public class PhraseQuery extends Query {
       final IndexReader reader = context.reader;
       final Bits liveDocs = acceptDocs;
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
+
+      final Terms fieldTerms = reader.terms(field);
+      if (fieldTerms == null) {
+        return null;
+      }
+
+      // Reuse single TermsEnum below:
+      final TermsEnum te = fieldTerms.iterator(null);
+      
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
         final TermState state = states[i].get(context.ord);
         if (state == null) { /* term doesnt exist in this segment */
-          assert termNotInReader(reader, field, t.bytes()) : "no termstate found but term exists in reader";
+          assert termNotInReader(reader, field, t.bytes()): "no termstate found but term exists in reader";
           return null;
         }
-        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(liveDocs,
-                                                                     t.field(),
-                                                                     t.bytes(),
-                                                                     state);
+        te.seekExact(t.bytes(), state);
+        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null);
+
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          assert (reader.termDocsEnum(liveDocs, t.field(), t.bytes(), state) != null) : "termstate found but no term exists in reader";
+          assert reader.termDocsEnum(liveDocs, t.field(), t.bytes(), state) != null: "termstate found but no term exists in reader";
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        // get the docFreq without seeking
-        TermsEnum te = reader.fields().terms(field).getThreadTermsEnum();
-        te.seekExact(t.bytes(), state);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i).intValue(), t);
       }
 
@@ -264,10 +269,9 @@ public class PhraseQuery extends Query {
       }
     }
     
+    // only called from assert
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
-      // only called from assert
-      final Terms terms = reader.terms(field);
-      return terms == null || terms.docFreq(bytes) == 0;
+      return reader.docFreq(field, bytes) == 0;
     }
 
     @Override

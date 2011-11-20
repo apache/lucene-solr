@@ -32,7 +32,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
@@ -50,16 +49,7 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
   private final static int FORMAT_SIZE = 4;
 
   private final FieldInfos fieldInfos;
-  private CloseableThreadLocal<IndexInput> fieldsStreamTL = new CloseableThreadLocal<IndexInput>();
-  
-  // The main fieldStream, used only for cloning.
-  private final IndexInput cloneableFieldsStream;
-
-  // This is a clone of cloneableFieldsStream used for reading documents.
-  // It should not be cloned outside of a synchronized context.
   private final IndexInput fieldsStream;
-
-  private final IndexInput cloneableIndexStream;
   private final IndexInput indexStream;
   private int numTotalDocs;
   private int size;
@@ -70,8 +60,6 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
 
-  private boolean isOriginal = false;
-
   /** Returns a cloned FieldsReader that shares open
    *  IndexInputs with the original one.  It is the caller's
    *  job not to close the original FieldsReader until all
@@ -80,7 +68,7 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
   @Override
   public DefaultStoredFieldsReader clone() {
     ensureOpen();
-    return new DefaultStoredFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
+    return new DefaultStoredFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, (IndexInput)fieldsStream.clone(), (IndexInput)indexStream.clone());
   }
 
   /** Verifies that the code version which wrote the segment is supported. */
@@ -102,16 +90,14 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
   
   // Used only by clone
   private DefaultStoredFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int docStoreOffset,
-                       IndexInput cloneableFieldsStream, IndexInput cloneableIndexStream) {
+                       IndexInput fieldsStream, IndexInput indexStream) {
     this.fieldInfos = fieldInfos;
     this.numTotalDocs = numTotalDocs;
     this.size = size;
     this.format = format;
     this.docStoreOffset = docStoreOffset;
-    this.cloneableFieldsStream = cloneableFieldsStream;
-    this.cloneableIndexStream = cloneableIndexStream;
-    fieldsStream = (IndexInput) cloneableFieldsStream.clone();
-    indexStream = (IndexInput) cloneableIndexStream.clone();
+    this.fieldsStream = fieldsStream;
+    this.indexStream = indexStream;
   }
 
   public DefaultStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
@@ -119,24 +105,20 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
     final int docStoreOffset = si.getDocStoreOffset();
     final int size = si.docCount;
     boolean success = false;
-    isOriginal = true;
+    fieldInfos = fn;
     try {
-      fieldInfos = fn;
-
-      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", DefaultStoredFieldsWriter.FIELDS_EXTENSION), context);
+      fieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", DefaultStoredFieldsWriter.FIELDS_EXTENSION), context);
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", DefaultStoredFieldsWriter.FIELDS_INDEX_EXTENSION);
-      cloneableIndexStream = d.openInput(indexStreamFN, context);
+      indexStream = d.openInput(indexStreamFN, context);
       
-      format = cloneableIndexStream.readInt();
+      format = indexStream.readInt();
 
       if (format < DefaultStoredFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(cloneableIndexStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooOldException(indexStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
       if (format > DefaultStoredFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(cloneableIndexStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooNewException(indexStream, format, DefaultStoredFieldsWriter.FORMAT_MINIMUM, DefaultStoredFieldsWriter.FORMAT_CURRENT);
 
-      fieldsStream = (IndexInput) cloneableFieldsStream.clone();
-
-      final long indexSize = cloneableIndexStream.length() - FORMAT_SIZE;
+      final long indexSize = indexStream.length() - FORMAT_SIZE;
       
       if (docStoreOffset != -1) {
         // We read only a slice out of this shared fields file
@@ -154,8 +136,6 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
           throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.docCount);
         }
       }
-
-      indexStream = (IndexInput) cloneableIndexStream.clone();
       numTotalDocs = (int) (indexSize >> 3);
       success = true;
     } finally {
@@ -180,18 +160,14 @@ public final class DefaultStoredFieldsReader extends StoredFieldsReader implemen
   }
 
   /**
-   * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams, including any ones associated with a
-   * lazy implementation of a Field.  This means that the Fields values will not be accessible.
+   * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams.
+   * This means that the Fields values will not be accessible.
    *
    * @throws IOException
    */
   public final void close() throws IOException {
     if (!closed) {
-      if (isOriginal) {
-        IOUtils.close(fieldsStream, indexStream, fieldsStreamTL, cloneableFieldsStream, cloneableIndexStream);
-      } else {
-        IOUtils.close(fieldsStream, indexStream, fieldsStreamTL);
-      }
+      IOUtils.close(fieldsStream, indexStream);
       closed = true;
     }
   }

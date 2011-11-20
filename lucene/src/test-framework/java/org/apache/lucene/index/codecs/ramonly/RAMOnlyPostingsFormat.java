@@ -109,6 +109,11 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int getUniqueFieldCount() {
+      return fieldToTerms.size();
+    }
+
+    @Override
     public FieldsEnum iterator() {
       return new RAMFieldsEnum(this);
     }
@@ -150,7 +155,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum iterator(TermsEnum reuse) {
       return new RAMTermsEnum(RAMOnlyPostingsFormat.RAMField.this);
     }
 
@@ -300,8 +305,8 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum terms() {
-      return new RAMTermsEnum(postings.fieldToTerms.get(current));
+    public Terms terms() {
+      return postings.fieldToTerms.get(current);
     }
   }
 

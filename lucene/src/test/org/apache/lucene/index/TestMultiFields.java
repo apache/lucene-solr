@@ -113,7 +113,6 @@ public class TestMultiFields extends LuceneTestCase {
       for(int delDoc : deleted) {
         assertFalse(liveDocs.get(delDoc));
       }
-      Terms terms2 = MultiFields.getTerms(reader, "field");
 
       for(int i=0;i<100;i++) {
         BytesRef term = terms.get(random.nextInt(terms.size()));
@@ -121,7 +120,7 @@ public class TestMultiFields extends LuceneTestCase {
           System.out.println("TEST: seek term="+ UnicodeUtil.toHexString(term.utf8ToString()) + " " + term);
         }
         
-        DocsEnum docsEnum = terms2.docs(liveDocs, term, null);
+        DocsEnum docsEnum = MultiFields.getTermDocsEnum(reader, liveDocs, "field", term);
         assertNotNull(docsEnum);
 
         for(int docID : docs.get(term)) {

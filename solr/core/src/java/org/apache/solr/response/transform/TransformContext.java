@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import org.apache.lucene.search.Query;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -32,4 +33,5 @@ public class TransformContext
   public boolean wantsScores = false;
   public DocIterator iterator;
   public SolrIndexSearcher searcher;
+  public SolrQueryRequest req;
 }

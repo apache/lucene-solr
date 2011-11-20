@@ -17,17 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
-
-import java.io.IOException;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMultiThreadTermVectors extends LuceneTestCase {
   private Directory directory;
@@ -161,34 +163,34 @@ class MultiThreadTermVectorsReader implements Runnable {
     long start = 0L;
     for (int docId = 0; docId < numDocs; docId++) {
       start = System.currentTimeMillis();
-      TermFreqVector [] vectors = reader.getTermFreqVectors(docId);
+      Fields vectors = reader.getTermVectors(docId);
       timeElapsed += System.currentTimeMillis()-start;
       
       // verify vectors result
       verifyVectors(vectors, docId);
       
       start = System.currentTimeMillis();
-      TermFreqVector vector = reader.getTermFreqVector(docId, "field");
+      Terms vector = reader.getTermVectors(docId).terms("field");
       timeElapsed += System.currentTimeMillis()-start;
       
-      vectors = new TermFreqVector[1];
-      vectors[0] = vector;
-      
-      verifyVectors(vectors, docId);
-      
+      verifyVector(vector.iterator(null), docId);
     }
   }
   
-  private void verifyVectors(TermFreqVector[] vectors, int num) {
-    StringBuilder temp = new StringBuilder();
-    BytesRef[] terms = null;
-    for (int i = 0; i < vectors.length; i++) {
-      terms = vectors[i].getTerms();
-      for (int z = 0; z < terms.length; z++) {
-        temp.append(terms[z].utf8ToString());
-      }
+  private void verifyVectors(Fields vectors, int num) throws IOException {
+    FieldsEnum fieldsEnum = vectors.iterator();
+    while(fieldsEnum.next() != null) {
+      Terms terms = fieldsEnum.terms();
+      assert terms != null;
+      verifyVector(terms.iterator(null), num);
     }
-    
+  }
+
+  private void verifyVector(TermsEnum vector, int num) throws IOException {
+    StringBuilder temp = new StringBuilder();
+    while(vector.next() != null) {
+      temp.append(vector.term().utf8ToString());
+    }
     if (!English.intToEnglish(num).trim().equals(temp.toString().trim()))
         System.out.println("wrong term result");
   }

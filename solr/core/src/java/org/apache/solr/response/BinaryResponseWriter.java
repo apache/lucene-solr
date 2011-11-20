@@ -119,17 +119,17 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     protected void writeResultsBody( ResultContext res, JavaBinCodec codec ) throws IOException 
     {
       DocList ids = res.docs;
-      TransformContext context = new TransformContext();
-      context.query = res.query;
-      context.wantsScores = returnFields.wantsScore() && ids.hasScores();
-      
       int sz = ids.size();
       codec.writeTag(JavaBinCodec.ARR, sz);
       if(searcher == null) searcher = solrQueryRequest.getSearcher();
-      if(schema == null) schema = solrQueryRequest.getSchema(); 
-      
-      context.searcher = searcher;
+      if(schema == null) schema = solrQueryRequest.getSchema();
+
       DocTransformer transformer = returnFields.getTransformer();
+      TransformContext context = new TransformContext();
+      context.query = res.query;
+      context.wantsScores = returnFields.wantsScore() && ids.hasScores();
+      context.req = solrQueryRequest;
+      context.searcher = searcher;
       if( transformer != null ) {
         transformer.setContext( context );
       }
@@ -141,7 +141,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         Document doc = searcher.doc(id, fnames);
         SolrDocument sdoc = getDoc(doc);
         if( transformer != null ) {
-          transformer.transform(sdoc, id );
+          transformer.transform(sdoc, id);
         }
         codec.writeSolrDocument(sdoc);
       }

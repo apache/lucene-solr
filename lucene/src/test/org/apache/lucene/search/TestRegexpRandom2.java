@@ -113,7 +113,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     
     @Override
     protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-      return new SimpleAutomatonTermsEnum(terms.iterator());
+      return new SimpleAutomatonTermsEnum(terms.iterator(null));
     }
 
     private class SimpleAutomatonTermsEnum extends FilteredTermsEnum {

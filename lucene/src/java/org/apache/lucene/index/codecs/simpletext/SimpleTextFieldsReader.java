@@ -87,8 +87,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum terms() throws IOException {
-      return SimpleTextFieldsReader.this.terms(current).iterator();
+    public Terms terms() throws IOException {
+      return SimpleTextFieldsReader.this.terms(current);
     }
   }
 
@@ -314,7 +314,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private class SimpleTextDocsAndPositionsEnum extends DocsAndPositionsEnum {
     private final IndexInput inStart;
     private final IndexInput in;
-    private int docID;
+    private int docID = -1;
     private int tf;
     private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
@@ -336,6 +336,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs) {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
+      docID = -1;
       return this;
     }
 
@@ -523,7 +524,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
       if (fst != null) {
         return new SimpleTextTermsEnum(fst, indexOptions);
       } else {
@@ -579,6 +580,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
       termsCache.put(field, terms);
     }
     return terms;
+  }
+
+  @Override
+  public int getUniqueFieldCount() {
+    return -1;
   }
 
   @Override

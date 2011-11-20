@@ -53,7 +53,7 @@ public class TestFlex extends LuceneTestCase {
 
       IndexReader r = w.getReader();
       
-      TermsEnum terms = MultiFields.getTerms(r, "field3").iterator();
+      TermsEnum terms = MultiFields.getTerms(r, "field3").iterator(null);
       assertEquals(TermsEnum.SeekStatus.END, terms.seekCeil(new BytesRef("abc")));
       r.close();
     }
@@ -70,7 +70,7 @@ public class TestFlex extends LuceneTestCase {
     doc.add(newField("f", "a b c", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    TermsEnum terms = r.getSequentialSubReaders()[0].fields().terms("f").iterator();
+    TermsEnum terms = r.getSequentialSubReaders()[0].fields().terms("f").iterator(null);
     assertTrue(terms.next() != null);
     try {
       assertEquals(0, terms.ord());

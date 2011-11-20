@@ -32,18 +32,20 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
-  private RAMDirectory directory;
+  private Directory directory;
   private IndexSearcher searcher;
+  private IndexReader reader;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
@@ -54,7 +56,16 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
     writer.close();
 
-    searcher = new IndexSearcher(directory, true);
+    reader = IndexReader.open(directory);
+    searcher = new IndexSearcher(reader);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
   }
 
   /*

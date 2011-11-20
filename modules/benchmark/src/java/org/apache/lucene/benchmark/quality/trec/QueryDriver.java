@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.quality.trec;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.benchmark.quality.*;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
 
@@ -53,7 +54,8 @@ public class QueryDriver {
     SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     int maxResults = 1000;
     String docNameField = "docname";
@@ -86,5 +88,8 @@ public class QueryDriver {
     // print an avarage sum of the results
     QualityStats avg = QualityStats.average(stats);
     avg.log("SUMMARY", 2, logger, "  ");
+    searcher.close();
+    reader.close();
+    dir.close();
   }
 }

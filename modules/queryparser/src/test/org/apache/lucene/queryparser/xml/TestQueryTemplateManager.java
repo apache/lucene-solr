@@ -20,6 +20,7 @@ package org.apache.lucene.queryparser.xml;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -46,6 +47,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
   private CoreParser builder;
   private final Analyzer analyzer = new MockAnalyzer(random);
   private IndexSearcher searcher;
+  private IndexReader reader;
   private Directory dir;
 
   //A collection of documents' field values for use in our tests
@@ -147,7 +149,8 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     }
     w.forceMerge(1);
     w.close();
-    searcher = new IndexSearcher(dir, true);
+    reader = IndexReader.open(dir);
+    searcher = new IndexSearcher(reader);
 
     //initialize the parser
     builder = new CorePlusExtensionsParser("artist", analyzer);
@@ -157,6 +160,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     searcher.close();
+    reader.close();
     dir.close();
     super.tearDown();
   }

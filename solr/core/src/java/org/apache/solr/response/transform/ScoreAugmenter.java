@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Simple Augmenter that adds the docId

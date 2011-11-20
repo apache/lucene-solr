@@ -25,9 +25,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -91,7 +94,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // "content", and then set our expected file names below
     // accordingly:
     CompoundFileDirectory cfsReader = new CompoundFileDirectory(dir, "_2.cfs", newIOContext(random), false);
-    FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
+    FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
+    FieldInfos fieldInfos = infosReader.read(cfsReader, "2", IOContext.READONCE);
     int contentFieldIndex = -1;
     for (FieldInfo fi : fieldInfos) {
       if (fi.name.equals("content")) {

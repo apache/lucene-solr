@@ -1703,6 +1703,10 @@ public final class SolrCore implements SolrInfoMBean {
   public TransformerFactory getTransformerFactory(String name) {
     return transformerFactories.get(name);
   }
+
+  public void addTransformerFactory(String name, TransformerFactory factory){
+    transformerFactories.put(name, factory);
+  }
   
 
   /**

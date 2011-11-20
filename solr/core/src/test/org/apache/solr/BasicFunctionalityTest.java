@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.LinkedList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -222,6 +224,43 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
   }
 
+
+  @Test
+  public void testClientErrorOnMalformedNumbers() throws Exception {
+
+    final String BAD_VALUE = "NOT_A_NUMBER";
+    ignoreException(BAD_VALUE);
+
+    final List<String> FIELDS = new LinkedList<String>();
+    for (String type : new String[] { "ti", "tf", "td", "tl" }) {
+      FIELDS.add("malformed_" + type);
+    }
+
+    // test that malformed numerics cause client error not server error
+    for (String field : FIELDS) {
+      try {
+        h.update(add( doc("id","100", field, BAD_VALUE)));
+        fail("Didn't encounter an error trying to add a non-number: " + field);
+      } catch (SolrException e) {
+        String msg = e.toString();
+        assertTrue("not an (update) client error on field: " + field +" : "+ msg,
+                   400 <= e.code() && e.code() < 500);
+        assertTrue("(update) client error does not mention bad value: " + msg,
+                   msg.contains(BAD_VALUE));
+      }
+      try {
+        h.query(req("q",field + ":" + BAD_VALUE));
+        fail("Didn't encounter an error trying to query a non-number: " + field);
+      } catch (SolrException e) {
+        String msg = e.toString();
+        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
+                   400 <= e.code() && e.code() < 500);
+        assertTrue("(search) client error does not mention bad value: " + msg,
+                   msg.contains(BAD_VALUE));
+      }
+    }
+  }
+  
   @Test
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";

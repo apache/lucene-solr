@@ -91,7 +91,7 @@ public class QualityQueriesFinder {
       int threshold = ir.maxDoc() / 10; // ignore words too common.
       Terms terms = MultiFields.getTerms(ir, field);
       if (terms != null) {
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.iterator(null);
         while (termsEnum.next() != null) {
           int df = termsEnum.docFreq();
           if (df<threshold) {

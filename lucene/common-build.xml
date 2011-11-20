@@ -808,7 +808,7 @@
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
-        <compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
+	<compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
       </javac>
     </sequential>
   </macrodef>

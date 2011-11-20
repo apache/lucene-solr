@@ -29,19 +29,21 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 /**
  * A test class for ShingleAnalyzerWrapper as regards queries and scoring.
  */
 public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
-
-  public IndexSearcher searcher;
+  private Analyzer analyzer;
+  private IndexSearcher searcher;
+  private IndexReader reader;
+  private Directory directory;
 
   /**
    * Set up a new index in RAM with three test phrases and the supplied Analyzer.
@@ -50,9 +52,12 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * @return an indexSearcher on the test index.
    * @throws Exception if an error occurs with index writer or searcher
    */
-  public IndexSearcher setUpSearcher(Analyzer analyzer) throws Exception {
-    Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new ShingleAnalyzerWrapper(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2);
+    directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc;
     doc = new Document();
@@ -69,7 +74,16 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     writer.close();
 
-    return new IndexSearcher(dir, true);
+    reader = IndexReader.open(directory);
+    searcher = new IndexSearcher(reader);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
   }
 
   protected void compareRanks(ScoreDoc[] hits, int[] ranks) throws Exception {
@@ -83,9 +97,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * This shows how to construct a phrase query containing shingles.
    */
   public void testShingleAnalyzerWrapperPhraseQuery() throws Exception {
-    Analyzer analyzer = new ShingleAnalyzerWrapper(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2);
-    searcher = setUpSearcher(analyzer);
-
     PhraseQuery q = new PhraseQuery();
 
     TokenStream ts = analyzer.tokenStream("content", new StringReader("this sentence"));
@@ -112,9 +123,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * in the right order and adjacent to each other.
    */
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
-    Analyzer analyzer = new ShingleAnalyzerWrapper(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2);
-    searcher = setUpSearcher(analyzer);
-
     BooleanQuery q = new BooleanQuery();
 
     TokenStream ts = analyzer.tokenStream("content", new StringReader("test sentence"));

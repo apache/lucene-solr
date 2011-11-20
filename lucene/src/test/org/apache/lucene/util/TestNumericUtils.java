@@ -143,7 +143,7 @@ public class TestNumericUtils extends LuceneTestCase {
   public void testDoubles() throws Exception {
     double[] vals=new double[]{
       Double.NEGATIVE_INFINITY, -2.3E25, -1.0E15, -1.0, -1.0E-1, -1.0E-2, -0.0, 
-      +0.0, 1.0E-2, 1.0E-1, 1.0, 1.0E15, 2.3E25, Double.POSITIVE_INFINITY
+      +0.0, 1.0E-2, 1.0E-1, 1.0, 1.0E15, 2.3E25, Double.POSITIVE_INFINITY, Double.NaN
     };
     long[] longVals=new long[vals.length];
     
@@ -159,10 +159,28 @@ public class TestNumericUtils extends LuceneTestCase {
     }
   }
 
+  public static final double[] DOUBLE_NANs = {
+    Double.NaN,
+    Double.longBitsToDouble(0x7ff0000000000001L),
+    Double.longBitsToDouble(0x7fffffffffffffffL),
+    Double.longBitsToDouble(0xfff0000000000001L),
+    Double.longBitsToDouble(0xffffffffffffffffL)
+  };
+
+  public void testSortableDoubleNaN() {
+    final long plusInf = NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
+    for (double nan : DOUBLE_NANs) {
+      assertTrue(Double.isNaN(nan));
+      final long sortable = NumericUtils.doubleToSortableLong(nan);
+      assertTrue("Double not sorted correctly: " + nan + ", long repr: " 
+          + sortable + ", positive inf.: " + plusInf, sortable > plusInf);
+    }
+  }
+  
   public void testFloats() throws Exception {
     float[] vals=new float[]{
       Float.NEGATIVE_INFINITY, -2.3E25f, -1.0E15f, -1.0f, -1.0E-1f, -1.0E-2f, -0.0f, 
-      +0.0f, 1.0E-2f, 1.0E-1f, 1.0f, 1.0E15f, 2.3E25f, Float.POSITIVE_INFINITY
+      +0.0f, 1.0E-2f, 1.0E-1f, 1.0f, 1.0E15f, 2.3E25f, Float.POSITIVE_INFINITY, Float.NaN
     };
     int[] intVals=new int[vals.length];
     
@@ -177,7 +195,25 @@ public class TestNumericUtils extends LuceneTestCase {
       assertTrue( "check sort order", intVals[i-1] < intVals[i] );
     }
   }
-  
+
+  public static final float[] FLOAT_NANs = {
+    Float.NaN,
+    Float.intBitsToFloat(0x7f800001),
+    Float.intBitsToFloat(0x7fffffff),
+    Float.intBitsToFloat(0xff800001),
+    Float.intBitsToFloat(0xffffffff)
+  };
+
+  public void testSortableFloatNaN() {
+    final int plusInf = NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
+    for (float nan : FLOAT_NANs) {
+      assertTrue(Float.isNaN(nan));
+      final int sortable = NumericUtils.floatToSortableInt(nan);
+      assertTrue("Float not sorted correctly: " + nan + ", int repr: " 
+          + sortable + ", positive inf.: " + plusInf, sortable > plusInf);
+    }
+  }
+
   // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitely tested by range filter tests
   
   /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */

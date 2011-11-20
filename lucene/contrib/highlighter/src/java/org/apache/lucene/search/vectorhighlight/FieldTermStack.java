@@ -21,10 +21,12 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 
@@ -76,30 +78,55 @@ public class FieldTermStack {
     // just return to make null snippet if un-matched fieldName specified when fieldMatch == true
     if( termSet == null ) return;
 
-    TermFreqVector tfv = reader.getTermFreqVector( docId, fieldName );
-    if( tfv == null ) return; // just return to make null snippets
-    TermPositionVector tpv = null;
-    try{
-      tpv = (TermPositionVector)tfv;
+    final Fields vectors = reader.getTermVectors(docId);
+    if (vectors == null) {
+      // null snippet
+      return;
     }
-    catch( ClassCastException e ){
-      return; // just return to make null snippets
+
+    final Terms vector = vectors.terms(fieldName);
+    if (vector == null) {
+      // null snippet
+      return;
     }
-    
+
     final CharsRef spare = new CharsRef();
-    for( BytesRef term : tpv.getTerms() ){
-      if( !termSet.contains( term.utf8ToChars(spare).toString() ) ) continue;
-      int index = tpv.indexOf( term );
-      TermVectorOffsetInfo[] tvois = tpv.getOffsets( index );
-      if( tvois == null ) return; // just return to make null snippets
-      int[] poss = tpv.getTermPositions( index );
-      if( poss == null ) return; // just return to make null snippets
-      for( int i = 0; i < tvois.length; i++ )
-        termList.add( new TermInfo( term.utf8ToChars(spare).toString(), tvois[i].getStartOffset(), tvois[i].getEndOffset(), poss[i] ) );
+    final TermsEnum termsEnum = vector.iterator(null);
+    DocsAndPositionsEnum dpEnum = null;
+    BytesRef text;
+    while ((text = termsEnum.next()) != null) {
+      final String term = text.utf8ToChars(spare).toString();
+      if (!termSet.contains(term)) {
+        continue;
+      }
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      if (dpEnum == null) {
+        // null snippet
+        return;
+      }
+
+      if (!dpEnum.attributes().hasAttribute(OffsetAttribute.class)) {
+        // null snippet
+        return;
+      }
+      dpEnum.nextDoc();
+
+      final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
+
+      final int freq = dpEnum.freq();
+      
+      for(int i = 0;i < freq;i++) {
+        final int pos = dpEnum.nextPosition();
+        if (pos == -1) {
+          // null snippet
+          return;
+        }
+        termList.add(new TermInfo(term, offsetAtt.startOffset(), offsetAtt.endOffset(), pos));
+      }
     }
     
     // sort by position
-    Collections.sort( termList );
+    Collections.sort(termList);
   }
 
   /**

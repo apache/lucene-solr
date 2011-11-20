@@ -92,17 +92,12 @@ final class TermInfosWriter implements Closeable {
     initialize(directory, segment, fis, interval, false);
     boolean success = false;
     try {
-    other = new TermInfosWriter(directory, segment, fis, interval, true);
-    other.other = this;
+      other = new TermInfosWriter(directory, segment, fis, interval, true);
+      other.other = this;
       success = true;
     } finally {
       if (!success) {
-        try {
-          IOUtils.closeWhileHandlingException(output);
-        } catch (IOException e) {
-          // cannot happen since we suppress exceptions
-          throw new RuntimeException(e);
-        }
+        IOUtils.closeWhileHandlingException(output);
 
         try {
           directory.deleteFile(IndexFileNames.segmentFileName(segment, "",
@@ -129,21 +124,16 @@ final class TermInfosWriter implements Closeable {
             : Lucene3xPostingsFormat.TERMS_EXTENSION)), IOContext.DEFAULT);
     boolean success = false;
     try {
-    output.writeInt(FORMAT_CURRENT);              // write format
-    output.writeLong(0);                          // leave space for size
-    output.writeInt(indexInterval);               // write indexInterval
-    output.writeInt(skipInterval);                // write skipInterval
-    output.writeInt(maxSkipLevels);               // write maxSkipLevels
-    assert initUTF16Results();
+      output.writeInt(FORMAT_CURRENT);              // write format
+      output.writeLong(0);                          // leave space for size
+      output.writeInt(indexInterval);               // write indexInterval
+      output.writeInt(skipInterval);                // write skipInterval
+      output.writeInt(maxSkipLevels);               // write maxSkipLevels
+      assert initUTF16Results();
       success = true;
     } finally {
       if (!success) {
-        try {
-          IOUtils.closeWhileHandlingException(output);
-        } catch (IOException e) {
-          // cannot happen since we suppress exceptions
-          throw new RuntimeException(e);
-        }
+        IOUtils.closeWhileHandlingException(output);
 
         try {
           directory.deleteFile(IndexFileNames.segmentFileName(segment, "",

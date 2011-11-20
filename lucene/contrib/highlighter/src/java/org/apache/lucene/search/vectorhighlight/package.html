@@ -95,7 +95,7 @@ will be generated:</p>
 </pre>
 
 <h3>Step 2.</h3>
-<p>In Step 2, Fast Vector Highlighter generates {@link org.apache.lucene.search.vectorhighlight.FieldTermStack}. Fast Vector Highlighter uses {@link org.apache.lucene.index.TermFreqVector} data
+<p>In Step 2, Fast Vector Highlighter generates {@link org.apache.lucene.search.vectorhighlight.FieldTermStack}. Fast Vector Highlighter uses term vector data
 (must be stored {@link org.apache.lucene.document.FieldType#setStoreTermVectorOffsets(boolean)} and {@link org.apache.lucene.document.FieldType#setStoreTermVectorPositions(boolean)})
 to generate it. <code>FieldTermStack</code> keeps the terms in the user query.
 Therefore, in this sample case, Fast Vector Highlighter generates the following <code>FieldTermStack</code>:</p>

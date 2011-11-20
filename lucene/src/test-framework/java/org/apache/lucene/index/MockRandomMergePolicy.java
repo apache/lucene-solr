@@ -93,7 +93,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMergesToExpungeDeletes(
+  public MergeSpecification findForcedDeletesMerges(
       SegmentInfos segmentInfos)
     throws CorruptIndexException, IOException {
     return findMerges(segmentInfos);

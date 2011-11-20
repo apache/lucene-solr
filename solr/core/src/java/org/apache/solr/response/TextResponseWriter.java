@@ -146,8 +146,12 @@ public abstract class TextResponseWriter {
       writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
       SolrDocument doc = toSolrDocument( (Document)val );
-      if( returnFields.getTransformer() != null ) {
-        returnFields.getTransformer().transform( doc, -1 );
+      DocTransformer transformer = returnFields.getTransformer();
+      if( transformer != null ) {
+        TransformContext context = new TransformContext();
+        context.req = req;
+        transformer.setContext(context);
+        transformer.transform(doc, -1);
       }
       writeSolrDocument(name, doc, returnFields, 0 );
     } else if (val instanceof SolrDocument) {
@@ -232,6 +236,7 @@ public abstract class TextResponseWriter {
     TransformContext context = new TransformContext();
     context.query = res.query;
     context.wantsScores = fields.wantsScore() && ids.hasScores();
+    context.req = req;
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(), 
         context.wantsScores ? new Float(ids.maxScore()) : null );
     
@@ -248,7 +253,7 @@ public abstract class TextResponseWriter {
       Document doc = context.searcher.doc(id, fnames);
       SolrDocument sdoc = toSolrDocument( doc );
       if( transformer != null ) {
-        transformer.transform( sdoc, id );
+        transformer.transform( sdoc, id);
       }
       writeSolrDocument( null, sdoc, returnFields, i );
     }

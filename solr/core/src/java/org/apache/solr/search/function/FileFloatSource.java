@@ -241,7 +241,7 @@ public class FileFloatSource extends ValueSource {
     BytesRef internalKey = new BytesRef();
 
     try {
-      TermsEnum termsEnum = MultiFields.getTerms(reader, idName).iterator();
+      TermsEnum termsEnum = MultiFields.getTerms(reader, idName).iterator(null);
       DocsEnum docsEnum = null;
 
       // removing deleted docs shouldn't matter

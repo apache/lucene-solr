@@ -99,7 +99,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         }
         
         @Override
-        public TermsEnum iterator() throws IOException {
+        public TermsEnum iterator(TermsEnum reuse) throws IOException {
           return fcsi.getTermsEnum();
         }
 
@@ -127,12 +127,10 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       assert termsEnum != null;
       if (termsEnum.next() != null) {
         // fill into a OpenBitSet
-        int termCount = 0;
         do {
           long ord = termsEnum.ord();
           if (ord > 0) {
             termSet.set(ord);
-            termCount++;
           }
         } while (termsEnum.next() != null);
       } else {

@@ -555,7 +555,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
-    DocsEnum docs = terms.docs(MultiFields.getLiveDocs(reader), termBytes, null);
+    final TermsEnum termsEnum = terms.iterator(null);
+    if (!termsEnum.seekExact(termBytes, false)) {
+      return -1;
+    }
+    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(reader), null);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -576,10 +580,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
       final Fields fields = reader.fields();
       if (fields == null) continue;
-      final Terms terms = fields.terms(field);
-      if (terms == null) continue;
+
       final Bits liveDocs = reader.getLiveDocs();
-      final DocsEnum docs = terms.docs(liveDocs, idBytes, null);
+      
+      final DocsEnum docs = reader.termDocsEnum(liveDocs, field, idBytes);
+
       if (docs == null) continue;
       int id = docs.nextDoc();
       if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
@@ -977,7 +982,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           BytesRef termBytes = t.bytes();
           
           Bits liveDocs = reader.getLiveDocs();
-          DocsEnum docsEnum = terms==null ? null : terms.docs(liveDocs, termBytes, null);
+          DocsEnum docsEnum = null;
+          if (terms != null) {
+            final TermsEnum termsEnum = terms.iterator(null);
+            if (termsEnum.seekExact(termBytes, false)) {
+              docsEnum = termsEnum.docs(MultiFields.getLiveDocs(reader), null);
+            }
+          }
 
           if (docsEnum != null) {
             DocsEnum.BulkReadResult readResult = docsEnum.getBulkResult();

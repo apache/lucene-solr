@@ -54,8 +54,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       @Override
-      public TermsEnum iterator() throws IOException {
-        return new TestTermsEnum(super.iterator());
+      public TermsEnum iterator(TermsEnum reuse) throws IOException {
+        return new TestTermsEnum(super.iterator(reuse));
       }
     }
 
@@ -65,8 +65,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       @Override
-      public TermsEnum terms() throws IOException {
-        return new TestTermsEnum(super.terms());
+      public Terms terms() throws IOException {
+        return new TestTerms(super.terms());
       }
     }
 
@@ -150,7 +150,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     reader.close();
     reader = IndexReader.open(target, true);
     
-    TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
+    TermsEnum terms = MultiFields.getTerms(reader, "default").iterator(null);
     while (terms.next() != null) {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }

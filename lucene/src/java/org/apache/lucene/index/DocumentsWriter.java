@@ -46,7 +46,7 @@ import org.apache.lucene.util.InfoStream;
  * which in turn processes the document and interacts with
  * other consumers in the indexing chain.  Certain
  * consumers, like {@link StoredFieldsConsumer} and {@link
- * TermVectorsTermsWriter}, digest a document and
+ * TermVectorsConsumer}, digest a document and
  * immediately write bytes to the "doc store" files (ie,
  * they do not consume RAM per document, except while they
  * are processing the document).

@@ -249,7 +249,7 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final FieldInfos fieldInfos = new FieldInfos();
+    final FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
 
     final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
@@ -264,7 +264,10 @@ public class TestCodecs extends LuceneTestCase {
 
     final FieldsEnum fieldsEnum = reader.iterator();
     assertNotNull(fieldsEnum.next());
-    final TermsEnum termsEnum = fieldsEnum.terms();
+    final Terms terms2 = fieldsEnum.terms();
+    assertNotNull(terms2);
+
+    final TermsEnum termsEnum = terms2.iterator(null);
 
     DocsEnum docsEnum = null;
     for(int i=0;i<NUM_TERMS;i++) {
@@ -293,7 +296,7 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final FieldInfos fieldInfos = new FieldInfos();
+    final FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {
@@ -452,7 +455,7 @@ public class TestCodecs extends LuceneTestCase {
 
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
         final FieldData field = fields[TestCodecs.random.nextInt(fields.length)];
-        final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
+        final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator(null);
         if (si.getCodec() instanceof Lucene3xCodec) {
           // code below expects unicode sort order
           continue;

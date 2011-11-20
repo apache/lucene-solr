@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -41,6 +43,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultTermVectorsReader;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
@@ -452,10 +455,12 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       writer.close();
 
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
       assertEquals(300, hits.length);
       searcher.close();
+      reader.close();
 
       dir.close();
     }
@@ -482,10 +487,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
       Term searchTerm = new Term("field", "aaa");
 
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(10, hits.length);
       searcher.close();
+      reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
@@ -503,12 +510,14 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.addDocument(doc);
       }
       writer.close();
-      searcher = new IndexSearcher(dir, false);
+      reader = IndexReader.open(dir, false);
+      searcher = new IndexSearcher(reader);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(27, hits.length);
       searcher.close();
+      reader.close();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      reader = IndexReader.open(dir, true);
       reader.close();
 
       dir.close();
@@ -578,15 +587,16 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       writer.close();
       Term searchTerm = new Term("content", "aaa");
-      IndexSearcher searcher = new IndexSearcher(dir, false);
+      IndexReader reader = IndexReader.open(dir, false);
+      IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
       searcher.close();
+      reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE));
       writer.close();
-      searcher.close();
       dir.close();
     }
 
@@ -878,7 +888,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, true);
     IndexReader subreader = getOnlySegmentReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
     assertEquals(new BytesRef("c"), te.next());
@@ -899,7 +909,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, true);
     IndexReader subreader = getOnlySegmentReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -985,7 +995,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.commit();
 
-    IndexSearcher s = new IndexSearcher(dir, false);
+    IndexReader r = IndexReader.open(dir, false);
+    IndexSearcher s = new IndexSearcher(r);
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
     pq.add(new Term("field", "b"));
@@ -1008,6 +1019,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     s.close();
+    r.close();
     dir.close();
   }
 
@@ -1062,13 +1074,23 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = IndexReader.open(dir, true);
-    TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
-    int[] poss = tpv.getTermPositions(0);
-    assertEquals(1, poss.length);
-    assertEquals(100, poss[0]);
-    poss = tpv.getTermPositions(1);
-    assertEquals(1, poss.length);
-    assertEquals(101, poss[0]);
+    Terms tpv = r.getTermVectors(0).terms("field");
+    TermsEnum termsEnum = tpv.iterator(null);
+    assertNotNull(termsEnum.next());
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    assertNotNull(dpEnum);
+    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(1, dpEnum.freq());
+    assertEquals(100, dpEnum.nextPosition());
+
+    assertNotNull(termsEnum.next());
+    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    assertNotNull(dpEnum);
+    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(1, dpEnum.freq());
+    assertEquals(101, dpEnum.nextPosition());
+    assertNull(termsEnum.next());
+
     r.close();
     dir.close();
   }
@@ -1393,7 +1415,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(d);
 
     IndexReader r = w.getReader().getSequentialSubReaders()[0];
-    TermsEnum t = r.fields().terms("field").iterator();
+    TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {
       final DocsEnum docs = t.docs(null, null);
@@ -1731,13 +1753,16 @@ public class TestIndexWriter extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
 
     assertNoUnreferencedFiles(dir, "no tv files");
-    String[] files = dir.listAll();
-    for(String file : files) {
-      assertTrue(!file.endsWith(IndexFileNames.VECTORS_FIELDS_EXTENSION));
-      assertTrue(!file.endsWith(IndexFileNames.VECTORS_INDEX_EXTENSION));
-      assertTrue(!file.endsWith(IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+    IndexReader r0 = IndexReader.open(dir);
+    for (IndexReader r : r0.getSequentialSubReaders()) {
+      SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
+      assertFalse(s.getHasVectors());
+      Set<String> files = new HashSet<String>();
+      s.getCodec().termVectorsFormat().files(dir, s, files);
+      assertTrue(files.isEmpty());
     }
-
+    
+    r0.close();
     dir.close();
   }
 

@@ -32,12 +32,16 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
+import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
 import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
+import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -1160,6 +1164,16 @@ public class TestAddIndexes extends LuceneTestCase {
     public StoredFieldsFormat storedFieldsFormat() {
       return new DefaultStoredFieldsFormat();
     }
+    
+    @Override
+    public TermVectorsFormat termVectorsFormat() {
+      return new DefaultTermVectorsFormat();
+    }
+    
+    @Override
+    public FieldInfosFormat fieldInfosFormat() {
+      return new DefaultFieldInfosFormat();
+    }
 
     @Override
     public SegmentInfosFormat segmentInfosFormat() {
@@ -1216,4 +1230,46 @@ public class TestAddIndexes extends LuceneTestCase {
     toAdd.close();
   }
 
+  // LUCENE-3575
+  public void testFieldNamesChanged() throws IOException {
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, d1);
+    Document doc = new Document();
+    doc.add(newField("f1", "doc1 field1", StringField.TYPE_STORED));
+    doc.add(newField("id", "1", StringField.TYPE_STORED));
+    w.addDocument(doc);
+    IndexReader r1 = w.getReader();
+    w.close();
+
+    Directory d2 = newDirectory();
+    w = new RandomIndexWriter(random, d2);
+    doc = new Document();
+    doc.add(newField("f2", "doc2 field2", StringField.TYPE_STORED));
+    doc.add(newField("id", "2", StringField.TYPE_STORED));
+    w.addDocument(doc);
+    IndexReader r2 = w.getReader();
+    w.close();
+
+    Directory d3 = newDirectory();
+    w = new RandomIndexWriter(random, d3);
+    w.addIndexes(r1, r2);
+    r1.close();
+    d1.close();
+    r2.close();
+    d2.close();
+
+    IndexReader r3 = w.getReader();
+    w.close();
+    assertEquals(2, r3.numDocs());
+    for(int docID=0;docID<2;docID++) {
+      Document d = r3.document(docID);
+      if (d.get("id").equals("1")) {
+        assertEquals("doc1 field1", d.get("f1"));
+      } else {
+        assertEquals("doc2 field2", d.get("f2"));
+      }
+    }
+    r3.close();
+    d3.close();
+  } 
 }

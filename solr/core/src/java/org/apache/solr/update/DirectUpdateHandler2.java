@@ -143,10 +143,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
 
     try {
-      if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        commitTracker.addedDocument( cmd.commitWithin );
-        softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
-      }
 
       if (cmd.overwrite) {
         Term updateTerm;
@@ -180,6 +176,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       // This also ensures that if a commit sneaks in-between, that we know everything in a particular
       // log version was definitely committed.
       ulog.add(cmd);
+
+      if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+        commitTracker.addedDocument( cmd.commitWithin );
+        softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
+      }
 
       rc = 1;
     } finally {
@@ -317,7 +318,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.optimize) {
         writer.forceMerge(cmd.maxOptimizeSegments);
       } else if (cmd.expungeDeletes) {
-        writer.expungeDeletes();
+        writer.forceMergeDeletes();
       }
 
       if (!cmd.softCommit) {

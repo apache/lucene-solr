@@ -46,6 +46,10 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     postingsFormat().files(dir, info, "", files);
     storedFieldsFormat().files(dir, info, files);
+    termVectorsFormat().files(dir, info, files);
+    fieldInfosFormat().files(dir, info, files);
+    // TODO: segmentInfosFormat should be allowed to declare additional files
+    // if it wants, in addition to segments_N
     docValuesFormat().files(dir, info, files);
   }
   
@@ -57,6 +61,12 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   /** Encodes/decodes stored fields */
   public abstract StoredFieldsFormat storedFieldsFormat();
+  
+  /** Encodes/decodes term vectors */
+  public abstract TermVectorsFormat termVectorsFormat();
+  
+  /** Encodes/decodes field infos file */
+  public abstract FieldInfosFormat fieldInfosFormat();
   
   /** Encodes/decodes segments file */
   public abstract SegmentInfosFormat segmentInfosFormat();

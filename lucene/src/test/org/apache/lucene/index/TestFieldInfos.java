@@ -21,8 +21,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldInfosReader;
+import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,7 +47,7 @@ public class TestFieldInfos extends LuceneTestCase {
   public FieldInfos createAndWriteFieldInfos(Directory dir, String filename) throws IOException{
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
-    FieldInfos fieldInfos = new FieldInfos();
+    FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
     _TestUtil.add(testDoc, fieldInfos);
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
@@ -52,16 +57,23 @@ public class TestFieldInfos extends LuceneTestCase {
     assertTrue(output != null);
     //Use a RAMOutputStream
   
-    fieldInfos.write(output);
+    FieldInfosWriter writer = Codec.getDefault().fieldInfosFormat().getFieldInfosWriter();
+    writer.write(dir, filename, fieldInfos, IOContext.DEFAULT);
     output.close();
     return fieldInfos;
   }
+  
+  public FieldInfos readFieldInfos(Directory dir, String filename) throws IOException {
+    FieldInfosReader reader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
+    return reader.read(dir, filename, IOContext.DEFAULT);
+  }
+  
   public void test() throws IOException {
     String name = "testFile";
     Directory dir = newDirectory();
     FieldInfos fieldInfos = createAndWriteFieldInfos(dir, name);
-    assertTrue(dir.fileLength(name) > 0);
-    FieldInfos readIn = new FieldInfos(dir, name);
+
+    FieldInfos readIn = readFieldInfos(dir, name);
     assertTrue(fieldInfos.size() == readIn.size());
     FieldInfo info = readIn.fieldInfo("textField1");
     assertTrue(info != null);
@@ -90,7 +102,7 @@ public class TestFieldInfos extends LuceneTestCase {
     String name = "testFile";
     Directory dir = newDirectory();
     FieldInfos fieldInfos = createAndWriteFieldInfos(dir, name);
-    FieldInfos readOnly = new FieldInfos(dir, name);
+    FieldInfos readOnly = readFieldInfos(dir, name);
     assertReadOnly(readOnly, fieldInfos);
     FieldInfos readOnlyClone = (FieldInfos)readOnly.clone();
     assertNotSame(readOnly, readOnlyClone);

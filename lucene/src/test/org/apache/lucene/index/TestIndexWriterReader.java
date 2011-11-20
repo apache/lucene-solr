@@ -873,7 +873,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir1.close();
   }
 
-  public void testExpungeDeletes() throws Throwable {
+  public void testForceMergeDeletes() throws Throwable {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
@@ -887,7 +887,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.deleteDocuments(new Term("id", "0"));
 
     IndexReader r = w.getReader();
-    w.expungeDeletes();
+    w.forceMergeDeletes();
     w.close();
     r.close();
     r = IndexReader.open(dir, true);

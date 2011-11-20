@@ -17,11 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -31,11 +33,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedSet;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -95,17 +94,13 @@ public class TestTermVectors extends LuceneTestCase {
     assertEquals(100, hits.length);
       
     for (int i = 0; i < hits.length; i++) {
-      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
-      assertTrue(vector != null);
-      assertEquals("doc=" + hits[i].doc + " tv=" + vector, 1, vector.length);
+      Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
+      assertNotNull(vectors);
+      assertEquals("doc=" + hits[i].doc + " tv=" + vectors, 1, vectors.getUniqueFieldCount());
     }
-    TermFreqVector vector;
-    vector = searcher.reader.getTermFreqVector(hits[0].doc, "noTV");
+    Terms vector;
+    vector = searcher.reader.getTermVectors(hits[0].doc).terms("noTV");
     assertNull(vector);
-
-    TestTermVectorMapper mapper = new TestTermVectorMapper();
-    searcher.reader.getTermFreqVector(hits[0].doc, "noTV", mapper);
-    assertNull(mapper.field);
   }
   
   public void testTermVectorsFieldOrder() throws IOException {
@@ -123,23 +118,38 @@ public class TestTermVectors extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
-    TermFreqVector[] v = reader.getTermFreqVectors(0);
-    assertEquals(4, v.length);
+    Fields v = reader.getTermVectors(0);
+    assertEquals(4, v.getUniqueFieldCount());
     String[] expectedFields = new String[]{"a", "b", "c", "x"};
     int[] expectedPositions = new int[]{1, 2, 0};
-    for(int i=0;i<v.length;i++) {
-      TermPositionVector posVec = (TermPositionVector) v[i];
-      assertEquals(expectedFields[i], posVec.getField());
-      BytesRef[] terms = posVec.getTerms();
-      assertEquals(3, terms.length);
-      assertEquals("content", terms[0].utf8ToString());
-      assertEquals("here", terms[1].utf8ToString());
-      assertEquals("some", terms[2].utf8ToString());
-      for(int j=0;j<3;j++) {
-        int[] positions = posVec.getTermPositions(j);
-        assertEquals(1, positions.length);
-        assertEquals(expectedPositions[j], positions[0]);
-      }
+    FieldsEnum fieldsEnum = v.iterator();
+    for(int i=0;i<expectedFields.length;i++) {
+      assertEquals(expectedFields[i], fieldsEnum.next());
+      assertEquals(3, v.terms(expectedFields[i]).getUniqueTermCount());
+
+      DocsAndPositionsEnum dpEnum = null;
+      Terms terms = fieldsEnum.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator(null);
+      assertEquals("content", termsEnum.next().utf8ToString());
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertEquals(1, dpEnum.freq());
+      assertEquals(expectedPositions[0], dpEnum.nextPosition());
+
+      assertEquals("here", termsEnum.next().utf8ToString());
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertEquals(1, dpEnum.freq());
+      assertEquals(expectedPositions[1], dpEnum.nextPosition());
+
+      assertEquals("some", termsEnum.next().utf8ToString());
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertEquals(1, dpEnum.freq());
+      assertEquals(expectedPositions[2], dpEnum.nextPosition());
+
+      assertNull(termsEnum.next());
     }
     reader.close();
     dir.close();
@@ -149,68 +159,61 @@ public class TestTermVectors extends LuceneTestCase {
     Query query = new TermQuery(new Term("field", "zero"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    
+
+    DocsAndPositionsEnum dpEnum = null;
     for (int i = 0; i < hits.length; i++) {
-      TermFreqVector[] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
-      assertTrue(vector != null);
-      assertTrue(vector.length == 1);
+      Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
+      assertNotNull(vectors);
+      assertEquals(1, vectors.getUniqueFieldCount());
       
-      boolean shouldBePosVector = (hits[i].doc % 2 == 0) ? true : false;
-      assertTrue((shouldBePosVector == false)
-          || (shouldBePosVector == true && (vector[0] instanceof TermPositionVector == true)));
+      TermsEnum termsEnum = vectors.terms("field").iterator(null);
+      assertNotNull(termsEnum.next());
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      OffsetAttribute offsetAtt = dpEnum == null ? null : dpEnum.attributes().getAttribute(OffsetAttribute.class);
+
+      boolean shouldBePosVector = hits[i].doc % 2 == 0;
+      assertTrue(!shouldBePosVector
+                 || (shouldBePosVector && dpEnum != null));
       
-      boolean shouldBeOffVector = (hits[i].doc % 3 == 0) ? true : false;
-      assertTrue((shouldBeOffVector == false)
-          || (shouldBeOffVector == true && (vector[0] instanceof TermPositionVector == true)));
+      boolean shouldBeOffVector = hits[i].doc % 3 == 0;
+      assertTrue(!shouldBeOffVector
+                 || (shouldBeOffVector && offsetAtt != null));
       
       if (shouldBePosVector || shouldBeOffVector) {
-        TermPositionVector posVec = (TermPositionVector) vector[0];
-        BytesRef[] terms = posVec.getTerms();
-        assertTrue(terms != null && terms.length > 0);
-        
-        for (int j = 0; j < terms.length; j++) {
-          int[] positions = posVec.getTermPositions(j);
-          TermVectorOffsetInfo[] offsets = posVec.getOffsets(j);
-          
+        while(true) {
+          dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+          assertNotNull(dpEnum);
+          offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
+
           if (shouldBePosVector) {
-            assertTrue(positions != null);
-            assertTrue(positions.length > 0);
-          } else assertTrue(positions == null);
+            assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+          }
           
           if (shouldBeOffVector) {
-            assertTrue(offsets != null);
-            assertTrue(offsets.length > 0);
-          } else assertTrue(offsets == null);
+            assertNotNull(offsetAtt);
+          } else {
+            assertNull(offsetAtt);
+          }
+
+          if (termsEnum.next() == null) {
+            break;
+          }
         }
       } else {
-        try {
-          assertTrue(false);
-        } catch (ClassCastException ignore) {
-          TermFreqVector freqVec = vector[0];
-          BytesRef[] terms = freqVec.getTerms();
-          assertTrue(terms != null && terms.length > 0);
-        }
-        
+        fail();
       }
     }
   }
   
-  public void testTermOffsetVectors() {
+  public void testTermOffsetVectors() throws IOException {
     Query query = new TermQuery(new Term("field", "fifty"));
-    try {
-      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
-      assertEquals(100, hits.length);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(100, hits.length);
       
-      for (int i = 0; i < hits.length; i++)
-      {
-        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
-        assertTrue(vector != null);
-        assertTrue(vector.length == 1);
-        
-        //assertTrue();
-      }
-    } catch (IOException e) {
-      assertTrue(false);
+    for (int i = 0; i < hits.length; i++) {
+      Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
+      assertNotNull(vectors);
+      assertEquals(1, vectors.getUniqueFieldCount());
     }
   }
 
@@ -260,16 +263,19 @@ public class TestTermVectors extends LuceneTestCase {
     
     DocsEnum docs = null;
     while(fields.next() != null) {
-      TermsEnum terms = fields.terms();
-      while(terms.next() != null) {
-        String text = terms.term().utf8ToString();
-        docs = terms.docs(MultiFields.getLiveDocs(knownSearcher.reader), docs);
+      Terms terms = fields.terms();
+      assertNotNull(terms);
+      TermsEnum termsEnum = terms.iterator(null);
+
+      while (termsEnum.next() != null) {
+        String text = termsEnum.term().utf8ToString();
+        docs = termsEnum.docs(MultiFields.getLiveDocs(knownSearcher.reader), docs);
         
         while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int docId = docs.docID();
           int freq = docs.freq();
           //System.out.println("Doc Id: " + docId + " freq " + freq);
-          TermFreqVector vector = knownSearcher.reader.getTermFreqVector(docId, "field");
+          Terms vector = knownSearcher.reader.getTermVectors(docId).terms("field");
           //float tf = sim.tf(freq);
           //float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
           //float qNorm = sim.queryNorm()
@@ -277,14 +283,12 @@ public class TestTermVectors extends LuceneTestCase {
           //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
           //float coord = sim.coord()
           //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
-          assertTrue(vector != null);
-          BytesRef[] vTerms = vector.getTerms();
-          int [] freqs = vector.getTermFrequencies();
-          for (int i = 0; i < vTerms.length; i++)
-          {
-            if (text.equals(vTerms[i].utf8ToString()))
-            {
-              assertTrue(freqs[i] == freq);
+          assertNotNull(vector);
+          TermsEnum termsEnum2 = vector.iterator(null);
+
+          while(termsEnum2.next() != null) {
+            if (text.equals(termsEnum2.term().utf8ToString())) {
+              assertEquals(freq, termsEnum2.totalTermFreq());
             }
           }
         }
@@ -304,46 +308,20 @@ public class TestTermVectors extends LuceneTestCase {
     assertTrue(hits[0].doc == 2);
     assertTrue(hits[1].doc == 3);
     assertTrue(hits[2].doc == 0);
-    TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits[1].doc, "field");
-    assertTrue(vector != null);
+    Terms vector = knownSearcher.reader.getTermVectors(hits[1].doc).terms("field");
+    assertNotNull(vector);
     //System.out.println("Vector: " + vector);
-    BytesRef[] terms = vector.getTerms();
-    int [] freqs = vector.getTermFrequencies();
-    assertTrue(terms != null && terms.length == 10);
-    for (int i = 0; i < terms.length; i++) {
-      String term = terms[i].utf8ToString();
+    assertEquals(10, vector.getUniqueTermCount());
+    TermsEnum termsEnum = vector.iterator(null);
+    while(termsEnum.next() != null) {
+      String term = termsEnum.term().utf8ToString();
       //System.out.println("Term: " + term);
-      int freq = freqs[i];
+      int freq = (int) termsEnum.totalTermFreq();
       assertTrue(test4.indexOf(term) != -1);
       Integer freqInt = test4Map.get(term);
       assertTrue(freqInt != null);
-      assertTrue(freqInt.intValue() == freq);        
+      assertEquals(freqInt.intValue(), freq);
     }
-    SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-    knownSearcher.reader.getTermFreqVector(hits[1].doc, mapper);
-    SortedSet<TermVectorEntry> vectorEntrySet = mapper.getTermVectorEntrySet();
-    assertTrue("mapper.getTermVectorEntrySet() Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
-    TermVectorEntry last = null;
-    for (final TermVectorEntry tve : vectorEntrySet) {
-      if (tve != null && last != null)
-      {
-        assertTrue("terms are not properly sorted", last.getFrequency() >= tve.getFrequency());
-        Integer expectedFreq =  test4Map.get(tve.getTerm().utf8ToString());
-        //we expect double the expectedFreq, since there are two fields with the exact same text and we are collapsing all fields
-        assertTrue("Frequency is not correct:", tve.getFrequency() == 2*expectedFreq.intValue());
-      }
-      last = tve;
-      
-    }
-    
-    FieldSortedTermVectorMapper fieldMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-    knownSearcher.reader.getTermFreqVector(hits[1].doc, fieldMapper);
-    Map<String,SortedSet<TermVectorEntry>> map = fieldMapper.getFieldToTerms();
-    assertTrue("map Size: " + map.size() + " is not: " + 2, map.size() == 2);
-    vectorEntrySet = map.get("field");
-    assertTrue("vectorEntrySet is null and it shouldn't be", vectorEntrySet != null);
-    assertTrue("vectorEntrySet Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
-    knownSearcher.close();
     reader.close();
     dir.close();
   } 
@@ -399,9 +377,9 @@ public class TestTermVectors extends LuceneTestCase {
     assertEquals(10, hits.length);
     for (int i = 0; i < hits.length; i++) {
 
-      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
-      assertTrue(vector != null);
-      assertTrue(vector.length == 1);
+      Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
+      assertNotNull(vectors);
+      assertEquals(1, vectors.getUniqueFieldCount());
     }
     reader.close();
   }
@@ -446,41 +424,36 @@ public class TestTermVectors extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[0].doc);
-    assertTrue(vector != null);
-    assertTrue(vector.length == 1);
-    TermPositionVector tfv = (TermPositionVector) vector[0];
-    assertTrue(tfv.getField().equals("field"));
-    BytesRef[] terms = tfv.getTerms();
-    assertEquals(1, terms.length);
-    assertEquals(terms[0].utf8ToString(), "one");
-    assertEquals(5, tfv.getTermFrequencies()[0]);
-
-    int[] positions = tfv.getTermPositions(0);
-    assertEquals(5, positions.length);
-    for(int i=0;i<5;i++)
-      assertEquals(i, positions[i]);
-    TermVectorOffsetInfo[] offsets = tfv.getOffsets(0);
-    assertEquals(5, offsets.length);
+    Fields vectors = searcher.reader.getTermVectors(hits[0].doc);
+    assertNotNull(vectors);
+    assertEquals(1, vectors.getUniqueFieldCount());
+    Terms vector = vectors.terms("field");
+    assertNotNull(vector);
+    assertEquals(1, vector.getUniqueTermCount());
+    TermsEnum termsEnum = vector.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals("one", termsEnum.term().utf8ToString());
+    assertEquals(5, termsEnum.totalTermFreq());
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    assertNotNull(dpEnum);
+    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(5, dpEnum.freq());
     for(int i=0;i<5;i++) {
-      assertEquals(4*i, offsets[i].getStartOffset());
-      assertEquals(4*i+3, offsets[i].getEndOffset());
+      assertEquals(i, dpEnum.nextPosition());
+    }
+
+    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    assertNotNull(dpEnum);
+    OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
+    assertNotNull(offsetAtt);
+    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(5, dpEnum.freq());
+    for(int i=0;i<5;i++) {
+      dpEnum.nextPosition();
+      assertEquals(4*i, offsetAtt.startOffset());
+      assertEquals(4*i+3, offsetAtt.endOffset());
     }
     reader.close();
-  }
-
-  private static class TestTermVectorMapper extends TermVectorMapper {
-    public String field = null;
-
-    @Override
-    public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-      this.field = field;
-    }
-
-    @Override
-    public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
-
-    }
   }
 
   private IndexWriter createWriter(Directory dir) throws IOException {
@@ -508,8 +481,7 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader r = IndexReader.open(dir);
     int numDocs = r.numDocs();
     for (int i = 0; i < numDocs; i++) {
-      TermFreqVector tfv = r.getTermFreqVector(i, "c");
-      assertNotNull("term vectors should not have been null for document " + i, tfv);
+      assertNotNull("term vectors should not have been null for document " + i, r.getTermVectors(i).terms("c"));
     }
     r.close();
   }
