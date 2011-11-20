@@ -146,4 +146,20 @@ public class TestAppendingCodec extends LuceneTestCase {
     assertTrue(de.advance(2) == DocsEnum.NO_MORE_DOCS);
     reader.close();
   }
+  
+  public void testCompoundFile() throws Exception {
+    Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
+    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random));
+    TieredMergePolicy mp = new TieredMergePolicy();
+    mp.setUseCompoundFile(true);
+    mp.setNoCFSRatio(1.0);
+    cfg.setMergePolicy(mp);
+    cfg.setCodec(new AppendingCodec());
+    IndexWriter writer = new IndexWriter(dir, cfg);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    writer.close();
+    assertTrue(dir.fileExists("_0.cfs"));
+    dir.close();
+  }
 }
