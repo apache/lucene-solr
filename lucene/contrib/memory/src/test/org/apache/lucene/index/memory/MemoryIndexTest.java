@@ -32,14 +32,19 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -176,5 +181,45 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       // return a random unicode term
       return _TestUtil.randomUnicodeString(random);
     }
+  }
+  
+  public void testDocsEnumStart() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random);
+    MemoryIndex memory = new MemoryIndex();
+    memory.addField("foo", "bar", analyzer);
+    IndexReader reader = memory.createSearcher().getIndexReader();
+    DocsEnum disi = reader.termDocsEnum(null, "foo", new BytesRef("bar"));
+    int docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    
+    // now reuse and check again
+    TermsEnum te = reader.terms("foo").iterator(null);
+    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    disi = te.docs(null, disi);
+    docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    reader.close();
+  }
+  
+  public void testDocsAndPositionsEnumStart() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random);
+    MemoryIndex memory = new MemoryIndex();
+    memory.addField("foo", "bar", analyzer);
+    IndexReader reader = memory.createSearcher().getIndexReader();
+    DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"));
+    int docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    
+    // now reuse and check again
+    TermsEnum te = reader.terms("foo").iterator(null);
+    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    disi = te.docsAndPositions(null, disi);
+    docid = disi.docID();
+    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    reader.close();
   }
 }

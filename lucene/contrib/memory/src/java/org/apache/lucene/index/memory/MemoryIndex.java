@@ -974,26 +974,28 @@ public class MemoryIndex {
       private ArrayIntList positions;
       private boolean hasNext;
       private Bits liveDocs;
+      private int doc = -1;
 
       public DocsEnum reset(Bits liveDocs, ArrayIntList positions) {
         this.liveDocs = liveDocs;
         this.positions = positions;
         hasNext = true;
+        doc = -1;
         return this;
       }
 
       @Override
       public int docID() {
-        return 0;
+        return doc;
       }
 
       @Override
       public int nextDoc() {
         if (hasNext && (liveDocs == null || liveDocs.get(0))) {
           hasNext = false;
-          return 0;
+          return doc = 0;
         } else {
-          return NO_MORE_DOCS;
+          return doc = NO_MORE_DOCS;
         }
       }
 
@@ -1013,27 +1015,29 @@ public class MemoryIndex {
       private int posUpto;
       private boolean hasNext;
       private Bits liveDocs;
+      private int doc = -1;
 
       public DocsAndPositionsEnum reset(Bits liveDocs, ArrayIntList positions) {
         this.liveDocs = liveDocs;
         this.positions = positions;
         posUpto = 0;
         hasNext = true;
+        doc = -1;
         return this;
       }
 
       @Override
       public int docID() {
-        return 0;
+        return doc;
       }
 
       @Override
       public int nextDoc() {
         if (hasNext && (liveDocs == null || liveDocs.get(0))) {
           hasNext = false;
-          return 0;
+          return doc = 0;
         } else {
-          return NO_MORE_DOCS;
+          return doc = NO_MORE_DOCS;
         }
       }
 
