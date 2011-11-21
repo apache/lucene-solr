@@ -161,6 +161,10 @@ Bug Fixes
 * SOLR-2849: Fix dependencies in Maven POMs. (David Smiley via Steve Rowe)
 
 * SOLR-2591: Remove commitLockTimeout option from solrconfig.xml (Luca Cavanna via Martijn van Groningen)
+
+* SOLR-1123: Changed JSONResponseWriter to now use application/json as its Content-Type
+  by default.  However the Content-Type can be overwritten and is set to text/plain in
+  the example configuration. (Chris Male)
   
 ==================  3.4.0  ==================
 
