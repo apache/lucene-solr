@@ -88,11 +88,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   public FullDistributedZkTest() {
     fixShardCount = true;
     shardCount = 12;
-    // TODO: for now, turn off stress because it uses regular clients, and we 
-    // need the cloud client because we kill servers
-    stress = 0;
-    
-    
   }
   
   private void initCloudClient() {
