@@ -35,5 +35,5 @@
 
   <tab id="" label="Main" href="http://lucene.apache.org/java/docs/"/>
   <tab id="wiki" label="Wiki" href="http://wiki.apache.org/lucene-java"/>
-  <tab label="Lucene 3.5 Documentation" dir=""/>
+  <tab label="Lucene 3.6 Documentation" dir=""/>
 </tabs>
