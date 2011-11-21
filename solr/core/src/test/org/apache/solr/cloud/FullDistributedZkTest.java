@@ -68,7 +68,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
-  private static final int sliceCount = 3;
+  private static final int sliceCount = 4;
   
   protected volatile CloudSolrServer cloudClient;
   
@@ -87,7 +87,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   public FullDistributedZkTest() {
     fixShardCount = true;
-    shardCount = 6;
+    shardCount = 12;
     // TODO: for now, turn off stress because it uses regular clients, and we 
     // need the cloud client because we kill servers
     stress = 0;
@@ -532,6 +532,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     System.out.println("shard2_2 port:" + ((CommonsHttpSolrServer)s2c.get(1)).getBaseURL());
     
     // wait a bit for replication
+    // TODO: poll or something..
     Thread.sleep(5000);
     
 
@@ -557,11 +558,18 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     for (SolrServer client : shardToClient.get("shard1")) {
       System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
-    // wait a bit for replication
-    Thread.sleep(5000);
-    // assert the new server has the same number of docs as another server in that shard
-    assertEquals(shardToClient.get("shard1").get(0).query(new SolrQuery("*:*")).getResults().getNumFound(), shardToClient.get("shard1").get(2).query(new SolrQuery("*:*")).getResults().getNumFound());
     
+    // wait a bit for replication
+    // TODO: poll or something..
+    Thread.sleep(5000);
+    
+    // assert the new server has the same number of docs as another server in
+    // that shard
+    assertEquals(shardToClient.get("shard1").get(0).query(new SolrQuery("*:*"))
+        .getResults().getNumFound(),
+        shardToClient.get("shard1").get(shardToClient.get("shard1").size() - 1)
+            .query(new SolrQuery("*:*")).getResults().getNumFound());
+
     assertDocCounts();
     
     // Thread.sleep(10000000000L);
