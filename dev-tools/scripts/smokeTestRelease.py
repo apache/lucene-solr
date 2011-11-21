@@ -185,13 +185,27 @@ def checkSigs(project, urlString, version, tmpDir):
     verifyDigests(artifact, urlString, tmpDir)
 
     print '    verify sig'
-    # Test sig
+    # Test sig (this is done with a clean brand-new GPG world)
     download(artifact + '.asc', urlString + '.asc', tmpDir)
     sigFile = '%s/%s.asc' % (tmpDir, artifact)
     artifactFile = '%s/%s' % (tmpDir, artifact)
     logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
     run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
         logFile)
+    # Forward any GPG warnings, except the expected one (since its a clean world)
+    f = open(logFile, 'rb')
+    for line in f.readlines():
+      if line.lower().find('warning') != -1 \
+      and line.find('WARNING: This key is not certified with a trusted signature') == -1:
+        print '      GPG: %s' % line.strip()
+    f.close()
+
+    # Test trust (this is done with the real users config)
+    run('gpg --import %s' % (keysFile),
+        '%s/%s.gpg.trust.import.log 2>&1' % (tmpDir, project))
+    print '    verify trust'
+    logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
+    run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
     # Forward any GPG warnings:
     f = open(logFile, 'rb')
     for line in f.readlines():
