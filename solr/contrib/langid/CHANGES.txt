@@ -7,6 +7,10 @@ See http://wiki.apache.org/solr/LanguageDetection for details
 
 $Id$
 
+================== Release 3.6.0 ==================
+
+(No Changes)
+
 ================== Release 3.5.0 ==================
 
 Initial release.  See README.txt.

@@ -24,6 +24,10 @@ Current Version: Tika 0.10 (released 2011-09-30)
 
 $Id$
 
+================== Release 3.6.0 ==================
+
+(No Changes)
+
 ================== Release 3.5.0 ==================
 
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)

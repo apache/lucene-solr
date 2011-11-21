@@ -11,6 +11,10 @@ analyzers for Chinese and Polish.
 
 
 $Id$
+==================  3.6.0 ==================
+
+(No Changes)
+
 ==================  3.5.0 ==================
 
 (No Changes)
