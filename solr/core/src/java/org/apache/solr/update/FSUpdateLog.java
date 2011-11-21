@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -483,6 +484,8 @@ public class FSUpdateLog extends UpdateLog {
     }
   }
 
+  public static Runnable testing_logReplayHook;  // aquires a permit before each log read
+  public static Runnable testing_logReplayFinishHook;  // releases a permit when log replay has finished
 
 
   // TODO: do we let the log replayer run across core reloads?
@@ -508,6 +511,7 @@ public class FSUpdateLog extends UpdateLog {
         Object o = null;
 
         try {
+          if (testing_logReplayHook != null) testing_logReplayHook.run();
           o = tlogReader.next(null);
         } catch (InterruptedException e) {
           SolrException.log(log,e);
@@ -589,14 +593,12 @@ public class FSUpdateLog extends UpdateLog {
           // something wrong with the request?
         }
       }
-      tlogReader.close();
-      tlog.decref();
 
       SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
       cmd.setVersion(commitVersion);
       cmd.softCommit = false;
-      cmd.waitSearcher = false;
+      cmd.waitSearcher = true;
       cmd.setFlags(UpdateCommand.REPLAY);
       try {
         uhandler.commit(cmd);
@@ -604,8 +606,12 @@ public class FSUpdateLog extends UpdateLog {
         log.error("Replay exception: final commit.", ex);
       }
 
+      tlogReader.close();
+      tlog.decref();
+
       log.warn("Ending log replay " + tlogReader);
 
+      if (testing_logReplayFinishHook != null) testing_logReplayFinishHook.run();
     }
   }
 
