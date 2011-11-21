@@ -186,6 +186,9 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
       final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
       or(obs.arr, obs.words);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      obs.advance(numBits);
     } else {
       int doc;
       while ((doc = iter.nextDoc()) < numBits) {
@@ -213,6 +216,9 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
       final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
       and(obs.arr, obs.words);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      obs.advance(numBits);
     } else {
       if (numBits == 0) return;
       int disiDoc, bitSetDoc = nextSetBit(0);
@@ -249,6 +255,9 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     if (iter instanceof OpenBitSetIterator && iter.docID() == -1) {
       final OpenBitSetIterator obs = (OpenBitSetIterator) iter;
       andNot(obs.arr, obs.words);
+      // advance after last doc that would be accepted if standard
+      // iteration is used (to exhaust it):
+      obs.advance(numBits);
     } else {
       int doc;
       while ((doc = iter.nextDoc()) < numBits) {
