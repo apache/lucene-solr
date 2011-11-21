@@ -31,6 +31,7 @@ import HTMLParser
 
 JAVA5_HOME = '/usr/local/src/jdk1.5.0_22'
 JAVA6_HOME = '/usr/local/src/jdk1.6.0_21'
+JAVA7_HOME = '/usr/local/src/jdk1.7.0_01'
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -383,6 +384,8 @@ def verifyUnpacked(project, artifact, unpackPath, version):
     else:
       print '    run tests w/ Java 6...'
       run('export JAVA_HOME=%s; ant test' % JAVA6_HOME, '%s/test.log' % unpackPath)
+      print '    run tests w/ Java 7...'
+      run('export JAVA_HOME=%s; ant test' % JAVA7_HOME, '%s/test.log' % unpackPath)
   else:
     if project == 'lucene':
       testDemo(isSrc, version)
