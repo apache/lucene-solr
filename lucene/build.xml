@@ -86,8 +86,16 @@
   	description="Runs tests of a previous Lucene version.">
 	<sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
-          
+      
+      <!-- TODO: separate test-framework from core tests (because META-INF duplicates in trunk) -->
+      
       <!-- compile branch tests against previous version JAR file -->	
+      <compile-test-macro srcdir="${backwards.dir}/src/test-framework/java" destdir="${build.dir.backwards}/classes/test"
+                  test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
+      <!-- Copy the resources folder (if existent) -->
+      <copy todir="${build.dir.backwards}/classes/test">
+        <fileset dir="${backwards.dir}/src/test-framework/resources" erroronmissingdir="no"/>
+      </copy>
       <compile-test-macro srcdir="${backwards.dir}/src/test" destdir="${build.dir.backwards}/classes/test"
                   test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
       
