@@ -74,9 +74,7 @@ public class FastInputStream extends InputStream implements DataInput {
   }
 
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-    int ret =  in.read(target, offset, len);
-    if (ret > 0) readFromStream += ret;
-    return ret;
+    return in.read(target, offset, len);
   }
 
   public long position() {
@@ -86,6 +84,7 @@ public class FastInputStream extends InputStream implements DataInput {
   public void refill() throws IOException {
     // this will set end to -1 at EOF
     end = readWrappedStream(buf, 0, buf.length);
+    if (end > 0) readFromStream += end;
     pos = 0;
   }
 
@@ -109,6 +108,7 @@ public class FastInputStream extends InputStream implements DataInput {
     // amount left to read is >= buffer size
     if (len-r >= buf.length) {
       int ret = readWrappedStream(b, off+r, len-r);
+      if (ret > 0) readFromStream += end;
       if (ret==-1) return r==0 ? -1 : r;
       r += ret;
       return r;

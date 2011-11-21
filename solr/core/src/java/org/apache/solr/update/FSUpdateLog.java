@@ -478,6 +478,8 @@ public class FSUpdateLog extends UpdateLog {
       if (tlog != null) {
         tlog.decref();
       }
+
+      recoveryExecutor.shutdownNow();
     }
   }
 

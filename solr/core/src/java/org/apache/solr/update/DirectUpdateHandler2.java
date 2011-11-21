@@ -471,13 +471,25 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     solrCoreState.decref(this);
   }
 
+
+  public static boolean commitOnClose = true;  // TODO: make this a real config option?
+
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
-    if (writer == null) return;
     commitLock.lock();
     try {
-      writer.close();
+      if (!commitOnClose) {
+        if (writer != null) {
+          writer.rollback();
+        }
+        return; // don't close the ulog either
+      }
+
+      if (writer != null) {
+        writer.close();
+      }
+
       // if the writer hits an exception, it's OK (and perhaps desirable)
       // to not close the ulog?
 

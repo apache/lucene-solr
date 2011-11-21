@@ -240,15 +240,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     String configFile = getSolrConfigFile();
     if (configFile != null) {
-
-      solrConfig = h.createConfig(getSolrConfigFile());
-      h = new TestHarness( dataDir.getAbsolutePath(),
-              solrConfig,
-              getSchemaFile());
-      lrf = h.getRequestFactory
-              ("standard",0,20,CommonParams.VERSION,"2.2");
+      createCore();
     }
     log.info("####initCore end");
+  }
+
+  public static void createCore() throws Exception {
+    solrConfig = h.createConfig(getSolrConfigFile());
+    h = new TestHarness( dataDir.getAbsolutePath(),
+            solrConfig,
+            getSchemaFile());
+    lrf = h.getRequestFactory
+            ("standard",0,20,CommonParams.VERSION,"2.2");
   }
 
   /** Subclasses that override setUp can optionally call this method
