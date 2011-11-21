@@ -38,16 +38,17 @@
     <build-directory>../../build/contrib/highlighter</build-directory>
   </properties>
   <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
