@@ -360,6 +360,10 @@ Other Changes
 * SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
   extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
 
+* SOLR-1123: Changed JSONResponseWriter to now use application/json as its Content-Type
+  by default.  However the Content-Type can be overwritten and is set to text/plain in
+  the example configuration. (Chris Male)
+
 Documentation
 ----------------------
 
