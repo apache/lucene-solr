@@ -362,7 +362,7 @@ Other Changes
 
 * SOLR-1123: Changed JSONResponseWriter to now use application/json as its Content-Type
   by default.  However the Content-Type can be overwritten and is set to text/plain in
-  the example configuration. (Chris Male)
+  the example configuration. (Uri Boness, Chris Male)
 
 Documentation
 ----------------------
