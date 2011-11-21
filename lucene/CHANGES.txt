@@ -636,6 +636,11 @@ Bug fixes
   when the directory isn't MMapDirectory, due to failing to reuse
   DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
   Robert Muir, Simon Willnauer, Mike McCandless)
+  
+  
+======================= Lucene 3.6.0 =======================
+
+(No Changes)
 
 ======================= Lucene 3.5.0 =======================
 

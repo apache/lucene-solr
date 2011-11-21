@@ -369,6 +369,10 @@ Documentation
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
+  
+==================  3.6.0  ==================
+
+(No Changes)
 
 ==================  3.5.0  ==================
 
