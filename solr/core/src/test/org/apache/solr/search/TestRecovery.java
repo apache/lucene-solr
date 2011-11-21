@@ -69,11 +69,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       );
 
       h.close();
-
-
       createCore();
 
       // verify that previous close didn't do a commit
+      // recovery should be blocked by our hook
       assertJQ(req("q","id:1") ,"/response/numFound==0");
 
       // unblock recovery
@@ -85,6 +84,30 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q", "id:1")
           , "/response/numFound==1"
       );
+
+      assertU(adoc("id","2"));
+      assertU(adoc("id","3"));
+      assertU(delI("2"));
+      assertU(adoc("id","4"));
+
+      assertJQ(req("q","*:*") ,"/response/numFound==1");
+
+      h.close();
+      createCore();
+
+      // wait until recovery has finished
+      assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
+      assertJQ(req("q","id:2") ,"/response/numFound==0");
+
+      // no updates, so insure that recovery does not run
+      h.close();
+      int permits = logReplay.availablePermits();
+      createCore();
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
+      Thread.sleep(100);
+      assertEquals(permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
+
 
     } finally {
       FSUpdateLog.testing_logReplayHook = null;
