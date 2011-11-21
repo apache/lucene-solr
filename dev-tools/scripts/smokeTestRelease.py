@@ -381,11 +381,41 @@ def verifyUnpacked(project, artifact, unpackPath, version):
       run('export JAVA_HOME=%s; ant test' % JAVA5_HOME, '%s/test.log' % unpackPath)
       run('export JAVA_HOME=%s; ant jar' % JAVA5_HOME, '%s/compile.log' % unpackPath)
       testDemo(isSrc, version)
+      # test javadocs
+      print '    generate javadocs w/ Java 5...'
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA5_HOME, '%s/javadocs.log' % unpackPath)
     else:
       print '    run tests w/ Java 6...'
       run('export JAVA_HOME=%s; ant test' % JAVA6_HOME, '%s/test.log' % unpackPath)
+
+      # test javadocs
+      print '    generate javadocs w/ Java 6...'
+      # uncomment this after 3.5.0 and delete the hack below
+      # run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir('lucene')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+
+      os.chdir('solr')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+      # end hackidy-hack     
+
       print '    run tests w/ Java 7...'
       run('export JAVA_HOME=%s; ant test' % JAVA7_HOME, '%s/test.log' % unpackPath)
+ 
+      # test javadocs
+      print '    generate javadocs w/ Java 7...'
+      # uncomment this after 3.5.0 and delete the hack below
+      # run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir('lucene')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+
+      os.chdir('solr')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+      # end hackidy-hack   
   else:
     if project == 'lucene':
       testDemo(isSrc, version)
