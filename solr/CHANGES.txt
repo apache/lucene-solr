@@ -363,6 +363,8 @@ Other Changes
 * SOLR-1123: Changed JSONResponseWriter to now use application/json as its Content-Type
   by default.  However the Content-Type can be overwritten and is set to text/plain in
   the example configuration. (Uri Boness, Chris Male)
+  
+* SOLR-2607: Removed deprecated clients/ruby (solr-ruby and flare). (ehatcher)
 
 Documentation
 ----------------------
