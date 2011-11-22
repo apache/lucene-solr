@@ -528,6 +528,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     System.out.println("shard2_2 port:" + ((CommonsHttpSolrServer)s2c.get(1)).getBaseURL());
     
 
+    //assertDocCounts();
     // if we properly recovered, we should now have the couple missing docs that
     // came in while shard was down
     assertEquals(s2c.get(0).query(new SolrQuery("*:*")).getResults()
@@ -550,9 +551,10 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     for (SolrServer client : shardToClient.get("shard1")) {
       System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
-    
+    Thread.sleep(5000);
     // assert the new server has the same number of docs as another server in
     // that shard
+    // TODO: make a new call that checks each shard in slice has equal docs
     assertEquals(shardToClient.get("shard1").get(0).query(new SolrQuery("*:*"))
         .getResults().getNumFound(),
         shardToClient.get("shard1").get(shardToClient.get("shard1").size() - 1)

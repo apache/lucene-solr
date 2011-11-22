@@ -45,6 +45,7 @@ public class ZkStateReader {
   public static final String CLUSTER_STATE = "/clusterstate.xml";
 
   public static final String RECOVERING = "recovering";
+  public static final String ACTIVE = "active";
   
   private volatile CloudState cloudState = new CloudState();
 

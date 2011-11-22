@@ -301,7 +301,7 @@ public class SnapPuller {
       boolean deleteTmpIdxDir = true;
       File indexDir = null ;
       try {
-        indexDir = new File(core.getIndexDir());
+        indexDir = new File(core.getNewIndexDir());
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
@@ -547,7 +547,9 @@ public class SnapPuller {
    */
   private void downloadIndexFiles(boolean downloadCompleteIndex, File tmpIdxDir, long latestVersion) throws Exception {
     for (Map<String, Object> file : filesToDownload) {
-      File localIndexFile = new File(solrCore.getIndexDir(), (String) file.get(NAME));
+      File localIndexFile = new File(solrCore.getNewIndexDir(), (String) file.get(NAME));
+      System.out.println("look at file:" + localIndexFile);
+      System.out.println("exits" + localIndexFile.exists());
       if (!localIndexFile.exists() || downloadCompleteIndex) {
         fileFetcher = new FileFetcher(tmpIdxDir, file, (String) file.get(NAME), false, latestVersion);
         currentFile = file;
@@ -567,7 +569,7 @@ public class SnapPuller {
    */
   private boolean isIndexStale() {
     for (Map<String, Object> file : filesToDownload) {
-      File localIndexFile = new File(solrCore.getIndexDir(), (String) file
+      File localIndexFile = new File(solrCore.getNewIndexDir(), (String) file
               .get(NAME));
       if (localIndexFile.exists()
               && localIndexFile.length() != (Long) file.get(SIZE)) {

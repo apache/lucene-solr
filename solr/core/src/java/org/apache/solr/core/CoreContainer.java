@@ -529,7 +529,7 @@ public class CoreContainer
   private void registerInZk(SolrCore core) {
     if (zkController != null) {
       try {
-        zkController.register(core.getName(), core.getCoreDescriptor(), core.getCoreDescriptor().getCloudDescriptor());
+        zkController.register(core.getName(), core.getCoreDescriptor());
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();

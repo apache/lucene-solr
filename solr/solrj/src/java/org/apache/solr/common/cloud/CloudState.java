@@ -78,11 +78,8 @@ public class CloudState {
 			collectionStates.put(collection, new HashMap<String, Slice>());
 		}
 		if (!collectionStates.get(collection).containsKey(slice.getName())) {
-			log.info("New slice: " + slice.getName());
 			collectionStates.get(collection).put(slice.getName(), slice);
 		} else {
-			log.info("Updating existing slice");
-			
 			Map<String, ZkNodeProps> shards = new HashMap<String, ZkNodeProps>();
 			
 			Slice existingSlice = collectionStates.get(collection).get(slice.getName());

@@ -48,7 +48,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jdt.core.dom.ThisExpression;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -74,6 +73,8 @@ public final class SolrCore implements SolrInfoMBean {
   private String name;
   private String logid; // used to show what name is set
   private final CoreDescriptor coreDescriptor;
+
+  private boolean isReloaded = false;
 
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
@@ -562,6 +563,7 @@ public final class SolrCore implements SolrInfoMBean {
       initDirectoryFactory();
     } else {
       directoryFactory = updateHandler.getSolrCoreState().getDirectoryFactory();
+      this.isReloaded = true;
     }
     
     initIndex();
@@ -1390,6 +1392,9 @@ public final class SolrCore implements SolrInfoMBean {
     return holder;
   }
 
+  public boolean isReloaded() {
+    return isReloaded;
+  }
 
   // Take control of newSearcherHolder (which should have a reference count of at
   // least 1 already.  If the caller wishes to use the newSearcherHolder directly

@@ -20,11 +20,8 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -32,7 +29,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -177,19 +173,33 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       
       CloudDescriptor cloudDesc = new CloudDescriptor();
       cloudDesc.setCollectionName("collection1");
+      
+      
       zkController.createCollectionZkNode(cloudDesc);
      
-      String shard1 = zkController.register("core1", new CoreDescriptor(null, "core1", "instanceDir"), cloudDesc);
+      CoreDescriptor desc = new CoreDescriptor(null, "core1", "");
+      desc.setCloudDescriptor(cloudDesc);
+      String shard1 = zkController.register("core1", desc);
       cloudDesc.setShardId(null);
-      String shard2 = zkController.register("core2", new CoreDescriptor(null, "core2", "instanceDir"), cloudDesc);
+      desc = new CoreDescriptor(null, "core2", "");
+      desc.setCloudDescriptor(cloudDesc);
+      String shard2 = zkController.register("core2", desc);
       cloudDesc.setShardId(null);
-      String shard3 = zkController.register("core3", new CoreDescriptor(null, "core3", "instanceDir"), cloudDesc);
+      desc = new CoreDescriptor(null, "core3", "");
+      desc.setCloudDescriptor(cloudDesc);
+      String shard3 = zkController.register("core3", desc);
       cloudDesc.setShardId(null);
-      String shard4 = zkController.register("core4", new CoreDescriptor(null, "core4", "instanceDir"), cloudDesc);
+      desc = new CoreDescriptor(null, "core4", "");
+      desc.setCloudDescriptor(cloudDesc);
+      String shard4 = zkController.register("core4", desc);
       cloudDesc.setShardId(null);
-      String shard5 = zkController.register("core5", new CoreDescriptor(null, "core5", "instanceDir"), cloudDesc);
+      desc = new CoreDescriptor(null, "core5", "");
+      desc.setCloudDescriptor(cloudDesc);
+      String shard5 = zkController.register("core5", desc);
       cloudDesc.setShardId(null);
-      String shard6 = zkController.register("core6", new CoreDescriptor(null, "core6", "instanceDir"), cloudDesc);
+      desc = new CoreDescriptor(null, "core6", "");
+      desc.setCloudDescriptor(cloudDesc);
+      String shard6 = zkController.register("core6", desc);
       cloudDesc.setShardId(null);
 
       assertEquals("shard1", shard1);

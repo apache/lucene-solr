@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
@@ -156,8 +157,7 @@ public final class ZkController {
                   .getCurrentDescriptors();
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
-                  register(descriptor.getName(), descriptor,
-                      descriptor.getCloudDescriptor());
+                  register(descriptor.getName(), descriptor);
                 }
               }
 
@@ -409,12 +409,13 @@ public final class ZkController {
    * @return
    * @throws Exception 
    */
-  public String register(String coreName, final CoreDescriptor desc, final CloudDescriptor cloudDesc) throws Exception {
+  public String register(String coreName, final CoreDescriptor desc) throws Exception {
     // nocommit: TODO: on core reload we don't want to do recovery or anything...
     
     String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
+    CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     final String collection = cloudDesc.getCollectionName();
     
     byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
@@ -424,17 +425,17 @@ public final class ZkController {
     CloudState state = CloudState.load(data);
     String shardZkNodeName = getNodeName() + "_" + coreName;
     
-    boolean doRecovery = checkRecovery(cloudDesc, state, shardZkNodeName);
-    
+    // checkRecovery will have updated the shardId if it already exists...
     String shardId = cloudDesc.getShardId();
-    if (shardId == null && !doRecovery) {
+
+    if (shardId == null && getShardId(desc, state, shardZkNodeName)) {
       shardId = assignShard.assignShard(collection, numShards);
       cloudDesc.setShardId(shardId);
     }
     
     if (log.isInfoEnabled()) {
         log.info("Register shard - core:" + coreName + " address:"
-            + shardUrl);
+            + shardUrl + "shardId:" + shardId);
       }
     
     leaderElector.setupForSlice(shardId, collection);
@@ -449,31 +450,46 @@ public final class ZkController {
     System.out.println("leader url: "+ leaderUrl);
     System.out.println("shard url: "+ shardUrl);
     boolean iamleader = false;
+    boolean doRecovery = true;
     if (leaderUrl.equals(shardUrl)) {
       iamleader = true;
+      // TODO: this should really be figured in checkRecovery
+      doRecovery = false;
     } else {
-      // we are not the leader, so catch up with recovery
-      doRecovery = true;
+      CoreContainer cc = desc.getCoreContainer();
+      if (cc != null) {
+        SolrCore core = cc.getCore(desc.getName());
+        try {
+          if (core.isReloaded()) {
+            doRecovery = false;
+          }
+        } finally {
+          core.close();
+        }
+      } else {
+        log.warn("Cannot recover without access to CoreConatiner");
+        return shardId;
+      }
+
     }
     
     if (doRecovery) {
-      if (desc.getCoreContainer() != null) {
-        doRecovery(collection, desc, cloudDesc, iamleader);
-      } else {
-        log.warn("For some odd reason a SolrCore is trying to recover but does not have access to a CoreContainer - skipping recovery.");
-      }
+      doRecovery(collection, desc, cloudDesc, iamleader);
+    } else {
+      System.out.println("dont do recovery");
     }
-    addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, "active");
+    addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.ACTIVE);
 
     return shardId;
   }
 
 
-  private boolean checkRecovery(final CloudDescriptor cloudDesc,
+  private boolean getShardId(final CoreDescriptor desc,
       CloudState state, String shardZkNodeName) {
-    boolean recover = false;
-    Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
 
+    CloudDescriptor cloudDesc = desc.getCloudDescriptor();
+    
+    Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
     if (slices != null) {
       Map<String,String> nodes = new HashMap<String,String>();
 
@@ -485,10 +501,10 @@ public final class ZkController {
       if (nodes.containsKey(shardZkNodeName)) {
         // TODO: we where already registered - go into recovery mode
         cloudDesc.setShardId(nodes.get(shardZkNodeName));
-        recover = true;
+        return false;
       }
     }
-    return recover;
+    return true;
   }
 
 
@@ -568,15 +584,16 @@ public final class ZkController {
   private void doRecovery(String collection, final CoreDescriptor desc,
       final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
       SolrServerException, IOException {
-    // nocommit: joke code
     System.out.println("do recovery");
+    
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get 
     // or full index replication
 
     // seems perhaps we cannot do this here since we are not fully running - 
-    // we need to trigger a recovery that happens later
+    // we may need to trigger a recovery that happens later
     System.out.println("shard is:" + cloudDesc.getShardId());
+    System.out.println("leader:" + iamleader);
     
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
     
@@ -588,9 +605,9 @@ public final class ZkController {
       
       
       // if we want to buffer updates while recovering, this
-      // will have to trigger later - http is not yet up
+      // will have to trigger later - http is not yet up ???
       
-      // use rep handler and SnapPuller directly, so we can do this sync rather than async
+      // use rep handler directly, so we can do this sync rather than async
       SolrCore core = desc.getCoreContainer().getCore(desc.getName());
       try {
         ReplicationHandler replicationHandler = (ReplicationHandler) core
