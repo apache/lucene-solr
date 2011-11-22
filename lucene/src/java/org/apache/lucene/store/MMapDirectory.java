@@ -412,6 +412,7 @@ public class MMapDirectory extends FSDirectory {
   
     @Override
     public void close() throws IOException {
+      curBuf = null; curBufIndex = 0;
       try {
         if (isClone || buffers == null) return;
         for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
