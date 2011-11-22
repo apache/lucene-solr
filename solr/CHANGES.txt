@@ -189,9 +189,6 @@ New Features
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
 
-* SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
-  a stream (shalin)
-
 Optimizations
 ----------------------
 
@@ -375,7 +372,10 @@ Documentation
   
 ==================  3.6.0  ==================
 
-(No Changes)
+New Features
+----------------------
+* SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
+  a stream (shalin)
 
 ==================  3.5.0  ==================
 
