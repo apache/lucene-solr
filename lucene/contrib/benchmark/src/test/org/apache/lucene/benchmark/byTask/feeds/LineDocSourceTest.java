@@ -42,6 +42,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.IOUtils;
 
 /** Tests the functionality of {@link LineDocSource}. */
 public class LineDocSourceTest extends BenchmarkTestCase {
@@ -110,53 +111,58 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     doIndexAndSearchTestWithRepeats(file, lineParserClass, 4, storedField); // 3 extra repetitions
   }
   
-  private void doIndexAndSearchTestWithRepeats(File file, 
-      Class<? extends LineParser> lineParserClass, int numAdds, String storedField) throws Exception {
+  private void doIndexAndSearchTestWithRepeats(File file,
+      Class<? extends LineParser> lineParserClass, int numAdds,
+      String storedField) throws Exception {
 
-    Properties props = new Properties();
-    
-    // LineDocSource specific settings.
-    props.setProperty("docs.file", file.getAbsolutePath());
-    if (lineParserClass != null) {
-      props.setProperty("line.parser", lineParserClass.getName());
-    }
-    
-    // Indexing configuration.
-    props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
-    props.setProperty("content.source", LineDocSource.class.getName());
-    props.setProperty("directory", "RAMDirectory");
-    props.setProperty("doc.stored", "true");
-    props.setProperty("doc.index.props", "true");
-    
-    // Create PerfRunData
-    Config config = new Config(props);
-    PerfRunData runData = new PerfRunData(config);
+    IndexReader reader = null;
+    IndexSearcher searcher = null;
+    PerfRunData runData = null;
+    try {
+      Properties props = new Properties();
+      
+      // LineDocSource specific settings.
+      props.setProperty("docs.file", file.getAbsolutePath());
+      if (lineParserClass != null) {
+        props.setProperty("line.parser", lineParserClass.getName());
+      }
+      
+      // Indexing configuration.
+      props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
+      props.setProperty("content.source", LineDocSource.class.getName());
+      props.setProperty("directory", "RAMDirectory");
+      props.setProperty("doc.stored", "true");
+      props.setProperty("doc.index.props", "true");
+      
+      // Create PerfRunData
+      Config config = new Config(props);
+      runData = new PerfRunData(config);
 
-    TaskSequence tasks = new TaskSequence(runData, "testBzip2", null, false);
-    tasks.addTask(new CreateIndexTask(runData));
-    for (int i=0; i<numAdds; i++) {
-      tasks.addTask(new AddDocTask(runData));
+      TaskSequence tasks = new TaskSequence(runData, "testBzip2", null, false);
+      tasks.addTask(new CreateIndexTask(runData));
+      for (int i=0; i<numAdds; i++) {
+        tasks.addTask(new AddDocTask(runData));
+      }
+      tasks.addTask(new CloseIndexTask(runData));
+      try {
+        tasks.doLogic();
+      } finally {
+        tasks.close();
+      }
+      
+      reader = IndexReader.open(runData.getDirectory(), true);
+      searcher = new IndexSearcher(reader);
+      TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
+      assertEquals(numAdds, td.totalHits);
+      assertNotNull(td.scoreDocs[0]);
+      
+      if (storedField==null) {
+        storedField = DocMaker.BODY_FIELD; // added to all docs and satisfies field-name == value
+      }
+      assertEquals("Wrong field value", storedField, searcher.doc(0).get(storedField));
+    } finally {
+      IOUtils.close(searcher, reader, runData);
     }
-    tasks.addTask(new CloseIndexTask(runData));
-    tasks.doLogic();
-    tasks.close();
-    
-    IndexReader r = runData.getIndexReader();
-    if (r == null) {
-      r = IndexReader.open(runData.getDirectory(), true);
-    }
-    IndexSearcher searcher = new IndexSearcher(r);
-    TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
-    assertEquals(numAdds, td.totalHits);
-    assertNotNull(td.scoreDocs[0]);
-    
-    if (storedField==null) {
-      storedField = DocMaker.BODY_FIELD; // added to all docs and satisfies field-name == value
-    }
-    assertEquals("Wrong field value", storedField, searcher.doc(0).get(storedField));
-
-    searcher.close();
-    r.close();
   }
   
   /* Tests LineDocSource with a bzip2 input stream. */
