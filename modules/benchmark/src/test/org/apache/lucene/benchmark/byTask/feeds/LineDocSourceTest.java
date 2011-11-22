@@ -155,6 +155,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
 
     searcher.close();
     reader.close();
+    runData.close();
   }
   
   /* Tests LineDocSource with a bzip2 input stream. */

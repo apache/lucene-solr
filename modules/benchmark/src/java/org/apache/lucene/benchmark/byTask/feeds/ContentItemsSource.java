@@ -17,6 +17,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ import org.apache.lucene.benchmark.byTask.utils.Format;
  * logStep is not 0 (<b>default=0</b>).
  * </ul>
  */
-public abstract class ContentItemsSource {
+public abstract class ContentItemsSource implements Closeable {
   
   private long bytesCount;
   private long totalBytesCount;
