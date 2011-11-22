@@ -364,7 +364,8 @@ Other Changes
   by default.  However the Content-Type can be overwritten and is set to text/plain in
   the example configuration. (Uri Boness, Chris Male)
   
-* SOLR-2607: Removed deprecated clients/ruby (solr-ruby and flare). (ehatcher)
+* SOLR-2607: Removed deprecated client/ruby directory, which included solr-ruby and flare.
+  (ehatcher)
 
 Documentation
 ----------------------
