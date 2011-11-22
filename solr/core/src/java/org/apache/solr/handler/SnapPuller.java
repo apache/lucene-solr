@@ -180,7 +180,7 @@ public class SnapPuller {
     post.addParameter(COMMAND, CMD_INDEX_VERSION);
     post.addParameter("wt", "javabin");
     if (force) {
-      post.addParameter(ReplicationHandler.FORCE, "true");
+      post.addParameter(ReplicationHandler.CMD_FORCE, "true");
     }
     return getNamedListResponse(post);
   }

@@ -81,15 +81,13 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
-  static final String FORCE = "force";
   
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
 
   private SnapPuller snapPuller;
 
-  // nocommit: made this public
-  public ReentrantLock snapPullLock = new ReentrantLock();
+  private ReentrantLock snapPullLock = new ReentrantLock();
 
   private String includeConfFiles;
 
@@ -121,7 +119,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
     final SolrParams solrParams = req.getParams();
-    boolean force = solrParams.getBool(FORCE, false);
+    boolean force = solrParams.getBool(CMD_FORCE, false);
     String command = solrParams.get(COMMAND);
     if (command == null) {
       rsp.add(STATUS, OK_STATUS);
@@ -297,7 +295,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         tempSnapPuller = snapPuller;
       }
       
-      tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool(FORCE, false));
+      tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool(CMD_FORCE, false));
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {
@@ -1101,6 +1099,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String COMMAND = "command";
 
+  public static final String CMD_FORCE = "force";
+  
   public static final String CMD_DETAILS = "details";
 
   public static final String CMD_BACKUP = "backup";

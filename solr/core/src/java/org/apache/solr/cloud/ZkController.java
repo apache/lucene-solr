@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,12 +38,11 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.handler.SnapPuller;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
@@ -603,28 +601,14 @@ public final class ZkController {
           return;
         }
         
-        ReentrantLock snapPullLock = replicationHandler.snapPullLock;
-        if (!snapPullLock.tryLock()) return;
-        SnapPuller tempSnapPuller;
-        try {
-          
-          NamedList<Object> nl = new NamedList<Object>();
-          nl.add(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
-          nl.remove(SnapPuller.POLL_INTERVAL);
-          tempSnapPuller = new SnapPuller(nl, replicationHandler, core);
-          
-          tempSnapPuller.fetchLatestIndex(core, true);
-        } catch (Exception e) {
-          log.error("SnapPull failed ", e);
-        } finally {
-          
-          snapPullLock.unlock();
-        }
+        ModifiableSolrParams solrParams = new ModifiableSolrParams();
+        solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
+        solrParams.set(ReplicationHandler.CMD_FORCE, true);
+
+        replicationHandler.doFetch(solrParams);
       } finally {
         core.close();
       }
-
-      // TODO: once done replicating, mark as active
     }
   }
 
