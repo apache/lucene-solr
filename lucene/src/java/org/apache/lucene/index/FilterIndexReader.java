@@ -37,6 +37,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * contained index reader. Subclasses of <code>FilterIndexReader</code> may
  * further override some of these methods and may also provide additional
  * methods and fields.
+ * <p><b>Note:</b> The default implementation of {@link FilterIndexReader#doOpenIfChanged}
+ * throws {@link UnsupportedOperationException} (like the base class),
+ * so it's not possible to reopen a <code>FilterIndexReader</code>.
+ * To reopen, you have to first reopen the underlying reader
+ * and wrap it again with the custom filter.
  */
 public class FilterIndexReader extends IndexReader {
 
