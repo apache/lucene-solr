@@ -89,7 +89,7 @@ public class JavaBinUpdateRequestCodec {
    *
    * @throws IOException in case of an exception while reading from the input stream or unmarshalling
    */
-  public UpdateRequest unmarshal(InputStream is, final StreamingDocumentHandler handler) throws IOException {
+  public UpdateRequest unmarshal(InputStream is, final StreamingUpdateHandler handler) throws IOException {
     final UpdateRequest updateRequest = new UpdateRequest();
     List<List<NamedList>> doclist;
     List<String> delById;
@@ -136,7 +136,13 @@ public class JavaBinUpdateRequestCodec {
         while (true) {
           Object o = readVal(fis);
           if (o == END_OBJ) break;
-          handler.document(listToSolrInputDocument((List<NamedList>) o), updateRequest);
+          if (o instanceof List) {
+            handler.update(listToSolrInputDocument((List<NamedList>) o), updateRequest);
+          } else if (o instanceof NamedList)  {
+            UpdateRequest req = new UpdateRequest();
+            req.setParams(new ModifiableSolrParams(SolrParams.toSolrParams((NamedList) o)));
+            handler.update(null, req);
+          }
         }
         return Collections.EMPTY_LIST;
       }
@@ -210,7 +216,7 @@ public class JavaBinUpdateRequestCodec {
     return nl;
   }
 
-  public static interface StreamingDocumentHandler {
-    public void document(SolrInputDocument document, UpdateRequest req);
+  public static interface StreamingUpdateHandler {
+    public void update(SolrInputDocument document, UpdateRequest req);
   }
 }

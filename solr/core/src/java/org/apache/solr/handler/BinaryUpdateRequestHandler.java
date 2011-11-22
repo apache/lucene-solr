@@ -24,12 +24,14 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -66,30 +68,49 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
   private void parseAndLoadDocs(SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream,
                                 final UpdateRequestProcessor processor) throws IOException {
     UpdateRequest update = null;
-    update = new JavaBinUpdateRequestCodec().unmarshal(stream,
-            new JavaBinUpdateRequestCodec.StreamingDocumentHandler() {
-              private AddUpdateCommand addCmd = null;
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+      private AddUpdateCommand addCmd = null;
 
-              public void document(SolrInputDocument document, UpdateRequest updateRequest) {
-                if (addCmd == null) {
-                  addCmd = getAddCommand(updateRequest.getParams());
-                }
-                addCmd.solrDoc = document;
-                try {
-                  processor.processAdd(addCmd);
-                  addCmd.clear();
-                } catch (IOException e) {
-                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document);
-                }
-              }
-            });
-    if (update.getDeleteById() != null) {
-      delete(update.getDeleteById(), processor, true);
+      public void update(SolrInputDocument document, UpdateRequest updateRequest) {
+        if (document == null) {
+          // Perhaps commit from the parameters
+          try {
+            RequestHandlerUtils.handleCommit(processor, updateRequest.getParams(), false);
+            RequestHandlerUtils.handleRollback(processor, updateRequest.getParams(), false);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR handling commit/rollback");
+          }
+          return;
+        }
+        if (addCmd == null) {
+          addCmd = getAddCommand(updateRequest.getParams());
+        }
+        addCmd.solrDoc = document;
+        try {
+          processor.processAdd(addCmd);
+          addCmd.clear();
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document);
+        }
+      }
+    };
+    FastInputStream in = FastInputStream.wrap(stream);
+    for (; ; ) {
+      try {
+        update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
+      } catch (EOFException e) {
+        break;
+      } catch (Exception e) {
+        log.error("Exception while processing update request", e);
+        break;
+      }
+      if (update.getDeleteById() != null) {
+        delete(update.getDeleteById(), processor, true);
+      }
+      if (update.getDeleteQuery() != null) {
+        delete(update.getDeleteQuery(), processor, false);
+      }
     }
-    if (update.getDeleteQuery() != null) {
-      delete(update.getDeleteQuery(), processor, false);
-    }
-
   }
 
   private AddUpdateCommand getAddCommand(SolrParams params) {

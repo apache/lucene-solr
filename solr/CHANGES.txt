@@ -23,6 +23,11 @@ on how to get started.
 
 ==================  3.6.0  ==================
 
+New Features
+----------------------
+* SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
+  a stream (shalin)
+
 ==================  3.5.0  ==================
 Versions of Major Components
 ---------------------
