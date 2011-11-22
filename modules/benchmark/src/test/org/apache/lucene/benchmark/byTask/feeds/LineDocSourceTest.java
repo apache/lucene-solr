@@ -140,6 +140,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     }
     tasks.addTask(new CloseIndexTask(runData));
     tasks.doLogic();
+    tasks.close();
     
     IndexReader reader = IndexReader.open(runData.getDirectory());
     IndexSearcher searcher = new IndexSearcher(reader);
