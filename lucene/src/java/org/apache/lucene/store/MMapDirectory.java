@@ -177,7 +177,7 @@ public class MMapDirectory extends FSDirectory {
   }
   
   /**
-   * Sets the maximum chunk size (default is {@link Integer#MAX_VALUE} for
+   * Sets the maximum chunk size (default is 1 GiBytes for
    * 64 bit JVMs and 256 MiBytes for 32 bit JVMs) used for memory mapping.
    * Especially on 32 bit platform, the address space can be very fragmented,
    * so large index files cannot be mapped.
