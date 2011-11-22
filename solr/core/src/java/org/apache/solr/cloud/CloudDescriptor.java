@@ -24,7 +24,7 @@ public class CloudDescriptor {
   private String shardId;
   private String collectionName;
   private SolrParams params;
-  private String roles;
+  private String roles = "";
   
   public void setShardId(String shardId) {
     this.shardId = shardId;

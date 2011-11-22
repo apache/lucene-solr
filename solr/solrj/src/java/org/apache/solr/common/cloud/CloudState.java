@@ -36,6 +36,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,14 +176,17 @@ public class CloudState {
 					}
 				}
 			} catch (SAXException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+        log.error("", e);
+        throw new ZooKeeperException(
+            SolrException.ErrorCode.SERVER_ERROR, "", e);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+        log.error("", e);
+        throw new ZooKeeperException(
+            SolrException.ErrorCode.SERVER_ERROR, "", e);
 			} catch (ParserConfigurationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+        log.error("", e);
+        throw new ZooKeeperException(
+            SolrException.ErrorCode.SERVER_ERROR, "", e);
 			} finally {
 				// some XML parsers are broken and don't close the byte stream (but
 				// they should according to spec)

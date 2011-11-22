@@ -88,7 +88,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private SnapPuller snapPuller;
 
-  private ReentrantLock snapPullLock = new ReentrantLock();
+  // nocommit: made this public
+  public ReentrantLock snapPullLock = new ReentrantLock();
 
   private String includeConfFiles;
 
@@ -282,22 +283,27 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile SnapPuller tempSnapPuller;
 
-  void doFetch(SolrParams solrParams) {
+  public void doFetch(SolrParams solrParams) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
       return;
     try {
-      tempSnapPuller = snapPuller;
+      
       if (masterUrl != null) {
         NamedList<Object> nl = solrParams.toNamedList();
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
+      } else {
+        tempSnapPuller = snapPuller;
       }
+      
       tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool(FORCE, false));
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {
-      tempSnapPuller = snapPuller;
+      if (snapPuller != null) {
+        tempSnapPuller = snapPuller;
+      }
       snapPullLock.unlock();
     }
   }
@@ -444,7 +450,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   boolean isPollingDisabled() {
-    return snapPuller.isPollingDisabled();
+    return snapPuller == null ? false : snapPuller.isPollingDisabled();
   }
 
   int getTimesReplicatedSinceStartup() {
@@ -456,7 +462,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   long getIndexSize() {
-    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
+    return FileUtils.sizeOfDirectory(new File(core.getNewIndexDir()));
   }
 
   /**

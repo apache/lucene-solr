@@ -107,7 +107,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void setupRequest(int hash) {
-    System.out.println("hash:" + hash);
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
     CloudState cloudState = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getCloudState();
@@ -152,7 +151,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (shardZkNodeName.equals(leader)) {
               isLeader = true;
             }
-            System.out.println(" go local");
           } else if (shardZkNodeName.equals(leader)) {
             isLeader = true;
             // that means I want to forward onto my replicas...
@@ -162,13 +160,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             
             // mark that this req has been to the leader
             params.set(SEEN_LEADER, true);
-            System.out.println("mark leader seen");
           } else {
             // I need to forward onto the leader...
             shardStr = leaderUrl;
             forwardToLeader  = true;
           }
-          System.out.println("set params on req:" + params);
           req.setParams(params);
         }
       } catch (KeeperException e) {
@@ -245,10 +241,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    System.out.println("LeaderParam:"
-        + req.getParams().get(SEEN_LEADER));
-    System.out.println("leader? " + isLeader);
-
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
 
@@ -280,10 +272,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           cmd.setVersion(version);
           cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
           bucket.updateHighest(version);
-          System.out.println("add version field to doc:" + version);
         } else {
           // The leader forwarded us this update.
-          System.out.println("got version from leader:" + versionOnUpdate);
           cmd.setVersion(versionOnUpdate);
 
           // if we aren't the leader, then we need to check that updates were not re-ordered

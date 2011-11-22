@@ -236,7 +236,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     boolean pick = random.nextBoolean();
     
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % sliceCount;
-    System.out.println("add doc to shard:" + which);
     
     if (pick) {
       which = which + ((shardCount / sliceCount) * random.nextInt(sliceCount-1));
@@ -247,7 +246,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     ureq.setParam("update.chain", "distrib-update-chain");
-    System.out.println("set update.chain on req");
     ureq.process(client);
   }
   
@@ -529,10 +527,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     System.out.println("shard2_1 port:" + ((CommonsHttpSolrServer)s2c.get(0)).getBaseURL());
     System.out.println("shard2_2 port:" + ((CommonsHttpSolrServer)s2c.get(1)).getBaseURL());
     
-    // wait a bit for replication
-    // TODO: poll or something..
-    Thread.sleep(5000);
-    
 
     // if we properly recovered, we should now have the couple missing docs that
     // came in while shard was down
@@ -556,10 +550,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     for (SolrServer client : shardToClient.get("shard1")) {
       System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
-    
-    // wait a bit for replication
-    // TODO: poll or something..
-    Thread.sleep(5000);
     
     // assert the new server has the same number of docs as another server in
     // that shard

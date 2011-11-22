@@ -38,12 +38,6 @@ public class HashPartitioner {
     long range = Integer.MAX_VALUE + (Math.abs((long)Integer.MIN_VALUE));
     long srange = range / partitions;
     
-    System.out.println("min:" + Integer.MIN_VALUE);
-    System.out.println("max:" + Integer.MAX_VALUE);
-    
-    System.out.println("range:" + range);
-    System.out.println("srange:" + srange);
-    
     List<Range> ranges = new ArrayList<Range>(partitions);
     
     long end = 0;
@@ -51,7 +45,6 @@ public class HashPartitioner {
 
     while (end < Integer.MAX_VALUE) {
       end = start + srange;
-      System.out.println("from:" + start + ":" + end);
       start = end + 1L;
       ranges.add(new Range(start, end));
     }

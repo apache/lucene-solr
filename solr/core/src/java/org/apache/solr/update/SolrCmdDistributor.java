@@ -316,13 +316,12 @@ public class SolrCmdDistributor {
             } else {
               url = shard;
             }
-            System.out.println("URL:" + url);
+
             SolrServer server = new CommonsHttpSolrServer(url, client);
             clonedRequest.ursp = server.request(clonedRequest.ureq);
             
             // currently no way to get the request body.
           } catch (Exception e) {
-            e.printStackTrace(System.out);
             clonedRequest.exception = e;
             if (e instanceof SolrException) {
               clonedRequest.rspCode = ((SolrException) e).code();
@@ -330,7 +329,6 @@ public class SolrCmdDistributor {
               clonedRequest.rspCode = -1;
             }
           }
-          System.out.println("RSPFirst:" + clonedRequest.rspCode);
           return clonedRequest;
         }
       };
@@ -352,7 +350,6 @@ public class SolrCmdDistributor {
         
         try {
           Request sreq = future.get();
-          System.out.println("RSP:" + sreq.rspCode);
           if (sreq.rspCode != 0) {
             // error during request
             failed++;
@@ -388,8 +385,6 @@ public class SolrCmdDistributor {
       }
     }
     
-    System.out.println("check failed rate:" + failed + " " + expectedResponses
-        / 2);
     if (failed <= (expectedResponses / 2)) {
       // don't fail if half or more where fine
       rsp.setException(null);
