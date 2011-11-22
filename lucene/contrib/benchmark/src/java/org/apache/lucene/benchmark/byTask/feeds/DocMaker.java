@@ -78,8 +78,9 @@ import org.apache.lucene.document.Field.TermVector;
 public class DocMaker {
 
   private static class LeftOver {
-    private DocData docdata;
-    private int cnt;
+    public LeftOver() {}
+    DocData docdata;
+    int cnt;
   }
 
   private Random r;

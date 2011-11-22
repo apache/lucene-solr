@@ -44,6 +44,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
  */
 public class EnwikiContentSource extends ContentSource {
 
+  @SuppressWarnings("synthetic-access")
   private class Parser extends DefaultHandler implements Runnable {
     private Thread t;
     private boolean threadDone;
@@ -54,6 +55,9 @@ public class EnwikiContentSource extends ContentSource {
     private String body;
     private String time;
     private String id;
+    
+    public Parser() {
+    }
     
     String[] next() throws NoMoreDataException {
       if (t == null) {

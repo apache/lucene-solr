@@ -130,7 +130,6 @@ public abstract class ContentItemsSource {
    * items generated since the last reset, so it's important to call
    * super.resetInputs in case you override this method.
    */
-  @SuppressWarnings("unused")
   public void resetInputs() throws IOException {
     bytesCount = 0;
     itemCount = 0;

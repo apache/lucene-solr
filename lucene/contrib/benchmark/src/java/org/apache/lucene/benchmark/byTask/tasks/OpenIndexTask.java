@@ -17,16 +17,16 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import java.io.IOException;
 
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LogMergePolicy;
 
 /**
  * Open an index writer.

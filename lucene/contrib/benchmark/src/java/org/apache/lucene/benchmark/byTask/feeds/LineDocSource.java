@@ -72,6 +72,7 @@ public class LineDocSource extends ContentSource {
     public SimpleLineParser(String[] header) {
       super(header);
     }
+    @Override
     public void parseLine(DocData docData, String line) {
       int k1 = 0;
       int k2 = line.indexOf(WriteLineDocTask.SEP, k1);
@@ -122,6 +123,7 @@ public class LineDocSource extends ContentSource {
       }
     }
     
+    @Override
     public void parseLine(DocData docData, String line) {
       int n = 0;
       int k1 = 0;

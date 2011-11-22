@@ -308,6 +308,7 @@ public class TaskSequence extends PerfTask {
       this.task = task;
     }
 
+    @SuppressWarnings("synthetic-access")
     @Override
     public void run() {
       try {

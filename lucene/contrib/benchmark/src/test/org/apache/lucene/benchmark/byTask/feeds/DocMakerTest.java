@@ -20,7 +20,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -30,6 +29,7 @@ import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -87,11 +87,14 @@ public class DocMakerTest extends BenchmarkTestCase {
     tasks.addTask(new AddDocTask(runData));
     tasks.addTask(new CloseIndexTask(runData));
     tasks.doLogic();
+    tasks.close();
     
-    IndexSearcher searcher = new IndexSearcher(runData.getDirectory(), true);
+    IndexReader r = IndexReader.open(runData.getDirectory(), true);
+    IndexSearcher searcher = new IndexSearcher(r);
     TopDocs td = searcher.search(new TermQuery(new Term("key", "value")), 10);
     assertEquals(numExpectedResults, td.totalHits);
     searcher.close();
+    r.close();
   }
   
   private Document createTestNormsDocument(boolean setNormsProp,
@@ -137,28 +140,28 @@ public class DocMakerTest extends BenchmarkTestCase {
     
     // Don't set anything, use the defaults
     doc = createTestNormsDocument(false, false, false, false);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getFieldable(DocMaker.TITLE_FIELD).getOmitNorms());
+    assertFalse(doc.getFieldable(DocMaker.BODY_FIELD).getOmitNorms());
     
     // Set norms to false
     doc = createTestNormsDocument(true, false, false, false);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getFieldable(DocMaker.TITLE_FIELD).getOmitNorms());
+    assertFalse(doc.getFieldable(DocMaker.BODY_FIELD).getOmitNorms());
     
     // Set norms to true
     doc = createTestNormsDocument(true, true, false, false);
-    assertFalse(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertFalse(doc.getFieldable(DocMaker.TITLE_FIELD).getOmitNorms());
+    assertFalse(doc.getFieldable(DocMaker.BODY_FIELD).getOmitNorms());
     
     // Set body norms to false
     doc = createTestNormsDocument(false, false, true, false);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertTrue(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getFieldable(DocMaker.TITLE_FIELD).getOmitNorms());
+    assertTrue(doc.getFieldable(DocMaker.BODY_FIELD).getOmitNorms());
     
     // Set body norms to true
     doc = createTestNormsDocument(false, false, true, true);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getFieldable(DocMaker.TITLE_FIELD).getOmitNorms());
+    assertFalse(doc.getFieldable(DocMaker.BODY_FIELD).getOmitNorms());
   }
   
 }

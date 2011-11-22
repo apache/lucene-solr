@@ -73,6 +73,7 @@ public class Sample {
     
     // execute
     top.doLogic();
+    top.close();
   }
 
   // Sample programmatic settings. Could also read from file.

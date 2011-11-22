@@ -1,4 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +16,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 
 import java.io.IOException;
 
@@ -34,8 +34,8 @@ public class ReopenReaderTask extends PerfTask {
   @Override
   public int doLogic() throws IOException {
     IndexReader r = getRunData().getIndexReader();
-    IndexReader nr = r.reopen();
-    if (nr != r) {
+    IndexReader nr = IndexReader.openIfChanged(r);
+    if (nr != null) {
       getRunData().setIndexReader(nr);
       nr.decRef();
     }

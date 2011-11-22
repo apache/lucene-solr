@@ -156,6 +156,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     assertEquals("Wrong field value", storedField, searcher.doc(0).get(storedField));
 
     searcher.close();
+    r.close();
   }
   
   /* Tests LineDocSource with a bzip2 input stream. */

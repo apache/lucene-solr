@@ -41,8 +41,7 @@ import java.util.List;
  * file.query.maker.file=c:/myqueries.txt
  * file.query.maker.default.field=body
  */
-public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMaker{
-
+public class FileBasedQueryMaker extends AbstractQueryMaker {
 
   @Override
   protected Query[] prepareQueries() throws Exception {

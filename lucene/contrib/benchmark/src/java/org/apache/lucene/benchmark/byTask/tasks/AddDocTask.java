@@ -17,8 +17,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.text.NumberFormat;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;

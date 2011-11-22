@@ -114,6 +114,8 @@ public class ReadTokensTask extends PerfTask {
     int upto;
     int left;
     String s;
+    
+    ReusableStringReader() {}
     void init(String s) {
       this.s = s;
       left = s.length();

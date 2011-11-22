@@ -45,6 +45,7 @@ import java.util.Stack;
 public class DirContentSource extends ContentSource {
 
   private static final class DateFormatInfo {
+    public DateFormatInfo() {}
     DateFormat df;
     ParsePosition pos;
   }

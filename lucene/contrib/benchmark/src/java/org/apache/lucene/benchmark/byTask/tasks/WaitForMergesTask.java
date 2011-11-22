@@ -1,4 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,12 +17,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
 
 /**
  * Waits for merges to finish.

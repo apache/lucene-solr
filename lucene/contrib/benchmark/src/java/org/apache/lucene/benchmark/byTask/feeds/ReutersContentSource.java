@@ -43,6 +43,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 public class ReutersContentSource extends ContentSource {
 
   private static final class DateFormatInfo {
+    DateFormatInfo() {}
     DateFormat df;
     ParsePosition pos;
   }
