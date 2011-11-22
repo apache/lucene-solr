@@ -33,8 +33,7 @@ import java.util.ArrayList;
  * A QueryMaker that makes queries for a collection created 
  * using {@link org.apache.lucene.benchmark.byTask.feeds.SingleDocSource}.
  */
-public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
-
+public class SimpleQueryMaker extends AbstractQueryMaker {
 
   /**
    * Prepare the queries for this test.

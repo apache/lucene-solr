@@ -74,8 +74,6 @@ public class CreateIndexTask extends PerfTask {
     super(runData);
   }
 
-  
-  
   public static IndexDeletionPolicy getIndexDeletionPolicy(Config config) {
     String deletionPolicyName = config.get("deletion.policy", "org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy");
     if (deletionPolicyName.equals(NoDeletionPolicy.class.getName())) {

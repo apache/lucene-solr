@@ -22,13 +22,13 @@ import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 /**
  * Create a log ready for submission.
  * Extend this class and override
- * {@link #report(QualityQuery, TopDocs, String, Searcher)}
+ * {@link #report(QualityQuery, TopDocs, String, IndexSearcher)}
  * to create different reports. 
  */
 public class SubmissionReport {
@@ -58,7 +58,7 @@ public class SubmissionReport {
    * @param searcher index access for fetching doc name.
    * @throws IOException in case of a problem.
    */
-  public void report(QualityQuery qq, TopDocs td, String docNameField, Searcher searcher) throws IOException {
+  public void report(QualityQuery qq, TopDocs td, String docNameField, IndexSearcher searcher) throws IOException {
     if (logger==null) {
       return;
     }

@@ -17,15 +17,6 @@ package org.apache.lucene.benchmark.quality.trec;
  * limitations under the License.
  */
 
-import org.apache.lucene.benchmark.quality.trec.TrecJudge;
-import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
-import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
-import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
-import org.apache.lucene.benchmark.quality.*;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.store.FSDirectory;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -33,6 +24,16 @@ import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.benchmark.quality.Judge;
+import org.apache.lucene.benchmark.quality.QualityBenchmark;
+import org.apache.lucene.benchmark.quality.QualityQuery;
+import org.apache.lucene.benchmark.quality.QualityQueryParser;
+import org.apache.lucene.benchmark.quality.QualityStats;
+import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
+import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  *
@@ -55,8 +56,9 @@ public class QueryDriver {
     File qrelsFile = new File(args[1]);
     SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
+    IndexReader r = IndexReader.open(dir, true);
+    IndexSearcher searcher = new IndexSearcher(r);
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
-    Searcher searcher = new IndexSearcher(dir, true);
 
     int maxResults = 1000;
     String docNameField = "docname";
@@ -89,5 +91,10 @@ public class QueryDriver {
     // print an avarage sum of the results
     QualityStats avg = QualityStats.average(stats);
     avg.log("SUMMARY", 2, logger, "  ");
+    
+    searcher.close();
+    r.close();
+    dir.close();
   }
+  
 }

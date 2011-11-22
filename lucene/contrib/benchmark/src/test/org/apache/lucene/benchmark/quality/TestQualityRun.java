@@ -22,6 +22,7 @@ import org.apache.lucene.benchmark.quality.trec.TrecJudge;
 import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 
@@ -68,7 +69,8 @@ public class TestQualityRun extends BenchmarkTestCase {
     judge.validateData(qqs, logger);
     
     Directory dir = newFSDirectory(new File(getWorkDir(),"index"));
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexReader r = IndexReader.open(dir, true);
+    IndexSearcher searcher = newSearcher(r);
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
@@ -134,6 +136,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     }
     
     searcher.close();
+    r.close();
     dir.close();
   }
   

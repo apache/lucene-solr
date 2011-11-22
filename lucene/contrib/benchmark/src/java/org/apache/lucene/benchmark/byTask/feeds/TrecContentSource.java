@@ -58,6 +58,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 public class TrecContentSource extends ContentSource {
 
   private static final class DateFormatInfo {
+    DateFormatInfo() {}
     DateFormat[] dfs;
     ParsePosition pos;
   }

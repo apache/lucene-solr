@@ -90,7 +90,7 @@ public class TrecJudge implements Judge {
 
   /** single Judgement of a trec quality query */
   private static class QRelJudgement {
-    private String queryID;
+    String queryID;
     private HashMap<String,String> relevantDocs;
     
     QRelJudgement(String queryID) {

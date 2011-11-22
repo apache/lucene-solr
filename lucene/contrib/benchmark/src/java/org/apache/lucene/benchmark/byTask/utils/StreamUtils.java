@@ -52,7 +52,7 @@ public class StreamUtils {
 		Type(String csfType) {
 			this.csfType = csfType;
 		}
-		private InputStream inputStream(InputStream in) throws IOException {
+		InputStream inputStream(InputStream in) throws IOException {
 			try {
 				return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
 			} catch (CompressorException e) {
@@ -60,7 +60,7 @@ public class StreamUtils {
     		ioe.initCause(e);
     		throw ioe;			}  
 		}
-		private OutputStream outputStream(OutputStream os) throws IOException {
+		OutputStream outputStream(OutputStream os) throws IOException {
 			try {
 				return csfType==null ? os : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
 			} catch (CompressorException e) {

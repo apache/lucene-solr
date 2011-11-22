@@ -39,8 +39,7 @@ import org.apache.lucene.util.Version;
  * A QueryMaker that uses common and uncommon actual Wikipedia queries for
  * searching the English Wikipedia collection. 90 queries total.
  */
-public class EnwikiQueryMaker extends AbstractQueryMaker implements
-    QueryMaker {
+public class EnwikiQueryMaker extends AbstractQueryMaker {
 
   // common and a few uncommon queries from wikipedia search logs
   private static String[] STANDARD_QUERIES = { "Images catbox gif",

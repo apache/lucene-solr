@@ -26,11 +26,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.Version;
 
-
-/**
- *
- *
- **/
 public class LongToEnglishQueryMaker implements QueryMaker {
   long counter = Long.MIN_VALUE + 10;
   protected QueryParser parser;
