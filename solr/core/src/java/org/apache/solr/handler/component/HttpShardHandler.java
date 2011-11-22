@@ -317,8 +317,10 @@ public class HttpShardHandler extends ShardHandler {
             StringBuilder sliceShardsStr = new StringBuilder();
             boolean first = true;
             for (ZkNodeProps nodeProps : sliceShards.values()) {
-              if (!liveNodes.contains(nodeProps.get(ZkStateReader.NODE_NAME)))
-                continue;
+              if (!liveNodes.contains(nodeProps
+                  .get(ZkStateReader.NODE_NAME_PROP))
+                  && !nodeProps.get(ZkStateReader.STATE_PROP).equals(
+                      ZkStateReader.RECOVERING)) continue;
               if (first) {
                 first = false;
               } else {

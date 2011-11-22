@@ -561,9 +561,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     assertDocCounts();
     
     // Thread.sleep(10000000000L);
-    if (DEBUG) {
-      super.printLayout();
-    }
+
   }
 
   private JettySolrRunner killShard(String shard, int index) throws Exception {
@@ -627,6 +625,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @Override
   public void tearDown() throws Exception {
+    if (DEBUG) {
+      super.printLayout();
+    }
     super.tearDown();
     System.clearProperty("CLOUD_UPDATE_DELAY");
     System.clearProperty("zkHost");

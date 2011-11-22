@@ -439,7 +439,7 @@ public final class ZkController {
     
     leaderElector.setupForSlice(shardId, collection);
     
-    ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, "recovering");
+    ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.RECOVERING);
     
     // leader election
     doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
@@ -498,11 +498,11 @@ public final class ZkController {
     ZkNodeProps props = new ZkNodeProps();
     props.put(ZkStateReader.URL_PROP, shardUrl);
     
-    props.put(ZkStateReader.NODE_NAME, getNodeName());
+    props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     
-    props.put("roles", cloudDesc.getRoles());
+    props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
     
-    props.put("state", state);
+    props.put(ZkStateReader.STATE_PROP, state);
 
     Map<String, ZkNodeProps> shardProps = new HashMap<String, ZkNodeProps>();
     shardProps.put(shardZkNodeName, props);

@@ -136,8 +136,11 @@ public class CloudSolrServer extends SolrServer {
     List<String> urlList = new ArrayList<String>();
     for (Slice slice : slices.values()) {
       for (ZkNodeProps nodeProps : slice.getShards().values()) {
-        String node = nodeProps.get(ZkStateReader.NODE_NAME);
-        if (!liveNodes.contains(node)) continue;
+        String node = nodeProps.get(ZkStateReader.NODE_NAME_PROP);
+        if (!liveNodes.contains(nodeProps
+            .get(ZkStateReader.NODE_NAME_PROP))
+            && !nodeProps.get(ZkStateReader.STATE_PROP).equals(
+                ZkStateReader.RECOVERING)) continue;
         if (nodes.put(node, nodeProps) == null) {
           String url = nodeProps.get(ZkStateReader.URL_PROP);
           urlList.add(url);

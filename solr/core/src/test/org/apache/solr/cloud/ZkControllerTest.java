@@ -220,7 +220,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     ZkNodeProps props = new ZkNodeProps();
     props.put(ZkStateReader.URL_PROP, url);
-    props.put(ZkStateReader.NODE_NAME, TEST_NODE_NAME);
+    props.put(ZkStateReader.NODE_NAME_PROP, TEST_NODE_NAME);
     byte[] bytes = props.store();
 
     zkClient

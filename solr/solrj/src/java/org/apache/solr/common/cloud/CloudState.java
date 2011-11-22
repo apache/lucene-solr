@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -129,7 +128,6 @@ public class CloudState {
 	}
 
 	public static CloudState load(byte[] state) {
-		// TODO this should throw some exception instead of eating them
 		CloudState cloudState = new CloudState();
 		if(state != null && state.length > 0) {
 			InputSource is = new InputSource(new ByteArrayInputStream(state));

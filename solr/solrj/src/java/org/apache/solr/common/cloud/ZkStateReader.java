@@ -38,16 +38,20 @@ public class ZkStateReader {
   
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String URL_PROP = "url";
-  public static final String NODE_NAME = "node_name";
+  public static final String NODE_NAME_PROP = "node_name";
   public static final String ROLES_PROP = "roles";
+  public static final String STATE_PROP = "state";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String CLUSTER_STATE = "/clusterstate.xml";
+
+  public static final String RECOVERING = "recovering";
   
   private volatile CloudState cloudState = new CloudState();
 
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
+
 
   private static class ZKTF implements ThreadFactory {
     private static ThreadGroup tg = new ThreadGroup("ZkStateReader");

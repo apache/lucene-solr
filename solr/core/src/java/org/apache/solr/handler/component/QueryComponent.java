@@ -283,14 +283,16 @@ public class QueryComponent extends SearchComponent
             StringBuilder sliceShardsStr = new StringBuilder();
             boolean first = true;
             for (ZkNodeProps nodeProps : sliceShards.values()) {
-              if (!liveNodes.contains(nodeProps.get(ZkStateReader.NODE_NAME)))
-                continue;
+              if (!liveNodes.contains(nodeProps
+                  .get(ZkStateReader.NODE_NAME_PROP))
+                  && !nodeProps.get(ZkStateReader.STATE_PROP).equals(
+                      ZkStateReader.RECOVERING)) continue;
               if (first) {
                 first = false;
               } else {
                 sliceShardsStr.append('|');
               }
-              String url = nodeProps.get("url");
+              String url = nodeProps.get(ZkStateReader.URL_PROP);
               if (url.startsWith("http://"))
                 url = url.substring(7);
               sliceShardsStr.append(url);
