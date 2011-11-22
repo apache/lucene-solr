@@ -208,16 +208,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     setupRequest(hash);
     
+    boolean dropCmd = false;
     if (!forwardToLeader) {
-      versionAdd(cmd, hash);
+      dropCmd = versionAdd(cmd, hash);
     }
 
+    if (dropCmd) {
+      // TODO: do we need to add anything to the response?
+      return;
+    }
     
     if (shardStr != null) {
       cmdDistrib.distribAdd(cmd, shardStr);
     } else {
       super.processAdd(cmd);
     }
+    
     
     if (returnVersions && rsp != null) {
       if (addsResponse == null) {
@@ -235,10 +241,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // processor too.
   }
 
-  private void versionAdd(AddUpdateCommand cmd, int hash) throws IOException {
+  /**
+   * @param cmd
+   * @param hash
+   * @return whether or not to drop this cmd
+   * @throws IOException
+   */
+  private boolean versionAdd(AddUpdateCommand cmd, int hash) throws IOException {
     if (vinfo == null) {
       super.processAdd(cmd);
-      return;
+      return false;
     }
 
     // at this point, there is an update we need to try and apply.
@@ -287,9 +299,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
               // This update is a repeat, or was reordered.  We need to drop this update.
-              // TODO: do we need to add anything to the response?
-              // nocommit: we should avoid next step in distrib add
-              return;
+              return true;
             }
           }
         }
@@ -297,7 +307,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     }
 
-
+    return false;
   }
   
   @Override
@@ -311,8 +321,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     setupRequest(hash);
     
+    boolean dropCmd = false;
     if (!forwardToLeader) {
-      versionDelete(cmd, hash);
+      dropCmd  = versionDelete(cmd, hash);
+    }
+    
+    if (dropCmd) {
+      // TODO: do we need to add anything to the response?
+      return;
     }
 
     if (shardStr != null) {
@@ -333,19 +349,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private void versionDelete(DeleteUpdateCommand cmd, int hash) throws IOException {
+  private boolean versionDelete(DeleteUpdateCommand cmd, int hash) throws IOException {
     if (cmd == null) {
       throw new NullArgumentException("cmd is null");
     }
     
     if (vinfo == null) {
-      return;
+      return false;
     }
 
     if (cmd.id == null) {
       // delete-by-query
       // TODO: forward to all nodes in distrib mode?  or just don't bother to support?
-      return;
+      return false;
     }
 
     // at this point, there is an update we need to try and apply.
@@ -381,16 +397,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // the specific version for this id.
             Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-              // This update is a repeat, or was reordered.  We need to drop this update.
-              // TODO: do we need to add anything to the response?
-              // nocommit: we should skip distrib update?
-              return;
+              // This update is a repeat, or was reordered.  We need to drop this update.   
+              return true;
             }
           }
         }
       }
 
-      return;
+      return false;
     }
 
   }
