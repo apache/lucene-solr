@@ -380,6 +380,9 @@ New Features
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
   a stream (shalin)
 
+* SOLR-1565: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin update
+  format (shalin)
+
 ==================  3.5.0  ==================
 
 New Features
