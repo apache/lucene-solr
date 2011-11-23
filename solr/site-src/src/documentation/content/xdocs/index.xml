@@ -67,7 +67,36 @@ customization is required.
     <section id="news">
       <title>News</title>
 
-        <section><title>26 October 2011 - Java 7u1 fixes index corruption and crash bugs in Apache Lucene Core and Apache Solr</title>
+      <section>
+        <title>18 November 2011 - 2nd edition of the first book on Solr published!</title>
+        <p><img src="images/as3ess_book.jpg" class="float-right" alt="Apache Solr 3 Enterprise Search Server cover" />
+          David Smiley and Eric Pugh proudly announce the second edition of the first book on Solr,
+          <a title="PACKT: Apache Solr 3 Enterprise Search Server"
+             href="http://link.packtpub.com/2LjDxE">"Apache Solr 3 Enterprise Search Server"</a>
+          from Packt Publishing.</p>
+        <p>Apache Solr 3 Enterprise Search Server is a comprehensive reference guide for nearly every feature has to
+          offer. Through using a large set of metadata about artists, releases, and tracks courtesy of the
+          MusicBrainz.org project, you will have a testing ground for learning Solr. You'll learn how to design a
+          schema, use appropriate text analysis and then how to import this data in various
+          ways. Next, you'll learn how to search this data, how to use advanced relevancy tuning, and how to enhance
+          standard search results with highlighting, faceting, query auto-complete, and other features. The book,
+          supported with working code examples in various languages, shows how to use a wide selection of Solr
+          integration client libraries, frameworks and other software like web crawlers. The book wraps up with
+          deployment considerations, tuning Solr performance, and scaling Solr to multiple machines.
+        </p>
+        <p>This edition naturally covers the latest features in Solr as of version 3.4 like Result Grouping and
+          Geospatial, but this is not a small update to the first book. No chapter was untouched &mdash; some were
+          revamped significantly and the content was expanded by about 25% by page count. Each chapter has a tip in the
+          introduction that advises readers in a hurry on what parts should be read now or later. Finally, it includes a
+          2-page parameter quick-reference appendix that you will surely find useful printed on your desk.
+        </p>
+        <p>You can find further information at <a href="http://link.packtpub.com/2LjDxE">the publisher's site</a>
+          and at <a href="http://www.solrenterprisesearchserver.com">the authors' site</a>, including a free chapter and
+          search parameter quick-reference sheet (the appendix).
+        </p>
+      </section>
+      
+      <section><title>26 October 2011 - Java 7u1 fixes index corruption and crash bugs in Apache Lucene Core and Apache Solr</title>
           <p>Oracle released <a href="http://www.oracle.com/technetwork/java/javase/7u1-relnotes-507962.html">Java 7u1</a> on October 19.
           According to the release notes and tests done by the Lucene committers, all bugs reported on July 28 are fixed in this release,
           so code using Porter stemmer no longer crashes with <code>SIGSEGV</code>. We were not able to experience any index corruption anymore,
