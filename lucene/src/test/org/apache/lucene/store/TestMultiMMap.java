@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -46,6 +47,35 @@ public class TestMultiMMap extends LuceneTestCase {
     assumeTrue("test requires a jre that supports unmapping", MMapDirectory.UNMAP_SUPPORTED);
     workDir = _TestUtil.getTempDir("TestMultiMMap");
     workDir.mkdirs();
+  }
+  
+  public void testCloneSafety() throws Exception {
+    MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testCloneSafety"));
+    IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random));
+    io.writeVInt(5);
+    io.close();
+    IndexInput one = mmapDir.openInput("bytes", IOContext.DEFAULT);
+    IndexInput two = (IndexInput) one.clone();
+    IndexInput three = (IndexInput) two.clone(); // clone of clone
+    one.close();
+    try {
+      one.readVInt();
+      fail("Must throw AlreadyClosedException");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    try {
+      two.readVInt();
+      fail("Must throw AlreadyClosedException");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    try {
+      three.readVInt();
+      fail("Must throw AlreadyClosedExveption");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
   }
 
   public void testSeekZero() throws Exception {
