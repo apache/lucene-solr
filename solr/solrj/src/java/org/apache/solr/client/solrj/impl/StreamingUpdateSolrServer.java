@@ -99,66 +99,70 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
       log.info( "starting runner: {}" , this );
       PostMethod method = null;
       try {
-        do {
+        while (!queue.isEmpty())  {
           try {
+            final UpdateRequest updateRequest = queue.poll(250, TimeUnit.MILLISECONDS);
+            if (updateRequest == null) break;
             RequestEntity request = new RequestEntity() {
               // we don't know the length
               public long getContentLength() { return -1; }
-              public String getContentType() { return ClientUtils.TEXT_XML; }
+              public String getContentType() { return requestWriter.getUpdateContentType(); }
               public boolean isRepeatable()  { return false; }
-      
+
               public void writeRequest(OutputStream out) throws IOException {
                 try {
-                  OutputStreamWriter writer = new OutputStreamWriter(out, "UTF-8");
-                  writer.append( "<stream>" ); // can be anything...
-                  UpdateRequest req = queue.poll( 250, TimeUnit.MILLISECONDS );
-                  while( req != null ) {
-                    log.debug( "sending: {}" , req );
-                    req.writeXML( writer ); 
-                    
-                    // check for commit or optimize
-                    SolrParams params = req.getParams();
-                    if( params != null ) {
-                      String fmt = null;
-                      if( params.getBool( UpdateParams.OPTIMIZE, false ) ) {
-                        fmt = "<optimize waitSearcher=\"%s\" waitFlush=\"%s\" />";
-                      }
-                      else if( params.getBool( UpdateParams.COMMIT, false ) ) {
-                        fmt = "<commit waitSearcher=\"%s\" waitFlush=\"%s\" />";
-                      }
-                      if( fmt != null ) {
-                        log.info( fmt );
-                        writer.write( String.format( fmt, 
-                            params.getBool( UpdateParams.WAIT_SEARCHER, false )+"",
-                            params.getBool( UpdateParams.WAIT_FLUSH, false )+"") );
+                  if (ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType())) {
+                    out.write("<stream>".getBytes("UTF-8")); // can be anything
+                  }
+                  UpdateRequest req = updateRequest;
+                  while (req != null) {
+                    requestWriter.write(req, out);
+                    if (ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType())) {
+                      // check for commit or optimize
+                      SolrParams params = req.getParams();
+                      if (params != null) {
+                        String fmt = null;
+                        if (params.getBool(UpdateParams.OPTIMIZE, false)) {
+                          fmt = "<optimize waitSearcher=\"%s\" waitFlush=\"%s\" />";
+                        } else if (params.getBool(UpdateParams.COMMIT, false)) {
+                          fmt = "<commit waitSearcher=\"%s\" waitFlush=\"%s\" />";
+                        }
+                        if (fmt != null) {
+                          byte[] content = String.format(fmt,
+                              params.getBool(UpdateParams.WAIT_SEARCHER, false) + "").getBytes("UTF-8");
+                          out.write(content);
+                        }
                       }
                     }
-                    
-                    writer.flush();
-                    req = queue.poll( 250, TimeUnit.MILLISECONDS );
+                    out.flush();
+                    req = queue.poll(250, TimeUnit.MILLISECONDS);
                   }
-                  writer.append( "</stream>" );
-                  writer.flush();
-                }
-                catch (InterruptedException e) {
+                  if (ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType())) {
+                    out.write("</stream>".getBytes("UTF-8"));
+                  }
+                  out.flush();
+                } catch (InterruptedException e) {
                   e.printStackTrace();
                 }
               }
             };
-          
-            method = new PostMethod(_baseURL+updateUrl );
+
+            String path = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType()) ? "/update" : "/update/javabin";
+
+            method = new PostMethod(_baseURL+path );
             method.setRequestEntity( request );
             method.setFollowRedirects( false );
             method.addRequestHeader( "User-Agent", AGENT );
-            
+
             int statusCode = getHttpClient().executeMethod(method);
+            log.info("Status for: " + updateRequest.getDocuments().get(0).getFieldValue("id") + " is " + statusCode);
             if (statusCode != HttpStatus.SC_OK) {
               StringBuilder msg = new StringBuilder();
               msg.append( method.getStatusLine().getReasonPhrase() );
               msg.append( "\n\n" );
               msg.append( method.getStatusText() );
               msg.append( "\n\n" );
-              msg.append( "request: "+method.getURI() );
+              msg.append("request: ").append(method.getURI());
               handleError( new Exception( msg.toString() ) );
             }
           } finally {
@@ -169,7 +173,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
             }
             catch( Exception ex ){}
           }
-        } while( ! queue.isEmpty());
+        }
       }
       catch (Throwable e) {
         handleError( e );
