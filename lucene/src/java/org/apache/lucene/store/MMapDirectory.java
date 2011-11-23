@@ -26,6 +26,9 @@ import java.nio.channels.ClosedChannelException; // javadoc
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
@@ -234,7 +237,8 @@ public class MMapDirectory extends FSDirectory {
     private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   
     private boolean isClone = false;
-    
+    private final Map<MMapIndexInput,Boolean> clones = new WeakHashMap<MMapIndexInput,Boolean>();
+
     MMapIndexInput(String resourceDescription, RandomAccessFile raf, int chunkSizePower) throws IOException {
       super(resourceDescription);
       this.length = raf.length();
@@ -282,6 +286,8 @@ public class MMapDirectory extends FSDirectory {
           curBuf.position(0);
         } while (!curBuf.hasRemaining());
         return curBuf.get();
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }
     }
   
@@ -304,6 +310,19 @@ public class MMapDirectory extends FSDirectory {
           curAvail = curBuf.remaining();
         }
         curBuf.get(b, offset, len);
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
+      }
+    }
+  
+    @Override
+    public short readShort() throws IOException {
+      try {
+        return curBuf.getShort();
+      } catch (BufferUnderflowException e) {
+        return super.readShort();
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }
     }
 
@@ -313,6 +332,8 @@ public class MMapDirectory extends FSDirectory {
         return curBuf.getInt();
       } catch (BufferUnderflowException e) {
         return super.readInt();
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }
     }
 
@@ -322,6 +343,8 @@ public class MMapDirectory extends FSDirectory {
         return curBuf.getLong();
       } catch (BufferUnderflowException e) {
         return super.readLong();
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }
     }
     
@@ -350,6 +373,8 @@ public class MMapDirectory extends FSDirectory {
           throw new IllegalArgumentException("Seeking to negative position: " + this);
         }
         throw new IOException("seek past EOF: " + this);
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }
     }
   
@@ -365,9 +390,9 @@ public class MMapDirectory extends FSDirectory {
       }
       final MMapIndexInput clone = (MMapIndexInput)super.clone();
       clone.isClone = true;
+      // we keep clone.clones, so it shares the same map with original and we have no additional cost on clones
+      assert clone.clones == this.clones;
       clone.buffers = new ByteBuffer[buffers.length];
-      // Since most clones will use only one buffer, duplicate() could also be
-      // done lazy in clones, e.g. when adapting curBuf.
       for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
         clone.buffers[bufNr] = buffers[bufNr].duplicate();
       }
@@ -376,25 +401,54 @@ public class MMapDirectory extends FSDirectory {
       } catch(IOException ioe) {
         throw new RuntimeException("Should never happen: " + this, ioe);
       }
+      
+      // register the new clone in our clone list to clean it up on closing:
+      synchronized(this.clones) {
+        this.clones.put(clone, Boolean.TRUE);
+      }
+      
       return clone;
+    }
+    
+    private void unsetBuffers() {
+      buffers = null;
+      curBuf = null;
+      curBufIndex = 0;
     }
   
     @Override
     public void close() throws IOException {
-      curBuf = null; curBufIndex = 0;
       try {
         if (isClone || buffers == null) return;
-        for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
-          // unmap the buffer (if enabled) and at least unset it for GC
-          try {
-            cleanMapping(buffers[bufNr]);
-          } finally {
-            buffers[bufNr] = null;
+        
+        // for extra safety unset also all clones' buffers:
+        synchronized(this.clones) {
+          for (final MMapIndexInput clone : this.clones.keySet()) {
+            assert clone.isClone;
+            clone.unsetBuffers();
           }
+          this.clones.clear();
+        }
+        
+        curBuf = null; curBufIndex = 0; // nuke curr pointer early
+        for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
+          cleanMapping(buffers[bufNr]);
         }
       } finally {
-        buffers = null;
+        unsetBuffers();
       }
+    }
+
+    // make sure we have identity on equals/hashCode for WeakHashMap
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
+    }
+
+    // make sure we have identity on equals/hashCode for WeakHashMap
+    @Override
+    public boolean equals(Object obj) {
+      return obj == this;
     }
   }
 }
