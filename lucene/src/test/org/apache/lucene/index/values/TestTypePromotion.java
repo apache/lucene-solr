@@ -116,35 +116,6 @@ public class TestTypePromotion extends LuceneTestCase {
     dir.close();
   }
 
-  private short asShort(BytesRef b) {
-    int pos = b.offset;
-    return (short) (0xFFFF & ((b.bytes[pos++] & 0xFF) << 8) | (b.bytes[pos] & 0xFF));
-  }
-  
-  /**
-   * Converts 4 consecutive bytes from the current offset to an int. Bytes are
-   * interpreted as Big-Endian (most significant bit first)
-   * <p>
-   * NOTE: this method does <b>NOT</b> check the bounds of the referenced array.
-   */
-  private int asInt(BytesRef b) {
-    return asIntInternal(b, b.offset);
-  }
-
-  /**
-   * Converts 8 consecutive bytes from the current offset to a long. Bytes are
-   * interpreted as Big-Endian (most significant bit first)
-   * <p>
-   * NOTE: this method does <b>NOT</b> check the bounds of the referenced array.
-   */
-  private long asLong(BytesRef b) {
-    return (((long) asIntInternal(b, b.offset) << 32) | asIntInternal(b, b.offset + 4) & 0xFFFFFFFFL);
-  }
-  
-  private int asIntInternal(BytesRef b, int pos) {
-    return ((b.bytes[pos++] & 0xFF) << 24) | ((b.bytes[pos++] & 0xFF) << 16)
-        | ((b.bytes[pos++] & 0xFF) << 8) | (b.bytes[pos] & 0xFF);
-  }
   
   private void assertValues(TestType type, Directory dir, long[] values)
       throws CorruptIndexException, IOException {
@@ -167,13 +138,13 @@ public class TestTypePromotion extends LuceneTestCase {
           value = bytes.bytes[bytes.offset];
           break;
         case 2:
-          value = asShort(bytes);
+          value = BytesRefUtils.asShort(bytes);
           break;
         case 4:
-          value = asInt(bytes);
+          value = BytesRefUtils.asInt(bytes);
           break;
         case 8:
-          value = asLong(bytes);
+          value = BytesRefUtils.asLong(bytes);
           break;
           
         default:
@@ -239,18 +210,18 @@ public class TestTypePromotion extends LuceneTestCase {
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         values[i] = random.nextLong();
-        ref.copyLong(values[i]);
+        BytesRefUtils.copyLong(ref, values[i]);
         valField.setBytes(ref, valueType);
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
       case BYTES_VAR_STRAIGHT:
         if (random.nextBoolean()) {
-          ref.copyInt(random.nextInt());
-          values[i] = asInt(ref);
+          BytesRefUtils.copyInt(ref, random.nextInt());
+          values[i] = BytesRefUtils.asInt(ref);
         } else {
-          ref.copyLong(random.nextLong());
-          values[i] = asLong(ref);
+          BytesRefUtils.copyLong(ref, random.nextLong());
+          values[i] = BytesRefUtils.asLong(ref);
         }
         valField.setBytes(ref, valueType);
         break;

@@ -73,7 +73,7 @@ class PackedIntValues {
         }
       }
       lastDocId = docID;
-      bytesRef.copyLong(v);
+      BytesRefUtils.copyLong(bytesRef, v);
       add(docID, bytesRef);
     }
 
@@ -244,7 +244,7 @@ class PackedIntValues {
     @Override
     public BytesRef getBytes(int docID, BytesRef ref) {
       ref.grow(8);
-      ref.copyLong(getInt(docID));
+      BytesRefUtils.copyLong(ref, getInt(docID));
       return ref;
     }
 

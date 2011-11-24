@@ -221,56 +221,7 @@ public final class BytesRef implements Comparable<BytesRef> {
     offset = 0;
   }
 
-  /**
-   * Copies the given long value and encodes it as 8 byte Big-Endian.
-   * <p>
-   * NOTE: this method resets the offset to 0, length to 8 and resizes the reference array
-   * if needed.
-   */
-  public void copyLong(long value) {
-    if (bytes.length < 8) {
-      bytes = new byte[8];
-    }
-    copyInternal((int) (value >> 32), offset = 0);
-    copyInternal((int) value, 4);
-    length = 8;
-  }
-  
-  /**
-   * Copies the given int value and encodes it as 4 byte Big-Endian.
-   * <p>
-   * NOTE: this method resets the offset to 0, length to 4 and resizes the reference array
-   * if needed.
-   */
-  public void copyInt(int value) {
-    if (bytes.length < 4) {
-      bytes = new byte[4];
-    }
-    copyInternal(value, offset = 0);
-    length = 4;
-  }
 
-  /**
-   * Copies the given short value and encodes it as a 2 byte Big-Endian.
-   * <p>
-   * NOTE: this method resets the offset to 0, length to 2 and resizes the reference array
-   * if needed.
-   */
-  public void copyShort(short value) {
-    if (bytes.length < 2) {
-      bytes = new byte[2];
-    }
-    bytes[offset] = (byte) (value >> 8);
-    bytes[offset + 1] = (byte) (value);
-    length = 2;
-  }
-
-  private void copyInternal(int value, int startOffset) {
-    bytes[startOffset] = (byte) (value >> 24);
-    bytes[startOffset + 1] = (byte) (value >> 16);
-    bytes[startOffset + 2] = (byte) (value >> 8);
-    bytes[startOffset + 3] = (byte) (value);
-  }
 
   public void append(BytesRef other) {
     int newLen = length + other.length;
