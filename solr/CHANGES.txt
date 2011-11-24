@@ -383,6 +383,10 @@ New Features
 * SOLR-1565: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin update
   format (shalin)
 
+Bug Fixes
+----------------------
+* SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
+
 ==================  3.5.0  ==================
 
 New Features
