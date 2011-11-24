@@ -108,66 +108,19 @@ public class FieldCacheTermsFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    return new FieldCacheTermsFilterDocIdSet(getFieldCache().getStringIndex(reader, field));
-  }
-
-  protected class FieldCacheTermsFilterDocIdSet extends DocIdSet {
-    private FieldCache.StringIndex fcsi;
-
-    private FixedBitSet bits;
-
-    public FieldCacheTermsFilterDocIdSet(FieldCache.StringIndex fcsi) {
-      this.fcsi = fcsi;
-      bits = new FixedBitSet(this.fcsi.lookup.length);
-      for (int i=0;i<terms.length;i++) {
-        int termNumber = this.fcsi.binarySearchLookup(terms[i]);
-        if (termNumber > 0) {
-          bits.set(termNumber);
-        }
+    final FieldCache.StringIndex fcsi = getFieldCache().getStringIndex(reader, field);
+    final FixedBitSet bits = new FixedBitSet(fcsi.lookup.length);
+    for (int i=0;i<terms.length;i++) {
+      int termNumber = fcsi.binarySearchLookup(terms[i]);
+      if (termNumber > 0) {
+        bits.set(termNumber);
       }
     }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      return new FieldCacheTermsFilterDocIdSetIterator();
-    }
-
-    /** This DocIdSet implementation is cacheable. */
-    @Override
-    public boolean isCacheable() {
-      return true;
-    }
-
-    protected class FieldCacheTermsFilterDocIdSetIterator extends DocIdSetIterator {
-      private int doc = -1;
-
+    return new FieldCacheRangeFilter.FieldCacheDocIdSet(reader, true) {
       @Override
-      public int docID() {
-        return doc;
+      boolean matchDoc(int doc) {
+        return bits.get(fcsi.order[doc]);
       }
-
-      @Override
-      public int nextDoc() {
-        try {
-          while (!bits.get(fcsi.order[++doc])) {}
-        } catch (ArrayIndexOutOfBoundsException e) {
-          doc = NO_MORE_DOCS;
-        }
-        return doc;
-      }
-
-      @Override
-      public int advance(int target) {
-        try {
-          doc = target;
-          while (!bits.get(fcsi.order[doc])) {
-            doc++;
-          }
-        } catch (ArrayIndexOutOfBoundsException e) {
-          doc = NO_MORE_DOCS;
-        }
-        return doc;
-      }
-    }
+    };
   }
 }
