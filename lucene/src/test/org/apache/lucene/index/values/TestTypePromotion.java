@@ -239,17 +239,17 @@ public class TestTypePromotion extends LuceneTestCase {
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         values[i] = random.nextLong();
-        ref.copy(values[i]);
+        ref.copyLong(values[i]);
         valField.setBytes(ref, valueType);
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
       case BYTES_VAR_STRAIGHT:
         if (random.nextBoolean()) {
-          ref.copy(random.nextInt());
+          ref.copyInt(random.nextInt());
           values[i] = asInt(ref);
         } else {
-          ref.copy(random.nextLong());
+          ref.copyLong(random.nextLong());
           values[i] = asLong(ref);
         }
         valField.setBytes(ref, valueType);

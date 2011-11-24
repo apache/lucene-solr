@@ -62,11 +62,11 @@ abstract class IndexDocValuesArray extends Source {
   }
 
   void toBytes(long value, BytesRef bytesRef) {
-    bytesRef.copy(value);
+    bytesRef.copyLong(value);
   }
 
   void toBytes(double value, BytesRef bytesRef) {
-    bytesRef.copy(Double.doubleToRawLongBits(value));
+    bytesRef.copyLong(Double.doubleToRawLongBits(value));
   }
 
   final static class ByteValues extends IndexDocValuesArray {
@@ -140,7 +140,7 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     void toBytes(long value, BytesRef bytesRef) {
-      bytesRef.copy((short) (0xFFFFL & value));
+      bytesRef.copyShort((short) (0xFFFFL & value));
     }
 
   };
@@ -179,7 +179,7 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     void toBytes(long value, BytesRef bytesRef) {
-      bytesRef.copy((int) (0xFFFFFFFF & value));
+      bytesRef.copyInt((int) (0xFFFFFFFF & value));
     }
 
   };
@@ -252,7 +252,7 @@ abstract class IndexDocValuesArray extends Source {
     
     @Override
     void toBytes(double value, BytesRef bytesRef) {
-      bytesRef.copy(Float.floatToRawIntBits((float)value));
+      bytesRef.copyInt(Float.floatToRawIntBits((float)value));
 
     }
 

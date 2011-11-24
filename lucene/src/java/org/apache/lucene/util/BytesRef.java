@@ -227,7 +227,7 @@ public final class BytesRef implements Comparable<BytesRef> {
    * NOTE: this method resets the offset to 0, length to 8 and resizes the reference array
    * if needed.
    */
-  public void copy(long value) {
+  public void copyLong(long value) {
     if (bytes.length < 8) {
       bytes = new byte[8];
     }
@@ -242,7 +242,7 @@ public final class BytesRef implements Comparable<BytesRef> {
    * NOTE: this method resets the offset to 0, length to 4 and resizes the reference array
    * if needed.
    */
-  public void copy(int value) {
+  public void copyInt(int value) {
     if (bytes.length < 4) {
       bytes = new byte[4];
     }
@@ -256,7 +256,7 @@ public final class BytesRef implements Comparable<BytesRef> {
    * NOTE: this method resets the offset to 0, length to 2 and resizes the reference array
    * if needed.
    */
-  public void copy(short value) {
+  public void copyShort(short value) {
     if (bytes.length < 2) {
       bytes = new byte[2];
     }
