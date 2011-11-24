@@ -636,6 +636,9 @@ Bug fixes
   when the directory isn't MMapDirectory, due to failing to reuse
   DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
   Robert Muir, Simon Willnauer, Mike McCandless)
+
+* LUCENE-3589: BytesRef copy(short) didnt set length.
+  (Peter Chang via Robert Muir)
   
   
 ======================= Lucene 3.6.0 =======================

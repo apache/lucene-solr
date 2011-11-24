@@ -65,18 +65,6 @@ public final class BytesRef implements Comparable<BytesRef> {
     this.bytes = new byte[capacity];
   }
 
-  /** Incoming IntsRef values must be Byte.MIN_VALUE -
-   *  Byte.MAX_VALUE. */
-  public BytesRef(IntsRef intsRef) {
-    bytes = new byte[intsRef.length];
-    for(int idx=0;idx<intsRef.length;idx++) {
-      final int v = intsRef.ints[intsRef.offset + idx];
-      assert v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE;
-      bytes[idx] = (byte) v;
-    }
-    length = intsRef.length;
-  }
-
   /**
    * @param text Initialize the byte[] from the UTF8 bytes
    * for the provided String.  This must be well-formed
@@ -85,16 +73,6 @@ public final class BytesRef implements Comparable<BytesRef> {
   public BytesRef(CharSequence text) {
     this();
     copy(text);
-  }
-  
-  /**
-   * @param text Initialize the byte[] from the UTF8 bytes
-   * for the provided array.  This must be well-formed
-   * unicode text, with no unpaired surrogates or U+FFFF.
-   */
-  public BytesRef(char text[], int offset, int length) {
-    this(length * 4);
-    copy(text, offset, length);
   }
 
   public BytesRef(BytesRef other) {
@@ -123,16 +101,6 @@ public final class BytesRef implements Comparable<BytesRef> {
    */
   public void copy(CharSequence text) {
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
-  }
-
-  /**
-   * Copies the UTF8 bytes for this string.
-   * 
-   * @param text Must be well-formed unicode text, with no
-   * unpaired surrogates or invalid UTF16 code units.
-   */
-  public void copy(char text[], int offset, int length) {
-    UnicodeUtil.UTF16toUTF8(text, offset, length, this);
   }
   
   public boolean bytesEquals(BytesRef other) {
@@ -294,38 +262,7 @@ public final class BytesRef implements Comparable<BytesRef> {
     }
     bytes[offset] = (byte) (value >> 8);
     bytes[offset + 1] = (byte) (value);
-
-  }
-  
-  /**
-   * Converts 2 consecutive bytes from the current offset to a short. Bytes are
-   * interpreted as Big-Endian (most significant bit first)
-   * <p>
-   * NOTE: this method does <b>NOT</b> check the bounds of the referenced array.
-   */
-  public short asShort() {
-    int pos = offset;
-    return (short) (0xFFFF & ((bytes[pos++] & 0xFF) << 8) | (bytes[pos] & 0xFF));
-  }
-
-  /**
-   * Converts 4 consecutive bytes from the current offset to an int. Bytes are
-   * interpreted as Big-Endian (most significant bit first)
-   * <p>
-   * NOTE: this method does <b>NOT</b> check the bounds of the referenced array.
-   */
-  public int asInt() {
-    return asIntInternal(offset);
-  }
-
-  /**
-   * Converts 8 consecutive bytes from the current offset to a long. Bytes are
-   * interpreted as Big-Endian (most significant bit first)
-   * <p>
-   * NOTE: this method does <b>NOT</b> check the bounds of the referenced array.
-   */
-  public long asLong() {
-    return (((long) asIntInternal(offset) << 32) | asIntInternal(offset + 4) & 0xFFFFFFFFL);
+    length = 2;
   }
 
   private void copyInternal(int value, int startOffset) {
@@ -333,11 +270,6 @@ public final class BytesRef implements Comparable<BytesRef> {
     bytes[startOffset + 1] = (byte) (value >> 16);
     bytes[startOffset + 2] = (byte) (value >> 8);
     bytes[startOffset + 3] = (byte) (value);
-  }
-
-  private int asIntInternal(int pos) {
-    return ((bytes[pos++] & 0xFF) << 24) | ((bytes[pos++] & 0xFF) << 16)
-        | ((bytes[pos++] & 0xFF) << 8) | (bytes[pos] & 0xFF);
   }
 
   public void append(BytesRef other) {
