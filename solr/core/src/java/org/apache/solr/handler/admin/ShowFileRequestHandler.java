@@ -210,12 +210,16 @@ public class ShowFileRequestHandler extends RequestHandlerBase
         return ""; // ignore it...
       }
     }
+    InputStream input = null;
     try {
       SolrCore core = SolrCore.getSolrCore();
-      InputStream input = core.getResourceLoader().openResource(path);
+      input = core.getResourceLoader().openResource(path);
       return IOUtils.toString( input, "UTF-8" );
     }
     catch( Exception ex ) {} // ignore it
+    finally {
+      IOUtils.closeQuietly(input);
+    }
     return "";
   }
 
