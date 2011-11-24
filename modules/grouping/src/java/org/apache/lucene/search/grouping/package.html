@@ -179,11 +179,44 @@ fields, <code>FieldCache</code>, etc.).
   FixedBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
 </pre>
 
-<p>For each of the above collectors there is also a variant that works with <code>ValueSource</code> instead of
+<p>For each of the above collector types there is also a variant that works with <code>ValueSource</code> instead of
    of fields. Concretely this means that these variants can work with functions. These variants are slower than
    there term based counter parts. These implementations are located in the
    <code>org.apache.lucene.search.grouping.function</code> package.
 </p>
+
+<p>
+  There are also IndexDocValues based implementations available for the group collectors. There are factory methods
+  available for creating idv based instances. A typical example using idv based grouping collectors:
+</p>
+
+<pre class="prettyprint">
+  boolean diskResident = true; // Whether values should fetched directly from disk by passing the Java heap space.
+  AbstractFirstPassGroupingCollector c1 = DVFirstPassGroupingCollector.create(
+        groupSort, groupOffset+topNGroups, "author", ValueType.BYTES_VAR_SORTED, diskResident
+  );
+
+  s.search(new TermQuery(new Term("content", searchTerm)), c1);
+
+  Collection&lt;SearchGroup&lt;BytesRef&gt;&gt; topGroups = c1.getTopGroups(groupOffset, fillFields);
+
+  if (topGroups == null) {
+    // No groups matched
+    return;
+  }
+
+  boolean getScores = true;
+  boolean getMaxScores = true;
+  boolean fillFields = true;
+  AbstractSecondPassGroupingCollector&lt;BytesRef&gt; c2 = DVSecondPassGroupingCollector.create(
+        "author", diskResident, ValueType.BYTES_VAR_SORTED, topGroups, groupSort, docSort,
+        docOffset+docsPerGroup, getScores, getMaxScores, fillFields
+  );
+
+  s.search(new TermQuery(new Term("content", searchTerm)), c2);
+  TopGroups&lt;BytesRef&gt; groupsResult = c2.getTopGroups(docOffset);
+  // Render groupsResult...
+</pre>
 
 </body>
 </html>

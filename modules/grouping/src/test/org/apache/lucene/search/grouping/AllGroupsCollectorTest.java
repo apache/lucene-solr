@@ -18,19 +18,19 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
+import org.apache.lucene.search.grouping.dv.DVAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -46,27 +46,29 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-                               random,
-                               dir,
-                               newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                    new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+        random,
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+
     // 0
     Document doc = new Document();
-    doc.add(new Field(groupField, "author1", TextField.TYPE_STORED));
+    addGroupField(doc, groupField, "author1", canUseIDV);
     doc.add(new Field("content", "random text", TextField.TYPE_STORED));
     doc.add(new Field("id", "1", customType));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field(groupField, "author1", TextField.TYPE_STORED));
+    addGroupField(doc, groupField, "author1", canUseIDV);
     doc.add(new Field("content", "some more random text blob", TextField.TYPE_STORED));
     doc.add(new Field("id", "2", customType));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field(groupField, "author1", TextField.TYPE_STORED));
+    addGroupField(doc, groupField, "author1", canUseIDV);
     doc.add(new Field("content", "some more random textual data", TextField.TYPE_STORED));
     doc.add(new Field("id", "3", customType));
     w.addDocument(doc);
@@ -74,21 +76,21 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
 
     // 3
     doc = new Document();
-    doc.add(new Field(groupField, "author2", TextField.TYPE_STORED));
+    addGroupField(doc, groupField, "author2", canUseIDV);
     doc.add(new Field("content", "some random text", TextField.TYPE_STORED));
     doc.add(new Field("id", "4", customType));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    doc.add(new Field(groupField, "author3", TextField.TYPE_STORED));
+    addGroupField(doc, groupField, "author3", canUseIDV);
     doc.add(new Field("content", "some more random text", TextField.TYPE_STORED));
     doc.add(new Field("id", "5", customType));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field(groupField, "author3", TextField.TYPE_STORED));
+    addGroupField(doc, groupField, "author3", canUseIDV);
     doc.add(new Field("content", "random blob", TextField.TYPE_STORED));
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
@@ -102,15 +104,15 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
     w.close();
 
-    AbstractAllGroupsCollector c1 = createRandomCollector(groupField);
+    AbstractAllGroupsCollector c1 = createRandomCollector(groupField, canUseIDV);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
     assertEquals(4, c1.getGroupCount());
 
-    AbstractAllGroupsCollector c2 = createRandomCollector(groupField);
+    AbstractAllGroupsCollector c2 = createRandomCollector(groupField, canUseIDV);
     indexSearcher.search(new TermQuery(new Term("content", "some")), c2);
     assertEquals(3, c2.getGroupCount());
 
-    AbstractAllGroupsCollector c3 = createRandomCollector(groupField);
+    AbstractAllGroupsCollector c3 = createRandomCollector(groupField, canUseIDV);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), c3);
     assertEquals(2, c3.getGroupCount());
 
@@ -118,13 +120,32 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     dir.close();
   }
 
-  private AbstractAllGroupsCollector createRandomCollector(String groupField) throws IOException {
-    if (random.nextBoolean()) {
-      return new TermAllGroupsCollector(groupField);
+  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
+    doc.add(new Field(groupField, value, TextField.TYPE_STORED));
+    if (canUseIDV) {
+      IndexDocValuesField valuesField = new IndexDocValuesField(groupField);
+      valuesField.setBytes(new BytesRef(value), ValueType.BYTES_VAR_SORTED);
+      doc.add(valuesField);
+    }
+  }
+
+  private AbstractAllGroupsCollector createRandomCollector(String groupField, boolean canUseIDV) throws IOException {
+    AbstractAllGroupsCollector selected;
+    if (random.nextBoolean() && canUseIDV) {
+      boolean diskResident = random.nextBoolean();
+      selected = DVAllGroupsCollector.create(groupField, ValueType.BYTES_VAR_SORTED, diskResident);
+    } else if (random.nextBoolean()) {
+      selected = new TermAllGroupsCollector(groupField);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      return new FunctionAllGroupsCollector(vs, new HashMap());
+      selected = new FunctionAllGroupsCollector(vs, new HashMap());
     }
+
+    if (VERBOSE) {
+      System.out.println("Selected implementation: " + selected.getClass().getName());
+    }
+
+    return selected;
   }
 
 }
