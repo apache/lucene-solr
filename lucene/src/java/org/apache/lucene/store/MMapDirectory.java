@@ -372,7 +372,11 @@ public class MMapDirectory extends FSDirectory {
     
     @Override
     public long getFilePointer() {
-      return (((long) curBufIndex) << chunkSizePower) + curBuf.position();
+      try {
+        return (((long) curBufIndex) << chunkSizePower) + curBuf.position();
+      } catch (NullPointerException npe) {
+        throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
+      }
     }
   
     @Override
