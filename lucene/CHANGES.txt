@@ -651,6 +651,12 @@ Security fixes
   prevents this as best as it can by throwing AlreadyClosedException
   also on clones.  (Uwe Schindler, Robert Muir)
 
+New Features
+
+* LUCENE-3593: Added a FieldValueFilter that accepts all documents that either
+  have at least one or no value at all in a specific field. (Simon Willnauer,
+  Uwe Schindler, Robert Muir)
+  
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy
