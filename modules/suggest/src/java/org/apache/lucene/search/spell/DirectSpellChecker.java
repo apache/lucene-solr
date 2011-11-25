@@ -376,6 +376,7 @@ public class DirectSpellChecker {
         UnicodeUtil.UTF8toUTF16(s.term, spare);
         s.termAsString = spare.toString();
       }
+      suggestion.string = s.termAsString;
       suggestion.score = s.score;
       suggestion.freq = s.docfreq;
       suggestions[index--] = suggestion;
