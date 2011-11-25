@@ -24,7 +24,7 @@ import java.io.UnsupportedEncodingException;
  *  existing byte[].
  *
  *  @lucene.experimental */
-public final class BytesRef implements Comparable<BytesRef> {
+public final class BytesRef implements Comparable<BytesRef>,Cloneable {
 
   static final int HASH_PRIME = 31;
   public static final byte[] EMPTY_BYTES = new byte[0]; 
@@ -72,36 +72,8 @@ public final class BytesRef implements Comparable<BytesRef> {
    */
   public BytesRef(CharSequence text) {
     this();
-    copy(text);
+    copyChars(text);
   }
-  
-  /**
-   * @param text Initialize the byte[] from the UTF8 bytes
-   * for the provided array.  This must be well-formed
-   * unicode text, with no unpaired surrogates or U+FFFF.
-   */
-  public BytesRef(char text[], int offset, int length) {
-    this(length * 4);
-    copy(text, offset, length);
-  }
-
-  public BytesRef(BytesRef other) {
-    this();
-    copy(other);
-  }
-
-  /* // maybe?
-  public BytesRef(BytesRef other, boolean shallow) {
-    this();
-    if (shallow) {
-      offset = other.offset;
-      length = other.length;
-      bytes = other.bytes;
-    } else {
-      copy(other);
-    }
-  }
-  */
 
   /**
    * Copies the UTF8 bytes for this string.
@@ -109,7 +81,7 @@ public final class BytesRef implements Comparable<BytesRef> {
    * @param text Must be well-formed unicode text, with no
    * unpaired surrogates or invalid UTF16 code units.
    */
-  public void copy(CharSequence text) {
+  public void copyChars(CharSequence text) {
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
   }
 
@@ -119,7 +91,7 @@ public final class BytesRef implements Comparable<BytesRef> {
    * @param text Must be well-formed unicode text, with no
    * unpaired surrogates or invalid UTF16 code units.
    */
-  public void copy(char text[], int offset, int length) {
+  public void copyChars(char text[], int offset, int length) {
     UnicodeUtil.UTF16toUTF8(text, offset, length, this);
   }
 
@@ -140,8 +112,8 @@ public final class BytesRef implements Comparable<BytesRef> {
   }
 
   @Override
-  public Object clone() {
-    return new BytesRef(this);
+  public BytesRef clone() {
+    return new BytesRef(bytes, offset, length);
   }
 
   private boolean sliceEquals(BytesRef other, int pos) {
@@ -224,7 +196,13 @@ public final class BytesRef implements Comparable<BytesRef> {
     return sb.toString();
   }
 
-  public void copy(BytesRef other) {
+  /**
+   * Copies the bytes from the given {@link BytesRef}
+   * <p>
+   * NOTE: this method resets the offset to 0 and resizes the reference array
+   * if needed.
+   */
+  public void copyBytes(BytesRef other) {
     if (bytes.length < other.length) {
       bytes = new byte[other.length];
     }
@@ -364,5 +342,18 @@ public final class BytesRef implements Comparable<BytesRef> {
       // One is a prefix of the other, or, they are equal:
       return a.length - b.length;
     }
+  }
+  
+  /**
+   * Creates a new BytesRef that points to a copy of the bytes from 
+   * <code>other</code>
+   * <p>
+   * The returned BytesRef will have a length of other.length
+   * and an offset of zero.
+   */
+  public static BytesRef deepCopyOf(BytesRef other) {
+    BytesRef copy = new BytesRef();
+    copy.copyBytes(other);
+    return copy;
   }
 }

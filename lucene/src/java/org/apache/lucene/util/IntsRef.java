@@ -21,7 +21,7 @@ package org.apache.lucene.util;
  *  existing int[].
  *
  *  @lucene.internal */
-public final class IntsRef implements Comparable<IntsRef> {
+public final class IntsRef implements Comparable<IntsRef>, Cloneable {
 
   public int[] ints;
   public int offset;
@@ -40,13 +40,9 @@ public final class IntsRef implements Comparable<IntsRef> {
     this.length = length;
   }
 
-  public IntsRef(IntsRef other) {
-    copy(other);
-  }
-
   @Override
-  public Object clone() {
-    return new IntsRef(this);
+  public IntsRef clone() {
+    return new IntsRef(ints, offset, length);
   }
 
   @Override
@@ -106,7 +102,7 @@ public final class IntsRef implements Comparable<IntsRef> {
     return this.length - other.length;
   }
 
-  public void copy(IntsRef other) {
+  public void copyInts(IntsRef other) {
     if (ints == null) {
       ints = new int[other.length];
     } else {
@@ -136,5 +132,18 @@ public final class IntsRef implements Comparable<IntsRef> {
     }
     sb.append(']');
     return sb.toString();
+  }
+  
+  /**
+   * Creates a new IntsRef that points to a copy of the ints from 
+   * <code>other</code>
+   * <p>
+   * The returned IntsRef will have a length of other.length
+   * and an offset of zero.
+   */
+  public static IntsRef deepCopyOf(IntsRef other) {
+    IntsRef clone = new IntsRef();
+    clone.copyInts(other);
+    return clone;
   }
 }

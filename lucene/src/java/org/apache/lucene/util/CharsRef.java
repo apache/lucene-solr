@@ -25,7 +25,7 @@ import java.util.Comparator;
  * {@link #EMPTY_ARRAY} if necessary.
  * @lucene.internal
  */
-public final class CharsRef implements Comparable<CharsRef>, CharSequence {
+public final class CharsRef implements Comparable<CharsRef>, CharSequence, Cloneable {
   private static final char[] EMPTY_ARRAY = new char[0];
   public char[] chars;
   public int offset;
@@ -68,18 +68,9 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
     this.length = chars.length;
   }
 
-  /**
-   * Creates a new {@link CharsRef} and copies the contents of the source into
-   * the new instance.
-   * @see #copy(CharsRef)
-   */
-  public CharsRef(CharsRef other) {
-    copy(other);
-  }
-
   @Override
-  public Object clone() {
-    return new CharsRef(this);
+  public CharsRef clone() {
+    return new CharsRef(chars, offset, length);
   }
 
   @Override
@@ -168,7 +159,8 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
    * @param other
    *          the {@link CharsRef} to copy
    */
-  public void copy(CharsRef other) {
+  // TODO: why does this behave differently/not invoke copyChars(char[], int, int) ???
+  public void copyChars(CharsRef other) {
     if (chars == null) {
       chars = new char[other.length];
     } else {
@@ -188,7 +180,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
   /**
    * Copies the given array into this CharsRef starting at offset 0
    */
-  public void copy(char[] otherChars, int otherOffset, int otherLength) {
+  public void copyChars(char[] otherChars, int otherOffset, int otherLength) {
     grow(otherLength);
     System.arraycopy(otherChars, otherOffset, this.chars, 0,
         otherLength);
@@ -274,5 +266,18 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
       // One is a prefix of the other, or, they are equal:
       return a.length - b.length;
     }
+  }
+  
+  /**
+   * Creates a new CharsRef that points to a copy of the chars from 
+   * <code>other</code>
+   * <p>
+   * The returned CharsRef will have a length of other.length
+   * and an offset of zero.
+   */
+  public static CharsRef deepCopyOf(CharsRef other) {
+    CharsRef clone = new CharsRef();
+    clone.copyChars(other);
+    return clone;
   }
 }

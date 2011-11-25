@@ -787,7 +787,7 @@ public class TestFSTs extends LuceneTestCase {
       final Map<IntsRef,CountMinOutput<T>> prefixes = new HashMap<IntsRef,CountMinOutput<T>>();
       final IntsRef scratch = new IntsRef(10);
       for(InputOutput<T> pair: pairs) {
-        scratch.copy(pair.input);
+        scratch.copyInts(pair.input);
         for(int idx=0;idx<=pair.input.length;idx++) {
           scratch.length = idx;
           CountMinOutput<T> cmo = prefixes.get(scratch);
@@ -795,7 +795,7 @@ public class TestFSTs extends LuceneTestCase {
             cmo = new CountMinOutput<T>();
             cmo.count = 1;
             cmo.output = pair.output;
-            prefixes.put(new IntsRef(scratch), cmo);
+            prefixes.put(IntsRef.deepCopyOf(scratch), cmo);
           } else {
             cmo.count++;
             cmo.output = outputs.common(cmo.output, pair.output);
@@ -847,7 +847,7 @@ public class TestFSTs extends LuceneTestCase {
         } else {
           // clear isLeaf for all ancestors
           //System.out.println("    keep");
-          scratch.copy(prefix);
+          scratch.copyInts(prefix);
           scratch.length--;
           while(scratch.length >= 0) {
             final CountMinOutput<T> cmo2 = prefixes.get(scratch);
@@ -1633,7 +1633,7 @@ public class TestFSTs extends LuceneTestCase {
           if (w == null) {
             break;
           }
-          term.copy(w);
+          term.copyChars(w);
           b.add(term, nothing);
         }
         

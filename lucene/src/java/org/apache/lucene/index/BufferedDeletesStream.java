@@ -31,7 +31,6 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.util.BytesRef;
 
 /* Tracks the stream of {@link BuffereDeletes}.
  * When DocumensWriter flushes, its buffered

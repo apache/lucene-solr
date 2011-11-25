@@ -413,7 +413,7 @@ public class Builder<T> {
     }
 
     // save last input
-    lastInput.copy(input);
+    lastInput.copyInts(input);
 
     //System.out.println("  count[0]=" + frontier[0].inputCount);
   }

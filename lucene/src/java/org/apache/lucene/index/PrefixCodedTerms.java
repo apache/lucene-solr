@@ -103,7 +103,7 @@ class PrefixCodedTerms implements Iterable<Term> {
     public void add(Term term) {
       assert lastTerm.equals(new Term("")) || term.compareTo(lastTerm) > 0;
 
-      scratch.copy(term.text);
+      scratch.copyChars(term.text);
       try {
         int prefix = sharedPrefix(lastBytes, scratch);
         int suffix = scratch.length - prefix;
@@ -115,7 +115,7 @@ class PrefixCodedTerms implements Iterable<Term> {
         }
         output.writeVInt(suffix);
         output.writeBytes(scratch.bytes, scratch.offset + prefix, suffix);
-        lastBytes.copy(scratch);
+        lastBytes.copyBytes(scratch);
         lastTerm.text = term.text;
         lastTerm.field = term.field;
       } catch (IOException e) {

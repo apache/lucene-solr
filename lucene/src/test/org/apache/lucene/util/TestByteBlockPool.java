@@ -37,7 +37,7 @@ public class TestByteBlockPool extends LuceneTestCase {
       final String value = _TestUtil.randomRealisticUnicodeString(random,
           maxLength);
       list.add(value);
-      ref.copy(value);
+      ref.copyChars(value);
       pool.copy(ref);
     }
     RAMDirectory dir = new RAMDirectory();
@@ -50,7 +50,7 @@ public class TestByteBlockPool extends LuceneTestCase {
     BytesRef expected = new BytesRef();
     BytesRef actual = new BytesRef();
     for (String string : list) {
-      expected.copy(string);
+      expected.copyChars(string);
       actual.grow(expected.length);
       actual.length = expected.length;
       input.readBytes(actual.bytes, 0, actual.length);

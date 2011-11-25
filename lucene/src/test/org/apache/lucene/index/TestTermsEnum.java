@@ -398,7 +398,7 @@ public class TestTermsEnum extends LuceneTestCase {
       } else {
         // pick valid term
         loc = random.nextInt(validTerms.length);
-        t = new BytesRef(validTerms[loc]);
+        t = BytesRef.deepCopyOf(validTerms[loc]);
         if (VERBOSE) {
           System.out.println("\nTEST: valid term=" + t.utf8ToString());
         }

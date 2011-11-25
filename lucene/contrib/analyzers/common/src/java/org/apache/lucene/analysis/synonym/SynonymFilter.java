@@ -185,7 +185,7 @@ public final class SynonymFilter extends TokenFilter {
       if (outputs[count] == null) {
         outputs[count] = new CharsRef();
       }
-      outputs[count].copy(output, offset, len);
+      outputs[count].copyChars(output, offset, len);
       count++;
     }
   };
@@ -253,7 +253,7 @@ public final class SynonymFilter extends TokenFilter {
 
     input.state = captureState();
     input.consumed = false;
-    input.term.copy(termAtt.buffer(), 0, termAtt.length());
+    input.term.copyChars(termAtt.buffer(), 0, termAtt.length());
 
     nextWrite = rollIncr(nextWrite);
 

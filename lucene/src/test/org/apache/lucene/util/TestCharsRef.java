@@ -62,7 +62,7 @@ public class TestCharsRef extends LuceneTestCase {
       int offset = random.nextInt(charArray.length);
       int length = charArray.length - offset;
       String str = new String(charArray, offset, length);
-      ref.copy(charArray, offset, length);
+      ref.copyChars(charArray, offset, length);
       assertEquals(str, ref.toString());  
     }
     

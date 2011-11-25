@@ -201,7 +201,7 @@ public class SynonymMap {
       MapEntry e = workingSet.get(input);
       if (e == null) {
         e = new MapEntry();
-        workingSet.put(new CharsRef(input), e); // make a copy, since we will keep around in our map    
+        workingSet.put(CharsRef.deepCopyOf(input), e); // make a copy, since we will keep around in our map    
       }
       
       e.ords.add(ord);
@@ -307,7 +307,7 @@ public class SynonymMap {
         
         scratch.length = scratchOutput.getPosition() - scratch.offset;
         //System.out.println("  add input=" + input + " output=" + scratch + " offset=" + scratch.offset + " length=" + scratch.length + " count=" + count);
-        builder.add(input, new BytesRef(scratch));
+        builder.add(input, BytesRef.deepCopyOf(scratch));
       }
       
       FST<BytesRef> fst = builder.finish();
