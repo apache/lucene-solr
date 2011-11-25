@@ -663,6 +663,12 @@ New Features
   have at least one or no value at all in a specific field. (Simon Willnauer,
   Uwe Schindler, Robert Muir)
   
+Bug fixes
+
+* LUCENE-3595: Fixed FieldCacheRangeFilter and FieldCacheTermsFilter
+  to correctly respect deletions on reopened SegmentReaders. Factored out
+  FieldCacheDocIdSet to be a top-level class.  (Uwe Schindler, Simon Willnauer)
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy

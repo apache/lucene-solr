@@ -124,7 +124,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          final boolean matchDoc(int doc) {
+          protected final boolean matchDoc(int doc) {
             final int docOrd = fcsi.getOrd(doc);
             return docOrd >= inclusiveLowerPoint && docOrd <= inclusiveUpperPoint;
           }
@@ -175,7 +175,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final byte[] values = FieldCache.DEFAULT.getBytes(context.reader, field, (FieldCache.ByteParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          boolean matchDoc(int doc) {
+          protected boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
           }
         };
@@ -225,7 +225,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final short[] values = FieldCache.DEFAULT.getShorts(context.reader, field, (FieldCache.ShortParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          boolean matchDoc(int doc) {
+          protected boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
           }
         };
@@ -275,7 +275,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final int[] values = FieldCache.DEFAULT.getInts(context.reader, field, (FieldCache.IntParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          boolean matchDoc(int doc) {
+          protected boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
           }
         };
@@ -325,7 +325,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final long[] values = FieldCache.DEFAULT.getLongs(context.reader, field, (FieldCache.LongParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          boolean matchDoc(int doc) {
+          protected boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
           }
         };
@@ -379,7 +379,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final float[] values = FieldCache.DEFAULT.getFloats(context.reader, field, (FieldCache.FloatParser) parser, false);
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          boolean matchDoc(int doc) {
+          protected boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
           }
         };
@@ -434,7 +434,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         // ignore deleted docs if range doesn't contain 0
         return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
           @Override
-          boolean matchDoc(int doc) {
+          protected boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
           }
         };
@@ -497,122 +497,4 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   
   /** Returns the current numeric parser ({@code null} for {@code T} is {@code String}} */
   public FieldCache.Parser getParser() { return parser; }
-  
-  static abstract class FieldCacheDocIdSet extends DocIdSet {
-    private final int maxDoc;
-    private final Bits acceptDocs;
-
-    FieldCacheDocIdSet(int maxDoc, Bits acceptDocs) {
-      this.maxDoc = maxDoc;
-      this.acceptDocs = acceptDocs;
-    }
-
-    /**
-     * this method checks, if a doc is a hit, should throw AIOBE, when position
-     * invalid
-     */
-    abstract boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException;
-
-    /**
-     * this DocIdSet is always cacheable (does not go back
-     * to the reader for iteration)
-     */
-    @Override
-    public boolean isCacheable() {
-      return true;
-    }
-
-    @Override
-    public Bits bits() {
-      return (acceptDocs == null) ? new Bits() {
-        public boolean get(int docid) {
-          return FieldCacheDocIdSet.this.matchDoc(docid);
-        }
-
-        public int length() {
-          return FieldCacheDocIdSet.this.maxDoc;
-        }
-      } : new Bits() {
-        public boolean get(int docid) {
-          return acceptDocs.get(docid) && FieldCacheDocIdSet.this.matchDoc(docid);
-        }
-
-        public int length() {
-          return FieldCacheDocIdSet.this.maxDoc;
-        }
-      };
-    }
-
-    @Override
-    public DocIdSetIterator iterator() throws IOException {
-      if (acceptDocs == null) {
-        // Specialization optimization disregard deletions
-        return new DocIdSetIterator() {
-          private int doc = -1;
-          @Override
-            public int docID() {
-            return doc;
-          }
-        
-          @Override
-          public int nextDoc() {
-            try {
-              do {
-                doc++;
-              } while (!matchDoc(doc));
-              return doc;
-            } catch (ArrayIndexOutOfBoundsException e) {
-              return doc = NO_MORE_DOCS;
-            }
-          }
-        
-          @Override
-          public int advance(int target) {
-            try {
-              doc = target;
-              while (!matchDoc(doc)) {
-                doc++;
-              }
-              return doc;
-            } catch (ArrayIndexOutOfBoundsException e) {
-              return doc = NO_MORE_DOCS;
-            }
-          }
-        };
-      } else {
-        // Must consult acceptDocs
-
-        // a DocIdSetIterator generating docIds by
-        // incrementing a variable & checking acceptDocs -
-        return new DocIdSetIterator() {
-          private int doc = -1;
-          @Override
-            public int docID() {
-            return doc;
-          }
-        
-          @Override
-          public int nextDoc() {
-            do {
-              doc++;
-              if (doc >= maxDoc) {
-                return doc = NO_MORE_DOCS;
-              }
-            } while (!acceptDocs.get(doc) || !matchDoc(doc));
-            return doc;
-          }
-        
-          @Override
-          public int advance(int target) {
-            for(doc=target;doc<maxDoc;doc++) {
-              if (acceptDocs.get(doc) && matchDoc(doc)) {
-                return doc;
-              }
-            }
-            return doc = NO_MORE_DOCS;
-          }
-        };
-      }
-    }
-  }
 }

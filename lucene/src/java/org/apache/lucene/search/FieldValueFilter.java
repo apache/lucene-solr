@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.FieldCacheRangeFilter.FieldCacheDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Bits.MatchAllBits;
 import org.apache.lucene.util.Bits.MatchNoBits;
@@ -67,14 +66,9 @@ public class FieldValueFilter extends Filter {
       if (docsWithField instanceof MatchAllBits) {
         return null;
       }
-      final int maxDoc = context.reader.maxDoc();
-      return new FieldCacheDocIdSet(maxDoc, acceptDocs) {
+      return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
         @Override
-        final boolean matchDoc(int doc) {
-          if (doc >= maxDoc) {
-            // TODO: this makes no sense we should check this on the caller level
-            throw new ArrayIndexOutOfBoundsException("doc: "+doc + " maxDoc: " + maxDoc);
-          }
+        protected final boolean matchDoc(int doc) {
           return !docsWithField.get(doc);
         }
       };
@@ -87,14 +81,9 @@ public class FieldValueFilter extends Filter {
         // :-)
         return BitsFilteredDocIdSet.wrap((DocIdSet) docsWithField, acceptDocs);
       }
-      final int maxDoc = context.reader.maxDoc();
-      return new FieldCacheDocIdSet(maxDoc, acceptDocs) {
+      return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
         @Override
-        final boolean matchDoc(int doc) {
-          if (doc >= maxDoc) {
-            // TODO: this makes no sense we should check this on the caller level
-            throw new ArrayIndexOutOfBoundsException("doc: "+doc + " maxDoc: " + maxDoc);
-          }
+        protected final boolean matchDoc(int doc) {
           return docsWithField.get(doc);
         }
       };
@@ -131,7 +120,7 @@ public class FieldValueFilter extends Filter {
 
   @Override
   public String toString() {
-    return "NoFieldValueFilter [field=" + field + ", negate=" + negate + "]";
+    return "FieldValueFilter [field=" + field + ", negate=" + negate + "]";
   }
 
 }
