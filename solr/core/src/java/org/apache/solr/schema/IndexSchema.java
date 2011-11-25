@@ -739,9 +739,11 @@ public final class IndexSchema {
     WhitespaceTokenizerFactory white = new WhitespaceTokenizerFactory();
     white.init(tc.getTokenizerFactory().getArgs());
 
+    TokenFilterFactory[] filterSplice = new TokenFilterFactory[idx];
+    System.arraycopy(filters, 0, filterSplice, 0,
+                     Math.min(filters.length, idx));
     return new TokenizerChain(tc.getCharFilterFactories(),
-        white,
-        Arrays.copyOfRange(filters, 0, idx));
+        white, filterSplice);
   }
 
   /**
