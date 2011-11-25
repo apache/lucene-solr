@@ -188,6 +188,11 @@ New Features
  
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
+    
+* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
+  a complete analysis chain for multiterm queries.   
+  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+
 
 Optimizations
 ----------------------
@@ -382,6 +387,11 @@ New Features
 
 * SOLR-1565: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin update
   format (shalin)
+
+* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
+  a complete analysis chain for multiterm queries.   
+  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+
 
 Bug Fixes
 ----------------------

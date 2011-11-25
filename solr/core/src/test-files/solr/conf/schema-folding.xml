@@ -1,0 +1,145 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<schema name="test" version="1.0">
+  <types>
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" multiValued="false"/>
+
+    <fieldType name="text" class="solr.TextField" multiValued="false">
+      <analyzer>
+        <tokenizer class="solr.PatternTokenizerFactory" pattern="\s+"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_multi" class="solr.TextField" multiValued="true">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.TrimFilterFactory"/>
+      </analyzer>
+      <analyzer type="multiterm">        <!-- Intentionally different to test that these are kept  distinct -->
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_multi_bad" class="solr.TextField" multiValued="false">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.TrimFilterFactory"/>
+      </analyzer>
+      <analyzer type="multiterm">        <!-- Intentionally different to test that these are kept  distinct -->
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+                catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+
+    <fieldType name="text_ws" class="solr.TextField" multiValued="true">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_rev" class="solr.TextField" legacyMultiTerm="false">
+      <analyzer type="index">
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.ReversedWildcardFilterFactory" withOriginal="false"
+                maxPosAsterisk="1" maxPosQuestion="2" maxFractionAsterisk="0.99"
+                minTrailing="1"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_lower_tokenizer" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.LowerCaseTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_charfilter" class="solr.TextField" multiValued="false">
+      <analyzer type="index">
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_oldstyle" class="solr.TextField" multiValued="false" legacyMultiTerm="true">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.TrimFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
+    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
+  </types>
+
+  <fields>
+    <field name="id" type="string" indexed="true" stored="true" required="true"/>
+    <field name="int_f" type="int"/>
+    <field name="float_f" type="float"/>
+    <field name="long_f" type="long"/>
+    <field name="double_f" type="double"/>
+    <field name="byte_f" type="byte"/>
+    <field name="short_f" type="short"/>
+    <field name="bool_f" type="boolean"/>
+    <field name="date_f" type="date"/>
+
+    <field name="content" type="text" indexed="true" stored="true"/>
+    <field name="content_ws" type="text_ws" indexed="true" stored="true"/>
+    <field name="content_rev" type="text_rev" indexed="true" stored="true"/>
+    <field name="content_multi" type="text_multi" indexed="true" stored="true"/>
+    <field name="content_lower_token" type="text_multi" indexed="true" stored="true"/>
+    <field name="content_oldstyle" type="text_oldstyle" indexed="true" stored="true"/>
+    <field name="content_charfilter" type="text_charfilter" indexed="true" stored="true"/>
+    <field name="content_multi_bad" type="text_multi_bad" indexed="true" stored="true"/>
+  </fields>
+
+  <defaultSearchField>content</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
+
+</schema>

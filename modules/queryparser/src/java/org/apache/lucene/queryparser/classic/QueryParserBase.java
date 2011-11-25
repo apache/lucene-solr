@@ -290,7 +290,6 @@ public abstract class QueryParserBase {
     this.lowercaseExpandedTerms = lowercaseExpandedTerms;
   }
 
-
   /**
    * @see #setLowercaseExpandedTerms(boolean)
    */
@@ -778,14 +777,21 @@ public abstract class QueryParserBase {
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
   }
 
-  private BytesRef analyzeRangePart(String field, String part) {
+  // TODO: Should this be protected instead?
+  private BytesRef analyzeMultitermTerm(String field, String part) {
+    return analyzeMultitermTerm(field, part, analyzer);
+  }
+
+  protected BytesRef analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
     TokenStream source;
-      
+
+    if (analyzerIn == null) analyzerIn = analyzer;
+
     try {
-      source = analyzer.tokenStream(field, new StringReader(part));
+      source = analyzerIn.tokenStream(field, new StringReader(part));
       source.reset();
     } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);
+      throw new RuntimeException("Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
     }
       
     TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
@@ -793,10 +799,10 @@ public abstract class QueryParserBase {
 
     try {
       if (!source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
+        throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
       termAtt.fillBytesRef();
       if (source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned too many terms for range part: " + part);
+        throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
     } catch (IOException e) {
       throw new RuntimeException("error analyzing range part: " + part, e);
     }
@@ -805,7 +811,7 @@ public abstract class QueryParserBase {
       source.end();
       source.close();
     } catch (IOException e) {
-      throw new RuntimeException("Unable to end & close TokenStream after analyzing range part: " + part, e);
+      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
     }
     
     return BytesRef.deepCopyOf(bytes);
@@ -827,13 +833,13 @@ public abstract class QueryParserBase {
     if (part1 == null) {
       start = null;
     } else {
-      start = analyzeRangeTerms ? analyzeRangePart(field, part1) : new BytesRef(part1);
+      start = analyzeRangeTerms ? analyzeMultitermTerm(field, part1) : new BytesRef(part1);
     }
      
     if (part2 == null) {
       end = null;
     } else {
-      end = analyzeRangeTerms ? analyzeRangePart(field, part2) : new BytesRef(part2);
+      end = analyzeRangeTerms ? analyzeMultitermTerm(field, part2) : new BytesRef(part2);
     }
       
     final TermRangeQuery query = new TermRangeQuery(field, start, end, startInclusive, endInclusive);

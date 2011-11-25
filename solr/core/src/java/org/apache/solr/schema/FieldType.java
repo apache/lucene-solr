@@ -429,6 +429,21 @@ public abstract class FieldType extends FieldProperties {
   protected Analyzer queryAnalyzer=analyzer;
 
   /**
+   * Analyzer set by schema for text types to use when searching fields
+   * of this type, subclasses can set analyzer themselves or override
+   * getAnalyzer()
+   * This analyzer is used to process wildcard, prefix, regex and other multiterm queries. It
+   * assembles a list of tokenizer +filters that "make sense" for this, primarily accent folding and
+   * lowercasing filters, and charfilters.
+   *
+   * If users require old-style behavior, they can specify 'legacyMultiterm="true" ' in the schema file
+   * @see #getMultiTermAnalyzer
+   * @see #setMultiTermAnalyzer
+   */
+  protected Analyzer multiTermAnalyzer=null;
+
+
+  /**
    * Returns the Analyzer to be used when indexing fields of this type.
    * <p>
    * This method may be called many times, at any time.
@@ -448,6 +463,17 @@ public abstract class FieldType extends FieldProperties {
    */
   public Analyzer getQueryAnalyzer() {
     return queryAnalyzer;
+  }
+
+  /**
+   * Returns the Analyzer to be used when searching fields of this type when mult-term queries are specified.
+   * <p>
+   * This method may be called many times, at any time.
+   * </p>
+   * @see #getAnalyzer
+   */
+  public Analyzer getMultiTermAnalyzer() {
+    return multiTermAnalyzer;
   }
 
   private final String analyzerError = 
@@ -490,6 +516,28 @@ public abstract class FieldType extends FieldProperties {
    * @see #getQueryAnalyzer
    */
   public void setQueryAnalyzer(Analyzer analyzer) {
+    SolrException e = new SolrException
+      (ErrorCode.SERVER_ERROR,
+       "FieldType: " + this.getClass().getSimpleName() +
+       " (" + typeName + ") does not support specifying an analyzer");
+    SolrException.logOnce(log,null,e);
+    throw e;
+  }
+
+  /**
+   * Sets the Analyzer to be used when querying fields of this type.
+   *
+   * <p>
+   *
+   * Subclasses that override this method need to ensure the behavior
+   * of the analyzer is consistent with the implementation of toInternal.
+   * </p>
+   *
+   * @see #toInternal
+   * @see #setAnalyzer
+   * @see #getQueryAnalyzer
+   */
+  public void setMultiTermAnalyzer(Analyzer analyzer) {
     SolrException e = new SolrException
       (ErrorCode.SERVER_ERROR,
        "FieldType: " + this.getClass().getSimpleName() +
