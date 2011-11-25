@@ -154,10 +154,10 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
 
     protected BytesRef copyDocGroupValue(BytesRef groupValue, BytesRef reuse) {
       if (reuse != null) {
-        reuse.copy(groupValue);
+        reuse.copyBytes(groupValue);
         return reuse;
       } else {
-        return new BytesRef(groupValue);
+        return BytesRef.deepCopyOf(groupValue);
       }
     }
 
@@ -184,10 +184,10 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
     @Override
     protected BytesRef copyDocGroupValue(BytesRef groupValue, BytesRef reuse) {
       if (reuse != null) {
-        reuse.copy(groupValue);
+        reuse.copyBytes(groupValue);
         return reuse;
       } else {
-        return new BytesRef(groupValue);
+        return BytesRef.deepCopyOf(groupValue);
       }
     }
 

@@ -748,7 +748,7 @@ public class TestGrouping extends LuceneTestCase {
         if (groupDoc.group != null) {
           group.setValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            idvGroupField.setBytes(new BytesRef(groupDoc.group), ValueType.BYTES_VAR_SORTED);
+            idvGroupField.setBytes(BytesRef.deepCopyOf(groupDoc.group), ValueType.BYTES_VAR_SORTED);
           }
         }
         sort1.setValue(groupDoc.sort1.utf8ToString());

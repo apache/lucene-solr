@@ -222,7 +222,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       }
 
       protected Comparable duplicate(Comparable value) {
-        return new BytesRef((BytesRef) value);
+        return BytesRef.deepCopyOf((BytesRef) value);
       }
 
       protected void setDocValuesSources(IndexDocValues.Source source) {
@@ -248,7 +248,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       }
 
       protected Comparable duplicate(Comparable value) {
-        return new BytesRef((BytesRef) value);
+        return BytesRef.deepCopyOf((BytesRef) value);
       }
 
       protected void setDocValuesSources(IndexDocValues.Source source) {

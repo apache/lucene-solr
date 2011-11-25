@@ -194,7 +194,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
     public void collect(int doc) throws IOException {
       BytesRef value = source.getBytes(doc, spare);
       if (!groups.contains(value)) {
-        groups.add(new BytesRef(value));
+        groups.add(BytesRef.deepCopyOf(value));
       }
     }
 
