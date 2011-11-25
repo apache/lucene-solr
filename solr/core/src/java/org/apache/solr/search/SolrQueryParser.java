@@ -25,7 +25,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
@@ -126,6 +125,14 @@ public class SolrQueryParser extends QueryParser {
     }
   }
 
+  protected String analyzeIfMultitermTermText(String field, String part, Analyzer analyzer) {
+    if (part == null) return part;
+
+    SchemaField sf = schema.getFieldOrNull((field));
+    if (sf == null || !(sf.getType() instanceof TextField)) return part;
+    return analyzeMultitermTerm(field, part, analyzer);
+  }
+
   @Override
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
     checkNullField(field);
@@ -161,6 +168,9 @@ public class SolrQueryParser extends QueryParser {
   @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     checkNullField(field);
+    part1 = analyzeIfMultitermTermText(field, part1, schema.getFieldType(field).getMultiTermAnalyzer());
+    part2 = analyzeIfMultitermTermText(field, part2, schema.getFieldType(field).getMultiTermAnalyzer());
+
     SchemaField sf = schema.getField(field);
     return sf.getType().getRangeQuery(parser, sf,
             "*".equals(part1) ? null : part1,
@@ -174,6 +184,8 @@ public class SolrQueryParser extends QueryParser {
     if (getLowercaseExpandedTerms()) {
       termStr = termStr.toLowerCase();
     }
+
+    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field).getMultiTermAnalyzer());
 
     // TODO: toInternal() won't necessarily work on partial
     // values, so it looks like we need a getPrefix() function
@@ -189,14 +201,14 @@ public class SolrQueryParser extends QueryParser {
     PrefixQuery prefixQuery = new PrefixQuery(t);
     return prefixQuery;
   }
-
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     // *:* -> MatchAllDocsQuery
     if ("*".equals(field) && "*".equals(termStr)) {
       return newMatchAllDocsQuery();
     }
-    
+    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field).getMultiTermAnalyzer());
+
     // can we use reversed wildcards in this field?
     String type = schema.getFieldType(field).getTypeName();
     ReversedWildcardFilterFactory factory = leadingWildcards.get(type);
@@ -216,4 +228,5 @@ public class SolrQueryParser extends QueryParser {
     }
     return q;
   }
+
 }

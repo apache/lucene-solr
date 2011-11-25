@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.VirtualMethod;
 
@@ -873,6 +874,41 @@ public class QueryParser implements QueryParserConstants {
   protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
     // FuzzyQuery doesn't yet allow constant score rewrite
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
+  }
+
+  protected String analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
+    TokenStream source;
+
+    if (analyzerIn == null) analyzerIn = analyzer;
+
+    try {
+      source = analyzerIn.tokenStream(field, new StringReader(part));
+      source.reset();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
+    }
+
+    CharTermAttribute termAtt = source.getAttribute(CharTermAttribute.class);
+    String termRet = "";
+
+    try {
+      if (!source.incrementToken())
+        throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
+      termRet = termAtt.toString();
+      if (source.incrementToken())
+        throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
+    } catch (IOException e) {
+      throw new RuntimeException("error analyzing range part: " + part, e);
+    }
+
+    try {
+      source.end();
+      source.close();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
+    }
+
+    return termRet;
   }
 
   /**

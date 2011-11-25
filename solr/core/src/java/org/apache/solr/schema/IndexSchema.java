@@ -18,11 +18,13 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.util.Version;
+import org.apache.solr.analysis.*;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -31,10 +33,6 @@ import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.analysis.CharFilterFactory;
-import org.apache.solr.analysis.TokenFilterFactory;
-import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -444,6 +442,11 @@ public final class IndexSchema {
           Node anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
           Analyzer queryAnalyzer = readAnalyzer(anode);
 
+          expression = "./analyzer[@type='multiterm']";
+          anode = (Node) xpath.evaluate(expression, node, XPathConstants.NODE);
+          Analyzer multiAnalyzer = readAnalyzer(anode);
+
+
           // An analyzer without a type specified, or with type="index"
           expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
           anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
@@ -451,9 +454,17 @@ public final class IndexSchema {
 
           if (queryAnalyzer==null) queryAnalyzer=analyzer;
           if (analyzer==null) analyzer=queryAnalyzer;
+          if (multiAnalyzer == null) {
+            Boolean legacyMatch = ! solrConfig.luceneMatchVersion.onOrAfter(Version.LUCENE_36);;
+            legacyMatch = (DOMUtil.getAttr(node, "legacyMultiTerm", null) == null) ? legacyMatch :
+                Boolean.parseBoolean(DOMUtil.getAttr(node, "legacyMultiTerm", null));
+            multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer, legacyMatch);
+          }
+
           if (analyzer!=null) {
             ft.setAnalyzer(analyzer);
             ft.setQueryAnalyzer(queryAnalyzer);
+            ft.setMultiTermAnalyzer(multiAnalyzer);
           }
           if (ft instanceof SchemaAware){
             schemaAware.add((SchemaAware) ft);
@@ -695,6 +706,42 @@ public final class IndexSchema {
       SolrException.logOnce(log, null, t);
       SolrConfig.severeErrors.add(t);
     }
+  }
+
+  // The point here is that, if no multitermanalyzer was specified in the schema file, do one of several things:
+  // 1> If legacyMultiTerm == false, assemble a new analyzer composed of all of the charfilters,
+  //    lowercase filters and asciifoldingfilter.
+  // 2> If letacyMultiTerm == true just construct the analyzer from a KeywordTokenizer. That should mimic current behavior.
+  //    Do the same if they've specified that the old behavior is required (legacyMultiTerm="true")
+
+  private Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer, Boolean legacyMultiTerm) {
+    if (queryAnalyzer == null) return null;
+
+    if (legacyMultiTerm || (!(queryAnalyzer instanceof TokenizerChain))) {
+      return new KeywordAnalyzer();
+    }
+
+    TokenizerChain tc = (TokenizerChain) queryAnalyzer;
+
+    // we know it'll never be longer than this unless the code below is explicitly changed
+    TokenFilterFactory[] filters = new TokenFilterFactory[2];
+    int idx = 0;
+    for (TokenFilterFactory factory : tc.getTokenFilterFactories()) {
+      if (factory instanceof LowerCaseFilterFactory) {
+        filters[idx] = new LowerCaseFilterFactory();
+        filters[idx++].init(factory.getArgs());
+      }
+      if (factory instanceof ASCIIFoldingFilterFactory) {
+        filters[idx] = new ASCIIFoldingFilterFactory();
+        filters[idx++].init(factory.getArgs());
+      }
+    }
+    WhitespaceTokenizerFactory white = new WhitespaceTokenizerFactory();
+    white.init(tc.getTokenizerFactory().getArgs());
+
+    return new TokenizerChain(tc.getCharFilterFactories(),
+        white,
+        Arrays.copyOfRange(filters, 0, idx));
   }
 
   /**

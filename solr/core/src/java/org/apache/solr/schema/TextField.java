@@ -98,6 +98,11 @@ public class TextField extends FieldType {
     this.queryAnalyzer = analyzer;
   }
 
+  @Override
+  public void setMultiTermAnalyzer(Analyzer analyzer) {
+    this.multiTermAnalyzer = analyzer;
+  }
+
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
     int phraseSlop = 0;
     boolean enablePositionIncrements = true;
