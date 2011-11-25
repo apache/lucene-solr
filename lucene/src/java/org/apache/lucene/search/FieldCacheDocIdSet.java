@@ -66,7 +66,7 @@ public abstract class FieldCacheDocIdSet extends DocIdSet {
       }
     } : new Bits() {
       public boolean get(int docid) {
-        return acceptDocs.get(docid) && matchDoc(docid);
+        return matchDoc(docid) && acceptDocs.get(docid);
       }
 
       public int length() {
@@ -134,14 +134,14 @@ public abstract class FieldCacheDocIdSet extends DocIdSet {
             if (doc >= maxDoc) {
               return doc = NO_MORE_DOCS;
             }
-          } while (!acceptDocs.get(doc) || !matchDoc(doc));
+          } while (!(matchDoc(doc) && acceptDocs.get(doc)));
           return doc;
         }
       
         @Override
         public int advance(int target) {
           for(doc=target; doc<maxDoc; doc++) {
-            if (acceptDocs.get(doc) && matchDoc(doc)) {
+            if (matchDoc(doc) && acceptDocs.get(doc)) {
               return doc;
             }
           }
