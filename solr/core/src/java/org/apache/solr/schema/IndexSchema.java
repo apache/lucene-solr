@@ -740,8 +740,7 @@ public final class IndexSchema {
     white.init(tc.getTokenizerFactory().getArgs());
 
     TokenFilterFactory[] filterSplice = new TokenFilterFactory[idx];
-    System.arraycopy(filters, 0, filterSplice, 0,
-                     Math.min(filters.length, idx));
+    System.arraycopy(filters, 0, filterSplice, 0, idx);
     return new TokenizerChain(tc.getCharFilterFactories(),
         white, filterSplice);
   }
