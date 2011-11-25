@@ -643,6 +643,12 @@ Bug fixes
   
 ======================= Lucene 3.6.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-3594: The protected inner class (never intended to be visible)
+  FieldCacheTermsFilter.FieldCacheTermsFilterDocIdSet was removed and
+  replaced by another internal implementation.  (Uwe Schindler)
+
 Security fixes
 
 * LUCENE-3588: Try harder to prevent SIGSEGV on cloned MMapIndexInputs:
