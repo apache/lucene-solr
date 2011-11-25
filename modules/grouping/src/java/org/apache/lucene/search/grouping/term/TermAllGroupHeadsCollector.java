@@ -130,7 +130,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       GroupHead groupHead = groups.get(groupValue);
       if (groupHead == null) {
         groupHead = new GroupHead(groupValue, sortWithinGroup, doc);
-        groups.put(groupValue == null ? null : new BytesRef(groupValue), groupHead);
+        groups.put(groupValue == null ? null : BytesRef.deepCopyOf(groupValue), groupHead);
         temporalResult.stop = true;
       } else {
         temporalResult.stop = false;

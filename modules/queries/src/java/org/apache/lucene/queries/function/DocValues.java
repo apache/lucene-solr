@@ -59,7 +59,7 @@ public abstract class DocValues {
       target.length = 0;
       return false;
     }
-    target.copy(s);
+    target.copyChars(s);
     return true;
   };
 

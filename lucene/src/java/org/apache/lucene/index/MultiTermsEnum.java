@@ -201,7 +201,7 @@ public final class MultiTermsEnum extends TermsEnum {
       seekOpt = true;
     }
 
-    lastSeekScratch.copy(term);
+    lastSeekScratch.copyBytes(term);
     lastSeek = lastSeekScratch;
 
     for(int i=0;i<numSubs;i++) {

@@ -207,7 +207,7 @@ public class TermsComponent extends SearchComponent {
         if (docFreq >= freqmin && docFreq <= freqmax) {
           // add the term to the list
           if (sort) {
-            queue.add(new CountPair<BytesRef, Integer>(new BytesRef(term), docFreq));
+            queue.add(new CountPair<BytesRef, Integer>(BytesRef.deepCopyOf(term), docFreq));
           } else {
 
             // TODO: handle raw somehow

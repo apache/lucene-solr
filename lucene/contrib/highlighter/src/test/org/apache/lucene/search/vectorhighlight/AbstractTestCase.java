@@ -177,7 +177,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
 
     while (tokenStream.incrementToken()) {
       termAttribute.fillBytesRef();
-      bytesRefs.add(new BytesRef(bytesRef));
+      bytesRefs.add(BytesRef.deepCopyOf(bytesRef));
     }
 
     tokenStream.end();

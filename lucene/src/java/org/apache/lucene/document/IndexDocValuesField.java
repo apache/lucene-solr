@@ -246,9 +246,9 @@ public class IndexDocValuesField extends Field implements PerDocFieldValues {
     }
     setDocValuesType(type);
     if (bytes == null) {
-      bytes = new BytesRef(value);
+      bytes = BytesRef.deepCopyOf(value);
     } else {
-      bytes.copy(value);
+      bytes.copyBytes(value);
     }
     bytesComparator = comp;
   }

@@ -366,7 +366,7 @@ public class MemoryIndex {
         ArrayIntList positions = terms.get(ref);
         if (positions == null) { // term not seen before
           positions = new ArrayIntList(stride);
-          terms.put(new BytesRef(ref), positions);
+          terms.put(BytesRef.deepCopyOf(ref), positions);
         }
         if (stride == 1) {
           positions.add(pos);
@@ -874,7 +874,7 @@ public class MemoryIndex {
       public boolean seekExact(BytesRef text, boolean useCache) {
         termUpto = Arrays.binarySearch(info.sortedTerms, text, termComparator);
         if (termUpto >= 0) {
-          br.copy(info.sortedTerms[termUpto].getKey());
+          br.copyBytes(info.sortedTerms[termUpto].getKey());
           return true;
         } else {
           return false;
@@ -889,11 +889,11 @@ public class MemoryIndex {
           if (termUpto >= info.sortedTerms.length) {
             return SeekStatus.END;
           } else {
-            br.copy(info.sortedTerms[termUpto].getKey());
+            br.copyBytes(info.sortedTerms[termUpto].getKey());
             return SeekStatus.NOT_FOUND;
           }
         } else {
-          br.copy(info.sortedTerms[termUpto].getKey());
+          br.copyBytes(info.sortedTerms[termUpto].getKey());
           return SeekStatus.FOUND;
         }
       }
@@ -910,7 +910,7 @@ public class MemoryIndex {
         if (termUpto >= info.sortedTerms.length) {
           return null;
         } else {
-          br.copy(info.sortedTerms[termUpto].getKey());
+          br.copyBytes(info.sortedTerms[termUpto].getKey());
           return br;
         }
       }

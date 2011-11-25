@@ -59,7 +59,7 @@ public class TermQParserPlugin extends QParserPlugin {
         if (ft != null) {
           ft.readableToIndexed(val, term);
         } else {
-          term.copy(val);
+          term.copyChars(val);
         }
         return new TermQuery(new Term(fname, term));
       }

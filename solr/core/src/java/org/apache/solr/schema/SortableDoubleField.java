@@ -81,7 +81,7 @@ public class SortableDoubleField extends FieldType {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
     input.utf8ToChars(charsRef);
     final char[] indexedToReadable = indexedToReadable(charsRef.toString()).toCharArray();
-    charsRef.copy(indexedToReadable, 0, indexedToReadable.length);
+    charsRef.copyChars(indexedToReadable, 0, indexedToReadable.length);
     return charsRef;
   }
 

@@ -447,7 +447,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       if (nextTerm >= numTerms) {
         return null;
       }
-      term.copy(lastTerm);
+      term.copyBytes(lastTerm);
       final int start = tvf.readVInt();
       final int deltaLen = tvf.readVInt();
       term.length = start + deltaLen;
@@ -477,7 +477,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
         }
       }
 
-      lastTerm.copy(term);
+      lastTerm.copyBytes(term);
       nextTerm++;
       return term;
     }

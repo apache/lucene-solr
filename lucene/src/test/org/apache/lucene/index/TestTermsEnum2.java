@@ -166,7 +166,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       Automaton expected = BasicOperations.intersection(termsAutomaton, automaton);
       TreeSet<BytesRef> found = new TreeSet<BytesRef>();
       while (te.next() != null) {
-        found.add(new BytesRef(te.term()));
+        found.add(BytesRef.deepCopyOf(te.term()));
       }
       
       Automaton actual = DaciukMihovAutomatonBuilder.build(found);     

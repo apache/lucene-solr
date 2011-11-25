@@ -785,7 +785,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       // only for assert:
       private boolean setSavedStartTerm(BytesRef startTerm) {
-        savedStartTerm = startTerm == null ? null : new BytesRef(startTerm);
+        savedStartTerm = startTerm == null ? null : BytesRef.deepCopyOf(startTerm);
         return true;
       }
 
@@ -1847,7 +1847,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             final SeekStatus result = currentFrame.scanToTerm(target, false);
             if (result == SeekStatus.END) {
-              term.copy(target);
+              term.copyBytes(target);
               termExists = false;
 
               if (next() != null) {
@@ -1900,7 +1900,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         final SeekStatus result = currentFrame.scanToTerm(target, false);
 
         if (result == SeekStatus.END) {
-          term.copy(target);
+          term.copyBytes(target);
           termExists = false;
           if (next() != null) {
             //if (DEBUG) {
@@ -2120,7 +2120,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           assert otherState != null && otherState instanceof BlockTermState;
           currentFrame = staticFrame;
           currentFrame.state.copyFrom(otherState);
-          term.copy(target);
+          term.copyBytes(target);
           currentFrame.metaDataUpto = currentFrame.getTermBlockOrd();
           assert currentFrame.metaDataUpto > 0;
           validIndexPrefix = 0;

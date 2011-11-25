@@ -240,7 +240,7 @@ public class CollationField extends FieldType {
       throw new RuntimeException("Unable to end & close TokenStream after analyzing range part: " + part, e);
     }
       
-    return new BytesRef(bytes);
+    return BytesRef.deepCopyOf(bytes);
   }
   
   @Override

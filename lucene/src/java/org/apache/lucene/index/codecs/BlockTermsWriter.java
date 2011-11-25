@@ -225,7 +225,7 @@ public class BlockTermsWriter extends FieldsConsumer {
         pendingTerms = newArray;
       }
       final TermEntry te = pendingTerms[pendingCount];
-      te.term.copy(text);
+      te.term.copyBytes(text);
       te.stats = stats;
 
       pendingCount++;
@@ -312,7 +312,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       bytesWriter.reset();
 
       postingsWriter.flushTermsBlock(pendingCount, pendingCount);
-      lastPrevTerm.copy(pendingTerms[pendingCount-1].term);
+      lastPrevTerm.copyBytes(pendingTerms[pendingCount-1].term);
       pendingCount = 0;
     }
   }

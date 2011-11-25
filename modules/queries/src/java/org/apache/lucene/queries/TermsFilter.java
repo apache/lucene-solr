@@ -79,7 +79,7 @@ public class TermsFilter extends Filter {
       }
 
       if (terms != null) { // TODO this check doesn't make sense, decide which variable its supposed to be for
-        br.copy(term.bytes());
+        br.copyBytes(term.bytes());
         if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
           docs = termsEnum.docs(acceptDocs, docs);
           while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {

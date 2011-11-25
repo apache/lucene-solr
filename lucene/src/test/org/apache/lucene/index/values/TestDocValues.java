@@ -134,8 +134,8 @@ public class TestDocValues extends LuceneTestCase {
               // random string was after our last
               assertTrue(lastRef.compareTo(bytesValue) < 0);
             } else {
-              final BytesRef before = (BytesRef) ss.getByOrd(insertIndex-1, bytesRef)
-              .clone();
+              // TODO: I don't think this actually needs a deep copy?
+              final BytesRef before = BytesRef.deepCopyOf(ss.getByOrd(insertIndex-1, bytesRef));
               BytesRef after = ss.getByOrd(insertIndex, bytesRef);
               assertTrue(COMP.compare(before, bytesValue) < 0);
               assertTrue(COMP.compare(bytesValue, after) < 0);

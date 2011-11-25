@@ -213,7 +213,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
           System.out.println("      " + Integer.toHexString(finalBuffer[i]&0xFF));
         }
       }
-      builder.add(text, new BytesRef(spare));
+      builder.add(text, BytesRef.deepCopyOf(spare));
       termCount++;
     }
 

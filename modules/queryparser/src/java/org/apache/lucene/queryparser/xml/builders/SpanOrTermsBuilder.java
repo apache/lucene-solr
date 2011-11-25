@@ -59,7 +59,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
       ts.reset();
       while (ts.incrementToken()) {
         termAtt.fillBytesRef();
-        SpanTermQuery stq = new SpanTermQuery(new Term(fieldName, new BytesRef(bytes)));
+        SpanTermQuery stq = new SpanTermQuery(new Term(fieldName, BytesRef.deepCopyOf(bytes)));
         clausesList.add(stq);
       }
       ts.end();

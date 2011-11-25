@@ -150,7 +150,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
       while (tokenStream.incrementToken()) {
         bytesAtt.fillBytesRef();
-        tokens.add(new BytesRef(bytes));
+        tokens.add(BytesRef.deepCopyOf(bytes));
       }
 
       tokenStream.end();

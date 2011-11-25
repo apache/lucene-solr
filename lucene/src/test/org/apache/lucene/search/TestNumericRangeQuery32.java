@@ -428,7 +428,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       if (last != null) {
         assertTrue(last.compareTo(cur) < 0);
       }
-      last = new BytesRef(cur);
+      last = BytesRef.deepCopyOf(cur);
     } 
     // LUCENE-3314: the results after next() already returned null are undefined,
     // assertNull(termEnum.next());

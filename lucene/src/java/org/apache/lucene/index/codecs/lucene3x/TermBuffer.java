@@ -78,7 +78,7 @@ final class TermBuffer implements Cloneable {
       reset();
       return;
     }
-    bytes.copy(term.bytes());
+    bytes.copyBytes(term.bytes());
     field = term.field().intern();
     currentFieldNumber = -1;
     this.term = term;
@@ -90,7 +90,7 @@ final class TermBuffer implements Cloneable {
     // dangerous to copy Term over, since the underlying
     // BytesRef could subsequently be modified:
     term = null;
-    bytes.copy(other.bytes);
+    bytes.copyBytes(other.bytes);
   }
 
   public void reset() {
@@ -104,7 +104,7 @@ final class TermBuffer implements Cloneable {
       return null;
 
     if (term == null) {
-      term = new Term(field, new BytesRef(bytes));
+      term = new Term(field, BytesRef.deepCopyOf(bytes));
     }
 
     return term;
@@ -116,7 +116,7 @@ final class TermBuffer implements Cloneable {
     try {
       clone = (TermBuffer)super.clone();
     } catch (CloneNotSupportedException e) {}
-    clone.bytes = new BytesRef(bytes);
+    clone.bytes = BytesRef.deepCopyOf(bytes);
     return clone;
   }
 }

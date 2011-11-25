@@ -726,12 +726,12 @@ public class CheckIndex {
           // make sure terms arrive in order according to
           // the comp
           if (lastTerm == null) {
-            lastTerm = new BytesRef(term);
+            lastTerm = BytesRef.deepCopyOf(term);
           } else {
             if (termComp.compare(lastTerm, term) >= 0) {
               throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
             }
-            lastTerm.copy(term);
+            lastTerm.copyBytes(term);
           }
 
           final int docFreq = termsEnum.docFreq();
@@ -977,7 +977,7 @@ public class CheckIndex {
               for(int i=seekCount-1;i>=0;i--) {
                 long ord = i*(termCount/seekCount);
                 termsEnum.seekExact(ord);
-                seekTerms[i] = new BytesRef(termsEnum.term());
+                seekTerms[i] = BytesRef.deepCopyOf(termsEnum.term());
               }
 
               // Seek by term

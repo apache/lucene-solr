@@ -436,7 +436,7 @@ public class DirectSpellChecker {
         continue;
       
       // add new entry in PQ
-      st.term = new BytesRef(candidateTerm);
+      st.term = BytesRef.deepCopyOf(candidateTerm);
       st.boost = boost;
       st.docfreq = df;
       st.termAsString = termAsString;

@@ -121,10 +121,10 @@ public class TestSurrogates extends LuceneTestCase {
             System.out.println();
           }
           if (lastText == null) {
-            lastText = new BytesRef(text);
+            lastText = BytesRef.deepCopyOf(text);
           } else {
             assertTrue(lastText.compareTo(text) < 0);
-            lastText.copy(text);
+            lastText.copyBytes(text);
           }
           assertEquals(exp.field(), field);
           assertEquals(exp.bytes(), text);

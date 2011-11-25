@@ -170,7 +170,7 @@ final class TermInfosWriter implements Closeable {
         return cmp;
     }
 
-    scratchBytes.copy(term);
+    scratchBytes.copyBytes(term);
     assert lastTerm.offset == 0;
     UnicodeUtil.UTF8toUTF16(lastTerm.bytes, 0, lastTerm.length, utf16Result1);
 
@@ -255,7 +255,7 @@ final class TermInfosWriter implements Closeable {
     output.writeVInt(length);                  // write delta length
     output.writeBytes(term.bytes, start+term.offset, length);  // write delta bytes
     output.writeVInt(fieldNumber); // write field num
-    lastTerm.copy(term);
+    lastTerm.copyBytes(term);
   }
 
   /** Called to complete TermInfos creation. */

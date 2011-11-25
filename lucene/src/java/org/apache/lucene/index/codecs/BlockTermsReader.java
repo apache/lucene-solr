@@ -85,7 +85,7 @@ public class BlockTermsReader extends FieldsProducer {
 
     public FieldAndTerm(FieldAndTerm other) {
       field = other.field;
-      term = new BytesRef(other.term);
+      term = BytesRef.deepCopyOf(other.term);
     }
 
     @Override
@@ -437,7 +437,7 @@ public class BlockTermsReader extends FieldsProducer {
             state.ord = indexEnum.ord()-1;
           }
 
-          term.copy(indexEnum.term());
+          term.copyBytes(indexEnum.term());
           //System.out.println("  seek: term=" + term.utf8ToString());
         } else {
           //System.out.println("  skip seek");
@@ -720,7 +720,7 @@ public class BlockTermsReader extends FieldsProducer {
         state.copyFrom(otherState);
         seekPending = true;
         indexIsCurrent = false;
-        term.copy(target);
+        term.copyBytes(target);
       }
       
       @Override
@@ -757,7 +757,7 @@ public class BlockTermsReader extends FieldsProducer {
 
         state.ord = indexEnum.ord()-1;
         assert state.ord >= -1: "ord=" + state.ord;
-        term.copy(indexEnum.term());
+        term.copyBytes(indexEnum.term());
 
         // Now, scan:
         int left = (int) (ord - state.ord);

@@ -241,7 +241,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
         //System.out.println("  YES");
         return true;
       } else {
-        lastTerm.copy(text);
+        lastTerm.copyBytes(text);
         return false;
       }
     }
@@ -260,7 +260,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       } finally {
         text.length = lengthSave;
       }
-      lastTerm.copy(text);
+      lastTerm.copyBytes(text);
     }
 
     @Override

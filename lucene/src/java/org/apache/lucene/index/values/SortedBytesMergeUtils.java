@@ -295,7 +295,7 @@ final class SortedBytesMergeUtils {
 
     @Override
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
-      bytesRef.copy(missingValue);
+      bytesRef.copyBytes(missingValue);
       return bytesRef;
     }
 

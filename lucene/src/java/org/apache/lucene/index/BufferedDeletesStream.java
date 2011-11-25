@@ -455,7 +455,7 @@ class BufferedDeletesStream {
       assert lastDeleteTerm == null || term.compareTo(lastDeleteTerm) > 0: "lastTerm=" + lastDeleteTerm + " vs term=" + term;
     }
     // TODO: we re-use term now in our merged iterable, but we shouldn't clone, instead copy for this assert
-    lastDeleteTerm = term == null ? null : new Term(term.field(), new BytesRef(term.bytes));
+    lastDeleteTerm = term == null ? null : new Term(term.field(), BytesRef.deepCopyOf(term.bytes));
     return true;
   }
 

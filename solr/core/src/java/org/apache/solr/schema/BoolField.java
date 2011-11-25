@@ -142,9 +142,9 @@ public class BoolField extends FieldType {
   @Override
   public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     if (input.length > 0 && input.bytes[input.offset] == 'T') {
-      charsRef.copy(TRUE);
+      charsRef.copyChars(TRUE);
     } else {
-      charsRef.copy(FALSE);
+      charsRef.copyChars(FALSE);
     }
     return charsRef;
   }

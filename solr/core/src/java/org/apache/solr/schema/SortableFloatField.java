@@ -79,7 +79,7 @@ public class SortableFloatField extends FieldType {
   public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
     final char[] indexedToReadable = indexedToReadable(input.utf8ToChars(charsRef).toString()).toCharArray();
-    charsRef.copy(indexedToReadable, 0, indexedToReadable.length);
+    charsRef.copyChars(indexedToReadable, 0, indexedToReadable.length);
     return charsRef;
   }
 

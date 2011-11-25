@@ -540,7 +540,7 @@ public abstract class QueryParserBase {
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
-      return newTermQuery(new Term(field, new BytesRef(bytes)));
+      return newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
     } else {
       if (severalTokensAtSamePosition || (!quoted && !autoGeneratePhraseQueries)) {
         if (positionCount == 1 || (!quoted && !autoGeneratePhraseQueries)) {
@@ -559,7 +559,7 @@ public abstract class QueryParserBase {
               // safe to ignore, because we know the number of tokens
             }
             Query currentQuery = newTermQuery(
-                new Term(field, new BytesRef(bytes)));
+                new Term(field, BytesRef.deepCopyOf(bytes)));
             q.add(currentQuery, occur);
           }
           return q;
@@ -592,7 +592,7 @@ public abstract class QueryParserBase {
               multiTerms.clear();
             }
             position += positionIncrement;
-            multiTerms.add(new Term(field, new BytesRef(bytes)));
+            multiTerms.add(new Term(field, BytesRef.deepCopyOf(bytes)));
           }
           if (enablePositionIncrements) {
             mpq.add(multiTerms.toArray(new Term[0]),position);
@@ -623,9 +623,9 @@ public abstract class QueryParserBase {
 
           if (enablePositionIncrements) {
             position += positionIncrement;
-            pq.add(new Term(field, new BytesRef(bytes)),position);
+            pq.add(new Term(field, BytesRef.deepCopyOf(bytes)),position);
           } else {
-            pq.add(new Term(field, new BytesRef(bytes)));
+            pq.add(new Term(field, BytesRef.deepCopyOf(bytes)));
           }
         }
         return pq;
@@ -808,7 +808,7 @@ public abstract class QueryParserBase {
       throw new RuntimeException("Unable to end & close TokenStream after analyzing range part: " + part, e);
     }
     
-    return new BytesRef(bytes);
+    return BytesRef.deepCopyOf(bytes);
   }
 
   /**

@@ -26,13 +26,13 @@ public final class TermStats {
   public long totalTermFreq;
   
   TermStats(String field, BytesRef termtext, int df) {
-    this.termtext = new BytesRef(termtext);
+    this.termtext = BytesRef.deepCopyOf(termtext);
     this.field = field;
     this.docFreq = df;
   }
   
   TermStats(String field, BytesRef termtext, int df, long tf) {
-    this.termtext = new BytesRef(termtext);
+    this.termtext = BytesRef.deepCopyOf(termtext);
     this.field = field;
     this.docFreq = df;
     this.totalTermFreq = tf;

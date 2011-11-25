@@ -64,7 +64,7 @@ public class TermsFilterBuilder implements FilterBuilder {
       ts.reset();
       while (ts.incrementToken()) {
         termAtt.fillBytesRef();
-        term = new Term(fieldName, new BytesRef(bytes));
+        term = new Term(fieldName, BytesRef.deepCopyOf(bytes));
         tf.addTerm(term);
       }
       ts.end();
