@@ -30,6 +30,7 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
@@ -605,7 +606,8 @@ public class QueryComponent extends SearchComponent
           // String field in Lucene, which returns the terms
           // data as BytesRef:
           if (val instanceof BytesRef) {
-            field.setValue(((BytesRef)val).utf8ToChars(spare).toString());
+            UnicodeUtil.UTF8toUTF16((BytesRef)val, spare);
+            field.setValue(spare.toString());
             val = ft.toObject(field);
           }
 

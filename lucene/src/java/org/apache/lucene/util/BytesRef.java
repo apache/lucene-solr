@@ -165,12 +165,6 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref);
     return ref.toString(); 
   }
-  
-  /** Interprets stored bytes as UTF8 bytes into the given {@link CharsRef} */
-  public CharsRef utf8ToChars(CharsRef ref) {
-    UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref);
-    return ref;
-  }
 
   /** Returns hex encoded bytes, eg [0x6c 0x75 0x63 0x65 0x6e 0x65] */
   @Override

@@ -349,7 +349,7 @@ public abstract class FieldType extends FieldProperties {
 
   /** Given an indexed term, append the human readable representation*/
   public CharsRef indexedToReadable(BytesRef input, CharsRef output) {
-    input.utf8ToChars(output);
+    UnicodeUtil.UTF8toUTF16(input, output);
     return output;
   }
 

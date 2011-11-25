@@ -48,6 +48,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
@@ -273,7 +274,8 @@ public class LukeRequestHandler extends RequestHandlerBase
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               final int freq = (int) termsEnum.totalTermFreq();
-              tfv.add( text.utf8ToChars(spare).toString(), freq );
+              UnicodeUtil.UTF8toUTF16(text, spare);
+              tfv.add(spare.toString(), freq);
             }
             f.add( "termVector", tfv );
           }
@@ -649,7 +651,8 @@ public class LukeRequestHandler extends RequestHandlerBase
         TermsEnum termsEnum = terms.iterator(null);
         BytesRef text;
         while((text = termsEnum.next()) != null) {
-          String t = text.utf8ToChars(spare).toString();
+          UnicodeUtil.UTF8toUTF16(text, spare);
+          String t = spare.toString();
   
           // Compute distinct terms for every field
           TopTermQueue tiq = info.get( field );

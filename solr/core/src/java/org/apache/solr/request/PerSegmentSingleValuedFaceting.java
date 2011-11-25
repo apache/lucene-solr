@@ -366,7 +366,8 @@ class CountSortedFacetCollector extends FacetCollector {
       // NOTE: we use c>min rather than c>=min as an optimization because we are going in
       // index order, so we already know that the keys are ordered.  This can be very
       // important if a lot of the counts are repeated (like zero counts would be).
-      queue.add(new SimpleFacets.CountPair<String,Integer>(term.utf8ToChars(spare).toString(), count));
+      UnicodeUtil.UTF8toUTF16(term, spare);
+      queue.add(new SimpleFacets.CountPair<String,Integer>(spare.toString(), count));
       if (queue.size()>=maxsize) min=queue.last().val;
     }
     return false;
@@ -414,7 +415,8 @@ class IndexSortedFacetCollector extends FacetCollector {
     }
 
     if (limit > 0) {
-      res.add(term.utf8ToChars(spare).toString(), count);
+      UnicodeUtil.UTF8toUTF16(term, spare);
+      res.add(spare.toString(), count);
       limit--;
     }
 

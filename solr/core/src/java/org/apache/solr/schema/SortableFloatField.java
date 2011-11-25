@@ -24,6 +24,7 @@ import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 import org.apache.solr.search.QParser;
@@ -78,7 +79,8 @@ public class SortableFloatField extends FieldType {
 
   public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
-    final char[] indexedToReadable = indexedToReadable(input.utf8ToChars(charsRef).toString()).toCharArray();
+    UnicodeUtil.UTF8toUTF16(input, charsRef);
+    final char[] indexedToReadable = indexedToReadable(charsRef.toString()).toCharArray();
     charsRef.copyChars(indexedToReadable, 0, indexedToReadable.length);
     return charsRef;
   }
