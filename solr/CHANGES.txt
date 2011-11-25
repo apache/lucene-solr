@@ -99,7 +99,7 @@ Bug Fixes
   results or one results less than requested. (David Smiley, Dawid Weiss)
 
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
-  could commit too frequently and could block adds until a new seaercher was
+  could commit too frequently and could block adds until a new searcher was
   registered. (yonik)
 
 * SOLR-2726: Fixed NullPointerException when using spellcheck.q with Suggester.
