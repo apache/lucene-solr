@@ -20,7 +20,10 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Class to partition int range into n ranges.
+ * 
+ */
 public class HashPartitioner {
   
   public static class Range {
@@ -33,20 +36,26 @@ public class HashPartitioner {
     }
   }
   
+  /**
+   * works up to 65537 before requested num of ranges is one short
+   * 
+   * @param partitions
+   * @return
+   */
   public List<Range> partitionRange(int partitions) {
     // some hokey code to partition the int space
-    long range = Integer.MAX_VALUE + (Math.abs((long)Integer.MIN_VALUE));
+    long range = Integer.MAX_VALUE + (Math.abs((long) Integer.MIN_VALUE));
     long srange = range / partitions;
     
     List<Range> ranges = new ArrayList<Range>(partitions);
     
     long end = 0;
     long start = Integer.MIN_VALUE;
-
+    
     while (end < Integer.MAX_VALUE) {
       end = start + srange;
-      start = end + 1L;
       ranges.add(new Range(start, end));
+      start = end + 1L;
     }
     
     return ranges;
