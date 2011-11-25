@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -160,14 +161,7 @@ public class SolrCmdDistributor {
     if (ureq.getParams() == null) {
       ureq.setParams(new ModifiableSolrParams());
     }
-    String seenLeader = req.getParams().get(
-        DistributedUpdateProcessor.SEEN_LEADER);
-    if (seenLeader != null) {
-      ureq.getParams().add(DistributedUpdateProcessor.SEEN_LEADER, seenLeader);
-    }
-    
-    // nocommit: we add the right update chain - we should add the current one?
-    ureq.getParams().add("update.chain", "distrib-update-chain");
+    passOnParams(ureq);
     addCommit(ureq, cmd);
     submit(ureq, shardStr);
     
@@ -178,6 +172,18 @@ public class SolrCmdDistributor {
     // nocommit
     if (/* cmd.waitFlush || */cmd.waitSearcher) {
       checkResponses(true);
+    }
+  }
+
+  private void passOnParams(UpdateRequestExt ureq) {
+    String seenLeader = req.getParams().get(
+        DistributedUpdateProcessor.SEEN_LEADER);
+    if (seenLeader != null) {
+      ureq.getParams().add(DistributedUpdateProcessor.SEEN_LEADER, seenLeader);
+    }
+    String updateChain = req.getParams().get(UpdateParams.UPDATE_CHAIN);
+    if (updateChain != null) {
+      ureq.getParams().add(UpdateParams.UPDATE_CHAIN, updateChain);
     }
   }
   
@@ -209,12 +215,8 @@ public class SolrCmdDistributor {
     if (ureq.getParams() == null) {
       ureq.setParams(new ModifiableSolrParams());
     }
-    String seenLeader = req.getParams().get(DistributedUpdateProcessor.SEEN_LEADER);
-    if (seenLeader != null) {
-      ureq.getParams().add(DistributedUpdateProcessor.SEEN_LEADER, seenLeader);
-    }
-    // nocommit: we add the right update chain - we should add the current one?
-    ureq.getParams().add("update.chain", "distrib-update-chain");
+    
+    passOnParams(ureq);
     addCommit(ureq, ccmd);
     
     for (AddUpdateCommand cmd : alist) {
@@ -236,14 +238,9 @@ public class SolrCmdDistributor {
       ureq.setParams(new ModifiableSolrParams());
     }
     
-    String seenLeader = req.getParams().get(DistributedUpdateProcessor.SEEN_LEADER);
-    if (seenLeader != null) {
-      ureq.getParams().add(DistributedUpdateProcessor.SEEN_LEADER, seenLeader);
-    }
-    
-    // nocommit: we add the right update chain - we should add the current one?
-    ureq.getParams().add("update.chain", "distrib-update-chain");
+    passOnParams(ureq);
     addCommit(ureq, ccmd);
+    
     for (DeleteUpdateCommand cmd : dlist) {
       if (cmd.id != null) {
         ureq.deleteById(cmd.id);
