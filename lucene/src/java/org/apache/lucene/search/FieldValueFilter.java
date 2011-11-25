@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.FieldCacheRangeFilter.FieldCacheDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Bits.MatchAllBits;
 import org.apache.lucene.util.Bits.MatchNoBits;
@@ -59,21 +58,16 @@ public class FieldValueFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
     final Bits docsWithField = FieldCache.DEFAULT.getDocsWithField(
         reader, field);
     if (negate) {
       if (docsWithField instanceof MatchAllBits) {
         return null;
       }
-      final int maxDoc = reader.maxDoc();
-      return new FieldCacheDocIdSet(reader, true) {
+      return new FieldCacheDocIdSet(reader) {
         @Override
-        final boolean matchDoc(int doc) {
-          if (doc >= maxDoc) {
-            // TODO: this makes no sense we should check this on the caller level
-            throw new ArrayIndexOutOfBoundsException("doc: "+doc + " maxDoc: " + maxDoc);
-          }
+        protected final boolean matchDoc(int doc) {
           return !docsWithField.get(doc);
         }
       };
@@ -84,20 +78,18 @@ public class FieldValueFilter extends Filter {
       if (docsWithField instanceof DocIdSet) {
         // UweSays: this is always the case for our current impl - but who knows
         // :-)
-        /*
-         *  TODO this could deliver delete docs but FCDID seems broken too if
-         *  this filter is not used with another query
-         */
-        return (DocIdSet) docsWithField;
+        final DocIdSet dis = (DocIdSet) docsWithField;
+        return (reader.hasDeletions()) ?
+          new FilteredDocIdSet(dis) {
+            @Override
+            protected final boolean match(int doc) {
+              return !reader.isDeleted(doc);
+            }
+          } : dis;
       }
-      final int maxDoc = reader.maxDoc();
-      return new FieldCacheDocIdSet(reader, true) {
+      return new FieldCacheDocIdSet(reader) {
         @Override
-        final boolean matchDoc(int doc) {
-          if (doc >= maxDoc) {
-            // TODO: this makes no sense we should check this on the caller level
-            throw new ArrayIndexOutOfBoundsException("doc: "+doc + " maxDoc: " + maxDoc);
-          }
+        protected final boolean matchDoc(int doc) {
           return docsWithField.get(doc);
         }
       };
@@ -134,7 +126,7 @@ public class FieldValueFilter extends Filter {
 
   @Override
   public String toString() {
-    return "NoFieldValueFilter [field=" + field + ", negate=" + negate + "]";
+    return "FieldValueFilter [field=" + field + ", negate=" + negate + "]";
   }
 
 }

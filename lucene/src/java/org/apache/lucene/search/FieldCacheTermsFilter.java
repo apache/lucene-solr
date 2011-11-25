@@ -116,9 +116,9 @@ public class FieldCacheTermsFilter extends Filter {
         bits.set(termNumber);
       }
     }
-    return new FieldCacheRangeFilter.FieldCacheDocIdSet(reader, true) {
+    return new FieldCacheDocIdSet(reader) {
       @Override
-      boolean matchDoc(int doc) {
+      protected final boolean matchDoc(int doc) {
         return bits.get(fcsi.order[doc]);
       }
     };

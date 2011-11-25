@@ -535,7 +535,6 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     search.close();
   }
   
-  // test using a sparse index (with deleted docs). The DocIdSet should be not cacheable, as it uses TermDocs if the range contains 0
   @Test
   public void testSparseIndex() throws IOException {
     Directory dir = newDirectory();
@@ -573,11 +572,11 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("find all", 20, result.length);
 
     result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) 10),Byte.valueOf((byte) 20),T,T), 100).scoreDocs;
-    assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 11, result.length);
 
     result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) -20),Byte.valueOf((byte) -10),T,T), 100).scoreDocs;
-    assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 11, result.length);
     search.close();
     reader.close();
