@@ -127,6 +127,14 @@ public class JettySolrRunner {
 
   }
 
+  public FilterHolder getDispatchFilter() {
+    return dispatchFilter;
+  }
+
+  public boolean isRunning() {
+    return server.isRunning();
+  }
+
   // ------------------------------------------------------------------------------------------------
   // ------------------------------------------------------------------------------------------------
 

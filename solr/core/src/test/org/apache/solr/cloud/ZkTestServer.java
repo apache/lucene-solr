@@ -174,6 +174,10 @@ public class ZkTestServer {
       @Override
       public int getTimeout() {
         return 4000;
+      }
+      @Override
+      public boolean isClosing() {
+        return false;
       }});
   }
 

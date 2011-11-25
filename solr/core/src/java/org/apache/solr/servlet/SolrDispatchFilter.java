@@ -63,6 +63,7 @@ public class SolrDispatchFilter implements Filter
   final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
 
   protected CoreContainer cores;
+
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected String solrConfigFilename = null;
@@ -123,6 +124,10 @@ public class SolrDispatchFilter implements Filter
     }
 
     log.info("SolrDispatchFilter.init() done");
+  }
+  
+  public CoreContainer getCores() {
+    return cores;
   }
 
   /** Method to override to change how CoreContainer initialization is performed. */

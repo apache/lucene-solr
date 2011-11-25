@@ -74,7 +74,6 @@ class ConnectionManager implements Watcher {
       connected = true;
       clientConnected.countDown();
     } else if (state == KeeperState.Expired) {
-      
       connected = false;
       log.info("Attempting to reconnect to ZooKeeper...");
 
@@ -93,11 +92,8 @@ class ConnectionManager implements Watcher {
       } catch (Exception e) {
         log.error("", e);
       }
-
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
-      // ZooKeeper client will recover when it can
-      // TODO: this needs to be investigated more
       connected = false;
     } else {
       connected = false;

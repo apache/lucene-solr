@@ -157,6 +157,8 @@ public final class ZkController {
                   .getCurrentDescriptors();
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
+                  // nocommit: non reloaded cores will try and
+                  // recover - reloaded cores will not
                   register(descriptor.getName(), descriptor);
                 }
               }
@@ -467,7 +469,7 @@ public final class ZkController {
           core.close();
         }
       } else {
-        log.warn("Cannot recover without access to CoreConatiner");
+        log.warn("Cannot recover without access to CoreContainer");
         return shardId;
       }
 
