@@ -26,7 +26,7 @@ import java.util.Comparator;
  * @lucene.internal
  */
 public final class CharsRef implements Comparable<CharsRef>, CharSequence, Cloneable {
-  private static final char[] EMPTY_CHARS = new char[0];
+  public static final char[] EMPTY_CHARS = new char[0];
   public char[] chars;
   public int offset;
   public int length;
