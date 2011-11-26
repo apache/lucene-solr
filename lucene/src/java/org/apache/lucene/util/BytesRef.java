@@ -25,8 +25,6 @@ import java.io.UnsupportedEncodingException;
  *
  *  @lucene.experimental */
 public final class BytesRef implements Comparable<BytesRef>,Cloneable {
-
-  static final int HASH_PRIME = 31;
   public static final byte[] EMPTY_BYTES = new byte[0]; 
 
   /** The contents of the BytesRef. Should never be {@code null}. */
@@ -152,12 +150,12 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    */
   @Override
   public int hashCode() {
-    int result = 0;
+    int hash = 0;
     final int end = offset + length;
     for(int i=offset;i<end;i++) {
-      result = HASH_PRIME * result + bytes[i];
+      hash = 31 * hash + bytes[i];
     }
-    return result;
+    return hash;
   }
 
   @Override
@@ -165,7 +163,10 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     if (other == null) {
       return false;
     }
-    return this.bytesEquals((BytesRef) other);
+    if (other instanceof BytesRef) {
+      return this.bytesEquals((BytesRef) other);
+    }
+    return false;
   }
 
   /** Interprets stored bytes as UTF8 bytes, returning the

@@ -23,11 +23,13 @@ package org.apache.lucene.util;
  *  @lucene.internal */
 public final class IntsRef implements Comparable<IntsRef>, Cloneable {
 
+  public static final int[] EMPTY_INTS = new int[0];
   public int[] ints;
   public int offset;
   public int length;
 
   public IntsRef() {
+    ints = EMPTY_INTS;
   }
 
   public IntsRef(int capacity) {
@@ -35,6 +37,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
   }
 
   public IntsRef(int[] ints, int offset, int length) {
+    assert ints != null;
     this.ints = ints;
     this.offset = offset;
     this.length = length;
@@ -58,7 +61,13 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
   
   @Override
   public boolean equals(Object other) {
-    return this.intsEquals((IntsRef) other);
+    if (other == null) {
+      return false;
+    }
+    if (other instanceof IntsRef) {
+      return this.intsEquals((IntsRef) other);
+    }
+    return false;
   }
 
   public boolean intsEquals(IntsRef other) {
