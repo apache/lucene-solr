@@ -279,7 +279,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
       assertTrue(ts.incrementToken());
       termAtt.fillBytesRef();
       // ensure we make a copy of the actual bytes too
-      map.put(term, new BytesRef(bytes));
+      map.put(term, BytesRef.deepCopyOf(bytes));
     }
     
     Thread threads[] = new Thread[numThreads];

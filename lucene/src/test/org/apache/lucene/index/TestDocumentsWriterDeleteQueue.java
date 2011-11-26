@@ -75,7 +75,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     HashSet<Term> frozenSet = new HashSet<Term>();
     for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
       BytesRef bytesRef = new BytesRef();
-      bytesRef.copy(t.bytes);
+      bytesRef.copyBytes(t.bytes);
       frozenSet.add(new Term(t.field, bytesRef));
     }
     assertEquals(uniqueValues, frozenSet);
@@ -204,7 +204,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     Set<Term> frozenSet = new HashSet<Term>();
     for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
       BytesRef bytesRef = new BytesRef();
-      bytesRef.copy(t.bytes);
+      bytesRef.copyBytes(t.bytes);
       frozenSet.add(new Term(t.field, bytesRef));
     }
     assertEquals("num deletes must be 0 after freeze", 0, queue

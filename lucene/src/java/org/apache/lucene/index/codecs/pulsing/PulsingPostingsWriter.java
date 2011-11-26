@@ -183,9 +183,9 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
       pos.docID = currentDoc.docID;
       if (payload != null && payload.length > 0) {
         if (pos.payload == null) {
-          pos.payload = new BytesRef(payload);
+          pos.payload = BytesRef.deepCopyOf(payload);
         } else {
-          pos.payload.copy(payload);
+          pos.payload.copyBytes(payload);
         }
       } else if (pos.payload != null) {
         pos.payload.length = 0;

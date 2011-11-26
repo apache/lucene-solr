@@ -186,7 +186,7 @@ public final class NumericTokenStream extends TokenStream {
     @Override
     public void reflectWith(AttributeReflector reflector) {
       fillBytesRef();
-      reflector.reflect(TermToBytesRefAttribute.class, "bytes", new BytesRef(bytes));
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", BytesRef.deepCopyOf(bytes));
       reflector.reflect(NumericTermAttribute.class, "shift", shift);
       reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
       reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);

@@ -71,10 +71,10 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
     if (groupValue == null) {
       return null;
     } else if (reuse != null) {
-      reuse.copy(groupValue);
+      reuse.copyBytes(groupValue);
       return reuse;
     } else {
-      return new BytesRef(groupValue);
+      return BytesRef.deepCopyOf(groupValue);
     }
   }
 

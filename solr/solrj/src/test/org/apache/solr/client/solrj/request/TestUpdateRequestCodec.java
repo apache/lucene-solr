@@ -21,6 +21,7 @@ import junit.framework.Assert;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.FastInputStream;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -83,8 +84,8 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
     final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-    JavaBinUpdateRequestCodec.StreamingDocumentHandler handler = new JavaBinUpdateRequestCodec.StreamingDocumentHandler() {
-      public void document(SolrInputDocument document, UpdateRequest req) {
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+      public void update(SolrInputDocument document, UpdateRequest req) {
         Assert.assertNotNull(req.getParams());
         docs.add(document);
       }
@@ -131,8 +132,8 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
     final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-    JavaBinUpdateRequestCodec.StreamingDocumentHandler handler = new JavaBinUpdateRequestCodec.StreamingDocumentHandler() {
-      public void document(SolrInputDocument document, UpdateRequest req) {
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+      public void update(SolrInputDocument document, UpdateRequest req) {
         Assert.assertNotNull(req.getParams());
         docs.add(document);
       }
@@ -154,7 +155,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
 
   }
 
-      
+
 
   private void compareDocs(String m, 
                            SolrInputDocument expectedDoc, 

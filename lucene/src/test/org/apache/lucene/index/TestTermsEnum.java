@@ -65,7 +65,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator(null);
     BytesRef term;
     while((term = termsEnum.next()) != null) {
-      terms.add(new BytesRef(term));
+      terms.add(BytesRef.deepCopyOf(term));
     }
     if (VERBOSE) {
       System.out.println("TEST: " + terms.size() + " terms");
@@ -310,7 +310,7 @@ public class TestTermsEnum extends LuceneTestCase {
         if (startTerm == null) {
           loc = 0;
         } else {
-          loc = Arrays.binarySearch(termsArray, new BytesRef(startTerm));
+          loc = Arrays.binarySearch(termsArray, BytesRef.deepCopyOf(startTerm));
           if (loc < 0) {
             loc = -(loc+1);
           } else {
@@ -648,7 +648,7 @@ public class TestTermsEnum extends LuceneTestCase {
       } else {
         // pick valid term
         loc = random.nextInt(validTerms.length);
-        t = new BytesRef(validTerms[loc]);
+        t = BytesRef.deepCopyOf(validTerms[loc]);
         termState = null;
         if (VERBOSE) {
           System.out.println("\nTEST: valid term=" + t.utf8ToString());

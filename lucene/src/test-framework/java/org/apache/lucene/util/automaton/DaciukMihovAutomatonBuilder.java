@@ -324,7 +324,7 @@ public final class DaciukMihovAutomatonBuilder {
   private boolean setPrevious(CharsRef current) {
     // don't need to copy, once we fix https://issues.apache.org/jira/browse/LUCENE-3277
     // still, called only from assert
-    previous = new CharsRef(current);
+    previous = CharsRef.deepCopyOf(current);
     return true;
   }
   

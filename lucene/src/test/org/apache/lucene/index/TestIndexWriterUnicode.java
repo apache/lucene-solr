@@ -148,7 +148,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       }
 
       assertTrue(last.compareTo(term) < 0);
-      last.copy(term);
+      last.copyBytes(term);
 
       final String s = term.utf8ToString();
       assertTrue("term " + termDesc(s) + " was not added to index (count=" + allTerms.size() + ")", allTerms.contains(s));

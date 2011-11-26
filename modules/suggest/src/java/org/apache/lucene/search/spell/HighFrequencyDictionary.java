@@ -26,6 +26,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * HighFrequencyDictionary: terms taken from the given field
@@ -89,7 +90,12 @@ public class HighFrequencyDictionary implements Dictionary {
       }
       hasNextCalled = false;
 
-      return (actualTerm != null) ? actualTerm.utf8ToChars(spare).toString() : null;
+      if (actualTerm == null) {
+        return null;
+      } else {
+        UnicodeUtil.UTF8toUTF16(actualTerm, spare);
+        return spare.toString();
+      }
     }
 
     public boolean hasNext() {

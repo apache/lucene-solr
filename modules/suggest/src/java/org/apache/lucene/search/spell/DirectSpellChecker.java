@@ -36,6 +36,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /**
@@ -371,7 +372,11 @@ public class DirectSpellChecker {
     int index = suggestions.length - 1;
     for (ScoreTerm s : terms) {
       SuggestWord suggestion = new SuggestWord();
-      suggestion.string = s.termAsString != null ? s.termAsString : s.term.utf8ToChars(spare).toString();
+      if (s.termAsString == null) {
+        UnicodeUtil.UTF8toUTF16(s.term, spare);
+        s.termAsString = spare.toString();
+      }
+      suggestion.string = s.termAsString;
       suggestion.score = s.score;
       suggestion.freq = s.docfreq;
       suggestions[index--] = suggestion;
@@ -428,7 +433,8 @@ public class DirectSpellChecker {
         // undo FuzzyTermsEnum's scale factor for a real scaled lev score
         score = boost / e.getScaleFactor() + e.getMinSimilarity();
       } else {
-        termAsString = candidateTerm.utf8ToChars(spare).toString();
+        UnicodeUtil.UTF8toUTF16(candidateTerm, spare);
+        termAsString = spare.toString();
         score = distance.getDistance(term.text(), termAsString);
       }
       
@@ -436,7 +442,7 @@ public class DirectSpellChecker {
         continue;
       
       // add new entry in PQ
-      st.term = new BytesRef(candidateTerm);
+      st.term = BytesRef.deepCopyOf(candidateTerm);
       st.boost = boost;
       st.docfreq = df;
       st.termAsString = termAsString;

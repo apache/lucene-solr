@@ -637,6 +637,38 @@ Bug fixes
   DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
   Robert Muir, Simon Willnauer, Mike McCandless)
 
+* LUCENE-3589: BytesRef copy(short) didnt set length.
+  (Peter Chang via Robert Muir)
+  
+  
+======================= Lucene 3.6.0 =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-3594: The protected inner class (never intended to be visible)
+  FieldCacheTermsFilter.FieldCacheTermsFilterDocIdSet was removed and
+  replaced by another internal implementation.  (Uwe Schindler)
+
+Security fixes
+
+* LUCENE-3588: Try harder to prevent SIGSEGV on cloned MMapIndexInputs:
+  Previous versions of Lucene could SIGSEGV the JVM if you try to access
+  the clone of an IndexInput retrieved from MMapDirectory. This security fix
+  prevents this as best as it can by throwing AlreadyClosedException
+  also on clones.  (Uwe Schindler, Robert Muir)
+
+New Features
+
+* LUCENE-3593: Added a FieldValueFilter that accepts all documents that either
+  have at least one or no value at all in a specific field. (Simon Willnauer,
+  Uwe Schindler, Robert Muir)
+  
+Bug fixes
+
+* LUCENE-3595: Fixed FieldCacheRangeFilter and FieldCacheTermsFilter
+  to correctly respect deletions on reopened SegmentReaders. Factored out
+  FieldCacheDocIdSet to be a top-level class.  (Uwe Schindler, Simon Willnauer)
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy

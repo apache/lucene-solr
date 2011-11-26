@@ -36,6 +36,13 @@
     <build-directory>build</build-directory>
   </properties>
   <dependencies>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-core</artifactId>
@@ -50,12 +57,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-sandbox</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>

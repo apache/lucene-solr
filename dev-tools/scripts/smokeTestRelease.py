@@ -31,6 +31,7 @@ import HTMLParser
 
 JAVA5_HOME = '/usr/local/src/jdk1.5.0_22'
 JAVA6_HOME = '/usr/local/src/jdk1.6.0_21'
+JAVA7_HOME = '/usr/local/src/jdk1.7.0_01'
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -185,13 +186,27 @@ def checkSigs(project, urlString, version, tmpDir):
     verifyDigests(artifact, urlString, tmpDir)
 
     print '    verify sig'
-    # Test sig
+    # Test sig (this is done with a clean brand-new GPG world)
     download(artifact + '.asc', urlString + '.asc', tmpDir)
     sigFile = '%s/%s.asc' % (tmpDir, artifact)
     artifactFile = '%s/%s' % (tmpDir, artifact)
     logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
     run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
         logFile)
+    # Forward any GPG warnings, except the expected one (since its a clean world)
+    f = open(logFile, 'rb')
+    for line in f.readlines():
+      if line.lower().find('warning') != -1 \
+      and line.find('WARNING: This key is not certified with a trusted signature') == -1:
+        print '      GPG: %s' % line.strip()
+    f.close()
+
+    # Test trust (this is done with the real users config)
+    run('gpg --import %s' % (keysFile),
+        '%s/%s.gpg.trust.import.log 2>&1' % (tmpDir, project))
+    print '    verify trust'
+    logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
+    run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
     # Forward any GPG warnings:
     f = open(logFile, 'rb')
     for line in f.readlines():
@@ -366,9 +381,41 @@ def verifyUnpacked(project, artifact, unpackPath, version):
       run('export JAVA_HOME=%s; ant test' % JAVA5_HOME, '%s/test.log' % unpackPath)
       run('export JAVA_HOME=%s; ant jar' % JAVA5_HOME, '%s/compile.log' % unpackPath)
       testDemo(isSrc, version)
+      # test javadocs
+      print '    generate javadocs w/ Java 5...'
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA5_HOME, '%s/javadocs.log' % unpackPath)
     else:
       print '    run tests w/ Java 6...'
       run('export JAVA_HOME=%s; ant test' % JAVA6_HOME, '%s/test.log' % unpackPath)
+
+      # test javadocs
+      print '    generate javadocs w/ Java 6...'
+      # uncomment this after 3.5.0 and delete the hack below
+      # run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir('lucene')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+
+      os.chdir('solr')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+      # end hackidy-hack     
+
+      print '    run tests w/ Java 7...'
+      run('export JAVA_HOME=%s; ant test' % JAVA7_HOME, '%s/test.log' % unpackPath)
+ 
+      # test javadocs
+      print '    generate javadocs w/ Java 7...'
+      # uncomment this after 3.5.0 and delete the hack below
+      # run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir('lucene')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+
+      os.chdir('solr')
+      run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
+      os.chdir(unpackPath)
+      # end hackidy-hack   
   else:
     if project == 'lucene':
       testDemo(isSrc, version)

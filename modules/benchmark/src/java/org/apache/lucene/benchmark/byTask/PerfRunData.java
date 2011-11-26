@@ -17,6 +17,7 @@ package org.apache.lucene.benchmark.byTask;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ import org.apache.lucene.util.IOUtils;
  *  <li><b>taxonomy.directory</b>=&lt;type of directory for taxonomy index| Default: RAMDirectory&gt;
  * </ul>
  */
-public class PerfRunData {
+public class PerfRunData implements Closeable {
 
   private Points points;
   
@@ -122,6 +123,12 @@ public class PerfRunData {
       System.out.println("------------> queries:");
       System.out.println(getQueryMaker(new SearchTask(this)).printQueries());
     }
+  }
+  
+  public void close() throws IOException {
+    IOUtils.close(indexWriter, indexReader, indexSearcher, directory, 
+                  taxonomyWriter, taxonomyReader, taxonomyDir, 
+                  docMaker, facetSource);
   }
 
   // clean old stuff, reopen 

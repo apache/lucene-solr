@@ -77,7 +77,7 @@ public class Test2BTerms extends LuceneTestCase {
       random.nextBytes(bytes.bytes);
       tokenCount++;
       if (--nextSave == 0) {
-        savedTerms.add(new BytesRef(bytes));
+        savedTerms.add(BytesRef.deepCopyOf(bytes));
         System.out.println("TEST: save term=" + bytes);
         nextSave = _TestUtil.nextInt(random, 500000, 1000000);
       }
@@ -231,7 +231,7 @@ public class Test2BTerms extends LuceneTestCase {
     BytesRef term;
     while((term = termsEnum.next()) != null) {
       if (--nextSave == 0) {
-        savedTerms.add(new BytesRef(term));
+        savedTerms.add(BytesRef.deepCopyOf(term));
         System.out.println("TEST: add " + term);
         nextSave = _TestUtil.nextInt(random, 500000, 1000000);
       }

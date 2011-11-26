@@ -206,11 +206,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase
         return ""; // ignore it...
       }
     }
+    InputStream input = null;
     try {
-      InputStream input = core.getResourceLoader().openResource(path);
+      input = core.getResourceLoader().openResource(path);
       return IOUtils.toString( input, "UTF-8" );
+    } catch( Exception ex ) {
+    } finally {
+      IOUtils.closeQuietly(input);
     }
-    catch( Exception ex ) {} // ignore it
     return "";
   }
 

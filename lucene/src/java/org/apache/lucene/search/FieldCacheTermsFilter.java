@@ -127,10 +127,9 @@ public class FieldCacheTermsFilter extends Filter {
         bits.set(termNumber);
       }
     }
-    final int maxDoc = context.reader.maxDoc();
-    return new FieldCacheRangeFilter.FieldCacheDocIdSet(maxDoc, acceptDocs) {
+    return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
       @Override
-      boolean matchDoc(int doc) {
+      protected final boolean matchDoc(int doc) {
         return bits.get(fcsi.getOrd(doc));
       }
     };

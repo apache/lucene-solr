@@ -118,7 +118,7 @@ public class UnInvertedField extends DocTermOrds {
 
     if (te.docFreq() > maxTermDocFreq) {
       TopTerm topTerm = new TopTerm();
-      topTerm.term = new BytesRef(term);
+      topTerm.term = BytesRef.deepCopyOf(term);
       topTerm.termNum = termNum;
       bigTerms.put(topTerm.termNum, topTerm);
 

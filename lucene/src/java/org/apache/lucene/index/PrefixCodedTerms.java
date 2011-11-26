@@ -111,7 +111,7 @@ class PrefixCodedTerms implements Iterable<Term> {
         }
         output.writeVInt(suffix);
         output.writeBytes(term.bytes.bytes, term.bytes.offset + prefix, suffix);
-        lastTerm.bytes.copy(term.bytes);
+        lastTerm.bytes.copyBytes(term.bytes);
         lastTerm.field = term.field;
       } catch (IOException e) {
         throw new RuntimeException(e);

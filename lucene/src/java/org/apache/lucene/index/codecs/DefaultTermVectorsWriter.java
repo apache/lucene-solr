@@ -132,7 +132,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     tvf.writeVInt(suffix);
     tvf.writeBytes(term.bytes, term.offset + prefix, suffix);
     tvf.writeVInt(freq);
-    lastTerm.copy(term);
+    lastTerm.copyBytes(term);
     lastPosition = lastOffset = 0;
     
     if (offsets && positions) {

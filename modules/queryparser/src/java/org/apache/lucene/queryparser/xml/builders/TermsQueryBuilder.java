@@ -59,7 +59,7 @@ public class TermsQueryBuilder implements QueryBuilder {
       ts.reset();
       while (ts.incrementToken()) {
         termAtt.fillBytesRef();
-        term = new Term(fieldName, new BytesRef(bytes));
+        term = new Term(fieldName, BytesRef.deepCopyOf(bytes));
         bq.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.SHOULD));
       }
       ts.end();

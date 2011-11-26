@@ -213,7 +213,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     // Do a deep clone
     t.termBuffer = new char[this.termLength];
     System.arraycopy(this.termBuffer, 0, t.termBuffer, 0, this.termLength);
-    t.bytes = new BytesRef(bytes);
+    t.bytes = BytesRef.deepCopyOf(bytes);
     return t;
   }
   
@@ -256,7 +256,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   public void reflectWith(AttributeReflector reflector) {
     reflector.reflect(CharTermAttribute.class, "term", toString());
     fillBytesRef();
-    reflector.reflect(TermToBytesRefAttribute.class, "bytes", new BytesRef(bytes));
+    reflector.reflect(TermToBytesRefAttribute.class, "bytes", BytesRef.deepCopyOf(bytes));
   }
   
   @Override

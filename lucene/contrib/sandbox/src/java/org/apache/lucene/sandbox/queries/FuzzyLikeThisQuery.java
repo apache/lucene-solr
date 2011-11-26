@@ -224,7 +224,7 @@ public class FuzzyLikeThisQuery extends Query
                       totalVariantDocFreqs+=fe.docFreq();
                       float score=boostAtt.getBoost();
                       if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
-                        ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), new BytesRef(possibleMatch)),score,startTerm);                    
+                        ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)),score,startTerm);                    
                         variantsQ.insertWithOverflow(st);
                         minScore = variantsQ.top().score; // maintain minScore
                       }

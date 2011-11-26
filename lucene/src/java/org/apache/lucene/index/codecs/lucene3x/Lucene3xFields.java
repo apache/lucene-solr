@@ -407,7 +407,7 @@ public class Lucene3xFields extends FieldsProducer {
             getTermsDict().seekEnum(termEnum, seekTermEnum.term(), true);
             //newSuffixStart = downTo+4;
             newSuffixStart = downTo;
-            scratchTerm.copy(termEnum.term().bytes());
+            scratchTerm.copyBytes(termEnum.term().bytes());
             didSeek = true;
             if (DEBUG_SURROGATES) {
               System.out.println("      seek!");
@@ -481,7 +481,7 @@ public class Lucene3xFields extends FieldsProducer {
           // done no scanning (eg, term was precisely
           // and index term, or, was in the term seek
           // cache):
-          scratchTerm.copy(b2);
+          scratchTerm.copyBytes(b2);
           setNewSuffixStart(prevTerm, scratchTerm);
 
           return true;
@@ -554,7 +554,7 @@ public class Lucene3xFields extends FieldsProducer {
       if (termEnum.term() == null || termEnum.term().field() != internedFieldName) {
         scratchTerm.length = 0;
       } else {
-        scratchTerm.copy(termEnum.term().bytes());
+        scratchTerm.copyBytes(termEnum.term().bytes());
       }
       
       if (DEBUG_SURROGATES) {
@@ -687,7 +687,7 @@ public class Lucene3xFields extends FieldsProducer {
             // TODO: more efficient seek?
             getTermsDict().seekEnum(termEnum, seekTermEnum.term(), true);
 
-            scratchTerm.copy(seekTermEnum.term().bytes());
+            scratchTerm.copyBytes(seekTermEnum.term().bytes());
 
             // +3 because we don't need to check the char
             // at upTo: we know it's > BMP
@@ -788,7 +788,7 @@ public class Lucene3xFields extends FieldsProducer {
 
         // We hit EOF; try end-case surrogate dance: if we
         // find an E, try swapping in S, backwards:
-        scratchTerm.copy(term);
+        scratchTerm.copyBytes(term);
 
         assert scratchTerm.offset == 0;
 
@@ -800,7 +800,7 @@ public class Lucene3xFields extends FieldsProducer {
 
             if (seekToNonBMP(seekTermEnum, scratchTerm, i)) {
 
-              scratchTerm.copy(seekTermEnum.term().bytes());
+              scratchTerm.copyBytes(seekTermEnum.term().bytes());
               getTermsDict().seekEnum(termEnum, seekTermEnum.term(), useCache);
 
               newSuffixStart = 1+i;
@@ -826,7 +826,7 @@ public class Lucene3xFields extends FieldsProducer {
         // We found a non-exact but non-null term; this one
         // is fun -- just treat it like next, by pretending
         // requested term was prev:
-        prevTerm.copy(term);
+        prevTerm.copyBytes(term);
 
         if (DEBUG_SURROGATES) {
           System.out.println("  seek hit non-exact term=" + UnicodeUtil.toHexString(t.text()));
@@ -895,7 +895,7 @@ public class Lucene3xFields extends FieldsProducer {
       }
 
       // TODO: can we use STE's prevBuffer here?
-      prevTerm.copy(termEnum.term().bytes());
+      prevTerm.copyBytes(termEnum.term().bytes());
 
       if (termEnum.next() && termEnum.term().field() == internedFieldName) {
         newSuffixStart = termEnum.newSuffixStart;

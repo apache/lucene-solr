@@ -55,7 +55,7 @@ public class LiteralValueSource extends ValueSource {
 
       @Override
       public boolean bytesVal(int doc, BytesRef target) {
-        target.copy(bytesRef);
+        target.copyBytes(bytesRef);
         return true;
       }
 

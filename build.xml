@@ -27,6 +27,15 @@
       </subant>
     </sequential>
   </target>
+  <target name="javadocs" description="Generate Lucene and Solr javadocs">
+    <sequential>
+      <subant target="javadocs" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml" />
+        <fileset dir="modules" includes="build.xml" />
+        <fileset dir="solr" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
   <target name="validate" description="Validate dependencies, licenses, etc.">
     <sequential><subant target="validate" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />

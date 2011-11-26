@@ -40,9 +40,13 @@ import org.apache.solr.search.ReturnFields;
  */
 
 public class JSONResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_JSON_UTF8="text/x-json; charset=UTF-8";
+  static String CONTENT_TYPE_JSON_UTF8="application/json; charset=UTF-8";
 
-  public void init(NamedList n) {
+  private String contentType;
+
+  public void init(NamedList namedList) {
+    String contentType = (String) namedList.get("content-type");
+    this.contentType = (contentType != null) ? contentType : CONTENT_TYPE_JSON_UTF8;
   }
 
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
@@ -55,11 +59,9 @@ public class JSONResponseWriter implements QueryResponseWriter {
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    // using the text/plain allows this to be viewed in the browser easily
-    return CONTENT_TYPE_TEXT_UTF8;
+    return contentType;
   }
 }
-
 
 class JSONWriter extends TextResponseWriter {
   private String namedListStyle;

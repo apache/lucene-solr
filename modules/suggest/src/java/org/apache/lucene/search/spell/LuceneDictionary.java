@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 
@@ -75,7 +76,7 @@ public class LuceneDictionary implements Dictionary {
         return null;
       }
 
-      final String result = pendingTerm.utf8ToChars(spare).toString();
+      UnicodeUtil.UTF8toUTF16(pendingTerm, spare);
 
       try {
         pendingTerm = termsEnum.next();
@@ -83,7 +84,7 @@ public class LuceneDictionary implements Dictionary {
         throw new RuntimeException(e);
       }
 
-      return result;
+      return spare.toString();
     }
 
     public boolean hasNext() {

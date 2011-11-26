@@ -48,13 +48,15 @@ public abstract class FieldProperties {
   
   protected final static int REQUIRED            = 0x00001000;
   protected final static int OMIT_POSITIONS      = 0x00002000;
+  protected final static int LEGACY_MULTITERM    = 0x00004000;
   
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
           "binary", "omitNorms", "omitTermFreqAndPositions",
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
-          "sortMissingFirst","sortMissingLast","required", "omitPositions"
+          "sortMissingFirst","sortMissingLast","required", "omitPositions" ,
+          "legacyMultiTerm"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<String,Integer>();

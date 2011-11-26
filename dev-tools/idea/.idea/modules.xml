@@ -6,7 +6,6 @@
       <module filepath="$PROJECT_DIR$/lucene/lucene.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/demo/demo.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/highlighter/highlighter.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/instantiated/instantiated.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />

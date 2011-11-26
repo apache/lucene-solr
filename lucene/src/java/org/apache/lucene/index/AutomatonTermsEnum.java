@@ -116,7 +116,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
         return seekBytesRef;
       }
     } else {
-      seekBytesRef.copy(term);
+      seekBytesRef.copyBytes(term);
     }
 
     // seek to the next possible string;

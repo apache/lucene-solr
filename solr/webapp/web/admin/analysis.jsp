@@ -159,7 +159,7 @@
       final BytesRef bytes = bytesAtt.getBytesRef();
       while (tstream.incrementToken()) {
         bytesAtt.fillBytesRef();
-        matches.add(new BytesRef(bytes));
+        matches.add(BytesRef.deepCopyOf(bytes));
       }
     }
 
@@ -282,12 +282,12 @@
     Tok(AttributeSource token, int pos, FieldType ft) {
       this.pos = pos;
       TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
-      BytesRef spare = termAtt.getBytesRef();
-	  termAtt.fillBytesRef();
-	  bytes = new BytesRef(spare);
+      BytesRef termBytes = termAtt.getBytesRef();
+	    termAtt.fillBytesRef();
+	    bytes = BytesRef.deepCopyOf(termBytes);
+      text = ft.indexedToReadable(bytes, new CharsRef()).toString();
       rawText = (token.hasAttribute(CharTermAttribute.class)) ?
         token.getAttribute(CharTermAttribute.class).toString() : null;
-      text = ft.indexedToReadable(bytes, new CharsRef()).toString();
       token.reflectWith(new AttributeReflector() {
         public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
           // leave out position and raw term

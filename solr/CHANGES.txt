@@ -188,6 +188,11 @@ New Features
  
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
+    
+* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
+  a complete analysis chain for multiterm queries.   
+  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+
 
 Optimizations
 ----------------------
@@ -360,11 +365,37 @@ Other Changes
 * SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
   extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
 
+* SOLR-1123: Changed JSONResponseWriter to now use application/json as its Content-Type
+  by default.  However the Content-Type can be overwritten and is set to text/plain in
+  the example configuration. (Uri Boness, Chris Male)
+  
+* SOLR-2607: Removed deprecated client/ruby directory, which included solr-ruby and flare.
+  (ehatcher)
+
 Documentation
 ----------------------
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
+  
+==================  3.6.0  ==================
+
+New Features
+----------------------
+* SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
+  a stream (shalin)
+
+* SOLR-1565: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin update
+  format (shalin)
+
+* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
+  a complete analysis chain for multiterm queries.   
+  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+
+
+Bug Fixes
+----------------------
+* SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
 
 ==================  3.5.0  ==================
 
@@ -411,7 +442,7 @@ Optimizations
 Bug Fixes
 ----------------------
 * SOLR-2748: The CommitTracker used for commitWith or autoCommit by maxTime
-  could commit too frequently and could block adds until a new seaercher was
+  could commit too frequently and could block adds until a new searcher was
   registered. (yonik)
 
 * SOLR-2726: Fixed NullPointerException when using spellcheck.q with Suggester.

@@ -21,6 +21,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -99,7 +100,8 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         if (field != null) {
           FieldType fieldType = field.getType();
           if (sortValue instanceof BytesRef) {
-            String indexedValue = ((BytesRef) sortValue).utf8ToChars(spare).toString();
+            UnicodeUtil.UTF8toUTF16((BytesRef)sortValue, spare);
+            String indexedValue = spare.toString();
             sortValue = (Comparable) fieldType.toObject(field.createField(fieldType.indexedToReadable(indexedValue), 0.0f));
           } else if (sortValue instanceof String) {
             sortValue = (Comparable) fieldType.toObject(field.createField(fieldType.indexedToReadable((String) sortValue), 0.0f));

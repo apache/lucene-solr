@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastInputStream;
@@ -72,16 +71,16 @@ public class JavaBinUpdateRequestCodec {
 
   /**
    * Reads a NamedList from the given InputStream, converts it into a SolrInputDocument and passes it to the given
-   * StreamingDocumentHandler
+   * StreamingUpdateHandler
    *
    * @param is      the InputStream from which to read
-   * @param handler an instance of StreamingDocumentHandler to which SolrInputDocuments are streamed one by one
+   * @param handler an instance of StreamingUpdateHandler to which SolrInputDocuments are streamed one by one
    *
    * @return the UpdateRequest
    *
    * @throws IOException in case of an exception while reading from the input stream or unmarshalling
    */
-  public UpdateRequest unmarshal(InputStream is, final StreamingDocumentHandler handler) throws IOException {
+  public UpdateRequest unmarshal(InputStream is, final StreamingUpdateHandler handler) throws IOException {
     final UpdateRequest updateRequest = new UpdateRequest();
     List<List<NamedList>> doclist;
     List<String> delById;
@@ -128,8 +127,17 @@ public class JavaBinUpdateRequestCodec {
         while (true) {
           Object o = readVal(fis);
           if (o == END_OBJ) break;
-          SolrInputDocument sdoc = (SolrInputDocument)o;
-          handler.document(sdoc, updateRequest);
+          SolrInputDocument sdoc = null;
+          if (o instanceof List) {
+            sdoc = listToSolrInputDocument((List<NamedList>) o);
+          } else if (o instanceof NamedList)  {
+            UpdateRequest req = new UpdateRequest();
+            req.setParams(new ModifiableSolrParams(SolrParams.toSolrParams((NamedList) o)));
+            handler.update(null, req);
+          } else  {
+            sdoc = (SolrInputDocument) o;
+          }
+          handler.update(sdoc, updateRequest);
         }
         return Collections.EMPTY_LIST;
       }
@@ -144,7 +152,11 @@ public class JavaBinUpdateRequestCodec {
     if (doclist != null && !doclist.isEmpty()) {
       List<SolrInputDocument> solrInputDocs = new ArrayList<SolrInputDocument>();
       for (Object o : doclist) {
-        solrInputDocs.add((SolrInputDocument)o);
+        if (o instanceof List) {
+          solrInputDocs.add(listToSolrInputDocument((List<NamedList>)o));
+        } else  {
+          solrInputDocs.add((SolrInputDocument)o);
+        }
       }
       updateRequest.add(solrInputDocs);
     }
@@ -162,6 +174,20 @@ public class JavaBinUpdateRequestCodec {
 
   }
 
+  private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
+    SolrInputDocument doc = new SolrInputDocument();
+    for (int i = 0; i < namedList.size(); i++) {
+      NamedList nl = namedList.get(i);
+      if (i == 0) {
+        doc.setDocumentBoost(nl.getVal(0) == null ? 1.0f : (Float) nl.getVal(0));
+      } else {
+        doc.addField((String) nl.getVal(0),
+                nl.getVal(1),
+                nl.getVal(2) == null ? 1.0f : (Float) nl.getVal(2));
+      }
+    }
+    return doc;
+  }
 
   private NamedList solrParamsToNamedList(SolrParams params) {
     if (params == null) return new NamedList();
@@ -174,7 +200,7 @@ public class JavaBinUpdateRequestCodec {
     return nl;
   }
 
-  public static interface StreamingDocumentHandler {
-    public void document(SolrInputDocument document, UpdateRequest req);
+  public static interface StreamingUpdateHandler {
+    public void update(SolrInputDocument document, UpdateRequest req);
   }
 }

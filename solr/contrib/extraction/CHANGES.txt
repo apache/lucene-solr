@@ -28,6 +28,10 @@ $Id$
 
 (No Changes)
 
+================== Release 3.6.0 ==================
+
+(No Changes)
+
 ================== Release 3.5.0 ==================
 
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)

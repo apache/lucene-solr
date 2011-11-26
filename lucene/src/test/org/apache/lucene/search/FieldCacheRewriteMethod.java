@@ -137,10 +137,9 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         return DocIdSet.EMPTY_DOCIDSET;
       }
       
-      final int maxDoc = context.reader.maxDoc();
-      return new FieldCacheRangeFilter.FieldCacheDocIdSet(maxDoc, acceptDocs) {
+      return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
         @Override
-        boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
+        protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
           return termSet.get(fcsi.getOrd(doc));
         }
       };

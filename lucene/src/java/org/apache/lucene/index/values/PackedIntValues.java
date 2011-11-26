@@ -73,7 +73,7 @@ class PackedIntValues {
         }
       }
       lastDocId = docID;
-      bytesRef.copy(v);
+      BytesRefUtils.copyLong(bytesRef, v);
       add(docID, bytesRef);
     }
 
@@ -128,7 +128,17 @@ class PackedIntValues {
           PackedInts.bitsRequired(maxValue - minValue));
       for (int i = 0; i < lastDocID + 1; i++) {
         set(bytesRef, i);
-        long asLong = bytesRef.asLong();
+        byte[] bytes = bytesRef.bytes;
+        int offset = bytesRef.offset;
+        long asLong =  
+           (((long)(bytes[offset+0] & 0xff) << 56) |
+            ((long)(bytes[offset+1] & 0xff) << 48) |
+            ((long)(bytes[offset+2] & 0xff) << 40) |
+            ((long)(bytes[offset+3] & 0xff) << 32) |
+            ((long)(bytes[offset+4] & 0xff) << 24) |
+            ((long)(bytes[offset+5] & 0xff) << 16) |
+            ((long)(bytes[offset+6] & 0xff) <<  8) |
+            ((long)(bytes[offset+7] & 0xff)));
         w.add(asLong == 0 ? defaultValue : asLong - minValue);
       }
       for (int i = lastDocID + 1; i < docCount; i++) {
@@ -234,7 +244,7 @@ class PackedIntValues {
     @Override
     public BytesRef getBytes(int docID, BytesRef ref) {
       ref.grow(8);
-      ref.copy(getInt(docID));
+      BytesRefUtils.copyLong(ref, getInt(docID));
       return ref;
     }
 

@@ -427,6 +427,42 @@
       </analyzer>
     </fieldType>
 
+    <!-- Illustrates the new "multiterm" analyzer definition the <fieldType> can take a new
+         parameter legacyMultiTerm="true" if the old behvaior is desired. The new default
+         behavior as of 3.6+ is to automatically define a multiterm analyzer
+    -->
+    <fieldType name="text_multiterm" class="solr.TextField" positionIncrementGap="100">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <!-- Illustrates the use of a new analyzer type "multiterm". See the Wiki page "Multiterm 
+           Query Analysis" and SOLR-2438 for full details. The short form is that this analyzer is
+           applied to wildcard terms (prefix, wildcard range) if specified. This allows, among other
+           things, not having to lowercase wildcard terms on the client.
+           
+           In the absence of this section, the new default behavior (3.6, 4.0) is to construct
+           one of these from the query analyzer that incorporates any defined charfilters, a
+           WhitespaceTokenizer, a LowerCaseFilter (if defined), and an ASCIIFoldingFilter 
+           (if defined).
+           
+           Arguably, this is an expert-level analyzer, most cases will be handled by an instance
+           of this being automatically constructed from the queryanalyzer.
+           
+      -->
+      <analyzer type="multiterm"> 
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
     <!-- since fields of this type are by default not stored or indexed,
          any data added to them will be ignored outright.  --> 
     <fieldtype name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />

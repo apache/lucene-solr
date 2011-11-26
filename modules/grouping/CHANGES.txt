@@ -14,3 +14,7 @@ API Changes
 
 LUCENE-3483: Move Function grouping collectors from Solr to
              grouping module. (Martijn van Groningen)
+
+New features
+
+LUCENE-3496: Support grouping by IndexDocValues. (Martijn van Groningen)

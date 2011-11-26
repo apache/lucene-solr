@@ -240,7 +240,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       this.bottomTerm = bottomTerm;
       // clone the term before potentially doing something with it
       // this is a rare but wonderful occurrence anyway
-      queuedBottom = new BytesRef(term);
+      queuedBottom = BytesRef.deepCopyOf(term);
     }
     
     return term;

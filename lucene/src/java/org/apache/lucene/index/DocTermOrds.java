@@ -221,7 +221,7 @@ public class DocTermOrds {
   protected void uninvert(final IndexReader reader, final BytesRef termPrefix) throws IOException {
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
     final long startTime = System.currentTimeMillis();
-    prefix = termPrefix == null ? null : new BytesRef(termPrefix);
+    prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);
 
     final int maxDoc = reader.maxDoc();
     final int[] index = new int[maxDoc];       // immediate term numbers, or the index into the byte[] representing the last number

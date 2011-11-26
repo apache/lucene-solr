@@ -116,6 +116,7 @@ public class TestTypePromotion extends LuceneTestCase {
     dir.close();
   }
 
+  
   private void assertValues(TestType type, Directory dir, long[] values)
       throws CorruptIndexException, IOException {
     IndexReader reader = IndexReader.open(dir);
@@ -137,13 +138,13 @@ public class TestTypePromotion extends LuceneTestCase {
           value = bytes.bytes[bytes.offset];
           break;
         case 2:
-          value = bytes.asShort();
+          value = BytesRefUtils.asShort(bytes);
           break;
         case 4:
-          value = bytes.asInt();
+          value = BytesRefUtils.asInt(bytes);
           break;
         case 8:
-          value = bytes.asLong();
+          value = BytesRefUtils.asLong(bytes);
           break;
           
         default:
@@ -209,18 +210,18 @@ public class TestTypePromotion extends LuceneTestCase {
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         values[i] = random.nextLong();
-        ref.copy(values[i]);
+        BytesRefUtils.copyLong(ref, values[i]);
         valField.setBytes(ref, valueType);
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
       case BYTES_VAR_STRAIGHT:
         if (random.nextBoolean()) {
-          ref.copy(random.nextInt());
-          values[i] = ref.asInt();
+          BytesRefUtils.copyInt(ref, random.nextInt());
+          values[i] = BytesRefUtils.asInt(ref);
         } else {
-          ref.copy(random.nextLong());
-          values[i] = ref.asLong();
+          BytesRefUtils.copyLong(ref, random.nextLong());
+          values[i] = BytesRefUtils.asLong(ref);
         }
         valField.setBytes(ref, valueType);
         break;

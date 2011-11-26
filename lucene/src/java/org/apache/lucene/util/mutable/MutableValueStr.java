@@ -30,13 +30,13 @@ public class MutableValueStr extends MutableValue {
   public void copy(MutableValue source) {
     MutableValueStr s = (MutableValueStr) source;
     exists = s.exists;
-    value.copy(s.value);
+    value.copyBytes(s.value);
   }
 
   @Override
   public MutableValue duplicate() {
     MutableValueStr v = new MutableValueStr();
-    v.value.copy(value);
+    v.value.copyBytes(value);
     v.exists = this.exists;
     return v;
   }

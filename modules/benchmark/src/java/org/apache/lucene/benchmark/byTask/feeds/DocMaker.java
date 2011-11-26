@@ -17,6 +17,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -75,7 +76,7 @@ import org.apache.lucene.document.TextField;
  * {@link DocData#getProps()} will be indexed. (default <b>false</b>).
  * </ul>
  */
-public class DocMaker {
+public class DocMaker implements Closeable {
 
   private static class LeftOver {
     private DocData docdata;

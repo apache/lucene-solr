@@ -28,6 +28,7 @@ import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
@@ -205,7 +206,7 @@ public class DateField extends FieldType {
 
   @Override
   public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
-    input.utf8ToChars(charsRef);
+    UnicodeUtil.UTF8toUTF16(input, charsRef);
     charsRef.append(Z_ARRAY, 0, 1);
     return charsRef;
   }

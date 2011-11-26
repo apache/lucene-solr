@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
@@ -77,7 +78,7 @@ public abstract class StringIndexDocValues extends DocValues {
     int ord=termsIndex.getOrd(doc);
     if (ord==0) return null;
     termsIndex.lookup(ord, spare);
-    spare.utf8ToChars(spareChars);
+    UnicodeUtil.UTF8toUTF16(spare, spareChars);
     return spareChars.toString();
   }
 

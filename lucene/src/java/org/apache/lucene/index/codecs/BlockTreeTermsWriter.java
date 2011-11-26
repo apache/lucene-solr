@@ -860,7 +860,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
 
       blockBuilder.add(text, noOutputs.getNoOutput());
-      pending.add(new PendingTerm(new BytesRef(text), stats));
+      pending.add(new PendingTerm(BytesRef.deepCopyOf(text), stats));
       postingsWriter.finishTerm(stats);
       numTerms++;
     }

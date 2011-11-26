@@ -38,6 +38,13 @@
     <build-directory>../../build/contrib/memory</build-directory>
   </properties>
   <dependencies>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-core</artifactId>
@@ -46,12 +53,6 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-queryparser</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

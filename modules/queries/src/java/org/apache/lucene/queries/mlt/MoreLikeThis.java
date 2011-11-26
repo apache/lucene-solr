@@ -34,6 +34,7 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.UnicodeUtil;
 
 
 /**
@@ -740,7 +741,8 @@ public final class MoreLikeThis {
     final CharsRef spare = new CharsRef();
     BytesRef text;
     while((text = termsEnum.next()) != null) {
-      final String term = text.utf8ToChars(spare).toString();
+      UnicodeUtil.UTF8toUTF16(text, spare);
+      final String term = spare.toString();
       if (isNoiseWord(term)) {
         continue;
       }

@@ -729,7 +729,7 @@ public class SimpleFacets {
 
           if (sortByCount) {
             if (c>min) {
-              BytesRef termCopy = new BytesRef(term);
+              BytesRef termCopy = BytesRef.deepCopyOf(term);
               queue.add(new CountPair<BytesRef,Integer>(termCopy, c));
               if (queue.size()>=maxsize) min=queue.last().val;
             }

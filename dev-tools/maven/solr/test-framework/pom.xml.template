@@ -38,13 +38,14 @@
   <dependencies>
     <!-- These dependencies are compile scope because this is a test framework. -->
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>solr-core</artifactId>
+      <!-- lucene-test-framework dependency must come before lucene-core -->
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>solr-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
