@@ -91,7 +91,7 @@ public class AddUpdateCommand extends UpdateCommand {
      return indexedId;
    }
 
-   public void setIndexedId(BytesRef idBytes) {
+   public void setIndexedId(BytesRef indexedId) {
      this.indexedId = indexedId;
    }
 
