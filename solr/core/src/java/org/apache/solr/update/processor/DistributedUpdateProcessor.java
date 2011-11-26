@@ -31,6 +31,7 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.solr.cloud.HashPartitioner;
 import org.apache.solr.cloud.HashPartitioner.Range;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
@@ -429,20 +430,26 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       String shardId, String shardZkNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
+   
     Slice replicas = cloudState.getSlices(collection).get(shardId);
     
-    // nocommit: ignore shards on nodes that are down
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
 
     StringBuilder replicasUrl = new StringBuilder();
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
-      if (replicasUrl.length() > 0) {
-        replicasUrl.append("|");
+      if (cloudState.liveNodesContain(entry.getValue().get(
+          ZkStateReader.NODE_NAME_PROP))) {
+        
+        if (replicasUrl.length() > 0) {
+          replicasUrl.append("|");
+        }
+        String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
+        replicasUrl.append(replicaUrl);
       }
-      String replicaUrl = entry.getValue().get("url");
-      replicasUrl.append(replicaUrl);
     }
-
+    if (replicasUrl.length() == 0) {
+      throw new ZooKeeperException(ErrorCode.SERVICE_UNAVAILABLE, "No servers hosting shard " + shardId + " found");
+    }
     return replicasUrl.toString();
   }
   
