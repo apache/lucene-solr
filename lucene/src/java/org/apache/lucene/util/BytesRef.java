@@ -275,12 +275,18 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     }    
   }
 
+  /** @deprecated */
+  @Deprecated
   private final static Comparator<BytesRef> utf8SortedAsUTF16SortOrder = new UTF8SortedAsUTF16Comparator();
 
+  /** @deprecated This comparator is only a transition mechanism */
+  @Deprecated
   public static Comparator<BytesRef> getUTF8SortedAsUTF16Comparator() {
     return utf8SortedAsUTF16SortOrder;
   }
 
+  /** @deprecated */
+  @Deprecated
   private static class UTF8SortedAsUTF16Comparator implements Comparator<BytesRef> {
     // Only singleton
     private UTF8SortedAsUTF16Comparator() {};

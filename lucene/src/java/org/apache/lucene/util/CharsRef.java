@@ -216,12 +216,18 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     return new CharsRef(chars, offset + start, offset + end - 1);
   }
   
+  /** @deprecated */
+  @Deprecated
   private final static Comparator<CharsRef> utf16SortedAsUTF8SortOrder = new UTF16SortedAsUTF8Comparator();
   
+  /** @deprecated This comparator is only a transition mechanism */
+  @Deprecated
   public static Comparator<CharsRef> getUTF16SortedAsUTF8Comparator() {
     return utf16SortedAsUTF8SortOrder;
   }
   
+  /** @deprecated */
+  @Deprecated
   private static class UTF16SortedAsUTF8Comparator implements Comparator<CharsRef> {
     // Only singleton
     private UTF16SortedAsUTF8Comparator() {};
