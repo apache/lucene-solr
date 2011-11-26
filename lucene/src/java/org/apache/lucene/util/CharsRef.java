@@ -22,7 +22,7 @@ import java.util.Comparator;
 /**
  * Represents char[], as a slice (offset + length) into an existing char[].
  * The {@link #chars} member should never be null; use
- * {@link #EMPTY_ARRAY} if necessary.
+ * {@link #EMPTY_CHARS} if necessary.
  * @lucene.internal
  */
 public final class CharsRef implements Comparable<CharsRef>, CharSequence, Cloneable {
