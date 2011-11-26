@@ -26,7 +26,7 @@ import java.util.Comparator;
  * @lucene.internal
  */
 public final class CharsRef implements Comparable<CharsRef>, CharSequence, Cloneable {
-  private static final char[] EMPTY_ARRAY = new char[0];
+  private static final char[] EMPTY_CHARS = new char[0];
   public char[] chars;
   public int offset;
   public int length;
@@ -35,7 +35,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
    * Creates a new {@link CharsRef} initialized an empty array zero-length
    */
   public CharsRef() {
-    this(EMPTY_ARRAY, 0, 0);
+    this(EMPTY_CHARS, 0, 0);
   }
 
   /**
@@ -86,26 +86,11 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
 
   @Override
   public boolean equals(Object other) {
-    if (this == other) {
-      return true;
+    if (other == null) {
+      return false;
     }
-
     if (other instanceof CharsRef) {
-      return charsEquals((CharsRef) other);
-    }
-
-    if (other instanceof CharSequence) {
-      final CharSequence seq = (CharSequence) other;
-      if (length == seq.length()) {
-        int n = length;
-        int i = offset;
-        int j = 0;
-        while (n-- != 0) {
-          if (chars[i++] != seq.charAt(j++))
-            return false;
-        }
-        return true;
-      }
+      return this.charsEquals((CharsRef) other);
     }
     return false;
   }
