@@ -68,6 +68,57 @@ customization is required.
       <title>News</title>
 
       <section>
+        <title>27 November 2011 - Solr 3.5.0 Released</title>
+        <p>
+          The Lucene PMC is pleased to announce the release of
+          <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.5.0</a>!
+        </p>
+        <p>
+          See the CHANGES.txt file included with the release for a full list of details.
+        </p>
+        <p>Solr 3.5.0 Release Highlights:</p>
+        <ul>
+          <li>
+            Bug fixes and improvements from Apache Lucene 3.5.0, including a
+            very substantial (3-5X) RAM reduction required to hold the terms
+            index on opening an <code>IndexReader</code>.
+            (<a href="https://issues.apache.org/jira/browse/LUCENE-2205">LUCENE-2205</a>)
+          </li>
+          <li>
+            Added support for distributed result grouping.
+            (<a href="https://issues.apache.org/jira/browse/SOLR-2066">SOLR-2066</a>,
+            <a href="https://issues.apache.org/jira/browse/SOLR-2776">SOLR-2776</a>)
+          </li>
+          <li>
+            Added support for Hunspell stemmer <code>TokenFilter</code> supporting
+            stemming for 99 languages.
+            (<a href="https://issues.apache.org/jira/browse/SOLR-2769">SOLR-2769</a>)
+          </li>
+          <li>
+            A new contrib module "langid" adds language identification
+            capabilities as an Update Processor, using Tika's
+            <code>LanguageIdentifier</code> or Cybozu language-detection library
+            (<a href="https://issues.apache.org/jira/browse/SOLR-1979">SOLR-1979</a>)
+          </li>
+          <li>
+            Numeric types including Trie and date types now support
+            <code>sortMissingFirst</code>/<code>Last</code>.
+            (<a href="https://issues.apache.org/jira/browse/SOLR-2881">SOLR-2881</a>)
+          </li>
+          <li>
+            Added <code>hl.q</code> parameter. It is optional and if it is specified,
+            it overrides <code>q</code> parameter in <code>Highlighter</code>.
+            (<a href="https://issues.apache.org/jira/browse/SOLR-1926">SOLR-1926</a>)
+          </li>
+          <li>
+            Several minor bugfixes like date parsing for years from 0001-1000, ignored
+            configurations when using <code>QueryAnalyzer</code> with
+            <code>SpellCheckComponent</code> and many more.
+            See CHANGES.txt entries for full details.
+          </li>
+        </ul>
+      </section>
+      <section>
         <title>18 November 2011 - 2nd edition of the first book on Solr published!</title>
         <p><img src="images/as3ess_book.jpg" class="float-right" alt="Apache Solr 3 Enterprise Search Server cover" />
           David Smiley and Eric Pugh proudly announce the second edition of the first book on Solr,
