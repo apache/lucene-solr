@@ -24,10 +24,6 @@ import java.io.IOException;
 
 /** @lucene.experimental */
 public abstract class IntStreamFactory {
-  public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
-    return openInput(dir, fileName, context);
-  }
-
-//  public abstract IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException;
+  public abstract IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException;
   public abstract IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException;
 }
