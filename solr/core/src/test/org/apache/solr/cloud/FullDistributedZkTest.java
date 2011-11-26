@@ -53,7 +53,7 @@ import org.junit.BeforeClass;
 public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
-  private static final boolean DEBUG = false;
+
   String t1="a_t";
   String i1="a_si";
   String nint = "n_i";
@@ -593,13 +593,16 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
 
     
-    System.out.println(controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    if (VERBOSE) {
+      System.out.println(controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    
     for (SolrServer client : clients) {
       try {
         System.out.println(client.query(new SolrQuery("*:*")).getResults().getNumFound());
       } catch(Exception e) {
         
       }
+    }
     }
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
@@ -633,7 +636,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // new server should be part of first shard
     // how man docs are on the new shard?
     for (SolrServer client : shardToClient.get("shard1")) {
-      System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
+      if (VERBOSE) System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     // assert the new server has the same number of docs as another server in
@@ -675,8 +678,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           String shardName = new URI(((CommonsHttpSolrServer)client).getBaseURL()).getPort() + "_solr_";
-         // System.out.println("key:" + shard.getKey() + " try:" + shardName);
-          if (shard.getKey().endsWith(shardName)) {
+          if (VERBOSE && shard.getKey().endsWith(shardName)) {
             System.out.println("shard:" + slice.getKey());
             System.out.println(shard.getValue());
           }
@@ -685,7 +687,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       
       long count = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       
-      System.out.println("docs:" + count + "\n\n");
+      if (VERBOSE) System.out.println("docs:" + count + "\n\n");
     }
     SolrQuery query = new SolrQuery("*:*");
     query.add("distrib", "true");
@@ -704,7 +706,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    if (DEBUG) {
+    if (VERBOSE) {
       super.printLayout();
     }
     if (cloudClient != null) {
