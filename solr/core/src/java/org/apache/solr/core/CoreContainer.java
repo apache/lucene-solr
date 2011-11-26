@@ -447,7 +447,13 @@ public class CoreContainer
     }
     return properties;
   }
+  
   private boolean isShutDown = false;
+  
+  public boolean isShutDown() {
+    return isShutDown;
+  }
+
   /**
    * Stops all cores.
    */

@@ -31,6 +31,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,6 +46,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     createTempDir();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
   
   @Override
@@ -89,8 +96,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     }
     
     public void close() throws InterruptedException {
-      zkClient.close();
-      super.stop();
+      if (!zkClient.isClosed()) {
+        zkClient.close();
+      }
+      this.stop();
     }
   }
   
@@ -104,6 +113,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     elector.setupForSlice("shard2", "collection1");
     elector.joinElection("shard2", "collection1", "dummynode1", null);
+    zkClient1.close();
     
     SolrZkClient zkClient2 = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     
@@ -111,6 +121,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     elector2.setupForSlice("shard2", "collection1");
     elector2.joinElection("shard2", "collection1", "dummynode2", null);
+    
+    zkClient2.close();
     
     List<ClientThread> threads = new ArrayList<ClientThread>();
     
@@ -235,6 +247,13 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     killThread.join();
     
     Thread.sleep(1000);
+    
+    scheduler.shutdownNow();
+    
+    // cleanup any threads still running
+    for (ClientThread thread : threads) {
+      thread.close();
+    }
     
     for (Thread thread : threads) {
       thread.join();

@@ -25,6 +25,7 @@ import org.apache.solr.cloud.lock.LockListener;
 import org.apache.solr.cloud.lock.WriteLock;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,20 +65,20 @@ public class ZkLockTest extends SolrTestCaseJ4 {
           
           @Override
           public void lockReleased() {
-            // TODO Auto-generated method stub
             
           }
           
           @Override
           public void lockAcquired() {
-            System.out.println("I got the lock!");
+         // TODO this is only a dumb observation test now
+            if (VERBOSE) System.out.println("I got the lock!");
             
           }
         });
     
     lock.lock();
-    System.out.println("zk:");
-    printLayout(server.getZkHost());
+   
+    if (VERBOSE) printLayout(server.getZkHost());
   }
   
   @Override
@@ -92,6 +93,12 @@ public class ZkLockTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
   
 }

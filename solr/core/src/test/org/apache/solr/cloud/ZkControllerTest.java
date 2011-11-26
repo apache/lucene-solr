@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,29 +27,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
-  private static final String TEST_NODE_NAME = "test_node_name";
-
-  private static final String URL3 = "http://localhost:3133/solr/core1";
-
-  private static final String URL2 = "http://localhost:3123/solr/core1";
-
-  private static final String SHARD3 = "localhost:3123_solr_core3";
-
-  private static final String SHARD2 = "localhost:3123_solr_core2";
-
-  private static final String SHARD1 = "localhost:3123_solr_core1";
-
   private static final String COLLECTION_NAME = "collection1";
 
-  static final int TIMEOUT = 10000;
-
-  private static final String URL1 = "http://localhost:3133/solr/core0";
+  static final int TIMEOUT = 1000;
 
   private static final boolean DEBUG = false;
   
@@ -83,7 +68,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkClient.printLayoutToStdOut();
       }
       zkClient.close();
-      ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, TIMEOUT,
+      ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, 10000,
           "localhost", "8983", "/solr", 3, new CurrentCoreDescriptorProvider() {
             
             @Override
@@ -223,23 +208,16 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
 
   }
-
-  private void addShardToZk(SolrZkClient zkClient, String shardsPath,
-      String zkNodeName, String url) throws IOException,
-      KeeperException, InterruptedException {
-
-    ZkNodeProps props = new ZkNodeProps();
-    props.put(ZkStateReader.URL_PROP, url);
-    props.put(ZkStateReader.NODE_NAME_PROP, TEST_NODE_NAME);
-    byte[] bytes = props.store();
-
-    zkClient
-        .create(shardsPath + "/" + zkNodeName, bytes, CreateMode.PERSISTENT);
-  }
   
   @Override
   public void tearDown() throws Exception {
     SolrConfig.severeErrors.clear();
     super.tearDown();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 }

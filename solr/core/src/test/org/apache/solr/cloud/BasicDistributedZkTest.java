@@ -270,6 +270,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
+    if (solrj != null) {
+      solrj.close();
+    }
     System.clearProperty("CLOUD_UPDATE_DELAY");
     System.clearProperty("zkHost");
   }

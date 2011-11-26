@@ -548,8 +548,6 @@ public class SnapPuller {
   private void downloadIndexFiles(boolean downloadCompleteIndex, File tmpIdxDir, long latestVersion) throws Exception {
     for (Map<String, Object> file : filesToDownload) {
       File localIndexFile = new File(solrCore.getNewIndexDir(), (String) file.get(NAME));
-      System.out.println("look at file:" + localIndexFile);
-      System.out.println("exits" + localIndexFile.exists());
       if (!localIndexFile.exists() || downloadCompleteIndex) {
         fileFetcher = new FileFetcher(tmpIdxDir, file, (String) file.get(NAME), false, latestVersion);
         currentFile = file;

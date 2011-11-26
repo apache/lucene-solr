@@ -28,6 +28,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.junit.AfterClass;
 
 public class ZkSolrClientTest extends AbstractSolrTestCase {
   private static final boolean DEBUG = false;
@@ -238,4 +239,9 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     super.tearDown();
   }
   
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
+  }
 }

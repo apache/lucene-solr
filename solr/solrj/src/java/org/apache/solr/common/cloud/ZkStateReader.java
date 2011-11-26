@@ -158,9 +158,8 @@ public class ZkStateReader {
         } catch (InterruptedException e) {
           // Restore the interrupted status
           Thread.currentThread().interrupt();
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
+          log.warn("", e);
+          return;
         } /*
            * catch(IOException e){ log.error("", e); throw new
            * ZooKeeperException( SolrException.ErrorCode.SERVER_ERROR, "", e); }
@@ -197,9 +196,8 @@ public class ZkStateReader {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+              log.warn("", e);
+              return;
             }
           }
           

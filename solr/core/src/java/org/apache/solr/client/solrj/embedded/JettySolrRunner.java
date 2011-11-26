@@ -105,7 +105,6 @@ public class JettySolrRunner {
 
       public void lifeCycleStarted(LifeCycle arg0) {
         lastPort = getLocalPort();
-        System.out.println("start on port:" + lastPort);
         System.setProperty("hostPort", Integer.toString(lastPort));
         if (solrConfigFilename != null) System.setProperty("solrconfig",
             solrConfigFilename);

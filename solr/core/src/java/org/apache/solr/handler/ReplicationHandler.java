@@ -146,7 +146,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         // the CMD_GET_FILE_LIST command.
         //
         core.getDeletionPolicy().setReserveDuration(commitPoint.getVersion(), reserveCommitDuration);
-        System.out.println("return version: " + commitPoint.getVersion());
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
@@ -777,7 +776,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   void refreshCommitpoint(boolean force) {
     IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    System.out.println("refresh commit point to:" + commitPoint.getVersion());
     if(force || replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
       indexCommitPoint = commitPoint;
     }

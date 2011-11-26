@@ -430,8 +430,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
     Slice replicas = cloudState.getSlices(collection).get(shardId);
+    
+    // nocommit: ignore shards on nodes that are down
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
-    //String self = null;
+
     StringBuilder replicasUrl = new StringBuilder();
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
       if (replicasUrl.length() > 0) {

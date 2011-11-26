@@ -24,6 +24,8 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
@@ -53,6 +55,10 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class SolrZkClient {
+  // These should *only* be used for debugging or monitoring purposes
+  public static final AtomicLong numOpens = new AtomicLong();
+  public static final AtomicLong numCloses = new AtomicLong();
+  
   static final String NEWL = System.getProperty("line.separator");
 
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
@@ -63,6 +69,8 @@ public class SolrZkClient {
   private ConnectionManager connManager;
 
   private volatile SolrZooKeeper keeper;
+
+  private volatile boolean isClosed = false;
   
   /**
    * @param zkServerAddress
@@ -107,6 +115,7 @@ public class SolrZkClient {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) throws InterruptedException,
       TimeoutException, IOException {
+    numOpens.incrementAndGet();
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
     strat.connect(zkServerAddress, zkClientTimeout, connManager,
@@ -503,7 +512,13 @@ public class SolrZkClient {
    * @throws InterruptedException
    */
   public void close() throws InterruptedException {
+    isClosed = true;
     keeper.close();
+    numCloses.incrementAndGet();
+  }
+
+  public boolean isClosed() {
+    return isClosed;
   }
 
   /**

@@ -193,7 +193,7 @@ public final class ZkController {
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-      log.error("", e);
+      log.warn("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "", e);
     }
@@ -449,8 +449,6 @@ public final class ZkController {
     
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
     
-    System.out.println("leader url: "+ leaderUrl);
-    System.out.println("shard url: "+ shardUrl);
     boolean iamleader = false;
     boolean doRecovery = true;
     if (leaderUrl.equals(shardUrl)) {
@@ -477,8 +475,6 @@ public final class ZkController {
     
     if (doRecovery) {
       doRecovery(collection, desc, cloudDesc, iamleader);
-    } else {
-      System.out.println("dont do recovery");
     }
     addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.ACTIVE);
 
@@ -586,16 +582,12 @@ public final class ZkController {
   private void doRecovery(String collection, final CoreDescriptor desc,
       final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
       SolrServerException, IOException {
-    System.out.println("do recovery");
-    
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get 
     // or full index replication
 
     // seems perhaps we cannot do this here since we are not fully running - 
     // we may need to trigger a recovery that happens later
-    System.out.println("shard is:" + cloudDesc.getShardId());
-    System.out.println("leader:" + iamleader);
     
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
     

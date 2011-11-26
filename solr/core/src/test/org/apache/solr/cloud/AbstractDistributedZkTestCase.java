@@ -23,6 +23,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
+import org.junit.AfterClass;
 import org.junit.Before;
 
 public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearchTestCase {
@@ -89,5 +90,11 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 }

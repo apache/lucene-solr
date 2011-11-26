@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,14 +26,13 @@ import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -71,6 +69,12 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 
   @Override
@@ -231,7 +235,9 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     }
     container1.shutdown();
     container2.shutdown();
-    container3.shutdown();
+    if (!container3.isShutDown()) {
+      container3.shutdown();
+    }
     zkServer.shutdown();
     super.tearDown();
     System.clearProperty("zkClientTimeout");

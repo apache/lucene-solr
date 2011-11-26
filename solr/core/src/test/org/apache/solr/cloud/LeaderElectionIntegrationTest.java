@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.SolrConfig;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -136,7 +137,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       shard1Ports.remove(leaderPort);
       
       // kill the leader
-      System.out.println("Killing " + leaderPort);
+      if (VERBOSE) System.out.println("Killing " + leaderPort);
       containerMap.get(leaderPort).shutdown();
       
       //printLayout(zkServer.getZkAddress());
@@ -171,7 +172,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     // first leader should not be leader anymore
     assertNotSame(leaderPort, getLeaderPort(getLeader()));
     
-    System.out.println("kill everyone");
+    if (VERBOSE) System.out.println("kill everyone");
     // kill everyone but the first leader that should have reconnected by now
     for (Map.Entry<Integer,CoreContainer> entry : containerMap.entrySet()) {
       if (entry.getKey() != leaderPort) {
@@ -214,7 +215,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     int leaderPort = 0;
     if (m.matches()) {
       leaderPort = Integer.parseInt(m.group(1));
-      System.out.println("The leader is:" + Integer.parseInt(m.group(1)));
+      if (VERBOSE) System.out.println("The leader is:" + Integer.parseInt(m.group(1)));
     } else {
       throw new IllegalStateException();
     }
@@ -229,7 +230,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     zkClient.close();
     
     for (CoreContainer cc : containerMap.values()) {
-      cc.shutdown();
+      if (!cc.isShutDown()) {
+        cc.shutdown();
+      }
     }
     zkServer.shutdown();
     super.tearDown();
@@ -245,5 +248,11 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 }

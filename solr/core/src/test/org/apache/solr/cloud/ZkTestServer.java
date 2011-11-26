@@ -236,7 +236,7 @@ public class ZkTestServer {
       } catch(IllegalStateException e) {
         
       }
-      if (cnt == 40) {
+      if (cnt == 100) {
         throw new RuntimeException("Could not get the port for ZooKeeper server");
       }
       cnt++;

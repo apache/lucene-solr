@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,6 +35,7 @@ import org.junit.Test;
  * test for writelock
  */
 public class WriteLockTest extends SolrTestCaseJ4 {
+  private static boolean VERBOSE = false;
   private static int TIMEOUT = 30 * 1000;
   protected String dir = "/" + getClass().getName();
   protected WriteLock[] nodes;
@@ -48,6 +50,12 @@ public class WriteLockTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     createTempDir();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
   
   @Override
@@ -109,7 +117,7 @@ public class WriteLockTest extends SolrTestCaseJ4 {
     
     if (count > 1) {
       if (killLeader) {
-        System.out.println("Now killing the leader");
+        if (VERBOSE) System.out.println("Now killing the leader");
         // now lets kill the leader
         latch = new CountDownLatch(1);
         first.unlock();
@@ -131,7 +139,7 @@ public class WriteLockTest extends SolrTestCaseJ4 {
       
       if (restartServer) {
         // now lets stop the server
-        System.out.println("Now stopping the server");
+        if (VERBOSE) System.out.println("Now stopping the server");
         server.shutdown();
         Thread.sleep(10000);
         
@@ -145,11 +153,11 @@ public class WriteLockTest extends SolrTestCaseJ4 {
         server.run();
         
         for (int i = 0; i < count - 1; i++) {
-          System.out.println("Calling acquire for node: " + i);
+          if (VERBOSE) System.out.println("Calling acquire for node: " + i);
           //nodes[i].lock();
         }
         dumpNodes(count);
-        System.out.println("Now closing down...");
+        if (VERBOSE) System.out.println("Now closing down...");
       }
     }
   }
@@ -163,7 +171,7 @@ public class WriteLockTest extends SolrTestCaseJ4 {
   protected void dumpNodes(int count) {
     for (int i = 0; i < count; i++) {
       WriteLock node = nodes[i];
-      System.out.println("node: " + i + " id: " + node.getId() + " is leader: "
+      if (VERBOSE) System.out.println("node: " + i + " id: " + node.getId() + " is leader: "
           + node.isOwner());
     }
   }
@@ -174,14 +182,14 @@ public class WriteLockTest extends SolrTestCaseJ4 {
       for (int i = 0; i < nodes.length; i++) {
         WriteLock node = nodes[i];
         if (node != null) {
-          System.out.println("Closing node: " + i);
+          if (VERBOSE) System.out.println("Closing node: " + i);
           node.close();
           if (workAroundClosingLastZNodeFails && i == nodes.length - 1) {
-            System.out.println("Not closing zookeeper: " + i + " due to bug!");
+            if (VERBOSE) System.out.println("Not closing zookeeper: " + i + " due to bug!");
           } else {
-            System.out.println("Closing zookeeper: " + i);
+            if (VERBOSE) System.out.println("Closing zookeeper: " + i);
             node.getZookeeper().close();
-            System.out.println("Closed zookeeper: " + i);
+
           }
         }
       }

@@ -27,6 +27,7 @@ import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -64,6 +65,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
     startTrackingSearchers();
+    startTrackingZkClients();
     ignoreException("ignore_exception");
   }
 
@@ -72,6 +74,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     deleteCore();
     resetExceptionIgnores();
     endTrackingSearchers();
+    endTrackingZkClients();
   }
 
   @Override
@@ -110,6 +113,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     numOpens = SolrIndexSearcher.numOpens.get();
     numCloses = SolrIndexSearcher.numCloses.get();
   }
+  static long zkClientNumOpens;
+  static long zkClientNumCloses;
+  public static void startTrackingZkClients() {
+    zkClientNumOpens = SolrIndexSearcher.numOpens.get();
+    zkClientNumCloses = SolrIndexSearcher.numCloses.get();
+  }
 
   public static void endTrackingSearchers() {
      long endNumOpens = SolrIndexSearcher.numOpens.get();
@@ -126,6 +135,22 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
        fail(msg);
      }
   }
+  
+  public static void endTrackingZkClients() {
+    long endNumOpens = SolrZkClient.numOpens.get();
+    long endNumCloses = SolrZkClient.numCloses.get();
+
+    SolrZkClient.numOpens.getAndSet(0);
+    SolrZkClient.numCloses.getAndSet(0);
+
+    
+    if (endNumOpens-numOpens != endNumCloses-numCloses) {
+      String msg = "ERROR: SolrZkClient opens=" + (endNumOpens-zkClientNumOpens) + " closes=" + (endNumCloses-zkClientNumCloses);
+      log.error(msg);
+      testsFailed = true;
+      fail(msg);
+    }
+ }
   
   /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
