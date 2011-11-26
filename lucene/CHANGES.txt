@@ -31,6 +31,10 @@ Bug fixes
   to correctly respect deletions on reopened SegmentReaders. Factored out
   FieldCacheDocIdSet to be a top-level class.  (Uwe Schindler, Simon Willnauer)
 
+Documentation
+
+* LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy
