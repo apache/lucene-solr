@@ -130,6 +130,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Document parentDoc = s.doc(group.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
+    s.close();
     r.close();
     dir.close();
   }
@@ -458,7 +459,9 @@ public class TestBlockJoin extends LuceneTestCase {
       }
     }
 
+    s.close();
     r.close();
+    joinS.close();
     joinR.close();
     dir.close();
     joinDir.close();
@@ -590,6 +593,7 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals("Lisa", parentDoc.get("name"));
 
 
+    s.close();
     r.close();
     dir.close();
   }
@@ -614,6 +618,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(ReaderUtil.leaves(s.getIndexReader().getTopReaderContext())[0], true, true, null);
     assertEquals(1, disi.advance(1));
+    s.close();
     r.close();
     dir.close();
   }
@@ -648,6 +653,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(ReaderUtil.leaves(s.getIndexReader().getTopReaderContext())[0], true, true, null);
     assertEquals(2, disi.advance(0));
+    s.close();
     r.close();
     dir.close();
   }
