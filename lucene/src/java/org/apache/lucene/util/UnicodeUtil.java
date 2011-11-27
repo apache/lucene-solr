@@ -123,6 +123,7 @@ public final class UnicodeUtil {
 
   /** Encode characters from a char[] source, starting at
    *  offset for length chars.  Returns a hash of the resulting bytes.  After encoding, result.offset will always be 0. */
+  // TODO: broken if incoming result.offset != 0
   public static int UTF16toUTF8WithHash(final char[] source, final int offset, final int length, BytesRef result) {
     int hash = 0;
     int upto = 0;
@@ -179,6 +180,7 @@ public final class UnicodeUtil {
   /** Encode characters from a char[] source, starting at
    *  offset for length chars. After encoding, result.offset will always be 0.
    */
+  // TODO: broken if incoming result.offset != 0
   public static void UTF16toUTF8(final char[] source, final int offset, final int length, BytesRef result) {
 
     int upto = 0;
@@ -234,6 +236,7 @@ public final class UnicodeUtil {
   /** Encode characters from this String, starting at offset
    *  for length characters. After encoding, result.offset will always be 0.
    */
+  // TODO: broken if incoming result.offset != 0
   public static void UTF16toUTF8(final CharSequence s, final int offset, final int length, BytesRef result) {
     final int end = offset + length;
 
@@ -427,8 +430,10 @@ public final class UnicodeUtil {
     return codePointCount;
   }
 
+  // TODO: broken if incoming result.offset != 0
   public static void UTF8toUTF32(final BytesRef utf8, final IntsRef utf32) {
     // pre-alloc for worst case
+    // TODO: ints cannot be null, should be an assert
     if (utf32.ints == null || utf32.ints.length < utf8.length) {
       utf32.ints = new int[utf8.length];
     }
@@ -567,6 +572,7 @@ public final class UnicodeUtil {
    * can result in an ArrayOutOfBoundsException if invalid UTF-8 is passed).
    * Explicit checks for valid UTF-8 are not performed. 
    */
+  // TODO: broken if chars.offset != 0
   public static void UTF8toUTF16(byte[] utf8, int offset, int length, CharsRef chars) {
     int out_offset = chars.offset = 0;
     final char[] out = chars.chars =  ArrayUtil.grow(chars.chars, length);

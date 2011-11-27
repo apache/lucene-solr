@@ -25,6 +25,7 @@ import java.util.Comparator;
  *
  *  @lucene.experimental */
 public final class BytesRef implements Comparable<BytesRef>,Cloneable {
+  /** An empty byte array for convenience */
   public static final byte[] EMPTY_BYTES = new byte[0]; 
 
   /** The contents of the BytesRef. Should never be {@code null}. */
@@ -36,8 +37,9 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** Length of used bytes. */
   public int length;
 
+  /** Create a BytesRef with {@link #EMPTY_BYTES} */
   public BytesRef() {
-    bytes = EMPTY_BYTES;
+    this(EMPTY_BYTES);
   }
 
   /** This instance will directly reference bytes w/o making a copy.
@@ -53,20 +55,23 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** This instance will directly reference bytes w/o making a copy.
    * bytes should not be null */
   public BytesRef(byte[] bytes) {
-    assert bytes != null;
-    this.bytes = bytes;
-    this.offset = 0;
-    this.length = bytes.length;
+    this(bytes, 0, bytes.length);
   }
 
+  /** 
+   * Create a BytesRef pointing to a new array of size <code>capacity</code>.
+   * Offset and length will both be zero.
+   */
   public BytesRef(int capacity) {
     this.bytes = new byte[capacity];
   }
 
   /**
-   * @param text Initialize the byte[] from the UTF8 bytes
-   * for the provided String.  This must be well-formed
-   * unicode text, with no unpaired surrogates or U+FFFF.
+   * Initialize the byte[] from the UTF8 bytes
+   * for the provided String.  
+   * 
+   * @param text This must be well-formed
+   * unicode text, with no unpaired surrogates.
    */
   public BytesRef(CharSequence text) {
     this();
@@ -79,11 +84,20 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * @param text Must be well-formed unicode text, with no
    * unpaired surrogates or invalid UTF16 code units.
    */
+  // TODO broken if offset != 0
   public void copyChars(CharSequence text) {
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
   }
   
+  /**
+   * Expert: compares the bytes against another BytesRef,
+   * returning true if the bytes are equal.
+   * 
+   * @param other Another BytesRef, should not be null.
+   * @lucene.internal
+   */
   public boolean bytesEquals(BytesRef other) {
+    assert other != null;
     if (length == other.length) {
       int otherUpto = other.offset;
       final byte[] otherBytes = other.bytes;
@@ -186,20 +200,24 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /**
    * Copies the bytes from the given {@link BytesRef}
    * <p>
-   * NOTE: this method resets the offset to 0 and resizes the reference array
-   * if needed.
+   * NOTE: if this would exceed the array size, this method creates a 
+   * new reference array.
    */
   public void copyBytes(BytesRef other) {
     if (bytes.length < other.length) {
       bytes = new byte[other.length];
+      offset = 0;
     }
-    System.arraycopy(other.bytes, other.offset, bytes, 0, other.length);
+    System.arraycopy(other.bytes, other.offset, bytes, offset, other.length);
     length = other.length;
-    offset = 0;
   }
 
-
-
+  /**
+   * Appends the bytes from the given {@link BytesRef}
+   * <p>
+   * NOTE: if this would exceed the array size, this method creates a 
+   * new reference array.
+   */
   public void append(BytesRef other) {
     int newLen = length + other.length;
     if (bytes.length < newLen) {
@@ -212,30 +230,15 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     length = newLen;
   }
 
+  // TODO: stupid if existing offset is non-zero.
+  /** @lucene.internal */
   public void grow(int newLength) {
     bytes = ArrayUtil.grow(bytes, newLength);
   }
 
   /** Unsigned byte order comparison */
   public int compareTo(BytesRef other) {
-    if (this == other) return 0;
-
-    final byte[] aBytes = this.bytes;
-    int aUpto = this.offset;
-    final byte[] bBytes = other.bytes;
-    int bUpto = other.offset;
-
-    final int aStop = aUpto + Math.min(this.length, other.length);
-
-    while(aUpto < aStop) {
-      int aByte = aBytes[aUpto++] & 0xff;
-      int bByte = bBytes[bUpto++] & 0xff;
-      int diff = aByte - bByte;
-      if (diff != 0) return diff;
-    }
-
-    // One is a prefix of the other, or, they are equal:
-    return this.length - other.length;
+    return utf8SortedAsUnicodeSortOrder.compare(this, other);
   }
   
   private final static Comparator<BytesRef> utf8SortedAsUnicodeSortOrder = new UTF8SortedAsUnicodeComparator();
