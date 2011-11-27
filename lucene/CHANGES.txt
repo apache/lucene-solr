@@ -685,11 +685,6 @@ Changes in backwards compatibility policy
   As this is expert API, most code will not be affected.
   (Uwe Schindler, Doron Cohen, Mike McCandless)
 
-* LUCENE-3464: IndexReader.reopen has been renamed to
-  IndexReader.openIfChanged (a static method), and now returns null
-  (instead of the old reader) if there are no changes in the index, to
-  prevent the common pitfall of accidentally closing the old reader.
-
 * LUCENE-3541: Remove IndexInput's protected copyBuf. If you want to
   keep a buffer in your IndexInput, do this yourself in your implementation, 
   and be sure to do the right thing on clone()!  (Robert Muir)
@@ -793,6 +788,11 @@ API Changes
   use of this method since it is horribly costly and rarely
   justified.  MergePolicy.findMergesToExpungeDeletes was renamed to
   findForcedDeletesMerges. (Robert Muir, Mike McCandless)
+
+* LUCENE-3464: IndexReader.reopen has been renamed to
+  IndexReader.openIfChanged (a static method), and now returns null
+  (instead of the old reader) if there are no changes in the index, to
+  prevent the common pitfall of accidentally closing the old reader.
 
 New Features
 
