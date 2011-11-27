@@ -193,7 +193,7 @@ public class BlockJoinQuery extends Query {
     private final Scorer childScorer;
     private final FixedBitSet parentBits;
     private final ScoreMode scoreMode;
-    private int parentDoc;
+    private int parentDoc = -1;
     private float parentScore;
     private int nextChildDoc;
 
@@ -326,8 +326,15 @@ public class BlockJoinQuery extends Query {
         return parentDoc = NO_MORE_DOCS;
       }
 
-      // Every parent must have at least one child:
-      assert parentTarget != 0;
+      if (parentTarget == 0) {
+        // Callers should only be passing in a docID from
+        // the parent space, so this means this parent
+        // has no children (it got docID 0), so it cannot
+        // possibly match.  We must handle this case
+        // separately otherwise we pass invalid -1 to
+        // prevSetBit below:
+        return nextDoc();
+      }
 
       final int prevParentDoc = parentBits.prevSetBit(parentTarget-1);
 
