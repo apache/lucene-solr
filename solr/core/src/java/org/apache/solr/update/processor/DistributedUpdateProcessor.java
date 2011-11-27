@@ -75,7 +75,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private NamedList addsResponse = null;
   private NamedList deleteResponse = null;
   private CharsRef scratch;
-  private boolean isLeader;
+  private boolean isLeader = true;
   private boolean forwardToLeader = false;
 
   private final SchemaField idField;
@@ -156,8 +156,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // we got a version, just go local - set no shardStr
             
             // still mark if i am the leader though
-            if (shardZkNodeName.equals(leader)) {
-              isLeader = true;
+            if (!shardZkNodeName.equals(leader)) {
+              isLeader = false;
             }
           } else if (shardZkNodeName.equals(leader)) {
             isLeader = true;
@@ -172,7 +172,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // I need to forward onto the leader...
             shards = new ArrayList<String>(1);
             shards.add(leaderUrl);
-            forwardToLeader  = true;
+            forwardToLeader = true;
+            isLeader = false;
           }
           req.setParams(params);
         }
