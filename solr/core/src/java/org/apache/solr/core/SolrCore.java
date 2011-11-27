@@ -661,7 +661,7 @@ public final class SolrCore implements SolrInfoMBean {
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
               new LogUpdateProcessorFactory(),
-              new VersionProcessorFactory(),
+              // new VersionProcessorFactory(),  // TODO: replace with new merged processor (distrib + versioning)
               new RunUpdateProcessorFactory()
       };
       def = new UpdateRequestProcessorChain(factories, this);
