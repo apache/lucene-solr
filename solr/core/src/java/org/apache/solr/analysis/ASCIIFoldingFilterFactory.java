@@ -32,9 +32,14 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ASCIIFoldingFilterFactory extends BaseTokenFilterFactory {
+public class ASCIIFoldingFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   public ASCIIFoldingFilter create(TokenStream input) {
     return new ASCIIFoldingFilter(input);
+  }
+
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }
 

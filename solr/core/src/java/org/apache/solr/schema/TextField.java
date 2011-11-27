@@ -17,13 +17,8 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -32,6 +27,7 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
@@ -48,6 +44,19 @@ import java.io.StringReader;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
 
+  /**
+   * Analyzer set by schema for text types to use when searching fields
+   * of this type, subclasses can set analyzer themselves or override
+   * getAnalyzer()
+   * This analyzer is used to process wildcard, prefix, regex and other multiterm queries. It
+   * assembles a list of tokenizer +filters that "make sense" for this, primarily accent folding and
+   * lowercasing filters, and charfilters.
+   *
+   * @see #getMultiTermAnalyzer
+   * @see #setMultiTermAnalyzer
+   */
+  protected Analyzer multiTermAnalyzer=null;
+
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
@@ -61,6 +70,21 @@ public class TextField extends FieldType {
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
     super.init(schema, args);    
+  }
+
+  /**
+   * Returns the Analyzer to be used when searching fields of this type when mult-term queries are specified.
+   * <p>
+   * This method may be called many times, at any time.
+   * </p>
+   * @see #getAnalyzer
+   */
+  public Analyzer getMultiTermAnalyzer() {
+    return multiTermAnalyzer;
+  }
+
+  public void setMultiTermAnalyzer(Analyzer analyzer) {
+    this.multiTermAnalyzer = analyzer;
   }
 
   public boolean getAutoGeneratePhraseQueries() {
@@ -98,10 +122,49 @@ public class TextField extends FieldType {
     this.queryAnalyzer = analyzer;
   }
 
+
   @Override
-  public void setMultiTermAnalyzer(Analyzer analyzer) {
-    this.multiTermAnalyzer = analyzer;
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+    Analyzer multiAnalyzer = getMultiTermAnalyzer();
+    BytesRef lower = analyzeMultiTerm(field.getName(), part1, multiAnalyzer);
+    BytesRef upper = analyzeMultiTerm(field.getName(), part2, multiAnalyzer);
+    return new TermRangeQuery(field.getName(), lower, upper, minInclusive, maxInclusive);
   }
+
+  public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
+    if (part == null) return null;
+
+    TokenStream source;
+    try {
+      source = analyzerIn.tokenStream(field, new StringReader(part));
+      source.reset();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
+    }
+
+    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+
+    try {
+      if (!source.incrementToken())
+        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
+      termAtt.fillBytesRef();
+      if (source.incrementToken())
+        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"error analyzing range part: " + part, e);
+    }
+
+    try {
+      source.end();
+      source.close();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
+    }
+
+    return BytesRef.deepCopyOf(bytes);
+  }
+
 
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
     int phraseSlop = 0;

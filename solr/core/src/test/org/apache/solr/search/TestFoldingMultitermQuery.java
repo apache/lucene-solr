@@ -59,7 +59,12 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
           "content_lower_token", docs[i],
           "content_oldstyle", docs[i],
           "content_charfilter", docs[i],
-          "content_multi_bad", docs[i]
+          "content_multi_bad", docs[i],
+          "content_straight", docs[i],
+          "content_lower", docs[i],
+          "content_folding", docs[i],
+          "content_stemming", docs[i],
+          "content_keyword", docs[i]
       ));
     }
     assertU(optimize());
@@ -95,6 +100,8 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
         assertQ(req("q", "content_lower_token:" + me),
             "//result[@numFound='1']",
             "//*[@name='id'][.='" + Integer.toString(idx) + "']");
+        assertQ(req("q", "content_oldstyle:" + me),
+            "//result[@numFound='0']");
       }
     }
     for (int idx = 0; idx < matchRevPrefixUpper.length; idx++) {
@@ -128,11 +135,48 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
         assertQ(req("q", "content_multi:" + me),
             "//result[@numFound='1']",
             "//*[@name='id'][.='" + Integer.toString(idx) + "']");
-        assertQ(req("q", "content_lower_token:" + me),
-            "//result[@numFound='1']",
-            "//*[@name='id'][.='" + Integer.toString(idx) + "']");
+        assertQ(req("q", "content_oldstyle:" + me),
+            "//result[@numFound='0']");
       }
     }
+  }
+
+  @Test
+  public void testLowerTokenizer() {
+    // The lowercasetokenizer will remove the '1' from the index, but not from the query, thus the special test.
+    assertQ(req("q", "content_lower_token:Á*C*"), "//result[@numFound='1']");
+    assertQ(req("q", "content_lower_token:Á*C*1"), "//result[@numFound='0']");
+    assertQ(req("q", "content_lower_token:h*1"), "//result[@numFound='0']");
+    assertQ(req("q", "content_lower_token:H*1"), "//result[@numFound='0']");
+    assertQ(req("q", "content_lower_token:*1"), "//result[@numFound='0']");
+    assertQ(req("q", "content_lower_token:HÏ*l?*"), "//result[@numFound='1']");
+    assertQ(req("q", "content_lower_token:hȉ*l?*"), "//result[@numFound='1']");
+  }
+
+  @Test
+  public void testRegex() throws Exception {
+    assertQ(req("q", "content:/Zill[a-z]/"),
+            "//result[@numFound='1']");
+    assertQ(req("q", "content:/Zill[A-Z]/"),   // everything in the regex gets lowercased?
+            "//result[@numFound='1']");
+    assertQ(req("q", "content_keyword:/.*Zill[A-Z]/"),
+            "//result[@numFound='1']");
+
+    assertQ(req("q", "content_straight:/Zill[a-z]/"),      // case preserving field shouldn't match
+           "//result[@numFound='0']");
+    assertQ(req("q", "content_folding:/Zill[a-z]/"),       // case preserving field shouldn't match
+           "//result[@numFound='0']");
+
+    assertQ(req("q", "content_keyword:/Abcdefg1 Finger/"), // test spaces
+           "//result[@numFound='1']");
+
+  }
+
+
+  @Test
+  public void testGeneral() throws Exception {
+    assertQ(req("q", "content_stemming:fings*"), "//result[@numFound='0']"); // should not match (but would if fings* was stemmed to fing*
+    assertQ(req("q", "content_stemming:fing*"), "//result[@numFound='1']");
   }
 
   // Phrases should fail. This test is mainly a marker so if phrases ever do start working with wildcards we go
@@ -143,16 +187,13 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
         "//result[@numFound='0']");
   }
 
-  // Make sure the legacy behavior flag is honored
-  @Test
-  public void testLegacyBehavior() {
-    assertQ(req("q", "content_oldstyle:ABCD*"),
-        "//result[@numFound='0']");
-  }
-
   @Test
   public void testWildcardRange() {
     assertQ(req("q", "content:[* TO *]"),
+        "//result[@numFound='3']");
+    assertQ(req("q", "content:[AB* TO Z*]"),
+        "//result[@numFound='3']");
+    assertQ(req("q", "content:[AB*E?G* TO TU*W]"),
         "//result[@numFound='3']");
   }
 
@@ -222,10 +263,13 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   @Test
   public void testMultiBad() {
     try {
+      ignoreException("analyzer returned too many terms");
       assertQ(req("q", "content_multi_bad:" + "abCD*"));
       fail("Should throw exception when token evaluates to more than one term");
     } catch (Exception expected) {
-      assertTrue(expected.getCause() instanceof IllegalArgumentException);
+      assertTrue(expected.getCause() instanceof org.apache.solr.common.SolrException);
+    } finally {
+      resetExceptionIgnores();
     }
   }
 }

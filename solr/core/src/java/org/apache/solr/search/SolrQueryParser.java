@@ -58,8 +58,9 @@ public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;
   protected final QParser parser;
   protected final String defaultField;
-  protected final Map<String, ReversedWildcardFilterFactory> leadingWildcards =
-    new HashMap<String, ReversedWildcardFilterFactory>();
+
+  // implementation detail - caching ReversedWildcardFilterFactory based on type
+  private Map<FieldType, ReversedWildcardFilterFactory> leadingWildcards;
 
   public SolrQueryParser(QParser parser, String defaultField) {
     this(parser, defaultField, parser.getReq().getSchema().getQueryAnalyzer());
@@ -71,30 +72,34 @@ public class SolrQueryParser extends QueryParser {
     this.parser = parser;
     this.defaultField = defaultField;
     setEnablePositionIncrements(true);
-    checkAllowLeadingWildcards();
+    setLowercaseExpandedTerms(false);
+    setAllowLeadingWildcard(true);
   }
 
-  protected void checkAllowLeadingWildcards() {
-    boolean allow = false;
-    for (Entry<String, FieldType> e : schema.getFieldTypes().entrySet()) {
-      Analyzer a = e.getValue().getAnalyzer();
-      if (a instanceof TokenizerChain) {
-        // examine the indexing analysis chain if it supports leading wildcards
-        TokenizerChain tc = (TokenizerChain)a;
-        TokenFilterFactory[] factories = tc.getTokenFilterFactories();
-        for (TokenFilterFactory factory : factories) {
-          if (factory instanceof ReversedWildcardFilterFactory) {
-            allow = true;
-            leadingWildcards.put(e.getKey(), (ReversedWildcardFilterFactory)factory);
-          }
+  protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
+    if (leadingWildcards == null) leadingWildcards = new HashMap<FieldType, ReversedWildcardFilterFactory>();
+    ReversedWildcardFilterFactory fac = leadingWildcards.get(fieldType);
+    if (fac == null && leadingWildcards.containsKey(fac)) {
+      return fac;
+    }
+
+    Analyzer a = fieldType.getAnalyzer();
+    if (a instanceof TokenizerChain) {
+      // examine the indexing analysis chain if it supports leading wildcards
+      TokenizerChain tc = (TokenizerChain)a;
+      TokenFilterFactory[] factories = tc.getTokenFilterFactories();
+      for (TokenFilterFactory factory : factories) {
+        if (factory instanceof ReversedWildcardFilterFactory) {
+          fac = (ReversedWildcardFilterFactory)factory;
+          break;
         }
       }
     }
-    // XXX should be enabled on a per-field basis
-    if (allow) {
-      setAllowLeadingWildcard(true);
-    }
+
+    leadingWildcards.put(fieldType, fac);
+    return fac;
   }
+
   
   private void checkNullField(String field) throws SolrException {
     if (field == null && defaultField == null) {
@@ -104,12 +109,14 @@ public class SolrQueryParser extends QueryParser {
     }
   }
 
-  protected String analyzeIfMultitermTermText(String field, String part, Analyzer analyzer) {
+  protected String analyzeIfMultitermTermText(String field, String part, FieldType fieldType) {
     if (part == null) return part;
 
     SchemaField sf = schema.getFieldOrNull((field));
-    if (sf == null || ! (sf.getType() instanceof TextField)) return part;
-    return analyzeMultitermTerm(field, part, analyzer).utf8ToString();
+    if (sf == null || ! (fieldType instanceof TextField)) return part;
+    String out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer()).utf8ToString();
+    // System.out.println("INPUT="+part + " OUTPUT="+out);
+    return out;
   }
 
   @Override
@@ -143,8 +150,6 @@ public class SolrQueryParser extends QueryParser {
   @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
     checkNullField(field);
-    part1 = analyzeIfMultitermTermText(field, part1, schema.getFieldType(field).getMultiTermAnalyzer());
-    part2 = analyzeIfMultitermTermText(field, part2, schema.getFieldType(field).getMultiTermAnalyzer());
     SchemaField sf = schema.getField(field);
     return sf.getType().getRangeQuery(parser, sf, part1, part2, startInclusive, endInclusive);
   }
@@ -153,21 +158,10 @@ public class SolrQueryParser extends QueryParser {
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
     checkNullField(field);
 
-    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field).getMultiTermAnalyzer());
+    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
 
-    // TODO: toInternal() won't necessarily work on partial
-    // values, so it looks like we need a getPrefix() function
-    // on fieldtype?  Or at the minimum, a method on fieldType
-    // that can tell me if I should lowercase or not...
-    // Schema could tell if lowercase filter is in the chain,
-    // but a more sure way would be to run something through
-    // the first time and check if it got lowercased.
-
-    // TODO: throw exception if field type doesn't support prefixes?
-    // (sortable numeric types don't do prefixes, but can do range queries)
-    Term t = new Term(field, termStr);
-    PrefixQuery prefixQuery = new PrefixQuery(t);
-    return prefixQuery;
+    // Solr has always used constant scoring for prefix queries.  This should return constant scoring by default.
+    return newPrefixQuery(new Term(field, termStr));
   }
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
@@ -175,10 +169,10 @@ public class SolrQueryParser extends QueryParser {
     if ("*".equals(field) && "*".equals(termStr)) {
       return newMatchAllDocsQuery();
     }
-    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field).getMultiTermAnalyzer());
+    FieldType fieldType = schema.getFieldType(field);
+    termStr = analyzeIfMultitermTermText(field, termStr, fieldType);
     // can we use reversed wildcards in this field?
-    String type = schema.getFieldType(field).getTypeName();
-    ReversedWildcardFilterFactory factory = leadingWildcards.get(type);
+    ReversedWildcardFilterFactory factory = getReversedWildcardFilterFactory(fieldType);
     if (factory != null) {
       Term term = new Term(field, termStr);
       // fsa representing the query
@@ -211,19 +205,15 @@ public class SolrQueryParser extends QueryParser {
         }
       };
     }
-    Query q = super.getWildcardQuery(field, termStr);
-    if (q instanceof WildcardQuery) {
-      // use a constant score query to avoid overflowing clauses
-      WildcardQuery wildcardQuery = new WildcardQuery(((WildcardQuery)q).getTerm());
-      return  wildcardQuery; 
-    }
-    return q;
+
+    // Solr has always used constant scoring for wildcard queries.  This should return constant scoring by default.
+    return newWildcardQuery(new Term(field, termStr));
   }
 
-
+  @Override
   protected Query getRegexpQuery(String field, String termStr) throws ParseException
   {
-    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field).getMultiTermAnalyzer());
-    return super.getRegexpQuery(field, termStr);
+    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
+    return newRegexpQuery(new Term(field, termStr));
   }
 }

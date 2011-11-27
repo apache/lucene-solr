@@ -102,15 +102,13 @@ public final class FieldTypePluginLoader
     if (queryAnalyzer==null) queryAnalyzer=analyzer;
     if (analyzer==null) analyzer=queryAnalyzer;
     if (multiAnalyzer == null) {
-      Boolean legacyMatch = ! schema.getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_36);
-      legacyMatch = (DOMUtil.getAttr(node, "legacyMultiTerm", null) == null) ? legacyMatch :
-          Boolean.parseBoolean(DOMUtil.getAttr(node, "legacyMultiTerm", null));
-      multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer, legacyMatch);
+      multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer);
     }
     if (analyzer!=null) {
       ft.setAnalyzer(analyzer);
       ft.setQueryAnalyzer(queryAnalyzer);
-      ft.setMultiTermAnalyzer(multiAnalyzer);
+      if (ft instanceof TextField)
+        ((TextField)ft).setMultiTermAnalyzer(multiAnalyzer);
     }
     if (similarity!=null) {
       ft.setSimilarity(similarity);
@@ -143,35 +141,74 @@ public final class FieldTypePluginLoader
   // 2> If letacyMultiTerm == true just construct the analyzer from a KeywordTokenizer. That should mimic current behavior.
   //    Do the same if they've specified that the old behavior is required (legacyMultiTerm="true")
 
-  private Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer, Boolean legacyMultiTerm) {
+  private Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer) {
     if (queryAnalyzer == null) return null;
 
-    if (legacyMultiTerm || (!(queryAnalyzer instanceof TokenizerChain))) {
+    if (!(queryAnalyzer instanceof TokenizerChain)) {
       return new KeywordAnalyzer();
     }
 
     TokenizerChain tc = (TokenizerChain) queryAnalyzer;
+    MultiTermChainBuilder builder = new MultiTermChainBuilder();
 
-    // we know it'll never be longer than this unless the code below is explicitly changed
-    TokenFilterFactory[] filters = new TokenFilterFactory[2];
-    int idx = 0;
-    for (TokenFilterFactory factory : tc.getTokenFilterFactories()) {
-      if (factory instanceof LowerCaseFilterFactory) {
-        filters[idx] = new LowerCaseFilterFactory();
-        filters[idx++].init(factory.getArgs());
-      }
-      if (factory instanceof ASCIIFoldingFilterFactory) {
-        filters[idx] = new ASCIIFoldingFilterFactory();
-        filters[idx++].init(factory.getArgs());
+    CharFilterFactory[] charFactories = tc.getCharFilterFactories();
+    if (charFactories != null) {
+      for (CharFilterFactory fact : charFactories) {
+        builder.add(fact);
       }
     }
-    WhitespaceTokenizerFactory white = new WhitespaceTokenizerFactory();
-    white.init(tc.getTokenizerFactory().getArgs());
 
-    return new TokenizerChain(tc.getCharFilterFactories(),
-        white,
-        Arrays.copyOfRange(filters, 0, idx));
+    builder.add(tc.getTokenizerFactory());
+
+    for (TokenFilterFactory fact : tc.getTokenFilterFactories()) {
+      builder.add(fact);
+    }
+
+    return builder.build();
   }
+
+  private static class MultiTermChainBuilder {
+    static final KeywordTokenizerFactory keyFactory;
+
+    static {
+      keyFactory = new KeywordTokenizerFactory();
+      keyFactory.init(new HashMap<String,String>());
+    }
+
+    ArrayList<CharFilterFactory> charFilters = null;
+    ArrayList<TokenFilterFactory> filters = new ArrayList<TokenFilterFactory>(2);
+    TokenizerFactory tokenizer = keyFactory;
+
+    public void add(Object current) {
+      if (!(current instanceof MultiTermAwareComponent)) return;
+      Object newComponent = ((MultiTermAwareComponent)current).getMultiTermComponent();
+      if (newComponent instanceof TokenFilterFactory) {
+        if (filters == null) {
+          filters = new ArrayList<TokenFilterFactory>(2);
+        }
+        filters.add((TokenFilterFactory)newComponent);
+      } else if (newComponent instanceof TokenizerFactory) {
+        tokenizer = (TokenizerFactory)newComponent;
+      } else if (newComponent instanceof CharFilterFactory) {
+        if (charFilters == null) {
+          charFilters = new ArrayList<CharFilterFactory>(1);
+        }
+        charFilters.add( (CharFilterFactory)newComponent);
+
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown analysis component from MultiTermAwareComponent: " + newComponent);
+      }
+    }
+
+    public TokenizerChain build() {
+      CharFilterFactory[] charFilterArr =  charFilters == null ? null : charFilters.toArray(new CharFilterFactory[charFilters.size()]);
+      TokenFilterFactory[] filterArr = filters == null ? new TokenFilterFactory[0] : filters.toArray(new TokenFilterFactory[filters.size()]);
+      return new TokenizerChain(charFilterArr, tokenizer, filterArr);
+    }
+
+
+  }
+
 
   //
   // <analyzer><tokenizer class="...."/><tokenizer class="...." arg="....">

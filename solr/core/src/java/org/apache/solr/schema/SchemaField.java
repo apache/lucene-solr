@@ -97,10 +97,6 @@ public final class SchemaField extends FieldProperties {
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
 
-  boolean legacyMultiTerm() {
-    return (properties & LEGACY_MULTITERM) != 0;
-  }
-
   public IndexableField createField(Object val, float boost) {
     return type.createField(this,val,boost);
   }

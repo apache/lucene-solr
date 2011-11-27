@@ -64,7 +64,7 @@
       </analyzer>
     </fieldType>
 
-    <fieldType name="text_rev" class="solr.TextField" legacyMultiTerm="false">
+    <fieldType name="text_rev" class="solr.TextField">
       <analyzer type="index">
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
@@ -80,11 +80,24 @@
       </analyzer>
     </fieldType>
 
-    <fieldType name="text_lower_tokenizer" class="solr.TextField">
+    <fieldType name="text_lower_token" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.LowerCaseTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
       </analyzer>
     </fieldType>
+
+    <fieldType name="text_oldstyle" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+      </analyzer>
+      <analyzer type="multiterm">
+        <tokenizer class="solr.KeywordTokenizerFactory" />
+      </analyzer>
+    </fieldType>
+
 
     <fieldType name="text_charfilter" class="solr.TextField" multiValued="false">
       <analyzer type="index">
@@ -99,19 +112,47 @@
       </analyzer>
     </fieldType>
 
-    <fieldType name="text_oldstyle" class="solr.TextField" multiValued="false" legacyMultiTerm="true">
+    <fieldType name="text_straight" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_lower" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_folding" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_stemming" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.ASCIIFoldingFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.TrimFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldType>
 
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="text_keyword" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+      <analyzer>
+         <tokenizer class="solr.KeywordTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory" />
+      </analyzer>
+    </fieldType>
+
+
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
@@ -133,10 +174,17 @@
     <field name="content_ws" type="text_ws" indexed="true" stored="true"/>
     <field name="content_rev" type="text_rev" indexed="true" stored="true"/>
     <field name="content_multi" type="text_multi" indexed="true" stored="true"/>
-    <field name="content_lower_token" type="text_multi" indexed="true" stored="true"/>
+    <field name="content_lower_token" type="text_lower_token" indexed="true" stored="true"/>
     <field name="content_oldstyle" type="text_oldstyle" indexed="true" stored="true"/>
     <field name="content_charfilter" type="text_charfilter" indexed="true" stored="true"/>
     <field name="content_multi_bad" type="text_multi_bad" indexed="true" stored="true"/>
+
+    <dynamicField name="*_straight" type="text_straight" indexed="true" stored="true"/>
+    <dynamicField name="*_lower" type="text_lower" indexed="true" stored="true"/>
+    <dynamicField name="*_folding" type="text_folding" indexed="true" stored="true"/>
+    <dynamicField name="*_stemming" type="text_stemming" indexed="true" stored="true"/>
+    <dynamicField name="*_keyword" type="text_keyword" indexed="true" stored="true"/>
+
   </fields>
 
   <defaultSearchField>content</defaultSearchField>

@@ -67,3 +67,4 @@ public interface TokenFilterFactory {
   /** Transform the specified input TokenStream */
   public TokenStream create(TokenStream input);
 }
+
