@@ -76,7 +76,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private NamedList deleteResponse = null;
   private CharsRef scratch;
   private boolean isLeader;
-  private boolean forwardToLeader;
+  private boolean forwardToLeader = false;
 
   private final SchemaField idField;
   
@@ -85,6 +85,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private HashPartitioner hp;
 
   private List<String> shards;
+
+  private boolean zkEnabled = false;
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -103,6 +105,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
     this.req = req;
+    
+    this.zkEnabled  = req.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware();
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
     
     cmdDistrib = new SolrCmdDistributor(req, rsp);
@@ -213,7 +217,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     int hash = hash(cmd);
     
-    shards = setupRequest(hash);
+    if (zkEnabled) {
+      shards = setupRequest(hash);
+    }
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
@@ -325,8 +331,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } else {
       hash = hash(cmd);
     }
-    
-    shards = setupRequest(hash);
+    if (zkEnabled) {
+      shards = setupRequest(hash);
+    }
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
@@ -428,7 +435,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void finish() throws IOException {
-    cmdDistrib.finish(shards);
+    if (shards != null) cmdDistrib.finish(shards);
     if (next != null && shards == null) next.finish();
   }
   
