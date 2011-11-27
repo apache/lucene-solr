@@ -85,27 +85,27 @@ public class SolrCmdDistributor {
     this.idField = req.getSchema().getUniqueKeyField();
   }
   
-  public void finish(String shardStr) {
+  public void finish(List<String> shards) {
 
     // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, shardStr);
-    flushDeletes(1, null, shardStr);
+    flushAdds(1, null, shards);
+    flushDeletes(1, null, shards);
 
     checkResponses(true);
   }
   
-  public void distribDelete(DeleteUpdateCommand cmd, String shardStr) throws IOException {
+  public void distribDelete(DeleteUpdateCommand cmd, List<String> shards) throws IOException {
     checkResponses(false);
     
     if (cmd.id != null) {
-      doDelete(cmd, shardStr);
+      doDelete(cmd, shards);
     } else if (cmd.query != null) {
       // TODO: query must be broadcast to all ??
-      doDelete(cmd, shardStr);
+      doDelete(cmd, shards);
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, String shardStr) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<String> shards) throws IOException {
     
     checkResponses(false);
     
@@ -116,7 +116,7 @@ public class SolrCmdDistributor {
     }
     
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, shardStr);
+    flushDeletes(1, null, shards);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -136,10 +136,10 @@ public class SolrCmdDistributor {
     }
     alist.add(clone);
     
-    flushAdds(maxBufferedAddsPerServer, null, shardStr);
+    flushAdds(maxBufferedAddsPerServer, null, shards);
   }
   
-  public void distribCommit(CommitUpdateCommand cmd, String shardStr)
+  public void distribCommit(CommitUpdateCommand cmd, List<String> shards)
       throws IOException {
     
     // Wait for all outstanding repsonses to make sure that a commit
@@ -150,9 +150,9 @@ public class SolrCmdDistributor {
     
     // piggyback on any outstanding adds or deletes if possible.
     // TODO: review this
-    flushAdds(1, cmd, shardStr);
+    flushAdds(1, cmd, shards);
     
-    flushDeletes(1, cmd, shardStr);
+    flushDeletes(1, cmd, shards);
     
     UpdateRequestExt ureq = new UpdateRequestExt();
 
@@ -161,7 +161,7 @@ public class SolrCmdDistributor {
     }
     passOnParams(ureq);
     addCommit(ureq, cmd);
-    submit(ureq, shardStr);
+    submit(ureq, shards);
     
     // if (next != null && shardStr == null) next.processCommit(cmd);
     
@@ -185,16 +185,16 @@ public class SolrCmdDistributor {
     }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, String shardStr) throws IOException {
+  private void doDelete(DeleteUpdateCommand cmd, List<String> shards) throws IOException {
     
-    flushAdds(1, null, shardStr);
+    flushAdds(1, null, shards);
     
     if (dlist == null) {
       dlist = new ArrayList<DeleteUpdateCommand>(2);
     }
     dlist.add(clone(cmd));
     
-    flushDeletes(maxBufferedDeletesPerServer, null, shardStr);
+    flushDeletes(maxBufferedDeletesPerServer, null, shards);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -204,7 +204,7 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, String shardStr) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls) {
     // check for pending deletes
     if (alist == null || alist.size() < limit) return false;
     
@@ -222,11 +222,11 @@ public class SolrCmdDistributor {
     }
     
     alist = null;
-    submit(ureq, shardStr);
+    submit(ureq, urls);
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, String shardStr) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> shards) {
     // check for pending deletes
     if (dlist == null || dlist.size() < limit) return false;
     
@@ -249,7 +249,7 @@ public class SolrCmdDistributor {
     }
     
     dlist = null;
-    submit(ureq, shardStr);
+    submit(ureq, shards);
     return true;
   }
   
@@ -263,16 +263,16 @@ public class SolrCmdDistributor {
   
   static class Request {
     // TODO: we may need to look at deep cloning this?
-    String shard;
+    List<String> shards;
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
     int rspCode;
     Exception exception;
   }
   
-  void submit(UpdateRequestExt ureq, String shardStr) {
+  void submit(UpdateRequestExt ureq, List<String> shards) {
     Request sreq = new Request();
-    sreq.shard = shardStr;
+    sreq.shards = shards;
     sreq.ureq = ureq;
     submit(sreq);
   }
@@ -282,15 +282,8 @@ public class SolrCmdDistributor {
       completionService = new ExecutorCompletionService<Request>(commExecutor);
       pending = new HashSet<Future<Request>>();
     }
-    String[] shards;
-    // look to see if we should send to multiple servers
-    if (sreq.shard.contains("|")) {
-      shards = sreq.shard.split("\\|");
-    } else {
-      shards = new String[1];
-      shards[0] = sreq.shard;
-    }
-    for (final String shard : shards) {
+
+    for (final String shard : sreq.shards) {
       // TODO: when we break up shards, we might forward
       // to self again - makes things simple here, but we could
       // also have realized this before, done the req locally, and
@@ -300,7 +293,7 @@ public class SolrCmdDistributor {
         @Override
         public Request call() throws Exception {
           Request clonedRequest = new Request();
-          clonedRequest.shard = sreq.shard;
+          clonedRequest.shards = sreq.shards;
           clonedRequest.ureq = sreq.ureq;
           
           try {
@@ -351,7 +344,7 @@ public class SolrCmdDistributor {
             // use the first exception encountered
             if (rsp.getException() == null) {
               Exception e = sreq.exception;
-              String newMsg = "shard update error (" + sreq.shard + "):"
+              String newMsg = "shard update error (" + sreq.shards + "):"
                   + e.getMessage();
               if (e instanceof SolrException) {
                 SolrException se = (SolrException) e;
@@ -365,7 +358,7 @@ public class SolrCmdDistributor {
             }
             
             SolrException.logOnce(SolrCore.log, "shard update error ("
-                + sreq.shard + ")", sreq.exception);
+                + sreq.shards + ")", sreq.exception);
           }
           
         } catch (ExecutionException e) {

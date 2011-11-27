@@ -77,13 +77,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private CharsRef scratch;
   private boolean isLeader;
   private boolean forwardToLeader;
-  private volatile String shardStr;
 
   private final SchemaField idField;
   
   private final SolrCmdDistributor cmdDistrib;
 
   private HashPartitioner hp;
+
+  private List<String> shards;
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -107,7 +108,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     cmdDistrib = new SolrCmdDistributor(req, rsp);
   }
 
-  private void setupRequest(int hash) {
+  private List<String> setupRequest(int hash) {
+    List<String> shards = null;
+    
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
     CloudState cloudState = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getCloudState();
@@ -156,14 +159,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             isLeader = true;
             // that means I want to forward onto my replicas...
             // so get the replicas...
-            shardStr = addReplicas(req, collection, shardId,
+            shards = getReplicaUrls(req, collection, shardId,
                 shardZkNodeName);
             
             // mark that this req has been to the leader
             params.set(SEEN_LEADER, true);
           } else {
             // I need to forward onto the leader...
-            shardStr = leaderUrl;
+            shards = new ArrayList<String>(1);
+            shards.add(leaderUrl);
             forwardToLeader  = true;
           }
           req.setParams(params);
@@ -180,6 +184,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             e);
       }
     }
+    
+    return shards;
   }
   
   private String getShard(int hash, String collection, CloudState cloudState) {
@@ -207,7 +213,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     int hash = hash(cmd);
     
-    setupRequest(hash);
+    shards = setupRequest(hash);
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
@@ -219,8 +225,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
     
-    if (shardStr != null) {
-      cmdDistrib.distribAdd(cmd, shardStr);
+    if (shards != null) {
+      cmdDistrib.distribAdd(cmd, shards);
     } else {
       super.processAdd(cmd);
     }
@@ -320,7 +326,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       hash = hash(cmd);
     }
     
-    setupRequest(hash);
+    shards = setupRequest(hash);
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
@@ -332,8 +338,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    if (shardStr != null) {
-      cmdDistrib.distribDelete(cmd, shardStr);
+    if (shards != null) {
+      cmdDistrib.distribDelete(cmd, shards);
     } else {
       super.processDelete(cmd);
     }
@@ -413,20 +419,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     // nocommit: make everyone commit?
-    if (shardStr != null) {
-      cmdDistrib.distribCommit(cmd, shardStr);
-    } else {
+//    if (shards != null) {
+//      cmdDistrib.distribCommit(cmd, shards);
+//    } else {
       super.processCommit(cmd);
-    }
+//    }
   }
   
   @Override
   public void finish() throws IOException {
-    cmdDistrib.finish(shardStr);
-    if (next != null && shardStr == null) next.finish();
+    cmdDistrib.finish(shards);
+    if (next != null && shards == null) next.finish();
   }
   
-  private String addReplicas(SolrQueryRequest req, String collection,
+  // TODO: currently this also includes the leader url
+  private List<String> getReplicaUrls(SolrQueryRequest req, String collection,
       String shardId, String shardZkNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
@@ -434,23 +441,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Slice replicas = cloudState.getSlices(collection).get(shardId);
     
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
+    List<String> urls = new ArrayList<String>();
 
-    StringBuilder replicasUrl = new StringBuilder();
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
       if (cloudState.liveNodesContain(entry.getValue().get(
           ZkStateReader.NODE_NAME_PROP))) {
-        
-        if (replicasUrl.length() > 0) {
-          replicasUrl.append("|");
-        }
         String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
-        replicasUrl.append(replicaUrl);
+        urls.add(replicaUrl);
       }
     }
-    if (replicasUrl.length() == 0) {
-      throw new ZooKeeperException(ErrorCode.SERVICE_UNAVAILABLE, "No servers hosting shard " + shardId + " found");
+    if (urls.size() == 0) {
+      throw new ZooKeeperException(ErrorCode.SERVICE_UNAVAILABLE, "No available servers hosting shard " + shardId + " found");
     }
-    return replicasUrl.toString();
+    return urls;
   }
   
   // TODO: move this to AddUpdateCommand/DeleteUpdateCommand and cache it? And
