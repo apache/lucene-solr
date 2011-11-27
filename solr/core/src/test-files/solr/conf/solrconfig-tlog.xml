@@ -29,10 +29,32 @@
     </lst>
   </requestHandler>
 
+  <requestHandler name="/update"    class="solr.XmlUpdateRequestHandler">
+    <lst name="defaults">
+      <str name="update.chain">distrib-update-chain</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+    <lst name="defaults">
+      <str name="update.chain">distrib-update-chain</str>
+    </lst>
+  </requestHandler>
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog class="solr.FSUpdateLog">
       <!-- <str name="dir">/tmp/solr/</str> -->
     </updateLog>
   </updateHandler>
+
+	<updateRequestProcessorChain name="distrib-update-chain">
+		<processor class="solr.DistributedUpdateProcessorFactory">
+			<!-- example configuration... "shards should be in the *same* order for
+				every server in a cluster. Only "self" should change to represent what server
+				*this* is. <str name="self">localhost:8983/solr</str> <arr name="shards">
+				<str>localhost:8983/solr</str> <str>localhost:7574/solr</str> </arr> -->
+		</processor>
+		<processor class="solr.RunUpdateProcessorFactory" />
+	</updateRequestProcessorChain>
 
 </config>

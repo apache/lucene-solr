@@ -220,6 +220,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (zkEnabled) {
       shards = setupRequest(hash);
+    } else {
+      // even in non zk mode, tests simulate updates from a leader
+      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
     }
     
     boolean dropCmd = false;
@@ -235,7 +238,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (shards != null) {
       cmdDistrib.distribAdd(cmd, shards);
     } else {
-      super.processAdd(cmd);
+      // At a minimum, local updates must be protected by synchronization
+      // super.processAdd(cmd);
     }
     
     
@@ -253,6 +257,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // an id may fail before it gets to this processor.
     // Given that, it may also make sense to move the version reporting out of this
     // processor too.
+  }
+
+  // must be synchronized by bucket
+  private void doLocalAdd(AddUpdateCommand cmd) throws IOException {
+    if (shards == null)   // TODO: temporary. a distrib update currently goes through HTTP for self
+      super.processAdd(cmd);
+  }
+
+  // must be synchronized by bucket
+  private void doLocalDelete(DeleteUpdateCommand cmd) throws IOException {
+    if (shards == null)   // TODO: temporary. a distrib update currently goes through HTTP for self
+      super.processDelete(cmd);
   }
 
   /**
@@ -319,7 +335,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
-    }
+      doLocalAdd(cmd);
+    }  // end synchronized (bucket)
 
     return false;
   }
@@ -329,11 +346,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     int hash = 0;
     if (cmd.getIndexedId() == null) {
       // delete by query...
+      // TODO: handle versioned and distributed deleteByQuery
+      super.processDelete(cmd);
     } else {
       hash = hash(cmd);
     }
     if (zkEnabled) {
       shards = setupRequest(hash);
+    } else {
+      // even in non zk mode, tests simulate updates from a leader
+      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
     }
     
     boolean dropCmd = false;
@@ -349,7 +371,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (shards != null) {
       cmdDistrib.distribDelete(cmd, shards);
     } else {
-      super.processDelete(cmd);
+      // super.processDelete(cmd);
     }
 
     // cmd.getIndexId == null when delete by query
@@ -419,8 +441,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
+      doLocalDelete(cmd);
       return false;
-    }
+    }  // end synchronized (bucket)
 
   }
   
