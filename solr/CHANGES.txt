@@ -189,14 +189,11 @@ New Features
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
     
-* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
-  a complete analysis chain for multiterm queries.   
-  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
   
-* SOLR-2918 Improvement to SOLR-2438, added MultiTermAwareComponent to the various classes
-  that should transform multiterm queries in various ways, and use this as the criteria for
-  adding them to the multiterm analyzer that is constructed if not specified in the
-  <fieldType>
+* SOLR-2438 added MultiTermAwareComponent to the various classes to allow automatic lowercasing
+  for multiterm queries (wildcards, regex, prefix, range, etc). You can now optionally specify a
+  "multiterm" analyzer in our schema.xml, but Solr should "do the right thing" if you don't
+  <fieldType> (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
 
 
 Optimizations
