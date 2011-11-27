@@ -154,10 +154,8 @@ public class SolrCmdDistributor {
     
     flushDeletes(1, cmd, shardStr);
     
-    
     UpdateRequestExt ureq = new UpdateRequestExt();
-    // pass on SEEN_LEADER
-    // TODO: perhaps we should just pass all the incoming params...
+
     if (ureq.getParams() == null) {
       ureq.setParams(new ModifiableSolrParams());
     }
@@ -382,6 +380,7 @@ public class SolrCmdDistributor {
       }
     }
     
+    // nocommit: just for kicks at the moment...
     if (failed <= (expectedResponses / 2)) {
       // don't fail if half or more where fine
       rsp.setException(null);
