@@ -758,10 +758,13 @@
     <!-- convenience target to package core JAR -->
   </target>
 
-  <target name="jar-src" depends="init">
-    <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
-      <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
-    </jarify>
+  <target name="jar-src">
+    <sequential>
+      <mkdir dir="${build.dir}" />
+      <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
+        <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
+      </jarify>
+    </sequential>
   </target>
 
   <target name="default" depends="jar-core"/>
