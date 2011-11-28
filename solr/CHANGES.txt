@@ -390,6 +390,8 @@ New Features
   a complete analysis chain for multiterm queries.   
   (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
 
+* SOLR-2919: Added support for localized range queries when the analysis chain uses 
+  CollationKeyFilter or ICUCollationKeyFilter.  (Michael Sokolov, rmuir)
 
 Bug Fixes
 ----------------------

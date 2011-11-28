@@ -15,6 +15,13 @@ $Id$
 
 (No Changes)
 
+==================  3.6.0 ==================
+
+* SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
+  These can be used to customize range query/sort behavior, for example to
+  support numeric collation, ignore punctuation/whitespace, ignore accents but
+  not case, control whether upper/lowercase values are sorted first, etc.  (rmuir)
+
 ==================  3.5.0 ==================
 
 (No Changes)

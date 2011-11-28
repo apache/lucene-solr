@@ -70,7 +70,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  * @see RuleBasedCollator
  * @since solr 3.1
  */
-public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent,ResourceLoaderAware {
   private Collator collator;
 
   public void inform(ResourceLoader loader) {
@@ -168,5 +168,10 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
     } finally {
       IOUtils.closeQuietly(input);
     }
+  }
+  
+  //@Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }
