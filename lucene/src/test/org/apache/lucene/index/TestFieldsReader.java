@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -441,6 +442,10 @@ public class TestFieldsReader extends LuceneTestCase {
       return fsDir.createOutput(name);
     }
     @Override
+    public void sync(Collection<String> names) throws IOException {
+      fsDir.sync(names);
+    }
+    @Override
     public void close() throws IOException {
       fsDir.close();
     }
@@ -491,6 +496,9 @@ public class TestFieldsReader extends LuceneTestCase {
       Directory dir = new FaultyFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
+      if (VERBOSE) {
+        writer.setInfoStream(System.out);
+      }
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.forceMerge(1);

@@ -3095,10 +3095,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p>
    * <b>NOTE:</b> this method only copies the segments of the incomning indexes
    * and does not merge them. Therefore deleted documents are not removed and
-   * the new segments are not merged with the existing ones. Also, if the merge 
-   * policy allows compound files, then any segment that is not compound is 
-   * converted to such. However, if the segment is compound, it is copied as-is
-   * even if the merge policy does not allow compound files.
+   * the new segments are not merged with the existing ones.
    * 
    * <p>
    * <p>This requires this index not be among those to be added.
@@ -3121,7 +3118,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         message("flush at addIndexes(Directory...)");
       flush(false, true);
       
-      int docCount = 0;
       List<SegmentInfo> infos = new ArrayList<SegmentInfo>();
       Comparator<String> versionComparator = StringHelper.getVersionComparator();
       for (Directory dir : dirs) {
@@ -3135,7 +3131,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         for (SegmentInfo info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
           
-          docCount += info.docCount;
           String newSegName = newSegmentName();
           String dsName = info.getDocStoreSegment();
           
@@ -3143,21 +3138,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             message("addIndexes: process segment origName=" + info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
           }
           
-          // create CFS only if the source segment is not CFS, and MP agrees it
-          // should be CFS.
-          boolean createCFS;
-          synchronized (this) { // Guard segmentInfos
-            createCFS = !info.getUseCompoundFile()
-                && mergePolicy.useCompoundFile(segmentInfos, info)
-                // optimize case only for segments that don't share doc stores
-                && versionComparator.compare(info.getVersion(), "3.1") >= 0;
-          }
+          copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied);
 
-          if (createCFS) {
-            copySegmentIntoCFS(info, newSegName);
-          } else {
-            copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied);
-          }
           infos.add(info);
         }
       }      
@@ -3265,31 +3247,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       handleOOM(oom, "addIndexes(IndexReader...)");
     }
   }
-
-  /** Copies the segment into the IndexWriter's directory, as a compound segment. */
-  private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
-    String segFileName = IndexFileNames.segmentFileName(segName, IndexFileNames.COMPOUND_FILE_EXTENSION);
-    Collection<String> files = info.files();
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
-    for (String file : files) {
-      String newFileName = segName + IndexFileNames.stripSegmentName(file);
-      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
-          && !IndexFileNames.isSeparateNormsFile(file)) {
-        cfsWriter.addFile(file, info.dir);
-      } else {
-        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-        info.dir.copy(directory, file, newFileName);
-      }
-    }
-    
-    // Create the .cfs
-    cfsWriter.close();
-    
-    info.dir = directory;
-    info.name = segName;
-    info.setUseCompoundFile(true);
-  }
-  
+ 
   /** Copies the segment files as-is into the IndexWriter's directory. */
   private void copySegmentAsIs(SegmentInfo info, String segName,
       Map<String, String> dsNames, Set<String> dsFilesCopied)
