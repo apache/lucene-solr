@@ -432,7 +432,7 @@ public final class BytesRefHash {
 
           final int endPos = pos + len;
           while (pos < endPos) {
-            code = BytesRef.HASH_PRIME * code + bytes[pos++];
+            code = 31 * code + bytes[pos++];
           }
         } else {
           code = bytesStart[e0];

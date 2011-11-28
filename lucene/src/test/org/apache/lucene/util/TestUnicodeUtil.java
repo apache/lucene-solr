@@ -178,8 +178,6 @@ public class TestUnicodeUtil extends LuceneTestCase {
       CharsRef cRef = new CharsRef(arr, offset, len);
       UnicodeUtil.UTF8toUTF16(ref, cRef);
       assertEquals(cRef.toString(), unicode);
-      assertEquals(cRef, unicode); // CharSeq
-      assertEquals(cRef, ref.utf8ToString()); // CharSeq
     }
   }
 }

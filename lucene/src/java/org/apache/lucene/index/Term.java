@@ -130,12 +130,6 @@ public final class Term implements Comparable<Term> {
     this.bytes = bytes;
   }
 
-  /** Resets the field and text of a Term. */
-  final void set(String fld, String txt) {
-    field = fld;
-    this.bytes = new BytesRef(txt);
-  }
-
   @Override
   public final String toString() { return field + ":" + bytes.utf8ToString(); }
 }

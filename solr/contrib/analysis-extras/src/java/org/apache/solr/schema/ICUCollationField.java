@@ -66,7 +66,16 @@ import com.ibm.icu.util.ULocale;
  *  <li>strength: 'primary','secondary','tertiary', 'quaternary', or 'identical' (optional)
  *  <li>decomposition: 'no' or 'canonical' (optional)
  * </ul>
- *
+ * <p>
+ * Expert options:
+ * <ul>
+ *  <li>alternate: 'shifted' or 'non-ignorable'. Can be used to ignore punctuation/whitespace.
+ *  <li>caseLevel: 'true' or 'false'. Useful with strength=primary to ignore accents but not case.
+ *  <li>caseFirst: 'lower' or 'upper'. Useful to control which is sorted first when case is not ignored.
+ *  <li>numeric: 'true' or 'false'. Digits are sorted according to numeric value, e.g. foobar-9 sorts before foobar-10
+ *  <li>variableTop: single character or contraction. Controls what is variable for 'alternate'
+ * </ul>
+ * 
  * @see Collator
  * @see ULocale
  * @see RuleBasedCollator
@@ -90,6 +99,12 @@ public class ICUCollationField extends FieldType {
     String strength = args.remove("strength");
     String decomposition = args.remove("decomposition");
     
+    String alternate = args.remove("alternate");
+    String caseLevel = args.remove("caseLevel");
+    String caseFirst = args.remove("caseFirst");
+    String numeric = args.remove("numeric");
+    String variableTop = args.remove("variableTop");
+
     if (custom == null && localeID == null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "Either custom or locale is required.");
     
@@ -133,6 +148,37 @@ public class ICUCollationField extends FieldType {
       else
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
     }
+    
+    // expert options: concrete subclasses are always a RuleBasedCollator
+    RuleBasedCollator rbc = (RuleBasedCollator) collator;
+    if (alternate != null) {
+      if (alternate.equalsIgnoreCase("shifted")) {
+        rbc.setAlternateHandlingShifted(true);
+      } else if (alternate.equalsIgnoreCase("non-ignorable")) {
+        rbc.setAlternateHandlingShifted(false);
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid alternate: " + alternate);
+      }
+    }
+    if (caseLevel != null) {
+      rbc.setCaseLevel(Boolean.parseBoolean(caseLevel));
+    }
+    if (caseFirst != null) {
+      if (caseFirst.equalsIgnoreCase("lower")) {
+        rbc.setLowerCaseFirst(true);
+      } else if (caseFirst.equalsIgnoreCase("upper")) {
+        rbc.setUpperCaseFirst(true);
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid caseFirst: " + caseFirst);
+      }
+    }
+    if (numeric != null) {
+      rbc.setNumericCollation(Boolean.parseBoolean(numeric));
+    }
+    if (variableTop != null) {
+      rbc.setVariableTop(variableTop);
+    }
+
     // we use 4.0 because it ensures we just encode the pure byte[] keys.
     analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
   }

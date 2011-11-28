@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -194,12 +195,15 @@ public class MockDirectoryWrapper extends Directory {
         f.close();
       } catch (Exception ignored) {}
     
-    int count = 0;
     while(it.hasNext()) {
       String name = it.next();
-      if (count % 3 == 0) {
+      int damage = randomState.nextInt(5);
+      String action = null;
+      if (damage == 0) {
+        action = "deleted";
         deleteFile(name, true);
-      } else if (count % 3 == 1) {
+      } else if (damage == 1) {
+        action = "zeroed";
         // Zero out file entirely
         long length = fileLength(name);
         byte[] zeroes = new byte[256];
@@ -211,13 +215,26 @@ public class MockDirectoryWrapper extends Directory {
           upto += limit;
         }
         out.close();
-      } else if (count % 3 == 2) {
-        // Truncate the file:
+      } else if (damage == 2) {
+        action = "partially truncated";
+        // Partially Truncate the file:
         IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         out.setLength(fileLength(name)/2);
         out.close();
+      } else if (damage == 3) {
+        // The file survived intact:
+        action = "didn't change";
+      } else {
+        action = "fully truncated";
+        // Totally truncate the file to zero bytes
+        deleteFile(name, true);
+        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
+        out.setLength(0);
+        out.close();
       }
-      count++;
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
+      }
     }
   }
 
@@ -499,10 +516,15 @@ public class MockDirectoryWrapper extends Directory {
     }
     open = false;
     if (checkIndexOnClose) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
-      } 
       if (IndexReader.indexExists(this)) {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
+        }
+        unSyncedFiles.remove("segments.gen"); // otherwise we add minutes to the tests: LUCENE-3605
+        crash(); // corrumpt any unsynced-files
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
+        } 
         _TestUtil.checkIndex(this);
       }
     }

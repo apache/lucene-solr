@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class LowerCaseFilterFactory extends BaseTokenFilterFactory {
+public class LowerCaseFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
@@ -42,5 +42,10 @@ public class LowerCaseFilterFactory extends BaseTokenFilterFactory {
 
   public LowerCaseFilter create(TokenStream input) {
     return new LowerCaseFilter(luceneMatchVersion,input);
+  }
+
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

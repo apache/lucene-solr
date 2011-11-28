@@ -85,6 +85,13 @@ Bug Fixes
 
 (No Changes)
 
+Bug Fixes
+
+ * LUCENE-3600: BlockJoinQuery now supports parent docs that have no
+   children (such docs will never match, but BJQ was tripping an
+   assert if such a parent doc was the first doc in the segment).
+   (Shay Banon, Mike McCandless)
+
 ======================= Lucene 3.5.0 ================
 
 Changes in backwards compatibility policy

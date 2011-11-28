@@ -31,6 +31,7 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -191,7 +192,13 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       taxoIndexCreateTime = Long.toString(System.nanoTime());
     }
     
-    indexWriter = openIndexWriter(directory, openMode);
+    IndexWriterConfig config = createIndexWriterConfig(openMode);
+    indexWriter = openIndexWriter(directory, config);
+    
+    // verify (to some extent) that merge policy in effect would preserve category docids 
+    assert !(indexWriter.getConfig().getMergePolicy() instanceof TieredMergePolicy) : 
+      "for preserving category docids, merging none-adjacent segments is not allowed";
+    
     reader = null;
 
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
@@ -225,37 +232,53 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * A hook for extensions of this class to provide their own
-   * {@link IndexWriter} implementation or instance. Extending classes can
-   * instantiate and configure the {@link IndexWriter} as they see fit,
-   * including setting a {@link org.apache.lucene.index.MergeScheduler}, or
-   * {@link org.apache.lucene.index.IndexDeletionPolicy}, different RAM size
-   * etc.<br>
-   * <b>NOTE:</b> the instance this method returns will be closed upon calling
+   * Open internal index writer, which contains the taxonomy data.
+   * <p>
+   * Extensions may provide their own {@link IndexWriter} implementation or instance. 
+   * <br><b>NOTE:</b> the instance this method returns will be closed upon calling
    * to {@link #close()}.
+   * <br><b>NOTE:</b> the merge policy in effect must not merge none adjacent segments. See
+   * comment in {@link #createIndexWriterConfig(IndexWriterConfig.OpenMode)} for the logic behind this.
+   *  
+   * @see #createIndexWriterConfig(IndexWriterConfig.OpenMode)
    * 
    * @param directory
    *          the {@link Directory} on top of which an {@link IndexWriter}
    *          should be opened.
-   * @param openMode
-   *          see {@link OpenMode}
+   * @param config
+   *          configuration for the internal index writer.
    */
-  protected IndexWriter openIndexWriter(Directory directory, OpenMode openMode)
+  protected IndexWriter openIndexWriter(Directory directory, IndexWriterConfig config)
       throws IOException {
-    // Make sure we use a MergePolicy which merges segments in-order and thus
-    // keeps the doc IDs ordered as well (this is crucial for the taxonomy
-    // index).
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_40,
-        new KeywordAnalyzer()).setOpenMode(openMode).setMergePolicy(
-        new LogByteSizeMergePolicy());
     return new IndexWriter(directory, config);
   }
 
-  // Currently overridden by a unit test that verifies that every index we open
-  // is close()ed.
   /**
-   * Open an {@link IndexReader} from the {@link #indexWriter} member, by
-   * calling {@link IndexWriter#getReader()}. Extending classes can override
+   * Create the {@link IndexWriterConfig} that would be used for opening the internal index writer.
+   * <br>Extensions can configure the {@link IndexWriter} as they see fit,
+   * including setting a {@link org.apache.lucene.index.MergeScheduler merge-scheduler}, or
+   * {@link org.apache.lucene.index.IndexDeletionPolicy deletion-policy}, different RAM size
+   * etc.<br>
+   * <br><b>NOTE:</b> internal docids of the configured index must not be altered.
+   * For that, categories are never deleted from the taxonomy index.
+   * In addition, merge policy in effect must not merge none adjacent segments.
+   * 
+   * @see #openIndexWriter(Directory, IndexWriterConfig)
+   * 
+   * @param openMode see {@link OpenMode}
+   */
+  protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
+    // Make sure we use a MergePolicy which always merges adjacent segments and thus
+    // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
+    return new IndexWriterConfig(Version.LUCENE_40,
+        new KeywordAnalyzer()).setOpenMode(openMode).setMergePolicy(
+        new LogByteSizeMergePolicy());
+  }
+
+  // Currently overridden by a unit test that verifies that every index we open is close()ed.
+  /**
+   * Open an {@link IndexReader} from the internal {@link IndexWriter}, by
+   * calling {@link IndexReader#open(IndexWriter, boolean)}. Extending classes can override
    * this method to return their own {@link IndexReader}.
    */
   protected IndexReader openReader() throws IOException {

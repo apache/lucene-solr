@@ -63,7 +63,15 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   public SimpleTextTermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
-    out = directory.createOutput(IndexFileNames.segmentFileName(segment, "", VECTORS_EXTENSION), context);
+    boolean success = false;
+    try {
+      out = directory.createOutput(IndexFileNames.segmentFileName(segment, "", VECTORS_EXTENSION), context);
+      success = true;
+    } finally {
+      if (!success) {
+        abort();
+      }
+    }
   }
   
   @Override

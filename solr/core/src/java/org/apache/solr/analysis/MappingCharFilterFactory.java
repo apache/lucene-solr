@@ -46,7 +46,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *
  */
 public class MappingCharFilterFactory extends BaseCharFilterFactory implements
-    ResourceLoaderAware {
+    ResourceLoaderAware, MultiTermAwareComponent {
 
   protected NormalizeCharMap normMap;
   private String mapping;
@@ -125,5 +125,10 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
       out[writePos++] = c;
     }
     return new String( out, 0, writePos );
+  }
+
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

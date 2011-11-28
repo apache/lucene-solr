@@ -17,29 +17,15 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.fa.PersianCharFilter;
-
-/**
- * Factory for {@link PersianCharFilter}.
- * <pre class="prettyprint" >
- * &lt;fieldType name="text_fa" class="solr.TextField" positionIncrementGap="100"&gt;
- *   &lt;analyzer&gt;
- *     &lt;charFilter class="solr.PersianCharFilterFactory"/&gt;
- *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
- *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre>
+/** Add to any analysis factory component to allow returning an
+ * analysis component factory for use with partial terms in prefix queries,
+ * wildcard queries, range query endpoints, regex queries, etc.
  *
+ * @lucene.experimental
  */
-public class PersianCharFilterFactory extends BaseCharFilterFactory implements MultiTermAwareComponent {
-
-  @Override
-  public CharStream create(CharStream input) {
-    return new PersianCharFilter(input);
-  }
-
-  @Override
-  public Object getMultiTermComponent() {
-    return this;
-  }
+public interface MultiTermAwareComponent {
+  /** Returns an analysis component to handle analysis if multi-term queries.
+   * The returned component must be a TokenizerFactory, TokenFilterFactory or CharFilterFactory.
+   */
+  public Object getMultiTermComponent();
 }

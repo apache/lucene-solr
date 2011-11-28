@@ -189,9 +189,11 @@ New Features
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
     
-* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
-  a complete analysis chain for multiterm queries.   
-  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+  
+* SOLR-2438 added MultiTermAwareComponent to the various classes to allow automatic lowercasing
+  for multiterm queries (wildcards, regex, prefix, range, etc). You can now optionally specify a
+  "multiterm" analyzer in our schema.xml, but Solr should "do the right thing" if you don't
+  specify <fieldType="multiterm"> (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
 
 
 Optimizations
@@ -388,10 +390,13 @@ New Features
 * SOLR-1565: StreamingUpdateSolrServer supports RequestWriter API and therefore, javabin update
   format (shalin)
 
-* SOLR-2438: Case insensitive search for wildcard queries. Actually, the ability to specify
-  a complete analysis chain for multiterm queries.   
-  (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
+* SOLR-2438 added MultiTermAwareComponent to the various classes to allow automatic lowercasing
+  for multiterm queries (wildcards, regex, prefix, range, etc). You can now optionally specify a
+  "multiterm" analyzer in our schema.xml, but Solr should "do the right thing" if you don't
+  specify <fieldType="multiterm"> (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
 
+* SOLR-2919: Added support for localized range queries when the analysis chain uses 
+  CollationKeyFilter or ICUCollationKeyFilter.  (Michael Sokolov, rmuir)
 
 Bug Fixes
 ----------------------

@@ -226,6 +226,8 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         } catch (AlreadyClosedException e) {
           // expected
         } catch (Throwable e) {
+          System.out.println("FAIL: unexpected exc");
+          e.printStackTrace(System.out);
           exc[0] = e;
           // use success as the barrier here to make sure we see the write
           success.set(false);

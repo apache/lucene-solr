@@ -72,7 +72,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  * @deprecated use {@link org.apache.solr.schema.CollationField} instead.
  */
 @Deprecated
-public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent,ResourceLoaderAware {
   private Collator collator;
 
   public void inform(ResourceLoader loader) {
@@ -170,5 +170,10 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
     } finally {
       IOUtils.closeQuietly(input);
     }
+  }
+  
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

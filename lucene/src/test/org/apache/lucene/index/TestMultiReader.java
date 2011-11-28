@@ -19,9 +19,19 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 
 public class TestMultiReader extends TestDirectoryReader {
+
+  // TODO: files are never fsynced if you do what this test is doing,
+  // so the checkindex is disabled.
+  @Override
+  protected Directory createDirectory() throws IOException {
+    MockDirectoryWrapper mdw = newDirectory();
+    mdw.setCheckIndexOnClose(false);
+    return mdw;
+  }
 
   @Override
   protected IndexReader openReader() throws IOException {
