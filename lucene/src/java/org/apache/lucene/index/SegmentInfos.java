@@ -875,9 +875,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
          */
         files.add(segmentFileName);
       }
-      if (lastGlobalFieldMapVersion > 0) {
-        files.add(getGlobalFieldNumberName(lastGlobalFieldMapVersion));
-      }
+    }
+    if (lastGlobalFieldMapVersion > 0) {
+      files.add(getGlobalFieldNumberName(lastGlobalFieldMapVersion));
     }
     final int size = size();
     for(int i=0;i<size;i++) {

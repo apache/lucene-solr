@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -52,7 +51,6 @@ import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.TwoPhaseCommit;
@@ -211,6 +209,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
+
+  private Collection<String> filesToCommit;
 
   final SegmentInfos segmentInfos;       // the segments
   final FieldNumberBiMap globalFieldNumberMap;
@@ -2654,8 +2654,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             // to commit.  This is important in case, eg, while
             // we are trying to sync all referenced files, a
             // merge completes which would otherwise have
-            // removed the files we are now syncing.
-            deleter.incRef(toCommit, false);
+            // removed the files we are now syncing.    
+            filesToCommit = toCommit.files(directory, false);
+            deleter.incRef(filesToCommit);
           }
           success = true;
         } finally {
@@ -2680,7 +2681,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } finally {
       if (!success) {
         synchronized (this) {
-          deleter.decRef(toCommit);
+          deleter.decRef(filesToCommit);
+          filesToCommit = null;
         }
       }
     }
@@ -2780,8 +2782,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         rollbackSegments = pendingCommit.createBackupSegmentInfos(true);
         deleter.checkpoint(pendingCommit, true);
       } finally {
-        // Matches the incRef done in startCommit:
-        deleter.decRef(pendingCommit);
+        // Matches the incRef done in prepareCommit:
+        deleter.decRef(filesToCommit);
+        filesToCommit = null;
         pendingCommit = null;
         notifyAll();
       }
@@ -3796,7 +3799,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (infoStream != null) {
             infoStream.message("IW", "  skip startCommit(): no changes pending");
           }
-          deleter.decRef(toSync);
+          deleter.decRef(filesToCommit);
+          filesToCommit = null;
           return;
         }
 
@@ -3857,7 +3861,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
 
             // Hit exception
-            deleter.decRef(toSync);
+            deleter.decRef(filesToCommit);
+            filesToCommit = null;
           }
         }
       }

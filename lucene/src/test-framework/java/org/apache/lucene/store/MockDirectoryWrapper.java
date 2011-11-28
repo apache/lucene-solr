@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
@@ -494,6 +496,12 @@ public class MockDirectoryWrapper extends Directory {
     return size;
   }
 
+  private boolean assertNoUnreferencedFilesOnClose = true;
+
+  public void setAssertNoUnrefencedFilesOnClose(boolean v) {
+    assertNoUnreferencedFilesOnClose = v;
+  }
+
   @Override
   public synchronized void close() throws IOException {
     maybeYield();
@@ -526,6 +534,20 @@ public class MockDirectoryWrapper extends Directory {
           System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
         } 
         _TestUtil.checkIndex(this);
+
+        if (assertNoUnreferencedFilesOnClose) {
+          // now look for unreferenced files:
+          String[] startFiles = listAll();
+          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
+          String[] endFiles = listAll();
+
+          Arrays.sort(startFiles);
+          Arrays.sort(endFiles);
+
+          if (!Arrays.equals(startFiles, endFiles)) {
+            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles);
+          }
+        }
       }
     }
     delegate.close();

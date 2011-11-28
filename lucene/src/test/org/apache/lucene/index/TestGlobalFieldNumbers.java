@@ -75,7 +75,6 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
         }
-        assertFNXFiles(dir, "_2.fnx");
         writer.close();
         assertFNXFiles(dir, "_2.fnx");
       }
@@ -127,7 +126,6 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
-        assertFNXFiles(dir, "_2.fnx");
         writer.close();
         assertFNXFiles(dir, "_2.fnx");
       }
