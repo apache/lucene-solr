@@ -294,11 +294,11 @@ public class Overseer implements NodeStateChangeListener {
         shardId = coreState.getProperties().get("shard_id");
       }
       
-      ZkNodeProps props = new ZkNodeProps();
+      Map<String,String> props = new HashMap<String,String>();
       for (Entry<String,String> entry : coreState.getProperties().entrySet()) {
         props.put(entry.getKey(), entry.getValue());
       }
-      
+      ZkNodeProps zkProps = new ZkNodeProps(props);
       Slice slice = cloudState.getSlice(collection, shardId);
       Map<String,ZkNodeProps> shardProps;
       if (slice == null) {
@@ -306,7 +306,7 @@ public class Overseer implements NodeStateChangeListener {
       } else {
         shardProps = cloudState.getSlice(collection, shardId).getShardsCopy();
       }
-      shardProps.put(coreName, props);
+      shardProps.put(coreName, zkProps);
       System.out.println("Current slices:" + cloudState.getSlice(collection, shardId));
       slice = new Slice(shardId, shardProps);
       CloudState state = new CloudState(cloudState.getLiveNodes(),
@@ -357,9 +357,9 @@ public class Overseer implements NodeStateChangeListener {
         if (data != null) {
           ZkNodeProps props = new ZkNodeProps();
           try {
-            props.load(data);
+            props = ZkNodeProps.load(data);
           } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Could not load ZkNodeProps", e);
           }
           collections.put(collection, props);
           log.info("Registered collection " + collection + " with following properties: "

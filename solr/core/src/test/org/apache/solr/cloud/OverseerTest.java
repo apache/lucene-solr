@@ -1,7 +1,9 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -57,12 +59,16 @@ public class OverseerTest extends SolrTestCaseJ4 {
       collection2Desc.setCollectionName("collection2");
 
       //create collection specs
-      ZkNodeProps props = new ZkNodeProps();
+      Map<String,String> props = new HashMap<String,String>();
+   
       props.put("num_shards", "3");
-      zkClient.setData("/collections/collection1", props.store());
+      ZkNodeProps zkProps = new ZkNodeProps(props);
+      zkClient.setData("/collections/collection1", zkProps.store());
       props.put("num_shards", "1");
-      zkClient.setData("/collections/collection2", props.store());
-
+      zkProps = new ZkNodeProps(props);
+      zkClient.setData("/collections/collection2", zkProps.store());
+      ZkNodeProps z = new ZkNodeProps(props);
+      
       CoreDescriptor desc = new CoreDescriptor(null, "core1", "");
       desc.setCloudDescriptor(collection1Desc);
       String shard1 = zkController.register("core1", desc);

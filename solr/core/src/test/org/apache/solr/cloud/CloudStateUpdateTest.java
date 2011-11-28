@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -136,11 +137,13 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   public void testCoreRegistration() throws Exception {
     System.setProperty("CLOUD_UPDATE_DELAY", "1");
     
-    ZkNodeProps props2 = new ZkNodeProps();
+   
+    Map<String,String> props2 = new HashMap<String,String>();
     props2.put("configName", "conf1");
+    ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/collections/testcore", props2.store(), CreateMode.PERSISTENT);
+    zkClient.makePath("/collections/testcore", zkProps2.store(), CreateMode.PERSISTENT);
     zkClient.makePath("/collections/testcore/shards", CreateMode.PERSISTENT);
     zkClient.close();
     

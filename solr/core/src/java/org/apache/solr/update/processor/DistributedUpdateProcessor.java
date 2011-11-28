@@ -28,7 +28,6 @@ import java.util.Set;
 import org.apache.commons.lang.NullArgumentException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.HashPartitioner;
 import org.apache.solr.cloud.HashPartitioner.Range;
 import org.apache.solr.common.SolrException;
@@ -48,7 +47,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.update.*;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.SolrCmdDistributor;
+import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.VersionBucket;
+import org.apache.solr.update.VersionInfo;
 import org.apache.zookeeper.KeeperException;
 
 // NOT mt-safe... create a new processor for each add thread
@@ -135,10 +142,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (leaderChildren.size() > 0) {
           String leader = leaderChildren.get(0);
           
-          ZkNodeProps zkNodeProps = new ZkNodeProps();
           byte[] bytes = zkClient
               .getData(leaderNode + "/" + leader, null, null);
-          zkNodeProps.load(bytes);
+          ZkNodeProps zkNodeProps = ZkNodeProps.load(bytes);
           
           String leaderUrl = zkNodeProps.get("url");
           

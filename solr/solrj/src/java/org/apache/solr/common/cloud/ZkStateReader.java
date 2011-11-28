@@ -349,8 +349,7 @@ public class ZkStateReader {
       if (leaderChildren.size() > 0) {
         String leader = leaderChildren.get(0);
         byte[] data = zkClient.getData(leaderPath + "/" + leader, null, null);
-        ZkNodeProps props = new ZkNodeProps();
-        props.load(data);
+        ZkNodeProps props = ZkNodeProps.load(data);
         url = props.get(ZkStateReader.URL_PROP);
         break;
       } else {

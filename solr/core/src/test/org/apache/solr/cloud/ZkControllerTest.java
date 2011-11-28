@@ -18,7 +18,9 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -60,9 +62,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + actualConfigName);
       
-      ZkNodeProps props = new ZkNodeProps();
+      Map<String,String> props = new HashMap<String,String>();
       props.put("configName", actualConfigName);
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME , props.store(), CreateMode.PERSISTENT);
+      ZkNodeProps zkProps = new ZkNodeProps(props);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME , zkProps.store(), CreateMode.PERSISTENT);
 
       if (DEBUG) {
         zkClient.printLayoutToStdOut();

@@ -321,12 +321,12 @@ public final class ZkController {
               return;
             }
           } catch (KeeperException e) {
-            log.error("Could not read node assignments.", e);
+            log.warn("Could not read node assignments.", e);
             return;
           } catch (InterruptedException e) {
             // Restore the interrupted status
             Thread.currentThread().interrupt();
-            log.error("Could not read node assignments.", e);
+            log.warn("Could not read node assignments.", e);
             return;
           }
           
@@ -430,10 +430,9 @@ public final class ZkController {
       log.info("Load collection config from:" + path);
     }
     byte[] data = zkClient.getData(path, null, null);
-    ZkNodeProps props = new ZkNodeProps();
     
     if(data != null) {
-      props.load(data);
+      ZkNodeProps props = ZkNodeProps.load(data);
       configName = props.get(CONFIGNAME_PROP);
     }
     
@@ -473,7 +472,7 @@ public final class ZkController {
     // checkRecovery will have updated the shardId if it already exists...
     String shardId = cloudDesc.getShardId();
 
-    ZkNodeProps props = new ZkNodeProps();
+    Map<String,String> props = new HashMap<String,String>();
     props.put(ZkStateReader.URL_PROP, shardUrl);
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
@@ -481,7 +480,6 @@ public final class ZkController {
     if(shardId!=null) {
       props.put("shard_id", shardId);
     }
-
 
     if (shardId == null && getShardId(desc, state, shardZkNodeName)) {
       publishState(cloudDesc, shardZkNodeName, props); //need to publish state to get overseer assigned id
@@ -500,7 +498,8 @@ public final class ZkController {
     leaderElector.setupForSlice(shardId, collection);
     
     // leader election
-    doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
+    ZkNodeProps zkProps = new ZkNodeProps(props);
+    doLeaderElectionProcess(shardId, collection, shardZkNodeName, zkProps);
     
     // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
@@ -564,7 +563,8 @@ public final class ZkController {
   ZkNodeProps addToZk(String collection, final CoreDescriptor desc, final CloudDescriptor cloudDesc, String shardUrl,
       final String shardZkNodeName, String state)
       throws Exception {
-    ZkNodeProps props = new ZkNodeProps();
+
+    Map<String,String> props = new HashMap<String,String>();
     props.put(ZkStateReader.URL_PROP, shardUrl);
     
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
@@ -574,10 +574,10 @@ public final class ZkController {
     props.put(ZkStateReader.STATE_PROP, state);
     
     System.out.println("update state to:" + state);
-    
+    ZkNodeProps zkProps = new ZkNodeProps(props);
 
     Map<String, ZkNodeProps> shardProps = new HashMap<String, ZkNodeProps>();
-    shardProps.put(shardZkNodeName, props);
+    shardProps.put(shardZkNodeName, zkProps);
 		Slice slice = new Slice(cloudDesc.getShardId(), shardProps);
 		
 		boolean persisted = false;
@@ -618,7 +618,7 @@ public final class ZkController {
         
         Map<String, ZkNodeProps> shards = new HashMap<String, ZkNodeProps>();
         shards.putAll(slice.getShards());
-        shards.put(shardZkNodeName, props);
+        shards.put(shardZkNodeName, zkProps);
         Slice newSlice = new Slice(slice.getName(), shards);
         
 
@@ -640,7 +640,7 @@ public final class ZkController {
 
 			}
 		}
-    return props;
+    return zkProps;
   }
 
 
@@ -807,7 +807,7 @@ public final class ZkController {
        SolrParams params = cd.getParams();
 
         try {
-          ZkNodeProps collectionProps = new ZkNodeProps();
+          Map<String,String> collectionProps = new HashMap<String,String>();
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, "configuration1");
 
@@ -847,9 +847,8 @@ public final class ZkController {
             int retry = 1;
             for (; retry < 6; retry++) {
               if (zkClient.exists(collectionPath)) {
-                collectionProps = new ZkNodeProps();
-                collectionProps.load(zkClient.getData(collectionPath, null, null));
-                if (collectionProps.containsKey(CONFIGNAME_PROP)) {
+                ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null));
+                if (cProps.containsKey(CONFIGNAME_PROP)) {
                   break;
                 }
               }
@@ -873,8 +872,8 @@ public final class ZkController {
           }
           
           collectionProps.put("num_shards", Integer.toString(numShards));
-          
-          zkClient.makePath(collectionPath, collectionProps.store(), CreateMode.PERSISTENT, null, true);
+          ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
+          zkClient.makePath(collectionPath, zkProps.store(), CreateMode.PERSISTENT, null, true);
           try {
             // shards_lock node
             if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/shards_lock")) {
@@ -915,7 +914,7 @@ public final class ZkController {
 
   
   private void publishState(CloudDescriptor cloudDesc, String shardZkNodeName,
-      ZkNodeProps props) {
+      Map<String,String> props) {
     CoreState coreState = new CoreState(shardZkNodeName,
         cloudDesc.getCollectionName(), props);
     coreStates.put(shardZkNodeName, coreState);

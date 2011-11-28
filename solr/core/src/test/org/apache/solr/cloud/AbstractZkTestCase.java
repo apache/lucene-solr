@@ -18,8 +18,9 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -74,12 +75,13 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
 
-    ZkNodeProps props = new ZkNodeProps();
+    Map<String,String> props = new HashMap<String,String>();
     props.put("configName", "conf1");
-    zkClient.makePath("/collections/collection1", props.store(), CreateMode.PERSISTENT);
+    ZkNodeProps zkProps = new ZkNodeProps(props);
+    zkClient.makePath("/collections/collection1", zkProps.store(), CreateMode.PERSISTENT);
     zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT);
 
-    zkClient.makePath("/collections/control_collection", props.store(), CreateMode.PERSISTENT);
+    zkClient.makePath("/collections/control_collection", zkProps.store(), CreateMode.PERSISTENT);
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT);
 
     putConfig(zkClient, config);

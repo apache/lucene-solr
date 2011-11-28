@@ -39,8 +39,7 @@ public class Slice {
   public Map<String,ZkNodeProps> getShardsCopy() {
     Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
     for (Map.Entry<String,ZkNodeProps> entry : this.shards.entrySet()) {
-      ZkNodeProps zkProps = new ZkNodeProps();
-      zkProps.putAll(entry.getValue());
+      ZkNodeProps zkProps = new ZkNodeProps(entry.getValue());
       shards.put(entry.getKey(), zkProps);
     }
     return shards;

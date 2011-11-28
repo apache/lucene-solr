@@ -165,7 +165,7 @@ public class CloudState {
 							String shardName = shard.getAttributes()
 									.getNamedItem("name").getNodeValue();
 							NodeList propsList = shard.getChildNodes();
-							ZkNodeProps props = new ZkNodeProps();
+							Map<String,String> props = new HashMap<String,String>();
 							
 							for (int i = 0; i < propsList.getLength(); i++) {
 								Node prop = propsList.item(i);
@@ -174,7 +174,7 @@ public class CloudState {
 								String propValue = prop.getTextContent();
 								props.put(propName, propValue);
 							}
-							shards.put(shardName, props);
+							shards.put(shardName, new ZkNodeProps(props));
 						}
             Map<String,Slice> s = null;
             if (!colStates.containsKey(collectionName)) {

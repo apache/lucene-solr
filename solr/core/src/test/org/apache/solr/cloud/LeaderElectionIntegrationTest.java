@@ -120,9 +120,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   
   @Test
   public void testSimpleSliceLeaderElection() throws Exception {
-    
-    ZkNodeProps props2 = new ZkNodeProps();
-    props2.put("configName", "conf1");
+
     //printLayout(zkServer.getZkAddress());
     
     for (int i = 0; i < 4; i++) {

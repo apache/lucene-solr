@@ -37,9 +37,11 @@ public class CloudStateTest extends SolrTestCaseJ4 {
     
     Map<String,Slice> slices = new HashMap<String,Slice>();
     Map<String,ZkNodeProps> sliceToProps = new HashMap<String,ZkNodeProps>();
-    ZkNodeProps zkNodeProps = new ZkNodeProps();
-    zkNodeProps.put("prop1", "value");
-    sliceToProps.put("node1", zkNodeProps );
+    Map<String,String> props = new HashMap<String,String>();
+
+    props.put("prop1", "value");
+    ZkNodeProps zkNodeProps = new ZkNodeProps(props);
+    sliceToProps.put("node1", zkNodeProps);
     Slice slice = new Slice("shard1", sliceToProps);
     slices.put("shard1", slice);
     collectionStates.put("collection1", slices);

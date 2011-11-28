@@ -18,42 +18,72 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-public class ZkNodeProps extends HashMap<String,String> {
+// Immutable
+public class ZkNodeProps  {
+  private final Map<String,String> propMap;
 
-  private static final long serialVersionUID = 1L;
-
-  public void load(byte[] bytes) throws IOException {
+  public ZkNodeProps(Map<String,String> propMap) {
+    this.propMap = new HashMap<String,String>();
+    this.propMap.putAll(propMap);
+  }
+  
+  public ZkNodeProps(ZkNodeProps zkNodeProps) {
+    this.propMap = new HashMap<String,String>();
+    this.propMap.putAll(zkNodeProps.propMap);
+  }
+  
+  public ZkNodeProps() {
+    propMap = new HashMap<String,String>();
+  }
+  
+  public Set<String> keySet() {
+    return Collections.unmodifiableSet(propMap.keySet());
+  }
+  
+  public static ZkNodeProps load(byte[] bytes) throws IOException {
+    ZkNodeProps props = new ZkNodeProps();
     String stringRep = new String(bytes, "UTF-8");
     String[] lines = stringRep.split("\n");
     for (String line : lines) {
       int sepIndex = line.indexOf('=');
       String key = line.substring(0, sepIndex);
       String value = line.substring(sepIndex + 1, line.length());
-      put(key, value);
+      props.propMap.put(key, value);
     }
+    return props;
   }
 
   public byte[] store() throws IOException {
     StringBuilder sb = new StringBuilder();
-    Set<Entry<String,String>> entries = entrySet();
+    Set<Entry<String,String>> entries = propMap.entrySet();
     for(Entry<String,String> entry : entries) {
       sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
     }
     return sb.toString().getBytes("UTF-8");
   }
   
+  public String get(String key) {
+    return propMap.get(key);
+  }
+  
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    Set<Entry<String,String>> entries = entrySet();
+    Set<Entry<String,String>> entries = propMap.entrySet();
     for(Entry<String,String> entry : entries) {
       sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
     }
     return sb.toString();
+  }
+
+  public boolean containsKey(String key) {
+    return propMap.containsKey(key);
   }
 
 }
