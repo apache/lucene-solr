@@ -26,17 +26,11 @@ import java.util.Map;
 
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.zookeeper.KeeperException;
 
 public class AssignShard {
-  private SolrZkClient client;
-  
-  public AssignShard(SolrZkClient client) {
-    this.client = client;
-  }
-  
+
   /**
    * Assign a new unique id up to slices count - then add replicas evenly.
    * 
@@ -47,55 +41,63 @@ public class AssignShard {
    * @throws InterruptedException
    * @throws KeeperException
    */
-  public String assignShard(String collection, int slices)
-      throws KeeperException, InterruptedException {
-    // we want the collection lock
-    ZkCollectionLock lock = new ZkCollectionLock(client, collection);
-    lock.lock();
-    String returnShardId = null;
-    try {
-      // lets read the current shards - we want to read straight from zk (we
-      // need the absolute latest info), and we assume we have some kind
-      // of collection level lock
-      
-      // TODO: this made a lot more sense when the cluster state was on multiple nodes
-      // and it was just a single getChildren read.
+  public static String assignShard(String collection,
+      ZkNodeProps collectionProperties, CloudState state) {
 
-      CloudState state = CloudState.load(client.getData(ZkStateReader.CLUSTER_STATE, null, null));
-      Map<String, Slice> sliceMap = state.getSlices(collection);
-      
-      if (sliceMap == null) {
-        return "shard1";
-      }
-      
-      List<String> shardIdNames = new ArrayList<String>(sliceMap.keySet());
-
-      
-      if (shardIdNames.size() < slices) {
-        return "shard" + (shardIdNames.size() + 1);
-      }
-      
-      // else figure out which shard needs more replicas
-      final Map<String,Integer> map = new HashMap<String,Integer>();
-      for (String shardId : shardIdNames) {
-    	int cnt = sliceMap.get(shardId).getShards().size();
-        map.put(shardId, cnt);
-      }
-
-      Collections.sort(shardIdNames, new Comparator<String>() {
-        
-        @Override
-        public int compare(String o1, String o2) {
-          Integer one = map.get(o1);
-          Integer two = map.get(o2);
-          return one.compareTo(two);
-        }
-      });
-
-      returnShardId = shardIdNames.get(0);
-    } finally {
-      lock.unlock();
+    int shards = 0;
+    String numShardsString = null;
+    if (collectionProperties != null) {
+      numShardsString = collectionProperties.get("num_shards");
     }
+
+    if (numShardsString == null) {
+      System.out.println("no shards count specified for collection "
+          + collection);
+      if (System.getProperty("numShards") == null) {
+        System.out.println("no shards count specified in system property, using 1");
+        shards = 1;
+      } else {
+        shards = Integer.parseInt(System.getProperty("numShards")); // XXXX
+        System.out.println("Shard count (System.property): " + shards);
+      }
+    } else {
+      shards = Integer.parseInt(numShardsString);
+    }
+
+    
+    System.out.println("final shard count: " + shards);
+
+    String returnShardId = null;
+    Map<String, Slice> sliceMap = state.getSlices(collection);
+
+    if (sliceMap == null) {
+      return "shard1";
+    }
+
+    List<String> shardIdNames = new ArrayList<String>(sliceMap.keySet());
+
+    if (shardIdNames.size() < shards) {
+      return "shard" + (shardIdNames.size() + 1);
+    }
+
+    // else figure out which shard needs more replicas
+    final Map<String, Integer> map = new HashMap<String, Integer>();
+    for (String shardId : shardIdNames) {
+      int cnt = sliceMap.get(shardId).getShards().size();
+      map.put(shardId, cnt);
+    }
+
+    Collections.sort(shardIdNames, new Comparator<String>() {
+
+      @Override
+      public int compare(String o1, String o2) {
+        Integer one = map.get(o1);
+        Integer two = map.get(o2);
+        return one.compareTo(two);
+      }
+    });
+
+    returnShardId = shardIdNames.get(0);
     return returnShardId;
   }
 }

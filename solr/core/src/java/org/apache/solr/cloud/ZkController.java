@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +48,8 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -79,6 +82,7 @@ public final class ZkController {
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
 
+  private final HashMap<String, CoreState> coreStates = new HashMap<String, CoreState>();
   private SolrZkClient zkClient;
   
   private ZkStateReader zkStateReader;
@@ -94,9 +98,11 @@ public final class ZkController {
 
   private String hostName;
 
-  private AssignShard assignShard;
-
+  private OverseerElector overseerElector;
+  
   private int numShards;
+
+  private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
 
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first
@@ -180,7 +186,6 @@ public final class ZkController {
     
     leaderElector = new SliceLeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
-    assignShard = new AssignShard(zkClient);
     init();
   }
 
@@ -300,6 +305,39 @@ public final class ZkController {
       
       createEphemeralLiveNode();
       setUpCollectionsNode();
+      setupOverseerNodes();
+      
+      byte[] assignments = zkClient.getData(getAssignmentsNode(), new Watcher(){
+
+        @Override
+        public void process(WatchedEvent event) {
+          //read latest assignments
+          try {
+            byte[] assignments = zkClient.getData(getAssignmentsNode(), this, null);
+            try {
+              processAssignmentsUpdate(assignments);
+            } catch (IOException e) {
+              log.error("assignment data was malformed");
+              e.printStackTrace();
+            }
+          } catch (KeeperException e) {
+            log.error("Could not read node assignments.");
+            e.printStackTrace();
+          } catch (InterruptedException e) {
+            log.error("Could not read node assignments.");
+            e.printStackTrace();
+          }
+          // TODO Auto-generated method stub
+          
+        }
+        
+      }, null);
+
+      processAssignmentsUpdate(assignments);
+      
+      overseerElector = new OverseerElector(zkClient);
+      overseerElector.setupForElection();
+      overseerElector.joinElection(getNodeName());
       zkStateReader.createClusterStateWatchersAndUpdate();
       
     } catch (IOException e) {
@@ -318,6 +356,11 @@ public final class ZkController {
           "", e);
     }
 
+  }
+
+
+  private String getAssignmentsNode() {
+    return "/node_assignments/" + getNodeName();
   }
 
   private void createEphemeralLiveNode() throws KeeperException,
@@ -430,11 +473,25 @@ public final class ZkController {
     // checkRecovery will have updated the shardId if it already exists...
     String shardId = cloudDesc.getShardId();
 
-    if (shardId == null && getShardId(desc, state, shardZkNodeName)) {
-      shardId = assignShard.assignShard(collection, numShards);
-      cloudDesc.setShardId(shardId);
+    ZkNodeProps props = new ZkNodeProps();
+    props.put(ZkStateReader.URL_PROP, shardUrl);
+    props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
+    props.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
+    if(shardId!=null) {
+      props.put("shard_id", shardId);
     }
-    
+
+
+    if (shardId == null && getShardId(desc, state, shardZkNodeName)) {
+      publishState(cloudDesc, shardZkNodeName, props); //need to publish state to get overseer assigned id
+      shardId = doGetShardIdProcess(coreName, cloudDesc);
+      cloudDesc.setShardId(shardId);
+      props.put("shard_id", shardId);
+    } else {
+      publishState(cloudDesc, shardZkNodeName, props);
+    }
+
     if (log.isInfoEnabled()) {
         log.info("Register shard - core:" + coreName + " address:"
             + shardUrl + "shardId:" + shardId);
@@ -442,18 +499,20 @@ public final class ZkController {
     
     leaderElector.setupForSlice(shardId, collection);
     
-    ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.RECOVERING);
+    // ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.RECOVERING);
+    
+    
     
     // leader election
     doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
     
+    // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
     
     boolean iamleader = false;
     boolean doRecovery = true;
     if (leaderUrl.equals(shardUrl)) {
       iamleader = true;
-      // TODO: this should really be figured in checkRecovery
       doRecovery = false;
     } else {
       CoreContainer cc = desc.getCoreContainer();
@@ -699,6 +758,34 @@ public final class ZkController {
     }
     
   }
+  
+  private void setupOverseerNodes() throws KeeperException, InterruptedException {
+    String nodeName = getAssignmentsNode();
+    
+    try {
+      if (!zkClient.exists(nodeName)) {
+        if (log.isInfoEnabled()) {
+          log.info("creating node:" + nodeName);
+        }
+        // makes collections zkNode if it doesn't exist
+        zkClient.makePath(nodeName, CreateMode.PERSISTENT, null);
+      }
+    } catch (KeeperException e) {
+      // its okay if another beats us creating the node
+      if (e.code() != KeeperException.Code.NODEEXISTS) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      }
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
+    }
+
+  }
 
   public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
     String collection = cd.getCollectionName();
@@ -777,6 +864,8 @@ public final class ZkController {
             }
           }
           
+          collectionProps.put("num_shards", Integer.toString(numShards));
+          
           zkClient.makePath(collectionPath, collectionProps.store(), CreateMode.PERSISTENT, null, true);
           try {
             // shards_lock node
@@ -816,4 +905,81 @@ public final class ZkController {
     return zkStateReader;
   }
 
+  
+  private void publishState(CloudDescriptor cloudDesc, String shardZkNodeName,
+      ZkNodeProps props) {
+    CoreState coreState = new CoreState(shardZkNodeName,
+        cloudDesc.getCollectionName(), props);
+    coreStates.put(shardZkNodeName, coreState);
+    final String nodePath = "/node_states/" + getNodeName();
+
+    try {
+      if (!zkClient.exists(nodePath)) {
+        zkClient.makePath(nodePath);
+      }
+    } catch (Throwable t) {
+
+    }
+
+    try {
+      log.info("publishing node state:" + coreStates.values());
+      zkClient.setData(
+          nodePath,
+          CoreState.tobytes(coreStates.values().toArray(
+              new CoreState[coreStates.size()])));
+    } catch (IOException e) {
+      log.error("could not publish node state");
+    } catch (KeeperException e) {
+      log.error("could not publish node state");
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      log.error("could not publish node state");
+      e.printStackTrace();
+    }
+  }
+
+  private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor) {
+    final String shardZkNodeName = getNodeName() + "_" + coreName;
+    while (true) {
+      synchronized (assignments) {
+        CoreAssignment assignment = assignments.get(shardZkNodeName);
+        if (assignment != null
+            && assignment.getProperties().get("shard_name") != null) {
+          return assignment.getProperties().get("shard_name");
+        }
+        
+//        System.out.println("current assignments:" + assignments);
+        try {
+          assignments.wait(1000);
+        } catch (InterruptedException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  /**
+   * Atomic assignments update
+   * @throws IOException 
+   */
+  private void processAssignmentsUpdate(byte[] assignments) throws IOException {
+
+    if (assignments == null) {
+      return;
+    }
+
+    HashMap<String, CoreAssignment> newAssignments = new HashMap<String, CoreAssignment>();
+    CoreAssignment[] assignments2 = CoreAssignment.fromBytes(assignments);
+    
+    System.out.println("read assignments from controller:" + Arrays.asList(assignments2));
+    for (CoreAssignment assignment : assignments2) {
+      newAssignments.put(assignment.getCoreName(), assignment);
+    }
+
+    synchronized (this.assignments) {
+      this.assignments.notifyAll();
+      this.assignments = newAssignments;
+    }
+  }
 }
