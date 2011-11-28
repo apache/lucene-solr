@@ -23,11 +23,14 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Future;
+
 /** @lucene.experimental */
 public abstract class UpdateLog implements PluginInfoInitialized {
   public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
 
   public enum SyncLevel { NONE, FLUSH, FSYNC }
+  public enum State { REPLAYING, BUFFERING, APPLYING_BUFFERED, ACTIVE }
 
   public static final int ADD = 0x01;
   public static final int DELETE = 0x02;
@@ -48,4 +51,12 @@ public abstract class UpdateLog implements PluginInfoInitialized {
   public abstract VersionInfo getVersionInfo();
   public abstract void finish(SyncLevel syncLevel);
   public abstract boolean recoverFromLog();
+
+  public abstract void bufferUpdates();
+  public abstract Future<FSUpdateLog.RecoveryInfo> applyBufferedUpdates();
+  public abstract State getState();
+
+
+  public static class RecoveryInfo {
+  }
 }

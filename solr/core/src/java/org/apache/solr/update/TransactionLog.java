@@ -67,8 +67,6 @@ public class TransactionLog {
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
   List<String> globalStringList = new ArrayList<String>();
 
-  CountDownLatch latch;  // if set, used to signal that we just added another log record
-
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
@@ -238,7 +236,6 @@ public class TransactionLog {
         // fos.flushBuffer();  // flush later
 
 
-        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -262,7 +259,6 @@ public class TransactionLog {
         BytesRef br = cmd.getIndexedId();
         codec.writeByteArray(br.bytes, br.offset, br.length);
         // fos.flushBuffer();  // flush later
-        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -285,7 +281,6 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(cmd.query);
         // fos.flushBuffer();  // flush later
-        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -309,17 +304,10 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are the last in the file
         // fos.flushBuffer();  // flush later
-        endWrite();
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-    }
-  }
-
-  private void endWrite() {
-    if (latch != null) {
-      latch.countDown();
     }
   }
 
@@ -412,53 +400,20 @@ public class TransactionLog {
       incref();
     }
 
-    /** Returns the next object from the log.  If this log is being concurrently written
-     * to, and you wish to block until a new record is available, then pass in a latch
-     * to use.
+    /** Returns the next object from the log, or null if none available.
      *
-     * @param latch The latch to use to block, waiting for the next log record
      * @return The log record, or null if EOF
      * @throws IOException
      */
-    public Object next(CountDownLatch latch) throws IOException, InterruptedException {
+    public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
 
       synchronized (TransactionLog.this) {
         if (pos >= fos.size()) {
-          // we caught up.
-          TransactionLog.this.latch = latch;
-
-
-          // TODO: how to prevent a race between catching up and
-          // switching to "active"... need higher level coordination?
-          // Probably since updating this log is normally done after
-          // updating the index.  Perhaps more than one phase...
-          // 1) next() returns null
-          // 2) replayer sets flag to "almost active" and updates start going to the index
-          // 3) replayer continues calling next() to get any records that were added inbetween.
-          // This *still* doesn't work since a thread that skipped adding to the index could
-          // be delayed, next() could return null, and *then* the thread would write to the
-          // log.
-          // TODO: may need to utilize a read-write lock around all the updates (this
-          // may be needed for deleteByQuery anyway)
           return null;
         }
 
         fos.flushBuffer();
-      }
-
-      if (TransactionLog.this.latch != null) {
-        TransactionLog.this.latch.await();
-
-        synchronized (TransactionLog.this) {
-          TransactionLog.this.latch = null;
-          if (fis.position() >= fos.size()) {
-            // still EOF... someone else must have tripped the latch.
-            return null;
-          }
-          fos.flushBuffer();
-        }
-
       }
 
       if (pos == 0) {

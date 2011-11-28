@@ -20,6 +20,9 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -39,6 +42,7 @@ public class VersionInfo {
   private final VersionBucket[] buckets;
   private SchemaField versionField;
   private SchemaField idField;
+  final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
   public VersionInfo(UpdateHandler updateHandler, int nBuckets) {
     this.updateHandler = updateHandler;
@@ -55,6 +59,21 @@ public class VersionInfo {
     return versionField;
   }
 
+  public void lockForUpdate() {
+    lock.readLock().lock();
+  }
+
+  public void unlockForUpdate() {
+    lock.readLock().unlock();
+  }
+
+  public void blockUpdates() {
+    lock.writeLock().lock();
+  }
+
+  public void unblockUpdates() {
+    lock.writeLock().unlock();
+  }
 
   // todo: initialize... use current time to start?
   // a clock that increments by 1 for every operation makes it easier to detect missing

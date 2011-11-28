@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.commons.lang.NullArgumentException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.HashPartitioner;
 import org.apache.solr.cloud.HashPartitioner.Range;
 import org.apache.solr.common.SolrException;
@@ -47,14 +48,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.VersionBucket;
-import org.apache.solr.update.VersionInfo;
+import org.apache.solr.update.*;
 import org.apache.zookeeper.KeeperException;
 
 // NOT mt-safe... create a new processor for each add thread
@@ -297,47 +291,60 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     VersionBucket bucket = vinfo.bucket(hash);
-    synchronized (bucket) {
-      // we obtain the version when synchronized and then do the add so we can ensure that
-      // if version1 < version2 then version1 is actually added before version2.
 
-      // even if we don't store the version field, synchronizing on the bucket
-      // will enable us to know what version happened first, and thus enable
-      // realtime-get to work reliably.
-      // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
-      // there may be other reasons in the future for a version on the commands
-      if (versionsStored) {
-        long bucketVersion = bucket.highest;
+    vinfo.lockForUpdate();
+    try {
+      synchronized (bucket) {
+        // we obtain the version when synchronized and then do the add so we can ensure that
+        // if version1 < version2 then version1 is actually added before version2.
 
-        if (isLeader) {
-          long version = vinfo.getNewClock();
-          cmd.setVersion(version);
-          cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
-          bucket.updateHighest(version);
-        } else {
-          // The leader forwarded us this update.
-          cmd.setVersion(versionOnUpdate);
+        // even if we don't store the version field, synchronizing on the bucket
+        // will enable us to know what version happened first, and thus enable
+        // realtime-get to work reliably.
+        // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
+        // there may be other reasons in the future for a version on the commands
+        if (versionsStored) {
 
-          // if we aren't the leader, then we need to check that updates were not re-ordered
-          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-            // we're OK... this update has a version higher than anything we've seen
-            // in this bucket so far, so we know that no reordering has yet occured.
-            bucket.updateHighest(versionOnUpdate);
+          long bucketVersion = bucket.highest;
+
+          if (isLeader) {
+            long version = vinfo.getNewClock();
+            cmd.setVersion(version);
+            cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+            bucket.updateHighest(version);
           } else {
-            // there have been updates higher than the current update.  we need to check
-            // the specific version for this id.
-            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-              // This update is a repeat, or was reordered.  We need to drop this update.
+            // The leader forwarded us this update.
+            cmd.setVersion(versionOnUpdate);
+
+            if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              // we're not in an active state, and this update isn't from a replay, so buffer it.
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+              ulog.add(cmd);
               return true;
+            }
+
+            // if we aren't the leader, then we need to check that updates were not re-ordered
+            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+              // we're OK... this update has a version higher than anything we've seen
+              // in this bucket so far, so we know that no reordering has yet occured.
+              bucket.updateHighest(versionOnUpdate);
+            } else {
+              // there have been updates higher than the current update.  we need to check
+              // the specific version for this id.
+              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+                // This update is a repeat, or was reordered.  We need to drop this update.
+                return true;
+              }
             }
           }
         }
-      }
 
-      doLocalAdd(cmd);
-    }  // end synchronized (bucket)
-
+        doLocalAdd(cmd);
+      }  // end synchronized (bucket)
+    } finally {
+      vinfo.unlockForUpdate();
+    }
     return false;
   }
   
@@ -409,46 +416,68 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Long versionOnUpdate = versionOnUpdateS == null ? null : Long.parseLong(versionOnUpdateS);
 
     VersionBucket bucket = vinfo.bucket(hash);
-    synchronized (bucket) {
-      if (versionsStored) {
-        long bucketVersion = bucket.highest;
 
-        if (isLeader) {
-          long version = vinfo.getNewClock();
-          cmd.setVersion(-version);
-          bucket.updateHighest(version);
-        } else {
-          // The leader forwarded us this update.
-          if (versionOnUpdate == null) {
-            throw new RuntimeException("we expected to find versionOnUpdate but did not");
-          }
-          
-          cmd.setVersion(versionOnUpdate);
-          // if we aren't the leader, then we need to check that updates were not re-ordered
-          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-            // we're OK... this update has a version higher than anything we've seen
-            // in this bucket so far, so we know that no reordering has yet occured.
-            bucket.updateHighest(versionOnUpdate);
+    vinfo.lockForUpdate();
+    try {
+
+      synchronized (bucket) {
+        if (versionsStored) {
+          long bucketVersion = bucket.highest;
+
+          if (isLeader) {
+            long version = vinfo.getNewClock();
+            cmd.setVersion(-version);
+            bucket.updateHighest(version);
           } else {
-            // there have been updates higher than the current update.  we need to check
-            // the specific version for this id.
-            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-              // This update is a repeat, or was reordered.  We need to drop this update.   
+            // The leader forwarded us this update.
+            if (versionOnUpdate == null) {
+              throw new RuntimeException("we expected to find versionOnUpdate but did not");
+            }
+
+            cmd.setVersion(versionOnUpdate);
+
+            if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              // we're not in an active state, and this update isn't from a replay, so buffer it.
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+              ulog.delete(cmd);
               return true;
+            }
+
+            // if we aren't the leader, then we need to check that updates were not re-ordered
+            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+              // we're OK... this update has a version higher than anything we've seen
+              // in this bucket so far, so we know that no reordering has yet occured.
+              bucket.updateHighest(versionOnUpdate);
+            } else {
+              // there have been updates higher than the current update.  we need to check
+              // the specific version for this id.
+              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+                // This update is a repeat, or was reordered.  We need to drop this update.
+                return true;
+              }
             }
           }
         }
-      }
 
-      doLocalDelete(cmd);
-      return false;
-    }  // end synchronized (bucket)
+        doLocalDelete(cmd);
+        return false;
+      }  // end synchronized (bucket)
 
+    } finally {
+      vinfo.unlockForUpdate();
+    }
   }
   
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
+
+    if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+      log.info("Ignoring commit while not ACTIVE");
+      return;
+    }
+
+
     // nocommit: make everyone commit?
 //    if (shards != null) {
 //      cmdDistrib.distribCommit(cmd, shards);
