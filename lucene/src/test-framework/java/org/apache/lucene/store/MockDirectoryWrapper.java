@@ -194,12 +194,12 @@ public class MockDirectoryWrapper extends Directory {
         f.close();
       } catch (Exception ignored) {}
     
-    int count = 0;
     while(it.hasNext()) {
       String name = it.next();
-      if (count % 3 == 0) {
+      int damage = randomState.nextInt(4);
+      if (damage == 0) {
         deleteFile(name, true);
-      } else if (count % 3 == 1) {
+      } else if (damage == 1) {
         // Zero out file entirely
         long length = fileLength(name);
         byte[] zeroes = new byte[256];
@@ -211,13 +211,18 @@ public class MockDirectoryWrapper extends Directory {
           upto += limit;
         }
         out.close();
-      } else if (count % 3 == 2) {
-        // Truncate the file:
+      } else if (damage == 2) {
+        // Partially Truncate the file:
         IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         out.setLength(fileLength(name)/2);
         out.close();
+      } else {
+        // Totally truncate the file to zero bytes
+        deleteFile(name, true);
+        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
+        out.setLength(0);
+        out.close();
       }
-      count++;
     }
   }
 
