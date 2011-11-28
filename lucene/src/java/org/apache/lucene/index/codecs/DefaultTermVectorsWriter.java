@@ -125,8 +125,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
 
   @Override
   public void startTerm(BytesRef term, int freq) throws IOException {
-    final int prefix = StringHelper.bytesDifference(lastTerm.bytes, lastTerm.offset, lastTerm.length, 
-                                                    term.bytes, term.offset, term.length);
+    final int prefix = StringHelper.bytesDifference(lastTerm, term);
     final int suffix = term.length - prefix;
     tvf.writeVInt(prefix);
     tvf.writeVInt(suffix);

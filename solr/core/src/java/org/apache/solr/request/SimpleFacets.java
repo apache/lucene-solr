@@ -656,7 +656,7 @@ public class SimpleFacets {
     if (docs.size() >= mincount) {
       while (term != null) {
 
-        if (startTermBytes != null && !term.startsWith(startTermBytes))
+        if (startTermBytes != null && !StringHelper.startsWith(term, startTermBytes))
           break;
 
         int df = termsEnum.docFreq();

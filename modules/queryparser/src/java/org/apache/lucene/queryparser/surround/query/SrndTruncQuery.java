@@ -20,6 +20,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 
@@ -106,7 +107,7 @@ public class SrndTruncQuery extends SimpleTerm {
         }
 
         while(text != null) {
-          if (text != null && text.startsWith(prefixRef)) {
+          if (text != null && StringHelper.startsWith(text, prefixRef)) {
             String textString = text.utf8ToString();
             matcher.reset(textString.substring(prefixLength));
             if (matcher.matches()) {

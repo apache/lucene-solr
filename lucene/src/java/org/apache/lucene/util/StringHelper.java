@@ -29,33 +29,21 @@ import java.util.StringTokenizer;
 public abstract class StringHelper {
 
   /**
-   * Compares two byte[] arrays, element by element, and returns the
+   * Compares two {@link BytesRef}, element by element, and returns the
    * number of elements common to both arrays.
    *
-   * @param bytes1 The first byte[] to compare
-   * @param bytes2 The second byte[] to compare
+   * @param left The first {@link BytesRef} to compare
+   * @param right The second {@link BytesRef} to compare
    * @return The number of common elements.
    */
-  public static int bytesDifference(byte[] bytes1, int len1, byte[] bytes2, int len2) {
-    int len = len1 < len2 ? len1 : len2;
+  public static int bytesDifference(BytesRef left, BytesRef right) {
+    int len = left.length < right.length ? left.length : right.length;
+    final byte[] bytesLeft = left.bytes;
+    final int offLeft = left.offset;
+    byte[] bytesRight = right.bytes;
+    final int offRight = right.offset;
     for (int i = 0; i < len; i++)
-      if (bytes1[i] != bytes2[i])
-        return i;
-    return len;
-  }
-  
-  /**
-   * Compares two byte[] arrays, element by element, and returns the
-   * number of elements common to both arrays.
-   *
-   * @param bytes1 The first byte[] to compare
-   * @param bytes2 The second byte[] to compare
-   * @return The number of common elements.
-   */
-  public static int bytesDifference(byte[] bytes1, int off1, int len1, byte[] bytes2, int off2, int len2) {
-    int len = len1 < len2 ? len1 : len2;
-    for (int i = 0; i < len; i++)
-      if (bytes1[i+off1] != bytes2[i+off2])
+      if (bytesLeft[i+offLeft] != bytesRight[i+offRight])
         return i;
     return len;
   }
@@ -107,5 +95,52 @@ public abstract class StringHelper {
     } else {
       return s1.equals(s2);
     }
+  }
+
+  /**
+   * Returns <code>true</code> iff the ref starts with the given prefix.
+   * Otherwise <code>false</code>.
+   * 
+   * @param ref
+   *          the {@link BytesRef} to test
+   * @param prefix
+   *          the expected prefix
+   * @return Returns <code>true</code> iff the ref starts with the given prefix.
+   *         Otherwise <code>false</code>.
+   */
+  public static boolean startsWith(BytesRef ref, BytesRef prefix) {
+    return sliceEquals(ref, prefix, 0);
+  }
+
+  /**
+   * Returns <code>true</code> iff the ref ends with the given suffix. Otherwise
+   * <code>false</code>.
+   * 
+   * @param ref
+   *          the {@link BytesRef} to test
+   * @param suffix
+   *          the expected suffix
+   * @return Returns <code>true</code> iff the ref ends with the given suffix.
+   *         Otherwise <code>false</code>.
+   */
+  public static boolean endsWith(BytesRef ref, BytesRef suffix) {
+    return sliceEquals(ref, suffix, ref.length - suffix.length);
+  }
+  
+  private static boolean sliceEquals(BytesRef sliceToTest, BytesRef other, int pos) {
+    if (pos < 0 || sliceToTest.length - pos < other.length) {
+      return false;
+    }
+    int i = sliceToTest.offset + pos;
+    int j = other.offset;
+    final int k = other.offset + other.length;
+    
+    while (j < k) {
+      if (sliceToTest.bytes[i++] != other.bytes[j++]) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 }

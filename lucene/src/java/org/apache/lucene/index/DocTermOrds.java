@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -278,7 +279,7 @@ public class DocTermOrds {
     // seek above):
     for (;;) {
       final BytesRef t = te.term();
-      if (t == null || (termPrefix != null && !t.startsWith(termPrefix))) {
+      if (t == null || (termPrefix != null && !StringHelper.startsWith(t, termPrefix))) {
         break;
       }
       //System.out.println("visit term=" + t.utf8ToString() + " " + t + " termNum=" + termNum);
@@ -785,7 +786,7 @@ public class DocTermOrds {
     private BytesRef setTerm() throws IOException {
       term = termsEnum.term();
       //System.out.println("  setTerm() term=" + term.utf8ToString() + " vs prefix=" + (prefix == null ? "null" : prefix.utf8ToString()));
-      if (prefix != null && !term.startsWith(prefix)) {
+      if (prefix != null && !StringHelper.startsWith(term, prefix)) {
         term = null;
       }
       return term;

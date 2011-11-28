@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -104,7 +105,7 @@ public class TestPrefixRandom extends LuceneTestCase {
       
       @Override
       protected AcceptStatus accept(BytesRef term) throws IOException {
-        return term.startsWith(prefix) ? AcceptStatus.YES : AcceptStatus.NO;
+        return StringHelper.startsWith(term, prefix) ? AcceptStatus.YES : AcceptStatus.NO;
       }
     }
 

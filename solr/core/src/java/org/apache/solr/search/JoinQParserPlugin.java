@@ -23,6 +23,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -301,7 +302,7 @@ class JoinQuery extends Query {
       toDeState.minSetSizeCached = minDocFreqTo;
 
       while (term != null) {
-        if (prefix != null && !term.startsWith(prefix))
+        if (prefix != null && !StringHelper.startsWith(term, prefix))
           break;
 
         fromTermCount++;

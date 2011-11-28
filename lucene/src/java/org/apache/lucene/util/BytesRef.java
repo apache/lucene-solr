@@ -118,30 +118,6 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     return new BytesRef(bytes, offset, length);
   }
 
-  private boolean sliceEquals(BytesRef other, int pos) {
-    if (pos < 0 || length - pos < other.length) {
-      return false;
-    }
-    int i = offset + pos;
-    int j = other.offset;
-    final int k = other.offset + other.length;
-    
-    while (j < k) {
-      if (bytes[i++] != other.bytes[j++]) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-  
-  public boolean startsWith(BytesRef other) {
-    return sliceEquals(other, 0);
-  }
-
-  public boolean endsWith(BytesRef other) {
-    return sliceEquals(other, length - other.length);
-  }
   
   /** Calculates the hash code as required by TermsHash during indexing.
    * <p>It is defined as:

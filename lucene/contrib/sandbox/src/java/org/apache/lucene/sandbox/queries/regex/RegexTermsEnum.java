@@ -21,6 +21,7 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 
@@ -53,7 +54,7 @@ public class RegexTermsEnum extends FilteredTermsEnum {
 
   @Override
   protected AcceptStatus accept(BytesRef term) {
-    if (term.startsWith(prefixRef)) {
+    if (StringHelper.startsWith(term, prefixRef)) {
       // TODO: set BoostAttr based on distance of
       // searchTerm.text() and term().text()
       return regexImpl.match(term) ? AcceptStatus.YES : AcceptStatus.NO;

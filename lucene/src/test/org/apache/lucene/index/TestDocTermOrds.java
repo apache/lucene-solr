@@ -37,6 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
 
 // TODO:
@@ -262,7 +263,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         final int[] docOrds = idToOrds[id];
         final List<Integer> newOrds = new ArrayList<Integer>();
         for(int ord : idToOrds[id]) {
-          if (termsArray[ord].startsWith(prefixRef)) {
+          if (StringHelper.startsWith(termsArray[ord], prefixRef)) {
             newOrds.add(ord);
           }
         }
@@ -332,7 +333,7 @@ public class TestDocTermOrds extends LuceneTestCase {
           TermsEnum termsEnum = terms.iterator(null);
           TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef, false);
           if (result != TermsEnum.SeekStatus.END) {
-            assertFalse("term=" + termsEnum.term().utf8ToString() + " matches prefix=" + prefixRef.utf8ToString(), termsEnum.term().startsWith(prefixRef));
+            assertFalse("term=" + termsEnum.term().utf8ToString() + " matches prefix=" + prefixRef.utf8ToString(), StringHelper.startsWith(termsEnum.term(), prefixRef));
           } else {
             // ok
           }

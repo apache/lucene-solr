@@ -32,6 +32,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -80,7 +81,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           current = null;
           return null;
         }
-        if (scratch.startsWith(FIELD)) {
+        if (StringHelper.startsWith(scratch, FIELD)) {
           return current = new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, "UTF-8");
         }
       }
@@ -270,7 +271,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       while(true) {
         final long lineStart = in.getFilePointer();
         SimpleTextUtil.readLine(in, scratch);
-        if (scratch.startsWith(DOC)) {
+        if (StringHelper.startsWith(scratch, DOC)) {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             in.seek(lineStart);
             if (!omitTF) {
@@ -282,15 +283,15 @@ class SimpleTextFieldsReader extends FieldsProducer {
           docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           termFreq = 0;
           first = false;
-        } else if (scratch.startsWith(FREQ)) {
+        } else if (StringHelper.startsWith(scratch, FREQ)) {
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+FREQ.length, scratch.length-FREQ.length, scratchUTF16);
           termFreq = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
-        } else if (scratch.startsWith(POS)) {
+        } else if (StringHelper.startsWith(scratch, POS)) {
           // skip termFreq++;
-        } else if (scratch.startsWith(PAYLOAD)) {
+        } else if (StringHelper.startsWith(scratch, PAYLOAD)) {
           // skip
         } else {
-          assert scratch.startsWith(TERM) || scratch.startsWith(FIELD) || scratch.startsWith(END): "scratch=" + scratch.utf8ToString();
+          assert StringHelper.startsWith(scratch, TERM) || StringHelper.startsWith(scratch, FIELD) || StringHelper.startsWith(scratch, END): "scratch=" + scratch.utf8ToString();
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             in.seek(lineStart);
             if (!omitTF) {
@@ -358,7 +359,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       while(true) {
         final long lineStart = in.getFilePointer();
         SimpleTextUtil.readLine(in, scratch);
-        if (scratch.startsWith(DOC)) {
+        if (StringHelper.startsWith(scratch, DOC)) {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
             in.seek(posStart);
@@ -368,16 +369,16 @@ class SimpleTextFieldsReader extends FieldsProducer {
           docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           tf = 0;
           first = false;
-        } else if (scratch.startsWith(FREQ)) {
+        } else if (StringHelper.startsWith(scratch, FREQ)) {
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+FREQ.length, scratch.length-FREQ.length, scratchUTF16);
           tf = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           posStart = in.getFilePointer();
-        } else if (scratch.startsWith(POS)) {
+        } else if (StringHelper.startsWith(scratch, POS)) {
           // skip
-        } else if (scratch.startsWith(PAYLOAD)) {
+        } else if (StringHelper.startsWith(scratch, PAYLOAD)) {
           // skip
         } else {
-          assert scratch.startsWith(TERM) || scratch.startsWith(FIELD) || scratch.startsWith(END);
+          assert StringHelper.startsWith(scratch, TERM) || StringHelper.startsWith(scratch, FIELD) || StringHelper.startsWith(scratch, END);
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
             in.seek(posStart);
@@ -398,12 +399,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int nextPosition() throws IOException {
       SimpleTextUtil.readLine(in, scratch);
-      assert scratch.startsWith(POS): "got line=" + scratch.utf8ToString();
+      assert StringHelper.startsWith(scratch, POS): "got line=" + scratch.utf8ToString();
       UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length, scratchUTF16_2);
       final int pos = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
       final long fp = in.getFilePointer();
       SimpleTextUtil.readLine(in, scratch);
-      if (scratch.startsWith(PAYLOAD)) {
+      if (StringHelper.startsWith(scratch, PAYLOAD)) {
         final int len = scratch.length - PAYLOAD.length;
         if (scratch2.bytes.length < len) {
           scratch2.grow(len);
@@ -477,7 +478,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       OpenBitSet visitedDocs = new OpenBitSet();
       while(true) {
         SimpleTextUtil.readLine(in, scratch);
-        if (scratch.equals(END) || scratch.startsWith(FIELD)) {
+        if (scratch.equals(END) || StringHelper.startsWith(scratch, FIELD)) {
           if (lastDocsStart != -1) {
             b.add(lastTerm, new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
                                                                                    new PairOutputs.Pair<Long,Long>((long) docFreq,
@@ -485,15 +486,15 @@ class SimpleTextFieldsReader extends FieldsProducer {
             sumTotalTermFreq += totalTermFreq;
           }
           break;
-        } else if (scratch.startsWith(DOC)) {
+        } else if (StringHelper.startsWith(scratch, DOC)) {
           docFreq++;
           sumDocFreq++;
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
           int docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           visitedDocs.set(docID);
-        } else if (scratch.startsWith(POS)) {
+        } else if (StringHelper.startsWith(scratch, POS)) {
           totalTermFreq++;
-        } else if (scratch.startsWith(TERM)) {
+        } else if (StringHelper.startsWith(scratch, TERM)) {
           if (lastDocsStart != -1) {
             b.add(lastTerm, new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
                                                                                    new PairOutputs.Pair<Long,Long>((long) docFreq,
