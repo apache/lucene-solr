@@ -5,8 +5,16 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.0 ================
 
-(No Changes)
+New Features
 
+* LUCENE-3596: DirectoryTaxonomyWriter extensions can override createIndexWriterConfig() 
+  and modify how its internal index writer is opened. (Doron Cohen)
+
+API Changes
+
+* LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
+  openIndexWriter parameter rather than just an open-mode. (Doron Cohen) 
+  
 Bug Fixes
 
  * LUCENE-3600: BlockJoinQuery now supports parent docs that have no
