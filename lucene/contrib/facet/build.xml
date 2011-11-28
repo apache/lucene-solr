@@ -52,7 +52,9 @@
   <target name="jar-examples" depends="compile-examples">
     <jarify basedir="${build.dir}/classes/examples" 
           destfile="${build.dir}/${final.name}-examples.jar" 
-          title="Lucene Search Engine: ${ant.project.name}-examples" />
+          title="Lucene Search Engine: ${ant.project.name}-examples">
+      <fileset dir="src/examples" />
+    </jarify>
   </target>
     
   <target name="compile-core" depends="common.compile-core,compile-examples" description="Compiles facet classes" />
