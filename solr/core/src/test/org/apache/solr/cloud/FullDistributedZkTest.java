@@ -70,7 +70,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
-  private static final int sliceCount = 4;
+  protected int sliceCount = 4;
   
   protected volatile CloudSolrServer cloudClient;
   
@@ -78,7 +78,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   protected Map<String,List<SolrServer>> shardToClient = new HashMap<String,List<SolrServer>>();
   protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<String,List<CloudJettyRunner>>();
   private AtomicInteger i = new AtomicInteger(0);
-  private ChaosMonkey chaosMonkey;
+  protected ChaosMonkey chaosMonkey;
   private volatile ZkStateReader zkStateReader;
   
   class CloudJettyRunner {
@@ -99,14 +99,14 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       zkServer.expire(sessionId);
     }
     
-    private JettySolrRunner killShard(String slice, int index) throws Exception {
+    public JettySolrRunner killShard(String slice, int index) throws Exception {
       // kill first shard in shard2
       JettySolrRunner jetty = shardToJetty.get(slice).get(index).jetty;
       jetty.stop();
       return jetty;
     }
     
-    private JettySolrRunner killRandomShard() throws Exception {
+    public JettySolrRunner killRandomShard() throws Exception {
       // add all the shards to a list
 //      CloudState clusterState = zk.getCloudState();
 //      for (String collection : collections)   {
@@ -114,7 +114,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       return null;
     }
     
-    private JettySolrRunner killRandomShard(String slice) throws Exception {
+    public JettySolrRunner killRandomShard(String slice) throws Exception {
       // get latest cloud state
       zkStateReader.updateCloudState(true);
       Slice theShards = zkStateReader.getCloudState().getSlices(DEFAULT_COLLECTION)
@@ -157,6 +157,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    System.setProperty("numShards", Integer.toString(sliceCount));
     zkStateReader = new ZkStateReader(zkServer.getZkAddress(), 10000,
         AbstractZkTestCase.TIMEOUT);
   }
@@ -164,18 +165,19 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("CLOUD_UPDATE_DELAY", "0");
-    System.setProperty("numShards", Integer.toString(sliceCount));
     
     System.setProperty("remove.version.field", "true");
   }
   
   public FullDistributedZkTest() {
     fixShardCount = true;
+    
     shardCount = 12;
     // TODO: for now, turn off stress because it uses regular clients, and we 
     // need the cloud client because we kill servers
     stress = 0;
     chaosMonkey = new ChaosMonkey(shardToJetty);
+
   }
   
   protected void initCloud() throws Exception {
@@ -321,7 +323,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % sliceCount;
     
-    if (pick) {
+    if (pick && sliceCount > 1) {
       which = which + ((shardCount / sliceCount) * random.nextInt(sliceCount-1));
     }
     
@@ -380,6 +382,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   @Override
   public void doTest() throws Exception {
     initCloud();
+    
+    printLayout();
     
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -659,10 +663,10 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
   }
 
-  private void assertDocCounts() throws Exception {
+  protected void assertDocCounts() throws Exception {
     // TODO: as we create the clients, we should build a map from shard to node/client
     // and node/client to shard?
-
+    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     long controlCount = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
     // do some really inefficient mapping...
@@ -685,10 +689,15 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         }
       }
       
-      long count = client.query(new SolrQuery("*:*")).getResults().getNumFound();
-      
-      if (VERBOSE) System.out.println("docs:" + count + "\n\n");
+      long count = 0;
+      String currentState = clientToInfo.get(client).get(ZkStateReader.STATE_PROP);
+      if (currentState != null && !currentState.equals(ZkStateReader.RECOVERING)) {
+        count = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+      }
+
+      if (VERBOSE) System.out.println("client docs:" + count + "\n\n");
     }
+    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     SolrQuery query = new SolrQuery("*:*");
     query.add("distrib", "true");
     assertEquals("Doc Counts do not add up", controlCount, cloudClient.query(query).getResults().getNumFound());

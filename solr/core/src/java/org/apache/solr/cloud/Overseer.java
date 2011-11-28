@@ -167,9 +167,14 @@ public class Overseer implements NodeStateChangeListener {
             try {
               List<String> liveNodes = zkClient.getChildren(
                   ZkStateReader.LIVE_NODES_ZKNODE, this);
+              Set<String> liveNodesSet = new HashSet<String>();
+              liveNodesSet.addAll(liveNodes);
               processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
               synchronized (cloudState) {
-                cloudState.setLiveNodes(liveNodes);
+                cloudState = new CloudState(liveNodesSet, cloudState
+                    .getCollectionStates());
+                // TODO: why are we syncing on cloudState and not the update
+                // lock?
               }
             } catch (KeeperException e) {
               if (e.code() == KeeperException.Code.SESSIONEXPIRED
@@ -190,8 +195,15 @@ public class Overseer implements NodeStateChangeListener {
           }
         });
     
+
+    Set<String> liveNodesSet = new HashSet<String>();
+    liveNodesSet.addAll(liveNodes);
+    processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
     synchronized (cloudState) {
-      cloudState.setLiveNodes(liveNodes);
+      cloudState = new CloudState(liveNodesSet,
+          this.cloudState.getCollectionStates());
+      // TODO: why are we syncing on cloudState and not the update
+      // lock?
     }
     processLiveNodesChanged(Collections.EMPTY_SET, liveNodes);
   }
@@ -287,10 +299,16 @@ public class Overseer implements NodeStateChangeListener {
         props.put(entry.getKey(), entry.getValue());
       }
       
-      Map<String,ZkNodeProps> shardProps = new HashMap<String,ZkNodeProps>();
+      Slice slice = cloudState.getSlice(collection, shardId);
+      Map<String,ZkNodeProps> shardProps;
+      if (slice == null) {
+        shardProps = new HashMap<String,ZkNodeProps>();
+      } else {
+        shardProps = cloudState.getSlice(collection, shardId).getShardsCopy();
+      }
       shardProps.put(coreName, props);
       System.out.println("Current slices:" + cloudState.getSlice(collection, shardId));
-      Slice slice = new Slice(shardId, shardProps);
+      slice = new Slice(shardId, shardProps);
       CloudState state = new CloudState(cloudState.getLiveNodes(),
           cloudState.getCollectionStates());
       state.addSlice(collection, slice);

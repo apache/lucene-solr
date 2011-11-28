@@ -2,6 +2,9 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -22,9 +25,12 @@ public class CloudStateUtility {
 
   public static CloudState get(SolrZkClient zkClient, Stat stat)
       throws KeeperException, InterruptedException {
-    byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE, null, stat);
-    if (data == null) return new CloudState();
-    CloudState state = CloudState.load(data);
+    
+    List<String> liveNodes = zkClient.getChildren(
+        ZkStateReader.LIVE_NODES_ZKNODE, null);
+    Set<String> liveNodesSet = new HashSet<String>();
+    liveNodesSet.addAll(liveNodes);
+    CloudState state = CloudState.load(zkClient, liveNodesSet);
     return state;
   }
   

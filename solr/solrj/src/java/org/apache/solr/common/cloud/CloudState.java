@@ -26,7 +26,6 @@ import java.io.Writer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,6 +36,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -46,12 +46,12 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-// immutable
+// quasi immutable :(
 public class CloudState {
 	protected static Logger log = LoggerFactory.getLogger(CloudState.class);
 	private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-	private Map<String, Map<String, Slice>> collectionStates;
-	private Set<String> liveNodes;
+	private final Map<String, Map<String, Slice>> collectionStates;
+	private final Set<String> liveNodes;
 
 	public CloudState() {
 		this.liveNodes = new HashSet<String>();
@@ -60,7 +60,8 @@ public class CloudState {
 
 	public CloudState(Set<String> liveNodes,
 			Map<String, Map<String, Slice>> collectionStates) {
-		this.liveNodes = liveNodes;
+		this.liveNodes = new HashSet<String>(liveNodes.size());
+		this.liveNodes.addAll(liveNodes);
 		this.collectionStates = new HashMap<String, Map<String, Slice>>(collectionStates.size());
 		this.collectionStates.putAll(collectionStates);
 	}
@@ -72,6 +73,7 @@ public class CloudState {
 		return null;
 	}
 
+	// TODO: this method must die - this object should be immutable!!
 	public void addSlice(String collection, Slice slice) {
 		if (!collectionStates.containsKey(collection)) {
 			log.info("New collection");
@@ -108,9 +110,9 @@ public class CloudState {
 		return Collections.unmodifiableSet(liveNodes);
 	}
 
-	public void setLiveNodes(Set<String> liveNodes) {
-		this.liveNodes = liveNodes;
-	}
+//	public void setLiveNodes(Set<String> liveNodes) {
+//		this.liveNodes = liveNodes;
+//	}
 
 	public boolean liveNodesContain(String name) {
 		return liveNodes.contains(name);
@@ -124,8 +126,16 @@ public class CloudState {
 		return sb.toString();
 	}
 
-	public static CloudState load(byte[] state) {
-		CloudState cloudState = new CloudState();
+	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
+    byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
+        null, null);
+    return load(state, liveNodes);
+	}
+	
+	public static CloudState load(byte[] state, Set<String> liveNodes) throws KeeperException, InterruptedException {
+	    
+	  Map<String,Map<String,Slice>> colStates = new HashMap<String, Map<String, Slice>>();
+	  
 		if(state != null && state.length > 0) {
 			InputSource is = new InputSource(new ByteArrayInputStream(state));
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -166,8 +176,33 @@ public class CloudState {
 							}
 							shards.put(shardName, props);
 						}
-						Slice s = new Slice(sliceName.getNodeValue(), shards);
-						cloudState.addSlice(collectionName, s);
+            Map<String,Slice> s = null;
+            if (!colStates.containsKey(collectionName)) {
+              s = new HashMap<String,Slice>();
+              colStates.put(collectionName, s);
+            } else {
+              s = colStates.get(collectionName);
+            }
+            String sn = sliceName.getTextContent();
+            Slice sl = s.get(sn);
+
+            if (sl == null) {
+              sl = new Slice(sliceName.getTextContent(), shards);
+              s.put(sn, sl);
+            } else {
+              sl = new Slice(sliceName.getTextContent(), shards);
+            }
+			      
+//			      Slice existingSlice = colStates.get(collection).get(slice.getName());
+//			      shards.putAll(existingSlice.getShards());
+//			      shards.putAll(slice.getShards());
+//			      Slice updatedSlice = new Slice(slice.getName(), shards);
+//			      collectionStates.get(collection).put(slice.getName(), updatedSlice);
+//				    }
+//						
+//						Slice s = new Slice(sliceName.getNodeValue(), shards);
+//	
+//						colStates.put(collectionName, s);
 					}
 				}
 			} catch (SAXException e) {
@@ -188,6 +223,8 @@ public class CloudState {
 				IOUtils.closeQuietly(is.getByteStream());
 			}
 		}
+		
+		CloudState cloudState = new CloudState(liveNodes, colStates);
 		return cloudState;
 	}
 
@@ -228,9 +265,9 @@ public class CloudState {
 
 	}
 
-  public void setLiveNodes(List<String> liveNodes) {
-    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
-    liveNodesSet.addAll(liveNodes);
-    this.liveNodes = liveNodesSet;
-  }
+//  public void setLiveNodes(List<String> liveNodes) {
+//    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
+//    liveNodesSet.addAll(liveNodes);
+//    this.liveNodes = liveNodesSet;
+//  }
 }

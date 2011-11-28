@@ -45,7 +45,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
-  private static final boolean VERBOSE = false;
+  private static final boolean VERBOSE = true;
 
   protected ZkTestServer zkServer;
 
@@ -131,6 +131,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     
   }
 
+  
   @Test
   public void testCoreRegistration() throws Exception {
     System.setProperty("CLOUD_UPDATE_DELAY", "1");

@@ -464,11 +464,10 @@ public final class ZkController {
     CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     final String collection = cloudDesc.getCollectionName();
     
-    byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
-        null, null);
+
     log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
         + null);
-    CloudState state = CloudState.load(data);
+    CloudState state = CloudState.load(zkClient, zkStateReader.getCloudState().getLiveNodes());
     String shardZkNodeName = getNodeName() + "_" + coreName;
     
     // checkRecovery will have updated the shardId if it already exists...
@@ -573,6 +572,9 @@ public final class ZkController {
     props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
     
     props.put(ZkStateReader.STATE_PROP, state);
+    
+    System.out.println("update state to:" + state);
+    
 
     Map<String, ZkNodeProps> shardProps = new HashMap<String, ZkNodeProps>();
     shardProps.put(shardZkNodeName, props);
@@ -600,23 +602,29 @@ public final class ZkController {
 			}
 		}
 		if (!persisted) {
-			stat = new Stat();
+	
 			boolean updated = false;
 			
 			// TODO: we don't want to retry forever
 			// give up at some point
 			while (!updated) {
-
-				byte[] data = zkClient.getData(ZkStateReader.CLUSTER_STATE,
-						null, stat);
+		    stat = zkClient.exists(ZkStateReader.CLUSTER_STATE, null);
 				log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
 						+ stat.getVersion());
-				CloudState clusterState = CloudState.load(data);
+				CloudState clusterState = CloudState.load(zkClient, zkStateReader.getCloudState().getLiveNodes());
+
 				// our second state read - should only need one? (see register)
+        slice = clusterState.getSlice(cloudDesc.getCollectionName(), cloudDesc.getShardId());
         
-				// we need a new copy to modify
-				clusterState = new CloudState(clusterState.getLiveNodes(), clusterState.getCollectionStates());
-				clusterState.addSlice(cloudDesc.getCollectionName(), slice);
+        Map<String, ZkNodeProps> shards = new HashMap<String, ZkNodeProps>();
+        shards.putAll(slice.getShards());
+        shards.put(shardZkNodeName, props);
+        Slice newSlice = new Slice(slice.getName(), shards);
+        
+
+        CloudState newClusterState = new CloudState(clusterState.getLiveNodes(), clusterState.getCollectionStates());
+        clusterState.addSlice(collection, newSlice);
+    
 
 				try {
 					zkClient.setData(ZkStateReader.CLUSTER_STATE,
@@ -627,6 +635,7 @@ public final class ZkController {
 						throw e;
 					}
 					log.info("Failed to update " + ZkStateReader.CLUSTER_STATE + ", retrying");
+					System.out.println("Failed to update " + ZkStateReader.CLUSTER_STATE + ", retrying");
 				}
 
 			}
@@ -638,6 +647,7 @@ public final class ZkController {
   private void doRecovery(String collection, final CoreDescriptor desc,
       final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
       SolrServerException, IOException {
+    log.info("Start recovery process");
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get 
     // or full index replication
@@ -675,6 +685,7 @@ public final class ZkController {
         replicationHandler.doFetch(solrParams);
       } finally {
         core.close();
+        log.info("Finished recovery process");
       }
     }
   }

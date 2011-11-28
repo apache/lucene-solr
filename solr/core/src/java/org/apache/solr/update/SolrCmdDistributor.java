@@ -357,6 +357,7 @@ public class SolrCmdDistributor {
               rsp.setException(e);
             }
             
+            // TODO: we dont log which request url actually failed - we currently list them all
             SolrException.logOnce(SolrCore.log, "shard update error ("
                 + sreq.shards + ")", sreq.exception);
           }
