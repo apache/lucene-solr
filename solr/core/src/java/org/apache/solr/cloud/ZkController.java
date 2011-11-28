@@ -317,17 +317,18 @@ public final class ZkController {
             try {
               processAssignmentsUpdate(assignments);
             } catch (IOException e) {
-              log.error("assignment data was malformed");
-              e.printStackTrace();
+              log.error("Assignment data was malformed", e);
+              return;
             }
           } catch (KeeperException e) {
-            log.error("Could not read node assignments.");
-            e.printStackTrace();
+            log.error("Could not read node assignments.", e);
+            return;
           } catch (InterruptedException e) {
-            log.error("Could not read node assignments.");
-            e.printStackTrace();
+            // Restore the interrupted status
+            Thread.currentThread().interrupt();
+            log.error("Could not read node assignments.", e);
+            return;
           }
-          // TODO Auto-generated method stub
           
         }
         
@@ -498,10 +499,6 @@ public final class ZkController {
       }
     
     leaderElector.setupForSlice(shardId, collection);
-    
-    // ZkNodeProps props = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.RECOVERING);
-    
-    
     
     // leader election
     doLeaderElectionProcess(shardId, collection, shardZkNodeName, props);
@@ -914,27 +911,30 @@ public final class ZkController {
     final String nodePath = "/node_states/" + getNodeName();
 
     try {
+
       if (!zkClient.exists(nodePath)) {
         zkClient.makePath(nodePath);
       }
-    } catch (Throwable t) {
-
-    }
-
-    try {
+      
       log.info("publishing node state:" + coreStates.values());
       zkClient.setData(
           nodePath,
           CoreState.tobytes(coreStates.values().toArray(
               new CoreState[coreStates.size()])));
     } catch (IOException e) {
-      log.error("could not publish node state");
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "could not publish node state", e);
     } catch (KeeperException e) {
-      log.error("could not publish node state");
-      e.printStackTrace();
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "could not publish node state", e);
     } catch (InterruptedException e) {
-      log.error("could not publish node state");
-      e.printStackTrace();
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "could not publish node state", e);
     }
   }
 
@@ -953,7 +953,6 @@ public final class ZkController {
           assignments.wait(1000);
         } catch (InterruptedException e) {
           // TODO Auto-generated catch block
-          e.printStackTrace();
         }
       }
     }
