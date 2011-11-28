@@ -44,7 +44,6 @@ public class LowerCaseFilterFactory extends BaseTokenFilterFactory implements Mu
     return new LowerCaseFilter(luceneMatchVersion,input);
   }
 
-  @Override
   public Object getMultiTermComponent() {
     return this;
   }

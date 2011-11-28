@@ -37,7 +37,6 @@ public class ASCIIFoldingFilterFactory extends BaseTokenFilterFactory implements
     return new ASCIIFoldingFilter(input);
   }
 
-  @Override
   public Object getMultiTermComponent() {
     return this;
   }

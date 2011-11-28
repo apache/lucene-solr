@@ -37,7 +37,6 @@ public class PersianCharFilterFactory extends BaseCharFilterFactory implements M
     return new PersianCharFilter(input);
   }
 
-  @Override
   public Object getMultiTermComponent() {
     return this;
   }

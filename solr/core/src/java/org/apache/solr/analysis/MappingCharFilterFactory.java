@@ -127,7 +127,6 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
     return new String( out, 0, writePos );
   }
 
-  @Override
   public Object getMultiTermComponent() {
     return this;
   }
