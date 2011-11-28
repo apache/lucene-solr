@@ -143,8 +143,6 @@ public class TestIndexWriter extends LuceneTestCase {
 
     public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
       String[] startFiles = dir.listAll();
-      SegmentInfos infos = new SegmentInfos();
-      infos.read(dir);
       new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))).rollback();
       String[] endFiles = dir.listAll();
 

@@ -31,27 +31,27 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LimitTokenCountAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.TwoPhaseCommit;
+import org.apache.lucene.util.Version;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -277,6 +277,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   volatile long pendingCommitChangeCount;
 
   final SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  private Collection<String> filesToCommit;
 
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
@@ -3381,7 +3382,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // we are trying to sync all referenced files, a
           // merge completes which would otherwise have
           // removed the files we are now syncing.
-          deleter.incRef(toCommit, false);
+          filesToCommit = toCommit.files(directory, false);
+          deleter.incRef(filesToCommit);
         }
         success = true;
       } finally {
@@ -3403,7 +3405,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } finally {
       if (!success) {
         synchronized (this) {
-          deleter.decRef(toCommit);
+          deleter.decRef(filesToCommit);
+          filesToCommit = null;
         }
       }
     }
@@ -3503,8 +3506,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         rollbackSegments = pendingCommit.createBackupSegmentInfos(true);
         deleter.checkpoint(pendingCommit, true);
       } finally {
-        // Matches the incRef done in startCommit:
-        deleter.decRef(pendingCommit);
+        // Matches the incRef done in prepareCommit:
+        deleter.decRef(filesToCommit);
+        filesToCommit = null;
         pendingCommit = null;
         notifyAll();
       }
@@ -4518,7 +4522,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           if (infoStream != null) {
             message("  skip startCommit(): no changes pending");
           }
-          deleter.decRef(toSync);
+          deleter.decRef(filesToCommit);
+          filesToCommit = null;
           return;
         }
         
@@ -4581,7 +4586,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
               message("hit exception committing segments file");
             }
 
-            deleter.decRef(toSync);
+            deleter.decRef(filesToCommit);
+            filesToCommit = null;
           }
         }
       }
