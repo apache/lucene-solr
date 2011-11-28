@@ -39,7 +39,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    dir = newDirectory();
+    dir = createDirectory();
     doc1 = new Document();
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
@@ -56,6 +56,10 @@ public class TestDirectoryReader extends LuceneTestCase {
     if (readers[1] != null) readers[1].close();
     dir.close();
     super.tearDown();
+  }
+  
+  protected Directory createDirectory() throws IOException {
+    return newDirectory();
   }
 
   protected IndexReader openReader() throws IOException {

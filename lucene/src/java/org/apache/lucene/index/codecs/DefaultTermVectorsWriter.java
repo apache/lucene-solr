@@ -64,7 +64,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
+        abort();
       }
     }
   }
