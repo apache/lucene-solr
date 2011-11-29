@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +30,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.common.SolrException;
@@ -90,7 +88,7 @@ public final class ZkController {
   
   private ZkStateReader zkStateReader;
 
-  private SliceLeaderElector leaderElector;
+  private LeaderElector leaderElector;
   
   private String zkServerAddress;
 
@@ -187,7 +185,7 @@ public final class ZkController {
           }
         });
     
-    leaderElector = new SliceLeaderElector(zkClient);
+    leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
     init();
   }
@@ -340,8 +338,9 @@ public final class ZkController {
       processAssignmentsUpdate(assignments);
       
       overseerElector = new OverseerElector(zkClient);
-      overseerElector.setupForElection();
-      overseerElector.joinElection(getNodeName());
+      ElectionContext context = new OverseerElectionContext(getNodeName());
+      overseerElector.setup(context);
+      overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();
       
     } catch (IOException e) {
@@ -498,12 +497,14 @@ public final class ZkController {
         log.info("Register shard - core:" + coreName + " address:"
             + shardUrl + "shardId:" + shardId);
       }
-    
-    leaderElector.setupForSlice(shardId, collection);
-    
-    // leader election
+
     ZkNodeProps zkProps = new ZkNodeProps(props);
-    doLeaderElectionProcess(shardId, collection, shardZkNodeName, zkProps);
+
+    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, zkProps.store());
+    
+    leaderElector.setup(context);
+    // leader election
+    doLeaderElectionProcess(context);
     
     // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
@@ -670,11 +671,10 @@ public final class ZkController {
     }
   }
 
-  private void doLeaderElectionProcess(String shardId,
-      final String collection, String shardZkNodeName, ZkNodeProps props) throws KeeperException,
+  private void doLeaderElectionProcess(ElectionContext context) throws KeeperException,
       InterruptedException, IOException {
    
-    leaderElector.joinElection(shardId, collection, shardZkNodeName, props);
+    leaderElector.joinElection(context);
   }
 
   /**

@@ -82,11 +82,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     @Override
     public void run() {
       try {
-        SliceLeaderElector elector = new SliceLeaderElector(zkClient);
+        LeaderElector elector = new LeaderElector(zkClient);
         
-        elector.setupForSlice("shard1", "collection1");
-        seq = elector.joinElection("shard1", "collection1",
-            Integer.toString(nodeNumber), null);
+        ElectionContext context = new ShardLeaderElectionContext("shard1", "collection1", Integer.toString(nodeNumber), null);
+        
+        elector.setup(context);
+        seq = elector.joinElection(context);
         seqToThread.put(seq, this);
         // run forever - we will be explicitly killed
         Thread.sleep(Integer.MAX_VALUE);
@@ -109,18 +110,22 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient1 = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     
-    SliceLeaderElector elector = new SliceLeaderElector(zkClient1);
+    LeaderElector elector = new LeaderElector(zkClient1);
     
-    elector.setupForSlice("shard2", "collection1");
-    elector.joinElection("shard2", "collection1", "dummynode1", null);
+    ElectionContext context = new ShardLeaderElectionContext("shard2", "collection1", "dummynode1", null);
+    
+    elector.setup(context);
+    elector.joinElection(context);
     zkClient1.close();
     
     SolrZkClient zkClient2 = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     
-    SliceLeaderElector elector2 = new SliceLeaderElector(zkClient2);
-    
-    elector2.setupForSlice("shard2", "collection1");
-    elector2.joinElection("shard2", "collection1", "dummynode2", null);
+    LeaderElector elector2 = new LeaderElector(zkClient2);
+
+    ElectionContext context2 = new ShardLeaderElectionContext("shard2", "collection1", "dummynode2", null);
+
+    elector2.setup(context2);
+    elector2.joinElection(context2);
     
     zkClient2.close();
     

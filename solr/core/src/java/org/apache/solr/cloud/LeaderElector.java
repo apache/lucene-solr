@@ -28,8 +28,6 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -39,23 +37,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Per slice Leader Election process. This class contains the logic by which a
- * leader shard for a slice is chosen. First call
- * {@link #setupForSlice(String, String)} to ensure the election process is
- * init'd for a new slice. Next call
- * {@link #joinElection(String, String, String)} to start the leader election.
+ * Leader Election process. This class contains the logic by which a
+ * leader is chosen. First call * {@link #setup(ElectionContext)} to ensure
+ * the election process is init'd. Next call
+ * {@link #joinElection(ElectionContext)} to start the leader election.
  * 
  * The implementation follows the classic ZooKeeper recipe of creating an
- * ephemeral, sequential node for each shard and then looking at the set of such
- * nodes - if the created node is the lowest sequential node, the shard that
- * created the node is the leader. If not, the shard puts a watch on the next
- * lowest node it finds, and if that node goes down, starts the whole process
- * over by checking if it's the lowest sequential node, etc.
+ * ephemeral, sequential node for each candidate and then looking at the set
+ * of such nodes - if the created node is the lowest sequential node, the
+ * candidate that created the node is the leader. If not, the candidate puts
+ * a watch on the next lowest node it finds, and if that node goes down, 
+ * starts the whole process over by checking if it's the lowest sequential node, etc.
  * 
  * TODO: now we could just reuse the lock package code for leader election
  */
-public class SliceLeaderElector {
-  private static Logger log = LoggerFactory.getLogger(SliceLeaderElector.class);
+public class LeaderElector {
+  private static Logger log = LoggerFactory.getLogger(LeaderElector.class);
   
   private static final String LEADER_NODE = "/leader";
   
@@ -65,37 +62,32 @@ public class SliceLeaderElector {
   
   private SolrZkClient zkClient;
   
-  public SliceLeaderElector(SolrZkClient zkClient) {
+  public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
   }
   
   /**
-   * Check if the shard with the given n_* sequence number is the slice leader.
-   * If it is, set the leaderId on the slice leader zk node. If it is not, start
-   * watching the shard that is in line before this one - if it goes down, check
-   * if this shard is the leader again.
+   * Check if the candidate with the given n_* sequence number is the leader.
+   * If it is, set the leaderId on the leader zk node. If it is not, start
+   * watching the candidate that is in line before this one - if it goes down, check
+   * if this candidate is the leader again.
    * 
-   * @param shardId
-   * @param collection
    * @param seq
-   * @param leaderId
-   * @param props 
+   * @param context 
    * @throws KeeperException
    * @throws InterruptedException
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  private void checkIfIamLeader(final String shardId, final String collection,
-      final int seq, final String leaderId, final ZkNodeProps props) throws KeeperException,
+  private void checkIfIamLeader(final int seq, final ElectionContext context) throws KeeperException,
       InterruptedException, IOException {
     // get all other numbers...
-    String holdElectionPath = getElectionPath(shardId, collection)
-        + ELECTION_NODE;
+    String holdElectionPath = context.electionPath + ELECTION_NODE;
     List<String> seqs = zkClient.getChildren(holdElectionPath, null);
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
-      runIamLeaderProcess(shardId, collection, leaderId, props);
+      runIamLeaderProcess(context);
     } else {
       // I am not the leader - watch the node below me
       int i = 1;
@@ -115,7 +107,7 @@ public class SliceLeaderElector {
               public void process(WatchedEvent event) {
                 // am I the next leader?
                 try {
-                  checkIfIamLeader(shardId, collection, seq, leaderId, props);
+                  checkIfIamLeader(seq, context);
                 } catch (KeeperException e) {
                   log.warn("", e);
                   
@@ -132,30 +124,18 @@ public class SliceLeaderElector {
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
-        checkIfIamLeader(shardId, collection, seq, leaderId, props);
+        checkIfIamLeader(seq, context);
       }
     }
   }
 
-  private void runIamLeaderProcess(final String shardId,
-      final String collection, final String leaderId, ZkNodeProps props) throws KeeperException,
+  protected void runIamLeaderProcess(final ElectionContext context) throws KeeperException,
       InterruptedException, IOException {
-    String currentLeaderZkPath = getElectionPath(shardId, collection)
+    String currentLeaderZkPath = context.electionPath
         + LEADER_NODE;
     // TODO: leader election tests do not currently set the props
-    zkClient.makePath(currentLeaderZkPath + "/" + leaderId, props == null ? null : props.store(), CreateMode.EPHEMERAL);
-  }
-  
-  /**
-   * /collections/{collection}/leader_elect/{shard_id}/
-   * 
-   * @param shardId
-   * @param collection
-   * @return
-   */
-  private String getElectionPath(String shardId, String collection) {
-    return ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
-        + ZkStateReader.LEADER_ELECT_ZKNODE + "/" + shardId;
+    
+    zkClient.makePath(currentLeaderZkPath + "/" + context.id, context.leaderProps == null ? null : context.leaderProps, CreateMode.EPHEMERAL);
   }
   
   /**
@@ -197,20 +177,15 @@ public class SliceLeaderElector {
    * node that is watched goes down, check if we are the new lowest node, else
    * watch the next lowest numbered node.
    * 
-   * @param shardId
-   * @param collection
-   * @param shardZkNodeName
-   * @param props 
+   * @param context
    * @return sequential node number
    * @throws KeeperException
    * @throws InterruptedException
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  public int joinElection(String shardId, String collection,
-      String shardZkNodeName, ZkNodeProps props) throws KeeperException, InterruptedException, IOException {
-    final String shardsElectZkPath = getElectionPath(shardId, collection)
-        + SliceLeaderElector.ELECTION_NODE;
+  public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
+    final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     String leaderSeqPath = null;
     boolean cont = true;
@@ -233,33 +208,33 @@ public class SliceLeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(shardId, collection, seq, shardZkNodeName, props);
+    checkIfIamLeader(seq, context);
     
     return seq;
   }
   
   /**
-   * Set up any ZooKeeper nodes needed per shardId (slice) for leader election.
+   * Set up any ZooKeeper nodes needed for leader election.
    * 
    * @param shardId
    * @param collection
    * @throws InterruptedException
    * @throws KeeperException
    */
-  public void setupForSlice(final String shardId, final String collection)
+  public void setup(final ElectionContext context)
       throws InterruptedException, KeeperException {
-    String shardsElectZkPath = getElectionPath(shardId, collection)
-        + SliceLeaderElector.ELECTION_NODE;
-    String currentLeaderZkPath = getElectionPath(shardId, collection)
-        + SliceLeaderElector.LEADER_NODE;
+    String electZKPath = context.electionPath
+        + LeaderElector.ELECTION_NODE;
+    String currentLeaderZkPath = context.electionPath
+        + LeaderElector.LEADER_NODE;
     
     try {
       
       // leader election node
-      if (!zkClient.exists(shardsElectZkPath)) {
+      if (!zkClient.exists(electZKPath)) {
         
         // make new leader election node
-        zkClient.makePath(shardsElectZkPath, CreateMode.PERSISTENT, null);
+        zkClient.makePath(electZKPath, CreateMode.PERSISTENT, null);
         
       }
     } catch (KeeperException e) {
