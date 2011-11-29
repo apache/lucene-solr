@@ -221,7 +221,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     }
     // we have to wait for the cloud state to be updated
     // TODO: instead we should poll or something
-    Thread.sleep(1000);
+    Thread.sleep(2000);
     updateMappingsFromZk(jettys, clients);
     
     this.jettys.addAll(jettys);
