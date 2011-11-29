@@ -51,7 +51,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jdt.core.dom.ThisExpression;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
