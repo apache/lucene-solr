@@ -96,8 +96,8 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
 
-    // check for the searcher, should have happend right after soft commit
-    Long searcher529 = monitor.searcher.poll(softCommitWaitMillis, MILLISECONDS);
+    // check for the searcher, should have happened right after soft commit
+    Long searcher529 = monitor.searcher.poll(softCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("searcher529 wasn't fast enough", searcher529);
     monitor.assertSaneOffers();
 
