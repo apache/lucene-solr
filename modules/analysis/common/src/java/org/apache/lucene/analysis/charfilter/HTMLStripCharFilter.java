@@ -124,8 +124,8 @@ public class HTMLStripCharFilter extends BaseCharFilter {
 
   private boolean isHex(int ch) {
     return (ch>='0' && ch<='9') ||
-           (ch>='A' && ch<='Z') ||
-           (ch>='a' && ch<='z');
+           (ch>='A' && ch<='F') ||
+           (ch>='a' && ch<='f');
   }
 
   private boolean isAlpha(int ch) {

@@ -402,6 +402,9 @@ Bug Fixes
 ----------------------
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
 
+* SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
+  (Bernhard Berger, hossman)
+
 ==================  3.5.0  ==================
 
 New Features
