@@ -46,7 +46,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
-  private static final boolean VERBOSE = true;
+  private static final boolean VERBOSE = false;
 
   protected ZkTestServer zkServer;
 
