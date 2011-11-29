@@ -547,6 +547,15 @@ public class MockDirectoryWrapper extends Directory {
           if (!Arrays.equals(startFiles, endFiles)) {
             assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles);
           }
+
+          IndexReader ir1 = IndexReader.open(this);
+          int numDocs1 = ir1.numDocs();
+          ir1.close();
+          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).close();
+          IndexReader ir2 = IndexReader.open(this);
+          int numDocs2 = ir2.numDocs();
+          ir2.close();
+          assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
         }
       }
     }
