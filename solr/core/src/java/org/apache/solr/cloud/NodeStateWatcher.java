@@ -77,13 +77,13 @@ public class NodeStateWatcher implements Watcher {
       byte[] data = zkClient.getData(path, this, null);
       processStateChange(data);
     } catch (KeeperException e) {
-      //stop working on any keeper error
+      // nocommit: stop working on any keeper error
       e.printStackTrace();
       stop = true;
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+      return;
     }
   }
 

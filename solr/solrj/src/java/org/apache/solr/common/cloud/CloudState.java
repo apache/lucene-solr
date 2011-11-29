@@ -133,7 +133,17 @@ public class CloudState {
 	}
 	
 	public static CloudState load(byte[] state, Set<String> liveNodes) throws KeeperException, InterruptedException {
-	    
+	  String dataString = null;
+    if (state != null) {
+      try {
+        dataString = new String(state, "UTF-8");
+      } catch (UnsupportedEncodingException e1) {
+        // TODO Auto-generated catch block
+        e1.printStackTrace();
+      }
+    }
+	  System.out.println("read state:" + dataString);
+	  
 	  Map<String,Map<String,Slice>> colStates = new HashMap<String, Map<String, Slice>>();
 	  
 		if(state != null && state.length > 0) {
@@ -146,6 +156,8 @@ public class CloudState {
 				db.setErrorHandler(xmllog);
 				Document doc = db.parse(is);
 	
+				
+				
 				Element root = doc.getDocumentElement();
 	
 				NodeList collectionStates = root.getChildNodes();
@@ -225,6 +237,7 @@ public class CloudState {
 		}
 		
 		CloudState cloudState = new CloudState(liveNodes, colStates);
+		System.out.println("read state: "+ cloudState);
 		return cloudState;
 	}
 
@@ -261,7 +274,9 @@ public class CloudState {
 		w.write("</clusterstate>");
 		w.flush();
 		w.close();
-		return stringWriter.toString().getBytes("UTF-8");
+		String xml = stringWriter.toString();
+		System.out.println("xml:" + xml);
+		return xml.getBytes("UTF-8");
 
 	}
 

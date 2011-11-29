@@ -35,6 +35,7 @@ public class CloudStateUtility {
   }
   
   public static void update(SolrZkClient zkClient, CloudState state, Stat stat) throws KeeperException, InterruptedException, IOException {
+    System.out.println("publish state: "+ state);
     zkClient.setData(ZkStateReader.CLUSTER_STATE,
         CloudState.store(state));
   }

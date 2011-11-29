@@ -43,9 +43,11 @@ public class ZkStateReader {
   public static final String NODE_NAME_PROP = "node_name";
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
+  public static final String SHARD_ID_PROP = "shard_id";
+  
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String CLUSTER_STATE = "/clusterstate.xml";
-
+  
   public static final String RECOVERING = "recovering";
   public static final String ACTIVE = "active";
   
@@ -54,6 +56,8 @@ public class ZkStateReader {
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
+
+
 
 
   private static class ZKTF implements ThreadFactory {
@@ -138,11 +142,12 @@ public class ZkStateReader {
       public void process(WatchedEvent event) {
         log.info("A cluster state change has occurred");
         try {
+          // remake watch
           byte[] data = zkClient.getData(CLUSTER_STATE, this, null);
           // delayed approach
           // ZkStateReader.this.updateCloudState(false, false);
           synchronized (ZkStateReader.this.getUpdateLock()) {
-            CloudState clusterState = CloudState.load(zkClient, ZkStateReader.this.cloudState
+            CloudState clusterState = CloudState.load(data, ZkStateReader.this.cloudState
                 .getLiveNodes());
             // update volatile
             cloudState = clusterState;

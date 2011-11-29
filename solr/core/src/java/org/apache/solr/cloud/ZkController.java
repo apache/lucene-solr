@@ -47,10 +47,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +80,7 @@ public final class ZkController {
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
 
+  // nocommit: access to this is not thread safe!
   private final HashMap<String, CoreState> coreStates = new HashMap<String, CoreState>();
   private SolrZkClient zkClient;
   
@@ -487,6 +486,9 @@ public final class ZkController {
       cloudDesc.setShardId(shardId);
       props.put("shard_id", shardId);
     } else {
+      // shard id was picked up in getShardId
+      props.put("shard_id", cloudDesc.getShardId());
+      shardId = cloudDesc.getShardId();
       publishState(cloudDesc, shardZkNodeName, props);
     }
 
@@ -530,7 +532,17 @@ public final class ZkController {
     if (doRecovery) {
       doRecovery(collection, desc, cloudDesc, iamleader);
     }
-    addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.ACTIVE);
+    //ZkNodeProps newProps = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.ACTIVE);
+    
+    // publish new props
+    Map<String,String> finalProps = new HashMap<String,String>();
+    finalProps.put(ZkStateReader.URL_PROP, shardUrl);
+    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    finalProps.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
+    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
+    finalProps.put(ZkStateReader.SHARD_ID_PROP, shardId);
+    
+    publishState(cloudDesc, shardZkNodeName, finalProps);
 
     return shardId;
   }
@@ -558,91 +570,6 @@ public final class ZkController {
     }
     return true;
   }
-
-
-  ZkNodeProps addToZk(String collection, final CoreDescriptor desc, final CloudDescriptor cloudDesc, String shardUrl,
-      final String shardZkNodeName, String state)
-      throws Exception {
-
-    Map<String,String> props = new HashMap<String,String>();
-    props.put(ZkStateReader.URL_PROP, shardUrl);
-    
-    props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    
-    props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
-    
-    props.put(ZkStateReader.STATE_PROP, state);
-    
-    System.out.println("update state to:" + state);
-    ZkNodeProps zkProps = new ZkNodeProps(props);
-
-    Map<String, ZkNodeProps> shardProps = new HashMap<String, ZkNodeProps>();
-    shardProps.put(shardZkNodeName, zkProps);
-		Slice slice = new Slice(cloudDesc.getShardId(), shardProps);
-		
-		boolean persisted = false;
-		Stat stat = zkClient.exists(ZkStateReader.CLUSTER_STATE, null);
-		if (stat == null) {
-			log.info(ZkStateReader.CLUSTER_STATE + " does not exist, attempting to create");
-			try {
-				CloudState clusterState = new CloudState();
-
-				clusterState.addSlice(cloudDesc.getCollectionName(), slice);
-
-				zkClient.create(ZkStateReader.CLUSTER_STATE,
-						CloudState.store(clusterState), Ids.OPEN_ACL_UNSAFE,
-						CreateMode.PERSISTENT);
-				persisted = true;
-				log.info(ZkStateReader.CLUSTER_STATE);
-			} catch (KeeperException e) {
-				if (e.code() != Code.NODEEXISTS) {
-					// If this node exists, no big deal
-					throw e;
-				}
-			}
-		}
-		if (!persisted) {
-	
-			boolean updated = false;
-			
-			// TODO: we don't want to retry forever
-			// give up at some point
-			while (!updated) {
-		    stat = zkClient.exists(ZkStateReader.CLUSTER_STATE, null);
-				log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
-						+ stat.getVersion());
-				CloudState clusterState = CloudState.load(zkClient, zkStateReader.getCloudState().getLiveNodes());
-
-				// our second state read - should only need one? (see register)
-        slice = clusterState.getSlice(cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        
-        Map<String, ZkNodeProps> shards = new HashMap<String, ZkNodeProps>();
-        shards.putAll(slice.getShards());
-        shards.put(shardZkNodeName, zkProps);
-        Slice newSlice = new Slice(slice.getName(), shards);
-        
-
-        CloudState newClusterState = new CloudState(clusterState.getLiveNodes(), clusterState.getCollectionStates());
-        clusterState.addSlice(collection, newSlice);
-    
-
-				try {
-					zkClient.setData(ZkStateReader.CLUSTER_STATE,
-							CloudState.store(clusterState), stat.getVersion());
-					updated = true;
-				} catch (KeeperException e) {
-					if (e.code() != Code.BADVERSION) {
-						throw e;
-					}
-					log.info("Failed to update " + ZkStateReader.CLUSTER_STATE + ", retrying");
-					System.out.println("Failed to update " + ZkStateReader.CLUSTER_STATE + ", retrying");
-				}
-
-			}
-		}
-    return zkProps;
-  }
-
 
   private void doRecovery(String collection, final CoreDescriptor desc,
       final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
@@ -923,6 +850,7 @@ public final class ZkController {
     try {
 
       if (!zkClient.exists(nodePath)) {
+        // nocommit: race condition - someone else might make the node first
         zkClient.makePath(nodePath);
       }
       

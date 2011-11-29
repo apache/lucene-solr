@@ -219,7 +219,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);
     }
-    
+    // we have to wait for the cloud state to be updated
+    // TODO: instead we should poll or something
+    Thread.sleep(1000);
     updateMappingsFromZk(jettys, clients);
     
     this.jettys.addAll(jettys);
@@ -236,7 +238,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   }
 
   private void updateMappingsFromZk(List<JettySolrRunner> jettys,
-      List<SolrServer> clients) throws InterruptedException, TimeoutException,
+      List<SolrServer> clients) throws Exception,
       IOException, KeeperException, URISyntaxException {
     for (SolrServer client : clients) {
       // find info for this client in zk
@@ -244,7 +246,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       zkStateReader.updateCloudState(true);
       Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
           DEFAULT_COLLECTION);
-
+      System.out.println("thestate:" + zkStateReader.getCloudState());
+      
+      printLayout();
       
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
