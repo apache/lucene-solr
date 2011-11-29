@@ -386,8 +386,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   public void doTest() throws Exception {
     initCloud();
     
-    printLayout();
-    
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
