@@ -92,6 +92,11 @@ Bug Fixes
    assert if such a parent doc was the first doc in the segment).
    (Shay Banon, Mike McCandless)
 
+Documentation
+
+ * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 
+   stating the expected order of the arguments (David Smiley via hossman)
+
 ======================= Lucene 3.5.0 ================
 
 Changes in backwards compatibility policy

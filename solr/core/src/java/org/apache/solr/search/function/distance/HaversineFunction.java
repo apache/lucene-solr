@@ -76,22 +76,22 @@ public class HaversineFunction extends ValueSource {
     double[] p2D = new double[2];
     p1DV.doubleVal(doc, p1D);
     p2DV.doubleVal(doc, p2D);
-    double x1;
     double y1;
-    double x2;
+    double x1;
     double y2;
+    double x2;
     if (convertToRadians) {
-      x1 = p1D[0] * DistanceUtils.DEGREES_TO_RADIANS;
-      y1 = p1D[1] * DistanceUtils.DEGREES_TO_RADIANS;
-      x2 = p2D[0] * DistanceUtils.DEGREES_TO_RADIANS;
-      y2 = p2D[1] * DistanceUtils.DEGREES_TO_RADIANS;
+      y1 = p1D[0] * DistanceUtils.DEGREES_TO_RADIANS;
+      x1 = p1D[1] * DistanceUtils.DEGREES_TO_RADIANS;
+      y2 = p2D[0] * DistanceUtils.DEGREES_TO_RADIANS;
+      x2 = p2D[1] * DistanceUtils.DEGREES_TO_RADIANS;
     } else {
-      x1 = p1D[0];
-      y1 = p1D[1];
-      x2 = p2D[0];
-      y2 = p2D[1];
+      y1 = p1D[0];
+      x1 = p1D[1];
+      y2 = p2D[0];
+      x2 = p2D[1];
     }
-    return DistanceUtils.haversine(x1, y1, x2, y2, radius);
+    return DistanceUtils.haversine(y1, x1, y2, x2, radius);
   }
 
 
