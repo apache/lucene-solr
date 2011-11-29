@@ -192,7 +192,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       assertEquals("shard1", shard1);
       
-      zkController.printLayoutToStdOut();
       assertEquals("shard2", shard2);
       assertEquals("shard3", shard3);
       assertEquals("shard1", shard4);

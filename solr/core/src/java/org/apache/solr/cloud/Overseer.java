@@ -307,7 +307,7 @@ public class Overseer implements NodeStateChangeListener {
         shardProps = cloudState.getSlice(collection, shardId).getShardsCopy();
       }
       shardProps.put(coreName, zkProps);
-      System.out.println("Current slices:" + cloudState.getSlice(collection, shardId));
+
       slice = new Slice(shardId, shardProps);
       CloudState state = new CloudState(cloudState.getLiveNodes(),
           cloudState.getCollectionStates());

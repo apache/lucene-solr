@@ -457,9 +457,7 @@ public final class ZkController {
    * @return
    * @throws Exception 
    */
-  public String register(String coreName, final CoreDescriptor desc) throws Exception {
-    // nocommit: TODO: on core reload we don't want to do recovery or anything...
-    
+  public String register(String coreName, final CoreDescriptor desc) throws Exception {  
     final String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
@@ -551,7 +549,7 @@ public final class ZkController {
             doRecovery(collection, desc, cloudDesc, iamleader);
             Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
             if (future == null) {
-              // replay needed
+              // no replay needed
             } else {
               // wait for replay
               future.get();
