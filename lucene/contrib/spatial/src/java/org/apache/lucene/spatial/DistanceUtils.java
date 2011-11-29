@@ -312,15 +312,15 @@ public class DistanceUtils {
   }
 
   /**
-   * @param x1     The x coordinate of the first point, in radians
+   * Computes the haversine distance between two points. The arguments are in radians and provided in lat,lon order.
    * @param y1     The y coordinate of the first point, in radians
-   * @param x2     The x coordinate of the second point, in radians
+   * @param x1     The x coordinate of the first point, in radians
    * @param y2     The y coordinate of the second point, in radians
+   * @param x2     The x coordinate of the second point, in radians
    * @param radius The radius of the sphere
-   * @return The distance between the two points, as determined by the Haversine formula.
-
+   * @return The distance between the two points, as determined by the haversine formula.
    */
-  public static double haversine(double x1, double y1, double x2, double y2, double radius) {
+  public static double haversine(double y1, double x1, double y2, double x2, double radius) {
     double result = 0;
     //make sure they aren't all the same, as then we can just return 0
     if ((x1 != x2) || (y1 != y2)) {
@@ -328,8 +328,8 @@ public class DistanceUtils {
       double diffY = y1 - y2;
       double hsinX = Math.sin(diffX * 0.5);
       double hsinY = Math.sin(diffY * 0.5);
-      double h = hsinX * hsinX +
-              (Math.cos(x1) * Math.cos(x2) * hsinY * hsinY);
+      double h = hsinY * hsinY +
+          (Math.cos(y1) * Math.cos(y2) * hsinX * hsinX);
       result = (radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
     }
     return result;
