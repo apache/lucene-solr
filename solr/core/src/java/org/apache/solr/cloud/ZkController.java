@@ -26,11 +26,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -45,6 +48,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -456,17 +460,17 @@ public final class ZkController {
   public String register(String coreName, final CoreDescriptor desc) throws Exception {
     // nocommit: TODO: on core reload we don't want to do recovery or anything...
     
-    String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
+    final String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
-    CloudDescriptor cloudDesc = desc.getCloudDescriptor();
+    final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     final String collection = cloudDesc.getCollectionName();
     
 
     log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
         + null);
     CloudState state = CloudState.load(zkClient, zkStateReader.getCloudState().getLiveNodes());
-    String shardZkNodeName = getNodeName() + "_" + coreName;
+    final String shardZkNodeName = getNodeName() + "_" + coreName;
     
     // checkRecovery will have updated the shardId if it already exists...
     String shardId = cloudDesc.getShardId();
@@ -506,15 +510,20 @@ public final class ZkController {
     // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
     
-    boolean iamleader = false;
+    final boolean iamleader;
+    final SolrCore core;
     boolean doRecovery = true;
     if (leaderUrl.equals(shardUrl)) {
       iamleader = true;
       doRecovery = false;
+      core = null;
+      // publish new props
+      publishAsActive(shardUrl, cloudDesc, shardZkNodeName, shardId);
     } else {
+      iamleader = false;
       CoreContainer cc = desc.getCoreContainer();
       if (cc != null) {
-        SolrCore core = cc.getCore(desc.getName());
+        core = cc.getCore(desc.getName());
         try {
           if (core.isReloaded()) {
             doRecovery = false;
@@ -530,11 +539,52 @@ public final class ZkController {
     }
     
     if (doRecovery) {
-      doRecovery(collection, desc, cloudDesc, iamleader);
+      core.getUpdateHandler().getUpdateLog().bufferUpdates();
+      final String frozenShardId = shardId;
+      Thread thread = new Thread() {
+        {
+          setDaemon(true);
+        }
+        @Override
+        public void run() {
+          try {
+            doRecovery(collection, desc, cloudDesc, iamleader);
+            Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
+            if (future == null) {
+              // replay needed
+            } else {
+              // wait for replay
+              future.get();
+            }
+            // publish new props
+            publishAsActive(shardUrl, cloudDesc, shardZkNodeName, frozenShardId);
+          } catch (SolrServerException e) {
+            log.error("", e);
+            // nocommit
+            e.printStackTrace();
+          } catch (IOException e) {
+            log.error("", e);
+            // nocommit
+            e.printStackTrace();
+          } catch (Exception e) {
+            log.error("", e);
+            // nocommit
+            e.printStackTrace();
+          }
+          log.info("Finished recovery process");
+          // nocommit: if we get an exception, recovery failed...
+        }
+      };
+      thread.start();
+  
     }
-    //ZkNodeProps newProps = addToZk(collection, desc, cloudDesc, shardUrl, shardZkNodeName, ZkStateReader.ACTIVE);
-    
-    // publish new props
+
+    return shardId;
+  }
+
+
+  private void publishAsActive(String shardUrl,
+      final CloudDescriptor cloudDesc, String shardZkNodeName, String shardId) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.URL_PROP, shardUrl);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
@@ -543,8 +593,6 @@ public final class ZkController {
     finalProps.put(ZkStateReader.SHARD_ID_PROP, shardId);
     
     publishState(cloudDesc, shardZkNodeName, finalProps);
-
-    return shardId;
   }
 
 
@@ -589,7 +637,15 @@ public final class ZkController {
       // then our ephemeral timed out or we are the only node
       
       // TODO: first, issue a hard commit?
+      // nocommit: require /update?
       
+      CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderUrl);
+     
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      
+      params.set("commit", true);
+      params.set("qt", "/update");
+      server.query(params );
       
       // if we want to buffer updates while recovering, this
       // will have to trigger later - http is not yet up ???
@@ -612,7 +668,6 @@ public final class ZkController {
         replicationHandler.doFetch(solrParams);
       } finally {
         core.close();
-        log.info("Finished recovery process");
       }
     }
   }
@@ -909,7 +964,6 @@ public final class ZkController {
     HashMap<String, CoreAssignment> newAssignments = new HashMap<String, CoreAssignment>();
     CoreAssignment[] assignments2 = CoreAssignment.fromBytes(assignments);
     
-    System.out.println("read assignments from controller:" + Arrays.asList(assignments2));
     for (CoreAssignment assignment : assignments2) {
       newAssignments.put(assignment.getCoreName(), assignment);
     }

@@ -246,7 +246,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       zkStateReader.updateCloudState(true);
       Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
           DEFAULT_COLLECTION);
-      System.out.println("thestate:" + zkStateReader.getCloudState());
       
       printLayout();
       
@@ -622,6 +621,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     List<SolrServer> s2c = shardToClient.get("shard2");
     
+    // we should poll until state change goes to active
+    Thread.sleep(2000);
 
     //assertDocCounts();
     // if we properly recovered, we should now have the couple missing docs that

@@ -545,6 +545,9 @@ public class FSUpdateLog extends UpdateLog {
     }
 
     tlog.incref();
+    if (recoveryExecutor.isShutdown()) {
+      throw new RuntimeException("executore is not running...");
+    }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(tlog, true);
     return cs.submit(replayer, recoveryInfo);
@@ -724,7 +727,8 @@ public class FSUpdateLog extends UpdateLog {
     }
   }
 
-  static ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+  // nocommit: i made this not static for my test that doesn't reinit statics after restart...
+   ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
       1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
 
 }
