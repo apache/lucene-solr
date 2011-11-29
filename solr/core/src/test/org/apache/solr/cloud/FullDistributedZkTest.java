@@ -649,7 +649,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     // TODO: poll instead
     // wait for replication
-    Thread.sleep(3000);
+    Thread.sleep(6000);
     
     // new server should be part of first shard
     // how many docs are on the new shard?

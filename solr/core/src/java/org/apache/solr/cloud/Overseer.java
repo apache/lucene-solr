@@ -260,11 +260,10 @@ public class Overseer implements NodeStateChangeListener {
             byte[] state = zkClient.getData(path, nsw, null);
             nsw.processStateChange(state);
           } catch (KeeperException e) {
-            e.printStackTrace();
-            //zk exception
-            //nsw.close();
+            //nocommit
+            log.error("", e);
           } catch (InterruptedException e) {
-            e.printStackTrace();
+          //nocommit
           }
           
         } else {
