@@ -279,7 +279,7 @@ public class Overseer implements NodeStateChangeListener {
    */
   private void updateState(CoreState coreState) {
     
-    System.out.println("updateState called for core:" + coreState);
+    //System.out.println("updateState called for core:" + coreState);
     
     String collection = coreState.getCollectionName();
     String coreName = coreState.getCoreName();
@@ -287,7 +287,6 @@ public class Overseer implements NodeStateChangeListener {
     synchronized (cloudState) {
       String shardId;
       if (coreState.getProperties().get("shard_id") == null) {
-        System.out.println("Getting new id");
         shardId = AssignShard.assignShard(collection,
             collections.get(collection), cloudState);
       } else {

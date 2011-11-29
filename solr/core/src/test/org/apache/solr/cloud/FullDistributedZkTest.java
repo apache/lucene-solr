@@ -247,8 +247,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
           DEFAULT_COLLECTION);
       
-      printLayout();
-      
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {

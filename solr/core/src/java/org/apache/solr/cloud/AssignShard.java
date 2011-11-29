@@ -65,7 +65,7 @@ public class AssignShard {
     }
 
     
-    System.out.println("final shard count: " + shards);
+    //System.out.println("final shard count: " + shards);
 
     String returnShardId = null;
     Map<String, Slice> sliceMap = state.getSlices(collection);

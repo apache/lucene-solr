@@ -51,6 +51,6 @@ public class CloudStateTest extends SolrTestCaseJ4 {
     
     CloudState loadedCloudState = CloudState.load(bytes, liveNodes);
     
-    System.out.println("cloud state:" + loadedCloudState);
+    //System.out.println("cloud state:" + loadedCloudState);
   }
 }
