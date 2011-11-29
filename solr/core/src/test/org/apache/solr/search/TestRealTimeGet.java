@@ -383,7 +383,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 }
 
                 // assertU("<delete><id>" + id + "</id></delete>");
-                Long version = deleteAndGetVersion(Integer.toString(id));
+                Long version = deleteAndGetVersion(Integer.toString(id), null);
 
                 model.put(id, new DocInfo(version, -nextVal));
                 if (VERBOSE) {
@@ -604,7 +604,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal);
 
-                Long version = deleteAndGetVersion(Integer.toString(id));
+                Long version = deleteAndGetVersion(Integer.toString(id), null);
                 assertTrue(version < 0);
 
                 // only update model if the version is newer
@@ -967,32 +967,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     }
 
   }
-
-
-  private Long addAndGetVersion(SolrInputDocument sdoc, SolrParams params) throws Exception {
-    String response = updateJ(jsonAdd(sdoc), params);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    List lst = (List)rsp.get("adds");
-    if (lst == null || lst.size() == 0) return null;
-    return (Long) lst.get(1);
-  }
-
-  private Long deleteAndGetVersion(String id) throws Exception {
-    String response = updateJ("{\"delete\":{\"id\":\""+id+"\"}}", null);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    List lst = (List)rsp.get("deletes");
-    if (lst == null || lst.size() == 0) return null;
-    return (Long) lst.get(1);
-  }
-
-  private Long deleteAndGetVersion(String id, SolrParams params) throws Exception {
-    String response = updateJ("{\"delete\":{\"id\":\""+id+"\"}}", params);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    List lst = (List)rsp.get("deletes");
-    if (lst == null || lst.size() == 0) return null;
-    return (Long) lst.get(1);
-  }
-
 
 
   // The purpose of this test is to roughly model how solr uses lucene

@@ -407,6 +407,30 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  /** Makes a query request and returns the JSON string response */
+  public static String JQ(SolrQueryRequest req) throws Exception {
+    SolrParams params = req.getParams();
+    if (!"json".equals(params.get("wt","xml")) || params.get("indent")==null) {
+      ModifiableSolrParams newParams = new ModifiableSolrParams(params);
+      newParams.set("wt","json");
+      if (params.get("indent")==null) newParams.set("indent","true");
+      req.setParams(newParams);
+    }
+
+    String response;
+    boolean failed=true;
+    try {
+      response = h.query(req);
+      failed = false;
+    } finally {
+      if (failed) {
+        log.error("REQUEST FAILED: " + req.getParamString());
+      }
+    }
+
+    return response;
+  }
+
   /**
    * Validates a query matches some JSON test expressions using the default double delta tollerance.
    * @see JSONTestUtil#DEFAULT_DELTA
@@ -426,7 +450,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * matching more than what you want to test.
    * </p>
    * @param req Solr request to execute
-   * @param delta tollerance allowed in comparing float/double values
+   * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
   public static void assertJQ(SolrQueryRequest req, double delta, String... tests) throws Exception {
@@ -768,6 +792,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return out.toString();
   }
+
+
+  public static Long addAndGetVersion(SolrInputDocument sdoc, SolrParams params) throws Exception {
+    String response = updateJ(jsonAdd(sdoc), params);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    List lst = (List)rsp.get("adds");
+    if (lst == null || lst.size() == 0) return null;
+    return (Long) lst.get(1);
+  }
+
+  public static Long deleteAndGetVersion(String id, SolrParams params) throws Exception {
+    String response = updateJ(jsonDelId(id), params);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    List lst = (List)rsp.get("deletes");
+    if (lst == null || lst.size() == 0) return null;
+    return (Long) lst.get(1);
+  }
+
 
   /////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// random document / index creation ///////////////////////

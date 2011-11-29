@@ -229,7 +229,12 @@ public class FSUpdateLog extends UpdateLog {
       ensureLog();
       long pos = tlog.write(cmd);
       LogPtr ptr = new LogPtr(pos, cmd.getVersion());
-      map.put(cmd.getIndexedId(), ptr);
+
+      // only update our map if we're not buffering
+      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
+        map.put(cmd.getIndexedId(), ptr);
+      }
+
       // SolrCore.verbose("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
@@ -245,9 +250,14 @@ public class FSUpdateLog extends UpdateLog {
       ensureLog();
       long pos = tlog.writeDelete(cmd);
       LogPtr ptr = new LogPtr(pos, cmd.version);
-      map.put(br, ptr);
 
-      oldDeletes.put(br, ptr);
+      // only update our map if we're not buffering
+      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
+        map.put(br, ptr);
+
+        oldDeletes.put(br, ptr);
+      }
+
       // SolrCore.verbose("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
   }
