@@ -19,12 +19,14 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  *
@@ -44,7 +46,6 @@ public class RecoveryZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
-    initCloud();
     
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -85,9 +86,13 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     };
     
     StopableThread indexThread = new StopableThread();
-    
     indexThread.start();
+    
+    StopableThread indexThread2 = new StopableThread();
+    
+    indexThread2.start();
 
+    // give some time to index...
     Thread.sleep(4000);
     
     // bring shard replica down
@@ -101,31 +106,29 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     replica.start();
     
     // wait for recovery to complete
+    String shard1State = "";
     
-    Thread.sleep(3000);
+    do  {
+      Thread.sleep(1000);
+      updateMappingsFromZk(jettys, clients);
+      ZkNodeProps props = jettyToInfo.get(replica);
+      shard1State = props.get(ZkStateReader.STATE_PROP);
+    } while(!shard1State.equals(ZkStateReader.ACTIVE));
     
-    // stop indexing thread
-    
+    // stop indexing threads
     indexThread.safeStop();
+    indexThread2.safeStop();
     
-    // check that downed replica is complete
-    
-    Thread.sleep(30000);
-    
-    //controlClient.commit();
-    
-    // TODO: need to access this through shardToClient map
-    //clients.get(1).commit();
     commit();
     
-    Thread.sleep(5000);
+    // test that leader and replica have same doc count
+    
+    long client1Docs = shardToClient.get("shard1").get(0).query(new SolrQuery("*:*")).getResults().getNumFound();
+    long client2Docs = shardToClient.get("shard1").get(1).query(new SolrQuery("*:*")).getResults().getNumFound();
+    
+    assertEquals(client1Docs, client2Docs);
     
     // TODO: right now the control and distrib are usually off by a few docs...
-    // we really want to test that leader and replica have same doc count
-    //assertDocCounts();
-   
-    
-    // these queries should be exactly ordered and scores should exactly match
     //query("q", "*:*", "distrib", true, "sort", i1 + " desc");
   }
   

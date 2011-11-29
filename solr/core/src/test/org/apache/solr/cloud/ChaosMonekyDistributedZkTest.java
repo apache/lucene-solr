@@ -36,7 +36,6 @@ public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
-    initCloud();
     
     handle.clear();
     handle.put("QTime", SKIPVAL);

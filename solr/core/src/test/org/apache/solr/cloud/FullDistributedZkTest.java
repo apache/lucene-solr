@@ -74,12 +74,15 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   protected volatile CloudSolrServer cloudClient;
   
+  protected Map<JettySolrRunner,ZkNodeProps> jettyToInfo = new HashMap<JettySolrRunner,ZkNodeProps>();
   protected Map<SolrServer,ZkNodeProps> clientToInfo = new HashMap<SolrServer,ZkNodeProps>();
   protected Map<String,List<SolrServer>> shardToClient = new HashMap<String,List<SolrServer>>();
   protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<String,List<CloudJettyRunner>>();
   private AtomicInteger i = new AtomicInteger(0);
   protected ChaosMonkey chaosMonkey;
   private volatile ZkStateReader zkStateReader;
+
+
   
   class CloudJettyRunner {
     JettySolrRunner jetty;
@@ -158,8 +161,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
-    zkStateReader = new ZkStateReader(zkServer.getZkAddress(), 10000,
-        AbstractZkTestCase.TIMEOUT);
+    
   }
   
   @BeforeClass
@@ -181,6 +183,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   }
   
   protected void initCloud() throws Exception {
+    if (zkStateReader == null) {
+      zkStateReader = new ZkStateReader(zkServer.getZkAddress(), 10000,
+          AbstractZkTestCase.TIMEOUT);
+
+      zkStateReader.createClusterStateWatchersAndUpdate();
+    }
     
     // use the distributed solrj client
     if (cloudClient == null) {
@@ -198,12 +206,14 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @Override
   protected void createServers(int numServers) throws Exception {
+    
     System.setProperty("collection", "control_collection");
     controlJetty = createJetty(testDir, testDir + "/control/data", "control_shard");
     System.clearProperty("collection");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     createJettys(numServers);
+
   }
 
   private void createJettys(int numJettys) throws Exception,
@@ -221,7 +231,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     }
     // we have to wait for the cloud state to be updated
     // TODO: instead we should poll or something
-    Thread.sleep(2000);
+    initCloud();
     updateMappingsFromZk(jettys, clients);
     
     this.jettys.addAll(jettys);
@@ -237,13 +247,14 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     shards = sb.toString();
   }
 
-  private void updateMappingsFromZk(List<JettySolrRunner> jettys,
+  protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
       List<SolrServer> clients) throws Exception,
       IOException, KeeperException, URISyntaxException {
+    zkStateReader.createClusterStateWatchersAndUpdate();
     for (SolrServer client : clients) {
       // find info for this client in zk
 
-      zkStateReader.updateCloudState(true);
+      
       Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
           DEFAULT_COLLECTION);
       
@@ -267,21 +278,17 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       
     }
     
+    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
+        DEFAULT_COLLECTION);
+    
     for (JettySolrRunner jetty : jettys) {
-      // find info for this client in zk
-      ZkStateReader zk = new ZkStateReader(zkServer.getZkAddress(), 10000,
-          AbstractZkTestCase.TIMEOUT);
-      zk.createClusterStateWatchersAndUpdate();
-      
-      Map<String,Slice> slices = zk.getCloudState().getSlices(
-          DEFAULT_COLLECTION);
-      zk.close();
-      
+
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           String shardName = jetty.getLocalPort() + "_solr_";
           if (shard.getKey().endsWith(shardName)) {
+            jettyToInfo.put(jetty, shard.getValue());
             List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
             if (list == null) {
               list = new ArrayList<CloudJettyRunner>();
@@ -382,7 +389,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
    */
   @Override
   public void doTest() throws Exception {
-    initCloud();
+    // TODO: remove the need for this...
+    Thread.sleep(1000);
+    //pause for cloud state to be updated with latest...
     
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -638,8 +647,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     // test adding another replica to a shard - it should do a recovery/replication to pick up the index from the leader
     createJettys(1);
     
+    // TODO: poll instead
+    // wait for replication
+    Thread.sleep(3000);
+    
     // new server should be part of first shard
-    // how man docs are on the new shard?
+    // how many docs are on the new shard?
     for (SolrServer client : shardToClient.get("shard1")) {
       if (VERBOSE) System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }

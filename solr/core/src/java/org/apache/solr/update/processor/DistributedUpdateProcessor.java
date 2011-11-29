@@ -197,6 +197,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // nocommit: we certainly don't want to do this every update request...
     // get the shard names
     Map<String,Slice> slices = cloudState.getSlices(collection);
+    
+    if (slices == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
+          + collection + " in " + cloudState.getCollections());
+    }
+    
     Set<String> shards = slices.keySet();
     List<String> shardList = new ArrayList<String>();
     shardList.addAll(shards);
