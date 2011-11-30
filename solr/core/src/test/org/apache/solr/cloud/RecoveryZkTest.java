@@ -53,7 +53,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     del("*:*");
     
-    printLayout();
+    //printLayout();
     
     // start an indexing thread
     
@@ -74,7 +74,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
           } catch (ThreadDeath td) {
             throw td;
           } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
           }
         }
       }
@@ -126,6 +126,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     long client1Docs = shardToClient.get("shard1").get(0).query(new SolrQuery("*:*")).getResults().getNumFound();
     long client2Docs = shardToClient.get("shard1").get(1).query(new SolrQuery("*:*")).getResults().getNumFound();
     
+    assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
     
     // TODO: right now the control and distrib are usually off by a few docs...
