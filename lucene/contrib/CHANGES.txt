@@ -92,6 +92,10 @@ Bug Fixes
    assert if such a parent doc was the first doc in the segment).
    (Shay Banon, Mike McCandless)
 
+ * LUCENE-3609: Fix regression in BooleanFilter, introduced in Lucene 3.5,
+   to correctly handle minShouldMatch behaviour of previous versions.
+   (Shay Banon, Uwe Schindler)
+ 
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 
