@@ -27,10 +27,12 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore("this test is not ready")
 public class RecoveryZkTest extends FullDistributedZkTest {
   
   @BeforeClass
@@ -90,12 +92,13 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     StopableThread indexThread2 = new StopableThread();
     
-    indexThread2.start();
+    //indexThread2.start();
 
     // give some time to index...
     Thread.sleep(4000);
     
     // bring shard replica down
+    System.out.println("bring shard down");
     JettySolrRunner replica = chaosMonkey.killShard("shard1", 1);
     
     // wait a moment
@@ -117,7 +120,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     // stop indexing threads
     indexThread.safeStop();
-    indexThread2.safeStop();
+    //indexThread2.safeStop();
     
     commit();
     
