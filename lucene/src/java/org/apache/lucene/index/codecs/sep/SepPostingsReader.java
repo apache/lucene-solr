@@ -411,34 +411,6 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int read() throws IOException {
-      // TODO: -- switch to bulk read api in IntIndexInput
-      //System.out.println("sepdocs read");
-      final int[] docs = bulkResult.docs.ints;
-      final int[] freqs = bulkResult.freqs.ints;
-      int i = 0;
-      final int length = docs.length;
-      while (i < length && count < docFreq) {
-        count++;
-        // manually inlined call to next() for speed
-        //System.out.println("decode doc");
-        accum += docReader.next();
-        if (!omitTF) {
-          //System.out.println("decode freq");
-          freq = freqReader.next();
-        }
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          docs[i] = doc = accum;
-          freqs[i] = freq;
-          //System.out.println("  docs[" + i + "]=" + doc + " count=" + count + " dF=" + docFreq);
-          i++;
-        }
-      }
-      return i;
-    }
-
-    @Override
     public int freq() {
       return freq;
     }

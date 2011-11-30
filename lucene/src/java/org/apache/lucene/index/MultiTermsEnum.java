@@ -25,6 +25,7 @@ import org.apache.lucene.util.MultiBits;
 import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -506,6 +507,11 @@ public final class MultiTermsEnum extends TermsEnum {
       this.terms = terms;
       current = term;
     }
+
+    @Override
+    public String toString() {
+      return subSlice.toString()+":"+terms;
+    }
   }
 
   private final static class TermMergeQueue extends PriorityQueue<TermsEnumWithSlice> {
@@ -523,5 +529,10 @@ public final class MultiTermsEnum extends TermsEnum {
         return termsA.subSlice.start < termsB.subSlice.start;
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return "MultiTermsEnum(" + Arrays.toString(subs) + ")";
   }
 }

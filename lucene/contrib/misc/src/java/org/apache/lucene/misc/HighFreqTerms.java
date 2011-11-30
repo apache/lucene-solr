@@ -25,11 +25,15 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.FieldReaderException;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ReaderUtil;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -178,45 +182,34 @@ public class HighFreqTerms {
     return ts;
   }
   
-  public static long getTotalTermFreq(IndexReader reader, String field, BytesRef termText) throws Exception {
-
-    long totalTF = 0;
+  public static long getTotalTermFreq(IndexReader reader, final String field, final BytesRef termText) throws Exception {   
+    final long totalTF[] = new long[1];
     
-    Terms terms = MultiFields.getTerms(reader, field);
-    if (terms == null) {
-      return 0;
-    }
+    new ReaderUtil.Gather(reader) {
 
-    TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekCeil(termText) != TermsEnum.SeekStatus.FOUND) {
-      return 0;
-    }
-
-    Bits liveDocs = MultiFields.getLiveDocs(reader);
-    if (liveDocs == null) {
-      // TODO: we could do this up front, during the scan
-      // (next()), instead of after-the-fact here w/ seek,
-      // if the codec supports it and there are no del
-      // docs...
-      final long totTF = termsEnum.totalTermFreq();
-      if (totTF != -1) {
-        return totTF;
+      @Override
+      protected void add(int base, IndexReader r) throws IOException {
+        Bits liveDocs = r.getLiveDocs();
+        if (liveDocs == null) {
+          // TODO: we could do this up front, during the scan
+          // (next()), instead of after-the-fact here w/ seek,
+          // if the codec supports it and there are no del
+          // docs...
+          final long totTF = r.totalTermFreq(field, termText);
+          if (totTF != -1) {
+            totalTF[0] += totTF;
+            return;
+          }
+        }
+        DocsEnum de = r.termDocsEnum(liveDocs, field, termText);
+        if (de != null) {
+          while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
+            totalTF[0] += de.freq();
+        }
       }
-    }
+    }.run();
     
-    DocsEnum de = termsEnum.docs(liveDocs, null);
-
-    // use DocsEnum.read() and BulkResult api
-    final DocsEnum.BulkReadResult bulkresult = de.getBulkResult();
-    int count;
-    while ((count = de.read()) != 0) {
-      final int[] freqs = bulkresult.freqs.ints;
-      final int limit = bulkresult.freqs.offset + count;
-      for(int i=bulkresult.freqs.offset;i<limit;i++) {
-        totalTF += freqs[i];
-      }
-    }
-    return totalTF;
+    return totalTF[0];
   }
   
   public static void fillQueue(TermsEnum termsEnum, TermStatsQueue tiq, String field) throws Exception {

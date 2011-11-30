@@ -101,24 +101,14 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     if (termsEnum.next() != null) {
       // fill into a FixedBitSet
       final FixedBitSet bitSet = new FixedBitSet(context.reader.maxDoc());
-      int termCount = 0;
       DocsEnum docsEnum = null;
       do {
-        termCount++;
         // System.out.println("  iter termCount=" + termCount + " term=" +
         // enumerator.term().toBytesString());
         docsEnum = termsEnum.docs(acceptDocs, docsEnum);
-        final DocsEnum.BulkReadResult result = docsEnum.getBulkResult();
-        while (true) {
-          final int count = docsEnum.read();
-          if (count != 0) {
-            final int[] docs = result.docs.ints;
-            for (int i = 0; i < count; i++) {
-              bitSet.set(docs[i]);
-            }
-          } else {
-            break;
-          }
+        int docid;
+        while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          bitSet.set(docid);
         }
       } while (termsEnum.next() != null);
       // System.out.println("  done termCount=" + termCount);

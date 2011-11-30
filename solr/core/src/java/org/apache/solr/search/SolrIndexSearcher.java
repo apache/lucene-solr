@@ -872,45 +872,32 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       for (int subindex = 0; subindex<numSubs; subindex++) {
         MultiDocsEnum.EnumWithSlice sub = subs[subindex];
         if (sub.docsEnum == null) continue;
-        DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
         int base = sub.slice.start;
-
-        for (;;) {
-          int nDocs = sub.docsEnum.read();
-          if (nDocs == 0) break;
-          int[] docArr = bulk.docs.ints;
-          int end = bulk.docs.offset + nDocs;
-          if (upto + nDocs > docs.length) {
-            if (obs == null) obs = new OpenBitSet(maxDoc());
-            for (int i=bulk.docs.offset; i<end; i++) {
-              obs.fastSet(docArr[i]+base);
-            }
-            bitsSet += nDocs;
-          } else {
-            for (int i=bulk.docs.offset; i<end; i++) {
-              docs[upto++] = docArr[i]+base;
-            }
+        int docid;
+        
+        if (largestPossible > docs.length) {
+          if (obs == null) obs = new OpenBitSet(maxDoc());
+          while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            obs.fastSet(docid + base);
+            bitsSet++;
+          }
+        } else {
+          while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            docs[upto++] = docid + base;
           }
         }
       }
     } else {
-      DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
-      for (;;) {
-        int nDocs = docsEnum.read();
-        if (nDocs == 0) break;
-        int[] docArr = bulk.docs.ints;
-        int end = bulk.docs.offset + nDocs;
-
-        if (upto + nDocs > docs.length) {
-          if (obs == null) obs = new OpenBitSet(maxDoc());
-          for (int i=bulk.docs.offset; i<end; i++) {
-            obs.fastSet(docArr[i]);
-          }
-          bitsSet += nDocs;
-        } else {
-          for (int i=bulk.docs.offset; i<end; i++) {
-            docs[upto++] = docArr[i];
-          }
+      int docid;
+      if (largestPossible > docs.length) {
+        if (obs == null) obs = new OpenBitSet(maxDoc());
+        while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          obs.fastSet(docid);
+          bitsSet++;
+        }
+      } else {
+        while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          docs[upto++] = docid;
         }
       }
     }
@@ -960,15 +947,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           }
 
           if (docsEnum != null) {
-            DocsEnum.BulkReadResult readResult = docsEnum.getBulkResult();
-            for (;;) {
-              int n = docsEnum.read();
-              if (n==0) break;
-              int[] arr = readResult.docs.ints;
-              int end = readResult.docs.offset + n;
-              for (int j=readResult.docs.offset; j<end; j++) {
-                collector.collect(arr[j]);
-              }
+            int docid;
+            while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              collector.collect(docid);
             }
           }
         }

@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -263,8 +264,16 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
   }
 
+  static final int BUFFERSIZE = 64;
+
   // Decodes only docs
   private class SegmentDocsEnum extends DocsEnum {
+    final int[] docs = new int[BUFFERSIZE];
+    final int[] freqs = new int[BUFFERSIZE];
+    
+    int start = -1;
+    int count = 0;
+    
     final IndexInput freqIn;
     final IndexInput startFreqIn;
 
@@ -294,7 +303,9 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       if (omitTF) {
         freq = 1;
+        Arrays.fill(freqs, 1);
       }
+      
       storePayloads = fieldInfo.storePayloads;
       this.liveDocs = liveDocs;
       freqOffset = termState.freqOffset;
@@ -313,89 +324,126 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
       skipped = false;
 
+      start = -1;
+      count = 0;
       return this;
     }
-
-    @Override
-    public int nextDoc() throws IOException {
-      //if (DEBUG) System.out.println("    stpr.nextDoc seg=" + segment + " fp=" + freqIn.getFilePointer());
-      while(true) {
-        if (ord == limit) {
-          //if (DEBUG) System.out.println("      return doc=" + NO_MORE_DOCS);
-          return doc = NO_MORE_DOCS;
-        }
-
-        ord++;
-
-        // Decode next doc/freq pair
-        final int code = freqIn.readVInt();
-        // if (DEBUG) System.out.println("      code=" + code);
-        if (omitTF) {
-          accum += code;
-        } else {
-          accum += code >>> 1;              // shift off low bit
-          if ((code & 1) != 0) {          // if low bit is set
-            freq = 1;                     // freq is one
-          } else {
-            freq = freqIn.readVInt();     // else read freq
-          }
-        }
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          break;
-        }
-      }
-
-      //if (DEBUG) System.out.println("    stpr.nextDoc return doc=" + doc);
-      return (doc = accum);
-    }
-
-    @Override
-    public int read() throws IOException {
-
-      final int[] docs = bulkResult.docs.ints;
-      final int[] freqs = bulkResult.freqs.ints;
-      int i = 0;
-      final int length = docs.length;
-      while (i < length && ord < limit) {
-        ord++;
-        // manually inlined call to next() for speed
-        final int code = freqIn.readVInt();
-        if (omitTF) {
-          accum += code;
-        } else {
-          accum += code >>> 1;              // shift off low bit
-          if ((code & 1) != 0) {          // if low bit is set
-            freq = 1;                     // freq is one
-          } else {
-            freq = freqIn.readVInt();     // else read freq
-          }
-        }
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          docs[i] = doc = accum;
-          freqs[i] = freq;
-          ++i;
-        }
-      }
-      
-      return i;
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
+    
     @Override
     public int freq() {
       return freq;
     }
 
     @Override
+    public int docID() {
+      return doc;
+    }
+    
+    @Override
+    public int nextDoc() throws IOException {
+      while (++start < count) {
+        int d = docs[start];
+        if (liveDocs == null || liveDocs.get(d)) {
+          freq = freqs[start];
+          return doc = d;
+        }
+      }
+      return doc = refill();
+    }
+    
+    @Override
     public int advance(int target) throws IOException {
+      // last doc in our buffer is >= target, binary search + next()
+      if (++start < count && docs[count-1] >= target) {
+        binarySearch(target);
+        return nextDoc();
+      }
+      
+      start = count; // buffer is consumed
+      
+      return doc = skipTo(target);
+    }
+    
+    private void binarySearch(int target) {
+      int hi = count - 1;
+      while (start <= hi) {
+        int mid = (hi + start) >>> 1;
+        int doc = docs[mid];
+        if (doc < target) {
+          start = mid + 1;
+        } else if (doc > target) {
+          hi = mid - 1;
+        } else {
+          start = mid;
+          break;
+        }
+      }
+      start--;
+    }
 
-      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
+    private int refill() throws IOException {
+      int doc = scanTo(0);
+      
+      int bufferSize = Math.min(docs.length, limit - ord);
+      start = -1;
+      count = bufferSize;
+      ord += bufferSize;
+      
+      if (omitTF)
+        fillDocs(bufferSize);
+      else
+        fillDocsAndFreqs(bufferSize);
+      
+      return doc;
+    }
+    
+    private int scanTo(int target) throws IOException {
+      while (ord++ < limit) {
+        int code = freqIn.readVInt();
+        if (omitTF) {
+          accum += code;
+        } else {
+          accum += code >>> 1;            // shift off low bit
+          if ((code & 1) != 0) {          // if low bit is set
+            freq = 1;                     // freq is one
+          } else {
+            freq = freqIn.readVInt();     // else read freq
+          }
+        }
+        
+        if (accum >= target && (liveDocs == null || liveDocs.get(accum))) {
+          return accum;
+        }
+      }
+      
+      return NO_MORE_DOCS;
+    }
+    
+    private void fillDocs(int size) throws IOException {
+      int docs[] = this.docs;
+      for (int i = 0; i < size; i++) {
+        accum += freqIn.readVInt();
+        docs[i] = accum;
+      }
+    }
+    
+    private void fillDocsAndFreqs(int size) throws IOException {
+      int docs[] = this.docs;
+      int freqs[] = this.freqs;
+      for (int i = 0; i < size; i++) {
+        int code = freqIn.readVInt();
+        accum += code >>> 1;                   // shift off low bit
+        docs[i] = accum;
+        if ((code & 1) != 0) {                 // if low bit is set
+          freqs[i] = 1;                        // freq is one
+        } else {
+          freqs[i] = freqIn.readVInt();        // else read freq
+        }
+      }
+    }
+
+    private int skipTo(int target) throws IOException {
+      if ((target - skipInterval) >= accum && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
         // skip data, and it isn't too close.
@@ -424,17 +472,11 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           // Skipper moved
 
           ord = newOrd;
-          doc = accum = skipper.getDoc();
+          accum = skipper.getDoc();
           freqIn.seek(skipper.getFreqPointer());
         }
       }
-        
-      // scan for the rest:
-      do {
-        nextDoc();
-      } while (target > doc);
-
-      return doc;
+      return scanTo(target);
     }
   }
 

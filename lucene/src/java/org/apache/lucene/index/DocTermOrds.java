@@ -17,6 +17,7 @@
 
 package org.apache.lucene.index;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
@@ -315,90 +316,85 @@ public class DocTermOrds {
 
         docsEnum = te.docs(liveDocs, docsEnum);
 
-        final DocsEnum.BulkReadResult bulkResult = docsEnum.getBulkResult();
-
         // dF, but takes deletions into account
         int actualDF = 0;
 
         for (;;) {
-          int chunk = docsEnum.read();
-          if (chunk <= 0) {
+          int doc = docsEnum.nextDoc();
+          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
           //System.out.println("  chunk=" + chunk + " docs");
 
-          actualDF += chunk;
+          actualDF ++;
+          termInstances++;
+          
+          //System.out.println("    docID=" + doc);
+          // add TNUM_OFFSET to the term number to make room for special reserved values:
+          // 0 (end term) and 1 (index into byte array follows)
+          int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
+          lastTerm[doc] = termNum;
+          int val = index[doc];
 
-          for (int i=0; i<chunk; i++) {
-            termInstances++;
-            int doc = bulkResult.docs.ints[i];
-            //System.out.println("    docID=" + doc);
-            // add TNUM_OFFSET to the term number to make room for special reserved values:
-            // 0 (end term) and 1 (index into byte array follows)
-            int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
-            lastTerm[doc] = termNum;
-            int val = index[doc];
-
-            if ((val & 0xff)==1) {
-              // index into byte array (actually the end of
-              // the doc-specific byte[] when building)
-              int pos = val >>> 8;
-              int ilen = vIntSize(delta);
-              byte[] arr = bytes[doc];
-              int newend = pos+ilen;
-              if (newend > arr.length) {
-                // We avoid a doubling strategy to lower memory usage.
-                // this faceting method isn't for docs with many terms.
-                // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit boundary.
-                // TODO: figure out what array lengths we can round up to w/o actually using more memory
-                // (how much space does a byte[] take up?  Is data preceded by a 32 bit length only?
-                // It should be safe to round up to the nearest 32 bits in any case.
-                int newLen = (newend + 3) & 0xfffffffc;  // 4 byte alignment
-                byte[] newarr = new byte[newLen];
-                System.arraycopy(arr, 0, newarr, 0, pos);
-                arr = newarr;
-                bytes[doc] = newarr;
-              }
-              pos = writeInt(delta, arr, pos);
-              index[doc] = (pos<<8) | 1;  // update pointer to end index in byte[]
+          if ((val & 0xff)==1) {
+            // index into byte array (actually the end of
+            // the doc-specific byte[] when building)
+            int pos = val >>> 8;
+            int ilen = vIntSize(delta);
+            byte[] arr = bytes[doc];
+            int newend = pos+ilen;
+            if (newend > arr.length) {
+              // We avoid a doubling strategy to lower memory usage.
+              // this faceting method isn't for docs with many terms.
+              // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit boundary.
+              // TODO: figure out what array lengths we can round up to w/o actually using more memory
+              // (how much space does a byte[] take up?  Is data preceded by a 32 bit length only?
+              // It should be safe to round up to the nearest 32 bits in any case.
+              int newLen = (newend + 3) & 0xfffffffc;  // 4 byte alignment
+              byte[] newarr = new byte[newLen];
+              System.arraycopy(arr, 0, newarr, 0, pos);
+              arr = newarr;
+              bytes[doc] = newarr;
+            }
+            pos = writeInt(delta, arr, pos);
+            index[doc] = (pos<<8) | 1;  // update pointer to end index in byte[]
+          } else {
+            // OK, this int has data in it... find the end (a zero starting byte - not
+            // part of another number, hence not following a byte with the high bit set).
+            int ipos;
+            if (val==0) {
+              ipos=0;
+            } else if ((val & 0x0000ff80)==0) {
+              ipos=1;
+            } else if ((val & 0x00ff8000)==0) {
+              ipos=2;
+            } else if ((val & 0xff800000)==0) {
+              ipos=3;
             } else {
-              // OK, this int has data in it... find the end (a zero starting byte - not
-              // part of another number, hence not following a byte with the high bit set).
-              int ipos;
-              if (val==0) {
-                ipos=0;
-              } else if ((val & 0x0000ff80)==0) {
-                ipos=1;
-              } else if ((val & 0x00ff8000)==0) {
-                ipos=2;
-              } else if ((val & 0xff800000)==0) {
-                ipos=3;
-              } else {
-                ipos=4;
-              }
+              ipos=4;
+            }
 
-              //System.out.println("      ipos=" + ipos);
+            //System.out.println("      ipos=" + ipos);
 
-              int endPos = writeInt(delta, tempArr, ipos);
-              //System.out.println("      endpos=" + endPos);
-              if (endPos <= 4) {
-                //System.out.println("      fits!");
-                // value will fit in the integer... move bytes back
-                for (int j=ipos; j<endPos; j++) {
-                  val |= (tempArr[j] & 0xff) << (j<<3);
-                }
-                index[doc] = val;
-              } else {
-                // value won't fit... move integer into byte[]
-                for (int j=0; j<ipos; j++) {
-                  tempArr[j] = (byte)val;
-                  val >>>=8;
-                }
-                // point at the end index in the byte[]
-                index[doc] = (endPos<<8) | 1;
-                bytes[doc] = tempArr;
-                tempArr = new byte[12];
+            int endPos = writeInt(delta, tempArr, ipos);
+            //System.out.println("      endpos=" + endPos);
+            if (endPos <= 4) {
+              //System.out.println("      fits!");
+              // value will fit in the integer... move bytes back
+              for (int j=ipos; j<endPos; j++) {
+                val |= (tempArr[j] & 0xff) << (j<<3);
               }
+              index[doc] = val;
+            } else {
+              // value won't fit... move integer into byte[]
+              for (int j=0; j<ipos; j++) {
+                tempArr[j] = (byte)val;
+                val >>>=8;
+              }
+              // point at the end index in the byte[]
+              index[doc] = (endPos<<8) | 1;
+              bytes[doc] = tempArr;
+              tempArr = new byte[12];
             }
           }
         }
