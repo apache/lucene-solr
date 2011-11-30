@@ -656,7 +656,15 @@ public class TestBlockJoin extends LuceneTestCase {
 
     BlockJoinQuery q = new BlockJoinQuery(tq, parentFilter, BlockJoinQuery.ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getSequentialSubReaders()[0], true, true);
+    final IndexReader[] subs = s.getIndexReader().getSequentialSubReaders();
+    final IndexReader sub;
+    if (subs == null) {
+      sub = s.getIndexReader();
+    } else {
+      assertEquals(1, subs.length);
+      sub = subs[0];
+    }
+    DocIdSetIterator disi = weight.scorer(sub, true, true);
     assertEquals(2, disi.advance(0));
     s.close();
     r.close();
