@@ -47,8 +47,10 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     FixedBitSet res = null;
     
+    boolean hasShouldClauses = false;
     for (final FilterClause fc : clauses) {
       if (fc.getOccur() == Occur.SHOULD) {
+        hasShouldClauses = true;
         final DocIdSetIterator disi = getDISI(fc.getFilter(), reader);
         if (disi == null) continue;
         if (res == null) {
@@ -57,10 +59,13 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
         res.or(disi);
       }
     }
+    if (hasShouldClauses && res == null)
+      return DocIdSet.EMPTY_DOCIDSET;
     
     for (final FilterClause fc : clauses) {
       if (fc.getOccur() == Occur.MUST_NOT) {
         if (res == null) {
+          assert !hasShouldClauses;
           res = new FixedBitSet(reader.maxDoc());
           res.set(0, reader.maxDoc()); // NOTE: may set bits on deleted docs
         }

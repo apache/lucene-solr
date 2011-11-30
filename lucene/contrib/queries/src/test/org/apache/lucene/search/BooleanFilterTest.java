@@ -28,6 +28,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BooleanFilterTest extends LuceneTestCase {
@@ -82,6 +83,15 @@ public class BooleanFilterTest extends LuceneTestCase {
 
   private Filter getWrappedTermQuery(String field, String text) {
     return new QueryWrapperFilter(new TermQuery(new Term(field, text)));
+  }
+
+  private Filter getEmptyFilter() {
+    return new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(IndexReader context) {
+        return new FixedBitSet(context.maxDoc());
+      }
+    };
   }
 
   private Filter getNullDISFilter() {
@@ -300,5 +310,22 @@ public class BooleanFilterTest extends LuceneTestCase {
     booleanFilter = new BooleanFilter();
     booleanFilter.add(getNullDISIFilter(), Occur.MUST_NOT);
     tstFilterCard("A single MUST_NOT filter that returns a null DIS should be invisible", 5, booleanFilter);
+  }
+  
+  public void testNonMatchingShouldsAndMusts() throws Exception {
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(getEmptyFilter(), Occur.SHOULD);
+    booleanFilter.add(getTermsFilter("accessRights", "admin"), Occur.MUST);
+    tstFilterCard(">0 shoulds with no matches should return no docs", 0, booleanFilter);
+    
+    booleanFilter = new BooleanFilter();
+    booleanFilter.add(getNullDISFilter(), Occur.SHOULD);
+    booleanFilter.add(getTermsFilter("accessRights", "admin"), Occur.MUST);
+    tstFilterCard(">0 shoulds with no matches should return no docs", 0, booleanFilter);
+    
+    booleanFilter = new BooleanFilter();
+    booleanFilter.add(getNullDISIFilter(), Occur.SHOULD);
+    booleanFilter.add(getTermsFilter("accessRights", "admin"), Occur.MUST);
+    tstFilterCard(">0 shoulds with no matches should return no docs", 0, booleanFilter);
   }
 }
