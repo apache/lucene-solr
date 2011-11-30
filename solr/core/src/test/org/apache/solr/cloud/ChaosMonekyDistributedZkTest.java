@@ -18,10 +18,12 @@ package org.apache.solr.cloud;
  */
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore("this test is not ready")
 public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
   
   

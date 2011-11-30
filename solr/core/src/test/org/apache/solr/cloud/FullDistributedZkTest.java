@@ -190,6 +190,14 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       zkStateReader.createClusterStateWatchersAndUpdate();
     }
     
+    // wait until shards have started registering...
+    while(!zkStateReader.getCloudState().getCollections().contains(DEFAULT_COLLECTION)) {
+      Thread.sleep(500);
+    }
+    while(zkStateReader.getCloudState().getSlices(DEFAULT_COLLECTION).size() != sliceCount) {
+      Thread.sleep(500);
+    }
+    
     // use the distributed solrj client
     if (cloudClient == null) {
       synchronized(this) {
@@ -229,9 +237,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);
     }
-    // we have to wait for the cloud state to be updated
-    // TODO: instead we should poll or something
-    Thread.sleep(2000);
+
     initCloud();
     updateMappingsFromZk(jettys, clients);
     
