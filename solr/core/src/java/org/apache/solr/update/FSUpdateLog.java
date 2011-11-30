@@ -720,7 +720,7 @@ public class FSUpdateLog extends UpdateLog {
             log.warn("IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
           } catch (ClassCastException cl) {
-            log.warn("Unexpectged log entry or corrupt log.  Entry=" + o);
+            log.warn("Unexpected log entry or corrupt log.  Entry=" + o);
             // would be caused by a corrupt transaction log
           } catch (Exception ex) {
             log.warn("Exception replaying log", ex);
