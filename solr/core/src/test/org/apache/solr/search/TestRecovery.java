@@ -229,6 +229,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
       deleteAndGetVersion("4", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-94"));   // this update should not take affect
       updateJ(jsonAdd(sdoc("id","6", "_version_","106")), params(SEEN_LEADER,SEEN_LEADER_VAL));
       updateJ(jsonAdd(sdoc("id","5", "_version_","105")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","8", "_version_","108")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      // test that delete by query is at least buffered along with everything else so it will delete the
+      // currently buffered id:8 (even if it doesn't currently support versioning)
+      updateJ("{\"delete\": { \"query\":\"id:2 OR id:8\" }}", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-300"));
+
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
@@ -247,17 +253,18 @@ public class TestRecovery extends SolrTestCaseJ4 {
       deleteAndGetVersion("6", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-206"));
 
       logReplay.release(1000);
-      if (rinfoFuture != null) rinfoFuture.get();
+      UpdateLog.RecoveryInfo recInfo = rinfoFuture.get();
 
       assertJQ(req("q", "*:*", "sort","id asc", "fl","id,_version_")
           , "/response/docs==["
-                           +  "{'id':'2','_version_':102}"
-                           + ",{'id':'3','_version_':103}"
+                           + "{'id':'3','_version_':103}"
                            + ",{'id':'4','_version_':104}"
                            + ",{'id':'5','_version_':105}"
                            + ",{'id':'7','_version_':107}"
                            +"]"
       );
+
+      assertEquals(1, recInfo.deleteByQuery);
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {

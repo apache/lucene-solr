@@ -487,6 +487,7 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public Future<RecoveryInfo> recoverFromLog() {
+    recoveryInfo = new RecoveryInfo();
     if (tlogFiles.length == 0) return null;
     TransactionLog oldTlog = null;
 
@@ -530,6 +531,7 @@ public class FSUpdateLog extends UpdateLog {
   @Override
   public void bufferUpdates() {
     assert state == State.ACTIVE;
+    recoveryInfo = new RecoveryInfo();
 
     // block all updates to eliminate race conditions
     // reading state and acting on it in the update processor
@@ -671,6 +673,7 @@ public class FSUpdateLog extends UpdateLog {
             switch (oper) {
               case UpdateLog.ADD:
               {
+                recoveryInfo.adds++;
                 // byte[] idBytes = (byte[]) entry.get(2);
                 SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
                 AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -686,6 +689,7 @@ public class FSUpdateLog extends UpdateLog {
               }
               case UpdateLog.DELETE:
               {
+                recoveryInfo.deletes++;
                 byte[] idBytes = (byte[]) entry.get(2);
                 DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
                 cmd.setIndexedId(new BytesRef(idBytes));
@@ -697,6 +701,7 @@ public class FSUpdateLog extends UpdateLog {
 
               case UpdateLog.DELETE_BY_QUERY:
               {
+                recoveryInfo.deleteByQuery++;
                 String query = (String)entry.get(2);
                 DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
                 cmd.query = query;
@@ -717,12 +722,15 @@ public class FSUpdateLog extends UpdateLog {
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
             }
           } catch (IOException ex) {
+            recoveryInfo.errors++;
             log.warn("IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
           } catch (ClassCastException cl) {
-            log.warn("Unexpected log entry or corrupt log.  Entry=" + o);
+            recoveryInfo.errors++;
+            log.warn("Unexpected log entry or corrupt log.  Entry=" + o, cl);
             // would be caused by a corrupt transaction log
           } catch (Exception ex) {
+            recoveryInfo.errors++;
             log.warn("Exception replaying log", ex);
             // something wrong with the request?
           }
@@ -736,12 +744,14 @@ public class FSUpdateLog extends UpdateLog {
         try {
           uhandler.commit(cmd);
         } catch (IOException ex) {
+          recoveryInfo.errors++;
           log.error("Replay exception: final commit.", ex);
         }
 
         try {
           proc.finish();
         } catch (IOException ex) {
+          recoveryInfo.errors++;
           log.error("Replay exception: finish()", ex);
         }
 
@@ -749,6 +759,7 @@ public class FSUpdateLog extends UpdateLog {
         translog.decref();
 
       } catch (Exception e) {
+        recoveryInfo.errors++;
         SolrException.log(log,e);
       } finally {
         // change the state while updates are still blocked to prevent races

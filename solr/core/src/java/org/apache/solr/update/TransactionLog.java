@@ -314,6 +314,10 @@ public class TransactionLog {
 
   /* This method is thread safe */
   public Object lookup(long pos) {
+    // A negative position can result from a log replay (which does not re-log, but does
+    // update the version map.  This is OK since the node won't be ACTIVE when this happens.
+    if (pos < 0) return null;
+
     try {
       // make sure any unflushed buffer has been flushed
       synchronized (fos) {

@@ -372,14 +372,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    int hash = 0;
-    if (cmd.getIndexedId() == null) {
+    if (!cmd.isDeleteById()) {
       // delete by query...
       // TODO: handle versioned and distributed deleteByQuery
-      super.processDelete(cmd);
-    } else {
-      hash = hash(cmd);
+
+      // even in non zk mode, tests simulate updates from a leader
+      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      processDeleteByQuery(cmd);
+      return;
     }
+
+    int hash = hash(cmd);
     if (zkEnabled) {
       shards = setupRequest(hash);
     } else {
@@ -496,7 +499,59 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.unlockForUpdate();
     }
   }
-  
+
+  private void processDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    if (vinfo == null) {
+      super.processDelete(cmd);
+      return;
+    }
+
+    // at this point, there is an update we need to try and apply.
+    // we may or may not be the leader.
+
+    // Find the version
+    long versionOnUpdate = cmd.getVersion();
+    if (versionOnUpdate == 0) {
+      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+    }
+    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+
+    boolean isReplay = (cmd.getFlags() & UpdateCommand.REPLAY) != 0;
+    boolean leaderLogic = isLeader && !isReplay;
+
+    if (!leaderLogic && versionOnUpdate==0) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
+    }
+
+    vinfo.blockUpdates();
+    try {
+
+      if (versionsStored) {
+        if (leaderLogic) {
+          long version = vinfo.getNewClock();
+          cmd.setVersion(-version);
+          // TODO update versions in all buckets
+        } else {
+          cmd.setVersion(-versionOnUpdate);
+
+          if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            // we're not in an active state, and this update isn't from a replay, so buffer it.
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+            ulog.deleteByQuery(cmd);
+            return;
+          }
+        }
+      }
+
+      doLocalDelete(cmd);
+
+    } finally {
+      vinfo.unblockUpdates();
+    }
+
+  }
+
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
 
