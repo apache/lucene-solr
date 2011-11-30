@@ -52,6 +52,8 @@ public class AddUpdateCommand extends UpdateCommand {
    public void clear() {
      solrDoc = null;
      indexedId = null;
+     updateTerm = null;
+     version = 0;
    }
 
    public SolrInputDocument getSolrInputDocument() {

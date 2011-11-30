@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
 
@@ -24,38 +25,55 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  *
  */
-  public class UpdateCommand {
-    protected final SolrQueryRequest req;
-    protected final String commandName;
-    protected long version;
-    protected int flags;
+public class UpdateCommand implements Cloneable {
+  protected SolrQueryRequest req;
+  protected final String commandName;
+  protected long version;
+  protected int flags;
 
-    public static int BUFFERING = 0x00000001; // update command is being buffered.
-    public static int REPLAY    = 0x00000002; // update command is from replaying a log.
-    public static int IGNORE_AUTOCOMMIT = 0x00000002; // this update should not count toward triggering of autocommits.
+  public static int BUFFERING = 0x00000001; // update command is being buffered.
+  public static int REPLAY    = 0x00000002; // update command is from replaying a log.
+  public static int IGNORE_AUTOCOMMIT = 0x00000002; // this update should not count toward triggering of autocommits.
 
-    public UpdateCommand(String commandName, SolrQueryRequest req) {
-      this.req = req;
-      this.commandName = commandName;
-    }
+  public UpdateCommand(String commandName, SolrQueryRequest req) {
+    this.req = req;
+    this.commandName = commandName;
+  }
 
-    @Override
-    public String toString() {
-      return commandName;
-    }
+  @Override
+  public String toString() {
+    return commandName;
+  }
 
-    public long getVersion() {
-      return version;
-    }
-    public void setVersion(long version) {
-      this.version = version;
-    }
+  public long getVersion() {
+    return version;
+  }
+  public void setVersion(long version) {
+    this.version = version;
+  }
 
-    public void setFlags(int flags) {
-      this.flags = flags;
-    }
+  public void setFlags(int flags) {
+    this.flags = flags;
+  }
 
-    public int getFlags() {
-      return flags;
+  public int getFlags() {
+    return flags;
+  }
+
+  public SolrQueryRequest getReq() {
+    return req;
+  }
+
+  public void setReq(SolrQueryRequest req) {
+    this.req = req;
+  }
+
+  @Override
+  public UpdateCommand clone() {
+    try {
+      return (UpdateCommand) super.clone();
+    } catch (CloneNotSupportedException e) {
+      return null;
     }
   }
+}

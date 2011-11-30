@@ -125,9 +125,9 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     for (String s : l) {
       DeleteUpdateCommand delcmd = new DeleteUpdateCommand(req);
       if (isId) {
-        delcmd.id = s;
+        delcmd.setId(s);
       } else {
-        delcmd.query = s;
+        delcmd.setQuery(s);
       }
       processor.processDelete(delcmd);
     }

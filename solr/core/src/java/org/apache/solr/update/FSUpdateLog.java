@@ -18,14 +18,20 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
+import org.apache.solr.update.processor.RunUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -95,8 +101,8 @@ class NullUpdateLog extends UpdateLog {
   }
 
   @Override
-  public boolean recoverFromLog() {
-    return false;
+  public Future<RecoveryInfo> recoverFromLog() {
+    return null;
   }
 
   @Override
@@ -182,8 +188,6 @@ public class FSUpdateLog extends UpdateLog {
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
     versionInfo = new VersionInfo(uhandler, 256);
-
-    recoverFromLog();  // TODO: is this too early?
   }
 
   static class LogPtr {
@@ -223,11 +227,20 @@ public class FSUpdateLog extends UpdateLog {
   @Override
   public void add(AddUpdateCommand cmd) {
     // don't log if we are replaying from another log
-    if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
+    // TODO: we currently need to log to maintain correct versioning, rtg, etc
+    // if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
 
     synchronized (this) {
-      ensureLog();
-      long pos = tlog.write(cmd);
+      long pos = -1;
+
+    // don't log if we are replaying from another log
+      if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+        ensureLog();
+        pos = tlog.write(cmd);
+      }
+
+      // TODO: in the future we could support a real position for a REPLAY update.
+      // Only currently would be useful for RTG while in recovery mode though.
       LogPtr ptr = new LogPtr(pos, cmd.getVersion());
 
       // only update our map if we're not buffering
@@ -241,14 +254,17 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void delete(DeleteUpdateCommand cmd) {
-    // don't log if we are replaying from another log
-    if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
-
     BytesRef br = cmd.getIndexedId();
 
     synchronized (this) {
-      ensureLog();
-      long pos = tlog.writeDelete(cmd);
+      long pos = -1;
+
+      // don't log if we are replaying from another log
+      if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+        ensureLog();
+        pos = tlog.writeDelete(cmd);
+      }
+
       LogPtr ptr = new LogPtr(pos, cmd.version);
 
       // only update our map if we're not buffering
@@ -264,16 +280,19 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) {
-    // don't log if we are replaying from another log
-    if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
-
     synchronized (this) {
-      ensureLog();
-      // TODO: how to support realtime-get, optimistic concurrency, or anything else in this case?
-      // Maybe we shouldn't?
-      // realtime-get could just do a reopen of the searcher
-      // optimistic concurrency? Maybe we shouldn't support deleteByQuery w/ optimistic concurrency
-      long pos = tlog.writeDeleteByQuery(cmd);
+      long pos = -1;
+    // don't log if we are replaying from another log
+      if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+
+        ensureLog();
+        // TODO: how to support realtime-get, optimistic concurrency, or anything else in this case?
+        // Maybe we shouldn't?
+        // realtime-get could just do a reopen of the searcher
+        // optimistic concurrency? Maybe we shouldn't support deleteByQuery w/ optimistic concurrency
+        pos = tlog.writeDeleteByQuery(cmd);
+      }
+
       LogPtr ptr = new LogPtr(pos, cmd.getVersion());
       // SolrCore.verbose("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
     }
@@ -467,21 +486,23 @@ public class FSUpdateLog extends UpdateLog {
   }
 
   @Override
-  public boolean recoverFromLog() {
-    if (tlogFiles.length == 0) return false;
+  public Future<RecoveryInfo> recoverFromLog() {
+    if (tlogFiles.length == 0) return null;
     TransactionLog oldTlog = null;
-    try {
-      oldTlog = new TransactionLog( new File(tlogDir, tlogFiles[tlogFiles.length-1]), null, true );
-      recoveryExecutor.execute(new LogReplayer(oldTlog, false));
-      return true;
 
-    } catch (Exception ex) {
-      // an error during recovery
-      log.warn("Exception during recovery", ex);
-      if (oldTlog != null) oldTlog.decref();
+    oldTlog = new TransactionLog( new File(tlogDir, tlogFiles[tlogFiles.length-1]), null, true );
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
+    LogReplayer replayer = new LogReplayer(oldTlog, false);
+
+    versionInfo.blockUpdates();
+    try {
+      state = State.REPLAYING;
+    } finally {
+      versionInfo.unblockUpdates();
     }
 
-    return false;
+    return cs.submit(replayer, recoveryInfo);
+
   }
 
 
@@ -588,6 +609,20 @@ public class FSUpdateLog extends UpdateLog {
         tlogReader = translog.getReader();
 
         SolrParams params = new ModifiableSolrParams();
+        SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
+        SolrQueryResponse rsp = new SolrQueryResponse();
+
+        // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
+        // to change underneath us.
+
+        // TODO: use the standard request factory?  We won't get any custom configuration instantiating this way.
+        RunUpdateProcessorFactory runFac = new RunUpdateProcessorFactory();
+        DistributedUpdateProcessorFactory magicFac = new DistributedUpdateProcessorFactory();
+        runFac.init(new NamedList());
+        magicFac.init(new NamedList());
+
+        UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
+
         long commitVersion = 0;
 
         for(;;) {
@@ -614,7 +649,7 @@ public class FSUpdateLog extends UpdateLog {
                 // only an issue if we crash before the commit (and we are paying attention
                 // to incomplete log files).
                 //
-                // versionInfo.lock.writeLock().unlock();
+                // versionInfo.unblockUpdates();
               }
             }
           } catch (InterruptedException e) {
@@ -624,11 +659,6 @@ public class FSUpdateLog extends UpdateLog {
           }
 
           if (o == null) break;
-
-          // create a new request each time since the update handler and core could change
-          SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
-
-          // TODO: race?  This core could close on us if it was reloaded
 
           try {
 
@@ -648,7 +678,7 @@ public class FSUpdateLog extends UpdateLog {
                 cmd.solrDoc = sdoc;
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                uhandler.addDoc(cmd);
+                proc.processAdd(cmd);
                 break;
 
                 // TODO: updates need to go through versioning code for handing reorders? (for replicas at least,
@@ -661,7 +691,7 @@ public class FSUpdateLog extends UpdateLog {
                 cmd.setIndexedId(new BytesRef(idBytes));
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                uhandler.delete(cmd);
+                proc.processDelete(cmd);
                 break;
               }
 
@@ -672,7 +702,7 @@ public class FSUpdateLog extends UpdateLog {
                 cmd.query = query;
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                uhandler.delete(cmd);
+                proc.processDelete(cmd);
                 break;
               }
 
@@ -698,7 +728,6 @@ public class FSUpdateLog extends UpdateLog {
           }
         }
 
-        SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
         cmd.setVersion(commitVersion);
         cmd.softCommit = false;
@@ -710,9 +739,17 @@ public class FSUpdateLog extends UpdateLog {
           log.error("Replay exception: final commit.", ex);
         }
 
+        try {
+          proc.finish();
+        } catch (IOException ex) {
+          log.error("Replay exception: finish()", ex);
+        }
+
         tlogReader.close();
         translog.decref();
 
+      } catch (Exception e) {
+        SolrException.log(log,e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;

@@ -50,8 +50,8 @@ public abstract class UpdateLog implements PluginInfoInitialized {
   public abstract void close();
   public abstract VersionInfo getVersionInfo();
   public abstract void finish(SyncLevel syncLevel);
-  public abstract boolean recoverFromLog();
 
+  public abstract Future<RecoveryInfo> recoverFromLog();
   public abstract void bufferUpdates();
   public abstract Future<FSUpdateLog.RecoveryInfo> applyBufferedUpdates();
   public abstract State getState();

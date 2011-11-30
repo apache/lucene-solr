@@ -209,9 +209,9 @@ class XMLLoader extends ContentStreamLoader {
         case XMLStreamConstants.END_ELEMENT:
           String currTag = parser.getLocalName();
           if ("id".equals(currTag)) {
-            deleteCmd.id = text.toString();
+            deleteCmd.setId(text.toString());
           } else if ("query".equals(currTag)) {
-            deleteCmd.query = text.toString();
+            deleteCmd.setQuery(text.toString());
           } else if ("delete".equals(currTag)) {
             return;
           } else {

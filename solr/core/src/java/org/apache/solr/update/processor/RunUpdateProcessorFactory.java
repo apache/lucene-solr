@@ -60,7 +60,7 @@ class RunUpdateProcessor extends UpdateRequestProcessor
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    if( cmd.id != null ) {
+    if( cmd.isDeleteById()) {
       updateHandler.delete(cmd);
     }
     else {

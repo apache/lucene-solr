@@ -117,20 +117,20 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
-    if (cmd.id != null) {
+    if (cmd.isDeleteById()) {
       if (deletes == null) {
         deletes = new ArrayList<String>();
         toLog.add("delete",deletes);
       }
       if (deletes.size() < maxNumToLog) {
-        deletes.add(cmd.id);
+        deletes.add(cmd.getId());
       }
-      if (logDebug) { log.debug("delete {}", cmd.id); }
+      if (logDebug) { log.debug("delete {}", cmd.getId()); }
     } else {
       if (toLog.size() < maxNumToLog) {
         toLog.add("deleteByQuery", cmd.query);
       }
-      if (logDebug) { log.debug("deleteByQuery {}", cmd.query); }
+      if (logDebug) { log.debug("deleteByQuery {}", cmd.getQuery()); }
     }
     numDeletes++;
 

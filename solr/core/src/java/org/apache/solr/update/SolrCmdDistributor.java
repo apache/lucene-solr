@@ -97,9 +97,9 @@ public class SolrCmdDistributor {
   public void distribDelete(DeleteUpdateCommand cmd, List<String> shards) throws IOException {
     checkResponses(false);
     
-    if (cmd.id != null) {
+    if (cmd.isDeleteById()) {
       doDelete(cmd, shards);
-    } else if (cmd.query != null) {
+    } else {
       // TODO: query must be broadcast to all ??
       doDelete(cmd, shards);
     }
@@ -240,10 +240,9 @@ public class SolrCmdDistributor {
     addCommit(ureq, ccmd);
     
     for (DeleteUpdateCommand cmd : dlist) {
-      if (cmd.id != null) {
-        ureq.deleteById(cmd.id);
-      }
-      if (cmd.query != null) {
+      if (cmd.isDeleteById()) {
+        ureq.deleteById(cmd.getId());
+      } else {
         ureq.deleteByQuery(cmd.query);
       }
     }
@@ -253,11 +252,9 @@ public class SolrCmdDistributor {
     return true;
   }
   
-  // TODO: this is brittle
   private DeleteUpdateCommand clone(DeleteUpdateCommand cmd) {
-    DeleteUpdateCommand c = new DeleteUpdateCommand(req);
-    c.id = cmd.id;
-    c.query = cmd.query;
+    DeleteUpdateCommand c = (DeleteUpdateCommand)cmd.clone();
+    cmd.setReq(req);
     return c;
   }
   

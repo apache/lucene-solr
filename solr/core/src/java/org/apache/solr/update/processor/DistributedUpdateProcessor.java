@@ -293,14 +293,24 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // we may or may not be the leader.
 
     // Find any existing version in the document
-    long versionOnUpdate = 0;
-    SolrInputField versionField = cmd.getSolrInputDocument().getField(VersionInfo.VERSION_FIELD);
-    if (versionField != null) {
-      Object o = versionField.getValue();
-      versionOnUpdate = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
-    } else {
-      // TODO: check for the version in the request params (this will be for user provided versions and optimistic concurrency only)
+    // TODO: don't reuse update commands any more!
+    long versionOnUpdate = cmd.getVersion();
+
+    if (versionOnUpdate == 0) {
+      SolrInputField versionField = cmd.getSolrInputDocument().getField(VersionInfo.VERSION_FIELD);
+      if (versionField != null) {
+        Object o = versionField.getValue();
+        versionOnUpdate = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
+      } else {
+        // Find the version
+        String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+        versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+      }
     }
+
+    boolean isReplay = (cmd.getFlags() & UpdateCommand.REPLAY) != 0;
+    boolean leaderLogic = isLeader && !isReplay;
+
 
     VersionBucket bucket = vinfo.bucket(hash);
 
@@ -319,7 +329,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           long bucketVersion = bucket.highest;
 
-          if (isLeader) {
+          if (leaderLogic) {
             long version = vinfo.getNewClock();
             cmd.setVersion(version);
             cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
@@ -414,7 +424,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return false;
     }
 
-    if (cmd.id == null) {
+    if (!cmd.isDeleteById()) {
       // delete-by-query
       // TODO: forward to all nodes in distrib mode?  or just don't bother to support?
       return false;
@@ -424,8 +434,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // we may or may not be the leader.
 
     // Find the version
-    String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
-    Long versionOnUpdate = versionOnUpdateS == null ? null : Long.parseLong(versionOnUpdateS);
+    long versionOnUpdate = cmd.getVersion();
+    if (versionOnUpdate == 0) {
+      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+    }
+    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+
+    boolean isReplay = (cmd.getFlags() & UpdateCommand.REPLAY) != 0;
+    boolean leaderLogic = isLeader && !isReplay;
+
+    if (!leaderLogic && versionOnUpdate==0) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
+    }
 
     VersionBucket bucket = vinfo.bucket(hash);
 
@@ -436,17 +457,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (versionsStored) {
           long bucketVersion = bucket.highest;
 
-          if (isLeader) {
+          if (leaderLogic) {
             long version = vinfo.getNewClock();
             cmd.setVersion(-version);
             bucket.updateHighest(version);
           } else {
-            // The leader forwarded us this update.
-            if (versionOnUpdate == null) {
-              throw new RuntimeException("we expected to find versionOnUpdate but did not");
-            }
-
-            cmd.setVersion(versionOnUpdate);
+            cmd.setVersion(-versionOnUpdate);
 
             if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.

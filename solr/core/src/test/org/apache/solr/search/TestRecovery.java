@@ -82,6 +82,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       h.close();
       createCore();
+      // TODO: kick off this from solr if leader (at a minimum)
+      h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // verify that previous close didn't do a commit
       // recovery should be blocked by our hook
@@ -106,6 +108,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       h.close();
       createCore();
+      // TODO: kick off this from solr if leader (at a minimum)
+      h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
@@ -116,6 +120,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       int permits = logReplay.availablePermits();
       createCore();
+      // TODO: kick off this from solr if leader (at a minimum)
+      h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+
       assertJQ(req("q","*:*") ,"/response/numFound==3");
       Thread.sleep(100);
       assertEquals(permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
@@ -173,12 +180,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
-      long version = 1;
       // simulate updates from a leader
-      updateJ(jsonAdd(sdoc("id","1", "_version_",Long.toString(++version))), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      updateJ(jsonAdd(sdoc("id","2", "_version_",Long.toString(++version))), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      updateJ(jsonAdd(sdoc("id","3", "_version_",Long.toString(++version))), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      deleteAndGetVersion("1", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_",Long.toString(++version)));
+      updateJ(jsonAdd(sdoc("id","1", "_version_","101")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","2", "_version_","102")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","3", "_version_","103")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      deleteAndGetVersion("1", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-201"));
       assertU(commit());
 
       // updates should be buffered, so we should not see any results yet.
@@ -212,10 +218,47 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
-      // TODO
+      Long ver = getVer(req("qt","/get", "id","3"));
+      assertEquals(103L, ver.longValue());
 
+      // add a reordered doc that shouldn't overwrite one in the index
+      updateJ(jsonAdd(sdoc("id","3", "_version_","3")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      // reorder two buffered updates
+      updateJ(jsonAdd(sdoc("id","4", "_version_","104")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      deleteAndGetVersion("4", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-94"));   // this update should not take affect
+      updateJ(jsonAdd(sdoc("id","6", "_version_","106")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","5", "_version_","105")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
+      assertTrue(rinfoFuture != null);
+      assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
+
+      // apply a single update
+      logReplay.release(1);
+
+      // now add another update
+      updateJ(jsonAdd(sdoc("id","7", "_version_","107")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      // a reordered update that should be dropped
+      deleteAndGetVersion("5", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-95"));
+
+      deleteAndGetVersion("6", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-206"));
+
+      logReplay.release(1000);
       if (rinfoFuture != null) rinfoFuture.get();
+
+      assertJQ(req("q", "*:*", "sort","id asc", "fl","id,_version_")
+          , "/response/docs==["
+                           +  "{'id':'2','_version_':102}"
+                           + ",{'id':'3','_version_':103}"
+                           + ",{'id':'4','_version_':104}"
+                           + ",{'id':'5','_version_':105}"
+                           + ",{'id':'7','_version_':107}"
+                           +"]"
+      );
+
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
       FSUpdateLog.testing_logReplayHook = null;

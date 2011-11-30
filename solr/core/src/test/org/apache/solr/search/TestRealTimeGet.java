@@ -836,12 +836,12 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal,"version",version);
 
-                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(version), SEEN_LEADER,SEEN_LEADER_VAL));
+                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), SEEN_LEADER,SEEN_LEADER_VAL));
 
                 // TODO: returning versions for these types of updates is redundant
                 // but if we do return, they had better be equal
                 if (returnedVersion != null) {
-                  assertEquals(version, returnedVersion.longValue());
+                  assertEquals(-version, returnedVersion.longValue());
                 }
 
                 // only update model if the version is newer
