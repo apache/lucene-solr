@@ -510,7 +510,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
    
-    Slice replicas = cloudState.getSlices(collection).get(shardId);
+    Map<String,Slice> slices = cloudState.getSlices(collection);
+    if (slices == null) {
+      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + collection);
+    }
+    
+    Slice replicas = slices.get(shardId);
+    if (replicas == null) {
+      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);
+    }
     
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
     List<String> urls = new ArrayList<String>();

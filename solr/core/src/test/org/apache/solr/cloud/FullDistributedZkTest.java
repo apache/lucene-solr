@@ -231,6 +231,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     }
     // we have to wait for the cloud state to be updated
     // TODO: instead we should poll or something
+    Thread.sleep(2000);
     initCloud();
     updateMappingsFromZk(jettys, clients);
     
@@ -250,7 +251,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
       List<SolrServer> clients) throws Exception,
       IOException, KeeperException, URISyntaxException {
-    zkStateReader.createClusterStateWatchersAndUpdate();
+    zkStateReader.updateCloudState(true);
     for (SolrServer client : clients) {
       // find info for this client in zk
 

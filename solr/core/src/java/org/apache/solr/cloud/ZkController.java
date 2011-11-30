@@ -538,6 +538,7 @@ public final class ZkController {
     }
     
     if (doRecovery) {
+      log.info("Start recovery process");
       core.getUpdateHandler().getUpdateLog().bufferUpdates();
       final String frozenShardId = shardId;
       Thread thread = new Thread() {
@@ -621,7 +622,7 @@ public final class ZkController {
   private void doRecovery(String collection, final CoreDescriptor desc,
       final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
       SolrServerException, IOException {
-    log.info("Start recovery process");
+
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get 
     // or full index replication
