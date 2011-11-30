@@ -159,7 +159,13 @@ public final class SearcherManager {
       try {
         // IR.openIfChanged preserves NRT and applyDeletes
         // in the newly returned reader:
-        final IndexReader newReader = IndexReader.openIfChanged(currentSearcher.getIndexReader());
+        final IndexReader newReader;
+        final IndexSearcher searcherToReopen = acquire();
+        try {
+          newReader = IndexReader.openIfChanged(searcherToReopen.getIndexReader());
+        } finally {
+          release(searcherToReopen);
+        }
         if (newReader != null) {
           final IndexSearcher newSearcher = new IndexSearcher(newReader, es);
           boolean success = false;
@@ -246,6 +252,10 @@ public final class SearcherManager {
 
   private synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
     ensureOpen();
+    // Don't allow un-closing!
+    if (currentSearcher == null && newSearcher != null) {
+      throw new AlreadyClosedException("this SearcherManager is closed");
+    }
     final IndexSearcher oldSearcher = currentSearcher;
     currentSearcher = newSearcher;
     release(oldSearcher);
