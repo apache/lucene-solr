@@ -84,8 +84,8 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
 
   protected boolean verbose() {
-    IndexWriter w = writer.get();
-    return w != null && w.verbose();
+    final IndexWriter w = writer.get();
+    return w != null && w.infoStream.isEnabled("LMP");
   }
 
   /** @see #setNoCFSRatio */
@@ -107,10 +107,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   
   protected void message(String message) {
     if (verbose()) {
-      final InfoStream infoStream = writer.get().infoStream;
-      if (infoStream != null) {
-        infoStream.message("LMP", message);
-      }
+      writer.get().infoStream.message("LMP", message);
     }
   }
 

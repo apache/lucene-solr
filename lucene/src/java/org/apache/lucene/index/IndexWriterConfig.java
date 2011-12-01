@@ -695,6 +695,10 @@ public final class IndexWriterConfig implements Cloneable {
    * to this.
    */
   public IndexWriterConfig setInfoStream(InfoStream infoStream) {
+    if (infoStream == null) {
+      throw new IllegalArgumentException("Cannot set InfoStream implementation to null. "+
+        "To disable logging use InfoStream.NO_OUTPUT");
+    }
     this.infoStream = infoStream;
     return this;
   }
@@ -703,8 +707,7 @@ public final class IndexWriterConfig implements Cloneable {
    * Convenience method that uses {@link PrintStreamInfoStream}
    */
   public IndexWriterConfig setInfoStream(PrintStream printStream) {
-    this.infoStream = printStream == null ? null : new PrintStreamInfoStream(printStream);
-    return this;
+    return setInfoStream(printStream == null ? InfoStream.NO_OUTPUT : new PrintStreamInfoStream(printStream));
   }
 
   @Override
@@ -725,7 +728,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("maxBufferedDocs=").append(maxBufferedDocs).append("\n");
     sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
     sb.append("codec=").append(codec).append("\n");
-    sb.append("infoStream=").append(infoStream == null ? "null" : infoStream.getClass().getName()).append("\n");
+    sb.append("infoStream=").append(infoStream.getClass().getName()).append("\n");
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("indexerThreadPool=").append(indexerThreadPool).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");
