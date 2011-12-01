@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -103,9 +104,13 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     }
     
     public JettySolrRunner killShard(String slice, int index) throws Exception {
-      // kill first shard in shard2
       JettySolrRunner jetty = shardToJetty.get(slice).get(index).jetty;
       jetty.stop();
+      return jetty;
+    }
+    
+    public JettySolrRunner getShard(String slice, int index) throws Exception {
+      JettySolrRunner jetty = shardToJetty.get(slice).get(index).jetty;
       return jetty;
     }
     
@@ -258,12 +263,24 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       List<SolrServer> clients) throws Exception,
       IOException, KeeperException, URISyntaxException {
     zkStateReader.updateCloudState(true);
+    
+    while(!zkStateReader.getCloudState().getCollections().contains(DEFAULT_COLLECTION)) {
+      Thread.sleep(500);
+    }
+    while(zkStateReader.getCloudState().getSlices(DEFAULT_COLLECTION).size() != sliceCount) {
+      Thread.sleep(500);
+    }
+    
     for (SolrServer client : clients) {
       // find info for this client in zk
 
-      
-      Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
+      CloudState cloudState = zkStateReader.getCloudState();
+      Map<String,Slice> slices = cloudState.getSlices(
           DEFAULT_COLLECTION);
+      
+      if (slices == null) {
+        throw new RuntimeException("No slices found for collection " + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
+      }
       
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();

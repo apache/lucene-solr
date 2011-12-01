@@ -18,26 +18,35 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.RecoveryStrat.RecoveryListener;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 /**
  *
  */
-@Ignore("this test is not ready")
+@Ignore
 public class RecoveryZkTest extends FullDistributedZkTest {
+
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-
+    System.setProperty("mockdir.checkindex", "false");
+  }
+  
+  @AfterClass
+  public static void afterSuperClass() throws Exception {
+    System.clearProperty("mockdir.checkindex");
   }
   
   public RecoveryZkTest() {
@@ -48,6 +57,8 @@ public class RecoveryZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
+    // nocommit: remove the need for this
+    Thread.sleep(5000);
     
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -55,9 +66,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     del("*:*");
     
-    //printLayout();
-    
-    // start an indexing thread
+    // start a couple indexing threads
     
     class StopableThread extends Thread {
       private volatile boolean stop = false;
@@ -73,10 +82,8 @@ public class RecoveryZkTest extends FullDistributedZkTest {
           try {
             indexr(id, i++, i1, 50, tlong, 50, t1,
                 "to come to the aid of their country.");
-          } catch (ThreadDeath td) {
-            throw td;
           } catch (Exception e) {
-            //e.printStackTrace();
+            e.printStackTrace();
           }
         }
       }
@@ -92,35 +99,51 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     StopableThread indexThread2 = new StopableThread();
     
-    //indexThread2.start();
+    indexThread2.start();
 
     // give some time to index...
-    Thread.sleep(4000);
+    Thread.sleep(4000);   
     
     // bring shard replica down
     System.out.println("bring shard down");
     JettySolrRunner replica = chaosMonkey.killShard("shard1", 1);
-    
-    // wait a moment
-    Thread.sleep(1000);
 
     
+    // wait a moment - lets allow some docs to be indexed so replication time is non 0
+    Thread.sleep(4000);
+
     // bring shard replica up
     replica.start();
     
-    // wait for recovery to complete
-    String shard1State = "";
+    final CountDownLatch recoveryLatch = new CountDownLatch(1);
+    RecoveryStrat recoveryStrat = ((SolrDispatchFilter) replica.getDispatchFilter().getFilter()).getCores()
+        .getZkController().getRecoveryStrat();
+    recoveryStrat.setRecoveryListener(new RecoveryListener() {
+      
+      @Override
+      public void startRecovery() {}
+      
+      @Override
+      public void finishedReplication() {}
+      
+      @Override
+      public void finishedRecovery() {
+        recoveryLatch.countDown();
+      }
+    });
     
-    do  {
-      Thread.sleep(1000);
-      updateMappingsFromZk(jettys, clients);
-      ZkNodeProps props = jettyToInfo.get(replica);
-      shard1State = props.get(ZkStateReader.STATE_PROP);
-    } while(!shard1State.equals(ZkStateReader.ACTIVE));
+    
+    // wait for recovery to finish
+    // if it takes over 30 seconds, assume we didnt get our listener attached before
+    // recover finished
+    recoveryLatch.await(30, TimeUnit.SECONDS);
     
     // stop indexing threads
     indexThread.safeStop();
-    //indexThread2.safeStop();
+    indexThread2.safeStop();
+    
+    indexThread.join();
+    indexThread2.join();
     
     commit();
     
@@ -131,7 +154,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
-    
+    Thread.sleep(2000);
     // TODO: right now the control and distrib are usually off by a few docs...
     //query("q", "*:*", "distrib", true, "sort", i1 + " desc");
   }

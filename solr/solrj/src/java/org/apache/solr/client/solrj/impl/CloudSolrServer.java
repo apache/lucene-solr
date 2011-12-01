@@ -124,6 +124,9 @@ public class CloudSolrServer extends SolrServer {
     // TODO: allow multiple collections to be specified via comma separated list
 
     Map<String,Slice> slices = cloudState.getSlices(collection);
+    
+    // nocommit: if slices is null, the collection cannot be found
+    
     Set<String> liveNodes = cloudState.getLiveNodes();
 
     // IDEA: have versions on various things... like a global cloudState version

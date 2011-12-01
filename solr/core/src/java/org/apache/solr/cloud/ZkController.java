@@ -25,13 +25,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.cloud.RecoveryStrat.OnFinish;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -40,13 +38,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -104,6 +99,8 @@ public final class ZkController {
   private int numShards;
 
   private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
+
+  private RecoveryStrat recoveryStrat = new RecoveryStrat();
 
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first
@@ -510,73 +507,45 @@ public final class ZkController {
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
     
     final boolean iamleader;
-    final SolrCore core;
-    boolean doRecovery = true;
-    if (leaderUrl.equals(shardUrl)) {
-      iamleader = true;
-      doRecovery = false;
-      core = null;
-      // publish new props
-      publishAsActive(shardUrl, cloudDesc, shardZkNodeName, shardId);
-    } else {
-      iamleader = false;
-      CoreContainer cc = desc.getCoreContainer();
-      if (cc != null) {
-        core = cc.getCore(desc.getName());
-        try {
+    SolrCore core = null;
+    try {
+      boolean doRecovery = true;
+      if (leaderUrl.equals(shardUrl)) {
+        iamleader = true;
+        doRecovery = false;
+        // publish new props
+        publishAsActive(shardUrl, cloudDesc, shardZkNodeName, shardId);
+      } else {
+        iamleader = false;
+        CoreContainer cc = desc.getCoreContainer();
+        if (cc != null) {
+          core = cc.getCore(desc.getName());
+          
           if (core.isReloaded()) {
             doRecovery = false;
           }
-        } finally {
-          core.close();
+          
+        } else {
+          log.warn("Cannot recover without access to CoreContainer");
+          return shardId;
         }
-      } else {
-        log.warn("Cannot recover without access to CoreContainer");
-        return shardId;
+        
       }
+      
+      if (doRecovery) {
+        recoveryStrat.recover(core, leaderUrl, iamleader, new OnFinish() {
 
-    }
-    
-    if (doRecovery) {
-      log.info("Start recovery process");
-      core.getUpdateHandler().getUpdateLog().bufferUpdates();
-      final String frozenShardId = shardId;
-      Thread thread = new Thread() {
-        {
-          setDaemon(true);
-        }
-        @Override
-        public void run() {
-          try {
-            doRecovery(collection, desc, cloudDesc, iamleader);
-            Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
-            if (future == null) {
-              // no replay needed
-            } else {
-              // wait for replay
-              future.get();
-            }
+          @Override
+          public void run() {
             // publish new props
-            publishAsActive(shardUrl, cloudDesc, shardZkNodeName, frozenShardId);
-          } catch (SolrServerException e) {
-            log.error("", e);
-            // nocommit
-            e.printStackTrace();
-          } catch (IOException e) {
-            log.error("", e);
-            // nocommit
-            e.printStackTrace();
-          } catch (Exception e) {
-            log.error("", e);
-            // nocommit
-            e.printStackTrace();
-          }
-          log.info("Finished recovery process");
-          // nocommit: if we get an exception, recovery failed...
-        }
-      };
-      thread.start();
-  
+            publishAsActive(shardUrl, cloudDesc, shardZkNodeName, cloudDesc.getShardId());
+            
+          }});
+      }
+    } finally {
+      if (core != null) {
+        core.close();
+      }
     }
 
     return shardId;
@@ -617,59 +586,6 @@ public final class ZkController {
       }
     }
     return true;
-  }
-
-  private void doRecovery(String collection, final CoreDescriptor desc,
-      final CloudDescriptor cloudDesc, boolean iamleader) throws Exception,
-      SolrServerException, IOException {
-
-    // start buffer updates to tran log
-    // and do recovery - either replay via realtime get 
-    // or full index replication
-
-    // seems perhaps we cannot do this here since we are not fully running - 
-    // we may need to trigger a recovery that happens later
-    
-    String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
-    
-    if (!iamleader) {
-      // if we are the leader, either we are trying to recover faster
-      // then our ephemeral timed out or we are the only node
-      
-      // TODO: first, issue a hard commit?
-      // nocommit: require /update?
-      
-      CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderUrl);
-     
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      
-      params.set("commit", true);
-      params.set("qt", "/update");
-      server.query(params );
-      
-      // if we want to buffer updates while recovering, this
-      // will have to trigger later - http is not yet up ???
-      
-      // use rep handler directly, so we can do this sync rather than async
-      SolrCore core = desc.getCoreContainer().getCore(desc.getName());
-      try {
-        ReplicationHandler replicationHandler = (ReplicationHandler) core
-            .getRequestHandler("/replication");
-        
-        if (replicationHandler == null) {
-          log.error("Skipping recovery, no /replication handler found");
-          return;
-        }
-        
-        ModifiableSolrParams solrParams = new ModifiableSolrParams();
-        solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
-        solrParams.set(ReplicationHandler.CMD_FORCE, true);
-
-        replicationHandler.doFetch(solrParams);
-      } finally {
-        core.close();
-      }
-    }
   }
 
   private void doLeaderElectionProcess(ElectionContext context) throws KeeperException,
@@ -971,5 +887,10 @@ public final class ZkController {
       this.assignments.notifyAll();
       this.assignments = newAssignments;
     }
+  }
+
+
+  public RecoveryStrat getRecoveryStrat() {
+    return recoveryStrat;
   }
 }
