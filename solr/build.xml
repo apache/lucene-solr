@@ -183,6 +183,13 @@
     <delete dir="dist" />
     <delete dir="package" />
     <delete dir="example/solr/lib" />
+    <delete includeemptydirs="true">
+      <fileset dir="example" includes="**/data/**/*" excludes="**/.gitignore" />
+      <fileset dir="example/webapps" includes="**/*" excludes="**/.gitignore" />
+      <fileset dir="example/work" includes="**/*" excludes="**/.gitignore" />
+    </delete>
+    <echo message="TODO: fix tests to not write files to 'core/src/test-files/data'!" />
+    <delete dir="core/src/test-files/data" />
   </target>
   
   <target name="clean-dest"
