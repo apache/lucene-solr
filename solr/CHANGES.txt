@@ -199,6 +199,11 @@ New Features
 Optimizations
 ----------------------
 
+* SOLR-2888: FSTSuggester refactoring: internal storage is now UTF-8, 
+  external sorting (on disk) prevents OOMs even with large data sets
+  (the bottleneck is now FST construction), code cleanups and API cleanups.
+  (Dawid Weiss)
+
 * SOLR-1875: Per-segment field faceting for single valued string fields.
   Enable with facet.method=fcs, control the number of threads used with
   the "threads" local param on the facet.field param.  This algorithm will
