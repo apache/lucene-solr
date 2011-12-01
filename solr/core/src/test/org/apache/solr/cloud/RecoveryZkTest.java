@@ -35,7 +35,6 @@ import org.junit.Ignore;
 /**
  *
  */
-@Ignore("this test still fails sometimes - it seems usually due to replay failing")
 public class RecoveryZkTest extends FullDistributedZkTest {
 
   

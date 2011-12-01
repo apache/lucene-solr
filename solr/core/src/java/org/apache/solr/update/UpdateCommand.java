@@ -42,7 +42,7 @@ public class UpdateCommand implements Cloneable {
 
   @Override
   public String toString() {
-    return commandName;
+    return commandName + ":{flags="+flags+", version="+version;
   }
 
   public long getVersion() {

@@ -24,6 +24,8 @@ import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.zookeeper.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -51,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class TransactionLog {
+  public static Logger log = LoggerFactory.getLogger(TransactionLog.class);
 
   public final static String END_MESSAGE="SOLR_TLOG_END";
 
@@ -59,13 +62,14 @@ public class TransactionLog {
   RandomAccessFile raf;
   FileChannel channel;
   OutputStream os;
-  FastOutputStream fos;    // all accesses to this stream should be synchronized on "this"
+  FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
 
   volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
   List<String> globalStringList = new ArrayList<String>();
+  final boolean debug = log.isDebugEnabled();
 
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
@@ -136,6 +140,10 @@ public class TransactionLog {
 
   TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
     try {
+      if (debug) {
+        log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size="+tlogFile.length() + ", openExisting=" + openExisting);
+      }
+
       this.tlogFile = tlogFile;
       raf = new RandomAccessFile(this.tlogFile, "rw");
       long start = raf.length();
@@ -195,7 +203,7 @@ public class TransactionLog {
   }
 
   Collection<String> getGlobalStrings() {
-    synchronized (fos) {
+    synchronized (this) {
       return new ArrayList<String>(globalStringList);
     }
   }
@@ -210,9 +218,10 @@ public class TransactionLog {
 
   public long write(AddUpdateCommand cmd) {
     LogCodec codec = new LogCodec();
-    synchronized (fos) {
+    long pos = 0;
+    synchronized (this) {
       try {
-        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         SolrInputDocument sdoc = cmd.getSolrInputDocument();
 
         if (pos == 0) { // TODO: needs to be changed if we start writing a header first
@@ -238,14 +247,15 @@ public class TransactionLog {
 
         return pos;
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        // TODO: reset our file pointer back to "pos", the start of this record.
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error logging add", e);
       }
     }
   }
 
   public long writeDelete(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec();
-    synchronized (fos) {
+    synchronized (this) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         if (pos == 0) {
@@ -268,7 +278,7 @@ public class TransactionLog {
 
   public long writeDeleteByQuery(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec();
-    synchronized (fos) {
+    synchronized (this) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         if (pos == 0) {
@@ -291,7 +301,7 @@ public class TransactionLog {
 
   public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec();
-    synchronized (fos) {
+    synchronized (this) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         if (pos == 0) {
@@ -320,7 +330,7 @@ public class TransactionLog {
 
     try {
       // make sure any unflushed buffer has been flushed
-      synchronized (fos) {
+      synchronized (this) {
         // TODO: optimize this by keeping track of what we have flushed up to
         fos.flushBuffer();
         /***
@@ -355,7 +365,7 @@ public class TransactionLog {
   public void finish(UpdateLog.SyncLevel syncLevel) {
     if (syncLevel == UpdateLog.SyncLevel.NONE) return;
     try {
-      synchronized (fos) {
+      synchronized (this) {
         fos.flushBuffer();
       }
 
@@ -373,6 +383,10 @@ public class TransactionLog {
 
   private void close() {
     try {
+      if (debug) {
+        log.debug("Closing " + this);
+      }
+
       fos.flush();
       fos.close();
       if (deleteOnClose) {
@@ -388,7 +402,7 @@ public class TransactionLog {
   }
 
   /** Returns a reader that can be used while a log is still in use.
-   * Currently only *one* log may be outstanding, and that log may only
+   * Currently only *one* LogReader may be outstanding, and that log may only
    * be used from a single thread. */
   public LogReader getReader() {
     return new LogReader();
@@ -412,7 +426,12 @@ public class TransactionLog {
     public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
 
+
       synchronized (TransactionLog.this) {
+        if (debug) {
+          log.debug("Reading log record.  pos="+pos+" currentSize="+fos.size());
+        }
+
         if (pos >= fos.size()) {
           return null;
         }

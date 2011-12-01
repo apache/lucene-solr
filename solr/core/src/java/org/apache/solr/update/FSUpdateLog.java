@@ -31,6 +31,8 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -122,6 +124,8 @@ class NullUpdateLog extends UpdateLog {
 
 /** @lucene.experimental */
 public class FSUpdateLog extends UpdateLog {
+  public static Logger log = LoggerFactory.getLogger(FSUpdateLog.class);
+  public boolean debug = log.isDebugEnabled();
 
   public static String TLOG_NAME="tlog";
 
@@ -247,7 +251,9 @@ public class FSUpdateLog extends UpdateLog {
         map.put(cmd.getIndexedId(), ptr);
       }
 
-      // SolrCore.verbose("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      if (debug) {
+        log.debug("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      }
     }
   }
 
@@ -273,7 +279,9 @@ public class FSUpdateLog extends UpdateLog {
         oldDeletes.put(br, ptr);
       }
 
-      // SolrCore.verbose("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      if (debug) {
+        log.debug("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      }
     }
   }
 
@@ -293,7 +301,10 @@ public class FSUpdateLog extends UpdateLog {
       }
 
       LogPtr ptr = new LogPtr(pos, cmd.getVersion());
-      // SolrCore.verbose("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+
+      if (debug) {
+        log.debug("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      }
     }
   }
 
@@ -316,6 +327,11 @@ public class FSUpdateLog extends UpdateLog {
   @Override
   public void preCommit(CommitUpdateCommand cmd) {
     synchronized (this) {
+      if (debug) {
+        log.debug("TLOG: preCommit");
+      }
+
+
       // since we're changing the log, we must change the map.
       newMap();
 
@@ -335,6 +351,9 @@ public class FSUpdateLog extends UpdateLog {
   @Override
   public void postCommit(CommitUpdateCommand cmd) {
     synchronized (this) {
+      if (debug) {
+        log.debug("TLOG: postCommit");
+      }
       if (prevTlog != null) {
         prevTlog.decref();
         prevTlog = null;
@@ -344,7 +363,10 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void preSoftCommit(CommitUpdateCommand cmd) {
+    debug = log.isDebugEnabled(); // refresh our view of debugging occasionally
+
     synchronized (this) {
+
       if (!cmd.softCommit) return;  // already handled this at the start of the hard commit
       newMap();
 
@@ -353,7 +375,10 @@ public class FSUpdateLog extends UpdateLog {
       // But we do know that any updates already added will definitely
       // show up in the latest reader after the commit succeeds.
       map = new HashMap<BytesRef, LogPtr>();
-      // SolrCore.verbose("TLOG: preSoftCommit: prevMap="+ System.identityHashCode(prevMap) + " new map=" + System.identityHashCode(map));
+
+      if (debug) {
+        log.debug("TLOG: preSoftCommit: prevMap="+ System.identityHashCode(prevMap) + " new map=" + System.identityHashCode(map));
+      }
     }
   }
 
@@ -365,8 +390,11 @@ public class FSUpdateLog extends UpdateLog {
       // it being called in the middle of a preSoftCommit, postSoftCommit sequence.
       // If this DUH2 synchronization were to be removed, preSoftCommit should
       // record what old maps were created and only remove those.
+
+      if (debug) {
+        SolrCore.verbose("TLOG: postSoftCommit: disposing of prevMap="+ System.identityHashCode(prevMap) + ", prevMap2=" + System.identityHashCode(prevMap2));
+      }
       clearOldMaps();
-      // SolrCore.verbose("TLOG: postSoftCommit: disposing of prevMap="+ System.identityHashCode(prevMap));
     }
   }
 
@@ -532,15 +560,22 @@ public class FSUpdateLog extends UpdateLog {
     assert state == State.ACTIVE;
     recoveryInfo = new RecoveryInfo();
 
+    // TODO: currently we don't keep track of where we are in an existing
+    // transaction log (if there have already been updates) and
+    // we start at the beginning when we replay.
+
     // block all updates to eliminate race conditions
     // reading state and acting on it in the update processor
     versionInfo.blockUpdates();
     try {
+      if (log.isInfoEnabled()) {
+        log.info("Starting to buffer updates. " + this);
+      }
+
       state = State.BUFFERING;
     } finally {
       versionInfo.unblockUpdates();
     }
-    recoveryInfo = new RecoveryInfo();
   }
 
   /** Returns the Future to wait on, or null if no replay was needed */
@@ -578,6 +613,11 @@ public class FSUpdateLog extends UpdateLog {
   @Override
   public State getState() {
     return state;
+  }
+
+  @Override
+  public String toString() {
+    return "FSUpdateLog{state="+getState()+", tlog="+tlog+"}";
   }
 
 

@@ -94,11 +94,13 @@ public class DeleteUpdateCommand extends UpdateCommand {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder(commandName);
-    sb.append(':');
-    if (id!=null) sb.append("id=").append(getId());
-    else sb.append("query=`").append(query).append('`');
-    return sb.toString();
+    StringBuilder sb = new StringBuilder(super.toString());
+    if (id!=null) sb.append(",id=").append(getId());
+    if (indexedId!=null) sb.append(",indexedId=").append(getId());
+    if (query != null) sb.append(",query=`").append(query).append('`');
+    // if (commitWithin != -1) sb.append(",commitWithin=").append(commitWithin);
+     sb.append('}');
+     return sb.toString();
   }
 
 }
