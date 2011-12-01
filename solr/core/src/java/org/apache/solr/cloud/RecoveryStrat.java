@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -73,6 +74,15 @@ public class RecoveryStrat {
             // wait for replay
             future.get();
           }
+          System.out.println("replay done");
+          EmbeddedSolrServer server = new EmbeddedSolrServer(core);
+          server.commit();
+          
+          RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true, true,
+              null);
+          System.out.println("DOCS AFTER REPLAY:"
+              + searcher.get().search(new MatchAllDocsQuery(), 1).totalHits);
+          searcher.decref();
           if (recoveryListener != null) recoveryListener.finishedRecovery();
           onFinish.run();
         } catch (SolrServerException e) {
@@ -114,12 +124,7 @@ public class RecoveryStrat {
       // nocommit: require /update?
       
       CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderUrl);
-      
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      
-      params.set("commit", true);
-      params.set("qt", "/update");
-      server.query(params);
+      server.commit(false, false);
       
       // use rep handler directly, so we can do this sync rather than async
       

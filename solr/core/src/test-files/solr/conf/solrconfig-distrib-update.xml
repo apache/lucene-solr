@@ -41,6 +41,10 @@
 	<requestHandler name="/replication" class="solr.ReplicationHandler">
 
     </requestHandler>
+    
+    <query>
+    	<maxWarmingSearchers>4</maxWarmingSearchers>
+    </query>
 
     <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
 

@@ -35,7 +35,7 @@ import org.junit.Ignore;
 /**
  *
  */
-@Ignore
+@Ignore("this test still fails sometimes - it seems usually due to replay failing")
 public class RecoveryZkTest extends FullDistributedZkTest {
 
   
@@ -70,14 +70,17 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     class StopableThread extends Thread {
       private volatile boolean stop = false;
+      private int startI;
       
-      {
+      
+      public StopableThread(int startI) {
+        this.startI = startI;
         setDaemon(true);
       }
       
       @Override
       public void run() {
-        int i = 0;
+        int i = startI;
         while (true && !stop) {
           try {
             indexr(id, i++, i1, 50, tlong, 50, t1,
@@ -94,10 +97,10 @@ public class RecoveryZkTest extends FullDistributedZkTest {
       
     };
     
-    StopableThread indexThread = new StopableThread();
+    StopableThread indexThread = new StopableThread(0);
     indexThread.start();
     
-    StopableThread indexThread2 = new StopableThread();
+    StopableThread indexThread2 = new StopableThread(10000);
     
     indexThread2.start();
 
@@ -112,12 +115,15 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(4000);
 
+    final CountDownLatch recoveryLatch = new CountDownLatch(1);
+
+    
     // bring shard replica up
     replica.start();
     
-    final CountDownLatch recoveryLatch = new CountDownLatch(1);
     RecoveryStrat recoveryStrat = ((SolrDispatchFilter) replica.getDispatchFilter().getFilter()).getCores()
         .getZkController().getRecoveryStrat();
+    
     recoveryStrat.setRecoveryListener(new RecoveryListener() {
       
       @Override
@@ -134,8 +140,8 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     
     // wait for recovery to finish
-    // if it takes over 30 seconds, assume we didnt get our listener attached before
-    // recover finished
+    // if it takes over n seconds, assume we didnt get our listener attached before
+    // recover started - it should be done before n though
     recoveryLatch.await(30, TimeUnit.SECONDS);
     
     // stop indexing threads
@@ -145,8 +151,10 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     indexThread.join();
     indexThread2.join();
     
-    commit();
     
+    System.out.println("commit");
+    commit();
+
     // test that leader and replica have same doc count
     
     long client1Docs = shardToClient.get("shard1").get(0).query(new SolrQuery("*:*")).getResults().getNumFound();
@@ -154,7 +162,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
-    Thread.sleep(2000);
+ 
     // TODO: right now the control and distrib are usually off by a few docs...
     //query("q", "*:*", "distrib", true, "sort", i1 + " desc");
   }
@@ -167,6 +175,13 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     ureq.add(doc);
     ureq.setParam("update.chain", "distrib-update-chain");
     ureq.process(cloudClient);
+  }
+  
+  protected void indexr(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    addFields(doc, "rnd_b", true);
+    indexDoc(doc);
   }
   
   @Override

@@ -18,17 +18,16 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -610,7 +609,8 @@ public class FSUpdateLog extends UpdateLog {
 
         tlogReader = translog.getReader();
 
-        SolrParams params = new ModifiableSolrParams();
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
         SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
         SolrQueryResponse rsp = new SolrQueryResponse();
 

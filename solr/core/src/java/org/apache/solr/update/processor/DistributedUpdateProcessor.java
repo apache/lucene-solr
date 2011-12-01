@@ -244,8 +244,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (shards != null) {
       cmdDistrib.distribAdd(cmd, shards);
     } else {
-      // At a minimum, local updates must be protected by synchronization
-      // super.processAdd(cmd);
+      // nocommit: At a minimum, local updates must be protected by synchronization
+      // right now we count on versionAdd to do the local add
+      //super.processAdd(cmd);
     }
     
     

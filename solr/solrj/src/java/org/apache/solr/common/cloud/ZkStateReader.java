@@ -51,7 +51,7 @@ public class ZkStateReader {
   public static final String RECOVERING = "recovering";
   public static final String ACTIVE = "active";
   
-  private volatile CloudState cloudState = new CloudState();
+  private volatile CloudState cloudState;
 
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
@@ -192,7 +192,6 @@ public class ZkStateReader {
                 CloudState clusterState = new CloudState(liveNodesSet, cloudState.getCollectionStates());
                 // update volatile
                 cloudState = clusterState;
-                System.out.println("UPDATE CLUSTER STATE TO:" + cloudState);
               }
             } catch (KeeperException e) {
               if (e.code() == KeeperException.Code.SESSIONEXPIRED
@@ -216,7 +215,6 @@ public class ZkStateReader {
     liveNodeSet.addAll(liveNodes);
     clusterState = CloudState.load(zkClient, liveNodeSet);
     this.cloudState = clusterState;
-    System.out.println("UPDATE CLUSTER STATE TO:" + cloudState);
   }
   
   
