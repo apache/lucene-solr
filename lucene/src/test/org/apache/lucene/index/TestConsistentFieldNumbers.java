@@ -179,7 +179,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         FieldInfos fis1 = sis.info(0).getFieldInfos();
         assertEquals("f1", fis1.fieldInfo(0).name);
         assertEquals("f2", fis1.fieldInfo(1).name);
-        assertTrue(dir.fileExists("_1.fnx"));
       }
       
 
@@ -203,8 +202,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         assertEquals("f1", fis2.fieldInfo(0).name);
         assertNull(fis2.fieldInfo(1));
         assertEquals("f3", fis2.fieldInfo(2).name);
-        assertFalse(dir.fileExists("_1.fnx"));
-        assertTrue(dir.fileExists("_2.fnx"));
       }
 
       {
@@ -232,9 +229,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         assertEquals("f1", fis3.fieldInfo(0).name);
         assertEquals("f2", fis3.fieldInfo(1).name);
         assertEquals("f3", fis3.fieldInfo(2).name);
-        assertFalse(dir.fileExists("_1.fnx"));
-        assertTrue(dir.fileExists("_2.fnx"));
-        assertFalse(dir.fileExists("_3.fnx"));
       }
 
       {
@@ -262,9 +256,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       assertEquals("f1", fis1.fieldInfo(0).name);
       assertEquals("f2", fis1.fieldInfo(1).name);
       assertEquals("f3", fis1.fieldInfo(2).name);
-      assertFalse(dir.fileExists("_1.fnx"));
-      assertTrue(dir.fileExists("_2.fnx"));
-      assertFalse(dir.fileExists("_3.fnx"));
       dir.close();
     }
   }

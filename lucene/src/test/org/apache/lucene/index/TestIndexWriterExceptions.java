@@ -916,10 +916,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       } catch (RuntimeException re) {
         // Expected
       }
-      assertTrue(dir.fileExists("_1.fnx"));
       assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
       w.rollback();
-      assertFalse(dir.fileExists("_1.fnx"));
       assertEquals(0, dir.listAll().length);
       dir.close();
     }

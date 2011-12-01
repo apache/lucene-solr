@@ -68,7 +68,6 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
       out.writeString(codecID); // write codecID
       out.writeLong(infos.version);
       out.writeInt(infos.counter); // write counter
-      out.writeLong(infos.getGlobalFieldMapVersion());
       out.writeInt(infos.size()); // write infos
       for (SegmentInfo si : infos) {
         writeInfo(out, si);

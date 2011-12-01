@@ -1082,7 +1082,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w3.close();
     // we should now see segments_X,
     // segments.gen,_Y.cfs,_Y.cfe, _Z.fnx
-    assertEquals("Only one compound segment should exist, but got: " + Arrays.toString(dir.listAll()), 5, dir.listAll().length);
+    assertEquals("Only one compound segment should exist, but got: " + Arrays.toString(dir.listAll()), 4, dir.listAll().length);
     dir.close();
   }
   

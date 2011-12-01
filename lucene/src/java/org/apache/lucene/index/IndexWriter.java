@@ -882,7 +882,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       rollbackSegments = segmentInfos.createBackupSegmentInfos(true);
 
       // start with previous field numbers, but new FieldInfos
-      globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap(directory);
+      globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap();
       docWriter = new DocumentsWriter(codec, config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
 
       // Default deleter (for backwards compatibility) is

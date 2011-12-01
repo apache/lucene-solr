@@ -57,10 +57,6 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
     infos.counter = Integer.parseInt(readString(COUNTER.length, scratch));
     
     SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, FNX_VERSION);
-    infos.setGlobalFieldMapVersion(Long.parseLong(readString(FNX_VERSION.length, scratch)));
-    
-    SimpleTextUtil.readLine(input, scratch);
     assert StringHelper.startsWith(scratch, NUM_USERDATA);
     int numUserData = Integer.parseInt(readString(NUM_USERDATA.length, scratch));
     infos.userData = new HashMap<String,String>();
