@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,6 +22,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -29,7 +30,7 @@ import org.apache.lucene.store.IndexOutput;
 /**
  * @lucene.experimental
  */
-public class DefaultFieldInfosWriter extends FieldInfosWriter {
+public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   
   /** Extension of field infos */
   static final String FIELD_INFOS_EXTENSION = "fnm";

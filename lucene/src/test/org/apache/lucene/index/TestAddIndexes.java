@@ -31,11 +31,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
-import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
-import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
@@ -43,6 +38,11 @@ import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.lucene40.Lucene40FieldInfosFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40DocValuesFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40SegmentInfosFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40StoredFieldsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
@@ -1098,27 +1098,27 @@ public class TestAddIndexes extends LuceneTestCase {
 
     @Override
     public DocValuesFormat docValuesFormat() {
-      return new DefaultDocValuesFormat();
+      return new Lucene40DocValuesFormat();
     }
 
     @Override
     public StoredFieldsFormat storedFieldsFormat() {
-      return new DefaultStoredFieldsFormat();
+      return new Lucene40StoredFieldsFormat();
     }
     
     @Override
     public TermVectorsFormat termVectorsFormat() {
-      return new DefaultTermVectorsFormat();
+      return new Lucene40TermVectorsFormat();
     }
     
     @Override
     public FieldInfosFormat fieldInfosFormat() {
-      return new DefaultFieldInfosFormat();
+      return new Lucene40FieldInfosFormat();
     }
 
     @Override
     public SegmentInfosFormat segmentInfosFormat() {
-      return new DefaultSegmentInfosFormat();
+      return new Lucene40SegmentInfosFormat();
     }
   }
   

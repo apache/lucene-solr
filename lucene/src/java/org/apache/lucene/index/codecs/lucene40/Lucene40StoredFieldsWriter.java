@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
+import org.apache.lucene.index.codecs.StoredFieldsReader;
+import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -35,7 +37,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /** @lucene.experimental */
-public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
+public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   // NOTE: bit 0 is free here!  You can steal it!
   static final int FIELD_IS_BINARY = 1 << 1;
 
@@ -78,7 +80,7 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
-  public DefaultStoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  public Lucene40StoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     assert directory != null;
     this.directory = directory;
     this.segment = segment;
@@ -227,12 +229,12 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
     
     for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
-      DefaultStoredFieldsReader matchingFieldsReader = null;
+      Lucene40StoredFieldsReader matchingFieldsReader = null;
       if (matchingSegmentReader != null) {
         final StoredFieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
-        // we can only bulk-copy if the matching reader is also a DefaultFieldsReader
-        if (fieldsReader != null && fieldsReader instanceof DefaultStoredFieldsReader) {
-          matchingFieldsReader = (DefaultStoredFieldsReader) fieldsReader;
+        // we can only bulk-copy if the matching reader is also a Lucene40FieldsReader
+        if (fieldsReader != null && fieldsReader instanceof Lucene40StoredFieldsReader) {
+          matchingFieldsReader = (Lucene40StoredFieldsReader) fieldsReader;
         }
       }
     
@@ -253,7 +255,7 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private int copyFieldsWithDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
-                                      final DefaultStoredFieldsReader matchingFieldsReader, int rawDocLengths[])
+                                      final Lucene40StoredFieldsReader matchingFieldsReader, int rawDocLengths[])
     throws IOException, MergeAbortedException, CorruptIndexException {
     int docCount = 0;
     final int maxDoc = reader.reader.maxDoc();
@@ -307,7 +309,7 @@ public final class DefaultStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   private int copyFieldsNoDeletions(MergeState mergeState, final MergeState.IndexReaderAndLiveDocs reader,
-                                    final DefaultStoredFieldsReader matchingFieldsReader, int rawDocLengths[])
+                                    final Lucene40StoredFieldsReader matchingFieldsReader, int rawDocLengths[])
     throws IOException, MergeAbortedException, CorruptIndexException {
     final int maxDoc = reader.reader.maxDoc();
     int docCount = 0;

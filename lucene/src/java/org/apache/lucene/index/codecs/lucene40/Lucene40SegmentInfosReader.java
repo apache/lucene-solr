@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,9 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.SegmentInfosReader;
+import org.apache.lucene.index.codecs.lucene40.Lucene40TermVectorsReader;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -34,7 +37,7 @@ import org.apache.lucene.store.IOContext;
  * Default implementation of {@link SegmentInfosReader}.
  * @lucene.experimental
  */
-public class DefaultSegmentInfosReader extends SegmentInfosReader {
+public class Lucene40SegmentInfosReader extends SegmentInfosReader {
 
   // TODO: shove all backwards code to preflex!
   // this is a little tricky, because of IR.commit(), two options:
@@ -68,7 +71,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
         }
 
         try {
-          DefaultStoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+          Lucene40StoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
         } finally {
           // If we opened the directory, close it
           if (dir != directory) dir.close();
@@ -93,7 +96,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
   // if we make a preflex impl we can remove a lot of this hair...
   public SegmentInfo readSegmentInfo(Directory dir, int format, ChecksumIndexInput input) throws IOException {
     final String version;
-    if (format <= DefaultSegmentInfosWriter.FORMAT_3_1) {
+    if (format <= SegmentInfos.FORMAT_3_1) {
       version = input.readString();
     } else {
       version = null;
@@ -112,7 +115,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
       docStoreIsCompoundFile = false;
     }
 
-    if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
+    if (format > SegmentInfos.FORMAT_4_0) {
       // pre-4.0 indexes write a byte if there is a single norms file
       byte b = input.readByte();
       assert 1 == b;
@@ -126,7 +129,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
       normGen = new HashMap<Integer, Long>();
       for(int j=0;j<numNormGen;j++) {
         int fieldNumber = j;
-        if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+        if (format <= SegmentInfos.FORMAT_4_0) {
           fieldNumber = input.readInt();
         }
 
@@ -142,7 +145,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
 
     final Codec codec;
     // note: if the codec is not available: Codec.forName will throw an exception.
-    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+    if (format <= SegmentInfos.FORMAT_4_0) {
       codec = Codec.forName(input.readString());
     } else {
       codec = Codec.forName("Lucene3x");
@@ -150,7 +153,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
     final Map<String,String> diagnostics = input.readStringStringMap();
 
     final int hasVectors;
-    if (format <= DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
+    if (format <= SegmentInfos.FORMAT_HAS_VECTORS) {
       hasVectors = input.readByte();
     } else {
       final String storesSegment;
@@ -173,7 +176,7 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
       }
       try {
         // TODO: remove this manual file check or push to preflex codec
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION)) ? SegmentInfo.YES : SegmentInfo.NO;
+        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", Lucene40TermVectorsReader.VECTORS_INDEX_EXTENSION)) ? SegmentInfo.YES : SegmentInfo.NO;
       } finally {
         if (isCompoundFile) {
           dirToTest.close();

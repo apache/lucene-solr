@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -34,29 +35,7 @@ import org.apache.lucene.util.IOUtils;
  * Default implementation of {@link SegmentInfosWriter}.
  * @lucene.experimental
  */
-public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
-
-  /** This format adds optional per-segment String
-   *  diagnostics storage, and switches userData to Map */
-  public static final int FORMAT_DIAGNOSTICS = -9;
-
-  /** Each segment records whether it has term vectors */
-  public static final int FORMAT_HAS_VECTORS = -10;
-
-  /** Each segment records the Lucene version that created it. */
-  public static final int FORMAT_3_1 = -11;
-
-  /** Each segment records whether its postings are written
-   *  in the new flex format */
-  public static final int FORMAT_4_0 = -12;
-
-  /** This must always point to the most recent file format.
-   * whenever you add a new format, make it 1 smaller (negative version logic)! */
-  // TODO: move this, as its currently part of required preamble
-  public static final int FORMAT_CURRENT = FORMAT_4_0;
-  
-  /** This must always point to the first supported file format. */
-  public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
+public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
 
   @Override
   public IndexOutput writeInfos(Directory dir, String segmentFileName, String codecID, SegmentInfos infos, IOContext context)
@@ -64,7 +43,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
     IndexOutput out = createOutput(dir, segmentFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount())));
     boolean success = false;
     try {
-      out.writeInt(FORMAT_CURRENT); // write FORMAT
+      out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
       out.writeString(codecID); // write codecID
       out.writeLong(infos.version);
       out.writeInt(infos.counter); // write counter

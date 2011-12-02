@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,23 +22,26 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.codecs.TermVectorsFormat;
+import org.apache.lucene.index.codecs.TermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-public class DefaultTermVectorsFormat extends TermVectorsFormat {
+public class Lucene40TermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new DefaultTermVectorsReader(directory, segmentInfo, fieldInfos, context);
+    return new Lucene40TermVectorsReader(directory, segmentInfo, fieldInfos, context);
   }
 
   @Override
   public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    return new DefaultTermVectorsWriter(directory, segment, context);
+    return new Lucene40TermVectorsWriter(directory, segment, context);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    DefaultTermVectorsReader.files(dir, info, files);
+    Lucene40TermVectorsReader.files(dir, info, files);
   }
 }

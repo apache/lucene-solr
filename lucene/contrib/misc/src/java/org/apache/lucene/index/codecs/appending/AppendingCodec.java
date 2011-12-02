@@ -18,10 +18,6 @@ package org.apache.lucene.index.codecs.appending;
  */
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
-import org.apache.lucene.index.codecs.DefaultFieldInfosFormat;
-import org.apache.lucene.index.codecs.DefaultStoredFieldsFormat;
-import org.apache.lucene.index.codecs.DefaultTermVectorsFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
@@ -29,6 +25,10 @@ import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.index.codecs.lucene40.Lucene40FieldInfosFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40DocValuesFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40StoredFieldsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40TermVectorsFormat;
 
 /**
  * This codec extends {@link Lucene40Codec} to work on append-only outputs, such
@@ -43,10 +43,10 @@ public class AppendingCodec extends Codec {
 
   private final PostingsFormat postings = new AppendingPostingsFormat();
   private final SegmentInfosFormat infos = new AppendingSegmentInfosFormat();
-  private final StoredFieldsFormat fields = new DefaultStoredFieldsFormat();
-  private final FieldInfosFormat fieldInfos = new DefaultFieldInfosFormat();
-  private final TermVectorsFormat vectors = new DefaultTermVectorsFormat();
-  private final DocValuesFormat docValues = new DefaultDocValuesFormat();
+  private final StoredFieldsFormat fields = new Lucene40StoredFieldsFormat();
+  private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat();
+  private final TermVectorsFormat vectors = new Lucene40TermVectorsFormat();
+  private final DocValuesFormat docValues = new Lucene40DocValuesFormat();
   
   @Override
   public PostingsFormat postingsFormat() {

@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +26,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.codecs.DocValuesReaderBase;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -35,19 +36,19 @@ import org.apache.lucene.util.IOUtils;
  * Default PerDocValues implementation that uses compound file.
  * @lucene.experimental
  */
-public class DefaultDocValuesProducer extends DocValuesReaderBase {
+public class Lucene40DocValuesProducer extends DocValuesReaderBase {
   protected final TreeMap<String,IndexDocValues> docValues;
   private final Directory cfs;
 
   /**
-   * Creates a new {@link DefaultDocValuesProducer} instance and loads all
+   * Creates a new {@link Lucene40DocValuesProducer} instance and loads all
    * {@link IndexDocValues} instances for this segment and codec.
    */
-  public DefaultDocValuesProducer(SegmentReadState state) throws IOException {
+  public Lucene40DocValuesProducer(SegmentReadState state) throws IOException {
     if (state.fieldInfos.anyDocValuesFields()) {
       cfs = new CompoundFileDirectory(state.dir, 
                                       IndexFileNames.segmentFileName(state.segmentInfo.name,
-                                                                     DefaultDocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION), 
+                                                                     Lucene40DocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION), 
                                       state.context, false);
       docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
     } else {

@@ -24,13 +24,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultStoredFieldsWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40StoredFieldsWriter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -41,8 +40,8 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    */
   public void testBasic() throws IOException {
     Set<String> fileExtensions = new HashSet<String>();
-    fileExtensions.add(DefaultStoredFieldsWriter.FIELDS_EXTENSION);
-    fileExtensions.add(DefaultStoredFieldsWriter.FIELDS_INDEX_EXTENSION);
+    fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_EXTENSION);
+    fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION);
     
     MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
     primaryDir.setCheckIndexOnClose(false); // only part of an index

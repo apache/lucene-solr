@@ -50,7 +50,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
   final IndexOutput freqOut;
   final IndexOutput proxOut;
-  final DefaultSkipListWriter skipListWriter;
+  final Lucene40SkipListWriter skipListWriter;
   /** Expert: The fraction of TermDocs entries stored in skip tables,
    * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
    * smaller indexes, greater acceleration, but fewer accelerable cases, while
@@ -113,7 +113,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
     totalNumDocs = state.numDocs;
 
-    skipListWriter = new DefaultSkipListWriter(skipInterval,
+    skipListWriter = new Lucene40SkipListWriter(skipInterval,
                                                maxSkipLevels,
                                                state.numDocs,
                                                freqOut,

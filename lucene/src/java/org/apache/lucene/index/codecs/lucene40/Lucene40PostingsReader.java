@@ -292,7 +292,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     int skipOffset;
 
     boolean skipped;
-    DefaultSkipListReader skipper;
+    Lucene40SkipListReader skipper;
 
     public SegmentDocsEnum(IndexInput freqIn) throws IOException {
       startFreqIn = freqIn;
@@ -450,7 +450,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
-          skipper = new DefaultSkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+          skipper = new Lucene40SkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
         }
 
         if (!skipped) {
@@ -502,7 +502,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     int posPendingCount;
 
     boolean skipped;
-    DefaultSkipListReader skipper;
+    Lucene40SkipListReader skipper;
     private long lazyProxPointer;
 
     public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
@@ -597,7 +597,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
-          skipper = new DefaultSkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+          skipper = new Lucene40SkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
         }
 
         if (!skipped) {
@@ -698,7 +698,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     boolean payloadPending;
 
     boolean skipped;
-    DefaultSkipListReader skipper;
+    Lucene40SkipListReader skipper;
     private BytesRef payload;
     private long lazyProxPointer;
 
@@ -796,7 +796,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
-          skipper = new DefaultSkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+          skipper = new Lucene40SkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
         }
 
         if (!skipped) {

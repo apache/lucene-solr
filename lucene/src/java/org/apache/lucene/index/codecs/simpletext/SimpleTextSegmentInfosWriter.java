@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
@@ -72,8 +71,8 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
     IndexOutput out = new ChecksumIndexOutput(dir.createOutput(segmentsFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount()))));
     boolean success = false;
     try {
-      // required preamble
-      out.writeInt(DefaultSegmentInfosWriter.FORMAT_CURRENT); // write FORMAT
+      // required preamble:
+      out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
       out.writeString(codecID); // write codecID
       // end preamble
       

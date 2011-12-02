@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.codecs.DocValuesWriterBase;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
@@ -32,13 +33,13 @@ import org.apache.lucene.store.Directory;
  * Default PerDocConsumer implementation that uses compound file.
  * @lucene.experimental
  */
-public class DefaultDocValuesConsumer extends DocValuesWriterBase {
+public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   private final Directory mainDirectory;
   private Directory directory;
 
   final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
   
-  public DefaultDocValuesConsumer(PerDocWriteState state) throws IOException {
+  public Lucene40DocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
     mainDirectory = state.directory;
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?

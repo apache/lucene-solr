@@ -33,7 +33,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -61,6 +60,36 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * be removed, however the numbers should continue to decrease. 
    */
 
+  // TODO: i don't think we need *all* these version numbers here?
+  // most codecs only need FORMAT_CURRENT? and we should rename it 
+  // to FORMAT_FLEX? because the 'preamble' is just FORMAT_CURRENT + codecname
+  // after that the codec takes over. 
+  
+  // also i think this class should write this, somehow we let 
+  // preflexrw hackishly override this (like seek backwards and overwrite it)
+
+  /** This format adds optional per-segment String
+   *  diagnostics storage, and switches userData to Map */
+  public static final int FORMAT_DIAGNOSTICS = -9;
+
+  /** Each segment records whether it has term vectors */
+  public static final int FORMAT_HAS_VECTORS = -10;
+
+  /** Each segment records the Lucene version that created it. */
+  public static final int FORMAT_3_1 = -11;
+
+  /** Each segment records whether its postings are written
+   *  in the new flex format */
+  public static final int FORMAT_4_0 = -12;
+
+  /** This must always point to the most recent file format.
+   * whenever you add a new format, make it 1 smaller (negative version logic)! */
+  // TODO: move this, as its currently part of required preamble
+  public static final int FORMAT_CURRENT = FORMAT_4_0;
+  
+  /** This must always point to the first supported file format. */
+  public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
+  
   /** Used for the segments.gen file only!
    * Whenever you add a new format, make it 1 smaller (negative version logic)! */
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
@@ -240,14 +269,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       setFormat(format);
     
       // check that it is a format we can understand
-      if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)
+      if (format > FORMAT_MINIMUM)
         throw new IndexFormatTooOldException(input, format,
-          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
-      if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT)
+          FORMAT_MINIMUM, FORMAT_CURRENT);
+      if (format < FORMAT_CURRENT)
         throw new IndexFormatTooNewException(input, format,
-          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+          FORMAT_MINIMUM, FORMAT_CURRENT);
 
-      if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+      if (format <= FORMAT_4_0) {
         codecFormat = Codec.forName(input.readString());
       } else {
         codecFormat = Codec.forName("Lucene3x");

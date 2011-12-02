@@ -26,7 +26,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -401,20 +400,20 @@ public class CheckIndex {
     String sFormat = "";
     boolean skip = false;
 
-    if (format == DefaultSegmentInfosWriter.FORMAT_DIAGNOSTICS) {
+    if (format == SegmentInfos.FORMAT_DIAGNOSTICS) {
       sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
-    } else if (format == DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
+    } else if (format == SegmentInfos.FORMAT_HAS_VECTORS) {
       sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
-    } else if (format == DefaultSegmentInfosWriter.FORMAT_3_1) {
+    } else if (format == SegmentInfos.FORMAT_3_1) {
       sFormat = "FORMAT_3_1 [Lucene 3.1+]";
-    } else if (format == DefaultSegmentInfosWriter.FORMAT_4_0) {
+    } else if (format == SegmentInfos.FORMAT_4_0) {
       sFormat = "FORMAT_4_0 [Lucene 4.0]";
-    } else if (format == DefaultSegmentInfosWriter.FORMAT_CURRENT) {
+    } else if (format == SegmentInfos.FORMAT_CURRENT) {
       throw new RuntimeException("BUG: You should update this tool!");
-    } else if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT) {
+    } else if (format < SegmentInfos.FORMAT_CURRENT) {
       sFormat = "int=" + format + " [newer version of Lucene than this tool supports]";
       skip = true;
-    } else if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM) {
+    } else if (format > SegmentInfos.FORMAT_MINIMUM) {
       sFormat = "int=" + format + " [older version of Lucene than this tool supports]";
       skip = true;
     }

@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,28 +20,28 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.codecs.DocValuesFormat;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 
-/**
- * @lucene.experimental
- */
-public class DefaultFieldInfosFormat extends FieldInfosFormat {
-  private final FieldInfosReader reader = new DefaultFieldInfosReader();
-  private final FieldInfosWriter writer = new DefaultFieldInfosWriter();
-  
+public class Lucene40DocValuesFormat extends DocValuesFormat {
+
   @Override
-  public FieldInfosReader getFieldInfosReader() throws IOException {
-    return reader;
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new Lucene40DocValuesConsumer(state);
   }
 
   @Override
-  public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    return writer;
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    return new Lucene40DocValuesProducer(state);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    DefaultFieldInfosReader.files(dir, info, files);
+    Lucene40DocValuesConsumer.files(dir, info, files);
   }
 }

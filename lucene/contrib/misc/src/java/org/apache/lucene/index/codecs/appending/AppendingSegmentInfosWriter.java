@@ -19,10 +19,10 @@ package org.apache.lucene.index.codecs.appending;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40SegmentInfosWriter;
 import org.apache.lucene.store.IndexOutput;
 
-public class AppendingSegmentInfosWriter extends DefaultSegmentInfosWriter {
+public class AppendingSegmentInfosWriter extends Lucene40SegmentInfosWriter {
 
   @Override
   public void prepareCommit(IndexOutput segmentOutput) throws IOException {

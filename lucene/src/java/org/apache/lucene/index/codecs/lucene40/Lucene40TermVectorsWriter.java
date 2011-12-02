@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,8 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.codecs.TermVectorsReader;
+import org.apache.lucene.index.codecs.TermVectorsWriter;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -44,23 +46,23 @@ import org.apache.lucene.util.StringHelper;
 //     file; saves a seek to tvd only to read a 0 vint (and
 //     saves a byte in tvd)
 
-public final class DefaultTermVectorsWriter extends TermVectorsWriter {
+public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
   private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;
 
-  public DefaultTermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  public Lucene40TermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
     boolean success = false;
     try {
       // Open files for TermVector storage
-      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION), context);
-      tvx.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION), context);
-      tvd.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
-      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_FIELDS_EXTENSION), context);
-      tvf.writeInt(DefaultTermVectorsReader.FORMAT_CURRENT);
+      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_INDEX_EXTENSION), context);
+      tvx.writeInt(Lucene40TermVectorsReader.FORMAT_CURRENT);
+      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_DOCUMENTS_EXTENSION), context);
+      tvd.writeInt(Lucene40TermVectorsReader.FORMAT_CURRENT);
+      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_FIELDS_EXTENSION), context);
+      tvf.writeInt(Lucene40TermVectorsReader.FORMAT_CURRENT);
       success = true;
     } finally {
       if (!success) {
@@ -97,9 +99,9 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     tvf.writeVInt(numTerms);
     byte bits = 0x0;
     if (positions)
-      bits |= DefaultTermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
+      bits |= Lucene40TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
     if (offsets)
-      bits |= DefaultTermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
+      bits |= Lucene40TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
     tvf.writeByte(bits);
     
     assert fieldCount <= numVectorFields;
@@ -202,15 +204,15 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     } catch (IOException ignored) {}
     
     try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_INDEX_EXTENSION));
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_INDEX_EXTENSION));
     } catch (IOException ignored) {}
     
     try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_DOCUMENTS_EXTENSION));
     } catch (IOException ignored) {}
     
     try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", DefaultTermVectorsReader.VECTORS_FIELDS_EXTENSION));
+      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_FIELDS_EXTENSION));
     } catch (IOException ignored) {}
   }
 
@@ -219,7 +221,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
    * streams.  This is used to expedite merging, if the
    * field numbers are congruent.
    */
-  private void addRawDocuments(DefaultTermVectorsReader reader, int[] tvdLengths, int[] tvfLengths, int numDocs) throws IOException {
+  private void addRawDocuments(Lucene40TermVectorsReader reader, int[] tvdLengths, int[] tvfLengths, int numDocs) throws IOException {
     long tvdPosition = tvd.getFilePointer();
     long tvfPosition = tvf.getFilePointer();
     long tvdStart = tvdPosition;
@@ -246,14 +248,14 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
     int numDocs = 0;
     for (final MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
       final SegmentReader matchingSegmentReader = mergeState.matchingSegmentReaders[idx++];
-      DefaultTermVectorsReader matchingVectorsReader = null;
+      Lucene40TermVectorsReader matchingVectorsReader = null;
       if (matchingSegmentReader != null) {
         TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();
 
-        if (vectorsReader != null && vectorsReader instanceof DefaultTermVectorsReader) {
+        if (vectorsReader != null && vectorsReader instanceof Lucene40TermVectorsReader) {
           // If the TV* files are an older format then they cannot read raw docs:
-          if (((DefaultTermVectorsReader)vectorsReader).canReadRawDocs()) {
-            matchingVectorsReader = (DefaultTermVectorsReader) vectorsReader;
+          if (((Lucene40TermVectorsReader)vectorsReader).canReadRawDocs()) {
+            matchingVectorsReader = (Lucene40TermVectorsReader) vectorsReader;
           }
         }
       }
@@ -272,7 +274,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   private int copyVectorsWithDeletions(MergeState mergeState,
-                                        final DefaultTermVectorsReader matchingVectorsReader,
+                                        final Lucene40TermVectorsReader matchingVectorsReader,
                                         final MergeState.IndexReaderAndLiveDocs reader,
                                         int rawDocLengths[],
                                         int rawDocLengths2[])
@@ -325,7 +327,7 @@ public final class DefaultTermVectorsWriter extends TermVectorsWriter {
   }
   
   private int copyVectorsNoDeletions(MergeState mergeState,
-                                      final DefaultTermVectorsReader matchingVectorsReader,
+                                      final Lucene40TermVectorsReader matchingVectorsReader,
                                       final MergeState.IndexReaderAndLiveDocs reader,
                                       int rawDocLengths[],
                                       int rawDocLengths2[])
