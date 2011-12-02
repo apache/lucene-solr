@@ -17,23 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.CodecUtil;
 
 /** Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -45,18 +37,9 @@ import org.apache.lucene.util.CodecUtil;
 public final class FieldInfos implements Iterable<FieldInfo> {
   static final class FieldNumberBiMap {
     
-    final static String CODEC_NAME = "GLOBAL_FIELD_MAP";
-    
-    // Initial format
-    private static final int VERSION_START = 0;
-
-    private static final int VERSION_CURRENT = VERSION_START;
-
     private final Map<Integer,String> numberToName;
     private final Map<String,Integer> nameToNumber;
     private int lowestUnassignedFieldNumber = -1;
-    private long lastVersion = 0;
-    private long version = 0;
     
     FieldNumberBiMap() {
       this.nameToNumber = new HashMap<String, Integer>();
@@ -85,7 +68,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
           fieldNumber = lowestUnassignedFieldNumber;
         }
         
-        version++;
         numberToName.put(fieldNumber, fieldName);
         nameToNumber.put(fieldName, fieldNumber);
         
@@ -101,76 +83,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
       if (!numberToName.containsKey(boxedFieldNumber)
           && !nameToNumber.containsKey(fieldName)) {
-        version++;
         numberToName.put(boxedFieldNumber, fieldName);
         nameToNumber.put(fieldName, boxedFieldNumber);
       } else {
         assert containsConsistent(boxedFieldNumber, fieldName);
       }
-    }
-    
-    /**
-     * Writes this {@link FieldNumberBiMap} to the given output and returns its
-     * version.
-     */
-    public synchronized long write(IndexOutput output) throws IOException{
-      Set<Entry<String, Integer>> entrySet = nameToNumber.entrySet();
-      CodecUtil.writeHeader(output, CODEC_NAME, VERSION_CURRENT); 
-      output.writeVInt(entrySet.size());
-      for (Entry<String, Integer> entry : entrySet) {
-        output.writeVInt(entry.getValue().intValue());
-        output.writeString(entry.getKey());
-      }
-      return version;
-    }
-
-    /**
-     * Reads the {@link FieldNumberBiMap} from the given input and resets the
-     * version to 0.
-     */
-    public synchronized void read(IndexInput input) throws IOException{
-      CodecUtil.checkHeader(input, CODEC_NAME,
-          VERSION_START,
-          VERSION_CURRENT);
-      final int size = input.readVInt();
-      for (int i = 0; i < size; i++) {
-        final int num = input.readVInt();
-        final String name = input.readString();
-        setIfNotSet(num, name);
-      }
-      version = lastVersion = 0;
-    }
-    
-    /**
-     * Returns <code>true</code> iff the last committed version differs from the
-     * current version, otherwise <code>false</code>
-     * 
-     * @return <code>true</code> iff the last committed version differs from the
-     *         current version, otherwise <code>false</code>
-     */
-    public synchronized boolean isDirty() {
-      return lastVersion != version;
-    }
-    
-    /**
-     * commits the given version if the given version is greater than the previous committed version
-     * 
-     * @param version
-     *          the version to commit
-     * @return <code>true</code> iff the version was successfully committed otherwise <code>false</code>
-     * @see #write(IndexOutput)
-     */
-    public synchronized boolean commitLastVersion(long version) {
-      if (version > lastVersion) {
-        lastVersion = version;
-        return true;
-      }
-      return false;
-    }
-    
-    // just for testing
-    Set<Entry<String, Integer>> entries() {
-      return new HashSet<Entry<String, Integer>>(nameToNumber.entrySet());
     }
     
     // used by assert
