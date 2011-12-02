@@ -27,9 +27,7 @@ import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 4.0 index format, with configurable per-field postings formats
- * and using {@link DefaultStoredFieldsFormat} for stored fields and {@link
- * DefaultDocValuesFormat} for doc values.
+ * Implements the Lucene 4.0 index format, with configurable per-field postings formats.
  *
  * @lucene.experimental
  */
