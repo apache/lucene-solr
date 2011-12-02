@@ -24,8 +24,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
+
 // Immutable
 public class ZkNodeProps  {
+
   private final Map<String,String> propMap;
 
   public ZkNodeProps(Map<String,String> propMap) {
@@ -47,25 +51,12 @@ public class ZkNodeProps  {
   }
   
   public static ZkNodeProps load(byte[] bytes) throws IOException {
-    ZkNodeProps props = new ZkNodeProps();
-    String stringRep = new String(bytes, "UTF-8");
-    String[] lines = stringRep.split("\n");
-    for (String line : lines) {
-      int sepIndex = line.indexOf('=');
-      String key = line.substring(0, sepIndex);
-      String value = line.substring(sepIndex + 1, line.length());
-      props.propMap.put(key, value);
-    }
-    return props;
+    Map<String, String> props = (Map<String, String>) ObjectBuilder.fromJSON(new String(bytes, "utf-8"));
+    return new ZkNodeProps(props);
   }
 
   public byte[] store() throws IOException {
-    StringBuilder sb = new StringBuilder();
-    Set<Entry<String,String>> entries = propMap.entrySet();
-    for(Entry<String,String> entry : entries) {
-      sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
-    }
-    return sb.toString().getBytes("UTF-8");
+    return new String(JSONUtil.toJSON(this.propMap)).getBytes("utf-8");
   }
   
   public String get(String key) {
@@ -81,7 +72,7 @@ public class ZkNodeProps  {
     }
     return sb.toString();
   }
-
+  
   public boolean containsKey(String key) {
     return propMap.containsKey(key);
   }

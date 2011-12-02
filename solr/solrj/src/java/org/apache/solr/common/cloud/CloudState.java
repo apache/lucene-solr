@@ -17,39 +17,24 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 // quasi immutable :(
 public class CloudState {
 	protected static Logger log = LoggerFactory.getLogger(CloudState.class);
-	private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 	private final Map<String, Map<String, Slice>> collectionStates;
 	private final Set<String> liveNodes;
 
@@ -126,152 +111,87 @@ public class CloudState {
 		return sb.toString();
 	}
 
-	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
+	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException, IOException {
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, null);
     return load(state, liveNodes);
 	}
 	
-	public static CloudState load(byte[] state, Set<String> liveNodes) throws KeeperException, InterruptedException {
-	  Map<String,Map<String,Slice>> colStates = new HashMap<String, Map<String, Slice>>();
-	  
-		if(state != null && state.length > 0) {
-			InputSource is = new InputSource(new ByteArrayInputStream(state));
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-	
-			try {
-				DocumentBuilder db = dbf.newDocumentBuilder();
-	
-				db.setErrorHandler(xmllog);
-				Document doc = db.parse(is);
-	
-				
-				
-				Element root = doc.getDocumentElement();
-	
-				NodeList collectionStates = root.getChildNodes();
-				for (int x = 0; x < collectionStates.getLength(); x++) {
-					Node collectionState = collectionStates.item(x);
-					String collectionName = collectionState.getAttributes()
-							.getNamedItem("name").getNodeValue();
-					NodeList slices = collectionState.getChildNodes();
-					for (int y = 0; y < slices.getLength(); y++) {
-						Node slice = slices.item(y);
-						Node sliceName = slice.getAttributes().getNamedItem("name");
-						
-						NodeList shardsNodeList = slice.getChildNodes();
-						Map<String, ZkNodeProps> shards = new HashMap<String, ZkNodeProps>();
-						for (int z = 0; z < shardsNodeList.getLength(); z++) {
-							Node shard = shardsNodeList.item(z);
-							String shardName = shard.getAttributes()
-									.getNamedItem("name").getNodeValue();
-							NodeList propsList = shard.getChildNodes();
-							Map<String,String> props = new HashMap<String,String>();
-							
-							for (int i = 0; i < propsList.getLength(); i++) {
-								Node prop = propsList.item(i);
-								String propName = prop.getAttributes()
-										.getNamedItem("name").getNodeValue();
-								String propValue = prop.getTextContent();
-								props.put(propName, propValue);
-							}
-							shards.put(shardName, new ZkNodeProps(props));
-						}
-            Map<String,Slice> s = null;
-            if (!colStates.containsKey(collectionName)) {
-              s = new HashMap<String,Slice>();
-              colStates.put(collectionName, s);
-            } else {
-              s = colStates.get(collectionName);
-            }
-            String sn = sliceName.getTextContent();
-            Slice sl = s.get(sn);
+	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException, IOException {
+    if (bytes == null || bytes.length == 0) {
+      return new CloudState(liveNodes, Collections.EMPTY_MAP);
+    }
+    
+    LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ObjectBuilder.fromJSON(new String(bytes, "utf-8"));
+    HashMap<String,Map<String, Slice>> state = new HashMap<String,Map<String,Slice>>();
 
-            if (sl == null) {
-              sl = new Slice(sliceName.getTextContent(), shards);
-              s.put(sn, sl);
-            } else {
-              sl = new Slice(sliceName.getTextContent(), shards);
-            }
-			      
-//			      Slice existingSlice = colStates.get(collection).get(slice.getName());
-//			      shards.putAll(existingSlice.getShards());
-//			      shards.putAll(slice.getShards());
-//			      Slice updatedSlice = new Slice(slice.getName(), shards);
-//			      collectionStates.get(collection).put(slice.getName(), updatedSlice);
-//				    }
-//						
-//						Slice s = new Slice(sliceName.getNodeValue(), shards);
-//	
-//						colStates.put(collectionName, s);
-					}
-				}
-			} catch (SAXException e) {
-        log.error("", e);
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR, "", e);
-			} catch (IOException e) {
-        log.error("", e);
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR, "", e);
-			} catch (ParserConfigurationException e) {
-        log.error("", e);
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR, "", e);
-			} finally {
-				// some XML parsers are broken and don't close the byte stream (but
-				// they should according to spec)
-				IOUtils.closeQuietly(is.getByteStream());
-			}
-		}
-		
-		CloudState cloudState = new CloudState(liveNodes, colStates);
-
-		return cloudState;
+    for(String collectionName: stateMap.keySet()){
+      Map<String, Object> collection = (Map<String, Object>)stateMap.get(collectionName);
+      HashMap<String, Slice> slices = new HashMap<String,Slice>();
+      for(String sliceName: collection.keySet()) {
+        Map<String, Map<String, String>> sliceMap = (Map<String, Map<String, String>>)collection.get(sliceName);
+        HashMap<String, ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
+        for(String shardName: sliceMap.keySet()) {
+          shards.put(shardName, new ZkNodeProps(sliceMap.get(shardName)));
+        }
+        Slice slice = new Slice(sliceName, shards);
+        slices.put(sliceName, slice);
+      }
+      state.put(collectionName, slices);
+    }
+    return new CloudState(liveNodes, state);
 	}
 
-	public static byte[] store(CloudState state)
-			throws UnsupportedEncodingException, IOException {
-		StringWriter stringWriter = new StringWriter();
-		Writer w = new BufferedWriter(stringWriter);
-		w.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
-		w.write("<clusterstate>");
-		Map<String, Map<String, Slice>> collectionStates = state
-				.getCollectionStates();
-		for (String collectionName : collectionStates.keySet()) {
-			w.write("<collectionstate name=\"" + collectionName + "\">");
-			Map<String, Slice> collection = collectionStates
-					.get(collectionName);
-			for (String sliceName : collection.keySet()) {
-				w.write("<shard name=\"" + sliceName + "\">");
-				Slice slice = collection.get(sliceName);
-				Map<String, ZkNodeProps> shards = slice.getShards();
-				for (String shardName : shards.keySet()) {
-					w.write("<replica name=\"" + shardName + "\">");
-					ZkNodeProps props = shards.get(shardName);
-					for (String propName : props.keySet()) {
-						w.write("<str name=\"" + propName + "\">"
-								+ props.get(propName) + "</str>");
-					}
-					w.write("</replica>");
+  public static byte[] store(CloudState state)
+      throws IOException {
+    CharArr out = new CharArr();
+    out.append(JSONUtil.OBJECT_START);
+    int collCount = state.getCollections().size();
 
-				}
-				w.write("</shard>");
-			}
-			w.write("</collectionstate>");
-		}
-		w.write("</clusterstate>");
-		w.flush();
-		w.close();
-		String xml = stringWriter.toString();
+    for (String collectionName : state.getCollections()) {
+      JSONUtil.writeString(collectionName, 0, collectionName.length(), out);
+      out.append(JSONUtil.NAME_SEPARATOR);
+      Map<String, Slice> slices = state.getSlices(collectionName);
+      out.append(JSONUtil.OBJECT_START);
+      int sliceCount = slices.keySet().size();
+      for(String sliceName: slices.keySet()) {
+        JSONUtil.writeString(sliceName, 0, sliceName.length(), out);
+        out.append(JSONUtil.NAME_SEPARATOR);
+        Slice slice = slices.get(sliceName);
+        Map<String, ZkNodeProps> shards = slice.getShards();
+        out.append(JSONUtil.OBJECT_START);
+        int shardCount = shards.keySet().size();
+        for(String shardName: shards.keySet()) {
+          ZkNodeProps props = shards.get(shardName);
+          JSONUtil.writeString(shardName, 0, shardName.length(), out);
+          out.append(JSONUtil.NAME_SEPARATOR);
+          out.append(JSONUtil.OBJECT_START);
+          int propCount = props.keySet().size();
+          for(String key: props.keySet()) {
+            JSONUtil.writeString(key, 0, key.length(), out);
+            out.append(JSONUtil.NAME_SEPARATOR);
+            JSONUtil.writeString(props.get(key), 0, props.get(key).length(), out);
+            if (--propCount != 0) {
+              out.append(JSONUtil.VALUE_SEPARATOR);
+            }
+          }
+          out.append(JSONUtil.OBJECT_END);
+          if (--shardCount != 0) {
+            out.append(JSONUtil.VALUE_SEPARATOR);
+          }
+        }
+        out.append(JSONUtil.OBJECT_END);
+        if (--sliceCount != 0) {
+          out.append(JSONUtil.VALUE_SEPARATOR);
+        }
 
-		return xml.getBytes("UTF-8");
-
-	}
-
-//  public void setLiveNodes(List<String> liveNodes) {
-//    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
-//    liveNodesSet.addAll(liveNodes);
-//    this.liveNodes = liveNodesSet;
-//  }
+      }
+      out.append(JSONUtil.OBJECT_END);
+      if (--collCount != 0) {
+        out.append(JSONUtil.VALUE_SEPARATOR);
+      }
+    }
+    out.append(JSONUtil.OBJECT_END);
+    return new String(out.getArray()).getBytes("utf-8");
+  }
 }

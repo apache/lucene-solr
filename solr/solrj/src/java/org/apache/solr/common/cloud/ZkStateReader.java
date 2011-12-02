@@ -46,7 +46,7 @@ public class ZkStateReader {
   public static final String SHARD_ID_PROP = "shard_id";
   
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
-  public static final String CLUSTER_STATE = "/clusterstate.xml";
+  public static final String CLUSTER_STATE = "/clusterstate.json";
   
   public static final String RECOVERING = "recovering";
   public static final String ACTIVE = "active";
@@ -100,6 +100,8 @@ public class ZkStateReader {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                   "", e);
+            } catch (IOException e) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"",e);
             }
 
           }
@@ -119,7 +121,7 @@ public class ZkStateReader {
   }
   
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
-      InterruptedException {
+      InterruptedException, IOException {
     // We need to fetch the current cluster state and the set of live nodes
     
     if (!zkClient.exists(CLUSTER_STATE)) {
@@ -169,7 +171,11 @@ public class ZkStateReader {
         } /*
            * catch(IOException e){ log.error("", e); throw new
            * ZooKeeperException( SolrException.ErrorCode.SERVER_ERROR, "", e); }
-           */
+           */ 
+        catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Could not serialize cloud state", e);
+        } 
       }
       
     });
@@ -288,6 +294,8 @@ public class ZkStateReader {
               log.error("", e);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR, "", e);
+            } catch (IOException e) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "",e);
             }
             // update volatile
             ZkStateReader.this.cloudState = cloudState;

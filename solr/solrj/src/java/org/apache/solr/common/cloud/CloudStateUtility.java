@@ -24,7 +24,7 @@ public class CloudStateUtility {
   }
 
   public static CloudState get(SolrZkClient zkClient, Stat stat)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     
     List<String> liveNodes = zkClient.getChildren(
         ZkStateReader.LIVE_NODES_ZKNODE, null);

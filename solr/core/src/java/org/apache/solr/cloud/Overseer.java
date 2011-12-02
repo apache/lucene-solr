@@ -78,6 +78,8 @@ public class Overseer implements NodeStateChangeListener {
     } catch (KeeperException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"",e);
     }
   }
   
@@ -98,7 +100,7 @@ public class Overseer implements NodeStateChangeListener {
   }
 
   public synchronized void createClusterStateWatchersAndUpdate()
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     // We need to fetch the current cluster state and the set of live nodes
     
     if (!zkClient.exists(ZkStateReader.CLUSTER_STATE)) {

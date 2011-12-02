@@ -17,92 +17,80 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
 
 public class CoreAssignment {
-  
+
+  private static String COLLECTION="_collection";
+  private static String CORE="_core";
+
   public String getCoreName() {
-    return coreName;
+    return properties.get(CORE);
   }
 
   public String getCollectionName() {
-    return collectionName;
+    return properties.get(COLLECTION);
   }
 
-  private final String coreName;
-  private final String collectionName;
   private final Map<String, String> properties;
   
   public Map<String,String> getProperties() {
     return properties;
   }
 
-  public CoreAssignment(String coreName, String collectionName, Map<String, String> properties) {
-    this.coreName = coreName;
-    this.collectionName = collectionName;
-    this.properties = Collections.unmodifiableMap(properties);
+  private CoreAssignment(Map<String, String> props) {
+    this.properties = Collections.unmodifiableMap(props);
   }
   
-  public static byte[] tobytes(CoreAssignment... states) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(baos);
-    
-    try {
-      dos.write(states.length);
-      for (CoreAssignment state : states) {
-        dos.writeUTF(state.coreName);
-        dos.writeUTF(state.collectionName);
-        dos.write(state.properties.size());
-        for(Entry<String, String> prop: state.properties.entrySet()) {
-          dos.writeUTF(prop.getKey());
-          if(prop.getValue()==null) {
-            throw new NullPointerException("value was null for key:" + prop.getKey());
-          }
-          dos.writeUTF(prop.getValue());
-        }
+  public CoreAssignment(String coreName, String collectionName, Map<String,String> properties) {
+    HashMap<String,String> props = new HashMap<String,String>();
+    props.putAll(properties);
+    props.put(COLLECTION, collectionName);
+    props.put(CORE, coreName);
+    this.properties = Collections.unmodifiableMap(props);
+  }
+  
+  public static byte[] tobytes(CoreAssignment... assignments) throws IOException {
+    CharArr out = new CharArr();
+    out.append(JSONUtil.ARRAY_START);
+    boolean first = true;
+    for (CoreAssignment assignment : assignments) {
+      if (first) {
+        first = false;
+      } else {
+        out.append(JSONUtil.VALUE_SEPARATOR);
       }
-      return baos.toByteArray();
-    } finally {
-      dos.close();
+      out.append(JSONUtil.toJSON(assignment.properties));
+      
     }
+    
+    out.append(JSONUtil.ARRAY_END);
+
+    return out.toString().getBytes("utf-8");
   }
   
   public static CoreAssignment[] fromBytes(byte[] bytes) throws IOException {
-    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-    DataInputStream dis = new DataInputStream(bais);
-    try {
-      int count = dis.read();
-      CoreAssignment[] states = new CoreAssignment[count];
-      for (int i = 0; i < count; i++) {
-        String coreName = dis.readUTF();
-        String collectionName = dis.readUTF();
-        int propcount = dis.read();
-        HashMap<String, String> props = new HashMap<String, String>();
-        for(int j=0;j<propcount;j++) {
-          String key = dis.readUTF();
-          String value = dis.readUTF();
-          props.put(key, value);
-        }
-        
-        states[i] = new CoreAssignment(coreName, collectionName, props);
-      }
-      return states;
-    } finally {
-      dis.close();
+    ArrayList<CoreAssignment> states = new ArrayList<CoreAssignment>(); 
+    List<Map<String, String>> stateMaps = (List<Map<String, String>>)ObjectBuilder.fromJSON(new String(bytes,"utf-8"));
+    for (Map<String,String> state : stateMaps) {
+      states.add(new CoreAssignment(state));
     }
+    
+    return states.toArray(new CoreAssignment[states.size()]);
   }
   
   @Override
   public int hashCode() {
-    return coreName.hashCode();
+    return getCoreName().hashCode();
   }
   
   @Override
@@ -112,7 +100,7 @@ public class CoreAssignment {
   
   @Override
   public String toString() {
-    return "coll:" + collectionName + " core:" + coreName + " props:" + properties;
+    return "coll:" + getCollectionName() + " core:" + getCoreName() + " props:" + properties;
   }
   
 }

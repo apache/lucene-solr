@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-
 // immutable
 public class Slice {
   private final Map<String,ZkNodeProps> shards;
@@ -35,7 +34,7 @@ public class Slice {
   public Map<String,ZkNodeProps> getShards() {
     return Collections.unmodifiableMap(shards);
   }
-  
+
   public Map<String,ZkNodeProps> getShardsCopy() {
     Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
     for (Map.Entry<String,ZkNodeProps> entry : this.shards.entrySet()) {

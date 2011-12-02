@@ -17,92 +17,81 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
 
 public class CoreState {
+
   
+  private static String COLLECTION="_collection";
+  private static String CORE="_core";
+
   public String getCoreName() {
-    return coreName;
+    return properties.get(CORE);
   }
 
   public String getCollectionName() {
-    return collectionName;
+    return properties.get(COLLECTION);
   }
 
-  private final String coreName;
-  private final String collectionName;
   private final Map<String, String> properties;
   
   public Map<String,String> getProperties() {
     return properties;
   }
 
-  public CoreState(String coreName, String collectionName, Map<String, String> properties) {
-    this.coreName = coreName;
-    this.collectionName = collectionName;
-    this.properties = Collections.unmodifiableMap(properties);
+  private CoreState(Map<String, String> props) {
+    this.properties = Collections.unmodifiableMap(props);
+  }
+  
+  public CoreState(String coreName, String collectionName, Map<String,String> properties) {
+    HashMap<String,String> props = new HashMap<String,String>();
+    props.putAll(properties);
+    props.put(COLLECTION, collectionName);
+    props.put(CORE, coreName);
+    this.properties = Collections.unmodifiableMap(props);
   }
   
   public static byte[] tobytes(CoreState... states) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    DataOutputStream dos = new DataOutputStream(baos);
-    
-    try {
-      dos.write(states.length);
-      for (CoreState state : states) {
-        dos.writeUTF(state.coreName);
-        dos.writeUTF(state.collectionName);
-        dos.write(state.properties.size());
-        for(Entry<String, String> prop: state.properties.entrySet()) {
-          dos.writeUTF(prop.getKey());
-          if(prop.getValue()==null) {
-            throw new NullPointerException("value was null for key:" + prop.getKey());
-          }
-          dos.writeUTF(prop.getValue());
-        }
+    CharArr out = new CharArr();
+    out.append(JSONUtil.ARRAY_START);
+    boolean first = true;
+    for (CoreState state : states) {
+      if (first) {
+        first = false;
+      } else {
+        out.append(JSONUtil.VALUE_SEPARATOR);
       }
-      return baos.toByteArray();
-    } finally {
-      dos.close();
+      out.append(JSONUtil.toJSON(state.properties));
+      
     }
+    
+    out.append(JSONUtil.ARRAY_END);
+
+    return out.toString().getBytes("utf-8");
   }
   
   public static CoreState[] fromBytes(byte[] bytes) throws IOException {
-    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-    DataInputStream dis = new DataInputStream(bais);
-    try {
-      int count = dis.read();
-      CoreState[] states = new CoreState[count];
-      for (int i = 0; i < count; i++) {
-        String coreName = dis.readUTF();
-        String collectionName = dis.readUTF();
-        int propcount = dis.read();
-        HashMap<String, String> props = new HashMap<String, String>();
-        for(int j=0;j<propcount;j++) {
-          String key = dis.readUTF();
-          String value = dis.readUTF();
-          props.put(key, value);
-        }
-        
-        states[i] = new CoreState(coreName, collectionName, props);
-      }
-      return states;
-    } finally {
-      dis.close();
+    ArrayList<CoreState> states = new ArrayList<CoreState>(); 
+    List<Map<String, String>> stateMaps = (List<Map<String, String>>)ObjectBuilder.fromJSON(new String(bytes,"utf-8"));
+    for (Map<String,String> state : stateMaps) {
+      states.add(new CoreState(state));
     }
+    
+    return states.toArray(new CoreState[states.size()]);
   }
   
   @Override
   public int hashCode() {
-    return coreName.hashCode();
+    return getCoreName().hashCode();
   }
   
   @Override
@@ -112,7 +101,7 @@ public class CoreState {
   
   @Override
   public String toString() {
-    return "coll:" + collectionName + " core:" + coreName + " props:" + properties;
+    return "coll:" + getCollectionName() + " core:" + getCoreName() + " props:" + properties;
   }
   
 }
