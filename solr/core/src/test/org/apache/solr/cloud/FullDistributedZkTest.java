@@ -105,6 +105,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     public JettySolrRunner killShard(String slice, int index) throws Exception {
       JettySolrRunner jetty = shardToJetty.get(slice).get(index).jetty;
+      // get a clean shutdown so that no dirs are left open...
+      ((SolrDispatchFilter)jetty.getDispatchFilter().getFilter()).destroy();
       jetty.stop();
       return jetty;
     }
