@@ -556,9 +556,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
 
-    if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-      log.info("Ignoring commit while not ACTIVE");
-      return;
+    if (vinfo != null) {
+      vinfo.lockForUpdate();
+    }
+    try {
+
+      if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+        log.info("Ignoring commit while not ACTIVE");
+        return;
+      }
+
+      super.processCommit(cmd);
+
+    } finally {
+      if (vinfo != null) {
+        vinfo.unlockForUpdate();
+      }
     }
 
 
@@ -566,7 +579,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 //    if (shards != null) {
 //      cmdDistrib.distribCommit(cmd, shards);
 //    } else {
-      super.processCommit(cmd);
+//      super.processCommit(cmd);
 //    }
   }
   
