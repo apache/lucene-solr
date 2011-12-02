@@ -486,6 +486,7 @@ class ChannelFastInputStream extends FastInputStream {
     super(null);
     this.ch = ch;
     this.chPosition = chPosition;
+    super.readFromStream = chPosition;  // make sure position() method returns the correct value
   }
 
   @Override
