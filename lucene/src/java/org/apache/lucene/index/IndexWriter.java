@@ -371,7 +371,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // never reached but javac disagrees:
         return null;
       } finally {
-        infoStream.message("IW", "hit exception during NRT reader");
+        if (!success && infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "hit exception during NRT reader");
+        }
         // Done: finish the full flush!
         docWriter.finishFullFlush(success);
         doAfterFlush();
@@ -1335,7 +1337,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         anySegmentFlushed = docWriter.updateDocuments(docs, analyzer, delTerm);
         success = true;
       } finally {
-        infoStream.message("IW", "hit exception updating document");
+        if (!success && infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "hit exception updating document");
+        }
       }
       if (anySegmentFlushed) {
         maybeMerge();
@@ -1480,7 +1484,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         anySegmentFlushed = docWriter.updateDocument(doc, analyzer, term);
         success = true;
       } finally {
-        infoStream.message("IW", "hit exception updating document");
+        if (!success && infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "hit exception updating document");
+        }
       }
 
       if (anySegmentFlushed) {
@@ -2043,7 +2049,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteAll");
     } finally {
-      infoStream.message("IW", "hit exception during deleteAll");
+      if (!success && infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "hit exception during deleteAll");
+      }
     }
   }
 
