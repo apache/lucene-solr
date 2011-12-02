@@ -560,16 +560,17 @@ public class FSUpdateLog extends UpdateLog {
     assert state == State.ACTIVE;
     recoveryInfo = new RecoveryInfo();
 
-    // TODO: currently we don't keep track of where we are in an existing
-    // transaction log (if there have already been updates) and
-    // we start at the beginning when we replay.
-
     // block all updates to eliminate race conditions
     // reading state and acting on it in the update processor
     versionInfo.blockUpdates();
     try {
       if (log.isInfoEnabled()) {
         log.info("Starting to buffer updates. " + this);
+      }
+
+      // since we blocked updates, this synchronization shouldn't strictly be necessary.
+      synchronized (this) {
+        recoveryInfo.positionOfStart = tlog == null ? 0 : tlog.position();
       }
 
       state = State.BUFFERING;
@@ -647,7 +648,7 @@ public class FSUpdateLog extends UpdateLog {
 
         uhandler.core.log.warn("Starting log replay " + tlogReader);
 
-        tlogReader = translog.getReader();
+        tlogReader = translog.getReader(recoveryInfo.positionOfStart);
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(DistributedUpdateProcessor.SEEN_LEADER, true);

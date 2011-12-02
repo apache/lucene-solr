@@ -58,6 +58,8 @@ public abstract class UpdateLog implements PluginInfoInitialized {
 
 
   public static class RecoveryInfo {
+    public long positionOfStart;
+
     public int adds;
     public int deletes;
     public int deleteByQuery;

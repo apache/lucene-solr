@@ -141,7 +141,7 @@ public class TransactionLog {
   TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
     try {
       if (debug) {
-        log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size="+tlogFile.length() + ", openExisting=" + openExisting);
+        log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
       }
 
       this.tlogFile = tlogFile;
@@ -362,6 +362,13 @@ public class TransactionLog {
     }
   }
 
+  /** returns the current position in the log file */
+  public long position() {
+    synchronized (this) {
+      return fos.size();
+    }
+  }
+
   public void finish(UpdateLog.SyncLevel syncLevel) {
     if (syncLevel == UpdateLog.SyncLevel.NONE) return;
     try {
@@ -404,18 +411,19 @@ public class TransactionLog {
   /** Returns a reader that can be used while a log is still in use.
    * Currently only *one* LogReader may be outstanding, and that log may only
    * be used from a single thread. */
-  public LogReader getReader() {
-    return new LogReader();
+  public LogReader getReader(long startingPos) {
+    return new LogReader(startingPos);
   }
 
 
 
   public class LogReader {
-    ChannelFastInputStream fis = new ChannelFastInputStream(channel, 0);
+    ChannelFastInputStream fis;
     private LogCodec codec = new LogCodec();
 
-    public LogReader() {
+    public LogReader(long startingPos) {
       incref();
+      fis = new ChannelFastInputStream(channel, startingPos);
     }
 
     /** Returns the next object from the log, or null if none available.
