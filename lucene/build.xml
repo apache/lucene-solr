@@ -229,7 +229,7 @@
   <target name="javadocs-all" description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
-      
+
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
@@ -244,14 +244,15 @@
         <sources>
           <!-- TODO: find a dynamic way to do include multiple source roots -->
           <packageset dir="src/java"/>
+          <packageset dir="src/test-framework/java"/>
 
           <!-- please keep this list up to date, and in alpha order...   -->
-        
+
           <!-- ie: `find contrib/* -path \*src/java | sort` -->
 
           <!-- if you make changes to the list of package sets, also -->
           <!-- make sure the group list below is updated.            -->
-          <!-- Also remember to keep site.xml in sync.            -->		  
+          <!-- Also remember to keep site.xml in sync.            -->
 
           <packageset dir="contrib/analyzers/common/src/java"/>
           <packageset dir="contrib/analyzers/smartcn/src/java"/>
@@ -277,7 +278,7 @@
           <!-- If the main javadoc Group listing includes an "Other   -->
           <!-- Packages" group after the ones listed here, then those -->
           <!-- packages are not being matched by any of these rules   -->
-  
+
           <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*:org.apache.lucene.analysis.tokenattributes*"/>
 
           <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*:org.tartarus.snowball*:org.egothor.stemmer*"/>
@@ -296,7 +297,7 @@
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
           <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
-          
+
         </sources>
       </invoke-javadoc>
   	</sequential>
@@ -394,6 +395,10 @@
               value="${dist.dir}/lucene-${version}-src.tgz"/>
     <delete file="${source.package.file}"/>
     <svn-export-source source.dir="."/>
+
+    <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/src/tools/javadoc/java5"/>
+
     <build-changes changes.src.dir="${svn.export.dir}/src/site/changes"
                    changes.target.dir="${svn.export.dir}/docs/changes"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
@@ -651,6 +656,8 @@
           title="${Name} ${version} Test Framework API">
         <sources>
           <packageset dir="src/test-framework/java"/>
+          <link offline="true" href="${javadoc.link.junit}"
+                packagelistLoc="${javadoc.packagelist.dir}/junit"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>
