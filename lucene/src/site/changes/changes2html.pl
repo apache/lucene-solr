@@ -150,7 +150,6 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     my $line;
     my $item = $_;
     $item =~ s/^(\s*\Q$type\E\s*)//;           # Trim the leading bullet
-    print STDERR $item if not defined($1);
     my $leading_ws_width = length($1);
     $item =~ s/\s+$//;                     # Trim trailing whitespace
     $item .= "\n";
