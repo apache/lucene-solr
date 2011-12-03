@@ -305,6 +305,10 @@
               value="${package.dir}/${fullnamever}-src.tgz"/>
     <delete file="${source.package.file}" failonerror="false" />
     <svn-export-source source.dir=".."/>
+
+    <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/lucene/src/tools/javadoc/java6"/>
+
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
                   prefix="${fullnamever}"
@@ -430,8 +434,9 @@
       <fileset dir="${common-solr.dir}/site" />
     </copy>
   </target>
- 
-  <target name="javadocs-all" depends="prep-lucene-jars,javadocs-dep"
+
+  <target name="javadocs-all"
+          depends="prep-lucene-jars,javadocs-dep,lucene-javadocs-all,define-lucene-javadoc-url"
           description="Generate javadoc for core, java client and contrib">
     <sequential>
       <mkdir dir="${dest}/docs/api"/>
@@ -456,6 +461,8 @@
       <invoke-javadoc destdir="${dest}/docs/api"
                       overview="core/src/java/overview.html">
         <sources>
+          <link offline="true" href="${lucene.javadoc.url}"
+                packagelistloc="${common.dir}/build/docs/api/all/"/>
           <packageset dir="core/src/java" />
           <packageset dir="solrj/src/java" />
           <packageset dir="contrib/analysis-extras/src/java"/>

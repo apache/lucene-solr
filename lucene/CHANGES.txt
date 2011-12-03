@@ -669,6 +669,34 @@ Bug fixes
   to correctly respect deletions on reopened SegmentReaders. Factored out
   FieldCacheDocIdSet to be a top-level class.  (Uwe Schindler, Simon Willnauer)
 
+Build
+
+* LUCENE-3228: Stop downloading external javadoc package-list files:
+
+  - Added package-list files for Oracle Java javadocs and JUnit javadocs to
+    Lucene/Solr subversion.
+
+  - The Oracle Java javadocs package-list file is excluded from Lucene and
+    Solr source release packages.
+
+  - Regardless of network connectivity, javadocs built from a subversion
+    checkout contain links to Oracle & JUnit javadocs.
+
+  - Building javadocs from a source release package will download the Oracle
+    Java package-list file if it isn't already present.
+
+  - When the Oracle Java package-list file is not present and download fails,
+    the javadocs targets will not fail the build, though an error will appear
+    in the build log.  In this case, the built javadocs will not contain links
+    to Oracle Java javadocs.
+
+  - Links from Solr javadocs to Lucene's javadocs are enabled. When building
+    a X.Y.Z-SNAPSHOT version, the links are to the most recently built nightly
+    Jenkins javadocs. When building a release version, links are to the
+    Lucene release javadocs for the same version.
+
+  (Steve Rowe, hossman)
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy

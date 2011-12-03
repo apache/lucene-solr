@@ -249,6 +249,7 @@
         <sources>
           <!-- TODO: find a dynamic way to do include multiple source roots -->
           <packageset dir="src/java"/>
+          <packageset dir="src/test-framework/java"/>
 
           <!-- please keep this list up to date, and in alpha order...   -->
         
@@ -377,6 +378,10 @@
               value="${dist.dir}/lucene-${version}-src.tgz"/>
     <delete file="${source.package.file}"/>
     <svn-export-source source.dir="."/>
+
+    <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
+    <delete dir="${svn.export.dir}/src/tools/javadoc/java6"/>
+
     <build-changes changes.src.dir="${svn.export.dir}/src/site/changes"
                    changes.target.dir="${svn.export.dir}/docs/changes"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
@@ -567,6 +572,8 @@
           title="${Name} ${version} Test Framework API">
         <sources>
           <packageset dir="src/test-framework/java"/>
+          <link offline="true" href="${javadoc.link.junit}"
+                packagelistLoc="${javadoc.packagelist.dir}/junit"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>
