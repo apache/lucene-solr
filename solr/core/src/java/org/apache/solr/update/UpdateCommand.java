@@ -25,9 +25,8 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  *
  */
-public class UpdateCommand implements Cloneable {
+public abstract class UpdateCommand implements Cloneable {
   protected SolrQueryRequest req;
-  protected final String commandName;
   protected long version;
   protected int flags;
 
@@ -35,14 +34,15 @@ public class UpdateCommand implements Cloneable {
   public static int REPLAY    = 0x00000002; // update command is from replaying a log.
   public static int IGNORE_AUTOCOMMIT = 0x00000002; // this update should not count toward triggering of autocommits.
 
-  public UpdateCommand(String commandName, SolrQueryRequest req) {
+  public UpdateCommand(SolrQueryRequest req) {
     this.req = req;
-    this.commandName = commandName;
   }
+
+  public abstract String name();
 
   @Override
   public String toString() {
-    return commandName + ":{flags="+flags+", version="+version;
+    return name() + "{flags="+flags+",version="+version;
   }
 
   public long getVersion() {

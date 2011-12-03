@@ -34,7 +34,12 @@ public class DeleteUpdateCommand extends UpdateCommand {
 
 
   public DeleteUpdateCommand(SolrQueryRequest req) {
-    super("delete", req);
+    super(req);
+  }
+
+  @Override
+  public String name() {
+    return "delete";
   }
 
   public boolean isDeleteById() {

@@ -45,8 +45,13 @@ public class AddUpdateCommand extends UpdateCommand {
    public int commitWithin = -1;
    
    public AddUpdateCommand(SolrQueryRequest req) {
-     super("add", req);
+     super(req);
    }
+
+  @Override
+  public String name() {
+    return "add";
+  }
 
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
