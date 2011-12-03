@@ -474,18 +474,11 @@ public class SnapPuller {
   }
 
   private void doCommit(boolean isFullCopyNeeded) throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
-        new ModifiableSolrParams());
-    try {
-      
-      // reboot the writer on the new index and get a new searcher
-      solrCore.getUpdateHandler().newIndexWriter();
-      solrCore.getSearcher(true, false, null);
-      
-      replicationHandler.refreshCommitpoint(isFullCopyNeeded);
-    } finally {
-      req.close();
-    }
+    // reboot the writer on the new index and get a new searcher
+    solrCore.getUpdateHandler().newIndexWriter();
+    solrCore.getSearcher(true, false, null);
+
+    replicationHandler.refreshCommitpoint(isFullCopyNeeded);
   }
 
 

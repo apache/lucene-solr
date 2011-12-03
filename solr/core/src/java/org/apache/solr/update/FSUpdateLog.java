@@ -331,6 +331,14 @@ public class FSUpdateLog extends UpdateLog {
         log.debug("TLOG: preCommit");
       }
 
+      if (getState() != State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+        // if we aren't in the active state, and this isn't a replay
+        // from the recovery process, then we shouldn't mess with
+        // the current transaction log.  This normally shouldn't happen
+        // as DistributedUpdateProcessor will prevent this.  Commits
+        // that don't use the processor are possible though.
+        return;
+      }
 
       // since we're changing the log, we must change the map.
       newMap();
@@ -604,7 +612,7 @@ public class FSUpdateLog extends UpdateLog {
 
     tlog.incref();
     if (recoveryExecutor.isShutdown()) {
-      throw new RuntimeException("executore is not running...");
+      throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(tlog, true);
