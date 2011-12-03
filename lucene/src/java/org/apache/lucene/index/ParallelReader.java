@@ -403,18 +403,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  protected void doSetNorm(int n, String field, byte value)
-    throws CorruptIndexException, IOException {
-    IndexReader reader = fieldToReader.get(field);
-    if (reader!=null) {
-      synchronized(normsCache) {
-        normsCache.remove(field);
-      }
-      reader.doSetNorm(n, field, value);
-    }
-  }
-
-  @Override
   public int docFreq(Term term) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(term.field());

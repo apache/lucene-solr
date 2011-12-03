@@ -51,9 +51,6 @@ final class SegmentNorms implements Cloneable {
   private AtomicInteger bytesRef;
   private byte[] bytes;
   private int number;
-
-  boolean dirty;
-  boolean rollbackDirty;
   
   private final SegmentReader owner;
   
@@ -154,27 +151,6 @@ final class SegmentNorms implements Cloneable {
   AtomicInteger bytesRef() {
     return bytesRef;
   }
-
-  // Called if we intend to change a norm value.  We make a
-  // private copy of bytes if it's shared with others:
-  public synchronized byte[] copyOnWrite() throws IOException {
-    assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-    bytes();
-    assert bytes != null;
-    assert bytesRef != null;
-    if (bytesRef.get() > 1) {
-      // I cannot be the origNorm for another norm
-      // instance if I'm being changed.  Ie, only the
-      // "head Norm" can be changed:
-      assert refCount == 1;
-      final AtomicInteger oldRef = bytesRef;
-      bytes = owner.cloneNormBytes(bytes);
-      bytesRef = new AtomicInteger(1);
-      oldRef.decrementAndGet();
-    }
-    dirty = true;
-    return bytes;
-  }
   
   // Returns a copy of this Norm instance that shares
   // IndexInput & bytes with the original one
@@ -210,36 +186,5 @@ final class SegmentNorms implements Cloneable {
     clone.in = null;
 
     return clone;
-  }
-
-  // Flush all pending changes to the next generation
-  // separate norms file.
-  public void reWrite(SegmentInfo si) throws IOException {
-    assert refCount > 0 && (origNorm == null || origNorm.refCount > 0): "refCount=" + refCount + " origNorm=" + origNorm;
-
-    // NOTE: norms are re-written in regular directory, not cfs
-    si.advanceNormGen(this.number);
-    final String normFileName = si.getNormFileName(this.number);
-    IndexOutput out = owner.directory().createOutput(normFileName, new IOContext(new FlushInfo(si.docCount, 0)));
-    boolean success = false;
-    try {
-      try {
-        out.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);
-        out.writeBytes(bytes, owner.maxDoc());
-      } finally {
-        out.close();
-      }
-      success = true;
-    } finally {
-      if (!success) {
-        try {
-          owner.directory().deleteFile(normFileName);
-        } catch (Throwable t) {
-          // suppress this so we keep throwing the
-          // original exception
-        }
-      }
-    }
-    this.dirty = false;
   }
 }

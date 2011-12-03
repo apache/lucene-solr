@@ -417,14 +417,6 @@ public class TestIndexReader extends LuceneTestCase
           // expected
         }
 
-        DefaultSimilarity sim = new DefaultSimilarity();
-        try {
-          reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
-          fail("setNorm after close failed to throw IOException");
-        } catch (AlreadyClosedException e) {
-          // expected
-        }
-
         try {
           reader.undeleteAll();
           fail("undeleteAll after close failed to throw IOException");
@@ -458,14 +450,6 @@ public class TestIndexReader extends LuceneTestCase
           // expected
         }
 
-        DefaultSimilarity sim = new DefaultSimilarity();
-        try {
-          reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
-          fail("setNorm should have hit LockObtainFailedException");
-        } catch (LockObtainFailedException e) {
-          // expected
-        }
-
         try {
           reader.undeleteAll();
           fail("undeleteAll should have hit LockObtainFailedException");
@@ -474,81 +458,6 @@ public class TestIndexReader extends LuceneTestCase
         }
         writer.close();
         reader.close();
-        dir.close();
-    }
-
-    // Make sure you can set norms & commit even if a reader
-    // is open against the index:
-    public void testWritingNorms() throws IOException {
-        Directory dir = newDirectory();
-        Term searchTerm = new Term("content", "aaa");
-
-        //  add 1 documents with term : aaa
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        addDoc(writer, searchTerm.text());
-        writer.close();
-
-        //  now open reader & set norm for doc 0
-        IndexReader reader = IndexReader.open(dir, false);
-        DefaultSimilarity sim = new DefaultSimilarity();
-        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
-
-        // we should be holding the write lock now:
-        assertTrue("locked", IndexWriter.isLocked(dir));
-
-        reader.commit();
-
-        // we should not be holding the write lock now:
-        assertTrue("not locked", !IndexWriter.isLocked(dir));
-
-        // open a 2nd reader:
-        IndexReader reader2 = IndexReader.open(dir, false);
-
-        // set norm again for doc 0
-        reader.setNorm(0, "content", sim.encodeNormValue(3.0f));
-        assertTrue("locked", IndexWriter.isLocked(dir));
-
-        reader.close();
-
-        // we should not be holding the write lock now:
-        assertTrue("not locked", !IndexWriter.isLocked(dir));
-
-        reader2.close();
-        dir.close();
-    }
-
-
-    // Make sure you can set norms & commit, and there are
-    // no extra norms files left:
-    public void testWritingNormsNoReader() throws IOException {
-        Directory dir = newDirectory();
-        IndexWriter writer = null;
-        IndexReader reader = null;
-        Term searchTerm = new Term("content", "aaa");
-
-        //  add 1 documents with term : aaa
-        writer  = new IndexWriter(
-            dir,
-            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-                setMergePolicy(newLogMergePolicy(false))
-        );
-        addDoc(writer, searchTerm.text());
-        writer.close();
-
-        DefaultSimilarity sim = new DefaultSimilarity();
-        //  now open reader & set norm for doc 0 (writes to
-        //  _0_1.s0)
-        reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
-        reader.close();
-        
-        //  now open reader again & set norm for doc 0 (writes to _0_2.s0)
-        reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
-        reader.close();
-        assertFalse("failed to remove first generation norms file on writing second generation",
-                    dir.fileExists("_0_1.s0"));
-        
         dir.close();
     }
 
@@ -710,40 +619,6 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
       if (!gotException) {
         fail("delete of out-of-bounds doc number failed to hit exception");
-      }
-      dir.close();
-    }
-
-    public void testExceptionReleaseWriteLockJIRA768() throws IOException {
-
-      Directory dir = newDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      addDoc(writer, "aaa");
-      writer.close();
-
-      IndexReader reader = IndexReader.open(dir, false);
-      try {
-        reader.deleteDocument(1);
-        fail("did not hit exception when deleting an invalid doc number");
-      } catch (ArrayIndexOutOfBoundsException e) {
-        // expected
-      }
-      reader.close();
-      if (IndexWriter.isLocked(dir)) {
-        fail("write lock is still held after close");
-      }
-
-      reader = IndexReader.open(dir, false);
-      DefaultSimilarity sim = new DefaultSimilarity();
-      try {
-        reader.setNorm(1, "content", sim.encodeNormValue(2.0f));
-        fail("did not hit exception when calling setNorm on an invalid doc number");
-      } catch (ArrayIndexOutOfBoundsException e) {
-        // expected
-      }
-      reader.close();
-      if (IndexWriter.isLocked(dir)) {
-        fail("write lock is still held after close");
       }
       dir.close();
     }

@@ -910,39 +910,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public abstract byte[] norms(String field) throws IOException;
 
-  /** Expert: Resets the normalization factor for the named field of the named
-   * document.  By default, the norm represents the product of the field's {@link
-   * org.apache.lucene.document.Field#setBoost(float) boost} and its
-   * length normalization}.  Thus, to preserve the length normalization
-   * values when resetting this, one should base the new value upon the old.
-   *
-   * <b>NOTE:</b> If this field does not index norms, then
-   * this method throws {@link IllegalStateException}.
-   *
-   * @see #norms(String)
-   * @see Similarity#computeNorm(FieldInvertState)
-   * @see org.apache.lucene.search.similarities.DefaultSimilarity#decodeNormValue(byte)
-   * @throws StaleReaderException if the index has changed
-   *  since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if there is a low-level IO error
-   * @throws IllegalStateException if the field does not index norms
-   */
-  public synchronized  void setNorm(int doc, String field, byte value)
-          throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    acquireWriteLock();
-    hasChanges = true;
-    doSetNorm(doc, field, value);
-  }
-
-  /** Implements setNorm in subclass.*/
-  protected abstract void doSetNorm(int doc, String field, byte value)
-          throws CorruptIndexException, IOException;
-
   /**
    * Returns {@link Fields} for this reader.
    * This method may return null if the reader has no
@@ -1229,8 +1196,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
   
   /**
-   * Commit changes resulting from delete, undeleteAll, or
-   * setNorm operations
+   * Commit changes resulting from delete, undeleteAll operations
    *
    * If an exception is hit, then either no changes or all
    * changes will have been committed to the index
@@ -1242,8 +1208,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
   
   /**
-   * Commit changes resulting from delete, undeleteAll, or
-   * setNorm operations
+   * Commit changes resulting from delete, undeleteAll operations
    *
    * If an exception is hit, then either no changes or all
    * changes will have been committed to the index
@@ -1415,7 +1380,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  that has no sub readers).
    *  <p>
    *  NOTE: You should not try using sub-readers returned by
-   *  this method to make any changes (setNorm, deleteDocument,
+   *  this method to make any changes (deleteDocument,
    *  etc.). While this might succeed for one composite reader
    *  (like MultiReader), it will most likely lead to index
    *  corruption for other readers (like DirectoryReader obtained
@@ -1443,7 +1408,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * for performance reasons.
    * <p>
    * NOTE: You should not try using sub-readers returned by this method to make
-   * any changes (setNorm, deleteDocument, etc.). While this might succeed for
+   * any changes (deleteDocument, etc.). While this might succeed for
    * one composite reader (like MultiReader), it will most likely lead to index
    * corruption for other readers (like DirectoryReader obtained through
    * {@link #open}. Use the top-level context's reader directly.

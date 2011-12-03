@@ -41,7 +41,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   
  /**
   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-  * Directory locking for delete, undeleteAll, and setNorm operations is
+  * Directory locking for delete, undeleteAll operations is
   * left to the subreaders. </p>
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
@@ -52,7 +52,7 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   /**
    * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-   * Directory locking for delete, undeleteAll, and setNorm operations is
+   * Directory locking for delete, undeleteAll operations is
    * left to the subreaders. </p>
    * @param closeSubReaders indicates whether the subreaders should be closed
    * when this MultiReader is closed
@@ -276,13 +276,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public synchronized byte[] norms(String field) throws IOException {
     throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
-  }
-
-  @Override
-  protected void doSetNorm(int n, String field, byte value)
-    throws CorruptIndexException, IOException {
-    int i = readerIndex(n);                           // find segment num
-    subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }
 
   @Override

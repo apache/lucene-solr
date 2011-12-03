@@ -72,9 +72,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Term searchTerm = new Term("id", "7");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("didn't delete the right number of documents", 1, delCount);
-    DefaultSimilarity sim = new DefaultSimilarity();
-    // Set one norm so we get a .s0 file:
-    reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
     reader.close();
 
     // Now, artificially create an extra .del file & extra
@@ -86,47 +83,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
       System.out.println(j + ": " + files[j]);
     }
     */
-
-    // The numbering of fields can vary depending on which
-    // JRE is in use.  On some JREs we see content bound to
-    // field 0; on others, field 1.  So, here we have to
-    // figure out which field number corresponds to
-    // "content", and then set our expected file names below
-    // accordingly:
-    CompoundFileDirectory cfsReader = new CompoundFileDirectory(dir, "_2.cfs", newIOContext(random), false);
-    FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
-    FieldInfos fieldInfos = infosReader.read(cfsReader, "2", IOContext.READONCE);
-    int contentFieldIndex = -1;
-    for (FieldInfo fi : fieldInfos) {
-      if (fi.name.equals("content")) {
-        contentFieldIndex = fi.number;
-        break;
-      }
-    }
-    cfsReader.close();
-    assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
-
-    String normSuffix = "s" + contentFieldIndex;
-
-    // Create a bogus separate norms file for a
-    // segment/field that actually has a separate norms file
-    // already:
-    copyFile(dir, "_2_1." + normSuffix, "_2_2." + normSuffix);
-
-    // Create a bogus separate norms file for a
-    // segment/field that actually has a separate norms file
-    // already, using the "not compound file" extension:
-    copyFile(dir, "_2_1." + normSuffix, "_2_2.f" + contentFieldIndex);
-
-    // Create a bogus separate norms file for a
-    // segment/field that does not have a separate norms
-    // file already:
-    copyFile(dir, "_2_1." + normSuffix, "_1_1." + normSuffix);
-
-    // Create a bogus separate norms file for a
-    // segment/field that does not have a separate norms
-    // file already using the "not compound file" extension:
-    copyFile(dir, "_2_1." + normSuffix, "_1_1.f" + contentFieldIndex);
 
     // Create a bogus separate del file for a
     // segment that already has a separate del file: 

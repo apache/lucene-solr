@@ -53,7 +53,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   volatile BitVector liveDocs;
   AtomicInteger liveDocsRef = null;
   private boolean liveDocsDirty = false;
-  private boolean normsDirty = false;
 
   // TODO: we should move this tracking into SegmentInfo;
   // this way SegmentInfo.toString shows pending deletes
@@ -61,7 +60,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   private boolean rollbackHasChanges = false;
   private boolean rollbackDeletedDocsDirty = false;
-  private boolean rollbackNormsDirty = false;
   private SegmentInfo rollbackSegmentInfo;
   private int rollbackPendingDeleteCount;
 
@@ -256,7 +254,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
         clone.liveDocsDirty = liveDocsDirty;
-        clone.normsDirty = normsDirty;
         clone.hasChanges = hasChanges;
         hasChanges = false;
       }
@@ -355,16 +352,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       assert pendingDeleteCount == 0;
     }
 
-    if (normsDirty) {               // re-write norms
-      si.initNormGen();
-      for (final SegmentNorms norm : norms.values()) {
-        if (norm.dirty) {
-          norm.reWrite(si);
-        }
-      }
-    }
     liveDocsDirty = false;
-    normsDirty = false;
     hasChanges = false;
   }
 
@@ -558,19 +546,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return norm.bytes();
   }
 
-  @Override
-  protected void doSetNorm(int doc, String field, byte value)
-          throws IOException {
-    SegmentNorms norm = norms.get(field);
-    if (norm == null) {
-      // field does not store norms
-      throw new IllegalStateException("Cannot setNorm for field " + field + ": norms were omitted");
-    }
-
-    normsDirty = true;
-    norm.copyOnWrite()[doc] = value;                    // set the value
-  }
-
   private void openNorms(Directory cfsDir, IOContext context) throws IOException {
     long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
@@ -723,22 +698,14 @@ public class SegmentReader extends IndexReader implements Cloneable {
     rollbackSegmentInfo = (SegmentInfo) si.clone();
     rollbackHasChanges = hasChanges;
     rollbackDeletedDocsDirty = liveDocsDirty;
-    rollbackNormsDirty = normsDirty;
     rollbackPendingDeleteCount = pendingDeleteCount;
-    for (SegmentNorms norm : norms.values()) {
-      norm.rollbackDirty = norm.dirty;
-    }
   }
 
   void rollbackCommit() {
     si.reset(rollbackSegmentInfo);
     hasChanges = rollbackHasChanges;
     liveDocsDirty = rollbackDeletedDocsDirty;
-    normsDirty = rollbackNormsDirty;
     pendingDeleteCount = rollbackPendingDeleteCount;
-    for (SegmentNorms norm : norms.values()) {
-      norm.dirty = norm.rollbackDirty;
-    }
   }
 
   /** Returns the directory this index resides in. */

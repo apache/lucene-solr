@@ -654,8 +654,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3*i+1);
-        DefaultSimilarity sim = new DefaultSimilarity();
-        reader.setNorm(4*i+1, "content", sim.encodeNormValue(2.0F));
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16*(1+i), hits.length);
@@ -783,8 +781,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3);
-        DefaultSimilarity sim = new DefaultSimilarity();
-        reader.setNorm(5, "content", sim.encodeNormValue(2.0F));
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16, hits.length);

@@ -115,34 +115,6 @@ public class TestParallelReader extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
-  
-  public void testIsCurrent() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
-    ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-    
-    assertTrue(pr.isCurrent());
-    IndexReader modifier = IndexReader.open(dir1, false);
-    DefaultSimilarity sim = new DefaultSimilarity();
-    modifier.setNorm(0, "f1", sim.encodeNormValue(100f));
-    modifier.close();
-    
-    // one of the two IndexReaders which ParallelReader is using
-    // is not current anymore
-    assertFalse(pr.isCurrent());
-    
-    modifier = IndexReader.open(dir2, false);
-    modifier.setNorm(0, "f3", sim.encodeNormValue(100f));
-    modifier.close();
-    
-    // now both are not current anymore
-    assertFalse(pr.isCurrent());
-    pr.close();
-    dir1.close();
-    dir2.close();
-  }
 
   private void queryTest(Query query) throws IOException {
     ScoreDoc[] parallelHits = parallel.search(query, null, 1000).scoreDocs;

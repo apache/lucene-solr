@@ -1112,11 +1112,6 @@ public class MemoryIndex {
       }
       return norms;
     }
-
-    @Override
-    protected void doSetNorm(int doc, String fieldName, byte value) {
-      throw new UnsupportedOperationException();
-    }
   
     @Override
     public int numDocs() {

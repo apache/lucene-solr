@@ -155,27 +155,6 @@ public class TestSegmentMerger extends LuceneTestCase {
     }
     assertFalse("should not have been able to create a .cfs with .del and .s* files", doFail);
     
-    // Create an index w/ .s*
-    w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-    doc = new Document();
-    doc.add(new TextField("c", "test"));
-    w.addDocument(doc);
-    w.close();
-    IndexReader r = IndexReader.open(dir, false);
-    r.setNorm(0, "c", (byte) 1);
-    r.close();
-    
-    // Assert that SM fails if .s* exists
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(dir);
-    try {
-      IndexWriter.createCompoundFile(dir, "b2", MergeState.CheckAbort.NONE, sis.info(0), newIOContext(random));
-      doFail = true; // should never get here
-    } catch (AssertionError e) {
-      // expected
-    }
-    assertFalse("should not have been able to create a .cfs with .del and .s* files", doFail);
-
     dir.close();
   }
 

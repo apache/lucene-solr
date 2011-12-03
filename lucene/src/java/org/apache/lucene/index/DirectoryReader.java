@@ -593,13 +593,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  protected void doSetNorm(int n, String field, byte value)
-    throws CorruptIndexException, IOException {
-    int i = readerIndex(n);                           // find segment num
-    subReaders[i].setNorm(n-starts[i], field, value); // dispatch
-  }
-
-  @Override
   public int docFreq(Term t) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in segments
@@ -647,7 +640,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     if (segmentInfos != null) {
       ensureOpen();
       if (stale)
-        throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+        throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete operations");
 
       if (writeLock == null) {
         Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
@@ -661,14 +654,14 @@ class DirectoryReader extends IndexReader implements Cloneable {
           stale = true;
           this.writeLock.release();
           this.writeLock = null;
-          throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+          throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete operations");
         }
       }
     }
   }
 
   /**
-   * Commit changes resulting from delete, undeleteAll, or setNorm operations
+   * Commit changes resulting from delete, undeleteAll operations
    * <p/>
    * If an exception is hit, then either no changes or all changes will have been committed to the index (transactional
    * semantics).

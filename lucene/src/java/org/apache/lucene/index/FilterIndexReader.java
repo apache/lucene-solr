@@ -277,7 +277,7 @@ public class FilterIndexReader extends IndexReader {
 
   /**
    * <p>Construct a FilterIndexReader based on the specified base reader.
-   * Directory locking for delete, undeleteAll, and setNorm operations is
+   * Directory locking for delete, undeleteAll operations is
    * left to the base reader.</p>
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
@@ -344,11 +344,6 @@ public class FilterIndexReader extends IndexReader {
   public byte[] norms(String f) throws IOException {
     ensureOpen();
     return in.norms(f);
-  }
-
-  @Override
-  protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
-    in.setNorm(d, f, b);
   }
 
   @Override
