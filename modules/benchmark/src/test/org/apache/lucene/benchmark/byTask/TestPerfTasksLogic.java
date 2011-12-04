@@ -57,6 +57,7 @@ import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
@@ -493,7 +494,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       TermsEnum termsEnum = terms.iterator(null);
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = termsEnum.docs(MultiFields.getLiveDocs(reader), docs);
+        docs = _TestUtil.docs(random, termsEnum, MultiFields.getLiveDocs(reader), docs, true);
         while(docs.nextDoc() != docs.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }

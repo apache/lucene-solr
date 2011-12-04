@@ -17,7 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -25,9 +26,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Random;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestDirectoryReader extends LuceneTestCase {
   protected Directory dir;
@@ -171,15 +171,18 @@ public class TestDirectoryReader extends LuceneTestCase {
     // test mixing up TermDocs and TermEnums from different readers.
     TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator(null);
     te2.seekCeil(new BytesRef("wow"));
-    DocsEnum td = MultiFields.getTermDocsEnum(mr2,
-                                              MultiFields.getLiveDocs(mr2),
-                                              "body",
-                                              te2.term());
+    DocsEnum td = _TestUtil.docs(random, mr2,
+                                 "body",
+                                 te2.term(),
+                                 MultiFields.getLiveDocs(mr2),
+                                 null,
+                                 false);
 
     TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator(null);
     te3.seekCeil(new BytesRef("wow"));
-    td = te3.docs(MultiFields.getLiveDocs(mr3),
-                  td);
+    td = _TestUtil.docs(random, te3, MultiFields.getLiveDocs(mr3),
+                        td,
+                        false);
     
     int ret = 0;
 

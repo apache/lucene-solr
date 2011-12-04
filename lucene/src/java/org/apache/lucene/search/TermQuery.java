@@ -21,18 +21,18 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
@@ -83,10 +83,15 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      // TODO should we reuse the DocsEnum here? 
-      final DocsEnum docs = termsEnum.docs(acceptDocs, null);
-      assert docs != null;
-      return new TermScorer(this, docs, createDocScorer(context));
+      DocsEnum docs = termsEnum.docs(acceptDocs, null, true);
+      if (docs != null) {
+        return new TermScorer(this, docs, createDocScorer(context));
+      } else {
+        // Index does not store freq info
+        docs = termsEnum.docs(acceptDocs, null, false);
+        assert docs != null;
+        return new MatchOnlyTermScorer(this, docs, createDocScorer(context));
+      }
     }
     
     /**
@@ -120,12 +125,11 @@ public class TermQuery extends Query {
     
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      IndexReader reader = context.reader;
-      DocsEnum docs = reader.termDocsEnum(context.reader.getLiveDocs(), term.field(), term.bytes());
-      if (docs != null) {
-        int newDoc = docs.advance(doc);
+      Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
+      if (scorer != null) {
+        int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
-          int freq = docs.freq();
+          float freq = scorer.freq();
           ExactDocScorer docScorer = similarity.exactDocScorer(stats, term.field(), context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
@@ -136,8 +140,7 @@ public class TermQuery extends Query {
           return result;
         }
       }
-      
-      return new ComplexExplanation(false, 0.0f, "no matching term");
+      return new ComplexExplanation(false, 0.0f, "no matching term");      
     }
   }
 

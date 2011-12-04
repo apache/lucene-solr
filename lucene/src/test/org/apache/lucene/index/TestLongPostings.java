@@ -367,7 +367,17 @@ public class TestLongPostings extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1 + " term=" + term);
       }
         
-      final DocsEnum postings = MultiFields.getTermDocsEnum(r, null, "field", new BytesRef(term));
+      final DocsEnum docs;
+      final DocsEnum postings;
+
+      if (options == IndexOptions.DOCS_ONLY) {
+        docs = _TestUtil.docs(random, r, "field", new BytesRef(term), null, null, false);
+        postings = null;
+      } else {
+        docs = postings = _TestUtil.docs(random, r, "field", new BytesRef(term), null, null, true);
+        assert postings != null;
+      }
+      assert docs != null;
 
       int docID = -1;
       while(docID < DocsEnum.NO_MORE_DOCS) {
@@ -388,7 +398,7 @@ public class TestLongPostings extends LuceneTestCase {
               expected++;
             }
           }
-          docID = postings.nextDoc();
+          docID = docs.nextDoc();
           if (VERBOSE) {
             System.out.println("  got docID=" + docID);
           }
@@ -397,7 +407,7 @@ public class TestLongPostings extends LuceneTestCase {
             break;
           }
 
-          if (random.nextInt(6) == 3) {
+          if (random.nextInt(6) == 3 && postings != null) {
             final int freq = postings.freq();
             assertTrue(freq >=1 && freq <= 4);
           }
@@ -424,7 +434,7 @@ public class TestLongPostings extends LuceneTestCase {
             }
           }
           
-          docID = postings.advance(targetDocID);
+          docID = docs.advance(targetDocID);
           if (VERBOSE) {
             System.out.println("  got docID=" + docID);
           }
@@ -433,7 +443,7 @@ public class TestLongPostings extends LuceneTestCase {
             break;
           }
           
-          if (random.nextInt(6) == 3) {
+          if (random.nextInt(6) == 3 && postings != null) {
             final int freq = postings.freq();
             assertTrue("got invalid freq=" + freq, freq >=1 && freq <= 4);
           }

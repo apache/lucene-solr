@@ -1033,7 +1033,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null, if either the field or
    *  term does not exist. */
-  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
+  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -1042,7 +1042,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docs(liveDocs, null);
+          return termsEnum.docs(liveDocs, null, needsFreqs);
         }
       }
     }
@@ -1052,7 +1052,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  field & term.  This may return null, if either the
    *  field or term does not exist, or, positions were not
-   *  stored for this term. */
+   *  indexed for this field. */
   public DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
     assert field != null;
     assert term != null;
@@ -1074,7 +1074,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists or the {@link TermState} is invalid for the underlying
    * implementation.*/
-  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
+  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsFreqs) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -1083,7 +1083,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         termsEnum.seekExact(term, state);
-        return termsEnum.docs(liveDocs, null);
+        return termsEnum.docs(liveDocs, null, needsFreqs);
       }
     }
     return null;
@@ -1093,7 +1093,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * Returns {@link DocsAndPositionsEnum} for the specified field and
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists, the {@link TermState} is invalid for the underlying
-   * implementation, or positions were not stored for this term.*/
+   * implementation, or positions were not indexed for this field. */
   public DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
     assert state != null;
     assert field != null;
@@ -1161,8 +1161,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
     DocsEnum docs = MultiFields.getTermDocsEnum(this,
                                                 MultiFields.getLiveDocs(this),
                                                 term.field(),
-                                                term.bytes());
-    if (docs == null) return 0;
+                                                term.bytes(),
+                                                false);
+    if (docs == null) {
+      return 0;
+    }
     int n = 0;
     int doc;
     while ((doc = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {

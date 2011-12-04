@@ -32,6 +32,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * MultiThreaded IndexWriter tests
@@ -209,10 +210,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = IndexReader.open(dir, true);
-      DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
-                                                  MultiFields.getLiveDocs(reader),
-                                                  "field",
-                                                  new BytesRef("aaa"));
+      DocsEnum tdocs = _TestUtil.docs(random, reader,
+                                      "field",
+                                      new BytesRef("aaa"),
+                                      MultiFields.getLiveDocs(reader),
+                                      null,
+                                      false);
       int count = 0;
       while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         count++;

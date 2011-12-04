@@ -559,7 +559,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if (!termsEnum.seekExact(termBytes, false)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(reader), null);
+    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(reader), null, false);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -861,7 +861,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     int bitsSet = 0;
     OpenBitSet obs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum);
+    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, false);
     if (deState.docsEnum == null) {
       deState.docsEnum = docsEnum;
     }
@@ -942,7 +942,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           if (terms != null) {
             final TermsEnum termsEnum = terms.iterator(null);
             if (termsEnum.seekExact(termBytes, false)) {
-              docsEnum = termsEnum.docs(MultiFields.getLiveDocs(reader), null);
+              docsEnum = termsEnum.docs(MultiFields.getLiveDocs(reader), null, false);
             }
           }
 

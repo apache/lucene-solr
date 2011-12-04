@@ -405,7 +405,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // TODO (Facet): avoid Multi*?
     Bits liveDocs = MultiFields.getLiveDocs(reader);
     DocsEnum docs = MultiFields.getTermDocsEnum(reader, liveDocs, Consts.FULL, 
-        new BytesRef(categoryPath.toString(delimiter)));
+                                                new BytesRef(categoryPath.toString(delimiter)),
+                                                false);
     if (docs == null || docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
       return -1; // category does not exist in taxonomy
     }
@@ -441,7 +442,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
     Bits liveDocs = MultiFields.getLiveDocs(reader);
     DocsEnum docs = MultiFields.getTermDocsEnum(reader, liveDocs, Consts.FULL, 
-        new BytesRef(categoryPath.toString(delimiter, prefixLen)));
+                                                new BytesRef(categoryPath.toString(delimiter, prefixLen)),
+                                                false);
     if (docs == null || docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
       return -1; // category does not exist in taxonomy
     }
@@ -788,7 +790,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         // hence documents), there are no deletions in the index. Therefore, it
         // is sufficient to call next(), and then doc(), exactly once with no
         // 'validation' checks.
-        docsEnum = termsEnum.docs(liveDocs, docsEnum);
+        docsEnum = termsEnum.docs(liveDocs, docsEnum, false);
         docsEnum.nextDoc();
         cp.clear();
         // TODO (Facet): avoid String creation/use bytes?
@@ -925,7 +927,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
             // like Lucene's merge works, we hope there are few seeks.
             // TODO (Facet): is there a quicker way? E.g., not specifying the
             // next term by name every time?
-            otherdocsEnum[i] = othertes[i].docs(MultiFields.getLiveDocs(otherreaders[i]), otherdocsEnum[i]);
+            otherdocsEnum[i] = othertes[i].docs(MultiFields.getLiveDocs(otherreaders[i]), otherdocsEnum[i], false);
             otherdocsEnum[i].nextDoc(); // TODO (Facet): check?
             int origordinal = otherdocsEnum[i].docID();
             ordinalMaps[i].addMapping(origordinal, newordinal);
@@ -942,7 +944,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         // to be added because it already existed in the main taxonomy.
 
         // TODO (Facet): Again, is there a quicker way?
-        mainde = mainte.docs(MultiFields.getLiveDocs(mainreader), mainde);
+        mainde = mainte.docs(MultiFields.getLiveDocs(mainreader), mainde, false);
         mainde.nextDoc(); // TODO (Facet): check?
         int newordinal = mainde.docID();
 
@@ -950,7 +952,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         for (int i=0; i<taxonomies.length; i++) {
           if (first.equals(currentOthers[i])) {
             // TODO (Facet): again, is there a quicker way?
-            otherdocsEnum[i] = othertes[i].docs(MultiFields.getLiveDocs(otherreaders[i]), otherdocsEnum[i]);
+            otherdocsEnum[i] = othertes[i].docs(MultiFields.getLiveDocs(otherreaders[i]), otherdocsEnum[i], false);
             otherdocsEnum[i].nextDoc(); // TODO (Facet): check?
             int origordinal = otherdocsEnum[i].docID();
             ordinalMaps[i].addMapping(origordinal, newordinal);

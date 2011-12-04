@@ -342,7 +342,7 @@ class FieldCacheImpl implements FieldCache {
               break;
             }
             final byte termval = parser.parseByte(term);
-            docs = termsEnum.docs(null, docs);
+            docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
               if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -415,7 +415,7 @@ class FieldCacheImpl implements FieldCache {
               break;
             }
             final short termval = parser.parseShort(term);
-            docs = termsEnum.docs(null, docs);
+            docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
               if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -519,7 +519,7 @@ class FieldCacheImpl implements FieldCache {
               retArray = new int[maxDoc];
             }
 
-            docs = termsEnum.docs(null, docs);
+            docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
               if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -586,7 +586,7 @@ class FieldCacheImpl implements FieldCache {
             res = new FixedBitSet(maxDoc);
           }
 
-          docs = termsEnum.docs(null, docs);
+          docs = termsEnum.docs(null, docs, false);
           // TODO: use bulk API
           while (true) {
             final int docID = docs.nextDoc();
@@ -669,7 +669,7 @@ class FieldCacheImpl implements FieldCache {
               retArray = new float[maxDoc];
             }
             
-            docs = termsEnum.docs(null, docs);
+            docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
               if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -757,7 +757,7 @@ class FieldCacheImpl implements FieldCache {
               retArray = new long[maxDoc];
             }
 
-            docs = termsEnum.docs(null, docs);
+            docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
               if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -846,7 +846,7 @@ class FieldCacheImpl implements FieldCache {
               retArray = new double[maxDoc];
             }
 
-            docs = termsEnum.docs(null, docs);
+            docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
               if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -1020,7 +1020,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
         throw new UnsupportedOperationException();
       }
 
@@ -1147,7 +1147,7 @@ class FieldCacheImpl implements FieldCache {
             termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
           }
           termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
-          docs = termsEnum.docs(null, docs);
+          docs = termsEnum.docs(null, docs, false);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocsEnum.NO_MORE_DOCS) {
@@ -1268,7 +1268,7 @@ class FieldCacheImpl implements FieldCache {
             break;
           }
           final long pointer = bytes.copyUsingLengthPrefix(term);
-          docs = termsEnum.docs(null, docs);
+          docs = termsEnum.docs(null, docs, false);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocsEnum.NO_MORE_DOCS) {

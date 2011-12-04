@@ -22,7 +22,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -34,6 +33,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util._TestUtil;
 
 public class TestDocsAndPositions extends LuceneTestCase {
   private String fieldName;
@@ -97,16 +97,6 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public DocsAndPositionsEnum getDocsAndPositions(IndexReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
       return reader.termPositionsEnum(null, fieldName, bytes);
-  }
-
-  public DocsEnum getDocsEnum(IndexReader reader, BytesRef bytes,
-      boolean freqs, Bits liveDocs) throws IOException {
-    int randInt = random.nextInt(10);
-    if (randInt == 0) { // once in a while throw in a positions enum
-      return getDocsAndPositions(reader, bytes, liveDocs);
-    } else {
-      return reader.termDocsEnum(liveDocs, fieldName, bytes);
-    } 
   }
 
   /**
@@ -232,31 +222,31 @@ public class TestDocsAndPositions extends LuceneTestCase {
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext context : leaves) {
         int maxDoc = context.reader.maxDoc();
-        DocsEnum docsAndPosEnum = getDocsEnum(context.reader, bytes, true, null);
+        DocsEnum docsEnum = _TestUtil.docs(random, context.reader, fieldName, bytes, null, null, true);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
-          assertNull(docsAndPosEnum);
+          assertNull(docsEnum);
           continue;
         }
-        assertNotNull(docsAndPosEnum);
-        docsAndPosEnum.nextDoc();
+        assertNotNull(docsEnum);
+        docsEnum.nextDoc();
         for (int j = 0; j < maxDoc; j++) {
           if (freqInDoc[context.docBase + j] != 0) {
-            assertEquals(j, docsAndPosEnum.docID());
-            assertEquals(docsAndPosEnum.freq(), freqInDoc[context.docBase +j]);
+            assertEquals(j, docsEnum.docID());
+            assertEquals(docsEnum.freq(), freqInDoc[context.docBase +j]);
             if (i % 2 == 0 && random.nextInt(10) == 0) {
               int next = findNext(freqInDoc, context.docBase+j+1, context.docBase + maxDoc) - context.docBase;
-              int advancedTo = docsAndPosEnum.advance(next);
+              int advancedTo = docsEnum.advance(next);
               if (next >= maxDoc) {
                 assertEquals(DocsEnum.NO_MORE_DOCS, advancedTo);
               } else {
                 assertTrue("advanced to: " +advancedTo + " but should be <= " + next, next >= advancedTo);  
               }
             } else {
-              docsAndPosEnum.nextDoc();
+              docsEnum.nextDoc();
             }
           } 
         }
-        assertEquals("docBase: " + context.docBase + " maxDoc: " + maxDoc + " " + docsAndPosEnum.getClass(), DocsEnum.NO_MORE_DOCS, docsAndPosEnum.docID());
+        assertEquals("docBase: " + context.docBase + " maxDoc: " + maxDoc + " " + docsEnum.getClass(), DocsEnum.NO_MORE_DOCS, docsEnum.docID());
       }
       
     }
@@ -343,7 +333,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexReader r = getOnlySegmentReader(reader);
-    DocsEnum disi = r.termDocsEnum(null, "foo", new BytesRef("bar"));
+    DocsEnum disi = _TestUtil.docs(random, r, "foo", new BytesRef("bar"), null, null, false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -351,7 +341,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
     assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = te.docs(null, disi);
+    disi = _TestUtil.docs(random, te, null, disi, false);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

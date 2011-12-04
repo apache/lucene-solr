@@ -387,7 +387,7 @@ class BufferedDeletesStream {
       // System.out.println("  term=" + term);
 
       if (termsEnum.seekExact(term.bytes(), false)) {
-        DocsEnum docsEnum = termsEnum.docs(reader.getLiveDocs(), docs);
+        DocsEnum docsEnum = termsEnum.docs(reader.getLiveDocs(), docs, false);
         //System.out.println("BDS: got docsEnum=" + docsEnum);
 
         if (docsEnum != null) {

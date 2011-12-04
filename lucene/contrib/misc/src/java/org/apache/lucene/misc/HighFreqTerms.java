@@ -201,7 +201,7 @@ public class HighFreqTerms {
             return;
           }
         }
-        DocsEnum de = r.termDocsEnum(liveDocs, field, termText);
+        DocsEnum de = r.termDocsEnum(liveDocs, field, termText, true);
         if (de != null) {
           while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
             totalTF[0] += de.freq();

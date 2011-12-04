@@ -57,7 +57,7 @@ public class CartesianShapeFilter extends Filter {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
-          return context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef);
+          return context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef, false);
         }
         
         @Override
@@ -70,7 +70,7 @@ public class CartesianShapeFilter extends Filter {
       for (int i =0; i< sz; i++) {
         double boxId = area.get(i).doubleValue();
         NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
-        final DocsEnum docsEnum = context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef);
+        final DocsEnum docsEnum = context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef, false);
         if (docsEnum == null) continue;
         // iterate through all documents
         // which have this boxId

@@ -27,8 +27,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -950,9 +950,11 @@ public class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
       PreDocsEnum docsEnum;
-      if (reuse == null || !(reuse instanceof PreDocsEnum)) {
+      if (needsFreqs && fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+        return null;
+      } else if (reuse == null || !(reuse instanceof PreDocsEnum)) {
         docsEnum = new PreDocsEnum();
       } else {
         docsEnum = (PreDocsEnum) reuse;

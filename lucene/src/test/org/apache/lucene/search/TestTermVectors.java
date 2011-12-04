@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -269,7 +270,7 @@ public class TestTermVectors extends LuceneTestCase {
 
       while (termsEnum.next() != null) {
         String text = termsEnum.term().utf8ToString();
-        docs = termsEnum.docs(MultiFields.getLiveDocs(knownSearcher.reader), docs);
+        docs = _TestUtil.docs(random, termsEnum, MultiFields.getLiveDocs(knownSearcher.reader), docs, true);
         
         while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int docId = docs.docID();

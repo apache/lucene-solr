@@ -314,7 +314,7 @@ public class DocTermOrds {
       final int df = te.docFreq();
       if (df <= maxTermDocFreq) {
 
-        docsEnum = te.docs(liveDocs, docsEnum);
+        docsEnum = te.docs(liveDocs, docsEnum, false);
 
         // dF, but takes deletions into account
         int actualDF = 0;
@@ -650,8 +650,8 @@ public class DocTermOrds {
     }
 
     @Override    
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
-      return termsEnum.docs(liveDocs, reuse);
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+      return termsEnum.docs(liveDocs, reuse, needsFreqs);
     }
 
     @Override    

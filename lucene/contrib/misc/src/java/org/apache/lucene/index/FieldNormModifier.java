@@ -129,12 +129,19 @@ public class FieldNormModifier {
           if (terms != null) {
             TermsEnum termsEnum = terms.iterator(null);
             DocsEnum docs = null;
+            DocsEnum docsAndFreqs = null;
             while(termsEnum.next() != null) {
-              docs = termsEnum.docs(liveDocs, docs);
+              docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
+              final DocsEnum docs2;
+              if (docsAndFreqs != null) {
+                docs2 = docsAndFreqs;
+              } else {
+                docs2 = docs = termsEnum.docs(liveDocs, docs, false);
+              }
               while(true) {
-                int docID = docs.nextDoc();
+                int docID = docs2.nextDoc();
                 if (docID != docs.NO_MORE_DOCS) {
-                  termCounts[docID] += docs.freq();
+                  termCounts[docID] += docsAndFreqs == null ? 1 : docsAndFreqs.freq();
                 } else {
                   break;
                 }

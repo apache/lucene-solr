@@ -17,17 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
-import org.apache.lucene.util.ArrayUtil;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
+import org.apache.lucene.util.ArrayUtil;
+
 /** Scorer for conjunctions, sets of terms, all of which are required. */
-final class ConjunctionTermScorer extends Scorer {
-  private final float coord;
-  private int lastDoc = -1;
-  private final DocsAndFreqs[] docsAndFreqs;
+class ConjunctionTermScorer extends Scorer {
+  protected final float coord;
+  protected int lastDoc = -1;
+  protected final DocsAndFreqs[] docsAndFreqs;
   private final DocsAndFreqs lead;
 
   ConjunctionTermScorer(Weight weight, float coord,
@@ -39,7 +40,7 @@ final class ConjunctionTermScorer extends Scorer {
     // lead the matching.
     ArrayUtil.mergeSort(docsAndFreqs, new Comparator<DocsAndFreqs>() {
       public int compare(DocsAndFreqs o1, DocsAndFreqs o2) {
-        return o1.freq - o2.freq;
+        return o1.docFreq - o2.docFreq;
       }
     });
 
@@ -96,14 +97,16 @@ final class ConjunctionTermScorer extends Scorer {
   }
 
   static final class DocsAndFreqs {
+    final DocsEnum docsAndFreqs;
     final DocsEnum docs;
-    final int freq;
+    final int docFreq;
     final ExactDocScorer docScorer;
     int doc = -1;
 
-    DocsAndFreqs(DocsEnum docs, int freq, ExactDocScorer docScorer) {
+    DocsAndFreqs(DocsEnum docsAndFreqs, DocsEnum docs, int docFreq, ExactDocScorer docScorer) {
+      this.docsAndFreqs = docsAndFreqs;
       this.docs = docs;
-      this.freq = freq;
+      this.docFreq = docFreq;
       this.docScorer = docScorer;
     }
   }

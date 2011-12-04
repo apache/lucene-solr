@@ -546,10 +546,12 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(1, reader.numDocs());
       Term t = new Term("field", "a");
       assertEquals(1, reader.docFreq(t));
-      DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                                MultiFields.getLiveDocs(reader),
-                                                "field",
-                                                new BytesRef("a"));
+      DocsEnum td = _TestUtil.docs(random, reader,
+                                   "field",
+                                   new BytesRef("a"),
+                                   MultiFields.getLiveDocs(reader),
+                                   null,
+                                   true);
       td.nextDoc();
       assertEquals(128*1024, td.freq());
       reader.close();
@@ -1338,12 +1340,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc1field1")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc2field1")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc3field1")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc1field2")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc2field2")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc3field2")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random, ir, "binary", new BytesRef("doc1field1"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random, ir, "binary", new BytesRef("doc2field1"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random, ir, "binary", new BytesRef("doc3field1"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random, ir, "string", new BytesRef("doc1field2"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random, ir, "string", new BytesRef("doc2field2"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random, ir, "string", new BytesRef("doc3field2"), null, null, false).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -1415,7 +1417,7 @@ public class TestIndexWriter extends LuceneTestCase {
     TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {
-      final DocsEnum docs = t.docs(null, null);
+      final DocsEnum docs = _TestUtil.docs(random, t, null, null, false);
       assertEquals(0, docs.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
       count++;

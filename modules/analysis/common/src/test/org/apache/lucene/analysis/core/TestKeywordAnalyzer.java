@@ -26,15 +26,16 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util._TestUtil;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -95,15 +96,21 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
-    DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                              MultiFields.getLiveDocs(reader),
-                                              "partnum",
-                                              new BytesRef("Q36"));
+    DocsEnum td = _TestUtil.docs(random,
+                                 reader,
+                                 "partnum",
+                                 new BytesRef("Q36"),
+                                 MultiFields.getLiveDocs(reader),
+                                 null,
+                                 false);
     assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-    td = MultiFields.getTermDocsEnum(reader,
-                                     MultiFields.getLiveDocs(reader),
-                                     "partnum",
-                                     new BytesRef("Q37"));
+    td = _TestUtil.docs(random,
+                        reader,
+                        "partnum",
+                        new BytesRef("Q37"),
+                        MultiFields.getLiveDocs(reader),
+                        null,
+                        false);
     assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
   }
 

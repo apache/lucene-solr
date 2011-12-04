@@ -17,19 +17,24 @@ package org.apache.lucene.index.codecs.simpletext;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.DocsEnum;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
@@ -37,13 +42,8 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.PairOutputs;
-
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.HashMap;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 class SimpleTextFieldsReader extends FieldsProducer {
 
@@ -190,14 +190,17 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
  
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+      if (needsFreqs && indexOptions == IndexOptions.DOCS_ONLY) {
+        return null;
+      }
       SimpleTextDocsEnum docsEnum;
       if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
         docsEnum = (SimpleTextDocsEnum) reuse;
       } else {
         docsEnum = new SimpleTextDocsEnum();
       }
-      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS_ONLY);
+      return docsEnum.reset(docsStart, liveDocs, !needsFreqs);
     }
 
     @Override
@@ -245,9 +248,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       in.seek(fp);
       this.omitTF = omitTF;
       docID = -1;
-      if (omitTF) {
-        tf = 1;
-      }
       return this;
     }
 
@@ -258,6 +258,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int freq() {
+      assert !omitTF;
       return tf;
     }
 

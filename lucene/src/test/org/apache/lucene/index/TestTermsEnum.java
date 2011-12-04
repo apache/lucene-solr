@@ -331,7 +331,7 @@ public class TestTermsEnum extends LuceneTestCase {
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
-          docsEnum = te.docs(null, docsEnum);
+          docsEnum = _TestUtil.docs(random, te, null, docsEnum, false);
           final int docID = docsEnum.nextDoc();
           assertTrue(docID != DocsEnum.NO_MORE_DOCS);
           assertEquals(docIDToID[docID], termToID.get(expected).intValue());

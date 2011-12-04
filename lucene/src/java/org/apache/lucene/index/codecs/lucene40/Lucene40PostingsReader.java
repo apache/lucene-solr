@@ -18,7 +18,6 @@ package org.apache.lucene.index.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -209,9 +208,11 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
     SegmentDocsEnum docsEnum;
-    if (reuse == null || !(reuse instanceof SegmentDocsEnum)) {
+    if (needsFreqs && fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+      return null;
+    } else if (reuse == null || !(reuse instanceof SegmentDocsEnum)) {
       docsEnum = new SegmentDocsEnum(freqIn);
     } else {
       docsEnum = (SegmentDocsEnum) reuse;
@@ -277,7 +278,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     final IndexInput freqIn;
     final IndexInput startFreqIn;
 
-    boolean omitTF;                               // does current field omit term freq?
+    boolean indexOmitsTF;                               // does current field omit term freq?
     boolean storePayloads;                        // does current field store payloads?
 
     int limit;                                    // number of docs in this posting
@@ -300,12 +301,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     public SegmentDocsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
-      if (omitTF) {
-        freq = 1;
-        Arrays.fill(freqs, 1);
-      }
-      
+      indexOmitsTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       storePayloads = fieldInfo.storePayloads;
       this.liveDocs = liveDocs;
       freqOffset = termState.freqOffset;
@@ -331,6 +327,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
     @Override
     public int freq() {
+      assert !indexOmitsTF;
       return freq;
     }
 
@@ -389,7 +386,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       count = bufferSize;
       ord += bufferSize;
       
-      if (omitTF)
+      if (indexOmitsTF)
         fillDocs(bufferSize);
       else
         fillDocsAndFreqs(bufferSize);
@@ -400,7 +397,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     private int scanTo(int target) throws IOException {
       while (ord++ < limit) {
         int code = freqIn.readVInt();
-        if (omitTF) {
+        if (indexOmitsTF) {
           accum += code;
         } else {
           accum += code >>> 1;            // shift off low bit

@@ -334,7 +334,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       // deleted docs):
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = termsEnum.docs(liveDocs1, docs);
+        docs = _TestUtil.docs(random, termsEnum, null, docs, false);
         while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           fail("r1 is not empty but r2 is");
         }
@@ -354,9 +354,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
         break;
       }
 
-      termDocs1 = termsEnum.docs(liveDocs1, termDocs1);
+      termDocs1 = _TestUtil.docs(random, termsEnum, liveDocs1, termDocs1, false);
       if (termsEnum2.seekExact(term, false)) {
-        termDocs2 = termsEnum2.docs(liveDocs2, termDocs2);
+        termDocs2 = _TestUtil.docs(random, termsEnum2, liveDocs2, termDocs2, false);
       } else {
         termDocs2 = null;
       }
@@ -415,7 +415,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                   System.out.println("          pos=" + dpEnum.nextPosition());
                 }
               } else {
-                dEnum = termsEnum3.docs(null, dEnum);
+                dEnum = _TestUtil.docs(random, termsEnum3, null, dEnum, true);
                 assertNotNull(dEnum);
                 assertTrue(dEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
                 final int freq = dEnum.freq();
@@ -449,7 +449,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                   System.out.println("          pos=" + dpEnum.nextPosition());
                 }
               } else {
-                dEnum = termsEnum3.docs(null, dEnum);
+                dEnum = _TestUtil.docs(random, termsEnum3, null, dEnum, true);
                 assertNotNull(dEnum);
                 assertTrue(dEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
                 final int freq = dEnum.freq();
@@ -506,7 +506,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
         
         //System.out.println("TEST: term1=" + term1);
-        docs1 = termsEnum1.docs(liveDocs1, docs1);
+        docs1 = _TestUtil.docs(random, termsEnum1, liveDocs1, docs1, true);
         while (docs1.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int d = docs1.docID();
           int f = docs1.freq();
@@ -540,7 +540,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
         
         //System.out.println("TEST: term1=" + term1);
-        docs2 = termsEnum2.docs(liveDocs2, docs2);
+        docs2 = _TestUtil.docs(random, termsEnum2, liveDocs2, docs2, true);
         while (docs2.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int d = r2r1[docs2.docID()];
           int f = docs2.freq();
@@ -667,8 +667,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
           assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum1.nextDoc());
           assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum2.nextDoc());
         } else {
-          dEnum1 = termsEnum1.docs(null, dEnum1);
-          dEnum2 = termsEnum2.docs(null, dEnum2);
+          dEnum1 = _TestUtil.docs(random, termsEnum1, null, dEnum1, true);
+          dEnum2 = _TestUtil.docs(random, termsEnum2, null, dEnum2, true);
           assertNotNull(dEnum1);
           assertNotNull(dEnum2);
           int docID1 = dEnum1.nextDoc();
