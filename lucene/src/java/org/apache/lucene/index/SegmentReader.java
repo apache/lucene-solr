@@ -208,26 +208,16 @@ public class SegmentReader extends IndexReader implements Cloneable {
     ensureOpen();
     boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
-    boolean normsUpToDate = true;
-    
-    Set<Integer> fieldNormsChanged = new HashSet<Integer>();
-    for (FieldInfo fi : core.fieldInfos) {
-      int fieldNumber = fi.number;
-      if (!this.si.getNormFileName(fieldNumber).equals(si.getNormFileName(fieldNumber))) {
-        normsUpToDate = false;
-        fieldNormsChanged.add(fieldNumber);
-      }
-    }
 
     // if we're cloning we need to run through the reopenSegment logic
     // also if both old and new readers aren't readonly, we clone to avoid sharing modifications
-    if (normsUpToDate && deletionsUpToDate && !doClone && openReadOnly && readOnly) {
+    if (deletionsUpToDate && !doClone && openReadOnly && readOnly) {
       return null;
     }    
 
     // When cloning, the incoming SegmentInfos should not
     // have any changes in it:
-    assert !doClone || (normsUpToDate && deletionsUpToDate);
+    assert !doClone || (deletionsUpToDate);
 
     // clone reader
     SegmentReader clone = new SegmentReader();

@@ -48,13 +48,15 @@ public class Lucene40NormsReader extends NormsReader {
   // but we just don't do any seeks or reading yet.
   public Lucene40NormsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException {
     maxdoc = info.docCount;
+    String segmentName = info.name;
+    Map<Integer,Long> normGen = info.getNormGen();
     boolean success = false;
     try {
       long nextNormSeek = Lucene40NormsWriter.NORMS_HEADER.length; //skip header (header unused for now)
       for (FieldInfo fi : fields) {
         if (fi.isIndexed && !fi.omitNorms) {
-          String fileName = info.getNormFileName(fi.number);
-          Directory d = info.hasSeparateNorms(fi.number) ? separateNormsDir : dir;
+          String fileName = getNormFilename(segmentName, normGen, fi.number);
+          Directory d = hasSeparateNorms(normGen, fi.number) ? separateNormsDir : dir;
         
           // singleNormFile means multiple norms share this file
           boolean singleNormFile = IndexFileNames.matchesExtension(fileName, IndexFileNames.NORMS_EXTENSION);
@@ -125,6 +127,24 @@ public class Lucene40NormsReader extends NormsReader {
       norms = null;
       openFiles = null;
     }
+  }
+  
+  private static String getNormFilename(String segmentName, Map<Integer,Long> normGen, int number) {
+    if (hasSeparateNorms(normGen, number)) {
+      return IndexFileNames.fileNameFromGeneration(segmentName, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
+    } else {
+      // single file for all norms
+      return IndexFileNames.fileNameFromGeneration(segmentName, IndexFileNames.NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
+    }
+  }
+  
+  private static boolean hasSeparateNorms(Map<Integer,Long> normGen, int number) {
+    if (normGen == null) {
+      return false;
+    }
+
+    Long gen = normGen.get(number);
+    return gen != null && gen.longValue() != SegmentInfo.NO;
   }
   
   class Norm {

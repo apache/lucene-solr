@@ -48,7 +48,7 @@ public final class SegmentInfo implements Cloneable {
   // TODO: remove these from this class, for now this is the representation
   public static final int NO = -1;          // e.g. no norms; no deletes;
   public static final int YES = 1;          // e.g. have norms; have deletes;
-  static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
+  public static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
   public String name;				  // unique name in dir
   public int docCount;				  // number of docs in seg
@@ -339,18 +339,6 @@ public final class SegmentInfo implements Cloneable {
   /**
    * @deprecated separate norms are not supported in >= 4.0
    */
-  public boolean hasSeparateNorms(int fieldNumber) {
-    if (normGen == null) {
-      return false;
-    }
-
-    Long gen = normGen.get(fieldNumber);
-    return gen != null && gen.longValue() != NO;
-  }
-
-  /**
-   * @deprecated separate norms are not supported in >= 4.0
-   */
   boolean hasSeparateNorms() {
     if (normGen == null) {
       return false;
@@ -363,42 +351,6 @@ public final class SegmentInfo implements Cloneable {
     }
 
     return false;
-  }
-
-  void initNormGen() {
-    if (normGen == null) { // normGen is null if this segments file hasn't had any norms set against it yet
-      normGen = new HashMap<Integer, Long>();
-    }
-  }
-
-  /**
-   * Increment the generation count for the norms file for
-   * this field.
-   *
-   * @param fieldIndex field whose norm file will be rewritten
-   */
-  void advanceNormGen(int fieldIndex) {
-    Long gen = normGen.get(fieldIndex);
-    if (gen == null || gen.longValue() == NO) {
-      normGen.put(fieldIndex, new Long(YES));
-    } else {
-      normGen.put(fieldIndex, gen+1);
-    }
-    clearFilesCache();
-  }
-
-  /**
-   * Get the file name for the norms file for this field.
-   *
-   * @param number field index
-   */
-  public String getNormFileName(int number) {
-    if (hasSeparateNorms(number)) {
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
-    } else {
-      // single file for all norms
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);
-    }
   }
 
   /**
