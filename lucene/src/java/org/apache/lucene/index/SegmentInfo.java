@@ -337,9 +337,7 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /**
-   * Returns true if this field for this segment has saved a separate norms file (_<segment>_N.sX).
-   *
-   * @param fieldNumber the field index to check
+   * @deprecated separate norms are not supported in >= 4.0
    */
   public boolean hasSeparateNorms(int fieldNumber) {
     if (normGen == null) {
@@ -351,9 +349,9 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /**
-   * Returns true if any fields in this segment have separate norms.
+   * @deprecated separate norms are not supported in >= 4.0
    */
-  public boolean hasSeparateNorms() {
+  boolean hasSeparateNorms() {
     if (normGen == null) {
       return false;
     } else {
