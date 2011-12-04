@@ -183,6 +183,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @param bv BitVector to clone
    * @return New BitVector
    */
+  // nocommit: remove deletions from SR
   protected BitVector cloneDeletedDocs(BitVector bv) {
     ensureOpen();
     return (BitVector)bv.clone();
@@ -321,6 +322,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
+  // nocommit: remove deletions from SR
   private synchronized void commitChanges(Map<String,String> commitUserData) throws IOException {
     if (liveDocsDirty) {               // re-write deleted
       si.advanceDelGen();
@@ -399,8 +401,16 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return si.hasSeparateNorms();
   }
 
-  @Override
-  protected void doDelete(int docNum) {
+  // nocommit: remove deletions from SR
+  synchronized void deleteDocument(int docNum) throws IOException {
+    ensureOpen();
+    acquireWriteLock();
+    hasChanges = true;
+    doDelete(docNum);
+  }
+
+  // nocommit: remove deletions from SR
+  void doDelete(int docNum) {
     if (liveDocs == null) {
       liveDocs = new BitVector(maxDoc());
       liveDocs.setAll();
@@ -418,23 +428,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     liveDocsDirty = true;
     if (liveDocs.getAndClear(docNum)) {
       pendingDeleteCount++;
-    }
-  }
-
-  @Override
-  protected void doUndeleteAll() {
-    liveDocsDirty = false;
-    if (liveDocs != null) {
-      assert liveDocsRef != null;
-      liveDocsRef.decrementAndGet();
-      liveDocs = null;
-      liveDocsRef = null;
-      pendingDeleteCount = 0;
-      si.clearDelGen();
-      si.setDelCount(0);
-    } else {
-      assert liveDocsRef == null;
-      assert pendingDeleteCount == 0;
     }
   }
 

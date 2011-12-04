@@ -412,6 +412,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux.close();
   }
 
+  /* nocommit: reactivate these tests
   // case 4: tail segments, invariants hold, copy, invariants not hold
   public void testMergeAfterCopy() throws IOException {
     // main directory
@@ -496,6 +497,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux.close();
     aux2.close();
   }
+  */
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
       throws IOException {

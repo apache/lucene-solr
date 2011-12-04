@@ -52,9 +52,6 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  as documents are added to and deleted from an index.  Clients should thus not
  rely on a given document having the same number between sessions.
 
- <p> An IndexReader can be opened on a directory for which an IndexWriter is
- opened already, but it cannot be used to delete documents from the index then.
-
  <p>
  <b>NOTE</b>: for backwards API compatibility, several methods are not listed 
  as abstract, but have no useful implementations in this base class and 
@@ -1075,98 +1072,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     return null;
   }
-
-
-  /** Deletes the document numbered <code>docNum</code>.  Once a document is
-   * deleted it will not appear in TermDocs or TermPositions enumerations.
-   * Attempts to read its field with the {@link #document}
-   * method will result in an error.  The presence of this document may still be
-   * reflected in the {@link #docFreq} statistic, though
-   * this will be corrected eventually as the index is further modified.
-   *
-   * @throws StaleReaderException if the index has changed
-   * since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if there is a low-level IO error
-   */
-  public synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    acquireWriteLock();
-    hasChanges = true;
-    doDelete(docNum);
-  }
-
-
-  /** Implements deletion of the document numbered <code>docNum</code>.
-   * Applications should call {@link #deleteDocument(int)} or {@link #deleteDocuments(Term)}.
-   */
-  protected abstract void doDelete(int docNum) throws CorruptIndexException, IOException;
-
-
-  /** Deletes all documents that have a given <code>term</code> indexed.
-   * This is useful if one uses a document field to hold a unique ID string for
-   * the document.  Then to delete such a document, one merely constructs a
-   * term with the appropriate field and the unique ID string as its text and
-   * passes it to this method.
-   * See {@link #deleteDocument(int)} for information about when this deletion will 
-   * become effective.
-   *
-   * @return the number of documents deleted
-   * @throws StaleReaderException if the index has changed
-   *  since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if there is a low-level IO error
-   */
-  public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    DocsEnum docs = MultiFields.getTermDocsEnum(this,
-                                                MultiFields.getLiveDocs(this),
-                                                term.field(),
-                                                term.bytes());
-    if (docs == null) return 0;
-    int n = 0;
-    int doc;
-    while ((doc = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
-      deleteDocument(doc);
-      n++;
-    }
-    return n;
-  }
-
-  /** Undeletes all documents currently marked as deleted in
-   * this index.
-   *
-   * <p>NOTE: this method can only recover documents marked
-   * for deletion but not yet removed from the index; when
-   * and how Lucene removes deleted documents is an
-   * implementation detail, subject to change from release
-   * to release.  However, you can use {@link
-   * #numDeletedDocs} on the current IndexReader instance to
-   * see how many documents will be un-deleted.
-   *
-   * @throws StaleReaderException if the index has changed
-   *  since this reader was opened
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    acquireWriteLock();
-    hasChanges = true;
-    doUndeleteAll();
-  }
-
-  /** Implements actual undeleteAll() in subclass. */
-  protected abstract void doUndeleteAll() throws CorruptIndexException, IOException;
 
   /** Does nothing by default. Subclasses that require a write lock for
    *  index modifications must implement this method. */

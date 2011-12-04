@@ -1138,16 +1138,6 @@ public class MemoryIndex {
     }
   
     @Override
-    protected void doDelete(int docNum) {
-      throw new UnsupportedOperationException();
-    }
-  
-    @Override
-    protected void doUndeleteAll() {
-      throw new UnsupportedOperationException();
-    }
-  
-    @Override
     protected void doCommit(Map<String,String> commitUserData) {
       if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
     }

@@ -116,6 +116,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer.close();
   }
   
+  /* nocommit: Fix tests to use an id and delete by term
   // LUCENE-325: test forceMergeDeletes, when 2 singular merges
   // are required
   public void testForceMergeDeletes() throws IOException {
@@ -125,8 +126,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
                                                   IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document document = new Document();
-
-    document = new Document();
 
     FieldType customType = new FieldType();
     customType.setStored(true);
@@ -270,6 +269,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     ir.close();
     dir.close();
   }
+  */
   
   // Just intercepts all merges & verifies that we are never
   // merging a segment with >= 20 (maxMergeDocs) docs

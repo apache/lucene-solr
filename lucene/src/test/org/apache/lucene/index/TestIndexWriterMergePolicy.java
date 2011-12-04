@@ -192,9 +192,14 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, false);
-    reader.deleteDocuments(new Term("content", "aaa"));
-    reader.close();
+    // delete some docs without merging
+    writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+    );
+    writer.deleteDocuments(new Term("content", "aaa"));
+    writer.close();
 
     ldmp = new LogDocMergePolicy();
     ldmp.setMergeFactor(5);

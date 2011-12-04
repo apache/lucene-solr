@@ -535,23 +535,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return hasDeletions;
   }
 
-  @Override
-  protected void doDelete(int n) throws CorruptIndexException, IOException {
-    numDocs = -1;                             // invalidate cache
-    int i = readerIndex(n);                   // find segment num
-    subReaders[i].deleteDocument(n - starts[i]);      // dispatch to segment reader
-    hasDeletions = true;
-  }
-
-  @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].undeleteAll();
-
-    hasDeletions = false;
-    numDocs = -1;                                 // invalidate cache
-  }
-
   private int readerIndex(int n) {    // find reader for doc n:
     return readerIndex(n, this.starts, this.subReaders.length);
   }

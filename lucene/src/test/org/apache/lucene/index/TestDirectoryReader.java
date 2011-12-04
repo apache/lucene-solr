@@ -74,12 +74,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     return reader;
   }
 
-  public void test() throws Exception {
-    doTestDocument();
-    doTestUndeleteAll();
-  }    
-
-  public void doTestDocument() throws IOException {
+  public void testDocument() throws IOException {
     sis.read(dir);
     IndexReader reader = openReader();
     assertTrue(reader != null);
@@ -92,43 +87,6 @@ public class TestDirectoryReader extends LuceneTestCase {
     Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
     TestSegmentReader.checkNorms(reader);
-    reader.close();
-  }
-
-  public void doTestUndeleteAll() throws IOException {
-    sis.read(dir);
-    IndexReader reader = openReader();
-    assertTrue(reader != null);
-    assertEquals( 2, reader.numDocs() );
-    reader.deleteDocument(0);
-    assertEquals( 1, reader.numDocs() );
-    reader.undeleteAll();
-    assertEquals( 2, reader.numDocs() );
-
-    // Ensure undeleteAll survives commit/close/reopen:
-    reader.commit();
-    reader.close();
-
-    if (reader instanceof MultiReader)
-      // MultiReader does not "own" the directory so it does
-      // not write the changes to sis on commit:
-      sis.commit(dir, sis.codecFormat());
-
-    sis.read(dir);
-    reader = openReader();
-    assertEquals( 2, reader.numDocs() );
-
-    reader.deleteDocument(0);
-    assertEquals( 1, reader.numDocs() );
-    reader.commit();
-    reader.close();
-    if (reader instanceof MultiReader)
-      // MultiReader does not "own" the directory so it does
-      // not write the changes to sis on commit:
-      sis.commit(dir, sis.codecFormat());
-    sis.read(dir);
-    reader = openReader();
-    assertEquals( 1, reader.numDocs() );
     reader.close();
   }
         

@@ -459,13 +459,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       addNoProxDoc(writer);
       writer.close();
 
-      // Delete one doc so we get a .del file:
-      IndexReader reader = IndexReader.open(dir, false);
+      writer = new IndexWriter(dir,
+        conf.setMergePolicy(doCFS ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES)
+      );
       Term searchTerm = new Term("id", "7");
-      int delCount = reader.deleteDocuments(searchTerm);
-      assertEquals("didn't delete the right number of documents", 1, delCount);
-
-      reader.close();
+      writer.deleteDocuments(searchTerm);
+      writer.close();
     }
     
     dir.close();
@@ -501,12 +500,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.close();
 
       // Delete one doc so we get a .del file:
-      IndexReader reader = IndexReader.open(dir, false);
+      writer = new IndexWriter(
+          dir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+            .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+      );
       Term searchTerm = new Term("id", "7");
-      int delCount = reader.deleteDocuments(searchTerm);
-      assertEquals("didn't delete the right number of documents", 1, delCount);
-
-      reader.close();
+      writer.deleteDocuments(searchTerm);
+      writer.close();
 
       // Now verify file names:
       String[] expected = new String[] {"_0.cfs", "_0.cfe",

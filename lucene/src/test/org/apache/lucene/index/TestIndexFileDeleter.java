@@ -68,11 +68,14 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     writer.close();
 
     // Delete one doc so we get a .del file:
-    IndexReader reader = IndexReader.open(dir, false);
+    writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+    );
     Term searchTerm = new Term("id", "7");
-    int delCount = reader.deleteDocuments(searchTerm);
-    assertEquals("didn't delete the right number of documents", 1, delCount);
-    reader.close();
+    writer.deleteDocuments(searchTerm);
+    writer.close();
 
     // Now, artificially create an extra .del file & extra
     // .s0 file:

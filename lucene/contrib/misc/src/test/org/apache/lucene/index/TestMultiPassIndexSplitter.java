@@ -41,10 +41,10 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
       doc.add(newField("f", i + " " + i, TextField.TYPE_STORED));
       w.addDocument(doc);
     }
+    w.commit();
+    w.deleteDocuments(new Term("id", "" + (NUM_DOCS-1)));
     w.close();
-    input = IndexReader.open(dir, false);
-    // delete the last doc
-    input.deleteDocument(input.maxDoc() - 1);
+    input = IndexReader.open(dir);
   }
   
   @Override
@@ -66,7 +66,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     };
     splitter.split(TEST_VERSION_CURRENT, input, dirs, false);
     IndexReader ir;
-    ir = IndexReader.open(dirs[0], true);
+    ir = IndexReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
     Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
@@ -74,7 +74,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("1")));
     assertNotSame("1", te.term().utf8ToString());
     ir.close();
-    ir = IndexReader.open(dirs[1], true);
+    ir = IndexReader.open(dirs[1]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals("1", doc.get("id"));
@@ -83,7 +83,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
 
     assertNotSame("0", te.term().utf8ToString());
     ir.close();
-    ir = IndexReader.open(dirs[2], true);
+    ir = IndexReader.open(dirs[2]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals("2", doc.get("id"));
@@ -111,19 +111,19 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     };
     splitter.split(TEST_VERSION_CURRENT, input, dirs, true);
     IndexReader ir;
-    ir = IndexReader.open(dirs[0], true);
+    ir = IndexReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     int start = ir.numDocs();
     ir.close();
-    ir = IndexReader.open(dirs[1], true);
+    ir = IndexReader.open(dirs[1]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals(start + "", doc.get("id"));
     start += ir.numDocs();
     ir.close();
-    ir = IndexReader.open(dirs[2], true);
+    ir = IndexReader.open(dirs[2]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals(start + "", doc.get("id"));

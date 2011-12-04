@@ -41,8 +41,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   
  /**
   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-  * Directory locking for delete, undeleteAll operations is
-  * left to the subreaders. </p>
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
   */
@@ -52,8 +50,6 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   /**
    * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-   * Directory locking for delete, undeleteAll operations is
-   * left to the subreaders. </p>
    * @param closeSubReaders indicates whether the subreaders should be closed
    * when this MultiReader is closed
    * @param subReaders set of (sub)readers
@@ -241,23 +237,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   public boolean hasDeletions() {
     ensureOpen();
     return hasDeletions;
-  }
-
-  @Override
-  protected void doDelete(int n) throws CorruptIndexException, IOException {
-    numDocs = -1;                             // invalidate cache
-    int i = readerIndex(n);                   // find segment num
-    subReaders[i].deleteDocument(n - starts[i]);      // dispatch to segment reader
-    hasDeletions = true;
-  }
-
-  @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].undeleteAll();
-
-    hasDeletions = false;
-    numDocs = -1;                                 // invalidate cache
   }
 
   private int readerIndex(int n) {    // find reader for doc n:

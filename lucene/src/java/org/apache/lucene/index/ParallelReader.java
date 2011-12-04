@@ -332,24 +332,6 @@ public class ParallelReader extends IndexReader {
     return hasDeletions;
   }
 
-  // delete in all readers
-  @Override
-  protected void doDelete(int n) throws CorruptIndexException, IOException {
-    for (final IndexReader reader : readers) {
-      reader.deleteDocument(n);
-    }
-    hasDeletions = true;
-  }
-
-  // undeleteAll in all readers
-  @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (final IndexReader reader : readers) {
-      reader.undeleteAll();
-    }
-    hasDeletions = false;
-  }
-
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();

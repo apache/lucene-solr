@@ -90,19 +90,19 @@ public class TestIndexWriter extends LuceneTestCase {
 
         // add 100 documents
         for (i = 0; i < 100; i++) {
-            addDoc(writer);
+            addDocWithIndex(writer,i);
         }
         assertEquals(100, writer.maxDoc());
         writer.close();
 
         // delete 40 documents
-        reader = IndexReader.open(dir, false);
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES));
         for (i = 0; i < 40; i++) {
-            reader.deleteDocument(i);
+            writer.deleteDocuments(new Term("id", ""+i));
         }
-        reader.close();
+        writer.close();
 
-        reader = IndexReader.open(dir, true);
+        reader = IndexReader.open(dir);
         assertEquals(60, reader.numDocs());
         reader.close();
 
@@ -115,7 +115,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         // check that the index reader gives the same numbers.
-        reader = IndexReader.open(dir, true);
+        reader = IndexReader.open(dir);
         assertEquals(60, reader.maxDoc());
         assertEquals(60, reader.numDocs());
         reader.close();
@@ -696,7 +696,6 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testVariableSchema() throws Exception {
     Directory dir = newDirectory();
-    int delID = 0;
     for(int i=0;i<20;i++) {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + i);
@@ -728,9 +727,6 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.addDocument(doc);
 
       writer.close();
-      IndexReader reader = IndexReader.open(dir, false);
-      reader.deleteDocument(delID++);
-      reader.close();
 
       if (0 == i % 4) {
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));

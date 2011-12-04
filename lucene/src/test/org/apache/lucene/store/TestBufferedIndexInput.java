@@ -240,6 +240,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
     }
 
+    /* nocommit: fix deletions to use IW
     public void testSetBufferSize() throws IOException {
       File indexDir = _TestUtil.getTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random);
@@ -289,6 +290,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         _TestUtil.rmDir(indexDir);
       }
     }
+    */
 
     private static class MockFSDirectory extends Directory {
 

@@ -473,29 +473,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     assertNotNull(commit);
 
-    IndexReader r = IndexReader.open(commit, true);
-    assertEquals(2, r.numDocs());
-    r.close();
-
-    // open "second", w/ writeable IndexReader & commit
-    r = IndexReader.open(commit, NoDeletionPolicy.INSTANCE, false);
-    assertEquals(2, r.numDocs());
-    r.deleteDocument(0);
-    r.deleteDocument(1);
-    commitData.put("tag", "fourth");
-    r.commit(commitData);
-    r.close();
-
-    // make sure "third" commit is still there
-    commit = null;
-    for(IndexCommit c : IndexReader.listCommits(dir)) {
-      if (c.getUserData().get("tag").equals("third")) {
-        commit = c;
-        break;
-      }
-    }
-    assertNotNull(commit);
-
     dir.close();
   }
   

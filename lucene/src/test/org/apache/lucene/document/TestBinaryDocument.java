@@ -71,13 +71,6 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     writer.close();    
     reader.close();
-    
-    reader = IndexReader.open(dir, false);
-    /** delete the document from index */
-    reader.deleteDocument(0);
-    assertEquals(0, reader.numDocs());
-    
-    reader.close();
     dir.close();
   }
   

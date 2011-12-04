@@ -852,14 +852,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       assertNotNull(r2);
       assertTrue(r2 != r);
 
-      // Reader should be readOnly
-      try {
-        r2.deleteDocument(0);
-        fail("no exception hit");
-      } catch (UnsupportedOperationException uoe) {
-        // expected
-      }
-
       final Map<String,String> s = commit.getUserData();
       final int v;
       if (s.size() == 0) {
