@@ -352,11 +352,6 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.docFreq(field, t);
   }
-
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    in.commit(commitUserData);
-  }
   
   @Override
   protected void doClose() throws IOException {

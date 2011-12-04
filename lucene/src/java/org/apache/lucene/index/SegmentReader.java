@@ -53,6 +53,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   volatile BitVector liveDocs;
   AtomicInteger liveDocsRef = null;
+  boolean hasChanges = false;
   private boolean liveDocsDirty = false;
 
   // TODO: we should move this tracking into SegmentInfo;
@@ -307,24 +308,39 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return clone;
   }
 
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    if (hasChanges) {
-      startCommit();
-      boolean success = false;
-      try {
-        commitChanges(commitUserData);
-        success = true;
-      } finally {
-        if (!success) {
-          rollbackCommit();
-        }
+  // nocommit: remove deletions from SR
+  void doCommit() throws IOException {
+    assert hasChanges;
+    startCommit();
+    boolean success = false;
+    try {
+      commitChanges();
+      success = true;
+    } finally {
+      if (!success) {
+        rollbackCommit();
       }
     }
   }
 
   // nocommit: remove deletions from SR
-  private synchronized void commitChanges(Map<String,String> commitUserData) throws IOException {
+  private void startCommit() {
+    rollbackSegmentInfo = (SegmentInfo) si.clone();
+    rollbackHasChanges = hasChanges;
+    rollbackDeletedDocsDirty = liveDocsDirty;
+    rollbackPendingDeleteCount = pendingDeleteCount;
+  }
+
+  // nocommit: remove deletions from SR
+  private void rollbackCommit() {
+    si.reset(rollbackSegmentInfo);
+    hasChanges = rollbackHasChanges;
+    liveDocsDirty = rollbackDeletedDocsDirty;
+    pendingDeleteCount = rollbackPendingDeleteCount;
+  }
+
+  // nocommit: remove deletions from SR
+  private synchronized void commitChanges() throws IOException {
     if (liveDocsDirty) {               // re-write deleted
       si.advanceDelGen();
 
@@ -366,6 +382,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   @Override
   protected void doClose() throws IOException {
+    if (hasChanges) {
+      doCommit();
+    }
+    
     termVectorsLocal.close();
     fieldsReaderLocal.close();
     
@@ -405,7 +425,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   // nocommit: remove deletions from SR
   synchronized void deleteDocument(int docNum) throws IOException {
     ensureOpen();
-    acquireWriteLock();
     hasChanges = true;
     doDelete(docNum);
   }
@@ -689,20 +708,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   void setSegmentInfo(SegmentInfo info) {
     si = info;
-  }
-
-  void startCommit() {
-    rollbackSegmentInfo = (SegmentInfo) si.clone();
-    rollbackHasChanges = hasChanges;
-    rollbackDeletedDocsDirty = liveDocsDirty;
-    rollbackPendingDeleteCount = pendingDeleteCount;
-  }
-
-  void rollbackCommit() {
-    si.reset(rollbackSegmentInfo);
-    hasChanges = rollbackHasChanges;
-    liveDocsDirty = rollbackDeletedDocsDirty;
-    pendingDeleteCount = rollbackPendingDeleteCount;
   }
 
   /** Returns the directory this index resides in. */

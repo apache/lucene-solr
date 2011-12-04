@@ -1138,11 +1138,6 @@ public class MemoryIndex {
     }
   
     @Override
-    protected void doCommit(Map<String,String> commitUserData) {
-      if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
-    }
-  
-    @Override
     protected void doClose() {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
     }

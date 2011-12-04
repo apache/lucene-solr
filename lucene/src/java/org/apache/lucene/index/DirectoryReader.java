@@ -44,17 +44,12 @@ import org.apache.lucene.util.MapBackedSet;
  */
 class DirectoryReader extends IndexReader implements Cloneable {
   protected Directory directory;
-  protected boolean readOnly;
+  protected boolean readOnly = true; // nocommit: remove this
 
   IndexWriter writer;
 
-  private IndexDeletionPolicy deletionPolicy;
-  private Lock writeLock;
   private final SegmentInfos segmentInfos;
-  private boolean stale;
   private final int termInfosIndexDivisor;
-
-  private boolean rollbackHasChanges;
 
   private SegmentReader[] subReaders;
   private ReaderContext topLevelReaderContext;
@@ -70,34 +65,22 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private final boolean applyAllDeletes;
 
-//  static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
-//      final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-//    return open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor, null);
-//  }
-  
-  static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
+  static IndexReader open(final Directory directory, final IndexCommit commit, final boolean readOnly,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-        return new DirectoryReader(directory, infos, deletionPolicy, readOnly, termInfosIndexDivisor);
+        return new DirectoryReader(directory, infos, readOnly, termInfosIndexDivisor);
       }
     }.run(commit);
   }
-
   /** Construct reading the named set of readers. */
-//  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws IOException {
-//    this(directory, sis, deletionPolicy, readOnly, termInfosIndexDivisor, null);
-//  }
-  
-  /** Construct reading the named set of readers. */
-  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws IOException {
+  DirectoryReader(Directory directory, SegmentInfos sis, boolean readOnly, int termInfosIndexDivisor) throws IOException {
     this.directory = directory;
-    this.readOnly = readOnly;
+    this.readOnly = true; // nocommit: remove readOnly at all
     this.segmentInfos = sis;
-    this.deletionPolicy = deletionPolicy;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     applyAllDeletes = false;
@@ -281,9 +264,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder();
-    if (hasChanges) {
-      buffer.append("*");
-    }
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
     final String segmentsFile = segmentInfos.getCurrentSegmentFileName();
@@ -348,21 +328,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // doOpenIfChanged calls ensureOpen
     DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
 
-    if (this != newReader) {
-      newReader.deletionPolicy = deletionPolicy;
-    }
     newReader.writer = writer;
-    // If we're cloning a non-readOnly reader, move the
-    // writeLock (if there is one) to the new reader:
-    if (!openReadOnly && writeLock != null) {
-      // In near real-time search, reader is always readonly
-      assert writer == null;
-      newReader.writeLock = writeLock;
-      newReader.hasChanges = hasChanges;
-      newReader.hasDeletions = hasDeletions;
-      writeLock = null;
-      hasChanges = false;
-    }
+    newReader.hasDeletions = hasDeletions;
     assert newReader.readerFinishedListeners != null;
 
     return newReader;
@@ -437,39 +404,15 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private synchronized IndexReader doOpenNoWriter(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
 
     if (commit == null) {
-      if (hasChanges) {
-        // We have changes, which means we are not readOnly:
-        assert readOnly == false;
-        // and we hold the write lock:
-        assert writeLock != null;
-        // so no other writer holds the write lock, which
-        // means no changes could have been done to the index:
-        assert isCurrent();
-
-        if (openReadOnly) {
-          return clone(openReadOnly);
-        } else {
-          return null;
-        }
-      } else if (isCurrent()) {
-        if (openReadOnly != readOnly) {
-          // Just fallback to clone
-          return clone(openReadOnly);
-        } else {
-          return null;
-        }
+      if (isCurrent()) {
+        return null;
       }
     } else {
       if (directory != commit.getDirectory()) {
         throw new IOException("the specified commit does not match the specified Directory");
       }
       if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getCurrentSegmentFileName())) {
-        if (readOnly != openReadOnly) {
-          // Just fallback to clone
-          return clone(openReadOnly);
-        } else {
-          return null;
-        }
+        return null;
       }
     }
 
@@ -597,145 +540,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public Fields fields() throws IOException {
     throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
-  }
-
-  /**
-   * Tries to acquire the WriteLock on this directory. this method is only valid if this IndexReader is directory
-   * owner.
-   *
-   * @throws StaleReaderException  if the index has changed since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws org.apache.lucene.store.LockObtainFailedException
-   *                               if another writer has this index open (<code>write.lock</code> could not be
-   *                               obtained)
-   * @throws IOException           if there is a low-level IO error
-   */
-  @Override
-  protected void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-
-    if (readOnly) {
-      // NOTE: we should not reach this code w/ the core
-      // IndexReader classes; however, an external subclass
-      // of IndexReader could reach this.
-      throw new UnsupportedOperationException("This IndexReader cannot make any changes to the index (it was opened with readOnly = true)");
-    }
-
-    if (segmentInfos != null) {
-      ensureOpen();
-      if (stale)
-        throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete operations");
-
-      if (writeLock == null) {
-        Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-        if (!writeLock.obtain(IndexWriterConfig.WRITE_LOCK_TIMEOUT)) // obtain write lock
-          throw new LockObtainFailedException("Index locked for write: " + writeLock);
-        this.writeLock = writeLock;
-
-        // we have to check whether index has changed since this reader was opened.
-        // if so, this reader is no longer valid for deletion
-        if (SegmentInfos.readCurrentVersion(directory) > maxIndexVersion) {
-          stale = true;
-          this.writeLock.release();
-          this.writeLock = null;
-          throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete operations");
-        }
-      }
-    }
-  }
-
-  /**
-   * Commit changes resulting from delete, undeleteAll operations
-   * <p/>
-   * If an exception is hit, then either no changes or all changes will have been committed to the index (transactional
-   * semantics).
-   *
-   * @throws IOException if there is a low-level IO error
-   */
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    // poll subreaders for changes
-    for (int i = 0; !hasChanges && i < subReaders.length; i++) {
-      hasChanges |= subReaders[i].hasChanges;
-    }
-    
-    if (hasChanges) {
-      segmentInfos.setUserData(commitUserData);
-      // Default deleter (for backwards compatibility) is
-      // KeepOnlyLastCommitDeleter:
-      // TODO: Decide what to do with InfoStream here? Use default or keep NO_OUTPUT?
-      IndexFileDeleter deleter = new IndexFileDeleter(directory,
-                                                      deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
-                                                      segmentInfos, InfoStream.NO_OUTPUT, null);
-      segmentInfos.updateGeneration(deleter.getLastSegmentInfos());
-      segmentInfos.changed();
-
-      // Checkpoint the state we are about to change, in
-      // case we have to roll back:
-      startCommit();
-
-      final List<SegmentInfo> rollbackSegments = segmentInfos.createBackupSegmentInfos(false);
-
-      boolean success = false;
-      try {
-        for (int i = 0; i < subReaders.length; i++)
-          subReaders[i].commit();
-
-        // Remove segments that contain only 100% deleted
-        // docs:
-        segmentInfos.pruneDeletedSegments();
-
-        // Sync all files we just wrote
-        directory.sync(segmentInfos.files(directory, false));
-        segmentInfos.commit(directory, segmentInfos.codecFormat());
-        success = true;
-      } finally {
-
-        if (!success) {
-
-          // Rollback changes that were made to
-          // SegmentInfos but failed to get [fully]
-          // committed.  This way this reader instance
-          // remains consistent (matched to what's
-          // actually in the index):
-          rollbackCommit();
-
-          // Recompute deletable files & remove them (so
-          // partially written .del files, etc, are
-          // removed):
-          deleter.refresh();
-
-          // Restore all SegmentInfos (in case we pruned some)
-          segmentInfos.rollbackSegmentInfos(rollbackSegments);
-        }
-      }
-
-      // Have the deleter remove any now unreferenced
-      // files due to this commit:
-      deleter.checkpoint(segmentInfos, true);
-      deleter.close();
-
-      maxIndexVersion = segmentInfos.getVersion();
-
-      if (writeLock != null) {
-        writeLock.release();  // release write lock
-        writeLock = null;
-      }
-    }
-    hasChanges = false;
-  }
-
-  void startCommit() {
-    rollbackHasChanges = hasChanges;
-    for (int i = 0; i < subReaders.length; i++) {
-      subReaders[i].startCommit();
-    }
-  }
-
-  void rollbackCommit() {
-    hasChanges = rollbackHasChanges;
-    for (int i = 0; i < subReaders.length; i++) {
-      subReaders[i].rollbackCommit();
-    }
   }
 
   @Override

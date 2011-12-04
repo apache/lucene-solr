@@ -275,12 +275,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
     return total;
   }
-  
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].commit(commitUserData);
-  }
 
   @Override
   protected synchronized void doClose() throws IOException {

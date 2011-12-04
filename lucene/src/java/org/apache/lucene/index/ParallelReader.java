@@ -428,12 +428,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    for (final IndexReader reader : readers)
-      reader.commit(commitUserData);
-  }
-
-  @Override
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < readers.size(); i++) {
       if (decrefOnClose.get(i).booleanValue()) {

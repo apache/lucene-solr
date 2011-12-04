@@ -618,7 +618,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo(), "key=" + ent.getKey());
-          sr.doCommit(null);
+          sr.doCommit();
 
           // Must checkpoint w/ deleter, because this
           // segment reader will have created new _X_N.del
@@ -650,7 +650,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final SegmentReader sr = readerMap.get(new SegmentCacheKey(info, IOContext.Context.READ));
         if (sr != null && sr.hasChanges) {
           assert infoIsLive(info);
-          sr.doCommit(null);
+          sr.doCommit();
           // Must checkpoint w/ deleter, because this
           // segment reader will have created new _X_N.del
           // file.

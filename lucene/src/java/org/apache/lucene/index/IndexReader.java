@@ -171,7 +171,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   private volatile boolean closed;
-  protected boolean hasChanges;
   
   private final AtomicInteger refCount = new AtomicInteger();
 
@@ -239,9 +238,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder();
-    if (hasChanges) {
-      buffer.append('*');
-    }
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
     final IndexReader[] subReaders = getSequentialSubReaders();
@@ -272,7 +268,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     if (rc == 1) {
       boolean success = false;
       try {
-        commit();
         doClose();
         success = true;
       } finally {
@@ -461,7 +456,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor);
+    // nocommit: deletionPolicy is ignored -> remove it
+    return DirectoryReader.open(directory, commit, readOnly, termInfosIndexDivisor);
   }
 
   /**
@@ -1072,62 +1068,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     return null;
   }
-
-  /** Does nothing by default. Subclasses that require a write lock for
-   *  index modifications must implement this method. */
-  protected synchronized void acquireWriteLock() throws IOException {
-    /* NOOP */
-  }
-  
-  /**
-   * 
-   * @throws IOException
-   */
-  public final synchronized void flush() throws IOException {
-    ensureOpen();
-    commit();
-  }
-
-  /**
-   * @param commitUserData Opaque Map (String -> String)
-   *  that's recorded into the segments file in the index,
-   *  and retrievable by {@link
-   *  IndexReader#getCommitUserData}.
-   * @throws IOException
-   */
-  public final synchronized void flush(Map<String, String> commitUserData) throws IOException {
-    ensureOpen();
-    commit(commitUserData);
-  }
-  
-  /**
-   * Commit changes resulting from delete, undeleteAll operations
-   *
-   * If an exception is hit, then either no changes or all
-   * changes will have been committed to the index
-   * (transactional semantics).
-   * @throws IOException if there is a low-level IO error
-   */
-  protected final synchronized void commit() throws IOException {
-    commit(null);
-  }
-  
-  /**
-   * Commit changes resulting from delete, undeleteAll operations
-   *
-   * If an exception is hit, then either no changes or all
-   * changes will have been committed to the index
-   * (transactional semantics).
-   * @throws IOException if there is a low-level IO error
-   */
-  public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
-    // Don't call ensureOpen since we commit() on close
-    doCommit(commitUserData);
-    hasChanges = false;
-  }
-
-  /** Implements commit.  */
-  protected abstract void doCommit(Map<String, String> commitUserData) throws IOException;
 
   /**
    * Closes files associated with this index.
