@@ -653,16 +653,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public synchronized Object clone() {
     throw new UnsupportedOperationException("This reader does not implement clone()");
   }
-  
-  /**
-   * Clones the IndexReader and optionally changes readOnly.  A readOnly 
-   * reader cannot open a writeable reader.  
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not implement clone()");
-  }
 
   /** 
    * Returns the directory associated with this index.  The Default 

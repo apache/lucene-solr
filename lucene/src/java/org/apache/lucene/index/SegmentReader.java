@@ -187,8 +187,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
-  public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+  // nocommit: is this needed anymore by IndexWriter?
+  final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
     return reopenSegment(si, true, openReadOnly);
   }
 

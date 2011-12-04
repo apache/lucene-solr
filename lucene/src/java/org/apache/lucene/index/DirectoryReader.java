@@ -305,23 +305,14 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public final synchronized Object clone() {
     try {
-      return clone(true);
+      DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, true);
+      newReader.writer = writer;
+      newReader.hasDeletions = hasDeletions;
+      assert newReader.readerFinishedListeners != null;
+      return newReader;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
-  }
-
-  @Override
-  public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
-    assert openReadOnly;
-    // doOpenIfChanged calls ensureOpen
-    DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
-
-    newReader.writer = writer;
-    newReader.hasDeletions = hasDeletions;
-    assert newReader.readerFinishedListeners != null;
-
-    return newReader;
   }
 
   @Override
