@@ -51,14 +51,13 @@ public class SegmentReader extends IndexReader implements Cloneable {
   boolean hasChanges = false;
   private boolean liveDocsDirty = false;
 
-  // TODO: we should move this tracking into SegmentInfo;
-  // this way SegmentInfo.toString shows pending deletes
+  // nocommit: move the whole modification stuff to IW
   private int pendingDeleteCount;
-
   private boolean rollbackHasChanges = false;
   private boolean rollbackDeletedDocsDirty = false;
   private SegmentInfo rollbackSegmentInfo;
   private int rollbackPendingDeleteCount;
+  // end nocommit
 
   SegmentCoreReaders core;
 

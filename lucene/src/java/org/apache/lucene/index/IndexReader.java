@@ -456,8 +456,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    // nocommit: deletionPolicy is ignored -> remove it
-    return DirectoryReader.open(directory, commit, readOnly, termInfosIndexDivisor);
+    // nocommit: deletionPolicy is ignored -> remove it, same for readonly
+    return DirectoryReader.open(directory, commit, termInfosIndexDivisor);
   }
 
   /**
