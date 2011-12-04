@@ -25,6 +25,9 @@
   
   <property name="Name" value="Solr" />
   <property name="version" value="4.0-SNAPSHOT"/>
+  <condition property="version.contains.SNAPSHOT">
+    <contains casesensitive="true" string="${version}" substring="-SNAPSHOT"/>
+  </condition>
   <property name="fullname" value="apache-${ant.project.name}"/>
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>
@@ -212,13 +215,19 @@
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
   </target>
 
-  <target name="javadocs" depends="compile-core">
+  <target name="lucene-javadocs-all">
+    <ant dir="${common.dir}" target="javadocs-all" inheritall="false"/>
+  </target>
+
+  <target name="javadocs" depends="compile-core,lucene-javadocs-all,define-lucene-javadoc-url">
    	<sequential>
       <mkdir dir="${javadoc.dir}"/>
       <mkdir dir="${dest}/META-INF/"/>
       <invoke-javadoc destdir="${javadoc.dir}"
                       title="${Name} ${version} ${name} API">
         <sources>
+          <link offline="true" href="${lucene.javadoc.url}"
+                packagelistloc="${common.dir}/build/docs/api/all/"/>
           <link href=""/>
           <packageset dir="${src.dir}"/>
         </sources>
@@ -230,6 +239,26 @@
               implementation.title="org.apache.solr"
               spec.version="${solr.spec.version}"/>
      </sequential>
+  </target>
+
+  <target name="define-lucene-javadoc-url"
+          depends="define-lucene-javadoc-url-SNAPSHOT,define-lucene-javadoc-url-release"/>
+
+  <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
+    <property name="lucene.javadoc.url"
+              value="https://builds.apache.org/job/Lucene-3.x/javadoc/all/"/>
+  </target>
+
+  <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">
+    <loadproperties>
+      <propertyresource name="version"/>
+      <filterchain>
+        <replaceregex pattern="[.]" replace="_" flags="g"/>
+        <prefixlines prefix="underscore.version="/>
+      </filterchain>
+    </loadproperties>
+    <property name="lucene.javadoc.url"
+              value="http://lucene.apache.org/java/${underscore.version}/api/all/"/>
   </target>
 
   <target name="jar-src" depends="init">

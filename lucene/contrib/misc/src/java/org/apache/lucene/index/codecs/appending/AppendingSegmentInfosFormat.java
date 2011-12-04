@@ -17,10 +17,10 @@ package org.apache.lucene.index.codecs.appending;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.DefaultSegmentInfosFormat;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40SegmentInfosFormat;
 
-public class AppendingSegmentInfosFormat extends DefaultSegmentInfosFormat {
+public class AppendingSegmentInfosFormat extends Lucene40SegmentInfosFormat {
   private final SegmentInfosWriter writer = new AppendingSegmentInfosWriter();
 
   @Override

@@ -35,6 +35,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
@@ -428,7 +429,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
      */
     @Override
     protected final AcceptStatus accept(BytesRef term) {
-      if (term.startsWith(prefixBytesRef)) {
+      if (StringHelper.startsWith(term, prefixBytesRef)) {
         UnicodeUtil.UTF8toUTF32(term, utf32);
         final float similarity = similarity(utf32.ints, realPrefixLength, utf32.length - realPrefixLength);
         if (similarity > minSimilarity) {

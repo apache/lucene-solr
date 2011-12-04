@@ -175,7 +175,7 @@ final class SegmentMerger {
       }
     }
 
-    if (mergeState.infoStream != null) {
+    if (mergeState.infoStream.isEnabled("SM")) {
       mergeState.infoStream.message("SM", "merge store matchedCount=" + mergeState.matchedCount + " vs " + mergeState.readers.size());
       if (mergeState.matchedCount != mergeState.readers.size()) {
         mergeState.infoStream.message("SM", "" + (mergeState.readers.size() - mergeState.matchedCount) + " non-bulk merges");

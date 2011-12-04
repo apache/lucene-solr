@@ -148,6 +148,8 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
         write(VALUE);
         write(bytes);
         newLine();
+      } else if (field.stringValue() == null) {
+        throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
       } else {
         write(TYPE_STRING);
         newLine();

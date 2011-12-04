@@ -31,7 +31,7 @@ import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.lucene3x.Lucene3xPostingsFormat;
 import org.apache.lucene.index.codecs.lucene3x.TermInfo;
-import org.apache.lucene.index.codecs.lucene40.DefaultSkipListWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40SkipListWriter;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -41,7 +41,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
   private final TermInfosWriter termsOut;
   private final IndexOutput freqOut;
   private final IndexOutput proxOut;
-  private final DefaultSkipListWriter skipListWriter;
+  private final Lucene40SkipListWriter skipListWriter;
   private final int totalNumDocs;
 
   public PreFlexFieldsWriter(SegmentWriteState state) throws IOException {
@@ -77,7 +77,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
       }
     }
 
-    skipListWriter = new DefaultSkipListWriter(termsOut.skipInterval,
+    skipListWriter = new Lucene40SkipListWriter(termsOut.skipInterval,
                                                termsOut.maxSkipLevels,
                                                totalNumDocs,
                                                freqOut,

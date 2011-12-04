@@ -72,3 +72,8 @@ lucene-libs
 
 # /solr/client/ruby/flare/
 /solr/client/ruby/flare/tmp
+
+# output folders.
+bin.misc/
+bin.tests-framework/
+

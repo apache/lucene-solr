@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,26 +22,29 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.codecs.StoredFieldsFormat;
+import org.apache.lucene.index.codecs.StoredFieldsReader;
+import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
 /** @lucene.experimental */
-public class DefaultStoredFieldsFormat extends StoredFieldsFormat {
+public class Lucene40StoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
       FieldInfos fn, IOContext context) throws IOException {
-    return new DefaultStoredFieldsReader(directory, si, fn, context);
+    return new Lucene40StoredFieldsReader(directory, si, fn, context);
   }
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, String segment,
       IOContext context) throws IOException {
-    return new DefaultStoredFieldsWriter(directory, segment, context);
+    return new Lucene40StoredFieldsWriter(directory, segment, context);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    DefaultStoredFieldsReader.files(dir, info, files);
+    Lucene40StoredFieldsReader.files(dir, info, files);
   }
 }

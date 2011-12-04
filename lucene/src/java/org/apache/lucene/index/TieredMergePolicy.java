@@ -644,16 +644,13 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   private boolean verbose() {
-    IndexWriter w = writer.get();
-    return w != null && w.verbose();
+    final IndexWriter w = writer.get();
+    return w != null && w.infoStream.isEnabled("TMP");
   }
 
   private void message(String message) {
     if (verbose()) {
-      final InfoStream infoStream = writer.get().infoStream;
-      if (infoStream != null) {
-        infoStream.message("TMP", message);
-      }
+      writer.get().infoStream.message("TMP", message);
     }
   }
 

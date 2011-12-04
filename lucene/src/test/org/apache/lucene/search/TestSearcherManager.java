@@ -237,9 +237,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     });
     thread.start();
     awaitEnterWarm.await();
-    for (int i = 0; i < 2; i++) {
-      searcherManager.close();
-    }
+    searcherManager.close();
     awaitClose.countDown();
     thread.join();
     try {

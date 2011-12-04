@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 import java.io.IOException;
 import java.util.Set;
@@ -11,6 +11,7 @@ import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.codecs.FieldInfosReader;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -36,13 +37,13 @@ import org.apache.lucene.store.IndexInput;
 /**
  * @lucene.experimental
  */
-public class DefaultFieldInfosReader extends FieldInfosReader {
+public class Lucene40FieldInfosReader extends FieldInfosReader {
 
-  static final int FORMAT_MINIMUM = DefaultFieldInfosWriter.FORMAT_START;
+  static final int FORMAT_MINIMUM = Lucene40FieldInfosWriter.FORMAT_START;
 
   @Override
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", DefaultFieldInfosWriter.FIELD_INFOS_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
 
     boolean hasVectors = false;
@@ -53,10 +54,10 @@ public class DefaultFieldInfosReader extends FieldInfosReader {
       final int format = input.readVInt();
 
       if (format > FORMAT_MINIMUM) {
-        throw new IndexFormatTooOldException(input, format, FORMAT_MINIMUM, DefaultFieldInfosWriter.FORMAT_CURRENT);
+        throw new IndexFormatTooOldException(input, format, FORMAT_MINIMUM, Lucene40FieldInfosWriter.FORMAT_CURRENT);
       }
-      if (format < DefaultFieldInfosWriter.FORMAT_CURRENT) {
-        throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, DefaultFieldInfosWriter.FORMAT_CURRENT);
+      if (format < Lucene40FieldInfosWriter.FORMAT_CURRENT) {
+        throw new IndexFormatTooNewException(input, format, FORMAT_MINIMUM, Lucene40FieldInfosWriter.FORMAT_CURRENT);
       }
 
       final int size = input.readVInt(); //read in the size
@@ -64,19 +65,19 @@ public class DefaultFieldInfosReader extends FieldInfosReader {
 
       for (int i = 0; i < size; i++) {
         String name = input.readString();
-        final int fieldNumber = format <= DefaultFieldInfosWriter.FORMAT_FLEX? input.readInt():i;
+        final int fieldNumber = format <= Lucene40FieldInfosWriter.FORMAT_FLEX? input.readInt():i;
         byte bits = input.readByte();
-        boolean isIndexed = (bits & DefaultFieldInfosWriter.IS_INDEXED) != 0;
-        boolean storeTermVector = (bits & DefaultFieldInfosWriter.STORE_TERMVECTOR) != 0;
-        boolean storePositionsWithTermVector = (bits & DefaultFieldInfosWriter.STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-        boolean storeOffsetWithTermVector = (bits & DefaultFieldInfosWriter.STORE_OFFSET_WITH_TERMVECTOR) != 0;
-        boolean omitNorms = (bits & DefaultFieldInfosWriter.OMIT_NORMS) != 0;
-        boolean storePayloads = (bits & DefaultFieldInfosWriter.STORE_PAYLOADS) != 0;
+        boolean isIndexed = (bits & Lucene40FieldInfosWriter.IS_INDEXED) != 0;
+        boolean storeTermVector = (bits & Lucene40FieldInfosWriter.STORE_TERMVECTOR) != 0;
+        boolean storePositionsWithTermVector = (bits & Lucene40FieldInfosWriter.STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+        boolean storeOffsetWithTermVector = (bits & Lucene40FieldInfosWriter.STORE_OFFSET_WITH_TERMVECTOR) != 0;
+        boolean omitNorms = (bits & Lucene40FieldInfosWriter.OMIT_NORMS) != 0;
+        boolean storePayloads = (bits & Lucene40FieldInfosWriter.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
-        if ((bits & DefaultFieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
-        } else if ((bits & DefaultFieldInfosWriter.OMIT_POSITIONS) != 0) {
-          if (format <= DefaultFieldInfosWriter.FORMAT_OMIT_POSITIONS) {
+        } else if ((bits & Lucene40FieldInfosWriter.OMIT_POSITIONS) != 0) {
+          if (format <= Lucene40FieldInfosWriter.FORMAT_OMIT_POSITIONS) {
             indexOptions = IndexOptions.DOCS_AND_FREQS;
           } else {
             throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format + " (resource: " + input + ")");
@@ -95,7 +96,7 @@ public class DefaultFieldInfosReader extends FieldInfosReader {
         hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         ValueType docValuesType = null;
-        if (format <= DefaultFieldInfosWriter.FORMAT_FLEX) {
+        if (format <= Lucene40FieldInfosWriter.FORMAT_FLEX) {
           final byte b = input.readByte();
           switch(b) {
             case 0:
@@ -161,6 +162,6 @@ public class DefaultFieldInfosReader extends FieldInfosReader {
   }
   
   public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, "", DefaultFieldInfosWriter.FIELD_INFOS_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION));
   }
 }

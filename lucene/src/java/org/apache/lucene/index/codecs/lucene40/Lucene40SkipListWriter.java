@@ -29,7 +29,7 @@ import org.apache.lucene.index.codecs.MultiLevelSkipListWriter;
  * that stores positions and payloads.
  * @lucene.experimental
  */
-public class DefaultSkipListWriter extends MultiLevelSkipListWriter {
+public class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
   private int[] lastSkipDoc;
   private int[] lastSkipPayloadLength;
   private long[] lastSkipFreqPointer;
@@ -44,7 +44,7 @@ public class DefaultSkipListWriter extends MultiLevelSkipListWriter {
   private long curFreqPointer;
   private long curProxPointer;
 
-  public DefaultSkipListWriter(int skipInterval, int numberOfSkipLevels, int docCount, IndexOutput freqOutput, IndexOutput proxOutput) {
+  public Lucene40SkipListWriter(int skipInterval, int numberOfSkipLevels, int docCount, IndexOutput freqOutput, IndexOutput proxOutput) {
     super(skipInterval, numberOfSkipLevels, docCount);
     this.freqOutput = freqOutput;
     this.proxOutput = proxOutput;

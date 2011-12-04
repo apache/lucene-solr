@@ -129,10 +129,7 @@ public abstract class FlushPolicy {
   }
   
   private boolean assertMessage(String s) {
-    InfoStream infoStream = writer.get().infoStream;
-    if (infoStream != null) {
-      infoStream.message("FP", s);
-    }
+    writer.get().infoStream.message("FP", s);
     return true;
   }
 

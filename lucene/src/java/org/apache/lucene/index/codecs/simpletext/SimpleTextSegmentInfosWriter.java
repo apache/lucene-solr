@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
@@ -43,7 +42,6 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
 
   final static BytesRef VERSION             = new BytesRef("version ");
   final static BytesRef COUNTER             = new BytesRef("counter ");
-  final static BytesRef FNX_VERSION         = new BytesRef("global field map version ");
   final static BytesRef NUM_USERDATA        = new BytesRef("user data entries ");
   final static BytesRef USERDATA_KEY        = new BytesRef("  key ");
   final static BytesRef USERDATA_VALUE      = new BytesRef("  value ");
@@ -73,8 +71,8 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
     IndexOutput out = new ChecksumIndexOutput(dir.createOutput(segmentsFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount()))));
     boolean success = false;
     try {
-      // required preamble
-      out.writeInt(DefaultSegmentInfosWriter.FORMAT_CURRENT); // write FORMAT
+      // required preamble:
+      out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
       out.writeString(codecID); // write codecID
       // end preamble
       
@@ -86,11 +84,6 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
       // counter
       SimpleTextUtil.write(out, COUNTER);
       SimpleTextUtil.write(out, Integer.toString(infos.counter), scratch);
-      SimpleTextUtil.writeNewline(out);
-      
-      // global field map version
-      SimpleTextUtil.write(out, FNX_VERSION);
-      SimpleTextUtil.write(out, Long.toString(infos.getGlobalFieldMapVersion()), scratch);
       SimpleTextUtil.writeNewline(out);
 
       // user data

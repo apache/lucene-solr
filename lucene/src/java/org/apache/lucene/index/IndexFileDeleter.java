@@ -102,7 +102,7 @@ final class IndexFileDeleter {
   private SegmentInfos lastSegmentInfos;
 
   /** Change to true to see details of reference counts when
-   *  infoStream != null */
+   *  infoStream is enabled */
   public static boolean VERBOSE_REF_COUNTS = false;
 
   // Used only for assert
@@ -128,7 +128,7 @@ final class IndexFileDeleter {
 
     final String currentSegmentsFile = segmentInfos.getCurrentSegmentFileName();
 
-    if (infoStream != null) {
+    if (infoStream.isEnabled("IFD")) {
       infoStream.message("IFD", "init: current segments file is \"" + currentSegmentsFile + "\"; deletionPolicy=" + policy);
     }
 
@@ -160,7 +160,7 @@ final class IndexFileDeleter {
           // This is a commit (segments or segments_N), and
           // it's valid (<= the max gen).  Load it, then
           // incref all files it refers to:
-          if (infoStream != null) {
+          if (infoStream.isEnabled("IFD")) {
             infoStream.message("IFD", "init: load commit \"" + fileName + "\"");
           }
           SegmentInfos sis = new SegmentInfos();
@@ -174,7 +174,7 @@ final class IndexFileDeleter {
             // file segments_X exists when in fact it
             // doesn't.  So, we catch this and handle it
             // as if the file does not exist
-            if (infoStream != null) {
+            if (infoStream.isEnabled("IFD")) {
               infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
             }
             sis = null;
@@ -205,7 +205,7 @@ final class IndexFileDeleter {
               } catch (FileNotFoundException e) {
                 refresh(segmentInfo.name);
                 sis = null;
-                if (infoStream != null) {
+                if (infoStream.isEnabled("IFD")) {
                   infoStream.message("IFD", "init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
                 }
               }
@@ -242,7 +242,7 @@ final class IndexFileDeleter {
       } catch (IOException e) {
         throw new CorruptIndexException("failed to locate current segments_N file");
       }
-      if (infoStream != null) {
+      if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "forced open of current segments file " + segmentInfos.getCurrentSegmentFileName());
       }
       currentCommitPoint = new CommitPoint(commitsToDelete, directory, sis);
@@ -260,7 +260,7 @@ final class IndexFileDeleter {
       RefCount rc = entry.getValue();
       final String fileName = entry.getKey();
       if (0 == rc.count) {
-        if (infoStream != null) {
+        if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "init: removing unreferenced file \"" + fileName + "\"");
         }
         deleteFile(fileName);
@@ -300,7 +300,7 @@ final class IndexFileDeleter {
       // the now-deleted commits:
       for(int i=0;i<size;i++) {
         CommitPoint commit = commitsToDelete.get(i);
-        if (infoStream != null) {
+        if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "deleteCommits: now decRef commit \"" + commit.getSegmentsFileName() + "\"");
         }
         for (final String file : commit.files) {
@@ -360,7 +360,7 @@ final class IndexFileDeleter {
           !refCounts.containsKey(fileName) &&
           !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
         // Unreferenced file, so remove it
-        if (infoStream != null) {
+        if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "refresh [prefix=" + segmentName + "]: removing newly created unreferenced file \"" + fileName + "\"");
         }
         deleteFile(fileName);
@@ -402,7 +402,7 @@ final class IndexFileDeleter {
    */
   void revisitPolicy() throws IOException {
     assert locked();
-    if (infoStream != null) {
+    if (infoStream.isEnabled("IFD")) {
       infoStream.message("IFD", "now revisitPolicy");
     }
 
@@ -419,7 +419,7 @@ final class IndexFileDeleter {
       deletable = null;
       int size = oldDeletable.size();
       for(int i=0;i<size;i++) {
-        if (infoStream != null) {
+        if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "delete pending file " + oldDeletable.get(i));
         }
         deleteFile(oldDeletable.get(i));
@@ -450,7 +450,7 @@ final class IndexFileDeleter {
   public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
     assert locked();
 
-    if (infoStream != null) {
+    if (infoStream.isEnabled("IFD")) {
       infoStream.message("IFD", "now checkpoint \"" + segmentInfos.toString(directory) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
@@ -501,7 +501,7 @@ final class IndexFileDeleter {
   void incRef(String fileName) throws IOException {
     assert locked();
     RefCount rc = getRefCount(fileName);
-    if (infoStream != null && VERBOSE_REF_COUNTS) {
+    if (infoStream.isEnabled("IFD") && VERBOSE_REF_COUNTS) {
       infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
     }
     rc.IncRef();
@@ -517,7 +517,7 @@ final class IndexFileDeleter {
   void decRef(String fileName) throws IOException {
     assert locked();
     RefCount rc = getRefCount(fileName);
-    if (infoStream != null && VERBOSE_REF_COUNTS) {
+    if (infoStream.isEnabled("IFD") && VERBOSE_REF_COUNTS) {
       infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
     }
     if (0 == rc.DecRef()) {
@@ -569,7 +569,7 @@ final class IndexFileDeleter {
     assert locked();
     for (final String fileName: files) {
       if (!refCounts.containsKey(fileName)) {
-        if (infoStream != null) {
+        if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "delete new file \"" + fileName + "\"");
         }
         deleteFile(fileName);
@@ -581,7 +581,7 @@ final class IndexFileDeleter {
        throws IOException {
     assert locked();
     try {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "delete \"" + fileName + "\"");
       }
       directory.deleteFile(fileName);
@@ -595,7 +595,7 @@ final class IndexFileDeleter {
         // the file is open in another process, and queue
         // the file for subsequent deletion.
 
-        if (infoStream != null) {
+        if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
         }
         if (deletable == null) {

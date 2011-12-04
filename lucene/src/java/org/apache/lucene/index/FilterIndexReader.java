@@ -227,16 +227,6 @@ public class FilterIndexReader extends IndexReader {
     public int advance(int target) throws IOException {
       return in.advance(target);
     }
-
-    @Override
-    public BulkReadResult getBulkResult() {
-      return in.getBulkResult();
-    }
-
-    @Override
-    public int read() throws IOException {
-      return in.read();
-    }
   }
 
   /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */

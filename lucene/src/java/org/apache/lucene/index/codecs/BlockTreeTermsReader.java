@@ -47,6 +47,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -929,7 +930,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             }
             System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
 
-            if (isSubBlock && target.startsWith(term)) {
+            if (isSubBlock && StringHelper.startsWith(target, term)) {
               // Recurse
               //if (DEBUG) System.out.println("      recurse!");
               currentFrame = pushFrame(getState());

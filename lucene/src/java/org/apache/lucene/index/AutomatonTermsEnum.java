@@ -22,6 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -94,7 +95,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
    */
   @Override
   protected AcceptStatus accept(final BytesRef term) {
-    if (commonSuffixRef == null || term.endsWith(commonSuffixRef)) {
+    if (commonSuffixRef == null || StringHelper.endsWith(term, commonSuffixRef)) {
       if (runAutomaton.run(term.bytes, term.offset, term.length))
         return linear ? AcceptStatus.YES : AcceptStatus.YES_AND_SEEK;
       else

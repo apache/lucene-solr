@@ -74,9 +74,9 @@ public class SolrIndexWriter extends IndexWriter {
       File parent = f.getParentFile();
       if (parent != null) parent.mkdirs();
       FileOutputStream fos = new FileOutputStream(f, true);
-      return new PrintStreamInfoStream(new TimeLoggingPrintStream(fos, true));
+      return new PrintStreamInfoStream(new PrintStream(fos, true));
     } else {
-      return null;
+      return InfoStream.NO_OUTPUT;
     }
   }
 
@@ -154,24 +154,5 @@ public class SolrIndexWriter extends IndexWriter {
       super.finalize();
     }
     
-  }
-  
-  // Helper class for adding timestamps to infoStream logging
-  static class TimeLoggingPrintStream extends PrintStream {
-    private DateFormat dateFormat;
-    public TimeLoggingPrintStream(OutputStream underlyingOutputStream,
-        boolean autoFlush) {
-      super(underlyingOutputStream, autoFlush);
-      this.dateFormat = DateFormat.getDateTimeInstance();
-    }
-
-    // We might ideally want to override print(String) as well, but
-    // looking through the code that writes to infoStream, it appears
-    // that all the classes except CheckIndex just use println.
-    @Override
-    public void println(String x) {
-      print(dateFormat.format(new Date()) + " ");
-      super.println(x);
-    }
   }
 }

@@ -18,30 +18,47 @@ package org.apache.lucene.util;
  */
 
 import java.io.Closeable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** @lucene.internal */
 public abstract class InfoStream implements Closeable {
-  // Used for printing messages
-  private static final AtomicInteger MESSAGE_ID = new AtomicInteger();
-  protected final int messageID = MESSAGE_ID.getAndIncrement();
+
+  /** Instance of InfoStream that does no logging at all. */
+  public static final InfoStream NO_OUTPUT = new NoOutput();
+  private static final class NoOutput extends InfoStream {
+    @Override
+    public void message(String component, String message) {}
+    
+    @Override
+    public boolean isEnabled(String component) { return false; }
+
+    @Override
+    public void close() {}
+  }
   
   /** prints a message */
   public abstract void message(String component, String message);
   
-  private static InfoStream defaultInfoStream;
+  /** returns true if messages are enabled and should be posted to {@link #message}. */
+  public abstract boolean isEnabled(String component);
   
-  /** The default infoStream (possibly null) used
-   * by a newly instantiated classes.
+  private static InfoStream defaultInfoStream = NO_OUTPUT;
+  
+  /** The default {@code InfoStream} used by a newly instantiated classes.
    * @see #setDefault */
-  public static InfoStream getDefault() {
+  public static synchronized InfoStream getDefault() {
     return defaultInfoStream;
   }
   
-  /** Sets the default infoStream (possibly null) used
-   * by a newly instantiated classes.
-   * @see #setDefault */
-  public static void setDefault(InfoStream infoStream) {
+  /** Sets the default {@code InfoStream} used
+   * by a newly instantiated classes. It cannot be {@code null},
+   * to disable logging use {@link #NO_OUTPUT}.
+   * @see #getDefault */
+  public static synchronized void setDefault(InfoStream infoStream) {
+    if (infoStream == null) {
+      throw new IllegalArgumentException("Cannot set InfoStream default implementation to null. "+
+        "To disable logging use InfoStream.NO_OUTPUT");
+    }
     defaultInfoStream = infoStream;
   }
+  
 }

@@ -216,9 +216,7 @@ final class DocumentsWriter {
     }
 
     try {
-      if (infoStream != null) {
-        infoStream.message("DW", "abort");
-      }
+      infoStream.message("DW", "abort");
 
       final Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
       while (threadsIterator.hasNext()) {
@@ -243,14 +241,14 @@ final class DocumentsWriter {
       }
       success = true;
     } finally {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "done abort; abortedFiles=" + abortedFiles + " success=" + success);
       }
     }
   }
 
   boolean anyChanges() {
-    if (infoStream != null) {
+    if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "anyChanges? numDocsInRam=" + numDocsInRAM.get()
           + " deletes=" + anyDeletions() + " hasTickets:"
           + ticketQueue.hasTickets() + " pendingChangesInFullFlush: "
@@ -289,7 +287,7 @@ final class DocumentsWriter {
     boolean maybeMerge = false;
     if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
       // Help out flushing any queued DWPTs so we can un-stall:
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "DocumentsWriter has queued dwpt; will hijack this thread to flush pending segment(s)");
       }
       do {
@@ -300,14 +298,14 @@ final class DocumentsWriter {
           maybeMerge |= doFlush(flushingDWPT);
         }
   
-        if (infoStream != null && flushControl.anyStalledThreads()) {
+        if (infoStream.isEnabled("DW") && flushControl.anyStalledThreads()) {
           infoStream.message("DW", "WARNING DocumentsWriter has stalled threads; waiting");
         }
         
         flushControl.waitIfStalled(); // block if stalled
       } while (flushControl.numQueuedFlushes() != 0); // still queued DWPTs try help flushing
 
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "continue indexing after helping out flushing DocumentsWriter is healthy");
       }
     }
@@ -466,7 +464,7 @@ final class DocumentsWriter {
     final double ramBufferSizeMB = indexWriter.getConfig().getRAMBufferSizeMB();
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
         flushControl.getDeleteBytesUsed() > (1024*1024*ramBufferSizeMB/2)) {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "force apply deletes bytesUsed=" + flushControl.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*ramBufferSizeMB));
       }
       applyAllDeletes(deleteQueue);
@@ -500,7 +498,7 @@ final class DocumentsWriter {
       assert bufferedDeletes != null;
       if (bufferedDeletes != null && bufferedDeletes.any()) {
         indexWriter.publishFrozenDeletes(bufferedDeletes);
-        if (infoStream != null) {
+        if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", "flush: push buffered deletes: " + bufferedDeletes);
         }
       }
@@ -527,14 +525,14 @@ final class DocumentsWriter {
     assert newSegment != null;
     final SegmentInfo segInfo = indexWriter.prepareFlushedSegment(newSegment);
     final BufferedDeletes deletes = newSegment.segmentDeletes;
-    if (infoStream != null) {
+    if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", Thread.currentThread().getName() + ": publishFlushedSegment seg-private deletes=" + deletes);  
     }
     FrozenBufferedDeletes packet = null;
     if (deletes != null && deletes.any()) {
       // Segment private delete
       packet = new FrozenBufferedDeletes(deletes, true);
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "flush: push buffered seg private deletes: " + packet);
       }
     }
@@ -560,7 +558,7 @@ final class DocumentsWriter {
   final boolean flushAllThreads()
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
-    if (infoStream != null) {
+    if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", Thread.currentThread().getName() + " startFullFlush");
     }
     
@@ -586,7 +584,7 @@ final class DocumentsWriter {
       // If a concurrent flush is still in flight wait for it
       flushControl.waitForFlush();  
       if (!anythingFlushed && flushingDeleteQueue.anyChanges()) { // apply deletes if we did not flush any document
-        if (infoStream != null) {
+        if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", Thread.currentThread().getName() + ": flush naked frozen global deletes");
         }
         synchronized (ticketQueue) {
@@ -604,7 +602,7 @@ final class DocumentsWriter {
   
   final void finishFullFlush(boolean success) {
     try {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", Thread.currentThread().getName() + " finishFullFlush success=" + success);
       }
       assert setFlushingDeleteQueue(null);

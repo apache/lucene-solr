@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.ReaderUtil;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -123,6 +124,16 @@ public final class MultiDocsEnum extends DocsEnum {
   public final static class EnumWithSlice {
     public DocsEnum docsEnum;
     public ReaderUtil.Slice slice;
+    
+    @Override
+    public String toString() {
+      return slice.toString()+":"+docsEnum;
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "MultiDocsEnum(" + Arrays.toString(getSubs()) + ")";
   }
 }
 

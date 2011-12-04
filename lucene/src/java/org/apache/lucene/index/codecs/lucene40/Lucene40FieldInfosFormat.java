@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,20 +17,34 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.codecs.FieldInfosFormat;
+import org.apache.lucene.index.codecs.FieldInfosReader;
+import org.apache.lucene.index.codecs.FieldInfosWriter;
+import org.apache.lucene.store.Directory;
+
 /**
  * @lucene.experimental
  */
-public class DefaultSegmentInfosFormat extends SegmentInfosFormat {
-  private final SegmentInfosReader reader = new DefaultSegmentInfosReader();
-  private final SegmentInfosWriter writer = new DefaultSegmentInfosWriter();
+public class Lucene40FieldInfosFormat extends FieldInfosFormat {
+  private final FieldInfosReader reader = new Lucene40FieldInfosReader();
+  private final FieldInfosWriter writer = new Lucene40FieldInfosWriter();
   
   @Override
-  public SegmentInfosReader getSegmentInfosReader() {
+  public FieldInfosReader getFieldInfosReader() throws IOException {
     return reader;
   }
 
   @Override
-  public SegmentInfosWriter getSegmentInfosWriter() {
+  public FieldInfosWriter getFieldInfosWriter() throws IOException {
     return writer;
+  }
+
+  @Override
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    Lucene40FieldInfosReader.files(dir, info, files);
   }
 }

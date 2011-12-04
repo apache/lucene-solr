@@ -131,9 +131,7 @@ public class DocumentsWriterPerThread {
   void abort() throws IOException {
     hasAborted = aborting = true;
     try {
-      if (infoStream != null) {
-        infoStream.message("DWPT", "now abort");
-      }
+      infoStream.message("DWPT", "now abort");
       try {
         consumer.abort();
       } catch (Throwable t) {
@@ -146,9 +144,7 @@ public class DocumentsWriterPerThread {
 
     } finally {
       aborting = false;
-      if (infoStream != null) {
-        infoStream.message("DWPT", "done abort");
-      }
+      infoStream.message("DWPT", "done abort");
     }
   }
   private final static boolean INFO_VERBOSE = false;
@@ -226,12 +222,12 @@ public class DocumentsWriterPerThread {
       // this call is synchronized on IndexWriter.segmentInfos
       segment = writer.newSegmentName();
       assert numDocsInRAM == 0;
-      if (INFO_VERBOSE && infoStream != null) {
+      if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segment + " delQueue=" + deleteQueue);  
       }
       
     }
-    if (INFO_VERBOSE && infoStream != null) {
+    if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segment);
     }
     boolean success = false;
@@ -274,11 +270,11 @@ public class DocumentsWriterPerThread {
       // this call is synchronized on IndexWriter.segmentInfos
       segment = writer.newSegmentName();
       assert numDocsInRAM == 0;
-      if (INFO_VERBOSE && infoStream != null) {
+      if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segment + " delQueue=" + deleteQueue);  
       }
     }
-    if (INFO_VERBOSE && infoStream != null) {
+    if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segment);
     }
     int docCount = 0;
@@ -459,12 +455,12 @@ public class DocumentsWriterPerThread {
       pendingDeletes.docIDs.clear();
     }
 
-    if (infoStream != null) {
+    if (infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", "flush postings as segment " + flushState.segmentName + " numDocs=" + numDocsInRAM);
     }
 
     if (aborting) {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush: skip because aborting is set");
       }
       return null;
@@ -476,7 +472,7 @@ public class DocumentsWriterPerThread {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
       final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.codec, fieldInfos.asReadOnly());
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.liveDocs.count())) + " deleted docs");
         infoStream.message("DWPT", "new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
         infoStream.message("DWPT", "flushedFiles=" + newSegment.files());
@@ -493,7 +489,7 @@ public class DocumentsWriterPerThread {
         pendingDeletes = new BufferedDeletes();
       }
 
-      if (infoStream != null) {
+      if (infoStream.isEnabled("DWPT")) {
         final double newSegmentSizeNoStore = newSegment.sizeInBytes(false)/1024./1024.;
         final double newSegmentSize = newSegment.sizeInBytes(true)/1024./1024.;
         infoStream.message("DWPT", "flushed: segment=" + newSegment + 

@@ -46,6 +46,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
 import static org.apache.lucene.index.codecs.simpletext.SimpleTextTermVectorsWriter.*;
@@ -88,7 +89,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     offsets = new ArrayList<Long>();
     while (!scratch.equals(END)) {
       readLine();
-      if (scratch.startsWith(DOC)) {
+      if (StringHelper.startsWith(scratch, DOC)) {
         offsets.add(in.getFilePointer());
       }
     }
@@ -105,30 +106,30 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     SortedMap<String,SimpleTVTerms> fields = new TreeMap<String,SimpleTVTerms>();
     in.seek(offsets.get(doc));
     readLine();
-    assert scratch.startsWith(NUMFIELDS);
+    assert StringHelper.startsWith(scratch, NUMFIELDS);
     int numFields = parseIntAt(NUMFIELDS.length);
     if (numFields == 0) {
       return null; // no vectors for this doc
     }
     for (int i = 0; i < numFields; i++) {
       readLine();
-      assert scratch.startsWith(FIELD);
+      assert StringHelper.startsWith(scratch, FIELD);
       int fieldNumber = parseIntAt(FIELD.length);
       
       readLine();
-      assert scratch.startsWith(FIELDNAME);
+      assert StringHelper.startsWith(scratch, FIELDNAME);
       String fieldName = readString(FIELDNAME.length, scratch);
       
       readLine();
-      assert scratch.startsWith(FIELDPOSITIONS);
+      assert StringHelper.startsWith(scratch, FIELDPOSITIONS);
       boolean positions = Boolean.parseBoolean(readString(FIELDPOSITIONS.length, scratch));
       
       readLine();
-      assert scratch.startsWith(FIELDOFFSETS);
+      assert StringHelper.startsWith(scratch, FIELDOFFSETS);
       boolean offsets = Boolean.parseBoolean(readString(FIELDOFFSETS.length, scratch));
       
       readLine();
-      assert scratch.startsWith(FIELDTERMCOUNT);
+      assert StringHelper.startsWith(scratch, FIELDTERMCOUNT);
       int termCount = parseIntAt(FIELDTERMCOUNT.length);
       
       SimpleTVTerms terms = new SimpleTVTerms();
@@ -136,7 +137,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       
       for (int j = 0; j < termCount; j++) {
         readLine();
-        assert scratch.startsWith(TERMTEXT);
+        assert StringHelper.startsWith(scratch, TERMTEXT);
         BytesRef term = new BytesRef();
         int termLength = scratch.length - TERMTEXT.length;
         term.grow(termLength);
@@ -147,7 +148,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         terms.terms.put(term, postings);
         
         readLine();
-        assert scratch.startsWith(TERMFREQ);
+        assert StringHelper.startsWith(scratch, TERMFREQ);
         postings.freq = parseIntAt(TERMFREQ.length);
         
         if (positions || offsets) {
@@ -163,17 +164,17 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
           for (int k = 0; k < postings.freq; k++) {
             if (positions) {
               readLine();
-              assert scratch.startsWith(POSITION);
+              assert StringHelper.startsWith(scratch, POSITION);
               postings.positions[k] = parseIntAt(POSITION.length);
             }
             
             if (offsets) {
               readLine();
-              assert scratch.startsWith(STARTOFFSET);
+              assert StringHelper.startsWith(scratch, STARTOFFSET);
               postings.startOffsets[k] = parseIntAt(STARTOFFSET.length);
               
               readLine();
-              assert scratch.startsWith(ENDOFFSET);
+              assert StringHelper.startsWith(scratch, ENDOFFSET);
               postings.endOffsets[k] = parseIntAt(ENDOFFSET.length);
             }
           }

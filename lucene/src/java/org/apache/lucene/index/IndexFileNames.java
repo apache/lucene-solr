@@ -68,9 +68,6 @@ public final class IndexFileNames {
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
 
-  /** Extension of global field numbers */
-  public static final String GLOBAL_FIELD_NUM_MAP_EXTENSION = "fnx";
-
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with one exception, namely the
@@ -85,7 +82,6 @@ public final class IndexFileNames {
     GEN_EXTENSION,
     NORMS_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
-    GLOBAL_FIELD_NUM_MAP_EXTENSION,
   };
 
   public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {

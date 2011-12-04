@@ -23,6 +23,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -301,7 +302,7 @@ class JoinQuery extends Query {
       toDeState.minSetSizeCached = minDocFreqTo;
 
       while (term != null) {
-        if (prefix != null && !term.startsWith(prefix))
+        if (prefix != null && !StringHelper.startsWith(term, prefix))
           break;
 
         fromTermCount++;
@@ -322,35 +323,21 @@ class JoinQuery extends Query {
             outer: for (int subindex = 0; subindex<numSubs; subindex++) {
               MultiDocsEnum.EnumWithSlice sub = subs[subindex];
               if (sub.docsEnum == null) continue;
-              DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
               int base = sub.slice.start;
-              for (;;) {
-                int nDocs = sub.docsEnum.read();
-                if (nDocs == 0) break;
-                int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-                int end = bulk.docs.offset + nDocs;
-                for (int i=bulk.docs.offset; i<end; i++) {
-                  if (fastForRandomSet.exists(docArr[i]+base)) {
-                    intersects = true;
-                    break outer;
-                  }
+              int docid;
+              while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (fastForRandomSet.exists(docid+base)) {
+                  intersects = true;
+                  break outer;
                 }
               }
             }
           } else {
-            // this should be the same bulk result object if sharing of the docsEnum succeeded
-            DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
-
-            outer: for (;;) {
-              int nDocs = docsEnum.read();
-              if (nDocs == 0) break;
-              int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-              int end = bulk.docs.offset + nDocs;
-              for (int i=bulk.docs.offset; i<end; i++) {
-                if (fastForRandomSet.exists(docArr[i])) {
-                  intersects = true;
-                  break outer;
-                }
+            int docid;
+            while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              if (fastForRandomSet.exists(docid)) {
+                intersects = true;
+                break;
               }
             }
           }
@@ -401,32 +388,18 @@ class JoinQuery extends Query {
                 for (int subindex = 0; subindex<numSubs; subindex++) {
                   MultiDocsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.docsEnum == null) continue;
-                  DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
                   int base = sub.slice.start;
-                  for (;;) {
-                    int nDocs = sub.docsEnum.read();
-                    if (nDocs == 0) break;
-                    resultListDocs += nDocs;
-                    int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-                    int end = bulk.docs.offset + nDocs;
-                    for (int i=bulk.docs.offset; i<end; i++) {
-                      resultBits.fastSet(docArr[i]+base);
-                    }
+                  int docid;
+                  while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                    resultListDocs++;
+                    resultBits.fastSet(docid + base);
                   }
                 }
               } else {
-                // this should be the same bulk result object if sharing of the docsEnum succeeded
-                DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
-
-                for (;;) {
-                  int nDocs = docsEnum.read();
-                  if (nDocs == 0) break;
-                  resultListDocs += nDocs;
-                  int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-                  int end = bulk.docs.offset + nDocs;
-                  for (int i=bulk.docs.offset; i<end; i++) {
-                    resultBits.fastSet(docArr[i]);
-                  }
+                int docid;
+                while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                  resultListDocs++;
+                  resultBits.fastSet(docid);
                 }
               }
             }

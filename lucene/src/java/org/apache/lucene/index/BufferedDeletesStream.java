@@ -88,7 +88,7 @@ class BufferedDeletesStream {
     deletes.add(packet);
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
-    if (infoStream != null) {
+    if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", "push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size() + " totBytesUsed=" + bytesUsed.get());
     }
     assert checkDeleteStats();
@@ -159,13 +159,13 @@ class BufferedDeletesStream {
     assert checkDeleteStats();
 
     if (!any()) {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("BD")) {
         infoStream.message("BD", "applyDeletes: no deletes; skipping");
       }
       return new ApplyDeletesResult(false, nextGen++, null);
     }
 
-    if (infoStream != null) {
+    if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
     }
 
@@ -237,7 +237,7 @@ class BufferedDeletesStream {
           allDeleted.add(info);
         }
 
-        if (infoStream != null) {
+        if (infoStream.isEnabled("BD")) {
           infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
         }
 
@@ -279,7 +279,7 @@ class BufferedDeletesStream {
             allDeleted.add(info);
           }
 
-          if (infoStream != null) {
+          if (infoStream.isEnabled("BD")) {
             infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
@@ -290,7 +290,7 @@ class BufferedDeletesStream {
     }
 
     assert checkDeleteStats();
-    if (infoStream != null) {
+    if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", "applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
@@ -313,7 +313,7 @@ class BufferedDeletesStream {
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
     }
 
-    if (infoStream != null) {
+    if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + deletes.size());
     }
     final int limit = deletes.size();
@@ -333,7 +333,7 @@ class BufferedDeletesStream {
 
   private synchronized void prune(int count) {
     if (count > 0) {
-      if (infoStream != null) {
+      if (infoStream.isEnabled("BD")) {
         infoStream.message("BD", "pruneDeletes: prune " + count + " packets; " + (deletes.size() - count) + " packets remain");
       }
       for(int delIDX=0;delIDX<count;delIDX++) {

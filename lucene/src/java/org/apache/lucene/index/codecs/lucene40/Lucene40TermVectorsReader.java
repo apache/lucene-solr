@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -45,7 +46,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-public class DefaultTermVectorsReader extends TermVectorsReader {
+public class Lucene40TermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than
   // the current format
@@ -74,7 +75,8 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
 
   /** Extension of vectors index file */
-  static final String VECTORS_INDEX_EXTENSION = "tvx";
+  // TODO: shouldnt be visible to segments reader, preflex should do this itself somehow
+  public static final String VECTORS_INDEX_EXTENSION = "tvx";
 
   private FieldInfos fieldInfos;
 
@@ -91,7 +93,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
   private final int format;
 
   // used by clone
-  DefaultTermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int docStoreOffset, int format) {
+  Lucene40TermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int docStoreOffset, int format) {
     this.fieldInfos = fieldInfos;
     this.tvx = tvx;
     this.tvd = tvd;
@@ -102,7 +104,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
     this.format = format;
   }
     
-  public DefaultTermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
+  public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
     final String segment = si.getDocStoreSegment();
     final int docStoreOffset = si.getDocStoreOffset();
@@ -395,7 +397,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
 
     // NOTE: tvf is pre-positioned by caller
     public TVTermsEnum() throws IOException {
-      this.origTVF = DefaultTermVectorsReader.this.tvf;
+      this.origTVF = Lucene40TermVectorsReader.this.tvf;
       tvf = (IndexInput) origTVF.clone();
     }
 
@@ -717,7 +719,7 @@ public class DefaultTermVectorsReader extends TermVectorsReader {
       cloneTvf = (IndexInput) tvf.clone();
     }
     
-    return new DefaultTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
+    return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
   }
   
   public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {

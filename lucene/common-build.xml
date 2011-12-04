@@ -110,6 +110,9 @@
   <property name="javac.includeAntRuntime" value="${run.clover}"/>
 
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
+  <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
+  <property name="javadoc.packagelist.dir" value="${common.dir}/src/tools/javadoc"/>
+  <available file="${javadoc.packagelist.dir}/java6/package-list" property="javadoc.java6.packagelist.exists"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" value="${common.dir}/build/docs/api"/>
@@ -843,6 +846,7 @@
   	<attribute name="title" default="${Name} ${version} API"/>
     <attribute name="overview" default="${src.dir}/overview.html"/>
     <sequential>
+      <antcall target="download-java6-javadoc-packagelist"/>
       <copy todir="@{destdir}" file="${prettify.dir}/prettify.js" overwrite="false" />
       <copy todir="@{destdir}" file="${prettify.dir}/prettify.css" overwrite="false" />
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
@@ -859,7 +863,6 @@
           use="true"
           failonerror="true"
           source="${ant.java.version}"
-          link="${javadoc.link}"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
           stylesheetfile="${prettify.dir}/stylesheet+prettify.css"
@@ -870,6 +873,7 @@
         <tag name="lucene.internal"
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
       	<link offline="true" packagelistLoc="${javadoc.dir}"/>
+        <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java6"/>
         <header><![CDATA[
            <script src="{@docRoot}/prettify.js" type="text/javascript"></script>
            <script language="JavaScript">window.onload=function(){windowTitle();prettyPrint();}</script>
@@ -919,6 +923,12 @@
       </subant>
     </sequential>
   </macrodef>
+
+  <target name="download-java6-javadoc-packagelist" unless="javadoc.java6.packagelist.exists">
+    <mkdir dir="${javadoc.packagelist.dir}/java6"/>
+    <get src="${javadoc.link}/package-list"
+         dest="${javadoc.packagelist.dir}/java6/package-list" ignoreerrors="true"/>
+  </target>
 
   <!-- VALIDATION work -->
 

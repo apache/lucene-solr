@@ -218,7 +218,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    * </pre>
    */
   protected boolean verbose() {
-    return writer != null && writer.verbose();
+    return writer != null && writer.infoStream.isEnabled("CMS");
   }
   
   /**
@@ -226,10 +226,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    * called and returned true.
    */
   protected void message(String message) {
-    final InfoStream infoStream = writer.infoStream;
-    if (infoStream != null) {
-      infoStream.message("CMS", message);
-    }
+    writer.infoStream.message("CMS", message);
   }
 
   private synchronized void initMergeThreadPriority() {

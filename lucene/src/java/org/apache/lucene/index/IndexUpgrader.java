@@ -131,11 +131,11 @@ public final class IndexUpgrader {
     final IndexWriter w = new IndexWriter(dir, c);
     try {
       InfoStream infoStream = c.getInfoStream();
-      if (infoStream != null) {
+      if (infoStream.isEnabled("IndexUpgrader")) {
         infoStream.message("IndexUpgrader", "Upgrading all pre-" + Constants.LUCENE_MAIN_VERSION + " segments of index directory '" + dir + "' to version " + Constants.LUCENE_MAIN_VERSION + "...");
       }
       w.forceMerge(1);
-      if (infoStream != null) {
+      if (infoStream.isEnabled("IndexUpgrader")) {
         infoStream.message("IndexUpgrader", "All segments upgraded to version " + Constants.LUCENE_MAIN_VERSION);
       }
     } finally {

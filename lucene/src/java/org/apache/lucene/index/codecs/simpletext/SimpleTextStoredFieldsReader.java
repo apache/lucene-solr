@@ -36,6 +36,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
 import static org.apache.lucene.index.codecs.simpletext.SimpleTextStoredFieldsWriter.*;
@@ -81,7 +82,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     offsets = new ArrayList<Long>();
     while (!scratch.equals(END)) {
       readLine();
-      if (scratch.startsWith(DOC)) {
+      if (StringHelper.startsWith(scratch, DOC)) {
         offsets.add(in.getFilePointer());
       }
     }
@@ -91,18 +92,18 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   public void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     in.seek(offsets.get(n));
     readLine();
-    assert scratch.startsWith(NUM);
+    assert StringHelper.startsWith(scratch, NUM);
     int numFields = parseIntAt(NUM.length);
     
     for (int i = 0; i < numFields; i++) {
       readLine();
-      assert scratch.startsWith(FIELD);
+      assert StringHelper.startsWith(scratch, FIELD);
       int fieldNumber = parseIntAt(FIELD.length);
       FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
       readLine();
-      assert scratch.startsWith(NAME);
+      assert StringHelper.startsWith(scratch, NAME);
       readLine();
-      assert scratch.startsWith(TYPE);
+      assert StringHelper.startsWith(scratch, TYPE);
       
       final BytesRef type;
       if (equalsAt(TYPE_STRING, scratch, TYPE.length)) {
@@ -127,7 +128,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
           break;
         case NO:   
           readLine();
-          assert scratch.startsWith(VALUE);
+          assert StringHelper.startsWith(scratch, VALUE);
           break;
         case STOP: return;
       }
@@ -136,7 +137,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   
   private void readField(BytesRef type, FieldInfo fieldInfo, StoredFieldVisitor visitor) throws IOException {
     readLine();
-    assert scratch.startsWith(VALUE);
+    assert StringHelper.startsWith(scratch, VALUE);
     if (type == TYPE_STRING) {
       visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, "UTF-8"));
     } else if (type == TYPE_BINARY) {

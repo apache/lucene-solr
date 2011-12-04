@@ -250,7 +250,7 @@ public final class MultiFields extends Fields {
 
   @Override
   public int getUniqueFieldCount() {
-    return terms.size();
+    return -1;
   }
 }
 

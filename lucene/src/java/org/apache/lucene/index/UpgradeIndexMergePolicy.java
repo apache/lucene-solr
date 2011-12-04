@@ -147,16 +147,13 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   private boolean verbose() {
-    IndexWriter w = writer.get();
-    return w != null && w.verbose();
+    final IndexWriter w = writer.get();
+    return w != null && w.infoStream.isEnabled("UPGMP");
   }
 
   private void message(String message) {
     if (verbose()) {
-      final InfoStream infoStream = writer.get().infoStream;
-      if (infoStream != null) {
-        infoStream.message("UPGMP", message);
-      }
+      writer.get().infoStream.message("UPGMP", message);
     }
   }
   

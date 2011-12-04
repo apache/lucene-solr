@@ -76,7 +76,7 @@ public abstract class DocValuesReaderBase extends PerDocValues {
           final String field = fieldInfo.name;
           // TODO can we have a compound file per segment and codec for
           // docvalues?
-          final String id = DefaultDocValuesConsumer.docValuesId(segment,
+          final String id = DocValuesWriterBase.docValuesId(segment,
               fieldInfo.number);
           values.put(field,
               loadDocValues(docCount, dir, id, fieldInfo.getDocValues(), context));

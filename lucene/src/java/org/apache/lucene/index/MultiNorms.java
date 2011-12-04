@@ -39,6 +39,9 @@ import org.apache.lucene.util.ReaderUtil;
  * @lucene.experimental
  */
 public class MultiNorms {
+  // no need to instantiate this
+  private MultiNorms() { }
+  
   /**
    * Warning: this is heavy! Do not use in a loop, or implement norms()
    * in your own reader with this (you should likely cache the result).

@@ -18,13 +18,13 @@ package org.apache.lucene.index.codecs.simpletext;
  */
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultDocValuesFormat;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40DocValuesFormat;
 
 /**
  * plain text index format.
@@ -39,7 +39,7 @@ public final class SimpleTextCodec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new SimpleTextFieldInfosFormat();
   private final TermVectorsFormat vectorsFormat = new SimpleTextTermVectorsFormat();
   // TODO: need a plain-text impl
-  private final DocValuesFormat docValues = new DefaultDocValuesFormat();
+  private final DocValuesFormat docValues = new Lucene40DocValuesFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");

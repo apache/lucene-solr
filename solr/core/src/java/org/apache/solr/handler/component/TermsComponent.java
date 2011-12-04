@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
@@ -183,7 +184,7 @@ public class TermsComponent extends SearchComponent {
         boolean externalized = false; // did we fill in "external" yet for this term?
 
         // stop if the prefix doesn't match
-        if (prefixBytes != null && !term.startsWith(prefixBytes)) break;
+        if (prefixBytes != null && !StringHelper.startsWith(term, prefixBytes)) break;
 
         if (pattern != null) {
           // indexed text or external text?

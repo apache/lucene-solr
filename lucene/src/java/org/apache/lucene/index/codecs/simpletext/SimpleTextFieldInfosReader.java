@@ -33,6 +33,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.index.codecs.simpletext.SimpleTextFieldInfosWriter.*;
 
@@ -57,45 +58,45 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
     try {
       
       SimpleTextUtil.readLine(input, scratch);
-      assert scratch.startsWith(NUMFIELDS);
+      assert StringHelper.startsWith(scratch, NUMFIELDS);
       final int size = Integer.parseInt(readString(NUMFIELDS.length, scratch));
       FieldInfo infos[] = new FieldInfo[size];
 
       for (int i = 0; i < size; i++) {
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(NAME);
+        assert StringHelper.startsWith(scratch, NAME);
         String name = readString(NAME.length, scratch);
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(NUMBER);
+        assert StringHelper.startsWith(scratch, NUMBER);
         int fieldNumber = Integer.parseInt(readString(NUMBER.length, scratch));
 
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(ISINDEXED);
+        assert StringHelper.startsWith(scratch, ISINDEXED);
         boolean isIndexed = Boolean.parseBoolean(readString(ISINDEXED.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(STORETV);
+        assert StringHelper.startsWith(scratch, STORETV);
         boolean storeTermVector = Boolean.parseBoolean(readString(STORETV.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(STORETVPOS);
+        assert StringHelper.startsWith(scratch, STORETVPOS);
         boolean storePositionsWithTermVector = Boolean.parseBoolean(readString(STORETVPOS.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(STORETVOFF);
+        assert StringHelper.startsWith(scratch, STORETVOFF);
         boolean storeOffsetWithTermVector = Boolean.parseBoolean(readString(STORETVOFF.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(PAYLOADS);
+        assert StringHelper.startsWith(scratch, PAYLOADS);
         boolean storePayloads = Boolean.parseBoolean(readString(PAYLOADS.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(NORMS);
+        assert StringHelper.startsWith(scratch, NORMS);
         boolean omitNorms = !Boolean.parseBoolean(readString(NORMS.length, scratch));
 
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(DOCVALUES);
+        assert StringHelper.startsWith(scratch, DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
         final ValueType docValuesType;
         
@@ -106,7 +107,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         }
         
         SimpleTextUtil.readLine(input, scratch);
-        assert scratch.startsWith(INDEXOPTIONS);
+        assert StringHelper.startsWith(scratch, INDEXOPTIONS);
         IndexOptions indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));
 
         hasVectors |= storeTermVector;

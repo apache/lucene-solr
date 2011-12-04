@@ -33,7 +33,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -61,6 +60,36 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * be removed, however the numbers should continue to decrease. 
    */
 
+  // TODO: i don't think we need *all* these version numbers here?
+  // most codecs only need FORMAT_CURRENT? and we should rename it 
+  // to FORMAT_FLEX? because the 'preamble' is just FORMAT_CURRENT + codecname
+  // after that the codec takes over. 
+  
+  // also i think this class should write this, somehow we let 
+  // preflexrw hackishly override this (like seek backwards and overwrite it)
+
+  /** This format adds optional per-segment String
+   *  diagnostics storage, and switches userData to Map */
+  public static final int FORMAT_DIAGNOSTICS = -9;
+
+  /** Each segment records whether it has term vectors */
+  public static final int FORMAT_HAS_VECTORS = -10;
+
+  /** Each segment records the Lucene version that created it. */
+  public static final int FORMAT_3_1 = -11;
+
+  /** Each segment records whether its postings are written
+   *  in the new flex format */
+  public static final int FORMAT_4_0 = -12;
+
+  /** This must always point to the most recent file format.
+   * whenever you add a new format, make it 1 smaller (negative version logic)! */
+  // TODO: move this, as its currently part of required preamble
+  public static final int FORMAT_CURRENT = FORMAT_4_0;
+  
+  /** This must always point to the first supported file format. */
+  public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
+  
   /** Used for the segments.gen file only!
    * Whenever you add a new format, make it 1 smaller (negative version logic)! */
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
@@ -73,11 +102,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    */
   public long version = System.currentTimeMillis();
   
-  private long globalFieldMapVersion = 0; // version of the GFNM for the next commit
-  private long lastGlobalFieldMapVersion = 0; // version of the GFNM file we last successfully read or wrote
-  private long pendingMapVersion = -1; // version of the GFNM itself that we have last successfully written
-                                       // or -1 if we it was not written. This is set during prepareCommit 
-
   private long generation = 0;     // generation of the "segments_N" for the next commit
   private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
                                    // or wrote; this is normally the same as generation except if
@@ -184,15 +208,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
                                                  lastGeneration);
   }
   
-  private String getGlobalFieldNumberName(long version) {
-    /*
-     * This creates a file name ${version}.fnx without a leading underscore
-     * since this file might belong to more than one segment (global map) and
-     * could otherwise easily be confused with a per-segment file.
-     */
-    return IndexFileNames.segmentFileName("_"+ version, "", IndexFileNames.GLOBAL_FIELD_NUM_MAP_EXTENSION);
-  }
-
   /**
    * Parse the generation off the segments file name and
    * return it.
@@ -254,14 +269,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       setFormat(format);
     
       // check that it is a format we can understand
-      if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)
+      if (format > FORMAT_MINIMUM)
         throw new IndexFormatTooOldException(input, format,
-          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
-      if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT)
+          FORMAT_MINIMUM, FORMAT_CURRENT);
+      if (format < FORMAT_CURRENT)
         throw new IndexFormatTooNewException(input, format,
-          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+          FORMAT_MINIMUM, FORMAT_CURRENT);
 
-      if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+      if (format <= FORMAT_4_0) {
         codecFormat = Codec.forName(input.readString());
       } else {
         codecFormat = Codec.forName("Lucene3x");
@@ -297,8 +312,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         return null;
       }
     }.run();
-    // either we are on 4.0 or we don't have a lastGlobalFieldMapVersion i.e. its still set to 0
-    assert DefaultSegmentInfosWriter.FORMAT_4_0 <= format || (DefaultSegmentInfosWriter.FORMAT_4_0 > format && lastGlobalFieldMapVersion == 0); 
   }
 
   // Only non-null after prepareCommit has been called and
@@ -308,14 +321,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   private void write(Directory directory, Codec codec) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
-    final String globalFieldMapFile;
-    if (globalFieldNumberMap != null && globalFieldNumberMap.isDirty()) {
-      globalFieldMapFile = getGlobalFieldNumberName(++globalFieldMapVersion);
-      pendingMapVersion = writeGlobalFieldMap(globalFieldNumberMap, directory, globalFieldMapFile);
-    } else {
-      globalFieldMapFile = null;
-    }
-    
     
     // Always advance the generation on write:
     if (generation == -1) {
@@ -347,16 +352,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         } catch (Throwable t) {
           // Suppress so we keep throwing the original exception
         }
-        if (globalFieldMapFile != null) { // delete if written here
-          try {
-            // Try not to leave global field map in
-            // the index:
-            directory.deleteFile(globalFieldMapFile);
-          } catch (Throwable t) {
-            // Suppress so we keep throwing the original exception
-          }
-        }
-        pendingMapVersion = -1;
       }
     }
   }
@@ -767,8 +762,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
     generation = other.generation;
-    lastGlobalFieldMapVersion = other.lastGlobalFieldMapVersion;
-    globalFieldMapVersion = other.globalFieldMapVersion;
   }
 
   final void rollbackCommit(Directory dir) throws IOException {
@@ -792,16 +785,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         // in our caller
       }
       pendingSegnOutput = null;
-      if (pendingMapVersion != -1) {
-        try {
-          final String fieldMapName = getGlobalFieldNumberName(globalFieldMapVersion--);
-          dir.deleteFile(fieldMapName);
-        } catch (Throwable t) {
-          // Suppress so we keep throwing the original exception
-          // in our caller
-        }
-        pendingMapVersion = -1;
-      }
     }
   }
 
@@ -820,44 +803,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       throw new IllegalStateException("prepareCommit was already called");
     write(dir, codec);
   }
-  
-  private final long writeGlobalFieldMap(FieldNumberBiMap map, Directory dir, String name) throws IOException {
-    final IndexOutput output = dir.createOutput(name, IOContext.READONCE);
-    boolean success = false;
-    long version;
-    try {
-      version = map.write(output);
-      success = true;
-    } finally {
-      try {
-        output.close();
-      } catch (Throwable t) {
-        // throw orig excp
-      }
-      if (!success) {
-        try {
-          dir.deleteFile(name);
-        } catch (Throwable t) {
-          // throw orig excp
-        }
-      } else {
-        // we must sync here explicitly since during a commit
-        // IW will not sync the global field map. 
-        dir.sync(Collections.singleton(name));
-      }
-    }
-    return version;
-  }
-  
-  private void readGlobalFieldMap(FieldNumberBiMap map, Directory dir) throws IOException {
-    final String name = getGlobalFieldNumberName(lastGlobalFieldMapVersion);
-    final IndexInput input = dir.openInput(name, IOContext.READONCE);
-    try {
-      map.read(input);
-    } finally {
-      input.close();
-    }
-  }
 
   /** Returns all file names referenced by SegmentInfo
    *  instances matching the provided Directory (ie files
@@ -874,9 +819,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
          * add null to the files set
          */
         files.add(segmentFileName);
-      }
-      if (lastGlobalFieldMapVersion > 0) {
-        files.add(getGlobalFieldNumberName(lastGlobalFieldMapVersion));
       }
     }
     final int size = size();
@@ -929,17 +871,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
 
     lastGeneration = generation;
-    if (pendingMapVersion != -1) {
-      /*
-       * TODO is it possible that the commit does not succeed here? if another
-       * commit happens at the same time and we lost the race between the
-       * prepareCommit and finishCommit the latest version is already
-       * incremented.
-       */
-      globalFieldNumberMap.commitLastVersion(pendingMapVersion);
-      pendingMapVersion = -1;
-      lastGlobalFieldMapVersion = globalFieldMapVersion;
-    }
 
     try {
       IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
@@ -1003,7 +934,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   void replace(SegmentInfos other) {
     rollbackSegmentInfos(other.asList());
     lastGeneration = other.lastGeneration;
-    lastGlobalFieldMapVersion = other.lastGlobalFieldMapVersion;
     format = other.format;
   }
 
@@ -1027,47 +957,24 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
    * If this {@link SegmentInfos} has no global field number map the returned instance is empty
    */
-  FieldNumberBiMap getOrLoadGlobalFieldNumberMap(Directory dir) throws IOException {
+  FieldNumberBiMap getOrLoadGlobalFieldNumberMap() throws IOException {
     if (globalFieldNumberMap != null) {
       return globalFieldNumberMap;
     }
     final FieldNumberBiMap map  = new FieldNumberBiMap();
     
-    if (lastGlobalFieldMapVersion > 0) {
-      // if we don't have a global map or this is a SI from a earlier version we just return the empty map;
-      readGlobalFieldMap(map, dir);
-    }
     if (size() > 0) {
-      if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
-        assert lastGlobalFieldMapVersion == 0;
-        // build the map up if we open a pre 4.0 index
-        for (SegmentInfo info : this) {
-          final FieldInfos segFieldInfos = info.getFieldInfos();
-          for (FieldInfo fi : segFieldInfos) {
-            map.addOrGet(fi.name, fi.number);
-          }
+      // build the map up
+      for (SegmentInfo info : this) {
+        final FieldInfos segFieldInfos = info.getFieldInfos();
+        for (FieldInfo fi : segFieldInfos) {
+          map.addOrGet(fi.name, fi.number);
         }
       }
     }
     return globalFieldNumberMap = map;
   }
 
-  /**
-   * Called by {@link SegmentInfosReader} when reading the global field map version
-   */
-  public void setGlobalFieldMapVersion(long version) {
-    lastGlobalFieldMapVersion = globalFieldMapVersion = version;
-  }
-
-  public long getGlobalFieldMapVersion() {
-    return globalFieldMapVersion;
-  }
-  
-  // for testing
-  long getLastGlobalFieldMapVersion() {
-    return lastGlobalFieldMapVersion;
-  }
-  
   /** applies all changes caused by committing a merge to this SegmentInfos */
   void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
     final Set<SegmentInfo> mergedAway = new HashSet<SegmentInfo>(merge.segments);

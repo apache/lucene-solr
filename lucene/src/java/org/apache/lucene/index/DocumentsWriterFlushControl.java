@@ -453,7 +453,7 @@ public final class DocumentsWriterFlushControl {
   private final List<DocumentsWriterPerThread> fullFlushBuffer = new ArrayList<DocumentsWriterPerThread>();
 
   void addFlushableState(ThreadState perThread) {
-    if (documentsWriter.infoStream != null) {
+    if (documentsWriter.infoStream.isEnabled("DWFC")) {
       documentsWriter.infoStream.message("DWFC", Thread.currentThread().getName() + ": addFlushableState " + perThread.perThread);
     }
     final DocumentsWriterPerThread dwpt = perThread.perThread;

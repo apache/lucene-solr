@@ -1,4 +1,8 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index.codecs.lucene40;
+
+import org.apache.lucene.index.codecs.SegmentInfosFormat;
+import org.apache.lucene.index.codecs.SegmentInfosReader;
+import org.apache.lucene.index.codecs.SegmentInfosWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,28 +21,20 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
-
-public class DefaultDocValuesFormat extends DocValuesFormat {
-
+/**
+ * @lucene.experimental
+ */
+public class Lucene40SegmentInfosFormat extends SegmentInfosFormat {
+  private final SegmentInfosReader reader = new Lucene40SegmentInfosReader();
+  private final SegmentInfosWriter writer = new Lucene40SegmentInfosWriter();
+  
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state);
+  public SegmentInfosReader getSegmentInfosReader() {
+    return reader;
   }
 
   @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state);
-  }
-
-  @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    DefaultDocValuesConsumer.files(dir, info, files);
+  public SegmentInfosWriter getSegmentInfosWriter() {
+    return writer;
   }
 }
