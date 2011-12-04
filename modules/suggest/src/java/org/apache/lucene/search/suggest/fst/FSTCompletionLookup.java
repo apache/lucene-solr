@@ -40,6 +40,14 @@ import org.apache.lucene.util.fst.NoOutputs;
  * @see FSTCompletion
  */
 public class FSTCompletionLookup extends Lookup {
+  /** 
+   * An invalid bucket count if we're creating an object
+   * of this class from an existing FST.
+   * 
+   * @see #FSTCompletionLookup(FSTCompletion, boolean)
+   */
+  private static int INVALID_BUCKETS_COUNT = -1;
+  
   /**
    * Shared tail length for conflating in the created automaton. Setting this
    * to larger values ({@link Integer#MAX_VALUE}) will create smaller (or minimal) 
@@ -70,34 +78,54 @@ public class FSTCompletionLookup extends Lookup {
    */
   private FSTCompletion normalCompletion;
 
-  /*
-   * 
+  /**
+   * This constructor prepares for creating a suggested FST using the
+   * {@link #build(TermFreqIterator)} method. The number of weight
+   * discretization buckets is set to {@link FSTCompletion#DEFAULT_BUCKETS} and
+   * exact matches are promoted to the top of the suggestions list.
    */
   public FSTCompletionLookup() {
     this(FSTCompletion.DEFAULT_BUCKETS, true);
   }
 
-  /*
+  /**
+   * This constructor prepares for creating a suggested FST using the
+   * {@link #build(TermFreqIterator)} method.
    * 
-   */
-  public FSTCompletionLookup(FSTCompletion completion, int buckets, boolean exactMatchFirst) {
-    this(buckets, exactMatchFirst);
-    this.normalCompletion = new FSTCompletion(
-        completion.getFST(), false, exactMatchFirst);
-    this.higherWeightsCompletion =  new FSTCompletion(
-        completion.getFST(), true, exactMatchFirst);
-  }
-
-  /*
+   * @param buckets
+   *          The number of weight discretization buckets (see
+   *          {@link FSTCompletion} for details).
    * 
+   * @param exactMatchFirst
+   *          If <code>true</code> exact matches are promoted to the top of the
+   *          suggestions list. Otherwise they appear in the order of
+   *          discretized weight and alphabetical within the bucket.
    */
   public FSTCompletionLookup(int buckets, boolean exactMatchFirst) {
     this.buckets = buckets;
     this.exactMatchFirst = exactMatchFirst;
   }
 
-  /*
+  /**
+   * This constructor takes a pre-built automaton.
    * 
+   *  @param completion 
+   *          An instance of {@link FSTCompletion}.
+   *  @param exactMatchFirst
+   *          If <code>true</code> exact matches are promoted to the top of the
+   *          suggestions list. Otherwise they appear in the order of
+   *          discretized weight and alphabetical within the bucket.
+   */
+  public FSTCompletionLookup(FSTCompletion completion, boolean exactMatchFirst) {
+    this(INVALID_BUCKETS_COUNT, exactMatchFirst);
+    this.normalCompletion = new FSTCompletion(
+        completion.getFST(), false, exactMatchFirst);
+    this.higherWeightsCompletion =  new FSTCompletion(
+        completion.getFST(), true, exactMatchFirst);
+  }
+
+  /**
+   * {@inheritDoc}
    */
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
