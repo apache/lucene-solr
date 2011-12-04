@@ -1047,6 +1047,7 @@
 
         <fileset dir="@{artifacts.dir}">
           <include name="**/*.jar"/>
+          <include name="**/*.war"/>
           <include name="**/*.zip"/>
           <include name="**/*.tgz"/>
           <include name="**/*.pom"/>
