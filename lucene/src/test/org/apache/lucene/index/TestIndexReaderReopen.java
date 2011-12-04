@@ -761,7 +761,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertEquals(0, reader.getRefCount());
     
     if (checkNormsClosed && reader instanceof SegmentReader) {
-      assertTrue(((SegmentReader) reader).normsClosed());
+      // TODO: should we really assert something here? we check for open files and this is obselete...
+      // assertTrue(((SegmentReader) reader).normsClosed());
     }
     
     if (checkSubReaders) {

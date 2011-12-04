@@ -62,8 +62,8 @@ public class Lucene40NormsWriter extends NormsWriter {
   
   @Override
   public void finish(int numDocs) throws IOException {
-    if (4+normCount*numDocs != out.getFilePointer()) {
-      throw new RuntimeException(".nrm file size mismatch: expected=" + (4+normCount*numDocs) + " actual=" + out.getFilePointer());
+    if (4+normCount*(long)numDocs != out.getFilePointer()) {
+      throw new RuntimeException(".nrm file size mismatch: expected=" + (4+normCount*(long)numDocs) + " actual=" + out.getFilePointer());
     }
   }
 

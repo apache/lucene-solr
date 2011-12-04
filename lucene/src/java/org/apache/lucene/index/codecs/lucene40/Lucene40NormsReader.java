@@ -1,0 +1,153 @@
+package org.apache.lucene.index.codecs.lucene40;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.codecs.NormsReader;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
+
+public class Lucene40NormsReader extends NormsReader {
+  // this would be replaced by Source/SourceCache in a dv impl.
+  // for now we have our own mini-version
+  Map<String,Norm> norms = new HashMap<String,Norm>();
+  // any .nrm or .sNN files we have open at any time.
+  // TODO: just a list, and double-close() separate norms files?
+  Map<IndexInput,Boolean> openFiles = new IdentityHashMap<IndexInput,Boolean>();
+  // points to a singleNormFile
+  IndexInput singleNormStream;
+  final int maxdoc;
+  
+  // note: just like segmentreader in 3.x, we open up all the files here (including separate norms) up front.
+  // but we just don't do any seeks or reading yet.
+  public Lucene40NormsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException {
+    maxdoc = info.docCount;
+    boolean success = false;
+    try {
+      long nextNormSeek = Lucene40NormsWriter.NORMS_HEADER.length; //skip header (header unused for now)
+      for (FieldInfo fi : fields) {
+        if (fi.isIndexed && !fi.omitNorms) {
+          String fileName = info.getNormFileName(fi.number);
+          Directory d = info.hasSeparateNorms(fi.number) ? separateNormsDir : dir;
+        
+          // singleNormFile means multiple norms share this file
+          boolean singleNormFile = IndexFileNames.matchesExtension(fileName, IndexFileNames.NORMS_EXTENSION);
+          IndexInput normInput = null;
+          long normSeek;
+
+          if (singleNormFile) {
+            normSeek = nextNormSeek;
+            if (singleNormStream == null) {
+              singleNormStream = d.openInput(fileName, context);
+              openFiles.put(singleNormStream, Boolean.TRUE);
+            }
+            // All norms in the .nrm file can share a single IndexInput since
+            // they are only used in a synchronized context.
+            // If this were to change in the future, a clone could be done here.
+            normInput = singleNormStream;
+          } else {
+            normInput = d.openInput(fileName, context);
+            openFiles.put(normInput, Boolean.TRUE);
+            // if the segment was created in 3.2 or after, we wrote the header for sure,
+            // and don't need to do the sketchy file size check. otherwise, we check 
+            // if the size is exactly equal to maxDoc to detect a headerless file.
+            // NOTE: remove this check in Lucene 5.0!
+            String version = info.getVersion();
+            final boolean isUnversioned = 
+                (version == null || StringHelper.getVersionComparator().compare(version, "3.2") < 0)
+                && normInput.length() == maxdoc;
+            if (isUnversioned) {
+              normSeek = 0;
+            } else {
+              normSeek = Lucene40NormsWriter.NORMS_HEADER.length;
+            }
+          }
+
+          Norm norm = new Norm();
+          norm.file = normInput;
+          norm.offset = normSeek;
+          norms.put(fi.name, norm);
+          nextNormSeek += maxdoc; // increment also if some norms are separate
+        }
+      }
+      // nocommit: change to a real check? see LUCENE-3619
+      assert singleNormStream == null || nextNormSeek == singleNormStream.length();
+      success = true;
+    } finally {
+      if (!success) {
+        if (openFiles != null) {
+          IOUtils.closeWhileHandlingException(openFiles.keySet());
+        }
+      }
+    }
+  }
+  
+  @Override
+  public byte[] norms(String name) throws IOException {
+    Norm norm = norms.get(name);
+    return norm == null ? null : norm.bytes();
+  }
+  
+
+  @Override
+  public void close() throws IOException {
+    try {
+      if (openFiles != null) {
+        IOUtils.close(openFiles.keySet());
+      }
+    } finally {
+      norms = null;
+      openFiles = null;
+    }
+  }
+  
+  class Norm {
+    IndexInput file;
+    long offset;
+    byte bytes[];
+    
+    synchronized byte[] bytes() throws IOException {
+      if (bytes == null) {
+        bytes = new byte[maxdoc];
+        // some norms share fds
+        synchronized(file) {
+          file.seek(offset);
+          file.readBytes(bytes, 0, bytes.length, false);
+        }
+        // we are done with this file
+        if (file != singleNormStream) {
+          openFiles.remove(file);
+          file.close();
+          file = null;
+        }
+      }
+      return bytes;
+    }
+  }
+}

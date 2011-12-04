@@ -17,21 +17,10 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.Set;
 
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-
-/**
- * format for normalization factors
- */
-public abstract class NormsFormat {
-  /** Note: separateNormsDir should not be used! */
-  public abstract NormsReader normsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException;
-  public abstract NormsWriter normsWriter(SegmentWriteState state) throws IOException;
-  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
+//simple api just for now before switching to docvalues apis
+public abstract class NormsReader implements Closeable {
+  public abstract byte[] norms(String name) throws IOException;
 }

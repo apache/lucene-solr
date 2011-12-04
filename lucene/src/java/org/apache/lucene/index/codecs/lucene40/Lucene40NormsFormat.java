@@ -20,13 +20,21 @@ package org.apache.lucene.index.codecs.lucene40;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.NormsFormat;
+import org.apache.lucene.index.codecs.NormsReader;
 import org.apache.lucene.index.codecs.NormsWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 public class Lucene40NormsFormat extends NormsFormat {
+
+  @Override
+  public NormsReader normsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException {
+    return new Lucene40NormsReader(dir, info, fields, context, separateNormsDir);
+  }
 
   @Override
   public NormsWriter normsWriter(SegmentWriteState state) throws IOException {

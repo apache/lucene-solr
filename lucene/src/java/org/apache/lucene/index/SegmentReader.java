@@ -20,25 +20,20 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermVectorsReader;
-import org.apache.lucene.index.codecs.lucene40.Lucene40NormsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * @lucene.experimental
@@ -65,10 +60,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private SegmentInfo rollbackSegmentInfo;
   private int rollbackPendingDeleteCount;
 
-  // optionally used for the .nrm file shared by multiple norms
-  IndexInput singleNormStream;
-  AtomicInteger singleNormRef;
-
   SegmentCoreReaders core;
 
   /**
@@ -80,8 +71,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       return core.getFieldsReaderOrig().clone();
     }
   }
-
-  Map<String,SegmentNorms> norms = new HashMap<String,SegmentNorms>();
   
   /**
    * @throws CorruptIndexException if the index is corrupt
@@ -114,7 +103,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
         instance.core.openDocStores(si);
       }
       instance.loadLiveDocs(context);
-      instance.openNorms(instance.core.cfsDir, context);
       success = true;
     } finally {
 
@@ -278,24 +266,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
           clone.liveDocsRef = liveDocsRef;
         }
       }
-
-      clone.norms = new HashMap<String,SegmentNorms>();
-
-      // Clone norms
-      for (FieldInfo fi : core.fieldInfos) {
-        // Clone unchanged norms to the cloned reader
-        if (doClone || !fieldNormsChanged.contains(fi.number)) {
-          final String curField = fi.name;
-          SegmentNorms norm = this.norms.get(curField);
-          if (norm != null)
-            clone.norms.put(curField, (SegmentNorms) norm.clone());
-        }
-      }
-
-      // If we are not cloning, then this will open anew
-      // any norms that have changed:
-      clone.openNorms(si.getUseCompoundFile() ? core.getCFSReader() : directory(), IOContext.DEFAULT);
-
       success = true;
     } finally {
       if (!success) {
@@ -395,9 +365,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       liveDocs = null;
     }
 
-    for (final SegmentNorms norm : norms.values()) {
-      norm.decRef();
-    }
     if (core != null) {
       core.decRef();
     }
@@ -545,95 +512,14 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public boolean hasNorms(String field) {
     ensureOpen();
-    return norms.containsKey(field);
+    FieldInfo fi = core.fieldInfos.fieldInfo(field);
+    return fi != null && fi.isIndexed && !fi.omitNorms;
   }
 
   @Override
   public byte[] norms(String field) throws IOException {
     ensureOpen();
-    final SegmentNorms norm = norms.get(field);
-    if (norm == null) {
-      // not indexed, or norms not stored
-      return null;  
-    }
-    return norm.bytes();
-  }
-
-  private void openNorms(Directory cfsDir, IOContext context) throws IOException {
-    boolean normsInitiallyEmpty = norms.isEmpty(); // only used for assert
-    long nextNormSeek = Lucene40NormsWriter.NORMS_HEADER.length; //skip header (header unused for now)
-    int maxDoc = maxDoc();
-    for (FieldInfo fi : core.fieldInfos) {
-      if (norms.containsKey(fi.name)) {
-        // in case this SegmentReader is being re-opened, we might be able to
-        // reuse some norm instances and skip loading them here
-        continue;
-      }
-      if (fi.isIndexed && !fi.omitNorms) {
-        Directory d = directory();
-        String fileName = si.getNormFileName(fi.number);
-        if (!si.hasSeparateNorms(fi.number)) {
-          d = cfsDir;
-        }
-        
-        // singleNormFile means multiple norms share this file
-        boolean singleNormFile = IndexFileNames.matchesExtension(fileName, IndexFileNames.NORMS_EXTENSION);
-        IndexInput normInput = null;
-        long normSeek;
-
-        if (singleNormFile) {
-          normSeek = nextNormSeek;
-          if (singleNormStream == null) {
-            singleNormStream = d.openInput(fileName, context);
-            singleNormRef = new AtomicInteger(1);
-          } else {
-            singleNormRef.incrementAndGet();
-          }
-          // All norms in the .nrm file can share a single IndexInput since
-          // they are only used in a synchronized context.
-          // If this were to change in the future, a clone could be done here.
-          normInput = singleNormStream;
-        } else {
-          normInput = d.openInput(fileName, context);
-          // if the segment was created in 3.2 or after, we wrote the header for sure,
-          // and don't need to do the sketchy file size check. otherwise, we check 
-          // if the size is exactly equal to maxDoc to detect a headerless file.
-          // NOTE: remove this check in Lucene 5.0!
-          String version = si.getVersion();
-          final boolean isUnversioned = 
-            (version == null || StringHelper.getVersionComparator().compare(version, "3.2") < 0)
-            && normInput.length() == maxDoc();
-          if (isUnversioned) {
-            normSeek = 0;
-          } else {
-            normSeek = Lucene40NormsWriter.NORMS_HEADER.length;
-          }
-        }
-
-        norms.put(fi.name, new SegmentNorms(normInput, fi.number, normSeek, this));
-        nextNormSeek += maxDoc; // increment also if some norms are separate
-      }
-    }
-    // nocommit: change to a real check? see LUCENE-3619
-    assert singleNormStream == null || !normsInitiallyEmpty || nextNormSeek == singleNormStream.length();
-  }
-
-  // for testing only
-  boolean normsClosed() {
-    if (singleNormStream != null) {
-      return false;
-    }
-    for (final SegmentNorms norm : norms.values()) {
-      if (norm.refCount > 0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // for testing only
-  boolean normsClosed(String field) {
-    return norms.get(field).refCount == 0;
+    return core.norms.norms(field);
   }
 
   /**

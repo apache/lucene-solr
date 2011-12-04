@@ -61,6 +61,8 @@ final class NormsConsumer extends InvertedDocEndConsumer {
       for (FieldInfo fi : state.fieldInfos) {
         final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
         int upto = 0;
+        // we must check the final value of omitNorms for the fieldinfo, it could have 
+        // changed for this field since the first time we added it.
         if (!fi.omitNorms && toWrite != null && toWrite.upto > 0) {
           normsOut.startField(fi);
           int docID = 0;
