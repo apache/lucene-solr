@@ -193,15 +193,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  protected synchronized IndexReader doOpenIfChanged()
-    throws CorruptIndexException, IOException {
+  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     return reopenSegment(si, false, readOnly);
-  }
-
-  @Override
-  protected synchronized IndexReader doOpenIfChanged(boolean openReadOnly)
-    throws CorruptIndexException, IOException {
-    return reopenSegment(si, false, openReadOnly);
   }
 
   synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {

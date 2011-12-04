@@ -305,7 +305,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public final synchronized Object clone() {
     try {
-      DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, true);
+      DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true);
       newReader.writer = writer;
       newReader.hasDeletions = hasDeletions;
       assert newReader.readerFinishedListeners != null;
@@ -317,31 +317,34 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   @Override
   protected final IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    return doOpenIfChanged(true, null);
-  }
-
-  @Override
-  protected final IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
-    return doOpenIfChanged(openReadOnly, null);
+    return doOpenIfChanged(null);
   }
 
   @Override
   protected final IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return doOpenIfChanged(true, commit);
+    ensureOpen();
+
+    // If we were obtained by writer.getReader(), re-ask the
+    // writer to get a new reader.
+    if (writer != null) {
+      return doOpenFromWriter(commit);
+    } else {
+      return doOpenNoWriter(commit);
+    }
   }
 
   @Override
   protected final IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    ensureOpen();
     if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
-      return doOpenIfChanged();
-    } else {    
+      return doOpenFromWriter(null);
+    } else {
+      // fail by calling supers impl throwing UOE
       return super.doOpenIfChanged(writer, applyAllDeletes);
     }
   }
 
-  private final IndexReader doOpenFromWriter(boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
-    assert openReadOnly;
-
+  private final IndexReader doOpenFromWriter(IndexCommit commit) throws CorruptIndexException, IOException {
     if (commit != null) {
       throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
     }
@@ -362,21 +365,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return reader;
   }
 
-  private IndexReader doOpenIfChanged(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
-    ensureOpen();
-
-    assert openReadOnly;
-
-    // If we were obtained by writer.getReader(), re-ask the
-    // writer to get a new reader.
-    if (writer != null) {
-      return doOpenFromWriter(openReadOnly, commit);
-    } else {
-      return doOpenNoWriter(openReadOnly, commit);
-    }
-  }
-
-  private synchronized IndexReader doOpenNoWriter(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
+  private synchronized IndexReader doOpenNoWriter(IndexCommit commit) throws CorruptIndexException, IOException {
 
     if (commit == null) {
       if (isCurrent()) {
@@ -396,13 +385,12 @@ class DirectoryReader extends IndexReader implements Cloneable {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         final SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-        return doOpenIfChanged(infos, false, openReadOnly);
+        return doOpenIfChanged(infos, false);
       }
     }.run(commit);
   }
 
-  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
-    assert openReadOnly;
+  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone) throws CorruptIndexException, IOException {
     return new DirectoryReader(directory, infos, subReaders, doClone, termInfosIndexDivisor, readerFinishedListeners);
   }
 

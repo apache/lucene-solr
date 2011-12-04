@@ -497,20 +497,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /**
-   * If the index has changed since the provided reader was
-   * opened, open and return a new reader, with the
-   * specified <code>readOnly</code>; else, return
-   * null.
-   *
-   * @see #openIfChanged(IndexReader)
-   */
-  public static IndexReader openIfChanged(IndexReader oldReader, boolean readOnly) throws IOException {
-    final IndexReader newReader = oldReader.doOpenIfChanged(readOnly);
-    assert newReader != oldReader;
-    return newReader;
-  }
-
-  /**
    * If the IndexCommit differs from what the
    * provided reader is searching, or the provided reader is
    * not already read-only, open and return a new
@@ -602,16 +588,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
   
-  /**
-   * If the index has changed since it was opened, open and return a new reader;
-   * else, return {@code null}.
-   * 
-   * @see #openIfChanged(IndexReader, boolean)
-   */
-  protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support reopen().");
-  }
-
   /**
    * If the index has changed since it was opened, open and return a new reader;
    * else, return {@code null}.
