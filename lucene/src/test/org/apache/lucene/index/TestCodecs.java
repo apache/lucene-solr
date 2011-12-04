@@ -279,7 +279,7 @@ public class TestCodecs extends LuceneTestCase {
       // make sure it properly fully resets (rewinds) its
       // internal state:
       for(int iter=0;iter<2;iter++) {
-        docsEnum = termsEnum.docs(null,  docsEnum);
+        docsEnum = _TestUtil.docs(random, termsEnum, null,  docsEnum, false);
         assertEquals(terms[i].docs[0], docsEnum.nextDoc());
         assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
       }
@@ -479,7 +479,7 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
         if (field.omitTF) {
-          this.verifyDocs(term.docs, term.positions, termsEnum.docs(null, null), false);
+          this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random, termsEnum, null, null, false), false);
         } else {
           this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
         }
@@ -499,7 +499,7 @@ public class TestCodecs extends LuceneTestCase {
           assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
           assertEquals(term.docs.length, termsEnum.docFreq());
           if (field.omitTF) {
-            this.verifyDocs(term.docs, term.positions, termsEnum.docs(null, null), false);
+            this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random, termsEnum, null, null, false), false);
           } else {
             this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
           }
@@ -549,15 +549,22 @@ public class TestCodecs extends LuceneTestCase {
         do {
           term = field.terms[upto];
           if (TestCodecs.random.nextInt(3) == 1) {
-            final DocsEnum docs = termsEnum.docs(null, null);
-            final DocsAndPositionsEnum postings = termsEnum.docsAndPositions(null, null);
-
-            final DocsEnum docsEnum;
-            if (postings != null) {
-              docsEnum = postings;
+            final DocsEnum docs;
+            final DocsEnum docsAndFreqs;
+            final DocsAndPositionsEnum postings;
+            if (!field.omitTF) {
+              postings = termsEnum.docsAndPositions(null, null);
+              if (postings != null) {
+                docs = docsAndFreqs = postings;
+              } else {
+                docs = docsAndFreqs = _TestUtil.docs(random, termsEnum, null, null, true);
+              }
             } else {
-              docsEnum = docs;
+              postings = null;
+              docsAndFreqs = null;
+              docs = _TestUtil.docs(random, termsEnum, null, null, false);
             }
+            assertNotNull(docs);
             int upto2 = -1;
             while(upto2 < term.docs.length-1) {
               // Maybe skip:
@@ -567,10 +574,10 @@ public class TestCodecs extends LuceneTestCase {
                 final int inc = 1+TestCodecs.random.nextInt(left-1);
                 upto2 += inc;
                 if (TestCodecs.random.nextInt(2) == 1) {
-                  doc = docsEnum.advance(term.docs[upto2]);
+                  doc = docs.advance(term.docs[upto2]);
                   assertEquals(term.docs[upto2], doc);
                 } else {
-                  doc = docsEnum.advance(1+term.docs[upto2]);
+                  doc = docs.advance(1+term.docs[upto2]);
                   if (doc == DocIdSetIterator.NO_MORE_DOCS) {
                     // skipped past last doc
                     assert upto2 == term.docs.length-1;
@@ -584,20 +591,20 @@ public class TestCodecs extends LuceneTestCase {
                   }
                 }
               } else {
-                doc = docsEnum.nextDoc();
+                doc = docs.nextDoc();
                 assertTrue(doc != -1);
                 upto2++;
               }
               assertEquals(term.docs[upto2], doc);
               if (!field.omitTF) {
-                assertEquals(term.positions[upto2].length, docsEnum.freq());
+                assertEquals(term.positions[upto2].length, postings.freq());
                 if (TestCodecs.random.nextInt(2) == 1) {
                   this.verifyPositions(term.positions[upto2], postings);
                 }
               }
             }
 
-            assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
+            assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
           }
           upto++;
 

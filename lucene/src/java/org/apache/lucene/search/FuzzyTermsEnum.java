@@ -259,8 +259,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
-    return actualEnum.docs(liveDocs, reuse);
+  public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    return actualEnum.docs(liveDocs, reuse, needsFreqs);
   }
   
   @Override

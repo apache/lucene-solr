@@ -25,8 +25,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -689,14 +689,11 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
         //System.out.println("BTR.docs this=" + this);
         decodeMetaData();
         //System.out.println("BTR.docs:  state.docFreq=" + state.docFreq);
-        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, liveDocs, reuse);
-        assert docsEnum != null;
-        //System.out.println("BTR.docs:  return docsEnum=" + docsEnum);
-        return docsEnum;
+        return postingsReader.docs(fieldInfo, state, liveDocs, reuse, needsFreqs);
       }
 
       @Override

@@ -147,12 +147,16 @@ public abstract class TermsEnum {
 
   /** Get {@link DocsEnum} for the current term.  Do not
    *  call this when the enum is unpositioned.  This method
-   *  will not return null.
+   *  may return null (if needsFreqs is true but freqs were
+   *  not indexed for this field).
    *  
    * @param liveDocs unset bits are documents that should not
    * be returned
-   * @param reuse pass a prior DocsEnum for possible reuse */
-  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException;
+   * @param reuse pass a prior DocsEnum for possible reuse
+   * @param needsFreqs true if the caller intends to call
+   * {@link DocsEnum#freq}.  If you pass false you must not
+   * call {@link DocsEnum#freq} in the returned DocsEnum. */
+  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException;
 
   /** Get {@link DocsAndPositionsEnum} for the current term.
    *  Do not call this when the enum is unpositioned.
@@ -229,7 +233,7 @@ public abstract class TermsEnum {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
       throw new IllegalStateException("this method should never be called");
     }
       

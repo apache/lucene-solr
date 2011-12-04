@@ -49,9 +49,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
-    DocsEnum td = MultiFields.getTermDocsEnum(r,
-                                              MultiFields.getLiveDocs(r),
-                                              t.field(), new BytesRef(t.text()));
+    DocsEnum td = _TestUtil.docs(random, r,
+                                 t.field(), new BytesRef(t.text()),
+                                 MultiFields.getLiveDocs(r),
+                                 null,
+                                 false);
 
     if (td != null) {
       while (td.nextDoc() != DocsEnum.NO_MORE_DOCS) {
@@ -990,7 +992,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.addDocument(doc);
     IndexReader r = IndexReader.open(w, true).getSequentialSubReaders()[0];
     try {
-      r.termDocsEnum(null, "f", new BytesRef("val"));
+      _TestUtil.docs(random, r, "f", new BytesRef("val"), null, null, false);
       fail("should have failed to seek since terms index was not loaded.");
     } catch (IllegalStateException e) {
       // expected - we didn't load the term index

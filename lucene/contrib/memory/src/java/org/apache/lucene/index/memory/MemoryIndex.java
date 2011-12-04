@@ -936,7 +936,7 @@ public class MemoryIndex {
       }
 
       @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) {
         if (reuse == null || !(reuse instanceof MemoryDocsEnum)) {
           reuse = new MemoryDocsEnum();
         }

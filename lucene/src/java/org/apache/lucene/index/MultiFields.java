@@ -151,14 +151,14 @@ public final class MultiFields extends Fields {
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null if the term does not
    *  exist. */
-  public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
+  public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
       if (termsEnum.seekExact(term, true)) {
-        return termsEnum.docs(liveDocs, null);
+        return termsEnum.docs(liveDocs, null, needsFreqs);
       }
     }
     return null;

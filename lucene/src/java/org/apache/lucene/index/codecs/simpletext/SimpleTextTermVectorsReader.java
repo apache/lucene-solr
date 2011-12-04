@@ -365,10 +365,10 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
       // TODO: reuse
       SimpleTVDocsEnum e = new SimpleTVDocsEnum();
-      e.reset(liveDocs, current.getValue().freq);
+      e.reset(liveDocs, needsFreqs ? current.getValue().freq : -1);
       return e;
     }
 
@@ -399,6 +399,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int freq() {
+      assert freq != -1;
       return freq;
     }
 

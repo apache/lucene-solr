@@ -166,8 +166,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits bits, DocsEnum reuse) throws IOException {
-    return tenum.docs(bits, reuse);
+  public DocsEnum docs(Bits bits, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    return tenum.docs(bits, reuse, needsFreqs);
   }
     
   @Override

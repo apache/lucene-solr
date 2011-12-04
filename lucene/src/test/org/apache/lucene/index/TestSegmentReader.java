@@ -22,12 +22,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.BytesRef;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
@@ -132,16 +132,20 @@ public class TestSegmentReader extends LuceneTestCase {
       }
     }
     
-    DocsEnum termDocs = MultiFields.getTermDocsEnum(reader,
-                                                    MultiFields.getLiveDocs(reader),
-                                                    DocHelper.TEXT_FIELD_1_KEY,
-                                                    new BytesRef("field"));
+    DocsEnum termDocs = _TestUtil.docs(random, reader,
+                                       DocHelper.TEXT_FIELD_1_KEY,
+                                       new BytesRef("field"),
+                                       MultiFields.getLiveDocs(reader),
+                                       null,
+                                       false);
     assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 
-    termDocs = MultiFields.getTermDocsEnum(reader,
-                                           MultiFields.getLiveDocs(reader),
-                                           DocHelper.NO_NORMS_KEY,
-                                           new BytesRef(DocHelper.NO_NORMS_TEXT));
+    termDocs = _TestUtil.docs(random, reader,
+                              DocHelper.NO_NORMS_KEY,
+                              new BytesRef(DocHelper.NO_NORMS_TEXT),
+                              MultiFields.getLiveDocs(reader),
+                              null,
+                              false);
 
     assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 

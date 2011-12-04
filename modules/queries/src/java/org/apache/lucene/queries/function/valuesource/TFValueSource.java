@@ -62,7 +62,7 @@ public class TFValueSource extends TermFreqValueSource {
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
           if (termsEnum.seekExact(indexedBytes, false)) {
-            docs = termsEnum.docs(null, null);
+            docs = termsEnum.docs(null, null, true);
           } else {
             docs = null;
           }

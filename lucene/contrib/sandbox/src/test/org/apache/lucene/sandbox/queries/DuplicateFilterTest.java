@@ -17,6 +17,9 @@ package org.apache.lucene.sandbox.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.HashSet;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
@@ -28,9 +31,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.HashSet;
+import org.apache.lucene.util._TestUtil;
 
 public class DuplicateFilterTest extends LuceneTestCase {
   private static final String KEY_FIELD = "url";
@@ -134,10 +135,13 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = MultiFields.getTermDocsEnum(reader,
-          MultiFields.getLiveDocs(reader),
-          KEY_FIELD,
-          new BytesRef(url));
+      DocsEnum td = _TestUtil.docs(random, reader,
+                                   KEY_FIELD,
+                                   new BytesRef(url),
+                                   MultiFields.getLiveDocs(reader),
+                                   null,
+                                   false);
+
       int lastDoc = 0;
       while (td.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         lastDoc = td.docID();
@@ -155,10 +159,13 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = MultiFields.getTermDocsEnum(reader,
-          MultiFields.getLiveDocs(reader),
-          KEY_FIELD,
-          new BytesRef(url));
+      DocsEnum td = _TestUtil.docs(random, reader,
+                                   KEY_FIELD,
+                                   new BytesRef(url),
+                                   MultiFields.getLiveDocs(reader),
+                                   null,
+                                   false);
+
       int lastDoc = 0;
       td.nextDoc();
       lastDoc = td.docID();

@@ -599,7 +599,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // should be found exactly
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(terms.docs(null, null)));
+      assertEquals(35, countDocs(_TestUtil.docs(random, terms, null, null, false)));
       assertNull(terms.next());
 
       // should hit end of field
@@ -611,12 +611,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(TermsEnum.SeekStatus.NOT_FOUND,
                    terms.seekCeil(new BytesRef("a")));
       assertTrue(terms.term().bytesEquals(aaaTerm));
-      assertEquals(35, countDocs(terms.docs(null, null)));
+      assertEquals(35, countDocs(_TestUtil.docs(random, terms, null, null, false)));
       assertNull(terms.next());
 
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(terms.docs(null, null)));
+      assertEquals(35, countDocs(_TestUtil.docs(random, terms,null, null, false)));
       assertNull(terms.next());
 
       r.close();

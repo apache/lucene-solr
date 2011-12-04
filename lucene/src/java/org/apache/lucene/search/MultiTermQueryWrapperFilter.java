@@ -105,7 +105,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       do {
         // System.out.println("  iter termCount=" + termCount + " term=" +
         // enumerator.term().toBytesString());
-        docsEnum = termsEnum.docs(acceptDocs, docsEnum);
+        docsEnum = termsEnum.docs(acceptDocs, docsEnum, false);
         int docid;
         while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           bitSet.set(docid);

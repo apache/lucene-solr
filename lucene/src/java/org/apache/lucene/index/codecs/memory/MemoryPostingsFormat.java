@@ -26,8 +26,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -36,10 +36,10 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
+import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -317,7 +317,6 @@ public class MemoryPostingsFormat extends PostingsFormat {
         docUpto++;
         if (indexOptions == IndexOptions.DOCS_ONLY) {
           accum += in.readVInt();
-          freq = 1;
         } else {
           final int code = in.readVInt();
           accum += code >>> 1;
@@ -371,6 +370,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
+      assert indexOptions != IndexOptions.DOCS_ONLY;
       return freq;
     }
   }
@@ -600,10 +600,13 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
       decodeMetaData();
       FSTDocsEnum docsEnum;
-      if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
+
+      if (needsFreqs && field.indexOptions == IndexOptions.DOCS_ONLY) {
+        return null;
+      } else if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
         docsEnum = new FSTDocsEnum(field.indexOptions, field.storePayloads);
       } else {
         docsEnum = (FSTDocsEnum) reuse;        

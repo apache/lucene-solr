@@ -6,31 +6,10 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -40,6 +19,25 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -91,7 +89,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // Obtain facets results and hand-test them
     assertCorrectResults(facetsCollector);
 
-    DocsEnum td = MultiFields.getTermDocsEnum(ir, MultiFields.getLiveDocs(ir), "$facets", new BytesRef("$fulltree$"));
+    DocsEnum td = _TestUtil.docs(random, ir, "$facets", new BytesRef("$fulltree$"), MultiFields.getLiveDocs(ir), null, false);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     tr.close();
@@ -188,7 +186,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   }
 
   private void assertPostingListExists(String field, String text, IndexReader ir) throws IOException {
-    DocsEnum de = MultiFields.getTermDocsEnum(ir, null, field, new BytesRef(text));
+    DocsEnum de = _TestUtil.docs(random, ir, field, new BytesRef(text), null, null, false);
     assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 

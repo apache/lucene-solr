@@ -17,18 +17,19 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.Directory;
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Collection;
+import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
@@ -98,10 +99,12 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 
-    DocsEnum termDocs = MultiFields.getTermDocsEnum(mergedReader,
-                                                    MultiFields.getLiveDocs(mergedReader),
-                                                    DocHelper.TEXT_FIELD_2_KEY,
-                                                    new BytesRef("field"));
+    DocsEnum termDocs = _TestUtil.docs(random, mergedReader,
+                                       DocHelper.TEXT_FIELD_2_KEY,
+                                       new BytesRef("field"),
+                                       MultiFields.getLiveDocs(mergedReader),
+                                       null,
+                                       false);
     assertTrue(termDocs != null);
     assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 

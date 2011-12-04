@@ -63,7 +63,19 @@ public abstract class PostingsConsumer {
     int df = 0;
     long totTF = 0;
 
-    if (mergeState.fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+      while(true) {
+        final int doc = postings.nextDoc();
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+        visitedDocs.set(doc);
+        this.startDoc(doc, 0);
+        this.finishDoc();
+        df++;
+      }
+      totTF = -1;
+    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS) {
       while(true) {
         final int doc = postings.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {

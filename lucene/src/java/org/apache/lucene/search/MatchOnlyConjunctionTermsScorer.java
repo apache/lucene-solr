@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.search;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,24 +17,21 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.AttributeSource;
+import java.io.IOException;
 
-/** Iterates through the documents and term freqs.
- *  NOTE: you must first call {@link #nextDoc} before using
- *  any of the per-doc methods. */
-public abstract class DocsEnum extends DocIdSetIterator {
+/** Scorer for conjunctions, sets of terms, all of which are required. */
+final class MatchOnlyConjunctionTermScorer extends ConjunctionTermScorer {
+  MatchOnlyConjunctionTermScorer(Weight weight, float coord,
+      DocsAndFreqs[] docsAndFreqs) throws IOException {
+    super(weight, coord, docsAndFreqs);
+  }
 
-  private AttributeSource atts = null;
-
-  /** Returns term frequency in the current document.  Do
-   *  not call this before {@link #nextDoc} is first called,
-   *  nor after {@link #nextDoc} returns NO_MORE_DOCS. */
-  public abstract int freq();
-  
-  /** Returns the related attributes. */
-  public AttributeSource attributes() {
-    if (atts == null) atts = new AttributeSource();
-    return atts;
+  @Override
+  public float score() throws IOException {
+    float sum = 0.0f;
+    for (DocsAndFreqs docs : docsAndFreqs) {
+      sum += docs.docScorer.score(lastDoc, 1);
+    }
+    return sum * coord;
   }
 }

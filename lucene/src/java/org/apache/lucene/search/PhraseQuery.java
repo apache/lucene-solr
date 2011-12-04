@@ -244,7 +244,7 @@ public class PhraseQuery extends Query {
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          assert reader.termDocsEnum(liveDocs, t.field(), t.bytes(), state) != null: "termstate found but no term exists in reader";
+          assert reader.termDocsEnum(liveDocs, t.field(), t.bytes(), state, false) != null: "termstate found but no term exists in reader";
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
