@@ -35,9 +35,6 @@ import org.apache.lucene.store.IndexOutput;
 
 final class SegmentNorms implements Cloneable {
 
-  /** norms header placeholder */
-  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
-
   int refCount = 1;
 
   // If this instance is a clone, the originalNorm

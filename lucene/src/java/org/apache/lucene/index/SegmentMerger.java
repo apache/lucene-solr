@@ -31,6 +31,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.TermVectorsWriter;
+import org.apache.lucene.index.codecs.lucene40.Lucene40NormsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -324,6 +325,7 @@ final class SegmentMerger {
       }
   }
 
+  // TODO: implement merge in normsformat instead.
   private void mergeNorms() throws IOException {
     IndexOutput output = null;
     boolean success = false;
@@ -332,7 +334,7 @@ final class SegmentMerger {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), context);
-            output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
+            output.writeBytes(Lucene40NormsWriter.NORMS_HEADER, Lucene40NormsWriter.NORMS_HEADER.length);
           }
           for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
             final int maxDoc = reader.reader.maxDoc();

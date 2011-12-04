@@ -33,6 +33,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermVectorsReader;
+import org.apache.lucene.index.codecs.lucene40.Lucene40NormsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
@@ -540,7 +541,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   private void openNorms(Directory cfsDir, IOContext context) throws IOException {
-    long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
+    boolean normsInitiallyEmpty = norms.isEmpty(); // only used for assert
+    long nextNormSeek = Lucene40NormsWriter.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
     for (FieldInfo fi : core.fieldInfos) {
       if (norms.containsKey(fi.name)) {
@@ -585,7 +587,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           if (isUnversioned) {
             normSeek = 0;
           } else {
-            normSeek = SegmentNorms.NORMS_HEADER.length;
+            normSeek = Lucene40NormsWriter.NORMS_HEADER.length;
           }
         }
 
@@ -593,6 +595,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
         nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
+    // nocommit: change to a real check? see LUCENE-3619
+    assert singleNormStream == null || !normsInitiallyEmpty || nextNormSeek == singleNormStream.length();
   }
 
   // for testing only
