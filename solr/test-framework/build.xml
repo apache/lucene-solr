@@ -39,11 +39,37 @@
     </compile>
   </target>
 
-  <target name="javadocs" depends="common-solr.javadocs">
-    <mkdir dir="${dest}/docs/api/test-framework"/>
-    <copy todir="${dest}/docs/api/test-framework">
-      <fileset dir="${javadoc.dir}"/>
-    </copy>
+  <!-- Override common-solr.javadocs to include a JUnit javadoc link     -->
+  <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
+  <target name="javadocs"
+          depends="compile-core,lucene-javadocs-all,define-lucene-javadoc-url">
+    <sequential>
+      <mkdir dir="${javadoc.dir}"/>
+      <mkdir dir="${dest}/META-INF/"/>
+      <invoke-javadoc destdir="${javadoc.dir}"
+                      title="${Name} ${version} ${name} API">
+        <sources>
+          <link offline="true" href="${lucene.javadoc.url}"
+                packagelistloc="${common.dir}/build/docs/api/all/"/>
+          <link offline="true" href="${lucene-javadoc-url}"
+                packagelistloc="${common.dir}/build/docs/api/all/"/>
+          <link offline="true" href="${javadoc.link.junit}"
+                packagelistLoc="${javadoc.packagelist.dir}/junit"/>
+          <link href=""/>
+          <packageset dir="${src.dir}"/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}"
+              destfile="${build.dir}/${final.name}-javadoc.jar"
+              title="Apache Solr Search Server: ${ant.project.name}"
+              metainf.source.dir="${common-solr.dir}"
+              implementation.title="org.apache.solr"
+              spec.version="${solr.spec.version}"/>
+      <mkdir dir="${dest}/docs/api/test-framework"/>
+      <copy todir="${dest}/docs/api/test-framework">
+        <fileset dir="${javadoc.dir}"/>
+      </copy>
+    </sequential>
   </target>
 </project>
 

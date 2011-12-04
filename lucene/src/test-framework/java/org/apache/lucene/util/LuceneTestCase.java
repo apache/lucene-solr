@@ -148,8 +148,12 @@ public abstract class LuceneTestCase extends Assert {
   public static final int TEST_ITER_MIN = Integer.parseInt(System.getProperty("tests.iter.min", Integer.toString(TEST_ITER)));
   /** Get the random seed for tests */
   public static final String TEST_SEED = System.getProperty("tests.seed", "random");
-  /** whether or not nightly tests should run */
+  /** whether or not @nightly tests should run */
   public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
+  /** whether or not @weekly tests should run */
+  public static final boolean TEST_WEEKLY = Boolean.parseBoolean(System.getProperty("tests.weekly", "false"));
+  /** whether or not @slow tests should run */
+  public static final boolean TEST_SLOW = Boolean.parseBoolean(System.getProperty("tests.slow", "false"));
   /** the line file used by LineFileDocs */
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
@@ -1348,6 +1352,22 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Nightly {}
+
+  /**
+   * Annotation for tests that should only be run during weekly builds
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Weekly{}
+
+  /**
+   * Annotation for tests that are slow and should be run only when specifically asked to run
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Slow{}
 
   /**
    * Annotation for test classes that should only use codecs that are not memory expensive (avoid SimpleText, MemoryCodec).

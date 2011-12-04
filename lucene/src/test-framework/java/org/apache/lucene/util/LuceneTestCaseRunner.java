@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.lucene.util.LuceneTestCase.Weekly;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,7 +48,10 @@ import static org.apache.lucene.util.LuceneTestCase.TEST_ITER_MIN;
 import static org.apache.lucene.util.LuceneTestCase.TEST_METHOD;
 import static org.apache.lucene.util.LuceneTestCase.TEST_SEED;
 import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
+import static org.apache.lucene.util.LuceneTestCase.TEST_WEEKLY;
+import static org.apache.lucene.util.LuceneTestCase.TEST_SLOW;
 import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
+
 
 /** optionally filters the tests to be run by TEST_METHOD */
 public class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
@@ -89,27 +95,13 @@ public class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
     }
     
     if (TEST_NIGHTLY == false) {
-      if (getTestClass().getJavaClass().isAnnotationPresent(Nightly.class)) {
-        /* the test class is annotated with nightly, remove all methods */
-        String className = getTestClass().getJavaClass().getSimpleName();
-        System.err.println("NOTE: Ignoring nightly-only test class '" + className + "'");
-        testMethods.clear();
-      } else {
-        /* remove all nightly-only methods */
-        for (int i = 0; i < testMethods.size(); i++) {
-          final FrameworkMethod m = testMethods.get(i);
-          if (m.getAnnotation(Nightly.class) != null) {
-            System.err.println("NOTE: Ignoring nightly-only test method '" + m.getName() + "'");
-            testMethods.remove(i--);
-          }
-        }
-      }
-      /* dodge a possible "no-runnable methods" exception by adding a fake ignored test */
-      if (testMethods.isEmpty()) {
-        try {
-          testMethods.add(new FrameworkMethod(LuceneTestCase.class.getMethod("alwaysIgnoredTestMethod")));
-        } catch (Exception e) { throw new RuntimeException(e); }
-      }
+      removeAnnotatedTests(Nightly.class, "@nightly");
+    }
+    if (TEST_WEEKLY == false) {
+      removeAnnotatedTests(Weekly.class, "@weekly");
+    }
+    if (TEST_SLOW == false) {
+      removeAnnotatedTests(Slow.class, "@slow");
     }
     // sort the test methods first before shuffling them, so that the shuffle is consistent
     // across different implementations that might order the methods different originally.
@@ -122,7 +114,31 @@ public class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
     Collections.shuffle(testMethods, r);
     return testMethods;
   }
-  
+
+  private void removeAnnotatedTests(Class<? extends Annotation> annotation, String userFriendlyName) {
+    if (getTestClass().getJavaClass().isAnnotationPresent(annotation)) {
+      /* the test class is annotated with the annotation, remove all methods */
+      String className = getTestClass().getJavaClass().getSimpleName();
+      System.err.println("NOTE: Ignoring " + userFriendlyName + " test class '" + className + "'");
+      testMethods.clear();
+    } else {
+      /* remove all methods with the annotation*/
+      for (int i = 0; i < testMethods.size(); i++) {
+        final FrameworkMethod m = testMethods.get(i);
+        if (m.getAnnotation(annotation) != null) {
+          System.err.println("NOTE: Ignoring " + userFriendlyName + " test method '" + m.getName() + "'");
+          testMethods.remove(i--);
+        }
+      }
+    }
+    /* dodge a possible "no-runnable methods" exception by adding a fake ignored test */
+    if (testMethods.isEmpty()) {
+      try {
+        testMethods.add(new FrameworkMethod(LuceneTestCase.class.getMethod("alwaysIgnoredTestMethod")));
+      } catch (Exception e) { throw new RuntimeException(e); }
+    }
+  }
+
   @Override
   protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
     if (VERBOSE) {
