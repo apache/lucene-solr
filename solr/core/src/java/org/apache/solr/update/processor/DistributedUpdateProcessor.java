@@ -71,7 +71,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final UpdateLog ulog;
   private final VersionInfo vinfo;
   private final boolean versionsStored;
-  private final boolean returnVersions = true; // todo: default to false and make configurable
+  private boolean returnVersions = true; // todo: default to false and make configurable
 
   private NamedList addsResponse = null;
   private NamedList deleteResponse = null;
@@ -101,6 +101,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     this.ulog = updateHandler.getUpdateLog();
     this.vinfo = ulog.getVersionInfo();
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
+    returnVersions = versionsStored;
 
     // TODO: better way to get the response, or pass back info to it?
     SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
@@ -222,9 +223,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    int hash = hash(cmd);
-    
+    int hash = 0;
     if (zkEnabled) {
+      hash = hash(cmd);
       shards = setupRequest(hash);
     } else {
       // even in non zk mode, tests simulate updates from a leader
@@ -233,7 +234,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
-      dropCmd = versionAdd(cmd, hash);
+      dropCmd = versionAdd(cmd);
     }
 
     if (dropCmd) {
@@ -280,15 +281,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    * @param cmd
-   * @param hash
    * @return whether or not to drop this cmd
    * @throws IOException
    */
-  private boolean versionAdd(AddUpdateCommand cmd, int hash) throws IOException {
-    if (vinfo == null) {
+  private boolean versionAdd(AddUpdateCommand cmd) throws IOException {
+    BytesRef idBytes = cmd.getIndexedId();
+
+    if (vinfo == null || idBytes == null) {
       super.processAdd(cmd);
       return false;
     }
+
+    // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
+    int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -313,7 +318,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean leaderLogic = isLeader && !isReplay;
 
 
-    VersionBucket bucket = vinfo.bucket(hash);
+    VersionBucket bucket = vinfo.bucket(bucketHash);
 
     vinfo.lockForUpdate();
     try {
@@ -383,8 +388,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    int hash = hash(cmd);
+    int hash = 0;
     if (zkEnabled) {
+      hash = hash(cmd);
       shards = setupRequest(hash);
     } else {
       // even in non zk mode, tests simulate updates from a leader
@@ -393,7 +399,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     boolean dropCmd = false;
     if (!forwardToLeader) {
-      dropCmd  = versionDelete(cmd, hash);
+      dropCmd  = versionDelete(cmd);
     }
     
     if (dropCmd) {
@@ -419,20 +425,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private boolean versionDelete(DeleteUpdateCommand cmd, int hash) throws IOException {
-    if (cmd == null) {
-      throw new NullArgumentException("cmd is null");
-    }
-    
-    if (vinfo == null) {
+  private boolean versionDelete(DeleteUpdateCommand cmd) throws IOException {
+
+    BytesRef idBytes = cmd.getIndexedId();
+
+    if (vinfo == null || idBytes == null) {
+      super.processDelete(cmd);
       return false;
     }
 
-    if (!cmd.isDeleteById()) {
-      // delete-by-query
-      // TODO: forward to all nodes in distrib mode?  or just don't bother to support?
-      return false;
-    }
+    // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
+    int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
 
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
@@ -452,7 +455,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
     }
 
-    VersionBucket bucket = vinfo.bucket(hash);
+    VersionBucket bucket = vinfo.bucket(bucketHash);
 
     vinfo.lockForUpdate();
     try {
