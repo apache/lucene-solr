@@ -94,10 +94,13 @@
   <property name="tests.seed" value="random" />
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
+  <property name="tests.weekly" value="false" />
+  <property name="tests.slow" value="false" />
   <property name="tests.cleanthreads.sysprop" value="perMethod"/>
   <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
+  <property name="tests.heapsize" value="512M"/>
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -527,8 +530,10 @@
   	<attribute name="tempDir" default="${build.dir}/test"/>
   	<attribute name="threadNum" default="1"/>
   	<attribute name="threadTotal" default="1"/>
-        <attribute name="tests.nightly" default="${tests.nightly}"/>
-        <attribute name="tests.multiplier" default="${tests.multiplier}"/>
+    <attribute name="tests.nightly" default="${tests.nightly}"/>
+    <attribute name="tests.weekly" default="${tests.weekly}"/>
+    <attribute name="tests.slow" default="${tests.slow}"/>
+    <attribute name="tests.multiplier" default="${tests.multiplier}"/>
 
     <sequential>
 	    <condition property="runall">
@@ -542,7 +547,7 @@
 	    This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
 	    -->
     	<touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
-	    <junit printsummary="off" haltonfailure="no" maxmemory="512M" tempdir="@{tempDir}/@{threadNum}"
+	    <junit printsummary="off" haltonfailure="no" maxmemory="${tests.heapsize}" tempdir="@{tempDir}/@{threadNum}"
 	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir="@{tempDir}/@{threadNum}">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
@@ -584,6 +589,10 @@
               <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
           <!-- set whether or not nightly tests should run -->
           <sysproperty key="tests.nightly" value="@{tests.nightly}"/>
+        <!-- set whether or not weekly tests should run -->
+          <sysproperty key="tests.weekly" value="@{tests.weekly}"/>
+        <!-- set whether or not slow tests should run -->
+          <sysproperty key="tests.slow" value="@{tests.slow}"/>
 	    	
           <!-- set whether tests framework should not require java assertions enabled -->
           <sysproperty key="tests.asserts.gracious" value="${tests.asserts.gracious}"/>

@@ -41,11 +41,11 @@ import org.junit.Ignore;
 // disk (but, should run successfully).  Best to run w/
 // -Dtests.codec=Standard, and w/ plenty of RAM, eg:
 //
-//   ant compile-test
+//   ant test -Dtest.weekly=true -Dtest.slow=true -Dtests.heapsize=8g
 //
 //   java -server -Xmx8g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=MMapDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
-
+@LuceneTestCase.UseNoMemoryExpensiveCodec
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 10;
@@ -140,13 +140,13 @@ public class Test2BTerms extends LuceneTestCase {
     }
   }
 
-  @Ignore("Takes ~4 hours to run on a fast machine!!  And requires that you don't use PreFlex codec.")
+  @Slow
   public void test2BTerms() throws IOException {
 
     if ("Lucene3x".equals(Codec.getDefault().getName())) {
-      throw new RuntimeException("thist test cannot run with PreFlex codec");
+      throw new RuntimeException("this test cannot run with PreFlex codec");
     }
-
+    System.out.println("Starting Test2B");
     final long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
 
     final int TERMS_PER_DOC = _TestUtil.nextInt(random, 100000, 1000000);
