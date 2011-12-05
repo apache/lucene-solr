@@ -53,7 +53,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
   }
 
   @Override
