@@ -323,7 +323,6 @@ public class Overseer implements NodeStateChangeListener {
    */
   private void publishCloudState() {
     try {
-      System.out.println("publish:" + cloudState.getCollections());
       CloudStateUtility.update(zkClient, cloudState, null);
     } catch (KeeperException e) {
       log.error("Could not publish cloud state.", e);

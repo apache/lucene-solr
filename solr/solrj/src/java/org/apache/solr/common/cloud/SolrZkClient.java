@@ -273,6 +273,16 @@ public class SolrZkClient {
     makePath(path, null, CreateMode.PERSISTENT);
   }
   
+  public void makePath(String path, File file) throws IOException,
+      KeeperException, InterruptedException {
+    if (log.isInfoEnabled()) {
+      log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
+    }
+    
+    String data = FileUtils.readFileToString(file);
+    makePath(path, data.getBytes("UTF-8"));
+  }
+  
   public void makePath(String path, CreateMode createMode) throws KeeperException,
       InterruptedException {
     makePath(path, null, createMode);
@@ -398,15 +408,7 @@ public class SolrZkClient {
    */
   public void setData(String path, byte[] data) throws KeeperException,
       InterruptedException {
-
-    makePath(path);
-
-    Object exists = exists(path, null);
-    if (exists != null) {
-      setData(path, data, -1);
-    } else {
-      create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    }
+    setData(path, data, -1);
   }
 
   /**

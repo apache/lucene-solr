@@ -51,12 +51,10 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  *
  */
-@Ignore("Trying to figure out an issue")
 public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";

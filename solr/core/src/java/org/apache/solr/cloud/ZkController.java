@@ -622,7 +622,7 @@ public final class ZkController {
     for(File file : files) {
       if (!file.getName().startsWith(".")) {
         if (!file.isDirectory()) {
-          zkClient.setData(zkPath + "/" + file.getName(), file);
+          zkClient.makePath(zkPath + "/" + file.getName(), file);
         } else {
           uploadToZK(file, zkPath + "/" + file.getName());
         }

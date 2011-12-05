@@ -63,10 +63,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
    
       props.put("num_shards", "3");
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.setData("/collections/collection1", zkProps.store());
+      zkClient.makePath("/collections/collection1", zkProps.store());
       props.put("num_shards", "1");
       zkProps = new ZkNodeProps(props);
-      zkClient.setData("/collections/collection2", zkProps.store());
+      zkClient.makePath("/collections/collection2", zkProps.store());
       ZkNodeProps z = new ZkNodeProps(props);
       
       CoreDescriptor desc = new CoreDescriptor(null, "core1", "");

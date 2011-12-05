@@ -49,7 +49,6 @@ public class CloudSolrServer extends SolrServer {
   private String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
-  static AtomicInteger cnt = new AtomicInteger(0);
 
   /**
    * @param zkHost The address of the zookeeper quorum containing the cloud state
@@ -95,10 +94,6 @@ public class CloudSolrServer extends SolrServer {
       synchronized (this) {
         if (zkStateReader == null) {
           try {
-            if (cnt.incrementAndGet() > 1) {
-              throw new IllegalStateException();
-            }
-            System.out.println("SHOULD ONLY HAPPEN ONCE");
             ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout,
                 zkClientTimeout, true);
             zk.createClusterStateWatchersAndUpdate();

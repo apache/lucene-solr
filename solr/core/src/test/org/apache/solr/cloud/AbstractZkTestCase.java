@@ -96,9 +96,10 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.close();
   }
 
-  private static void putConfig(SolrZkClient zkConnection, String name)
+  private static void putConfig(SolrZkClient zkClient, String name)
       throws Exception {
-    zkConnection.setData("/configs/conf1/" + name, getFile("solr"
+
+    zkClient.makePath("/configs/conf1/" + name, getFile("solr"
         + File.separator + "conf" + File.separator + name));
   }
 
