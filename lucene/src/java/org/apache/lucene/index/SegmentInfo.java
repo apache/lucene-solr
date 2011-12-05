@@ -339,6 +339,7 @@ public final class SegmentInfo implements Cloneable {
   /**
    * @deprecated separate norms are not supported in >= 4.0
    */
+  @Deprecated
   boolean hasSeparateNorms() {
     if (normGen == null) {
       return false;
@@ -508,16 +509,12 @@ public final class SegmentInfo implements Cloneable {
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       fileSet.add(delFileName);
     }
-   
-    // TODO: push this to codec?
+
+    // because separate norm files are unconditionally stored outside cfs,
+    // we must explicitly ask for their filenames if we might have separate norms:
+    // remove this when 3.x indexes are no longer supported
     if (normGen != null) {
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        long gen = entry.getValue();
-        if (gen >= YES) {
-          // Definitely a separate norm file, with generation:
-          fileSet.add(IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
-        }
-      }
+      codec.normsFormat().separateFiles(dir, this, fileSet);
     }
 
     files = new ArrayList<String>(fileSet);

@@ -34,4 +34,11 @@ public abstract class NormsFormat {
   public abstract NormsReader normsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException;
   public abstract NormsWriter normsWriter(SegmentWriteState state) throws IOException;
   public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
+  
+  /** 
+   * Note: this should not be overridden! 
+   * @deprecated 
+   */
+  @Deprecated
+  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {};
 }

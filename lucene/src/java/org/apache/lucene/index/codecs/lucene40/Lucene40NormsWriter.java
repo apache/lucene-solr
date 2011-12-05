@@ -40,6 +40,11 @@ public class Lucene40NormsWriter extends NormsWriter {
   /** Extension of norms file */
   static final String NORMS_EXTENSION = "nrm";
   
+  /** Extension of separate norms file
+   * @deprecated */
+  @Deprecated
+  static final String SEPARATE_NORMS_EXTENSION = "s";
+  
   public Lucene40NormsWriter(Directory directory, String segment, IOContext context) throws IOException {
     final String normsFileName = IndexFileNames.segmentFileName(segment, "", NORMS_EXTENSION);
     boolean success = false;

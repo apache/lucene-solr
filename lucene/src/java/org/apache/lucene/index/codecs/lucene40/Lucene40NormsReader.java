@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -132,7 +133,7 @@ public class Lucene40NormsReader extends NormsReader {
   
   private static String getNormFilename(String segmentName, Map<Integer,Long> normGen, int number) {
     if (hasSeparateNorms(normGen, number)) {
-      return IndexFileNames.fileNameFromGeneration(segmentName, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
+      return IndexFileNames.fileNameFromGeneration(segmentName, Lucene40NormsWriter.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
     } else {
       // single file for all norms
       return IndexFileNames.fileNameFromGeneration(segmentName, Lucene40NormsWriter.NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
@@ -178,6 +179,21 @@ public class Lucene40NormsReader extends NormsReader {
     final String normsFileName = IndexFileNames.segmentFileName(info.name, "", Lucene40NormsWriter.NORMS_EXTENSION);
     if (dir.fileExists(normsFileName)) {
       files.add(normsFileName);
+    }
+  }
+  
+  /** @deprecated */
+  @Deprecated
+  static void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    Map<Integer,Long> normGen = info.getNormGen();
+    if (normGen != null) {
+      for (Entry<Integer,Long> entry : normGen.entrySet()) {
+        long gen = entry.getValue();
+        if (gen >= SegmentInfo.YES) {
+          // Definitely a separate norm file, with generation:
+          files.add(IndexFileNames.fileNameFromGeneration(info.name, Lucene40NormsWriter.SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
+        }
+      }
     }
   }
 }
