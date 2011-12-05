@@ -29,6 +29,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
@@ -479,8 +480,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * for doing so); if a new reader is returned you also
    * must eventually close it.  Be sure to never close a
    * reader while other threads are still using it; see
-   * <code>SearcherManager</code> in
-   * <code>contrib/misc</code> to simplify managing this.
+   * {@link SearcherManager} to simplify managing this.
    *
    * <p>If a new reader is returned, it's safe to make changes
    * (deletions, norms) with it.  All shared mutable state
@@ -565,7 +565,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * <p>This provides "near real-time" searching, in that
    * changes made during an {@link IndexWriter} session can be
    * quickly made available for searching without closing
-   * the writer nor calling {@link #commit}.
+   * the writer nor calling {@link IndexWriter#commit}.
    *
    * <p>It's <i>near</i> real-time because there is no hard
    * guarantee on how quickly you can get a new reader after
