@@ -72,6 +72,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient;
     private int nodeNumber;
     private int seq = -1;
+    private volatile boolean stop;
     
     public ClientThread(int nodeNumber) throws Exception {
       super("Thread-" + nodeNumber);
@@ -81,26 +82,36 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     @Override
     public void run() {
-      try {
+      
         LeaderElector elector = new LeaderElector(zkClient);
         
-        ElectionContext context = new ShardLeaderElectionContext("shard1", "collection1", Integer.toString(nodeNumber), null);
+        ElectionContext context = new ShardLeaderElectionContext("shard1",
+            "collection1", Integer.toString(nodeNumber), null);
         
-        elector.setup(context);
-        seq = elector.joinElection(context);
-        seqToThread.put(seq, this);
-        // run forever - we will be explicitly killed
-        Thread.sleep(Integer.MAX_VALUE);
-      } catch (Throwable e) {
-
+        try {
+          elector.setup(context);
+          
+          seq = elector.joinElection(context);
+          seqToThread.put(seq, this);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        
+      while (!stop) {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
       }
+      
     }
     
     public void close() throws InterruptedException {
       if (!zkClient.isClosed()) {
         zkClient.close();
       }
-      this.stop();
+      this.stop = true;
     }
   }
   
@@ -151,7 +162,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     int leaderThread = Integer.parseInt(getLeader());
     
     // whoever the leader is, should be the n_0 seq
-    // TODO: seen this fail by seq being -1
     assertEquals(0, threads.get(leaderThread).seq);
     
     // kill n_0, 1, 3 and 4
