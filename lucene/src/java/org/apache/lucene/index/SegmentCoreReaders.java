@@ -94,7 +94,9 @@ final class SegmentCoreReaders {
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;
-      // ask codec for its Norms
+      // ask codec for its Norms: 
+      // TODO: since we don't write any norms file if there are no norms,
+      // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       norms = codec.normsFormat().normsReader(cfsDir, si, fieldInfos, context, dir);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
       success = true;

@@ -180,7 +180,8 @@ public class TestOmitNorms extends LuceneTestCase {
   private void assertNoNrm(Directory dir) throws Throwable {
     final String[] files = dir.listAll();
     for (int i = 0; i < files.length; i++) {
-      assertFalse(files[i].endsWith(".nrm"));
+      // TODO: this relies upon filenames
+      assertFalse(files[i].endsWith(".nrm") || files[i].endsWith(".len"));
     }
   }
 
