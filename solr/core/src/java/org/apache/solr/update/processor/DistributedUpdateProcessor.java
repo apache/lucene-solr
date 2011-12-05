@@ -201,7 +201,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (slices == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
-          + collection + " in " + cloudState.getCollections());
+          + collection + " in " + cloudState);
     }
     
     Set<String> shards = slices.keySet();
@@ -600,7 +600,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    
     Map<String,Slice> slices = cloudState.getSlices(collection);
     if (slices == null) {
-      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + collection);
+      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + cloudState);
     }
     
     Slice replicas = slices.get(shardId);

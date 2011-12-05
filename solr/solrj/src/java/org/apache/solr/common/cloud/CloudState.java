@@ -35,19 +35,19 @@ import org.slf4j.LoggerFactory;
 // quasi immutable :(
 public class CloudState {
 	protected static Logger log = LoggerFactory.getLogger(CloudState.class);
-	private final Map<String, Map<String, Slice>> collectionStates;
+	private final Map<String, Map<String,Slice>> collectionStates;
 	private final Set<String> liveNodes;
 
 	public CloudState() {
 		this.liveNodes = new HashSet<String>();
-		this.collectionStates = new HashMap<String, Map<String, Slice>>(0);
+		this.collectionStates = new HashMap<String,Map<String,Slice>>(0);
 	}
 
 	public CloudState(Set<String> liveNodes,
-			Map<String, Map<String, Slice>> collectionStates) {
+			Map<String, Map<String,Slice>> collectionStates) {
 		this.liveNodes = new HashSet<String>(liveNodes.size());
 		this.liveNodes.addAll(liveNodes);
-		this.collectionStates = new HashMap<String, Map<String, Slice>>(collectionStates.size());
+		this.collectionStates = new HashMap<String, Map<String,Slice>>(collectionStates.size());
 		this.collectionStates.putAll(collectionStates);
 	}
 
@@ -62,12 +62,12 @@ public class CloudState {
 	public void addSlice(String collection, Slice slice) {
 		if (!collectionStates.containsKey(collection)) {
 			log.info("New collection");
-			collectionStates.put(collection, new HashMap<String, Slice>());
+			collectionStates.put(collection, new HashMap<String,Slice>());
 		}
 		if (!collectionStates.get(collection).containsKey(slice.getName())) {
 			collectionStates.get(collection).put(slice.getName(), slice);
 		} else {
-			Map<String, ZkNodeProps> shards = new HashMap<String, ZkNodeProps>();
+			Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
 			
 			Slice existingSlice = collectionStates.get(collection).get(slice.getName());
 			shards.putAll(existingSlice.getShards());
@@ -119,7 +119,7 @@ public class CloudState {
 	
 	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException, IOException {
     if (bytes == null || bytes.length == 0) {
-      return new CloudState(liveNodes, Collections.EMPTY_MAP);
+      return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }
     
     LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ObjectBuilder.fromJSON(new String(bytes, "utf-8"));

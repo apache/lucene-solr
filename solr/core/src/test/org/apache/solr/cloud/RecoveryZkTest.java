@@ -30,14 +30,15 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class RecoveryZkTest extends FullDistributedZkTest {
 
-  
+  private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
     System.setProperty("mockdir.checkindex", "false");
@@ -56,8 +57,8 @@ public class RecoveryZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
-    // nocommit: remove the need for this
-    Thread.sleep(5000);
+    // GRRRRR - this is needed because it takes a while for all the shards to learn about the cluster state
+    //Thread.sleep(5000);
     
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -114,34 +115,13 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(4000);
 
-    final CountDownLatch recoveryLatch = new CountDownLatch(1);
+    
 
     
     // bring shard replica up
     replica.start();
     
-    RecoveryStrat recoveryStrat = ((SolrDispatchFilter) replica.getDispatchFilter().getFilter()).getCores()
-        .getZkController().getRecoveryStrat();
-    
-    recoveryStrat.setRecoveryListener(new RecoveryListener() {
-      
-      @Override
-      public void startRecovery() {}
-      
-      @Override
-      public void finishedReplication() {}
-      
-      @Override
-      public void finishedRecovery() {
-        recoveryLatch.countDown();
-      }
-    });
-    
-    
-    // wait for recovery to finish
-    // if it takes over n seconds, assume we didnt get our listener attached before
-    // recover started - it should be done before n though
-    recoveryLatch.await(30, TimeUnit.SECONDS);
+    waitForRecovery(replica);
     
     // stop indexing threads
     indexThread.safeStop();

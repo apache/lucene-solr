@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -48,6 +49,7 @@ public class CloudSolrServer extends SolrServer {
   private String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
+  static AtomicInteger cnt = new AtomicInteger(0);
 
   /**
    * @param zkHost The address of the zookeeper quorum containing the cloud state
@@ -60,6 +62,7 @@ public class CloudSolrServer extends SolrServer {
    * @param zkHost The address of the zookeeper quorum containing the cloud state
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
+    System.out.println("new cloud server");
     this.zkHost = zkHost;
     this.lbServer = lbServer;
   }
@@ -88,24 +91,33 @@ public class CloudSolrServer extends SolrServer {
    * @throws InterruptedException
    */
   public void connect() {
-    if (zkStateReader != null) return;
-    synchronized(this) {
-      if (zkStateReader != null) return;
-      try {
-        ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout, zkClientTimeout);
-        zk.createClusterStateWatchersAndUpdate();
-        zkStateReader = zk;
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-      } catch (KeeperException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-
-      } catch (IOException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-
-      } catch (TimeoutException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    if (zkStateReader == null) {
+      synchronized (this) {
+        if (zkStateReader == null) {
+          try {
+            if (cnt.incrementAndGet() > 1) {
+              throw new IllegalStateException();
+            }
+            System.out.println("SHOULD ONLY HAPPEN ONCE");
+            ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout,
+                zkClientTimeout, true);
+            zk.createClusterStateWatchersAndUpdate();
+            zkStateReader = zk;
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (KeeperException e) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (IOException e) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (TimeoutException e) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          }
+        }
       }
     }
   }
@@ -125,7 +137,9 @@ public class CloudSolrServer extends SolrServer {
 
     Map<String,Slice> slices = cloudState.getSlices(collection);
     
-    // nocommit: if slices is null, the collection cannot be found
+    if (slices == null) {
+      throw new RuntimeException("Could not find collection in zk: " + cloudState);
+    }
     
     Set<String> liveNodes = cloudState.getLiveNodes();
 

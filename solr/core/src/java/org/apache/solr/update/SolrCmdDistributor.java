@@ -125,6 +125,7 @@ public class SolrCmdDistributor {
     clone.solrDoc = cmd.solrDoc;
     clone.commitWithin = cmd.commitWithin;
     clone.overwrite = cmd.overwrite;
+    clone.setVersion(cmd.getVersion());
     
     // nocommit: review as far as SOLR-2685
     // clone.indexedId = cmd.indexedId;
@@ -254,7 +255,10 @@ public class SolrCmdDistributor {
   
   private DeleteUpdateCommand clone(DeleteUpdateCommand cmd) {
     DeleteUpdateCommand c = (DeleteUpdateCommand)cmd.clone();
-    cmd.setReq(req);
+    // TODO: shouldnt the clone do this?
+    c.setReq(req);
+    c.setFlags(cmd.getFlags());
+    c.setVersion(cmd.getVersion());
     return c;
   }
   

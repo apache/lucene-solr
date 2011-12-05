@@ -73,10 +73,10 @@ public class Overseer implements NodeStateChangeListener {
       createZkNodes(zkClient);
       createClusterStateWatchersAndUpdate();
     } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
+      // nocommit
       e.printStackTrace();
     } catch (KeeperException e) {
-      // TODO Auto-generated catch block
+      // nocommit
       e.printStackTrace();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"",e);
@@ -167,12 +167,13 @@ public class Overseer implements NodeStateChangeListener {
           @Override
           public void process(WatchedEvent event) {
             try {
-              List<String> liveNodes = zkClient.getChildren(
-                  ZkStateReader.LIVE_NODES_ZKNODE, this);
-              Set<String> liveNodesSet = new HashSet<String>();
-              liveNodesSet.addAll(liveNodes);
-              processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
               synchronized (cloudState) {
+                List<String> liveNodes = zkClient.getChildren(
+                    ZkStateReader.LIVE_NODES_ZKNODE, this);
+                Set<String> liveNodesSet = new HashSet<String>();
+                liveNodesSet.addAll(liveNodes);
+                processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
+                
                 cloudState = new CloudState(liveNodesSet, cloudState
                     .getCollectionStates());
                 // TODO: why are we syncing on cloudState and not the update
@@ -322,6 +323,7 @@ public class Overseer implements NodeStateChangeListener {
    */
   private void publishCloudState() {
     try {
+      System.out.println("publish:" + cloudState.getCollections());
       CloudStateUtility.update(zkClient, cloudState, null);
     } catch (KeeperException e) {
       log.error("Could not publish cloud state.", e);
@@ -424,7 +426,7 @@ public class Overseer implements NodeStateChangeListener {
     try {
       zkClient.setData("/node_assignments/" + node, content);
     } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
+      // nocommit
       e.printStackTrace();
     }
   }
