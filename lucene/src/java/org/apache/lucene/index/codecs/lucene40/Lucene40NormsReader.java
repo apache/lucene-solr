@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -59,7 +60,7 @@ public class Lucene40NormsReader extends NormsReader {
           Directory d = hasSeparateNorms(normGen, fi.number) ? separateNormsDir : dir;
         
           // singleNormFile means multiple norms share this file
-          boolean singleNormFile = IndexFileNames.matchesExtension(fileName, IndexFileNames.NORMS_EXTENSION);
+          boolean singleNormFile = IndexFileNames.matchesExtension(fileName, Lucene40NormsWriter.NORMS_EXTENSION);
           IndexInput normInput = null;
           long normSeek;
 
@@ -134,7 +135,7 @@ public class Lucene40NormsReader extends NormsReader {
       return IndexFileNames.fileNameFromGeneration(segmentName, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
     } else {
       // single file for all norms
-      return IndexFileNames.fileNameFromGeneration(segmentName, IndexFileNames.NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
+      return IndexFileNames.fileNameFromGeneration(segmentName, Lucene40NormsWriter.NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
     }
   }
   
@@ -168,6 +169,15 @@ public class Lucene40NormsReader extends NormsReader {
         }
       }
       return bytes;
+    }
+  }
+  
+  static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    // TODO: This is what SI always did... but we can do this cleaner?
+    // like first FI that has norms but doesn't have separate norms?
+    final String normsFileName = IndexFileNames.segmentFileName(info.name, "", Lucene40NormsWriter.NORMS_EXTENSION);
+    if (dir.fileExists(normsFileName)) {
+      files.add(normsFileName);
     }
   }
 }

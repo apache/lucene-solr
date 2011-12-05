@@ -51,8 +51,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     // TODO: segmentInfosFormat should be allowed to declare additional files
     // if it wants, in addition to segments_N
     docValuesFormat().files(dir, info, files);
-    // nocommit: not yet
-    //normsFormat().files(dir, info, files);
+    normsFormat().files(dir, info, files);
   }
   
   /** Encodes/decodes postings */

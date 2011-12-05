@@ -466,11 +466,6 @@ public final class SegmentInfo implements Cloneable {
     return codec;
   }
 
-  private void addIfExists(Set<String> files, String fileName) throws IOException {
-    if (dir.fileExists(fileName))
-      files.add(fileName);
-  }
-
   /*
    * Return all files referenced by this SegmentInfo.  The
    * returns List is a locally cached List so you should not
@@ -496,9 +491,6 @@ public final class SegmentInfo implements Cloneable {
             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
       }
     } else {
-      for(String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS) {
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));
-      }
       codec.files(dir, this, fileSet);
     }
 
@@ -517,6 +509,7 @@ public final class SegmentInfo implements Cloneable {
       fileSet.add(delFileName);
     }
    
+    // TODO: push this to codec?
     if (normGen != null) {
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
         long gen = entry.getValue();

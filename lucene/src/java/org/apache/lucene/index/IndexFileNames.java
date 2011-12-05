@@ -49,9 +49,6 @@ public final class IndexFileNames {
   
   /** Name of the generation reference file name */
   public static final String SEGMENTS_GEN = "segments." +  GEN_EXTENSION;
-  
-  /** Extension of norms file */
-  public static final String NORMS_EXTENSION = "nrm";
 
   /** Extension of compound file */
   public static final String COMPOUND_FILE_EXTENSION = "cfs";
@@ -80,12 +77,7 @@ public final class IndexFileNames {
     COMPOUND_FILE_ENTRIES_EXTENSION,
     DELETES_EXTENSION,
     GEN_EXTENSION,
-    NORMS_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
-  };
-
-  public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
-    NORMS_EXTENSION
   };
 
   /**

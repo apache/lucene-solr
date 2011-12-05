@@ -43,7 +43,6 @@ public class Lucene40NormsFormat extends NormsFormat {
 
   @Override
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    // nocommit: hairy calculations involving .s files, etc
+    Lucene40NormsReader.files(dir, info, files);
   }
-  
 }

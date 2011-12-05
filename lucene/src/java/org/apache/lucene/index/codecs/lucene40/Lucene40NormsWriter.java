@@ -35,11 +35,13 @@ public class Lucene40NormsWriter extends NormsWriter {
   private int normCount = 0;
   
   /** norms header placeholder */
-  // nocommit: not public
-  public static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
+  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
+  
+  /** Extension of norms file */
+  static final String NORMS_EXTENSION = "nrm";
   
   public Lucene40NormsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    final String normsFileName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION);
+    final String normsFileName = IndexFileNames.segmentFileName(segment, "", NORMS_EXTENSION);
     boolean success = false;
     try {
       out = directory.createOutput(normsFileName, context);
