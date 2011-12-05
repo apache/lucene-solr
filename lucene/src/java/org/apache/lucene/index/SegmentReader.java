@@ -145,7 +145,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   private void loadLiveDocs(IOContext context) throws IOException {
     // NOTE: the bitvector is stored using the regular directory, not cfs
-    if (hasDeletions(si)) {
+    if (si.hasDeletions()) {
       liveDocs = new BitVector(directory(), si.getDelFileName(), new IOContext(context, true));
       liveDocsRef = new AtomicInteger(1);
       assert checkLiveCounts();
@@ -154,17 +154,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       }
     } else
       assert si.getDelCount() == 0;
-  }
-  
-  /**
-   * Clones the norm bytes.  May be overridden by subclasses.  New and experimental.
-   * @param bytes Byte array to clone
-   * @return New BitVector
-   */
-  protected byte[] cloneNormBytes(byte[] bytes) {
-    byte[] cloneBytes = new byte[bytes.length];
-    System.arraycopy(bytes, 0, cloneBytes, 0, bytes.length);
-    return cloneBytes;
   }
   
   /**
@@ -352,23 +341,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  static boolean hasDeletions(SegmentInfo si) throws IOException {
-    // Don't call ensureOpen() here (it could affect performance)
-    return si.hasDeletions();
-  }
-
   @Override
   public boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return liveDocs != null;
-  }
-
-  static boolean usesCompoundFile(SegmentInfo si) throws IOException {
-    return si.getUseCompoundFile();
-  }
-
-  static boolean hasSeparateNorms(SegmentInfo si) throws IOException {
-    return si.hasSeparateNorms();
   }
 
   // nocommit: remove deletions from SR
