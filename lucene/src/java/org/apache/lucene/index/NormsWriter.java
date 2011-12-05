@@ -164,7 +164,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
             normsOut.writeByte(defaultNorm);
         }
 
-        assert 4+normCount*state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*state.numDocs) + " actual=" + normsOut.getFilePointer();
+        assert 4+normCount*(long)state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*(long)state.numDocs) + " actual=" + normsOut.getFilePointer();
       }
       success = true;
     } finally {

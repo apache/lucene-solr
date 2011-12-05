@@ -634,6 +634,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
+    boolean normsInitiallyEmpty = norms.isEmpty(); // only used for assert
     long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
     for (int i = 0; i < core.fieldInfos.size(); i++) {
@@ -688,6 +689,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
+    assert singleNormStream == null || !normsInitiallyEmpty || nextNormSeek == singleNormStream.length();
   }
 
   boolean termsIndexLoaded() {
