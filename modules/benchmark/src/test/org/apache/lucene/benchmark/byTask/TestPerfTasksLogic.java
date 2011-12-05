@@ -167,7 +167,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "{ AddDoc } : 100",
         "ForceMerge(1)",
         "CloseIndex",
-        "OpenReader(true)",
+        "OpenReader",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
         "CloseReader",
     };
@@ -206,7 +206,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "{ AddDoc } : 1000",
         "ForceMerge(1)",
         "CloseIndex",
-        "OpenReader(false)",
+        "OpenReader",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
         "CloseReader",
     };
@@ -621,40 +621,6 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       super();
       called = true;
     }
-  }
-
-  public void testDeleteByPercent() throws Exception {
-    // 1. alg definition (required in every "logic" test)
-    String algLines[] = {
-        "# ----- properties ",
-        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-        "docs.file=" + getReuters20LinesFile(),
-        "ram.flush.mb=-1",
-        "max.buffered=2",
-        "content.source.log.step=3",
-        "doc.term.vector=false",
-        "content.source.forever=false",
-        "directory=RAMDirectory",
-        "doc.stored=false",
-        "doc.tokenized=false",
-        "debug.level=1",
-        "# ----- alg ",
-        "CreateIndex",
-        "{ \"AddDocs\"  AddDoc > : * ",
-        "CloseIndex()",
-        "OpenReader(false)",
-        "DeleteByPercent(20)",
-        "CloseReader"
-    };
-    
-    // 2. execute the algorithm  (required in every "logic" test)
-    Benchmark benchmark = execBenchmark(algLines);
-
-    // 3. test number of docs in the index
-    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 16; // first 20 reuters docs, minus 20%
-    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
-    ir.close();
   }
 
   /**
