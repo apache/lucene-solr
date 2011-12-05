@@ -18,16 +18,12 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.RecoveryStrat.RecoveryListener;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
