@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * TODO: every now and then, this leaves a dir open for some odd reason
  */
 public class RecoveryZkTest extends FullDistributedZkTest {
 
@@ -53,9 +53,6 @@ public class RecoveryZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
-    // GRRRRR - this is needed because it takes a while for all the shards to learn about the cluster state
-    //Thread.sleep(5000);
-    
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);

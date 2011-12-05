@@ -431,10 +431,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
    */
   @Override
   public void doTest() throws Exception {
-    // TODO: remove the need for this...
-    //Thread.sleep(1000);
-    //pause for cloud state to be updated with latest...
-    
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
