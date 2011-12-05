@@ -60,7 +60,9 @@ final class NormsWriter extends InvertedDocEndConsumer {
       for (FieldInfo fi : state.fieldInfos) {
         final NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fi);
         int upto = 0;
-        if (toWrite != null && toWrite.upto > 0) {
+        // we must check the final value of omitNorms for the fieldinfo, it could have 
+        // changed for this field since the first time we added it.
+        if (!fi.omitNorms && toWrite != null && toWrite.upto > 0) {
           normCount++;
 
           int docID = 0;
@@ -84,7 +86,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
             normsOut.writeByte((byte) 0);
         }
 
-        assert 4+normCount*state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*state.numDocs) + " actual=" + normsOut.getFilePointer();
+        assert 4+normCount*(long)state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*(long)state.numDocs) + " actual=" + normsOut.getFilePointer();
       }
       success = true;
     } finally {
