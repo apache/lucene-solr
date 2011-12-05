@@ -18,13 +18,16 @@ package org.apache.lucene.index.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.codecs.NormsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
 public class Lucene40NormsWriter extends NormsWriter {
@@ -65,6 +68,48 @@ public class Lucene40NormsWriter extends NormsWriter {
     if (4+normCount*(long)numDocs != out.getFilePointer()) {
       throw new RuntimeException(".nrm file size mismatch: expected=" + (4+normCount*(long)numDocs) + " actual=" + out.getFilePointer());
     }
+  }
+  
+  /** we override merge and bulk-merge norms when there are no deletions */
+  @Override
+  public int merge(MergeState mergeState) throws IOException {
+    int numMergedDocs = 0;
+    for (FieldInfo fi : mergeState.fieldInfos) {
+      if (fi.isIndexed && !fi.omitNorms) {
+        startField(fi);
+        int numMergedDocsForField = 0;
+        for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+          final int maxDoc = reader.reader.maxDoc();
+          byte normBuffer[] = reader.reader.norms(fi.name);
+          if (normBuffer == null) {
+            // Can be null if this segment doesn't have
+            // any docs with this field
+            normBuffer = new byte[maxDoc];
+            Arrays.fill(normBuffer, (byte)0);
+          }
+          if (reader.liveDocs == null) {
+            //optimized case for segments without deleted docs
+            out.writeBytes(normBuffer, maxDoc);
+            numMergedDocsForField += maxDoc;
+          } else {
+            // this segment has deleted docs, so we have to
+            // check for every doc if it is deleted or not
+            final Bits liveDocs = reader.liveDocs;
+            for (int k = 0; k < maxDoc; k++) {
+              if (liveDocs.get(k)) {
+                numMergedDocsForField++;
+                out.writeByte(normBuffer[k]);
+              }
+            }
+          }
+          mergeState.checkAbort.work(maxDoc);
+        }
+        assert numMergedDocs == 0 || numMergedDocs == numMergedDocsForField;
+        numMergedDocs = numMergedDocsForField;
+      }
+    }
+    finish(numMergedDocs);
+    return numMergedDocs;
   }
 
   @Override

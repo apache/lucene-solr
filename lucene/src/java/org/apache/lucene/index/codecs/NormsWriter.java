@@ -19,8 +19,11 @@ package org.apache.lucene.index.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.util.Bits;
 
 // simple api just for now before switching to docvalues apis
 public abstract class NormsWriter implements Closeable {
@@ -31,4 +34,37 @@ public abstract class NormsWriter implements Closeable {
   public abstract void writeNorm(byte norm) throws IOException;
   public abstract void finish(int numDocs) throws IOException;
   
+  public int merge(MergeState mergeState) throws IOException {
+    int numMergedDocs = 0;
+    for (FieldInfo fi : mergeState.fieldInfos) {
+      if (fi.isIndexed && !fi.omitNorms) {
+        startField(fi);
+        int numMergedDocsForField = 0;
+        for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
+          final int maxDoc = reader.reader.maxDoc();
+          byte normBuffer[] = reader.reader.norms(fi.name);
+          if (normBuffer == null) {
+            // Can be null if this segment doesn't have
+            // any docs with this field
+            normBuffer = new byte[maxDoc];
+            Arrays.fill(normBuffer, (byte)0);
+          }
+          // this segment has deleted docs, so we have to
+          // check for every doc if it is deleted or not
+          final Bits liveDocs = reader.liveDocs;
+          for (int k = 0; k < maxDoc; k++) {
+            if (liveDocs == null || liveDocs.get(k)) {
+              writeNorm(normBuffer[k]);
+              numMergedDocsForField++;
+            }
+          }
+          mergeState.checkAbort.work(maxDoc);
+        }
+        assert numMergedDocs == 0 || numMergedDocs == numMergedDocsForField;
+        numMergedDocs = numMergedDocsForField;
+      }
+    }
+    finish(numMergedDocs);
+    return numMergedDocs;
+  }
 }
