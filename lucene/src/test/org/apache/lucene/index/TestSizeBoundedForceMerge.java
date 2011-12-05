@@ -290,7 +290,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
   
     // delete the last document, so that the last segment is merged.
-    IndexReader r = IndexReader.open(dir, false);
+    IndexReader r = IndexReader.open(dir);
     r.deleteDocument(r.numDocs() - 1);
     r.close();
     
@@ -348,7 +348,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     writer.close();
   
     // delete the last document
-    IndexReader r = IndexReader.open(dir, false);
+    IndexReader r = IndexReader.open(dir);
     r.deleteDocument(r.numDocs() - 1);
     r.close();
     

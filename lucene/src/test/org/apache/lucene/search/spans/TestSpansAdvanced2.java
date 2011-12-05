@@ -76,7 +76,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
    * @throws Exception
    */
   public void testVerifyIndex() throws Exception {
-    final IndexReader reader = IndexReader.open(mDirectory, true);
+    final IndexReader reader = IndexReader.open(mDirectory);
     assertEquals(8, reader.numDocs());
     reader.close();
   }

@@ -144,11 +144,11 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     Directory target = newDirectory();
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    IndexReader reader = new TestReader(IndexReader.open(directory, true));
+    IndexReader reader = new TestReader(IndexReader.open(directory));
     writer.addIndexes(reader);
     writer.close();
     reader.close();
-    reader = IndexReader.open(target, true);
+    reader = IndexReader.open(target);
     
     TermsEnum terms = MultiFields.getTerms(reader, "default").iterator(null);
     while (terms.next() != null) {

@@ -94,7 +94,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   public void testNoDir() throws Throwable {
     Directory dir = newFSSwitchDirectory(Collections.<String>emptySet());
     try {
-      IndexReader.open(dir, true);
+      IndexReader.open(dir);
       fail("did not hit expected exception");
     } catch (NoSuchDirectoryException nsde) {
       // expected

@@ -285,7 +285,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     // f1
     Terms tfv1 = reader.getTermVectors(0).terms("f1");
     assertNotNull(tfv1);
@@ -326,7 +326,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir, false));
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir));
     FieldInfos fi = reader.fieldInfos();
     // f1
     assertFalse("f1 should have no norms", reader.hasNorms("f1"));

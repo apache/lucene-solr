@@ -200,7 +200,7 @@ public class QueryUtils {
       Assert.assertEquals("writer has non-deleted docs", 
                           0, w.numDocs());
       w.close();
-      IndexReader r = IndexReader.open(d, true);
+      IndexReader r = IndexReader.open(d);
       Assert.assertEquals("reader has wrong number of deleted docs", 
                           numDeletedDocs, r.numDeletedDocs());
       return r;

@@ -183,8 +183,8 @@ public class TestTransactions extends LuceneTestCase {
     public void doWork() throws Throwable {
       IndexReader r1, r2;
       synchronized(lock) {
-        r1 = IndexReader.open(dir1, true);
-        r2 = IndexReader.open(dir2, true);
+        r1 = IndexReader.open(dir1);
+        r2 = IndexReader.open(dir2);
       }
       if (r1.numDocs() != r2.numDocs())
         throw new RuntimeException("doc counts differ: r1=" + r1.numDocs() + " r2=" + r2.numDocs());

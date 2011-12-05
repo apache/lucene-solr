@@ -40,7 +40,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
@@ -66,7 +66,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
@@ -89,7 +89,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
@@ -134,7 +134,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
 
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);

@@ -59,7 +59,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     ir.close();
     
     /* nocommit: fix this to use IW to delete documents
-    ir = IndexReader.open(dir, false);
+    ir = IndexReader.open(dir);
     int numDeletions = atLeast(20);
     for (int i = 0; i < numDeletions; i++) {
       ir.deleteDocument(random.nextInt(ir.maxDoc()));
@@ -70,7 +70,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     w.forceMerge(1);
     w.close();
     
-    ir = IndexReader.open(dir, true);
+    ir = IndexReader.open(dir);
     assertSumDocFreq(ir);
     ir.close();
     */

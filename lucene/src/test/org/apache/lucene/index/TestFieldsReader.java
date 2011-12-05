@@ -206,7 +206,7 @@ public class TestFieldsReader extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      IndexReader reader = IndexReader.open(dir);
 
       FaultyIndexInput.doFail = true;
 

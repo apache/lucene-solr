@@ -46,7 +46,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     addDoc("three four", iw, 300f);
     iw.close();
 
-    IndexReader ir = IndexReader.open(dir, false);
+    IndexReader ir = IndexReader.open(dir);
     IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
 

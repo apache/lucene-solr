@@ -78,7 +78,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   private boolean verifyIndex(Directory directory, int startAt) throws IOException
   {
     boolean fail = false;
-    IndexReader reader = IndexReader.open(directory, true);
+    IndexReader reader = IndexReader.open(directory);
 
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)
@@ -144,7 +144,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       writer.addDocument(document);
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir, false);
+    IndexReader ir = IndexReader.open(dir);
     assertEquals(10, ir.maxDoc());
     assertEquals(10, ir.numDocs());
     ir.deleteDocument(0);
@@ -158,7 +158,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer.forceMergeDeletes();
     assertEquals(8, writer.numDocs());
     writer.close();
-    ir = IndexReader.open(dir, true);
+    ir = IndexReader.open(dir);
     assertEquals(8, ir.maxDoc());
     assertEquals(8, ir.numDocs());
     ir.close();
@@ -195,7 +195,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       writer.addDocument(document);
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir, false);
+    IndexReader ir = IndexReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     for(int i=0;i<98;i+=2)
@@ -211,7 +211,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(49, writer.numDocs());
     writer.forceMergeDeletes();
     writer.close();
-    ir = IndexReader.open(dir, true);
+    ir = IndexReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -248,7 +248,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       writer.addDocument(document);
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir, false);
+    IndexReader ir = IndexReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     for(int i=0;i<98;i+=2)
@@ -263,7 +263,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     writer.forceMergeDeletes(false);
     writer.close();
-    ir = IndexReader.open(dir, true);
+    ir = IndexReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
     ir.close();

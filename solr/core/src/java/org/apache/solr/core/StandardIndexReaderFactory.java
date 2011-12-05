@@ -35,6 +35,7 @@ public class StandardIndexReaderFactory extends IndexReaderFactory {
   @Override
   public IndexReader newReader(Directory indexDir, boolean readOnly)
       throws IOException {
-    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor);
+    assert readOnly; // nocommit: readOnly is ignored - remove
+    return IndexReader.open(indexDir, termInfosIndexDivisor);
   }
 }

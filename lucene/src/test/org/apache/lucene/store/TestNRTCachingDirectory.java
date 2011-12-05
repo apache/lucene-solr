@@ -123,7 +123,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   public void testNoDir() throws Throwable {
     Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("doesnotexist")), 2.0, 25.0);
     try {
-      IndexReader.open(dir, true);
+      IndexReader.open(dir);
       fail("did not hit expected exception");
     } catch (NoSuchDirectoryException nsde) {
       // expected

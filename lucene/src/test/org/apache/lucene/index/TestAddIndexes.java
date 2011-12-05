@@ -424,7 +424,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux);
 
-    IndexReader reader = IndexReader.open(aux, false);
+    IndexReader reader = IndexReader.open(aux);
     for (int i = 0; i < 20; i++) {
       reader.deleteDocument(i);
     }
@@ -469,14 +469,14 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(3, writer.getSegmentCount());
     writer.close();
 
-    IndexReader reader = IndexReader.open(aux, false);
+    IndexReader reader = IndexReader.open(aux);
     for (int i = 0; i < 27; i++) {
       reader.deleteDocument(i);
     }
     assertEquals(3, reader.numDocs());
     reader.close();
 
-    reader = IndexReader.open(aux2, false);
+    reader = IndexReader.open(aux2);
     for (int i = 0; i < 8; i++) {
       reader.deleteDocument(i);
     }
@@ -525,7 +525,7 @@ public class TestAddIndexes extends LuceneTestCase {
   }
 
   private void verifyNumDocs(Directory dir, int numDocs) throws IOException {
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(numDocs, reader.maxDoc());
     assertEquals(numDocs, reader.numDocs());
     reader.close();
@@ -533,7 +533,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
   private void verifyTermDocs(Directory dir, Term term, int numDocs)
       throws IOException {
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     DocsEnum docsEnum = _TestUtil.docs(random, reader, term.field, term.bytes, null, null, false);
     int count = 0;
     while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
@@ -659,7 +659,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
       readers = new IndexReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
-        readers[i] = IndexReader.open(dir, true);
+        readers[i] = IndexReader.open(dir);
     }
 
     void launchThreads(final int numIter) {
@@ -785,7 +785,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     assertTrue("found unexpected failures: " + c.failures, c.failures.isEmpty());
 
-    IndexReader reader = IndexReader.open(c.dir2, true);
+    IndexReader reader = IndexReader.open(c.dir2);
     assertEquals(expectedNumDocs, reader.numDocs());
     reader.close();
 

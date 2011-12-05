@@ -302,21 +302,27 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR);
+    return open(directory, null, DEFAULT_TERMS_INDEX_DIVISOR);
   }
-
-  /** Returns an IndexReader reading the index in the given
-   *  Directory.  You should pass readOnly=true, since it
-   *  gives much better concurrent performance, unless you
-   *  intend to do write operations (delete documents or
-   *  change norms) with the reader.
+  
+  /** Returns a IndexReader reading the index in the given
+   *  Directory, with readOnly=true.
    * @param directory the index directory
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @param termInfosIndexDivisor Subsamples which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+  public static IndexReader open(final Directory directory, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return open(directory, null, termInfosIndexDivisor);
   }
   
   /**
@@ -352,111 +358,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+  public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), commit, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
-  /** Expert: returns an IndexReader reading the index in
-   *  the given Directory, with a custom {@link
-   *  IndexDeletionPolicy}.  You should pass readOnly=true,
-   *  since it gives much better concurrent performance,
-   *  unless you intend to do write operations (delete
-   *  documents or change norms) with the reader.
-   * @param directory the index directory
-   * @param deletionPolicy a custom deletion policy (only used
-   *  if you use this reader to perform deletes or to set
-   *  norms); see {@link IndexWriter} for details.
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
-  }
 
-  /** Expert: returns an IndexReader reading the index in
-   *  the given Directory, with a custom {@link
-   *  IndexDeletionPolicy}.  You should pass readOnly=true,
-   *  since it gives much better concurrent performance,
-   *  unless you intend to do write operations (delete
-   *  documents or change norms) with the reader.
-   * @param directory the index directory
-   * @param deletionPolicy a custom deletion policy (only used
-   *  if you use this reader to perform deletes or to set
-   *  norms); see {@link IndexWriter} for details.
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor);
-  }
-
-  /** Expert: returns an IndexReader reading the index in
-   *  the given Directory, using a specific commit and with
-   *  a custom {@link IndexDeletionPolicy}.  You should pass
-   *  readOnly=true, since it gives much better concurrent
-   *  performance, unless you intend to do write operations
-   *  (delete documents or change norms) with the reader.
-   * @param commit the specific {@link IndexCommit} to open;
-   * see {@link IndexReader#listCommits} to list all commits
-   * in a directory
-   * @param deletionPolicy a custom deletion policy (only used
-   *  if you use this reader to perform deletes or to set
-   *  norms); see {@link IndexWriter} for details.
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
-  }
-
-  /** Expert: returns an IndexReader reading the index in
-   *  the given Directory, using a specific commit and with
-   *  a custom {@link IndexDeletionPolicy}.  You should pass
-   *  readOnly=true, since it gives much better concurrent
-   *  performance, unless you intend to do write operations
-   *  (delete documents or change norms) with the reader.
-   * @param commit the specific {@link IndexCommit} to open;
-   * see {@link IndexReader#listCommits} to list all commits
-   * in a directory
-   * @param deletionPolicy a custom deletion policy (only used
-   *  if you use this reader to perform deletes or to set
-   *  norms); see {@link IndexWriter} for details.
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely. This is only useful in 
-   *  advanced situations when you will only .next() through all terms; 
-   *  attempts to seek will hit an exception.
-   *  
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor);
-  }
-
-  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    // nocommit: deletionPolicy is ignored -> remove it, same for readonly
+  private static IndexReader open(final Directory directory, final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return DirectoryReader.open(directory, commit, termInfosIndexDivisor);
   }
 

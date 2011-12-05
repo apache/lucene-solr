@@ -106,7 +106,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.commit();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -114,7 +114,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.commit();
 
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(0, reader.numDocs());
     reader.close();
     modifier.close();
@@ -166,7 +166,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       assertEquals(0, modifier.getSegmentCount());
       modifier.commit();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      IndexReader reader = IndexReader.open(dir);
       assertEquals(1, reader.numDocs());
 
       int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
@@ -204,7 +204,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.commit();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(5, reader.numDocs());
     modifier.close();
     reader.close();
@@ -226,7 +226,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     modifier.commit();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -236,7 +236,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.commit();
 
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(5, reader.numDocs());
     reader.close();
 
@@ -246,7 +246,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     modifier.deleteDocuments(terms);
     modifier.commit();
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(2, reader.numDocs());
     reader.close();
 
@@ -269,7 +269,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     modifier.commit();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -280,7 +280,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.deleteAll();
 
     // Delete all shouldn't be on disk yet
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -292,7 +292,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.commit();
 
     // Validate there are no docs left
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(2, reader.numDocs());
     reader.close();
 
@@ -317,7 +317,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     addDoc(modifier, ++id, value);
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -329,7 +329,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.close();
 
     // Validate that the docs are still there
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -372,7 +372,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.close();
 
     // Validate that the docs are still there
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     assertEquals(7, reader.numDocs());
     reader.close();
 
@@ -567,7 +567,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         // changed (transactional semantics):
         IndexReader newReader = null;
         try {
-          newReader = IndexReader.open(dir, true);
+          newReader = IndexReader.open(dir);
         }
         catch (IOException e) {
           e.printStackTrace();

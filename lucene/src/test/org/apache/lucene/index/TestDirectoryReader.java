@@ -64,7 +64,7 @@ public class TestDirectoryReader extends LuceneTestCase {
 
   protected IndexReader openReader() throws IOException {
     IndexReader reader;
-    reader = IndexReader.open(dir, false);
+    reader = IndexReader.open(dir);
     assertTrue(reader instanceof DirectoryReader);
 
     assertTrue(dir != null);
@@ -95,7 +95,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     addDoc(random, ramDir1, "test foo", true);
     Directory ramDir2=newDirectory();
     addDoc(random, ramDir2, "test blah", true);
-    IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
+    IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2)};
     MultiReader mr = new MultiReader(readers);
     assertTrue(mr.isCurrent());   // just opened, must be current
     addDoc(random, ramDir1, "more text", false);
@@ -121,8 +121,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     Directory ramDir3=newDirectory();
     addDoc(random, ramDir3, "test wow", true);
 
-    IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
-    IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false), IndexReader.open(ramDir3, false)};
+    IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir3)};
+    IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2), IndexReader.open(ramDir3)};
     MultiReader mr2 = new MultiReader(readers1);
     MultiReader mr3 = new MultiReader(readers2);
 

@@ -143,7 +143,7 @@ public class MultiPassIndexSplitter {
           System.err.println("Invalid input index - skipping: " + file);
           continue;
         }
-        indexes.add(IndexReader.open(dir, true));
+        indexes.add(IndexReader.open(dir));
       }
     }
     if (outDir == null) {

@@ -67,7 +67,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     IndexReader reader = null;
     
     try {
-      reader = IndexReader.open(directory, true);
+      reader = IndexReader.open(directory);
       for(int i = 1; i <= numThreads; i++)
         testTermPositionVectors(reader, i);
       

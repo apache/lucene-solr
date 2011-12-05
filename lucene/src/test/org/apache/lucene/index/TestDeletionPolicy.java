@@ -73,7 +73,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     }
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       IndexCommit lastCommit =  commits.get(commits.size()-1);
-      IndexReader r = IndexReader.open(dir, true);
+      IndexReader r = IndexReader.open(dir);
       assertEquals("lastCommit.segmentCount()=" + lastCommit.getSegmentCount() + " vs IndexReader.segmentCount=" + r.getSequentialSubReaders().length, r.getSequentialSubReaders().length, lastCommit.getSegmentCount());
       r.close();
       verifyCommitOrder(commits);
@@ -259,7 +259,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
     while(gen > 0) {
       try {
-        IndexReader reader = IndexReader.open(dir, true);
+        IndexReader reader = IndexReader.open(dir);
         reader.close();
         fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                          "",
@@ -351,7 +351,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       // Make sure we can open a reader on each commit:
       for (final IndexCommit commit : commits) {
-        IndexReader r = IndexReader.open(commit, null, false);
+        IndexReader r = IndexReader.open(commit);
         r.close();
       }
 
@@ -360,7 +360,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
       while(gen > 0) {
-        IndexReader reader = IndexReader.open(dir, true);
+        IndexReader reader = IndexReader.open(dir);
         reader.close();
         dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
         gen--;
@@ -435,7 +435,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     // Should undo our rollback:
     writer.rollback();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     // Still merged, still 11 docs
     assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(11, r.numDocs());
@@ -450,7 +450,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     // Now 8 because we made another commit
     assertEquals(7, IndexReader.listCommits(dir).size());
     
-    r = IndexReader.open(dir, true);
+    r = IndexReader.open(dir);
     // Not fully merged because we rolled it back, and now only
     // 10 docs
     assertTrue(r.getSequentialSubReaders().length > 1);
@@ -462,7 +462,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    r = IndexReader.open(dir, true);
+    r = IndexReader.open(dir);
     assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(10, r.numDocs());
     r.close();
@@ -474,7 +474,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     
     // Reader still sees fully merged index, because writer
     // opened on the prior commit has not yet committed:
-    r = IndexReader.open(dir, true);
+    r = IndexReader.open(dir);
     assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(10, r.numDocs());
     r.close();
@@ -482,7 +482,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.close();
 
     // Now reader sees not-fully-merged index:
-    r = IndexReader.open(dir, true);
+    r = IndexReader.open(dir);
     assertTrue(r.getSequentialSubReaders().length > 1);
     assertEquals(10, r.numDocs());
     r.close();
@@ -535,7 +535,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       // Simplistic check: just verify the index is in fact
       // readable:
-      IndexReader reader = IndexReader.open(dir, true);
+      IndexReader reader = IndexReader.open(dir);
       reader.close();
 
       dir.close();
@@ -583,7 +583,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
       for(int i=0;i<N+1;i++) {
         try {
-          IndexReader reader = IndexReader.open(dir, true);
+          IndexReader reader = IndexReader.open(dir);
           reader.close();
           if (i == N) {
             fail("should have failed on commits prior to last " + N);
@@ -668,7 +668,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       assertEquals(3*(N+1), policy.numOnInit);
       assertEquals(3*(N+1)+1, policy.numOnCommit);
 
-      IndexReader rwReader = IndexReader.open(dir, false);
+      IndexReader rwReader = IndexReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(rwReader);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
       assertEquals(0, hits.length);
@@ -685,7 +685,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       for(int i=0;i<N+1;i++) {
         try {
-          IndexReader reader = IndexReader.open(dir, true);
+          IndexReader reader = IndexReader.open(dir);
 
           // Work backwards in commits on what the expected
           // count should be.

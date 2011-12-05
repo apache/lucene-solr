@@ -78,7 +78,7 @@ public class HighFreqTerms {
       }
     }
     
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     TermStats[] terms = getHighFreqTerms(reader, numTerms, field);
     if (!IncludeTermFreqs) {
       //default HighFreqTerms behavior

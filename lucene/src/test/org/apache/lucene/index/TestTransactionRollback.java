@@ -86,7 +86,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   }
 	
   private void checkExpecteds(BitSet expecteds) throws Exception {
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
 		
     //Perhaps not the most efficient approach but meets our
     //needs here.
@@ -204,7 +204,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       // should not work:
       new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
           .setIndexDeletionPolicy(new DeleteLastCommitPolicy())).close();
-      IndexReader r = IndexReader.open(dir, true);
+      IndexReader r = IndexReader.open(dir);
       assertEquals(100, r.numDocs());
       r.close();
     }

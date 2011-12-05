@@ -491,7 +491,7 @@ public class TestSpans extends LuceneTestCase {
     writer.close();
 
     // Get searcher
-    final IndexReader reader = IndexReader.open(dir, true);
+    final IndexReader reader = IndexReader.open(dir);
     final IndexSearcher searcher = newSearcher(reader);
 
     // Control (make sure docs indexed)

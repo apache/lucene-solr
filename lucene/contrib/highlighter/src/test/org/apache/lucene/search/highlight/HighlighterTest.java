@@ -1677,7 +1677,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * writer = new IndexWriter(ramDir,bigramAnalyzer , true); Document d = new
    * Document(); Field f = new Field(FIELD_NAME, "java abc def", true, true,
    * true); d.add(f); writer.addDocument(d); writer.close(); IndexReader reader =
-   * IndexReader.open(ramDir, true);
+   * IndexReader.open(ramDir);
    * 
    * IndexSearcher searcher=new IndexSearcher(reader); query =
    * QueryParser.parse("abc", FIELD_NAME, bigramAnalyzer);
@@ -1763,7 +1763,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.addDocument(doc, analyzer);
     writer.forceMerge(1);
     writer.close();
-    reader = IndexReader.open(ramDir, true);
+    reader = IndexReader.open(ramDir);
     numHighlights = 0;
   }
 

@@ -128,7 +128,7 @@ public final class SearcherManager {
       ExecutorService es) throws IOException {
     this.es = es;
     this.warmer = warmer;
-    currentSearcher = new IndexSearcher(IndexReader.open(dir, true), es);
+    currentSearcher = new IndexSearcher(IndexReader.open(dir), es);
   }
 
   /**
