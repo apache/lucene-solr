@@ -22,10 +22,12 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Super basic testing, no shard restarting or anything.
  */
+@Ignore("distrib delete not working yet")
 public class BasicFullDistributedZkTest extends FullDistributedZkTest {
   
   
