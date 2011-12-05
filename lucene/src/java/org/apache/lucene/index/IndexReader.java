@@ -31,7 +31,6 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.search.FieldCache; // javadocs
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -44,7 +43,7 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
  <p> Concrete subclasses of IndexReader are usually constructed with a call to
  one of the static <code>open()</code> methods, e.g. {@link
- #open(Directory, boolean)}.
+ #open(Directory)}.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique
@@ -61,13 +60,6 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  </p>
 
  <p>
-
- <b>NOTE</b>: as of 2.4, it's possible to open a read-only
- IndexReader using the static open methods that accept the 
- boolean readOnly parameter.  Such a reader may have better 
- concurrency.  You must specify false if you want to 
- make changes with the resulting IndexReader.
- </p>
 
  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
  IndexReader} instances are completely thread
@@ -296,7 +288,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
   
   /** Returns a IndexReader reading the index in the given
-   *  Directory, with readOnly=true.
+   *  Directory
    * @param directory the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -306,7 +298,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
   
   /** Returns a IndexReader reading the index in the given
-   *  Directory, with readOnly=true.
+   *  Directory
    * @param directory the index directory
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
@@ -349,12 +341,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit}.  You should pass readOnly=true, since it
-   *  gives much better concurrent performance, unless you
-   *  intend to do write operations (delete documents or
-   *  change norms) with the reader.
+   *  {@link IndexCommit}.
    * @param commit the commit point to open
-   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -387,11 +375,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * <code>SearcherManager</code> in
    * <code>contrib/misc</code> to simplify managing this.
    *
-   * <p>If a new reader is returned, it's safe to make changes
-   * (deletions, norms) with it.  All shared mutable state
-   * with the old reader uses "copy on write" semantics to
-   * ensure the changes are not seen by other readers.
-   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @return null if there are no changes; else, a new
@@ -405,13 +388,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * If the IndexCommit differs from what the
-   * provided reader is searching, or the provided reader is
-   * not already read-only, open and return a new
-   * <code>readOnly=true</code> reader; else, return null.
+   * provided reader is searching, open and return a new
+   * reader; else, return null.
    *
    * @see #openIfChanged(IndexReader)
    */
-  // TODO: should you be able to specify readOnly?
   public static IndexReader openIfChanged(IndexReader oldReader, IndexCommit commit) throws IOException {
     final IndexReader newReader = oldReader.doOpenIfChanged(commit);
     assert newReader != oldReader;
@@ -421,7 +402,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /**
    * Expert: If there changes (committed or not) in the
    * {@link IndexWriter} versus what the provided reader is
-   * searching, then open and return a new read-only
+   * searching, then open and return a new
    * IndexReader searching both committed and uncommitted
    * changes from the writer; else, return null (though, the
    * current implementation never returns null).
@@ -429,7 +410,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * <p>This provides "near real-time" searching, in that
    * changes made during an {@link IndexWriter} session can be
    * quickly made available for searching without closing
-   * the writer nor calling {@link #commit}.
+   * the writer nor calling {@link IndexWriter#commit}.
    *
    * <p>It's <i>near</i> real-time because there is no hard
    * guarantee on how quickly you can get a new reader after
@@ -518,19 +499,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /**
    * Efficiently clones the IndexReader (sharing most
    * internal state).
-   * <p>
-   * On cloning a reader with pending changes (deletions,
-   * norms), the original reader transfers its write lock to
-   * the cloned reader.  This means only the cloned reader
-   * may make further changes to the index, and commit the
-   * changes to the index on close, but the old reader still
-   * reflects all changes made up until it was cloned.
-   * <p>
-   * Like {@link #openIfChanged(IndexReader)}, it's safe to make changes to
-   * either the original or the cloned reader: all shared
-   * mutable state obeys "copy on write" semantics to ensure
-   * the changes are not seen by other readers.
-   * <p>
    */
   @Override
   public synchronized Object clone() {
@@ -1077,7 +1045,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  one commit point.  But if you're using a custom {@link
    *  IndexDeletionPolicy} then there could be many commits.
    *  Once you have a given commit, you can open a reader on
-   *  it by calling {@link IndexReader#open(IndexCommit,boolean)}
+   *  it by calling {@link IndexReader#open(IndexCommit)}
    *  There must be at least one commit in
    *  the Directory, else this method throws {@link
    *  IndexNotFoundException}.  Note that if a commit is in

@@ -49,7 +49,7 @@ public class MultiPassIndexSplitter {
   
   /**
    * Split source index into multiple parts.
-   * @param input source index, can be read-only, can have deletions, can have
+   * @param in source index, can have deletions, can have
    * multiple segments (or multiple readers).
    * @param outputs list of directories where the output parts will be stored.
    * @param seq if true, then the source index will be split into equal
