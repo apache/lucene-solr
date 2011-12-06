@@ -476,7 +476,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     dir.close();
   }
   
-  public void testNoCommits() throws Exception {
+  public void testZeroCommits() throws Exception {
     // Tests that if we don't call commit(), the directory has 0 commits. This has
     // changed since LUCENE-2386, where before IW would always commit on a fresh
     // new index.
