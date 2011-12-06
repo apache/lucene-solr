@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,31 +18,15 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.noggit.CharArr;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import java.util.*;
 
 public class CoreAssignment {
 
   private static String COLLECTION="_collection";
   private static String CORE="_core";
 
-  public String getCoreName() {
-    return properties.get(CORE);
-  }
-
-  public String getCollectionName() {
-    return properties.get(COLLECTION);
-  }
-
   private final Map<String, String> properties;
-  
+
   public Map<String,String> getProperties() {
     return properties;
   }
@@ -58,34 +42,29 @@ public class CoreAssignment {
     props.put(CORE, coreName);
     this.properties = Collections.unmodifiableMap(props);
   }
-  
-  public static byte[] tobytes(CoreAssignment... assignments) throws IOException {
-    CharArr out = new CharArr();
-    out.append(JSONUtil.ARRAY_START);
-    boolean first = true;
-    for (CoreAssignment assignment : assignments) {
-      if (first) {
-        first = false;
-      } else {
-        out.append(JSONUtil.VALUE_SEPARATOR);
-      }
-      out.append(JSONUtil.toJSON(assignment.properties));
-      
-    }
-    
-    out.append(JSONUtil.ARRAY_END);
 
-    return out.toString().getBytes("utf-8");
+  public String getCoreName() {
+    return properties.get(CORE);
+  }
+
+  public String getCollectionName() {
+    return properties.get(COLLECTION);
+  }
+
+  public static byte[] tobytes(CoreAssignment... assignments) throws IOException {
+    return CloudState.toJSON(assignments);
   }
   
   public static CoreAssignment[] fromBytes(byte[] bytes) throws IOException {
-    ArrayList<CoreAssignment> states = new ArrayList<CoreAssignment>(); 
-    List<Map<String, String>> stateMaps = (List<Map<String, String>>)ObjectBuilder.fromJSON(new String(bytes,"utf-8"));
+    List<Map<String, String>> stateMaps = (List<Map<String, String>>) CloudState.fromJSON(bytes);
+
+    CoreAssignment[] states = new CoreAssignment[stateMaps.size()];
+    int i = 0;
     for (Map<String,String> state : stateMaps) {
-      states.add(new CoreAssignment(state));
+      states[i++] = new CoreAssignment(state);
     }
     
-    return states.toArray(new CoreAssignment[states.size()]);
+    return states;
   }
   
   @Override

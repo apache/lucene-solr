@@ -49,14 +49,18 @@ public class ZkNodeProps  {
   public Set<String> keySet() {
     return Collections.unmodifiableSet(propMap.keySet());
   }
-  
+
+  public Map<String,String> getProperties() {
+    return Collections.unmodifiableMap(propMap);
+  }
+
   public static ZkNodeProps load(byte[] bytes) throws IOException {
-    Map<String, String> props = (Map<String, String>) ObjectBuilder.fromJSON(new String(bytes, "utf-8"));
+    Map<String, String> props = (Map<String, String>) CloudState.fromJSON(bytes);
     return new ZkNodeProps(props);
   }
 
   public byte[] store() throws IOException {
-    return new String(JSONUtil.toJSON(this.propMap)).getBytes("utf-8");
+    return CloudState.toJSON(propMap);
   }
   
   public String get(String key) {

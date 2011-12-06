@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,21 +18,25 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.noggit.CharArr;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import java.util.*;
 
 public class CoreState {
-
-  
   private static String COLLECTION="_collection";
   private static String CORE="_core";
+
+  private final Map<String, String> properties;
+
+  private CoreState(Map<String, String> props) {
+    this.properties = Collections.unmodifiableMap(props);
+  }
+
+  public CoreState(String coreName, String collectionName, Map<String,String> properties) {
+    HashMap<String,String> props = new HashMap<String,String>();
+    props.putAll(properties);
+    props.put(COLLECTION, collectionName);
+    props.put(CORE, coreName);
+    this.properties = Collections.unmodifiableMap(props);
+  }
 
   public String getCoreName() {
     return properties.get(CORE);
@@ -42,51 +46,24 @@ public class CoreState {
     return properties.get(COLLECTION);
   }
 
-  private final Map<String, String> properties;
-  
   public Map<String,String> getProperties() {
     return properties;
   }
 
-  private CoreState(Map<String, String> props) {
-    this.properties = Collections.unmodifiableMap(props);
-  }
-  
-  public CoreState(String coreName, String collectionName, Map<String,String> properties) {
-    HashMap<String,String> props = new HashMap<String,String>();
-    props.putAll(properties);
-    props.put(COLLECTION, collectionName);
-    props.put(CORE, coreName);
-    this.properties = Collections.unmodifiableMap(props);
-  }
-  
   public static byte[] tobytes(CoreState... states) throws IOException {
-    CharArr out = new CharArr();
-    out.append(JSONUtil.ARRAY_START);
-    boolean first = true;
-    for (CoreState state : states) {
-      if (first) {
-        first = false;
-      } else {
-        out.append(JSONUtil.VALUE_SEPARATOR);
-      }
-      out.append(JSONUtil.toJSON(state.properties));
-      
-    }
-    
-    out.append(JSONUtil.ARRAY_END);
-
-    return out.toString().getBytes("utf-8");
+    return CloudState.toJSON(states);
   }
   
   public static CoreState[] fromBytes(byte[] bytes) throws IOException {
-    ArrayList<CoreState> states = new ArrayList<CoreState>(); 
-    List<Map<String, String>> stateMaps = (List<Map<String, String>>)ObjectBuilder.fromJSON(new String(bytes,"utf-8"));
+    List<Map<String, String>> stateMaps = (List<Map<String, String>>) CloudState.fromJSON(bytes);
+
+    CoreState[] states = new CoreState[stateMaps.size()];
+    int i = 0;
     for (Map<String,String> state : stateMaps) {
-      states.add(new CoreState(state));
+      states[i++] = new CoreState(state);
     }
-    
-    return states.toArray(new CoreState[states.size()]);
+
+    return states;
   }
   
   @Override

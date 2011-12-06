@@ -18,16 +18,15 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.io.InputStreamReader;
+import java.util.*;
 
-import org.apache.noggit.CharArr;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.noggit.*;
+import org.apache.solr.common.cloud.CoreAssignment;
+import org.apache.solr.common.cloud.CoreState;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,7 @@ import org.slf4j.LoggerFactory;
 // quasi immutable :(
 public class CloudState {
 	protected static Logger log = LoggerFactory.getLogger(CloudState.class);
-	private final Map<String, Map<String,Slice>> collectionStates;
+	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
 
 	public CloudState() {
@@ -122,7 +121,7 @@ public class CloudState {
       return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }
     
-    LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ObjectBuilder.fromJSON(new String(bytes, "utf-8"));
+    LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) fromJSON(bytes);
     HashMap<String,Map<String, Slice>> state = new HashMap<String,Map<String,Slice>>();
 
     for(String collectionName: stateMap.keySet()){
@@ -142,7 +141,63 @@ public class CloudState {
     return new CloudState(liveNodes, state);
 	}
 
+  private static class CloudJSONWriter extends JSONWriter {
+    public CloudJSONWriter(CharArr out, int indent) {
+      super(out, indent);
+    }
+    @Override
+    public void handleUnknownClass(Object o) {
+      if (o instanceof Slice) {
+        setIndentSize(2); // this is big enough, we currently always want indenting
+        write( ((Slice)o).getShards() );
+      } else if (o instanceof ZkNodeProps) {
+        write( ((ZkNodeProps) o).getProperties() );
+      } else if (o instanceof CloudState) {
+        setIndentSize(2); // this is big enough, we currently always want indenting
+        write( ((CloudState)o).getCollectionStates() );
+      } else if (o instanceof CoreAssignment) {
+        write(((CoreAssignment) o).getProperties());
+      } else if (o instanceof CoreState) {
+        write(((CoreState) o).getProperties());
+      } else {
+        super.handleUnknownClass(o);
+      }
+    }
+  }
+
   public static byte[] store(CloudState state)
+      throws IOException {
+    return toJSON(state);
+  }
+
+  // convenience methods... should these go somewhere else?
+
+  public static byte[] toJSON(Object o) {
+    CharArr out = new CharArr();
+    new CloudJSONWriter(out, 2).write(o); // indentation by default
+    return toUTF8(out);
+  }
+
+  public static byte[] toUTF8(CharArr out) {
+    BytesRef br = new BytesRef(out);
+    return Arrays.copyOf(br.bytes, br.length);
+  }
+
+  public static Object fromJSON(byte[] utf8) {
+    // convert directly from bytes to chars
+    // and parse directly from that instead of going through
+    // intermediate strings or readers
+    CharsRef chars = new CharsRef();
+    UnicodeUtil.UTF8toUTF16(utf8, 0, utf8.length, chars);   // TODO: this method currently oversizes the array
+    JSONParser parser = new JSONParser(chars.chars, chars.offset, chars.length);
+    try {
+      return ObjectBuilder.getVal(parser);
+    } catch (IOException e) {
+      throw new RuntimeException(e); // should never happen w/o using real IO
+    }
+  }
+
+  public static byte[] store0(CloudState state)
       throws IOException {
     CharArr out = new CharArr();
     out.append(JSONUtil.OBJECT_START);
