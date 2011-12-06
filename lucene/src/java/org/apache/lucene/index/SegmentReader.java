@@ -38,13 +38,13 @@ import org.apache.lucene.util.CloseableThreadLocal;
 /**
  * @lucene.experimental
  */
-public class SegmentReader extends IndexReader implements Cloneable {
-  protected boolean readOnly;
+public final class SegmentReader extends IndexReader implements Cloneable {
+  private final boolean readOnly;
 
   private SegmentInfo si;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
-  CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
-  CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
+  final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
+  final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
   volatile BitVector liveDocs;
   AtomicInteger liveDocsRef = null;
@@ -75,29 +75,30 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor, IOContext context) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, true, termInfosIndexDivisor, context);
+  public static SegmentReader get(SegmentInfo si, int termInfosIndexDivisor, IOContext context) throws CorruptIndexException, IOException {
+    return get(true, si, true, termInfosIndexDivisor, context);
+  }
+
+  // nocommit: remove deletions from SR
+  static SegmentReader getRW(SegmentInfo si, boolean doOpenStores, int termInfosIndexDivisor, IOContext context) throws CorruptIndexException, IOException {
+    return get(false, si, doOpenStores, termInfosIndexDivisor, context);
   }
 
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(boolean readOnly,
-                                  Directory dir,
+  private static SegmentReader get(boolean readOnly,
                                   SegmentInfo si,
                                   boolean doOpenStores,
                                   int termInfosIndexDivisor,
                                   IOContext context)
     throws CorruptIndexException, IOException {
     
-    SegmentReader instance = new SegmentReader();
-    instance.readOnly = readOnly;
-    instance.si = si;
+    SegmentReader instance = new SegmentReader(readOnly, si);
     boolean success = false;
-
     try {
-      instance.core = new SegmentCoreReaders(instance, dir, si, context, termInfosIndexDivisor);
+      instance.core = new SegmentCoreReaders(instance, si.dir, si, context, termInfosIndexDivisor);
       if (doOpenStores) {
         instance.core.openDocStores(si);
       }
@@ -115,6 +116,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
       }
     }
     return instance;
+  }
+
+  private SegmentReader(boolean readOnly, SegmentInfo si) {
+    this.readOnly = readOnly;
+    this.si = si;
   }
 
   void openDocStores() throws IOException {
@@ -162,7 +168,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @return New BitVector
    */
   // nocommit: remove deletions from SR
-  protected BitVector cloneDeletedDocs(BitVector bv) {
+  BitVector cloneDeletedDocs(BitVector bv) {
     ensureOpen();
     return (BitVector)bv.clone();
   }
@@ -202,14 +208,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
     assert !doClone || (deletionsUpToDate);
 
     // clone reader
-    SegmentReader clone = new SegmentReader();
+    SegmentReader clone = new SegmentReader(openReadOnly, si);
 
     boolean success = false;
     try {
       core.incRef();
       clone.core = core;
-      clone.readOnly = openReadOnly;
-      clone.si = si;
       clone.pendingDeleteCount = pendingDeleteCount;
       clone.readerFinishedListeners = readerFinishedListeners;
 

@@ -698,7 +698,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // TODO: we may want to avoid doing this while
         // synchronized
         // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(false, info.dir, info, doOpenStores, context.context == IOContext.Context.MERGE ? -1 : config.getReaderTermsIndexDivisor(), context);
+        sr = SegmentReader.getRW(info, doOpenStores, context.context == IOContext.Context.MERGE ? -1 : config.getReaderTermsIndexDivisor(), context);
         sr.readerFinishedListeners = readerFinishedListeners;
 
         if (info.dir == directory) {

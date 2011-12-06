@@ -59,7 +59,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private final boolean applyAllDeletes;
 
-  static IndexReader open(final Directory directory, final IndexCommit commit,
+  public static IndexReader open(final Directory directory, final IndexCommit commit,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
@@ -88,7 +88,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     for (int i = sis.size()-1; i >= 0; i--) {
       boolean success = false;
       try {
-        readers[i] = SegmentReader.get(true /** nocommit: remove readOnly */, sis.info(i), termInfosIndexDivisor, IOContext.READ);
+        readers[i] = SegmentReader.get(sis.info(i), termInfosIndexDivisor, IOContext.READ);
         readers[i].readerFinishedListeners = readerFinishedListeners;
         success = true;
       } finally {
@@ -206,7 +206,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
           assert !doClone;
 
           // this is a new reader; in case we hit an exception we can close it safely
-          newReader = SegmentReader.get(true, infos.info(i), termInfosIndexDivisor, IOContext.READ);
+          newReader = SegmentReader.get(infos.info(i), termInfosIndexDivisor, IOContext.READ);
           newReader.readerFinishedListeners = readerFinishedListeners;
           readerShared[i] = false;
           newReaders[i] = newReader;

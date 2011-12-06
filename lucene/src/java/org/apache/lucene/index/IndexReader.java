@@ -352,7 +352,24 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
 
-  private static IndexReader open(final Directory directory, final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+  /** Expert: returns an IndexReader reading the index in the given
+   *  {@link IndexCommit}.
+   * @param directory the index directory
+   * @param commit the commit point to open
+   * @param termInfosIndexDivisor Subsamples which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return DirectoryReader.open(directory, commit, termInfosIndexDivisor);
   }
 

@@ -54,8 +54,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentInfo info1 = DocHelper.writeDoc(random, merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentInfo info2 = DocHelper.writeDoc(random, merge2Dir, doc2);
-    reader1 = SegmentReader.get(true, info1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
-    reader2 = SegmentReader.get(true, info2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    reader1 = SegmentReader.get(info1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    reader2 = SegmentReader.get(info2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
   }
 
   @Override
@@ -86,7 +86,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(docsMerged == 2);
     final FieldInfos fieldInfos = mergeState.fieldInfos;
     //Should be able to open a new SegmentReader against the new directory
-    SegmentReader mergedReader = SegmentReader.get(false, mergedDir, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
+    SegmentReader mergedReader = SegmentReader.getRW(new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
                                                                                      codec, fieldInfos),
                                                    true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(mergedReader != null);
