@@ -80,7 +80,7 @@ public class AppendingCodec extends Codec {
   public FieldInfosFormat fieldInfosFormat() {
     return fieldInfos;
   }
-
+  
   @Override
   public NormsFormat normsFormat() {
     return norms;

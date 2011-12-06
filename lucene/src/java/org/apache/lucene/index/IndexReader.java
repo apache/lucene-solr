@@ -31,6 +31,7 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.search.FieldCache; // javadocs
+import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -372,8 +373,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * for doing so); if a new reader is returned you also
    * must eventually close it.  Be sure to never close a
    * reader while other threads are still using it; see
-   * <code>SearcherManager</code> in
-   * <code>contrib/misc</code> to simplify managing this.
+   * {@link SearcherManager} to simplify managing this.
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error

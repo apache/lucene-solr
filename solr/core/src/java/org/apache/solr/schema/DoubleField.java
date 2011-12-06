@@ -28,7 +28,18 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
+ * A legacy numeric field type that encodes "Double" values as simple Strings.
+ * This class should not be used except by people with existing indexes that
+ * contain numeric values indexed as Strings.  
+ * New schemas should use {@link TrieDoubleField}.
  *
+ * <p>
+ * Field values will sort numerically, but Range Queries (and other features 
+ * that rely on numeric ranges) will not work as expected: values will be 
+ * evaluated in unicode String order, not numeric order.
+ * </p>
+ * 
+ * @see TrieDoubleField
  */
 public class DoubleField extends FieldType {
   @Override
