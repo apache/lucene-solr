@@ -293,6 +293,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         assertEquals(35, hits.length);
         writer.close();
         searcher.close();
+        reader.close();
       } finally {
         _TestUtil.rmDir(indexDir);
       }
