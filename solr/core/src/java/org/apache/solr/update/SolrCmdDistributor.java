@@ -376,8 +376,7 @@ public class SolrCmdDistributor {
     }
     
     // nocommit: just for kicks at the moment...
-    if (failed <= (expectedResponses / 2)) {
-      // don't fail if half or more where fine
+    if (failed <= (expectedResponses / 2) - 1) {
       rsp.setException(null);
     }
   }

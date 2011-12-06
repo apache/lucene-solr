@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang.NullArgumentException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.cloud.HashPartitioner;
@@ -269,14 +268,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   // must be synchronized by bucket
   private void doLocalAdd(AddUpdateCommand cmd) throws IOException {
-    if (shards == null)   // TODO: temporary. a distrib update currently goes through HTTP for self
-      super.processAdd(cmd);
+    super.processAdd(cmd);
   }
 
   // must be synchronized by bucket
   private void doLocalDelete(DeleteUpdateCommand cmd) throws IOException {
-    if (shards == null)   // TODO: temporary. a distrib update currently goes through HTTP for self
-      super.processDelete(cmd);
+    super.processDelete(cmd);
   }
 
   /**
@@ -613,13 +610,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
       if (cloudState.liveNodesContain(entry.getValue().get(
-          ZkStateReader.NODE_NAME_PROP))) {
+          ZkStateReader.NODE_NAME_PROP)) && !entry.getKey().equals(shardZkNodeName)) {
         String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
         urls.add(replicaUrl);
       }
     }
     if (urls.size() == 0) {
-      throw new ZooKeeperException(ErrorCode.SERVICE_UNAVAILABLE, "No available servers hosting shard " + shardId + " found");
+      return null;
     }
     return urls;
   }
