@@ -61,9 +61,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     static volatile boolean newReaderCalled = false;
 
     @Override
-    public IndexReader newReader(Directory indexDir, boolean readOnly)
-        throws IOException {
-      assert readOnly; // nocommit: readOnly is ignored - remove
+    public IndexReader newReader(Directory indexDir) throws IOException {
       TestIndexReaderFactory.newReaderCalled = true;
       return IndexReader.open(indexDir);
     }
