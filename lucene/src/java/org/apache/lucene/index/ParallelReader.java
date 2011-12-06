@@ -385,13 +385,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public int docFreq(Term term) throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(term.field());
-    return reader==null ? 0 : reader.docFreq(term);
-  }
-
-  @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);

@@ -483,15 +483,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public int docFreq(Term t) throws IOException {
-    ensureOpen();
-    int total = 0;          // sum freqs in segments
-    for (int i = 0; i < subReaders.length; i++)
-      total += subReaders[i].docFreq(t);
-    return total;
-  }
-
-  @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in segments
@@ -504,11 +495,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public Fields fields() throws IOException {
     throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
-  }
-
-  @Override
-  public long getUniqueTermCount() throws IOException {
-    return -1;
   }
 
   @Override

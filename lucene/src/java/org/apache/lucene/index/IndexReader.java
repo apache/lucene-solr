@@ -170,7 +170,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   static int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
   /** Expert: returns the current refCount for this reader */
-  public int getRefCount() {
+  public final int getRefCount() {
     return refCount.get();
   }
   
@@ -189,7 +189,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #decRef
    * @see #tryIncRef
    */
-  public void incRef() {
+  public final void incRef() {
     ensureOpen();
     refCount.incrementAndGet();
   }
@@ -217,7 +217,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #decRef
    * @see #incRef
    */
-  public boolean tryIncRef() {
+  public final boolean tryIncRef() {
     int count;
     while ((count = refCount.get()) > 0) {
       if (refCount.compareAndSet(count, count+1)) {
@@ -255,7 +255,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @see #incRef
    */
-  public void decRef() throws IOException {
+  public final void decRef() throws IOException {
     ensureOpen();
     final int rc = refCount.getAndDecrement();
     if (rc == 1) {
@@ -658,14 +658,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  term vectors were not indexed.  The returned Fields
    *  instance acts like a single-document inverted index
    *  (the docID will be 0). */
-  abstract public Fields getTermVectors(int docID)
+  public abstract Fields getTermVectors(int docID)
           throws IOException;
 
   /** Retrieve term vector for this document and field, or
    *  null if term vectors were not indexed.  The returned
    *  Fields instance acts like a single-document inverted
    *  index (the docID will be 0). */
-  public Terms getTermVector(int docID, String field)
+  public final Terms getTermVector(int docID, String field)
     throws IOException {
     Fields vectors = getTermVectors(docID);
     if (vectors == null) {
@@ -699,7 +699,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public abstract int maxDoc();
 
   /** Returns the number of deleted documents. */
-  public int numDeletedDocs() {
+  public final int numDeletedDocs() {
     return maxDoc() - numDocs();
   }
 
@@ -732,7 +732,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // TODO: we need a separate StoredField, so that the
   // Document returned here contains that class not
   // IndexableField
-  public Document document(int docID) throws CorruptIndexException, IOException {
+  public final Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
     if (docID < 0 || docID >= maxDoc()) {
       throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
@@ -791,7 +791,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * through them yourself. */
   public abstract PerDocValues perDocValues() throws IOException;
 
-  public int docFreq(Term term) throws IOException {
+  public final int docFreq(Term term) throws IOException {
     return docFreq(term.field(), term.bytes());
   }
 
@@ -822,7 +822,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * field does not exists.  This method does not take into
    * account deleted documents that have not yet been merged
    * away. */
-  public long totalTermFreq(String field, BytesRef term) throws IOException {
+  public final long totalTermFreq(String field, BytesRef term) throws IOException {
     final Fields fields = fields();
     if (fields == null) {
       return 0;
@@ -840,7 +840,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** This may return null if the field does not exist.*/
-  public Terms terms(String field) throws IOException {
+  public final Terms terms(String field) throws IOException {
     final Fields fields = fields();
     if (fields == null) {
       return null;
@@ -851,7 +851,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null, if either the field or
    *  term does not exist. */
-  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
+  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -871,7 +871,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  field & term.  This may return null, if either the
    *  field or term does not exist, or, positions were not
    *  indexed for this field. */
-  public DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -892,7 +892,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists or the {@link TermState} is invalid for the underlying
    * implementation.*/
-  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsFreqs) throws IOException {
+  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsFreqs) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -912,7 +912,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists, the {@link TermState} is invalid for the underlying
    * implementation, or positions were not indexed for this field. */
-  public DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -1109,12 +1109,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves}
    * reference. Only the top-level context maintains the convenience leaf-view
    * for performance reasons.
-   * <p>
-   * NOTE: You should not try using sub-readers returned by this method to make
-   * any changes (deleteDocument, etc.). While this might succeed for
-   * one composite reader (like MultiReader), it will most likely lead to index
-   * corruption for other readers (like DirectoryReader obtained through
-   * {@link #open}. Use the top-level context's reader directly.
    * 
    * @lucene.experimental
    */
@@ -1135,7 +1129,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  Instead, you should call {@link
    *  #getSequentialSubReaders} and ask each sub reader for
    *  its unique term count. */
-  public long getUniqueTermCount() throws IOException {
+  public final long getUniqueTermCount() throws IOException {
+    if (!getTopReaderContext().isAtomic) {
+      return -1;
+    }
     final Fields fields = fields();
     if (fields == null) {
       return 0;

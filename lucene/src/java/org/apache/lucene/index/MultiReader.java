@@ -83,11 +83,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public long getUniqueTermCount() throws IOException {
-    throw new UnsupportedOperationException("");
-  }
-
-  @Override
   public Fields fields() throws IOException {
     throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
@@ -255,15 +250,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public synchronized byte[] norms(String field) throws IOException {
     throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
-  }
-
-  @Override
-  public int docFreq(Term t) throws IOException {
-    ensureOpen();
-    int total = 0;          // sum freqs in segments
-    for (int i = 0; i < subReaders.length; i++)
-      total += subReaders[i].docFreq(t);
-    return total;
   }
   
   @Override
