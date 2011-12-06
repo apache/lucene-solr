@@ -22,7 +22,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
@@ -33,7 +35,7 @@ import org.apache.solr.common.util.XML;
 public class UpdateRequestExt extends AbstractUpdateRequest {
   
   private List<SolrDoc> documents = null;
-  private List<String> deleteById = null;
+  private Map<String,Long> deleteById = null;
   private List<String> deleteQuery = null;
   
   private class SolrDoc {
@@ -105,17 +107,27 @@ public class UpdateRequestExt extends AbstractUpdateRequest {
   
   public UpdateRequestExt deleteById(String id) {
     if (deleteById == null) {
-      deleteById = new ArrayList<String>();
+      deleteById = new HashMap<String,Long>();
     }
-    deleteById.add(id);
+    deleteById.put(id, null);
+    return this;
+  }
+  
+  public UpdateRequestExt deleteById(String id, Long version) {
+    if (deleteById == null) {
+      deleteById = new HashMap<String,Long>();
+    }
+    deleteById.put(id, version);
     return this;
   }
   
   public UpdateRequestExt deleteById(List<String> ids) {
     if (deleteById == null) {
-      deleteById = new ArrayList<String>(ids);
+      deleteById = new HashMap<String,Long>();
     } else {
-      deleteById.addAll(ids);
+      for (String id : ids) {
+        deleteById.put(id, null);
+      }
     }
     return this;
   }
@@ -178,9 +190,15 @@ public class UpdateRequestExt extends AbstractUpdateRequest {
     if (deleteI || deleteQ) {
       writer.append("<delete>");
       if (deleteI) {
-        for (String id : deleteById) {
-          writer.append("<id>");
-          XML.escapeCharData(id, writer);
+        for (Map.Entry<String,Long> entry : deleteById.entrySet()) {
+          writer.append("<id");
+          Long version = entry.getValue();
+          if (version != null) {
+            writer.append(" version=\"" + version + "\"");
+          }
+          writer.append(">");
+          
+          XML.escapeCharData(entry.getKey(), writer);
           writer.append("</id>");
         }
       }
@@ -216,8 +234,8 @@ public class UpdateRequestExt extends AbstractUpdateRequest {
 
     return docLists;
   }
-  
-  public List<String> getDeleteById() {
+
+  public Map<String,Long> getDeleteById() {
     return deleteById;
   }
   

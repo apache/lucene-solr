@@ -692,39 +692,39 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     assertDocCounts();
     
-//    String docId = "99999999";
-//    indexr("id", docId, t1, "originalcontent");
-//    
-//    commit();
-//    
-//    ModifiableSolrParams params = new ModifiableSolrParams();
-//    params.add("distrib", "true");
-//    params.add("q", t1 + ":originalcontent");
-//    QueryResponse results = clients.get(0).query(params);
-//    assertEquals(1, results.getResults().getNumFound());
-//    System.out.println("results:" + results);
-//    
-//    // update doc
-//    indexr("id", docId, t1, "updatedcontent");
-//    
-//    commit();
-//    
-//    results = clients.get(0).query(params);
-//    assertEquals(0, results.getResults().getNumFound());
-//    
-//    params.set("q", t1 + ":updatedcontent");
-//    
-//    results = clients.get(0).query(params);
-//    assertEquals(1, results.getResults().getNumFound());
-//    
-//    UpdateRequest uReq = new UpdateRequest();
-//    uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
-//    uReq.deleteById(docId).process(clients.get(0));
-//    
-//    commit();
-//    
-//    results = clients.get(0).query(params);
-//    assertEquals(0, results.getResults().getNumFound());
+    String docId = "99999999";
+    indexr("id", docId, t1, "originalcontent");
+    
+    commit();
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("distrib", "true");
+    params.add("q", t1 + ":originalcontent");
+    QueryResponse results = clients.get(0).query(params);
+    assertEquals(1, results.getResults().getNumFound());
+    System.out.println("results:" + results);
+    
+    // update doc
+    indexr("id", docId, t1, "updatedcontent");
+    
+    commit();
+    
+    results = clients.get(0).query(params);
+    assertEquals(0, results.getResults().getNumFound());
+    
+    params.set("q", t1 + ":updatedcontent");
+    
+    results = clients.get(0).query(params);
+    assertEquals(1, results.getResults().getNumFound());
+    
+    UpdateRequest uReq = new UpdateRequest();
+    uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    uReq.deleteById(docId).process(clients.get(0));
+    
+    commit();
+    
+    results = clients.get(0).query(params);
+    assertEquals(0, results.getResults().getNumFound());
     
     // expire a session...
     //CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);

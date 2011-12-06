@@ -27,7 +27,6 @@ import org.junit.Ignore;
 /**
  * Super basic testing, no shard restarting or anything.
  */
-@Ignore("distrib delete not working yet")
 public class BasicFullDistributedZkTest extends FullDistributedZkTest {
   
   
@@ -44,9 +43,6 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
-    // GRRRRR - this is needed because it takes a while for all the shards to learn about the cluster state
-    Thread.sleep(5000);
-    
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);

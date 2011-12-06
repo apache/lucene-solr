@@ -242,7 +242,7 @@ public class SolrCmdDistributor {
     
     for (DeleteUpdateCommand cmd : dlist) {
       if (cmd.isDeleteById()) {
-        ureq.deleteById(cmd.getId());
+        ureq.deleteById(cmd.getId(), cmd.getVersion());
       } else {
         ureq.deleteByQuery(cmd.query);
       }
