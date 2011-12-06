@@ -74,20 +74,12 @@ public class ZkStateReader {
   private SolrZkClient zkClient;
   
   private boolean closeClient = false;
-
-  private boolean debugLog;
   
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
   }
   
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, false);
-  }
-  
-  public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, boolean debugLog) throws InterruptedException, TimeoutException, IOException {
-    this.debugLog = debugLog;
-    if (debugLog) System.out.println("NEW ZKREADER");
     closeClient = true;
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
@@ -149,7 +141,6 @@ public class ZkStateReader {
       
       @Override
       public void process(WatchedEvent event) {
-        if (debugLog) System.out.println("cluster change triggered");
         log.info("A cluster state change has occurred");
         try {
           
@@ -160,7 +151,6 @@ public class ZkStateReader {
             byte[] data = zkClient.getData(CLUSTER_STATE, this, null);
             CloudState clusterState = CloudState.load(data,
                 ZkStateReader.this.cloudState.getLiveNodes());
-            if (debugLog) System.out.println("update cluster:" + clusterState.getCollections());
             // update volatile
             cloudState = clusterState;
           }
@@ -226,7 +216,6 @@ public class ZkStateReader {
       Set<String> liveNodeSet = new HashSet<String>();
       liveNodeSet.addAll(liveNodes);
       CloudState clusterState = CloudState.load(zkClient, liveNodeSet);
-      if (debugLog) System.out.println("make cluster:" + clusterState.getCollections());
       this.cloudState = clusterState;
     }
   }
