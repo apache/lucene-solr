@@ -17,6 +17,16 @@
 
 package org.apache.solr.schema;
 
+/**
+ * A numeric field that can contain 32-bit signed two's complement integer values.
+ *
+ * <ul>
+ *  <li>Min Value Allowed: -2147483648</li>
+ *  <li>Max Value Allowed: 2147483647</li>
+ * </ul>
+ * 
+ * @see Integer
+ */
 public class TrieIntField extends TrieField {
   {
     type=TrieTypes.INTEGER;
