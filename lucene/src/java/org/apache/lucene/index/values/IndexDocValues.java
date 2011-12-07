@@ -258,6 +258,12 @@ public abstract class IndexDocValues implements Closeable {
     /** Returns value for specified ord. */
     public abstract BytesRef getByOrd(int ord, BytesRef bytesRef);
 
+    /** Return true if it's safe to call {@link
+     *  #getDocToOrd}. */
+    public boolean hasPackedDocToOrd() {
+      return false;
+    }
+
     /**
      * Returns the PackedInts.Reader impl that maps document to ord.
      */
@@ -389,6 +395,11 @@ public abstract class IndexDocValues implements Closeable {
         assert ord == 0;
         bytesRef.length = 0;
         return bytesRef;
+      }
+
+      @Override
+      public boolean hasPackedDocToOrd() {
+        return true;
       }
 
       @Override

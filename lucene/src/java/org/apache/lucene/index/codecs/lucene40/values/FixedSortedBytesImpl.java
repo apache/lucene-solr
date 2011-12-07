@@ -197,6 +197,11 @@ class FixedSortedBytesImpl {
     }
 
     @Override
+    public boolean hasPackedDocToOrd() {
+      return true;
+    }
+
+    @Override
     public PackedInts.Reader getDocToOrd() {
       return docToOrdIndex;
     }

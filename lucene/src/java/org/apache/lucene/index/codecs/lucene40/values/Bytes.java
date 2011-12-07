@@ -579,6 +579,11 @@ public final class Bytes {
     }
 
     @Override
+    public boolean hasPackedDocToOrd() {
+      return true;
+    }
+
+    @Override
     public PackedInts.Reader getDocToOrd() {
       return docToOrdIndex;
     }

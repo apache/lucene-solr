@@ -1623,11 +1623,11 @@ public abstract class FieldComparator<T> {
 
     // Used per-segment when bit width is not a native array
     // size (8, 16, 32):
-    private final class AnyOrdComparator extends PerSegmentComparator {
+    private final class AnyPackedDocToOrdComparator extends PerSegmentComparator {
       private final PackedInts.Reader readerOrds;
       private final int docBase;
 
-      public AnyOrdComparator(PackedInts.Reader readerOrds, int docBase) {
+      public AnyPackedDocToOrdComparator(PackedInts.Reader readerOrds, int docBase) {
         this.readerOrds = readerOrds;
         this.docBase = docBase;
       }
@@ -1664,6 +1664,47 @@ public abstract class FieldComparator<T> {
       }
     }
 
+    // Used per-segment when DV doesn't use packed ints for
+    // docToOrds:
+    private final class AnyOrdComparator extends PerSegmentComparator {
+      private final int docBase;
+
+      public AnyOrdComparator(int docBase) {
+        this.docBase = docBase;
+      }
+
+      @Override
+      public int compareBottom(int doc) {
+        assert bottomSlot != -1;
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return bottomOrd - termsIndex.ord(doc);
+        } else {
+          // ord is only approx comparable: if they are not
+          // equal, we can use that; if they are equal, we
+          // must fallback to compare by value
+          final int order = termsIndex.ord(doc);
+          final int cmp = bottomOrd - order;
+          if (cmp != 0) {
+            return cmp;
+          }
+          termsIndex.getByOrd(order, tempBR);
+          return comp.compare(bottomValue, tempBR);
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) {
+        final int ord = termsIndex.ord(doc);
+        ords[slot] = ord;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.getByOrd(ord, values[slot]);
+        readerGen[slot] = currentReaderGen;
+      }
+    }
+
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
@@ -1687,24 +1728,30 @@ public abstract class FieldComparator<T> {
       comp = termsIndex.getComparator();
 
       FieldComparator perSegComp = null;
-      final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
-      if (docToOrd.hasArray()) {
-        final Object arr = docToOrd.getArray();
-        assert arr != null;
-        if (arr instanceof byte[]) {
-          // 8 bit packed
-          perSegComp = new ByteOrdComparator((byte[]) arr, termsIndex, docBase);
-        } else if (arr instanceof short[]) {
-          // 16 bit packed
-          perSegComp = new ShortOrdComparator((short[]) arr, termsIndex, docBase);
-        } else if (arr instanceof int[]) {
-          // 32 bit packed
-          perSegComp = new IntOrdComparator((int[]) arr, termsIndex, docBase);
+      if (termsIndex.hasPackedDocToOrd()) {
+        final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
+        if (docToOrd.hasArray()) {
+          final Object arr = docToOrd.getArray();
+          assert arr != null;
+          if (arr instanceof byte[]) {
+            // 8 bit packed
+            perSegComp = new ByteOrdComparator((byte[]) arr, termsIndex, docBase);
+          } else if (arr instanceof short[]) {
+            // 16 bit packed
+            perSegComp = new ShortOrdComparator((short[]) arr, termsIndex, docBase);
+          } else if (arr instanceof int[]) {
+            // 32 bit packed
+            perSegComp = new IntOrdComparator((int[]) arr, termsIndex, docBase);
+          }
         }
-      }
 
-      if (perSegComp == null) {
-        perSegComp = new AnyOrdComparator(docToOrd, docBase);
+        if (perSegComp == null) {
+          perSegComp = new AnyPackedDocToOrdComparator(docToOrd, docBase);
+        }
+      } else {
+        if (perSegComp == null) {
+          perSegComp = new AnyOrdComparator(docBase);
+        }
       }
         
       currentReaderGen++;
