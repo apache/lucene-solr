@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
@@ -31,6 +33,8 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.TermVectorsWriter;
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.TypePromoter;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -128,9 +132,7 @@ final class SegmentMerger {
       int numMerged = mergeVectors();
       assert numMerged == mergeState.mergedDocCount;
     }
-    // write FIS once merge is done. IDV might change types or drops fields
-    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
-    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
+
     return mergeState;
   }
 
@@ -183,15 +185,40 @@ final class SegmentMerger {
       }
     }
   }
+  
+  // returns an updated typepromoter (tracking type and size) given a previous one,
+  // and a newly encountered docvalues
+  private TypePromoter mergeDocValuesType(TypePromoter previous, IndexDocValues docValues) {
+    TypePromoter incoming = TypePromoter.create(docValues.type(),  docValues.getValueSize());
+    if (previous == null) {
+      previous = TypePromoter.getIdentityPromoter();
+    }
+    TypePromoter promoted = previous.promote(incoming);
+    if (promoted == null) {
+      // type is incompatible: promote to BYTES_VAR_STRAIGHT
+      return TypePromoter.create(ValueType.BYTES_VAR_STRAIGHT, TypePromoter.VAR_TYPE_VALUE_SIZE);
+    } else {
+      return promoted;
+    }
+  }
 
   private void mergeFieldInfos() throws IOException {
+    // mapping from all docvalues fields found to their promoted types
+    // this is because FieldInfos does not store the valueSize
+    Map<FieldInfo,TypePromoter> docValuesTypes = new HashMap<FieldInfo,TypePromoter>();
+
     for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : mergeState.readers) {
       final IndexReader reader = readerAndLiveDocs.reader;
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         FieldInfos readerFieldInfos = segmentReader.fieldInfos();
         for (FieldInfo fi : readerFieldInfos) {
-          mergeState.fieldInfos.add(fi);
+          FieldInfo merged = mergeState.fieldInfos.add(fi);
+          // update the type promotion mapping for this reader
+          if (fi.hasDocValues()) {
+            TypePromoter previous = docValuesTypes.get(merged);
+            docValuesTypes.put(merged, mergeDocValuesType(previous, reader.docValues(fi.name))); 
+          }
         }
       } else {
         addIndexed(reader, mergeState.fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
@@ -206,10 +233,33 @@ final class SegmentMerger {
         Collection<String> dvNames = reader.getFieldNames(FieldOption.DOC_VALUES);
         mergeState.fieldInfos.addOrUpdate(dvNames, false);
         for (String dvName : dvNames) {
-          mergeState.fieldInfos.fieldInfo(dvName).setDocValues(reader.docValues(dvName).type());
+          FieldInfo merged = mergeState.fieldInfos.fieldInfo(dvName);
+          IndexDocValues docValues = reader.docValues(dvName);
+          merged.setDocValues(docValues.type());
+          TypePromoter previous = docValuesTypes.get(merged);
+          docValuesTypes.put(merged, mergeDocValuesType(previous, docValues));
         }
       }
     }
+    
+    // update any promoted doc values types:
+    for (Map.Entry<FieldInfo,TypePromoter> e : docValuesTypes.entrySet()) {
+      FieldInfo fi = e.getKey();
+      TypePromoter promoter = e.getValue();
+      if (promoter == null) {
+        fi.resetDocValues(null);
+      } else {
+        assert promoter != TypePromoter.getIdentityPromoter();
+        if (fi.getDocValues() != promoter.type()) {
+          // reset the type if we got promoted
+          fi.resetDocValues(promoter.type());
+        }
+      }
+    }
+    
+    // write the merged infos
+    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
+    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
   }
 
   /**
