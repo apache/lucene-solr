@@ -114,7 +114,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemtsss broens", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
        ,"/spellcheck/suggestions/collation=='document brown'"
     );
-    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","pixma-a-b-c-d-e-f-g", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","pixma", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
        ,"/spellcheck/suggestions/collation=='pixmaa'"
     );
   }
