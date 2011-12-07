@@ -15,6 +15,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.lucene40.values.BytesRefUtils;
 import org.apache.lucene.index.values.IndexDocValues.Source;
@@ -102,7 +103,7 @@ public class TestTypePromotion extends LuceneTestCase {
       } else {
         // do a real merge here
         IndexReader open = IndexReader.open(dir_2);
-        writer.addIndexes(open);
+        writer.addIndexes(random.nextBoolean() ? new SlowMultiReaderWrapper(open) : open);
         open.close();
       }
       dir_2.close();
