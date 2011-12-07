@@ -23,7 +23,6 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.Counter;
 
 /**
  * Abstract API that consumes {@link PerDocFieldValues}.
@@ -35,20 +34,6 @@ import org.apache.lucene.util.Counter;
  * @lucene.experimental
  */
 public abstract class DocValuesConsumer {
-
-  protected final Counter bytesUsed;
-
-  /**
-   * Creates a new {@link DocValuesConsumer}.
-   * 
-   * @param bytesUsed
-   *          bytes-usage tracking reference used by implementation to track
-   *          internally allocated memory. All tracked bytes must be released
-   *          once {@link #finish(int)} has been called.
-   */
-  protected DocValuesConsumer(Counter bytesUsed) {
-    this.bytesUsed = bytesUsed == null ? Counter.newCounter() : bytesUsed;
-  }
 
   /**
    * Adds the given {@link PerDocFieldValues} instance to this

@@ -42,6 +42,8 @@ import org.apache.lucene.util.Counter;
  */
 public abstract class Writer extends DocValuesConsumer {
   protected Source currentMergeSource;
+  protected final Counter bytesUsed;
+
   /**
    * Creates a new {@link Writer}.
    * 
@@ -51,7 +53,7 @@ public abstract class Writer extends DocValuesConsumer {
    *          once {@link #finish(int)} has been called.
    */
   protected Writer(Counter bytesUsed) {
-    super(bytesUsed);
+    this.bytesUsed = bytesUsed;
   }
 
   /**
