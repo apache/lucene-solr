@@ -211,7 +211,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
           readerShared[i] = false;
           newReaders[i] = newReader;
         } else {
-          newReader = newReaders[i].reopenSegment(infos.info(i), doClone, true /* nocommit: remove readOnly */);
+          newReader = newReaders[i].reopenSegment(infos.info(i), doClone, true);
           if (newReader == null) {
             // this reader will be shared between the old and the new one,
             // so we must incRef it
