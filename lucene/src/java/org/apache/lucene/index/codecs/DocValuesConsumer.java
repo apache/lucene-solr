@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergeState;
@@ -77,14 +76,6 @@ public abstract class DocValuesConsumer {
    * @throws IOException
    */
   public abstract void finish(int docCount) throws IOException;
-
-  /**
-   * Gathers files associated with this {@link DocValuesConsumer}
-   * 
-   * @param files
-   *          the of files to add the consumers files to.
-   */
-  public abstract void files(Collection<String> files) throws IOException;
 
   /**
    * Merges the given {@link org.apache.lucene.index.MergeState} into

@@ -19,7 +19,6 @@ package org.apache.lucene.index.codecs.lucene40.values;
 
 /** Base class for specific Bytes Reader/Writer implementations */
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -307,18 +306,6 @@ public final class Bytes {
       final BytesRef ref;
       if ((ref = docValues.getBytes()) != null) {
         add(docID, ref);
-      }
-    }
-
-    @Override
-    public void files(Collection<String> files) throws IOException {
-      assert datOut != null;
-      files.add(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX, DATA_EXTENSION));
-      if (idxOut != null) { // called after flush - so this must be initialized
-        // if needed or present
-        final String idxFile = IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
-            INDEX_EXTENSION);
-        files.add(idxFile);
       }
     }
   }
