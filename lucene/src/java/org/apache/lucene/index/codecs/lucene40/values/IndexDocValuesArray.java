@@ -1,10 +1,11 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;

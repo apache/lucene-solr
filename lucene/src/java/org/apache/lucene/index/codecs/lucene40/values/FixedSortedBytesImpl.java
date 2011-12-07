@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,12 +22,14 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.values.Bytes.BytesReaderBase;
-import org.apache.lucene.index.values.Bytes.BytesSortedSourceBase;
-import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSortedSourceBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
+import org.apache.lucene.index.codecs.lucene40.values.SortedBytesMergeUtils.MergeContext;
+import org.apache.lucene.index.codecs.lucene40.values.SortedBytesMergeUtils.SortedSourceSlice;
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
-import org.apache.lucene.index.values.SortedBytesMergeUtils.MergeContext;
-import org.apache.lucene.index.values.SortedBytesMergeUtils.SortedSourceSlice;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;

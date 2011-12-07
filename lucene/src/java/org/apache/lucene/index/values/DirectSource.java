@@ -27,13 +27,13 @@ import org.apache.lucene.util.BytesRef;
  * Base class for disk resident source implementations
  * @lucene.internal
  */
-abstract class DirectSource extends Source {
+public abstract class DirectSource extends Source {
 
   protected final IndexInput data;
   private final ToNumeric toNumeric;
   protected final long baseOffset;
 
-  DirectSource(IndexInput input, ValueType type) {
+  public DirectSource(IndexInput input, ValueType type) {
     super(type);
     this.data = input;
     baseOffset = input.getFilePointer();

@@ -22,7 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.values.Writer;
+import org.apache.lucene.index.codecs.lucene40.values.Writer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;

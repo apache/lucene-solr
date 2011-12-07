@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.codecs.DocValuesWriterBase;
-import org.apache.lucene.index.values.Writer;
+import org.apache.lucene.index.codecs.lucene40.values.Writer;
 import org.apache.lucene.store.Directory;
 
 /**

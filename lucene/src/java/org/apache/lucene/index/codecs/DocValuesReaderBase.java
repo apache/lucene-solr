@@ -26,10 +26,10 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.values.Bytes;
-import org.apache.lucene.index.values.Floats;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes;
+import org.apache.lucene.index.codecs.lucene40.values.Floats;
+import org.apache.lucene.index.codecs.lucene40.values.Ints;
 import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;

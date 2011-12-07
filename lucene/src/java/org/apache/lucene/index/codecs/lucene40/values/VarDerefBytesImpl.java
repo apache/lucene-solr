@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,9 +19,11 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.Bytes.BytesReaderBase;
-import org.apache.lucene.index.values.Bytes.BytesSourceBase;
-import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSourceBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
+import org.apache.lucene.index.values.DirectSource;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;

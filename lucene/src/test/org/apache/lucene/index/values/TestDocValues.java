@@ -20,6 +20,10 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.codecs.lucene40.values.Bytes;
+import org.apache.lucene.index.codecs.lucene40.values.Floats;
+import org.apache.lucene.index.codecs.lucene40.values.Ints;
+import org.apache.lucene.index.codecs.lucene40.values.Writer;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;

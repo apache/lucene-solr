@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +25,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @lucene.internal
  */
-final class BytesRefUtils {
+public final class BytesRefUtils {
 
   private BytesRefUtils() {
   }

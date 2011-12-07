@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Counter;
 
@@ -106,7 +105,7 @@ public abstract class DocValuesConsumer {
       final org.apache.lucene.index.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
       if (docValues[readerIDX] != null) {
         hasMerged = true;
-        merge(new Writer.SingleSubMergeState(docValues[readerIDX], mergeState.docBase[readerIDX], reader.reader.maxDoc(),
+        merge(new SingleSubMergeState(docValues[readerIDX], mergeState.docBase[readerIDX], reader.reader.maxDoc(),
                                     reader.liveDocs));
       }
     }
