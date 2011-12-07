@@ -378,11 +378,6 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public int getRefCount() {
-    return in.getRefCount();
-  }
-
-  @Override
   public IndexReader reopen(IndexCommit commit) throws CorruptIndexException, IOException {
     return in.reopen(commit);
   }
@@ -426,63 +421,8 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public void decRef() throws IOException {
-    in.decRef();
-  }
-
-  @Override
-  public void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    in.deleteDocument(docNum);
-  }
-
-  @Override
-  public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    return in.deleteDocuments(term);
-  }
-
-  @Override
-  public Document document(int n) throws CorruptIndexException, IOException {
-    return in.document(n);
-  }
-
-//  @Override
-//  public String getCommitUserData() {
-//    return in.getCommitUserData();
-//  }
-
-  @Override
   public IndexCommit getIndexCommit() throws IOException {
     return in.getIndexCommit();
-  }
-
-  @Override
-  public void incRef() {
-    in.incRef();
-  }
-
-  @Override
-  public int numDeletedDocs() {
-    return in.numDeletedDocs();
-  }
-
-  @Override
-  public void setNorm(int doc, String field, byte value) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    in.setNorm(doc, field, value);
-  }
-
-  @Override
-  public void setNorm(int doc, String field, float value) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    in.setNorm(doc, field, value);
-  }
-
-  @Override
-  public TermPositions termPositions(Term term) throws IOException {
-    return in.termPositions(term);
-  }
-
-  @Override
-  public void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    in.undeleteAll();
   }
 
   @Override

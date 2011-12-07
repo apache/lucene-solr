@@ -1148,12 +1148,6 @@ public class MemoryIndex implements Serializable {
       return 1;
     }
   
-    @Override
-    public Document document(int n) {
-      if (DEBUG) System.err.println("MemoryIndexReader.document");
-      return new Document(); // there are no stored fields
-    }
-
     //When we convert to JDK 1.5 make this Set<String>
     @Override
     public Document document(int n, FieldSelector fieldSelector) throws IOException {

@@ -270,32 +270,6 @@ public class InstantiatedIndexReader extends IndexReader {
    */
   @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
-    return document(n);
-  }
-
-  /**
-   * Returns the stored fields of the <code>n</code><sup>th</sup>
-   * <code>Document</code> in this index.
-   * <p>
-   * <b>Warning!</b>
-   * The resulting document is the actual stored document instance
-   * and not a deserialized clone as retuned by an IndexReader
-   * over a {@link org.apache.lucene.store.Directory}.
-   * I.e., if you need to touch the document, clone it first!
-   * <p>
-   * This can also be seen as a feature for live changes of stored values,
-   * but be careful! Adding a field with an name unknown to the index
-   * or to a field with previously no stored values will make
-   * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)}
-   * out of sync, causing problems for instance when merging the
-   * instantiated index to another index.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-
-  @Override
-  public Document document(int n) throws IOException {
     return isDeleted(n) ? null : getIndex().getDocumentsByNumber()[n].getDocument();
   }
 

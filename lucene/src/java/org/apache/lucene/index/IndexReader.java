@@ -32,7 +32,6 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
 import org.apache.lucene.util.VirtualMethod;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
@@ -177,7 +176,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   static int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
   /** Expert: returns the current refCount for this reader */
-  public int getRefCount() {
+  public final int getRefCount() {
     return refCount.get();
   }
   
@@ -196,7 +195,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #decRef
    * @see #tryIncRef
    */
-  public void incRef() {
+  public final void incRef() {
     ensureOpen();
     refCount.incrementAndGet();
   }
@@ -224,7 +223,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #decRef
    * @see #incRef
    */
-  public boolean tryIncRef() {
+  public final boolean tryIncRef() {
     int count;
     while ((count = refCount.get()) > 0) {
       if (refCount.compareAndSet(count, count+1)) {
@@ -265,7 +264,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @see #incRef
    */
-  public void decRef() throws IOException {
+  public final void decRef() throws IOException {
     ensureOpen();
     final int rc = refCount.getAndDecrement();
     if (rc == 1) {
@@ -1090,7 +1089,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public abstract int maxDoc();
 
   /** Returns the number of deleted documents. */
-  public int numDeletedDocs() {
+  public final int numDeletedDocs() {
     return maxDoc() - numDocs();
   }
 
@@ -1107,7 +1106,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public Document document(int n) throws CorruptIndexException, IOException {
+  public final Document document(int n) throws CorruptIndexException, IOException {
     ensureOpen();
     if (n < 0 || n >= maxDoc()) {
       throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + n + ")");
@@ -1198,7 +1197,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    * @throws IllegalStateException if the field does not index norms
    */
-  public synchronized  void setNorm(int doc, String field, byte value)
+  public final synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
@@ -1228,7 +1227,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * This method will be removed in Lucene 4.0
    */
   @Deprecated
-  public void setNorm(int doc, String field, float value)
+  public final void setNorm(int doc, String field, float value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     setNorm(doc, field, Similarity.getDefault().encodeNormValue(value));
@@ -1305,7 +1304,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * greater than all that precede it in the enumeration.
    * @throws IOException if there is a low-level IO error
    */
-  public TermPositions termPositions(Term term) throws IOException {
+  public final TermPositions termPositions(Term term) throws IOException {
     ensureOpen();
     TermPositions termPositions = termPositions();
     termPositions.seek(term);
@@ -1334,7 +1333,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  be obtained)
    * @throws IOException if there is a low-level IO error
    */
-  public synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+  public final synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
     hasChanges = true;
@@ -1365,7 +1364,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  be obtained)
    * @throws IOException if there is a low-level IO error
    */
-  public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+  public final int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     TermDocs docs = termDocs(term);
     if (docs == null) return 0;
@@ -1400,7 +1399,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+  public final synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
     hasChanges = true;

@@ -18,16 +18,19 @@ package org.apache.lucene.index;
  */
 
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
+
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import java.io.IOException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -136,4 +139,29 @@ public class TestFilterIndexReader extends LuceneTestCase {
     reader.close();
     directory.close();
   }
+
+  public void testOverrideMethods() throws Exception {
+    HashSet<String> methodsThatShouldNotBeOverridden = new HashSet<String>();
+    methodsThatShouldNotBeOverridden.add("reopen");
+    methodsThatShouldNotBeOverridden.add("doOpenIfChanged");
+    methodsThatShouldNotBeOverridden.add("clone");
+    boolean fail = false;
+    for (Method m : FilterIndexReader.class.getMethods()) {
+      int mods = m.getModifiers();
+      if (Modifier.isStatic(mods) || Modifier.isFinal(mods)) {
+        continue;
+      }
+      Class< ? > declaringClass = m.getDeclaringClass();
+      String name = m.getName();
+      if (declaringClass != FilterIndexReader.class && declaringClass != Object.class && !methodsThatShouldNotBeOverridden.contains(name)) {
+        System.err.println("method is not overridden by FilterIndexReader: " + name);
+        fail = true;
+      } else if (declaringClass == FilterIndexReader.class && methodsThatShouldNotBeOverridden.contains(name)) {
+        System.err.println("method should not be overridden by FilterIndexReader: " + name);
+        fail = true;
+      }
+    }
+    assertFalse("FilterIndexReader overrides (or not) some problematic methods; see log above", fail);
+  }
+
 }

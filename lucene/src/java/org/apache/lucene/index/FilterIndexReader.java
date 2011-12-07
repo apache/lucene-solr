@@ -124,6 +124,18 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
+  public IndexCommit getIndexCommit() throws IOException {
+    ensureOpen();
+    return in.getIndexCommit();
+  }
+  
+  @Override
+  public int getTermInfosIndexDivisor() {
+    ensureOpen();
+    return in.getTermInfosIndexDivisor();
+  }
+  
+  @Override
   public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException {
     ensureOpen();
@@ -137,7 +149,6 @@ public class FilterIndexReader extends IndexReader {
     return in.getTermFreqVector(docNumber, field);
   }
 
-
   @Override
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
@@ -150,6 +161,12 @@ public class FilterIndexReader extends IndexReader {
     in.getTermFreqVector(docNumber, mapper);
   }
 
+  @Override
+  public long getUniqueTermCount() throws IOException {
+    ensureOpen();
+    return in.getUniqueTermCount();
+  }
+  
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)

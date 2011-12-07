@@ -421,12 +421,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public TermPositions termPositions(Term term) throws IOException {
-    ensureOpen();
-    return new ParallelTermPositions(term);
-  }
-
-  @Override
   public TermPositions termPositions() throws IOException {
     ensureOpen();
     return new ParallelTermPositions();

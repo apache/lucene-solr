@@ -195,11 +195,6 @@ public class IndexSorter {
     }
 
     @Override
-    public Document document(int n) throws IOException {
-      return document(n, null);
-    }
-
-    @Override
     public Document document(int n, FieldSelector fieldSelector)
         throws CorruptIndexException, IOException {
       return super.document(newToOld[n], fieldSelector);
