@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.codecs.lucene40.values.Writer;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
@@ -52,8 +53,8 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   }
 
   @Override
-  public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-    return Writer.create(field.getDocValues(),
+  public DocValuesConsumer addValuesField(ValueType valueType, FieldInfo field) throws IOException {
+    return Writer.create(valueType,
         docValuesId(segmentName, field.number), 
         getDirectory(), getComparator(), bytesUsed, context);
   }

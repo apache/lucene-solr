@@ -26,11 +26,12 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
+import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
@@ -224,7 +225,7 @@ final class DocFieldProcessor extends DocConsumer {
         // needs to be more "pluggable" such that if I want
         // to have a new "thing" my Fields can do, I can
         // easily add it
-        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.fieldType(), false, field.docValuesType());
+        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.fieldType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -235,7 +236,7 @@ final class DocFieldProcessor extends DocConsumer {
           rehash();
         }
       } else {
-        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.fieldType(), false, field.docValuesType());
+        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.fieldType());
       }
 
       if (thisFieldGen != fp.lastGen) {
@@ -261,7 +262,7 @@ final class DocFieldProcessor extends DocConsumer {
       }
       final PerDocFieldValues docValues = field.docValues();
       if (docValues != null) {
-        docValuesConsumer(docState, fp.fieldInfo).add(docState.docID, docValues);
+        docValuesConsumer(field.docValuesType(), docState, fp.fieldInfo).add(docState.docID, docValues);
       }
     }
 
@@ -310,7 +311,7 @@ final class DocFieldProcessor extends DocConsumer {
   final private Map<String, DocValuesConsumerAndDocID> docValues = new HashMap<String, DocValuesConsumerAndDocID>();
   final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
 
-  DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo) 
+  DocValuesConsumer docValuesConsumer(ValueType valueType, DocState docState, FieldInfo fieldInfo) 
       throws IOException {
     DocValuesConsumerAndDocID docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
     if (docValuesConsumerAndDocID != null) {
@@ -329,17 +330,9 @@ final class DocFieldProcessor extends DocConsumer {
       perDocConsumer = dvFormat.docsConsumer(perDocWriteState);
       perDocConsumers.put(0, perDocConsumer);
     }
-    boolean success = false;
-    DocValuesConsumer docValuesConsumer = null;
-    try {
-      docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
-      fieldInfo.commitDocValues();
-      success = true;
-    } finally {
-      if (!success) {
-        fieldInfo.revertUncommitted();
-      }
-    }
+
+    DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
+    fieldInfo.setDocValuesType(valueType);
 
     docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;

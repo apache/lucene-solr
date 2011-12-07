@@ -1140,7 +1140,7 @@ public class CheckIndex {
           final Source values = docValues.getDirectSource();
           final int maxDoc = reader.maxDoc();
           for (int i = 0; i < maxDoc; i++) {
-            switch (fieldInfo.docValues) {
+            switch (fieldInfo.getDocValuesType()) {
             case BYTES_FIXED_SORTED:
             case BYTES_VAR_SORTED:
             case BYTES_FIXED_DEREF:
@@ -1162,7 +1162,7 @@ public class CheckIndex {
               break;
             default:
               throw new IllegalArgumentException("Field: " + fieldInfo.name
-                  + " - no such DocValues type: " + fieldInfo.docValues);
+                          + " - no such DocValues type: " + fieldInfo.getDocValuesType());
             }
           }
         }

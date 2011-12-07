@@ -74,7 +74,7 @@ public abstract class DocValuesReaderBase extends PerDocValues {
           final String id = DocValuesWriterBase.docValuesId(segment,
               fieldInfo.number);
           values.put(field,
-              loadDocValues(docCount, dir, id, fieldInfo.getDocValues(), context));
+              loadDocValues(docCount, dir, id, fieldInfo.getDocValuesType(), context));
         }
       }
       success = true;

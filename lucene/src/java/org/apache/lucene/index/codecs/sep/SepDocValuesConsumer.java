@@ -53,7 +53,7 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
         String filename = docValuesId(segmentInfo.name, fieldInfo.number);
-        switch (fieldInfo.getDocValues()) {
+        switch (fieldInfo.getDocValuesType()) {
           case BYTES_FIXED_DEREF:
           case BYTES_VAR_DEREF:
           case BYTES_VAR_STRAIGHT:

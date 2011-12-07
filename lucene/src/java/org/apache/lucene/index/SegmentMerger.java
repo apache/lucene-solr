@@ -235,7 +235,7 @@ final class SegmentMerger {
         for (String dvName : dvNames) {
           FieldInfo merged = mergeState.fieldInfos.fieldInfo(dvName);
           IndexDocValues docValues = reader.docValues(dvName);
-          merged.setDocValues(docValues.type());
+          merged.setDocValuesType(docValues.type());
           TypePromoter previous = docValuesTypes.get(merged);
           docValuesTypes.put(merged, mergeDocValuesType(previous, docValues));
         }
@@ -247,12 +247,12 @@ final class SegmentMerger {
       FieldInfo fi = e.getKey();
       TypePromoter promoter = e.getValue();
       if (promoter == null) {
-        fi.resetDocValues(null);
+        fi.resetDocValuesType(null);
       } else {
         assert promoter != TypePromoter.getIdentityPromoter();
-        if (fi.getDocValues() != promoter.type()) {
+        if (fi.getDocValuesType() != promoter.type()) {
           // reset the type if we got promoted
-          fi.resetDocValues(promoter.type());
+          fi.resetDocValuesType(promoter.type());
         }
       }
     }

@@ -304,10 +304,20 @@ public final class FieldInfos implements Iterable<FieldInfo> {
                                storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
   }
 
-  synchronized public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType, boolean scorePayloads, ValueType docValues) {
-    return addOrUpdateInternal(name, -1, fieldType.indexed(), fieldType.storeTermVectors(),
-        fieldType.storeTermVectorPositions(), fieldType.storeTermVectorOffsets(), fieldType.omitNorms(), scorePayloads,
-        fieldType.indexOptions(), docValues);
+  // NOTE: this method does not carry over termVector
+  // booleans nor docValuesType; the indexer chain
+  // (TermVectorsConsumerPerField, DocFieldProcessor) must
+  // set these fields when they succeed in consuming
+  // the document:
+  public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
+    // TODO: really, indexer shouldn't even call this
+    // method (it's only called from DocFieldProcessor);
+    // rather, each component in the chain should update
+    // what it "owns".  EG fieldType.indexOptions() should
+    // be updated by maybe FreqProxTermsWriterPerField:
+    return addOrUpdateInternal(name, -1, fieldType.indexed(), false, false, false,
+                               fieldType.omitNorms(), false,
+                               fieldType.indexOptions(), null);
   }
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
@@ -322,7 +332,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
-      fi.setDocValues(docValues);
+      fi.setDocValuesType(docValues);
     }
     version++;
     return fi;
@@ -333,7 +343,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
                fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
-               fi.indexOptions, fi.docValues);
+               fi.indexOptions, fi.getDocValuesType());
   }
   
   /*
@@ -427,16 +437,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   
   synchronized final long getVersion() {
     return version;
-  }
-  
-  /**
-   * Reverts all uncommitted changes 
-   * @see FieldInfo#revertUncommitted()
-   */
-  void revertUncommitted() {
-    for (FieldInfo fieldInfo : this) {
-      fieldInfo.revertUncommitted();
-    }
   }
   
   final FieldInfos asReadOnly() {

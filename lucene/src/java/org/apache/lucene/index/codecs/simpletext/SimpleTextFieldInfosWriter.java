@@ -100,7 +100,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         if (!fi.hasDocValues()) {
           SimpleTextUtil.write(out, "false", scratch);
         } else {
-          SimpleTextUtil.write(out, fi.getDocValues().toString(), scratch);
+          SimpleTextUtil.write(out, fi.getDocValuesType().toString(), scratch);
         }
         SimpleTextUtil.writeNewline(out);
         

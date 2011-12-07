@@ -25,7 +25,7 @@ public final class FieldInfo {
   public final int number;
 
   public boolean isIndexed;
-  ValueType docValues;
+  private ValueType docValues;
 
 
   // true if term vector for this field should be stored
@@ -118,13 +118,14 @@ public final class FieldInfo {
     }
     assert this.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !this.storePayloads;
   }
-  void setDocValues(ValueType v) {
+
+  void setDocValuesType(ValueType v) {
     if (docValues == null) {
       docValues = v;
     }
   }
   
-  public void resetDocValues(ValueType v) {
+  public void resetDocValuesType(ValueType v) {
     if (docValues != null) {
       docValues = v;
     }
@@ -134,42 +135,13 @@ public final class FieldInfo {
     return docValues != null;
   }
 
-  public ValueType getDocValues() {
+  public ValueType getDocValuesType() {
     return docValues;
   }
-  
-  private boolean vectorsCommitted;
-  private boolean docValuesCommitted;
- 
-  /**
-   * Reverts all uncommitted changes on this {@link FieldInfo}
-   * @see #commitVectors()
-   */
-  void revertUncommitted() {
-    if (storeTermVector && !vectorsCommitted) {
-      storeOffsetWithTermVector = false;
-      storePositionWithTermVector = false;
-      storeTermVector = false;  
-    }
-    
-    if (docValues != null && !docValuesCommitted) {
-      docValues = null;
-    }
-  }
 
-  /**
-   * Commits term vector modifications. Changes to term-vectors must be
-   * explicitly committed once the necessary files are created. If those changes
-   * are not committed subsequent {@link #revertUncommitted()} will reset the
-   * all term-vector flags before the next document.
-   */
-  void commitVectors() {
-    assert storeTermVector;
-    vectorsCommitted = true;
-  }
-  
-  void commitDocValues() {
-    assert hasDocValues();
-    docValuesCommitted = true;
+  public void setStoreTermVectors(boolean withPositions, boolean withOffsets) {
+    storeTermVector = true;
+    storePositionWithTermVector |= withPositions;
+    storeOffsetWithTermVector |= withOffsets;
   }
 }

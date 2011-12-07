@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.ValueType;
 
 /**
  * Abstract API that consumes per document values. Concrete implementations of
@@ -34,7 +35,7 @@ import org.apache.lucene.index.values.IndexDocValues;
  */
 public abstract class PerDocConsumer implements Closeable{
   /** Adds a new DocValuesField */
-  public abstract DocValuesConsumer addValuesField(FieldInfo field)
+  public abstract DocValuesConsumer addValuesField(ValueType type, FieldInfo field)
       throws IOException;
 
   /**
@@ -56,7 +57,7 @@ public abstract class PerDocConsumer implements Closeable{
             docValues[i] = perDocValues[i].docValues(fieldInfo.name);
           }
         }
-        final DocValuesConsumer docValuesConsumer = addValuesField(fieldInfo);
+        final DocValuesConsumer docValuesConsumer = addValuesField(fieldInfo.getDocValuesType(), fieldInfo);
         assert docValuesConsumer != null;
         docValuesConsumer.merge(mergeState, docValues);
       }

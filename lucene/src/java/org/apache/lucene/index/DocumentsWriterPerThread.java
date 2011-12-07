@@ -244,7 +244,6 @@ public class DocumentsWriterPerThread {
           // mark document as deleted
           deleteDocID(docState.docID);
           numDocsInRAM++;
-          fieldInfos.revertUncommitted();
         } else {
           abort();
         }
@@ -308,7 +307,6 @@ public class DocumentsWriterPerThread {
               // Incr here because finishDocument will not
               // be called (because an exc is being thrown):
               numDocsInRAM++;
-              fieldInfos.revertUncommitted();
             } else {
               abort();
             }
