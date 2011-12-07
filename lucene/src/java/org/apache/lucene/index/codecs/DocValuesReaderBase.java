@@ -53,11 +53,6 @@ public abstract class DocValuesReaderBase extends PerDocValues {
   public IndexDocValues docValues(String field) throws IOException {
     return docValues().get(field);
   }
-
-  @Override
-  public Collection<String> fields() {
-    return docValues().keySet();
-  }
   
   public Comparator<BytesRef> getComparator() throws IOException {
     return BytesRef.getUTF8SortedAsUnicodeComparator();

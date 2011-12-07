@@ -533,11 +533,6 @@ public class ParallelReader extends IndexReader {
     public IndexDocValues docValues(String field) throws IOException {
       return fields.get(field);
     }
-
-    @Override
-    public Collection<String> fields() {
-      return fields.keySet();
-    }
   }
 }
 

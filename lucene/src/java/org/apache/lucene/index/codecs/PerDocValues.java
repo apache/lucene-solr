@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs;
  */
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.index.values.IndexDocValues;
 
@@ -46,9 +45,4 @@ public abstract class PerDocValues implements Closeable {
   public abstract IndexDocValues docValues(String field) throws IOException;
 
   public static final PerDocValues[] EMPTY_ARRAY = new PerDocValues[0];
-
-  /**
-   * Returns all fields this {@link PerDocValues} contains values for.
-   */
-  public abstract Collection<String> fields();
 }

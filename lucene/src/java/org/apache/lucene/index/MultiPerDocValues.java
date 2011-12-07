@@ -49,15 +49,10 @@ public class MultiPerDocValues extends PerDocValues {
   private final PerDocValues[] subs;
   private final ReaderUtil.Slice[] subSlices;
   private final Map<String, IndexDocValues> docValues = new ConcurrentHashMap<String, IndexDocValues>();
-  private final TreeSet<String> fields;
 
   public MultiPerDocValues(PerDocValues[] subs, ReaderUtil.Slice[] subSlices) {
     this.subs = subs;
     this.subSlices = subSlices;
-    fields = new TreeSet<String>();
-    for (PerDocValues sub : subs) {
-      fields.addAll(sub.fields());
-    }
   }
 
   /**
@@ -153,10 +148,5 @@ public class MultiPerDocValues extends PerDocValues {
 
   public void close() throws IOException {
     IOUtils.close(this.subs);
-  }
-
-  @Override
-  public Collection<String> fields() {
-    return fields;
   }
 }
