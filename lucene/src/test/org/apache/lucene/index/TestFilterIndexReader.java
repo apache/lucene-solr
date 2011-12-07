@@ -28,6 +28,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -167,4 +170,28 @@ public class TestFilterIndexReader extends LuceneTestCase {
     directory.close();
     target.close();
   }
+
+  public void testOverrideMethods() throws Exception {
+    HashSet<String> methodsThatShouldNotBeOverridden = new HashSet<String>();
+    methodsThatShouldNotBeOverridden.add("doOpenIfChanged");
+    methodsThatShouldNotBeOverridden.add("clone");
+    boolean fail = false;
+    for (Method m : FilterIndexReader.class.getMethods()) {
+      int mods = m.getModifiers();
+      if (Modifier.isStatic(mods) || Modifier.isFinal(mods)) {
+        continue;
+      }
+      Class< ? > declaringClass = m.getDeclaringClass();
+      String name = m.getName();
+      if (declaringClass != FilterIndexReader.class && declaringClass != Object.class && !methodsThatShouldNotBeOverridden.contains(name)) {
+        System.err.println("method is not overridden by FilterIndexReader: " + name);
+        fail = true;
+      } else if (declaringClass == FilterIndexReader.class && methodsThatShouldNotBeOverridden.contains(name)) {
+        System.err.println("method should not be overridden by FilterIndexReader: " + name);
+        fail = true;
+      }
+    }
+    assertFalse("FilterIndexReader overrides (or not) some problematic methods; see log above", fail);
+  }
+
 }

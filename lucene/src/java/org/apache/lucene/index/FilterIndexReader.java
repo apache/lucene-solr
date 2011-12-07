@@ -426,4 +426,14 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.perDocValues();
   }
+
+  @Override
+  public IndexCommit getIndexCommit() throws IOException {
+    return in.getIndexCommit();
+  }
+
+  @Override
+  public int getTermInfosIndexDivisor() {
+    return in.getTermInfosIndexDivisor();
+  }  
 }
