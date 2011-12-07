@@ -341,23 +341,23 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
 
 
-        if (cmd.softCommit) {
-          // ulog.preSoftCommit();
-          synchronized (this) {
-            ulog.preSoftCommit(cmd);
-            core.getSearcher(true,false,waitSearcher, true);
-            ulog.postSoftCommit(cmd);
-          }
-          // ulog.postSoftCommit();
-        } else {
-          synchronized (this) {
-            ulog.preSoftCommit(cmd);
-            core.getSearcher(true,false,waitSearcher);
-            ulog.postSoftCommit(cmd);
-          }
-          ulog.postCommit(cmd); // postCommit currently means new searcher has also been opened
+      if (cmd.softCommit) {
+        // ulog.preSoftCommit();
+        synchronized (this) {
+          ulog.preSoftCommit(cmd);
+          core.getSearcher(true, false, waitSearcher, true);
+          ulog.postSoftCommit(cmd);
         }
-
+        // ulog.postSoftCommit();
+      } else {
+        synchronized (this) {
+          ulog.preSoftCommit(cmd);
+          core.getSearcher(true, false, waitSearcher);
+          ulog.postSoftCommit(cmd);
+        }
+        ulog.postCommit(cmd); // postCommit currently means new searcher has
+                              // also been opened
+      }
 
       // reset commit tracking
 
