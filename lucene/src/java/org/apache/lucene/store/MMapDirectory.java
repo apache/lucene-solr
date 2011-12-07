@@ -26,7 +26,7 @@ import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import java.security.AccessController;
@@ -34,6 +34,7 @@ import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
+import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.Constants;
 
 /** File-based {@link Directory} implementation that uses
@@ -259,7 +260,7 @@ public class MMapDirectory extends FSDirectory {
     private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   
     private boolean isClone = false;
-    private final Map<MMapIndexInput,Boolean> clones = new WeakHashMap<MMapIndexInput,Boolean>();
+    private final Set<MMapIndexInput> clones = new MapBackedSet<MMapIndexInput>(new WeakHashMap<MMapIndexInput,Boolean>());
 
     MMapIndexInput(String resourceDescription, RandomAccessFile raf, long offset, long length, int chunkSizePower) throws IOException {
       super(resourceDescription);
@@ -430,7 +431,7 @@ public class MMapDirectory extends FSDirectory {
       
       // register the new clone in our clone list to clean it up on closing:
       synchronized(this.clones) {
-        this.clones.put(clone, Boolean.TRUE);
+        this.clones.add(clone);
       }
       
       return clone;
@@ -449,7 +450,7 @@ public class MMapDirectory extends FSDirectory {
         
         // for extra safety unset also all clones' buffers:
         synchronized(this.clones) {
-          for (final MMapIndexInput clone : this.clones.keySet()) {
+          for (final MMapIndexInput clone : this.clones) {
             assert clone.isClone;
             clone.unsetBuffers();
           }
