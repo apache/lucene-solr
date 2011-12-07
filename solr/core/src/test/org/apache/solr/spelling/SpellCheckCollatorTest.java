@@ -46,9 +46,62 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "faith of homer")));
 		assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "fat of homer")));
 		assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt1", "peace")));
+		assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "hyphenated word")));
 		assertNull(h.validateUpdate(commit()));
 	}
-	
+
+	@Test
+	public void testCollationWithHypens() throws Exception
+	{
+	  SolrCore core = h.getCore();
+    SearchComponent speller = core.getSearchComponent("spellcheck");
+    assertTrue("speller is null and it shouldn't be", speller != null);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();   
+    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");   
+    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+    
+    params.add(CommonParams.Q, "lowerfilt:(hypenated-wotd)");
+    {
+      SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      rsp.add("responseHeader", new SimpleOrderedMap());
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+      handler.handleRequest(req, rsp);
+      req.close();
+      NamedList values = rsp.getValues();
+      NamedList spellCheck = (NamedList) values.get("spellcheck");
+      NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+      List<String> collations = suggestions.getAll("collation");
+      assertTrue(collations.size()==1); 
+      String collation = collations.iterator().next();      
+      assertTrue("Incorrect collation: " + collation,"lowerfilt:(hyphenated-word)".equals(collation));
+    }
+
+    params.remove(CommonParams.Q);
+    params.add("defType", "dismax");
+    params.add("qf", "lowerfilt");
+    params.add(CommonParams.Q, "hypenated-wotd");
+    {
+      SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      rsp.add("responseHeader", new SimpleOrderedMap());
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+      handler.handleRequest(req, rsp);
+      req.close();
+      NamedList values = rsp.getValues();
+      NamedList spellCheck = (NamedList) values.get("spellcheck");
+      NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+      List<String> collations = suggestions.getAll("collation");
+      assertTrue(collations.size()==1);
+      String collation = collations.iterator().next();
+      assertTrue("Incorrect collation: " + collation,"hyphenated-word".equals(collation));
+    }
+
+  }
+
 	@Test
 	public void testCollateWithFilter() throws Exception
 	{

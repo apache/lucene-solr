@@ -286,6 +286,9 @@ Bug Fixes
   and added a merge() method to SolrSpellChecker instead. Previously if you extended SolrSpellChecker
   your spellchecker would not work in distributed fashion.  (James Dyer via rmuir)
   
+* SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
+  a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
+  
 Other Changes
 ----------------------
 
@@ -409,6 +412,9 @@ Bug Fixes
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
   (Bernhard Berger, hossman)
+  
+* SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
+  a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
   
 Other Changes
 ----------------------

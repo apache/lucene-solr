@@ -466,6 +466,9 @@ public final class SegmentReader extends IndexReader implements Cloneable {
       else if ((fi.storeOffsetWithTermVector && fi.storePositionWithTermVector) &&
                 fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET) {
         fieldSet.add(fi.name);
+      } 
+      else if (fi.hasDocValues() && fieldOption == IndexReader.FieldOption.DOC_VALUES) {
+        fieldSet.add(fi.name);
       }
     }
     return fieldSet;
