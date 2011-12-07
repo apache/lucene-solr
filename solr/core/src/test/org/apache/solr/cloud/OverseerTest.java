@@ -8,6 +8,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -63,10 +64,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
    
       props.put("num_shards", "3");
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.makePath("/collections/collection1", zkProps.store());
+      zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps));
       props.put("num_shards", "1");
       zkProps = new ZkNodeProps(props);
-      zkClient.makePath("/collections/collection2", zkProps.store());
+      zkClient.makePath("/collections/collection2", ZkStateReader.toJSON(zkProps));
       ZkNodeProps z = new ZkNodeProps(props);
       
       CoreDescriptor desc = new CoreDescriptor(null, "core1", "");

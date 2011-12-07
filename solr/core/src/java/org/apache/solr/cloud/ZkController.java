@@ -491,7 +491,7 @@ public final class ZkController {
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
 
-    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, zkProps.store());
+    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, ZkStateReader.toJSON(zkProps));
     
     leaderElector.setup(context);
     // leader election
@@ -772,7 +772,7 @@ public final class ZkController {
           
           collectionProps.put("num_shards", Integer.toString(numShards));
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
-          zkClient.makePath(collectionPath, zkProps.store(), CreateMode.PERSISTENT, null, true);
+          zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
           try {
             // shards_lock node
             if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/shards_lock")) {
@@ -829,12 +829,8 @@ public final class ZkController {
       log.info("publishing node state:" + coreStates.values());
       zkClient.setData(
           nodePath,
-          CoreState.tobytes(coreStates.values().toArray(
-              new CoreState[coreStates.size()])));
-    } catch (IOException e) {
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "could not publish node state", e);
+          ZkStateReader.toJSON(coreStates.values()));
+
     } catch (KeeperException e) {
       throw new ZooKeeperException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -879,7 +875,7 @@ public final class ZkController {
     }
 
     HashMap<String, CoreAssignment> newAssignments = new HashMap<String, CoreAssignment>();
-    CoreAssignment[] assignments2 = CoreAssignment.fromBytes(assignments);
+    CoreAssignment[] assignments2 = CoreAssignment.load(assignments);
     
     for (CoreAssignment assignment : assignments2) {
       newAssignments.put(assignment.getCoreName(), assignment);

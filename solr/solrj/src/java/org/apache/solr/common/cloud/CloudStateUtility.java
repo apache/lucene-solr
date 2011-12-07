@@ -19,7 +19,7 @@ public class CloudStateUtility {
   
   public static void create(CloudState state, SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException, IOException {
     zkClient.create(ZkStateReader.CLUSTER_STATE,
-        CloudState.store(state), Ids.OPEN_ACL_UNSAFE,
+        ZkStateReader.toJSON(state), Ids.OPEN_ACL_UNSAFE,
         CreateMode.PERSISTENT);
   }
 
@@ -36,7 +36,7 @@ public class CloudStateUtility {
   
   public static void update(SolrZkClient zkClient, CloudState state, Stat stat) throws KeeperException, InterruptedException, IOException {
     zkClient.setData(ZkStateReader.CLUSTER_STATE,
-        CloudState.store(state));
+        ZkStateReader.toJSON(state));
   }
 
 }

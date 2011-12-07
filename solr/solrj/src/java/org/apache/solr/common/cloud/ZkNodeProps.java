@@ -24,11 +24,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.noggit.JSONWriter;
 
 // Immutable
-public class ZkNodeProps  {
+public class ZkNodeProps implements JSONWriter.Writable {
 
   private final Map<String,String> propMap;
 
@@ -55,12 +54,13 @@ public class ZkNodeProps  {
   }
 
   public static ZkNodeProps load(byte[] bytes) throws IOException {
-    Map<String, String> props = (Map<String, String>) CloudState.fromJSON(bytes);
+    Map<String, String> props = (Map<String, String>) ZkStateReader.fromJSON(bytes);
     return new ZkNodeProps(props);
   }
 
-  public byte[] store() throws IOException {
-    return CloudState.toJSON(propMap);
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(propMap);
   }
   
   public String get(String key) {

@@ -89,7 +89,7 @@ public class NodeStateWatcher implements Watcher {
   void processStateChange(byte[] data) {
     if (data != null) {
       try {
-        CoreState[] states = CoreState.fromBytes(data);
+        CoreState[] states = CoreState.load(data);
         List<CoreState> stateList = Arrays.asList(states);
         
         // get new cores:

@@ -415,7 +415,7 @@ public class Overseer implements NodeStateChangeListener {
     }
     
     //serialize
-    byte[] content = CoreAssignment.tobytes(assignments.toArray(new CoreAssignment[assignments.size()]));
+    byte[] content = ZkStateReader.toJSON(assignments);
     try {
       zkClient.setData("/node_assignments/" + node, content);
     } catch (InterruptedException e) {

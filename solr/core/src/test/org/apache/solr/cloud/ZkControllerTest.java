@@ -65,7 +65,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       Map<String,String> props = new HashMap<String,String>();
       props.put("configName", actualConfigName);
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME , zkProps.store(), CreateMode.PERSISTENT);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME , ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
 
       if (DEBUG) {
         zkClient.printLayoutToStdOut();

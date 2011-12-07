@@ -17,10 +17,12 @@ package org.apache.solr.common.cloud;
  * the License.
  */
 
+import org.apache.noggit.JSONWriter;
+
 import java.io.IOException;
 import java.util.*;
 
-public class CoreState {
+public class CoreState implements JSONWriter.Writable {
   private static String COLLECTION="_collection";
   private static String CORE="_core";
 
@@ -50,12 +52,14 @@ public class CoreState {
     return properties;
   }
 
-  public static byte[] tobytes(CoreState... states) throws IOException {
-    return CloudState.toJSON(states);
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(properties);
   }
-  
-  public static CoreState[] fromBytes(byte[] bytes) throws IOException {
-    List<Map<String, String>> stateMaps = (List<Map<String, String>>) CloudState.fromJSON(bytes);
+
+
+  public static CoreState[] load(byte[] bytes) throws IOException {
+    List<Map<String, String>> stateMaps = (List<Map<String, String>>) ZkStateReader.fromJSON(bytes);
 
     CoreState[] states = new CoreState[stateMaps.size()];
     int i = 0;
@@ -80,5 +84,5 @@ public class CoreState {
   public String toString() {
     return "coll:" + getCollectionName() + " core:" + getCoreName() + " props:" + properties;
   }
-  
+
 }

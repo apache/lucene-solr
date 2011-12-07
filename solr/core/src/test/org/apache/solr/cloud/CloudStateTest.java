@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
 public class CloudStateTest extends SolrTestCaseJ4 {
@@ -52,7 +53,7 @@ public class CloudStateTest extends SolrTestCaseJ4 {
     collectionStates.put("collection2", slices);
     
     CloudState cloudState = new CloudState(liveNodes, collectionStates);
-    byte[] bytes = CloudState.store(cloudState);
+    byte[] bytes = ZkStateReader.toJSON(cloudState);
     
     CloudState loadedCloudState = CloudState.load(bytes, liveNodes);
     

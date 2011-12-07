@@ -23,10 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.CoreDescriptor;
@@ -143,7 +140,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/collections/testcore", zkProps2.store(), CreateMode.PERSISTENT);
+    zkClient.makePath("/collections/testcore", ZkStateReader.toJSON(zkProps2), CreateMode.PERSISTENT);
     zkClient.makePath("/collections/testcore/shards", CreateMode.PERSISTENT);
     zkClient.close();
     

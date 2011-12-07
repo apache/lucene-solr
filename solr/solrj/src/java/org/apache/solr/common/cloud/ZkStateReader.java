@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONParser;
+import org.apache.noggit.JSONWriter;
+import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -56,6 +64,34 @@ public class ZkStateReader {
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
+
+  //
+  // convenience methods... should these go somewhere else?
+  //
+  public static byte[] toJSON(Object o) {
+    CharArr out = new CharArr();
+    new JSONWriter(out, 2).write(o); // indentation by default
+    return toUTF8(out);
+  }
+
+  public static byte[] toUTF8(CharArr out) {
+    BytesRef br = new BytesRef(out);
+    return Arrays.copyOf(br.bytes, br.length);
+  }
+
+  public static Object fromJSON(byte[] utf8) {
+    // convert directly from bytes to chars
+    // and parse directly from that instead of going through
+    // intermediate strings or readers
+    CharsRef chars = new CharsRef();
+    UnicodeUtil.UTF8toUTF16(utf8, 0, utf8.length, chars);   // TODO: this method currently oversizes the array
+    JSONParser parser = new JSONParser(chars.chars, chars.offset, chars.length);
+    try {
+      return ObjectBuilder.getVal(parser);
+    } catch (IOException e) {
+      throw new RuntimeException(e); // should never happen w/o using real IO
+    }
+  }
 
 
   private static class ZKTF implements ThreadFactory {

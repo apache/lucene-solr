@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
@@ -78,10 +79,10 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     Map<String,String> props = new HashMap<String,String>();
     props.put("configName", "conf1");
     ZkNodeProps zkProps = new ZkNodeProps(props);
-    zkClient.makePath("/collections/collection1", zkProps.store(), CreateMode.PERSISTENT);
+    zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
     zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT);
 
-    zkClient.makePath("/collections/control_collection", zkProps.store(), CreateMode.PERSISTENT);
+    zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT);
 
     putConfig(zkClient, config);
