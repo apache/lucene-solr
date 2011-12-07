@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.StringHelper;
 
 public class Lucene40NormsReader extends NormsReader {
@@ -41,7 +42,7 @@ public class Lucene40NormsReader extends NormsReader {
   Map<String,Norm> norms = new HashMap<String,Norm>();
   // any .nrm or .sNN files we have open at any time.
   // TODO: just a list, and double-close() separate norms files?
-  Map<IndexInput,Boolean> openFiles = new IdentityHashMap<IndexInput,Boolean>();
+  Set<IndexInput> openFiles = new MapBackedSet<IndexInput>(new IdentityHashMap<IndexInput,Boolean>());
   // points to a singleNormFile
   IndexInput singleNormStream;
   final int maxdoc;
@@ -69,7 +70,7 @@ public class Lucene40NormsReader extends NormsReader {
             normSeek = nextNormSeek;
             if (singleNormStream == null) {
               singleNormStream = d.openInput(fileName, context);
-              openFiles.put(singleNormStream, Boolean.TRUE);
+              openFiles.add(singleNormStream);
             }
             // All norms in the .nrm file can share a single IndexInput since
             // they are only used in a synchronized context.
@@ -77,7 +78,7 @@ public class Lucene40NormsReader extends NormsReader {
             normInput = singleNormStream;
           } else {
             normInput = d.openInput(fileName, context);
-            openFiles.put(normInput, Boolean.TRUE);
+            openFiles.add(normInput);
             // if the segment was created in 3.2 or after, we wrote the header for sure,
             // and don't need to do the sketchy file size check. otherwise, we check 
             // if the size is exactly equal to maxDoc to detect a headerless file.
@@ -100,13 +101,13 @@ public class Lucene40NormsReader extends NormsReader {
           nextNormSeek += maxdoc; // increment also if some norms are separate
         }
       }
-      // nocommit: change to a real check? see LUCENE-3619
+      // TODO: change to a real check? see LUCENE-3619
       assert singleNormStream == null || nextNormSeek == singleNormStream.length();
       success = true;
     } finally {
       if (!success) {
         if (openFiles != null) {
-          IOUtils.closeWhileHandlingException(openFiles.keySet());
+          IOUtils.closeWhileHandlingException(openFiles);
         }
       }
     }
@@ -123,7 +124,7 @@ public class Lucene40NormsReader extends NormsReader {
   public void close() throws IOException {
     try {
       if (openFiles != null) {
-        IOUtils.close(openFiles.keySet());
+        IOUtils.close(openFiles);
       }
     } finally {
       norms = null;

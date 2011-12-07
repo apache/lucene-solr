@@ -51,13 +51,13 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   boolean hasChanges = false;
   private boolean liveDocsDirty = false;
 
-  // nocommit: move the whole modification stuff to IW
+  // TODO: remove deletions from SR
   private int pendingDeleteCount;
   private boolean rollbackHasChanges = false;
   private boolean rollbackDeletedDocsDirty = false;
   private SegmentInfo rollbackSegmentInfo;
   private int rollbackPendingDeleteCount;
-  // end nocommit
+  // end TODO
 
   SegmentCoreReaders core;
 
@@ -79,7 +79,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     return get(true, si, true, termInfosIndexDivisor, context);
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   static SegmentReader getRW(SegmentInfo si, boolean doOpenStores, int termInfosIndexDivisor, IOContext context) throws CorruptIndexException, IOException {
     return get(false, si, doOpenStores, termInfosIndexDivisor, context);
   }
@@ -167,7 +167,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
    * @param bv BitVector to clone
    * @return New BitVector
    */
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   BitVector cloneDeletedDocs(BitVector bv) {
     ensureOpen();
     return (BitVector)bv.clone();
@@ -182,7 +182,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  // nocommit: is this needed anymore by IndexWriter?
+  // TODO: is this needed anymore by IndexWriter?
   final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
     return reopenSegment(si, true, openReadOnly);
   }
@@ -253,7 +253,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     return clone;
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   void doCommit() throws IOException {
     assert hasChanges;
     startCommit();
@@ -268,7 +268,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   private void startCommit() {
     rollbackSegmentInfo = (SegmentInfo) si.clone();
     rollbackHasChanges = hasChanges;
@@ -276,7 +276,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     rollbackPendingDeleteCount = pendingDeleteCount;
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   private void rollbackCommit() {
     si.reset(rollbackSegmentInfo);
     hasChanges = rollbackHasChanges;
@@ -284,7 +284,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     pendingDeleteCount = rollbackPendingDeleteCount;
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   private synchronized void commitChanges() throws IOException {
     if (liveDocsDirty) {               // re-write deleted
       si.advanceDelGen();
@@ -351,14 +351,14 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     return liveDocs != null;
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   synchronized void deleteDocument(int docNum) throws IOException {
     ensureOpen();
     hasChanges = true;
     doDelete(docNum);
   }
 
-  // nocommit: remove deletions from SR
+  // TODO: remove deletions from SR
   void doDelete(int docNum) {
     if (liveDocs == null) {
       liveDocs = new BitVector(maxDoc());
