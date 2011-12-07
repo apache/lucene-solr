@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -44,6 +45,7 @@ import org.apache.lucene.index.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -1212,5 +1214,48 @@ public class TestAddIndexes extends LuceneTestCase {
     }
     r3.close();
     d3.close();
-  } 
+  }
+  
+  public void testDocValues() throws IOException {
+    assumeFalse("preflex does not support docvalues", Codec.getDefault().getName().equals("Lucene3x"));
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, d1);
+    Document doc = new Document();
+    doc.add(newField("id", "1", StringField.TYPE_STORED));
+    IndexDocValuesField dv = new IndexDocValuesField("dv");
+    dv.setInt(1);
+    doc.add(dv);
+    w.addDocument(doc);
+    IndexReader r1 = w.getReader();
+    w.close();
+
+    Directory d2 = newDirectory();
+    w = new RandomIndexWriter(random, d2);
+    doc = new Document();
+    doc.add(newField("id", "2", StringField.TYPE_STORED));
+    dv = new IndexDocValuesField("dv");
+    dv.setInt(2);
+    doc.add(dv);
+    w.addDocument(doc);
+    IndexReader r2 = w.getReader();
+    w.close();
+
+    Directory d3 = newDirectory();
+    w = new RandomIndexWriter(random, d3);
+    w.addIndexes(new SlowMultiReaderWrapper(r1), new SlowMultiReaderWrapper(r2));
+    r1.close();
+    d1.close();
+    r2.close();
+    d2.close();
+
+    w.forceMerge(1);
+    IndexReader r3 = w.getReader();
+    w.close();
+    IndexReader sr = getOnlySegmentReader(r3);
+    assertEquals(2, sr.numDocs());
+    IndexDocValues docValues = sr.perDocValues().docValues("dv");
+    assertNotNull(docValues);
+    r3.close();
+    d3.close();
+  }
 }
