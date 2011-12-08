@@ -145,6 +145,9 @@ Bug Fixes
   a wrong number of collation results in the response.
   (Bastiaan Verhoef, James Dyer via Simon Willnauer)
 
+* SOLR-1730: Made it clearer when a core failed to load as well as better logging when the
+  QueryElevationComponent fails to properly initialize (gsingers)
+
  Other Changes
 ----------------------
 
