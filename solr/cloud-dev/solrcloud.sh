@@ -20,7 +20,7 @@ rm -r -f example/solr/zoo_data
 
 ant example dist
 
-java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkController 127.0.0.1:9983 127.0.0.1 8983 solr example/solr/conf conf1 example/solr/zoo_data
+java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkController 127.0.0.1:9983 example/solr 8983 example/solr/conf conf1
 
 cd example
 java -DzkRun -jar start.jar &

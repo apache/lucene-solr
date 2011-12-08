@@ -99,20 +99,25 @@ public final class ZkController {
 
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first
-    SolrZkServer zkServer = new SolrZkServer("true", null, "example/solr", args[2]);
+    String zkServerAddress = args[0];
+    
+    String solrHome = args[1];
+    String solrPort = args[2];
+    
+    String confDir = args[3];
+    String confName = args[4];
+    
+    SolrZkServer zkServer = new SolrZkServer("true", null, solrHome, solrPort);
     zkServer.parseConfig();
     zkServer.start();
-    Thread.sleep(5000);
-    ZkController zkController = new ZkController(args[0], 15000, 5000, args[1], args[2], args[3], -1, new CurrentCoreDescriptorProvider() {
-      
-      @Override
-      public List<CoreDescriptor> getCurrentDescriptors() {
-        // do nothing
-        return null;
-      }
-    });
     
-    zkController.uploadConfigDir(new File(args[4]), args[5]);
+    SolrZkClient zkClient = new SolrZkClient(zkServerAddress, 15000, 5000,
+        new OnReconnect() {
+          @Override
+          public void command() {
+          }});
+    
+    uploadConfigDir(zkClient, new File(confDir), confName);
     
     zkServer.stop();
   }
@@ -613,19 +618,7 @@ public final class ZkController {
    * @throws InterruptedException
    */
   public void uploadToZK(File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
-    File[] files = dir.listFiles();
-    if (files == null) {
-      throw new IllegalArgumentException("Illegal directory: " + dir);
-    }
-    for(File file : files) {
-      if (!file.getName().startsWith(".")) {
-        if (!file.isDirectory()) {
-          zkClient.makePath(zkPath + "/" + file.getName(), file);
-        } else {
-          uploadToZK(file, zkPath + "/" + file.getName());
-        }
-      }
-    }
+    uploadToZK(zkClient, dir, zkPath);
   }
   
   /**
@@ -636,7 +629,7 @@ public final class ZkController {
    * @throws InterruptedException
    */
   public void uploadConfigDir(File dir, String configName) throws IOException, KeeperException, InterruptedException {
-    uploadToZK(dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
+    uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
 
   // convenience for testing
@@ -884,5 +877,25 @@ public final class ZkController {
 
   public RecoveryStrat getRecoveryStrat() {
     return recoveryStrat;
+  }
+  
+  public static void uploadToZK(SolrZkClient zkClient, File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
+    File[] files = dir.listFiles();
+    if (files == null) {
+      throw new IllegalArgumentException("Illegal directory: " + dir);
+    }
+    for(File file : files) {
+      if (!file.getName().startsWith(".")) {
+        if (!file.isDirectory()) {
+          zkClient.makePath(zkPath + "/" + file.getName(), file);
+        } else {
+          uploadToZK(zkClient, file, zkPath + "/" + file.getName());
+        }
+      }
+    }
+  }
+  
+  public static void uploadConfigDir(SolrZkClient zkClient, File dir, String configName) throws IOException, KeeperException, InterruptedException {
+    uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
 }
