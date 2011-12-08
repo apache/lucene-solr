@@ -617,11 +617,14 @@ public final class SolrCore implements SolrInfoMBean {
       // Finally tell anyone who wants to know
       resourceLoader.inform( resourceLoader );
       resourceLoader.inform( this );  // last call before the latch is released.
-    } catch (IOException e) {
-      log.error("", e);
+    } catch (Throwable e) {
+      log.error("Error in constructing the core", e);
+      latch.countDown();//release the latch, otherwise we block trying to do the close.  This should be fine, since counting down on a latch of 0 is still fine
+      //close down the searcher and any other resources, if it exists, as this is not recoverable
+      close();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e, false);
     } finally {
-      // allow firstSearcher events to fire
+      // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
     }
 
