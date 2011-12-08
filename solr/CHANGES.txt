@@ -288,6 +288,9 @@ Bug Fixes
   
 * SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
   a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
+
+* SOLR-1730: Made it clearer when a core failed to load as well as better logging when the
+  QueryElevationComponent fails to properly initialize (gsingers)
   
 Other Changes
 ----------------------
