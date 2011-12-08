@@ -116,7 +116,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer.close();
   }
   
-  /* nocommit: Fix tests to use an id and delete by term
   // LUCENE-325: test forceMergeDeletes, when 2 singular merges
   // are required
   public void testForceMergeDeletes() throws IOException {
@@ -136,19 +135,31 @@ public class TestIndexWriterMerging extends LuceneTestCase
     customType1.setStoreTermVectorPositions(true);
     customType1.setStoreTermVectorOffsets(true);
     
+    Field idField = newField("id", "", StringField.TYPE_UNSTORED);
+    document.add(idField);
     Field storedField = newField("stored", "stored", customType);
     document.add(storedField);
     Field termVectorField = newField("termVector", "termVector", customType1);
     document.add(termVectorField);
-    for(int i=0;i<10;i++)
+    for(int i=0;i<10;i++) {
+      idField.setValue("" + i);
       writer.addDocument(document);
+    }
     writer.close();
 
     IndexReader ir = IndexReader.open(dir);
     assertEquals(10, ir.maxDoc());
     assertEquals(10, ir.numDocs());
-    ir.deleteDocument(0);
-    ir.deleteDocument(7);
+    ir.close();
+
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    writer = new IndexWriter(dir, dontMergeConfig);
+    writer.deleteDocuments(new Term("id", "0"));
+    writer.deleteDocuments(new Term("id", "7"));
+    writer.close();
+    
+    ir = IndexReader.open(dir);
     assertEquals(8, ir.numDocs());
     ir.close();
 
@@ -165,6 +176,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     dir.close();
   }
 
+  /* nocommit: Fix tests to use an id and delete by term
   // LUCENE-325: test forceMergeDeletes, when many adjacent merges are required
   public void testForceMergeDeletes2() throws IOException {
     Directory dir = newDirectory();
