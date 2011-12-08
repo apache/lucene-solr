@@ -25,6 +25,7 @@ import java.util.Collection;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -607,7 +608,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * Test a deletion policy that keeps last N commits
    * around, through creates.
    */
-  /* nocommit: fix this test, I don't understand it!
   public void testKeepLastNDeletionPolicyWithCreates() throws IOException {
     
     final int N = 10;
@@ -644,16 +644,21 @@ public class TestDeletionPolicy extends LuceneTestCase {
         }
         writer = new IndexWriter(dir, conf);
         for(int j=0;j<17;j++) {
-          addDoc(writer);
+          addDocWithID(writer, i*(N+1)+j);
         }
         // this is a commit
         writer.close();
-        IndexReader reader = IndexReader.open(dir, policy, false);
-        reader.deleteDocument(3);
+        conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+          .setIndexDeletionPolicy(policy)
+          .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+        writer = new IndexWriter(dir, conf);
+        writer.deleteDocuments(new Term("id", "" + (i*(N+1)+3)));
+        // this is a commit
+        writer.close();
+        IndexReader reader = IndexReader.open(dir);
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16, hits.length);
-        // this is a commit
         reader.close();
         searcher.close();
 
@@ -718,8 +723,14 @@ public class TestDeletionPolicy extends LuceneTestCase {
       dir.close();
     }
   }
-  */
 
+  private void addDocWithID(IndexWriter writer, int id) throws IOException {
+    Document doc = new Document();
+    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+    doc.add(newField("id", "" + id, StringField.TYPE_UNSTORED));
+    writer.addDocument(doc);
+  }
+  
   private void addDoc(IndexWriter writer) throws IOException
   {
     Document doc = new Document();
