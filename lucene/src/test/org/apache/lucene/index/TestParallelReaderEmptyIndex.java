@@ -24,6 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -70,22 +71,32 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    * to have TermVectors. Adding this index to another index should not throw
    * any exception.
    */
-  /* nocommit: Fix tests to use an id and delete by term
   public void testEmptyIndexWithVectors() throws IOException {
     Directory rd1 = newDirectory();
     {
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
+      Field idField = newField("id", "", TextField.TYPE_UNSTORED);
+      doc.add(idField);
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       doc.add(newField("test", "", customType));
+      idField.setValue("1");
       iw.addDocument(doc);
       doc.add(newField("test", "", TextField.TYPE_UNSTORED));
+      idField.setValue("2");
       iw.addDocument(doc);
       iw.close();
 
+      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+      IndexWriter writer = new IndexWriter(rd1, dontMergeConfig);
+      
+      writer.deleteDocuments(new Term("id", "1"));
+      writer.close();
       IndexReader ir = IndexReader.open(rd1);
-      ir.deleteDocument(0);
+      assertEquals(2, ir.maxDoc());
+      assertEquals(1, ir.numDocs());
       ir.close();
 
       iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
@@ -122,5 +133,4 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     
     rdOut.close();
   }
-  */
 }
