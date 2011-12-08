@@ -452,7 +452,6 @@ public class TestAddIndexes extends LuceneTestCase {
     aux.close();
   }
 
-  /* nocommit: re-enable
   // case 5: tail segments, invariants not hold
   public void testMoreMerges() throws IOException {
     // main directory
@@ -461,7 +460,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory aux = newDirectory();
     Directory aux2 = newDirectory();
 
-    setUpDirs(dir, aux);
+    setUpDirs(dir, aux, true);
 
     IndexWriter writer = newWriter(
         aux2,
@@ -475,17 +474,25 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(3, writer.getSegmentCount());
     writer.close();
 
-    IndexReader reader = IndexReader.open(aux);
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    writer = new IndexWriter(aux, dontMergeConfig);
     for (int i = 0; i < 27; i++) {
-      reader.deleteDocument(i);
+      writer.deleteDocuments(new Term("id", "" + i));
     }
+    writer.close();
+    IndexReader reader = IndexReader.open(aux);
     assertEquals(3, reader.numDocs());
     reader.close();
 
-    reader = IndexReader.open(aux2);
+    dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    writer = new IndexWriter(aux2, dontMergeConfig);
     for (int i = 0; i < 8; i++) {
-      reader.deleteDocument(i);
+      writer.deleteDocuments(new Term("id", "" + i));
     }
+    writer.close();
+    reader = IndexReader.open(aux2);
     assertEquals(22, reader.numDocs());
     reader.close();
 
@@ -505,7 +512,6 @@ public class TestAddIndexes extends LuceneTestCase {
     aux.close();
     aux2.close();
   }
-  */
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
       throws IOException {
