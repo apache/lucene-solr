@@ -56,6 +56,22 @@ public class FieldValueFilter extends Filter {
     this.field = field;
     this.negate = negate;
   }
+  
+  /**
+   * Returns the field this filter is applied on.
+   * @return the field this filter is applied on.
+   */
+  public String field() {
+    return field;
+  }
+  
+  /**
+   * Returns <code>true</code> iff this filter is negated, otherwise <code>false</code> 
+   * @return <code>true</code> iff this filter is negated, otherwise <code>false</code>
+   */
+  public boolean negate() {
+    return negate; 
+  }
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
