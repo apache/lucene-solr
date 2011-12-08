@@ -207,6 +207,18 @@ Changes in backwards compatibility policy
 * LUCENE-3533: Removed SpanFilters, they created large lists of objects and 
   did not scale. (Robert Muir)
   
+* LUCENE-3606: IndexReader was made read-only. It is no longer possible to
+  delete or undelete documents using IndexReader; you have to use IndexWriter
+  now. As deleting by internal Lucene docID is no longer possible, this
+  requires adding a unique identifier field to your index. Deleting/relying
+  upon Lucene docIDs is not recommended anyway, because they can change.
+  Consequently commit() was removed and IndexReader.open(), openIfChanged(),
+  and clone() no longer take readOnly booleans or IndexDeletionPolicy
+  instances. Furthermore, IndexReader.setNorm() was removed. If you need
+  customized norm values, the recommended way to do this is by modifying
+  SimilarityProvider to use an external byte[] or one of the new DocValues
+  fields (LUCENE-3108).  (Uwe Schindler, Robert Muir)
+  
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
