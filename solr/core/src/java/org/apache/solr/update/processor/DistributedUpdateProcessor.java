@@ -60,12 +60,14 @@ import org.apache.zookeeper.KeeperException;
 // NOT mt-safe... create a new processor for each add thread
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String SEEN_LEADER = "leader";
+  public static final String COMMIT_END_POINT = "commit_end_points";
   
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
   private final UpdateRequestProcessor next;
 
   private static final String VERSION_FIELD = "_version_";
+
   private final UpdateHandler updateHandler;
   private final UpdateLog ulog;
   private final VersionInfo vinfo;
@@ -573,14 +575,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         vinfo.unlockForUpdate();
       }
     }
-
-
-    // nocommit: make everyone commit?
-//    if (shards != null) {
-//      cmdDistrib.distribCommit(cmd, shards);
-//    } else {
-//      super.processCommit(cmd);
-//    }
+    // nocommit: we should consider this? commit everyone in the current collection
+    if (zkEnabled) {
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      if (!params.getBool(COMMIT_END_POINT, false)) {
+        params.set(COMMIT_END_POINT, true);
+        req.setParams(params);
+        String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
+            .getZkController().getNodeName();
+        String shardZkNodeName = nodeName + "_" + req.getCore().getName();
+        shards = getReplicaUrls(req, req.getCore().getCoreDescriptor()
+            .getCloudDescriptor().getCollectionName(), shardZkNodeName);
+        if (shards != null) {
+          cmdDistrib.distribCommit(cmd, shards);
+        }
+      }
+    }
   }
   
   @Override
@@ -589,7 +599,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (next != null && shards == null) next.finish();
   }
   
-  // TODO: currently this also includes the leader url
   private List<String> getReplicaUrls(SolrQueryRequest req, String collection,
       String shardId, String shardZkNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
@@ -613,6 +622,34 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           ZkStateReader.NODE_NAME_PROP)) && !entry.getKey().equals(shardZkNodeName)) {
         String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
         urls.add(replicaUrl);
+      }
+    }
+    if (urls.size() == 0) {
+      return null;
+    }
+    return urls;
+  }
+  
+  private List<String> getReplicaUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
+    CloudState cloudState = req.getCore().getCoreDescriptor()
+        .getCoreContainer().getZkController().getCloudState();
+    List<String> urls = new ArrayList<String>();
+    Map<String,Slice> slices = cloudState.getSlices(collection);
+    if (slices == null) {
+      throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
+          "Could not find collection in zk: " + cloudState);
+    }
+    for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
+      Slice replicas = slices.get(sliceEntry.getKey());
+      
+      Map<String,ZkNodeProps> shardMap = replicas.getShards();
+      
+      for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
+        if (cloudState.liveNodesContain(entry.getValue().get(
+            ZkStateReader.NODE_NAME_PROP)) && !entry.getKey().equals(shardZkNodeName)) {
+          String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
+          urls.add(replicaUrl);
+        }
       }
     }
     if (urls.size() == 0) {

@@ -840,13 +840,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   protected void commit() throws Exception {
     controlClient.commit();
-    for (SolrServer client : clients) {
-      try {
-        client.commit();
-      } catch (SolrServerException e) {
-        // we might have killed a server on purpose in the test
-        log.warn("", e);
-      }
-    }
+    cloudClient.commit();
   }
 }

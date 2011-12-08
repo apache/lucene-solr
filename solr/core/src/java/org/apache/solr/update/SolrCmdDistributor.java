@@ -184,6 +184,10 @@ public class SolrCmdDistributor {
     if (updateChain != null) {
       ureq.getParams().add(UpdateParams.UPDATE_CHAIN, updateChain);
     }
+    String commitEndPoint = req.getParams().get(DistributedUpdateProcessor.COMMIT_END_POINT);
+    if (commitEndPoint != null) {
+      ureq.getParams().add(DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint);
+    }
   }
   
   private void doDelete(DeleteUpdateCommand cmd, List<String> shards) throws IOException {
