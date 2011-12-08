@@ -613,6 +613,9 @@ public final class ZkController {
    */
   public void uploadToZK(File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
     File[] files = dir.listFiles();
+    if (files == null) {
+      throw new IllegalArgumentException("Illegal directory: " + dir);
+    }
     for(File file : files) {
       if (!file.getName().startsWith(".")) {
         if (!file.isDirectory()) {
@@ -773,18 +776,6 @@ public final class ZkController {
           collectionProps.put("num_shards", Integer.toString(numShards));
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
-          try {
-            // shards_lock node
-            if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/shards_lock")) {
-              // makes shards_lock zkNode if it doesn't exist
-              zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/shards_lock");
-            }
-          } catch (KeeperException e) {
-            // its okay if another beats us creating the node
-            if (e.code() != KeeperException.Code.NODEEXISTS) {
-              throw e;
-            }
-          }
          
           // ping that there is a new collection
           zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
