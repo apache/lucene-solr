@@ -99,18 +99,21 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   static final int OUTPUT_FLAG_IS_FLOOR = 0x1;
   static final int OUTPUT_FLAG_HAS_TERMS = 0x2;
 
-  final static String CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
-
-  // Initial format
-  public static final int VERSION_START = 0;
-
-  public static final int VERSION_CURRENT = VERSION_START;
-
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tim";
-  static final String TERMS_INDEX_EXTENSION = "tip";
+  final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
+  // Initial format
+  public static final int TERMS_VERSION_START = 0;
+  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
 
-  protected final IndexOutput out;
+  /** Extension of terms index file */
+  static final String TERMS_INDEX_EXTENSION = "tip";
+  final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
+  // Initial format
+  public static final int TERMS_INDEX_VERSION_START = 0;
+  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_START;
+
+  private final IndexOutput out;
   private final IndexOutput indexOut;
   final int minItemsInBlock;
   final int maxItemsInBlock;
@@ -178,22 +181,22 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   }
   
   protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
+    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT); 
     out.writeLong(0);                             // leave space for end index pointer    
   }
 
   protected void writeIndexHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
+    CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, TERMS_INDEX_VERSION_CURRENT); 
     out.writeLong(0);                             // leave space for end index pointer    
   }
 
-  protected void writeTrailer(long dirStart) throws IOException {
-    out.seek(CodecUtil.headerLength(CODEC_NAME));
+  protected void writeTrailer(IndexOutput out, long dirStart) throws IOException {
+    out.seek(CodecUtil.headerLength(TERMS_CODEC_NAME));
     out.writeLong(dirStart);    
   }
 
-  protected void writeIndexTrailer(long dirStart) throws IOException {
-    indexOut.seek(CodecUtil.headerLength(CODEC_NAME));
+  protected void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
+    indexOut.seek(CodecUtil.headerLength(TERMS_INDEX_CODEC_NAME));
     indexOut.writeLong(dirStart);    
   }
   
@@ -935,8 +938,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           indexOut.writeVLong(field.indexStartFP);
         }
       }
-      writeTrailer(dirStart);
-      writeIndexTrailer(indexDirStart);
+      writeTrailer(out, dirStart);
+      writeIndexTrailer(indexOut, indexDirStart);
     } catch (IOException ioe2) {
       ioe = ioe2;
     } finally {

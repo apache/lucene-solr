@@ -215,7 +215,6 @@ public class CoreContainer
     }
     
     /**
-     * @exception generates an error if you attempt to set this value to false
      * @deprecated all cores now abort on configuration error regardless of configuration
      */
     @Deprecated
@@ -246,6 +245,9 @@ public class CoreContainer
       }
       
       solrConfigFilename = cores.getConfigFile().getName();
+      if (cores.cores.isEmpty()){
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No cores were created, please check the logs for errors");
+      }
       
       return cores;
     }

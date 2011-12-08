@@ -166,16 +166,16 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTreeTermsWriter.CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
+                          BlockTreeTermsWriter.TERMS_VERSION_START,
+                          BlockTreeTermsWriter.TERMS_VERSION_CURRENT);
     dirOffset = input.readLong();    
   }
 
   protected void readIndexHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTreeTermsWriter.CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+                          BlockTreeTermsWriter.TERMS_INDEX_VERSION_START,
+                          BlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
     indexDirOffset = input.readLong();    
   }
   
