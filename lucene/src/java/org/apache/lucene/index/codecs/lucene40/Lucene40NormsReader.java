@@ -39,10 +39,10 @@ import org.apache.lucene.util.StringHelper;
 public class Lucene40NormsReader extends NormsReader {
   // this would be replaced by Source/SourceCache in a dv impl.
   // for now we have our own mini-version
-  Map<String,Norm> norms = new HashMap<String,Norm>();
+  final Map<String,Norm> norms = new HashMap<String,Norm>();
   // any .nrm or .sNN files we have open at any time.
   // TODO: just a list, and double-close() separate norms files?
-  Set<IndexInput> openFiles = new MapBackedSet<IndexInput>(new IdentityHashMap<IndexInput,Boolean>());
+  final Set<IndexInput> openFiles = new MapBackedSet<IndexInput>(new IdentityHashMap<IndexInput,Boolean>());
   // points to a singleNormFile
   IndexInput singleNormStream;
   final int maxdoc;
@@ -106,9 +106,7 @@ public class Lucene40NormsReader extends NormsReader {
       success = true;
     } finally {
       if (!success) {
-        if (openFiles != null) {
-          IOUtils.closeWhileHandlingException(openFiles);
-        }
+        IOUtils.closeWhileHandlingException(openFiles);
       }
     }
   }
@@ -123,12 +121,10 @@ public class Lucene40NormsReader extends NormsReader {
   @Override
   public void close() throws IOException {
     try {
-      if (openFiles != null) {
-        IOUtils.close(openFiles);
-      }
+      IOUtils.close(openFiles);
     } finally {
-      norms = null;
-      openFiles = null;
+      norms.clear();
+      openFiles.clear();
     }
   }
   
