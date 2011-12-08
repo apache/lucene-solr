@@ -176,7 +176,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
     dir.close();
   }
 
-  /* nocommit: Fix tests to use an id and delete by term
   // LUCENE-325: test forceMergeDeletes, when many adjacent merges are required
   public void testForceMergeDeletes2() throws IOException {
     Directory dir = newDirectory();
@@ -203,15 +202,28 @@ public class TestIndexWriterMerging extends LuceneTestCase
     document.add(storedField);
     Field termVectorField = newField("termVector", "termVector", customType1);
     document.add(termVectorField);
-    for(int i=0;i<98;i++)
+    Field idField = newField("id", "", StringField.TYPE_UNSTORED);
+    document.add(idField);
+    for(int i=0;i<98;i++) {
+      idField.setValue("" + i);
       writer.addDocument(document);
+    }
     writer.close();
 
     IndexReader ir = IndexReader.open(dir);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
-    for(int i=0;i<98;i+=2)
-      ir.deleteDocument(i);
+    ir.close();
+    
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    writer = new IndexWriter(dir, dontMergeConfig);
+    for(int i=0;i<98;i+=2) {
+      writer.deleteDocuments(new Term("id", "" + i));
+    }
+    writer.close();
+    
+    ir = IndexReader.open(dir);
     assertEquals(49, ir.numDocs());
     ir.close();
 
@@ -230,6 +242,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     dir.close();
   }
 
+  /* nocommit: Fix tests to use an id and delete by term
   // LUCENE-325: test forceMergeDeletes without waiting, when
   // many adjacent merges are required
   public void testForceMergeDeletes3() throws IOException {
