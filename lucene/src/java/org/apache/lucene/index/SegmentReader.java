@@ -161,17 +161,6 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     } else
       assert si.getDelCount() == 0;
   }
-  
-  /**
-   * Clones the deleteDocs BitVector.  May be overridden by subclasses. New and experimental.
-   * @param bv BitVector to clone
-   * @return New BitVector
-   */
-  // TODO: remove deletions from SR
-  BitVector cloneDeletedDocs(BitVector bv) {
-    ensureOpen();
-    return (BitVector)bv.clone();
-  }
 
   @Override
   public final synchronized Object clone() {
@@ -182,144 +171,16 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  // TODO: is this needed anymore by IndexWriter?
-  final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
-    return reopenSegment(si, true, openReadOnly);
+  // used by DirectoryReader:
+  synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone) throws CorruptIndexException, IOException {
+    return reopenSegment(si, doClone, true);
   }
 
   @Override
   protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     return reopenSegment(si, false, readOnly);
   }
-
-  synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
-    ensureOpen();
-    boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
-                                  && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
-
-    // if we're cloning we need to run through the reopenSegment logic
-    // also if both old and new readers aren't readonly, we clone to avoid sharing modifications
-    if (deletionsUpToDate && !doClone && openReadOnly && readOnly) {
-      return null;
-    }    
-
-    // When cloning, the incoming SegmentInfos should not
-    // have any changes in it:
-    assert !doClone || (deletionsUpToDate);
-
-    // clone reader
-    SegmentReader clone = new SegmentReader(openReadOnly, si);
-
-    boolean success = false;
-    try {
-      core.incRef();
-      clone.core = core;
-      clone.pendingDeleteCount = pendingDeleteCount;
-      clone.readerFinishedListeners = readerFinishedListeners;
-
-      if (!openReadOnly && hasChanges) {
-        // My pending changes transfer to the new reader
-        clone.liveDocsDirty = liveDocsDirty;
-        clone.hasChanges = hasChanges;
-        hasChanges = false;
-      }
-      
-      if (doClone) {
-        if (liveDocs != null) {
-          liveDocsRef.incrementAndGet();
-          clone.liveDocs = liveDocs;
-          clone.liveDocsRef = liveDocsRef;
-        }
-      } else {
-        if (!deletionsUpToDate) {
-          // load deleted docs
-          assert clone.liveDocs == null;
-          clone.loadLiveDocs(IOContext.READ);
-        } else if (liveDocs != null) {
-          liveDocsRef.incrementAndGet();
-          clone.liveDocs = liveDocs;
-          clone.liveDocsRef = liveDocsRef;
-        }
-      }
-      success = true;
-    } finally {
-      if (!success) {
-        // An exception occurred during reopen, we have to decRef the norms
-        // that we incRef'ed already and close singleNormsStream and FieldsReader
-        clone.decRef();
-      }
-    }
-    
-    return clone;
-  }
-
-  // TODO: remove deletions from SR
-  void doCommit() throws IOException {
-    assert hasChanges;
-    startCommit();
-    boolean success = false;
-    try {
-      commitChanges();
-      success = true;
-    } finally {
-      if (!success) {
-        rollbackCommit();
-      }
-    }
-  }
-
-  // TODO: remove deletions from SR
-  private void startCommit() {
-    rollbackSegmentInfo = (SegmentInfo) si.clone();
-    rollbackHasChanges = hasChanges;
-    rollbackDeletedDocsDirty = liveDocsDirty;
-    rollbackPendingDeleteCount = pendingDeleteCount;
-  }
-
-  // TODO: remove deletions from SR
-  private void rollbackCommit() {
-    si.reset(rollbackSegmentInfo);
-    hasChanges = rollbackHasChanges;
-    liveDocsDirty = rollbackDeletedDocsDirty;
-    pendingDeleteCount = rollbackPendingDeleteCount;
-  }
-
-  // TODO: remove deletions from SR
-  private synchronized void commitChanges() throws IOException {
-    if (liveDocsDirty) {               // re-write deleted
-      si.advanceDelGen();
-
-      assert liveDocs.length() == si.docCount;
-
-      // We can write directly to the actual name (vs to a
-      // .tmp & renaming it) because the file is not live
-      // until segments file is written:
-      final String delFileName = si.getDelFileName();
-      boolean success = false;
-      try {
-        liveDocs.write(directory(), delFileName, IOContext.DEFAULT);
-        success = true;
-      } finally {
-        if (!success) {
-          try {
-            directory().deleteFile(delFileName);
-          } catch (Throwable t) {
-            // suppress this so we keep throwing the
-            // original exception
-          }
-        }
-      }
-      si.setDelCount(si.getDelCount()+pendingDeleteCount);
-      pendingDeleteCount = 0;
-      assert (maxDoc()-liveDocs.count()) == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + (maxDoc()-liveDocs.count());
-    } else {
-      assert pendingDeleteCount == 0;
-    }
-
-    liveDocsDirty = false;
-    hasChanges = false;
-  }
-
+  
   /** @lucene.internal */
   public StoredFieldsReader getFieldsReader() {
     return fieldsReaderLocal.get();
@@ -349,35 +210,6 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   public boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return liveDocs != null;
-  }
-
-  // TODO: remove deletions from SR
-  synchronized void deleteDocument(int docNum) throws IOException {
-    ensureOpen();
-    hasChanges = true;
-    doDelete(docNum);
-  }
-
-  // TODO: remove deletions from SR
-  void doDelete(int docNum) {
-    if (liveDocs == null) {
-      liveDocs = new BitVector(maxDoc());
-      liveDocs.setAll();
-      liveDocsRef = new AtomicInteger(1);
-    }
-    // there is more than 1 SegmentReader with a reference to this
-    // liveDocs BitVector so decRef the current liveDocsRef,
-    // clone the BitVector, create a new liveDocsRef
-    if (liveDocsRef.get() > 1) {
-      AtomicInteger oldRef = liveDocsRef;
-      liveDocs = cloneDeletedDocs(liveDocs);
-      liveDocsRef = new AtomicInteger(1);
-      oldRef.decrementAndGet();
-    }
-    liveDocsDirty = true;
-    if (liveDocs.getAndClear(docNum)) {
-      pendingDeleteCount++;
-    }
   }
 
   List<String> files() throws IOException {
@@ -526,7 +358,6 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     return termVectorsReader.get(docID);
   }
 
-  /** {@inheritDoc} */
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder();
@@ -597,5 +428,179 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   public PerDocValues perDocValues() throws IOException {
     ensureOpen();
     return core.perDocProducer;
+  }
+
+  /**
+   * Clones the deleteDocs BitVector.  May be overridden by subclasses. New and experimental.
+   * @param bv BitVector to clone
+   * @return New BitVector
+   */
+  // TODO: remove deletions from SR
+  BitVector cloneDeletedDocs(BitVector bv) {
+    ensureOpen();
+    return (BitVector)bv.clone();
+  }
+  
+  // TODO: remove deletions from SR
+  final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    return reopenSegment(si, true, openReadOnly);
+  }
+
+  // TODO: remove deletions from SR
+  private synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
+    ensureOpen();
+    boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
+                                  && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
+
+    // if we're cloning we need to run through the reopenSegment logic
+    // also if both old and new readers aren't readonly, we clone to avoid sharing modifications
+    if (deletionsUpToDate && !doClone && openReadOnly && readOnly) {
+      return null;
+    }    
+
+    // When cloning, the incoming SegmentInfos should not
+    // have any changes in it:
+    assert !doClone || (deletionsUpToDate);
+
+    // clone reader
+    SegmentReader clone = new SegmentReader(openReadOnly, si);
+
+    boolean success = false;
+    try {
+      core.incRef();
+      clone.core = core;
+      clone.pendingDeleteCount = pendingDeleteCount;
+      clone.readerFinishedListeners = readerFinishedListeners;
+
+      if (!openReadOnly && hasChanges) {
+        // My pending changes transfer to the new reader
+        clone.liveDocsDirty = liveDocsDirty;
+        clone.hasChanges = hasChanges;
+        hasChanges = false;
+      }
+      
+      if (doClone) {
+        if (liveDocs != null) {
+          liveDocsRef.incrementAndGet();
+          clone.liveDocs = liveDocs;
+          clone.liveDocsRef = liveDocsRef;
+        }
+      } else {
+        if (!deletionsUpToDate) {
+          // load deleted docs
+          assert clone.liveDocs == null;
+          clone.loadLiveDocs(IOContext.READ);
+        } else if (liveDocs != null) {
+          liveDocsRef.incrementAndGet();
+          clone.liveDocs = liveDocs;
+          clone.liveDocsRef = liveDocsRef;
+        }
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        // An exception occurred during reopen, we have to decRef the norms
+        // that we incRef'ed already and close singleNormsStream and FieldsReader
+        clone.decRef();
+      }
+    }
+    
+    return clone;
+  }
+
+  // TODO: remove deletions from SR
+  void doCommit() throws IOException {
+    assert hasChanges;
+    startCommit();
+    boolean success = false;
+    try {
+      commitChanges();
+      success = true;
+    } finally {
+      if (!success) {
+        rollbackCommit();
+      }
+    }
+  }
+
+  // TODO: remove deletions from SR
+  private void startCommit() {
+    rollbackSegmentInfo = (SegmentInfo) si.clone();
+    rollbackHasChanges = hasChanges;
+    rollbackDeletedDocsDirty = liveDocsDirty;
+    rollbackPendingDeleteCount = pendingDeleteCount;
+  }
+
+  // TODO: remove deletions from SR
+  private void rollbackCommit() {
+    si.reset(rollbackSegmentInfo);
+    hasChanges = rollbackHasChanges;
+    liveDocsDirty = rollbackDeletedDocsDirty;
+    pendingDeleteCount = rollbackPendingDeleteCount;
+  }
+
+  // TODO: remove deletions from SR
+  private synchronized void commitChanges() throws IOException {
+    if (liveDocsDirty) {               // re-write deleted
+      si.advanceDelGen();
+
+      assert liveDocs.length() == si.docCount;
+
+      // We can write directly to the actual name (vs to a
+      // .tmp & renaming it) because the file is not live
+      // until segments file is written:
+      final String delFileName = si.getDelFileName();
+      boolean success = false;
+      try {
+        liveDocs.write(directory(), delFileName, IOContext.DEFAULT);
+        success = true;
+      } finally {
+        if (!success) {
+          try {
+            directory().deleteFile(delFileName);
+          } catch (Throwable t) {
+            // suppress this so we keep throwing the
+            // original exception
+          }
+        }
+      }
+      si.setDelCount(si.getDelCount()+pendingDeleteCount);
+      pendingDeleteCount = 0;
+      assert (maxDoc()-liveDocs.count()) == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + (maxDoc()-liveDocs.count());
+    } else {
+      assert pendingDeleteCount == 0;
+    }
+
+    liveDocsDirty = false;
+    hasChanges = false;
+  }
+
+  // TODO: remove deletions from SR
+  synchronized void deleteDocument(int docNum) throws IOException {
+    ensureOpen();
+    hasChanges = true;
+    doDelete(docNum);
+  }
+
+  // TODO: remove deletions from SR
+  void doDelete(int docNum) {
+    if (liveDocs == null) {
+      liveDocs = new BitVector(maxDoc());
+      liveDocs.setAll();
+      liveDocsRef = new AtomicInteger(1);
+    }
+    // there is more than 1 SegmentReader with a reference to this
+    // liveDocs BitVector so decRef the current liveDocsRef,
+    // clone the BitVector, create a new liveDocsRef
+    if (liveDocsRef.get() > 1) {
+      AtomicInteger oldRef = liveDocsRef;
+      liveDocs = cloneDeletedDocs(liveDocs);
+      liveDocsRef = new AtomicInteger(1);
+      oldRef.decrementAndGet();
+    }
+    liveDocsDirty = true;
+    if (liveDocs.getAndClear(docNum)) {
+      pendingDeleteCount++;
+    }
   }
 }
