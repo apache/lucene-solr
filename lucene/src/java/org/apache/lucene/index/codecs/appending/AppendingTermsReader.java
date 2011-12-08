@@ -1,6 +1,6 @@
 package org.apache.lucene.index.codecs.appending;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,30 +18,40 @@ package org.apache.lucene.index.codecs.appending;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
+import org.apache.lucene.index.codecs.BlockTreeTermsReader;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-public class AppendingTermsIndexReader extends FixedGapTermsIndexReader {
+/**
+ * Reads append-only terms from {@link AppendingTermsWriter}
+ * @lucene.experimental
+ */
+public class AppendingTermsReader extends BlockTreeTermsReader {
 
-  public AppendingTermsIndexReader(Directory dir, FieldInfos fieldInfos,
-          String segment, int indexDivisor, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
-          throws IOException {
-    super(dir, fieldInfos, segment, indexDivisor, termComp, segmentSuffix, context);
+  public AppendingTermsReader(Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, 
+      IOContext ioContext, String segmentSuffix, int indexDivisor) throws IOException {
+    super(dir, fieldInfos, segment, postingsReader, ioContext, segmentSuffix, indexDivisor);
   }
-  
+
   @Override
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, AppendingTermsIndexWriter.CODEC_NAME,
-      AppendingTermsIndexWriter.VERSION_START, AppendingTermsIndexWriter.VERSION_START);    
+    CodecUtil.checkHeader(input, AppendingTermsWriter.TERMS_CODEC_NAME,
+        AppendingTermsWriter.TERMS_VERSION_START,
+        AppendingTermsWriter.TERMS_VERSION_CURRENT);  
   }
 
+  @Override
+  protected void readIndexHeader(IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, AppendingTermsWriter.TERMS_INDEX_CODEC_NAME,
+        AppendingTermsWriter.TERMS_INDEX_VERSION_START,
+        AppendingTermsWriter.TERMS_INDEX_VERSION_CURRENT);
+  }
+  
   @Override
   protected void seekDir(IndexInput input, long dirOffset) throws IOException {
     input.seek(input.length() - Long.SIZE / 8);
