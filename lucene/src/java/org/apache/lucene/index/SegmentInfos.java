@@ -381,11 +381,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       generation++;
     }
 
-    ChecksumIndexOutput segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName));
-
+    ChecksumIndexOutput segnOutput = null;
     boolean success = false;
 
     try {
+      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName));
       segnOutput.writeInt(CURRENT_FORMAT); // write FORMAT
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
