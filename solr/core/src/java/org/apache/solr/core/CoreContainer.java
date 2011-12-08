@@ -215,37 +215,16 @@ public class CoreContainer
 
   // Helper class to initialize the CoreContainer
   public static class Initializer {
-    protected String solrConfigFilename = null;
+    protected String containerConfigFilename = null;  // normally "solr.xml"
     protected String dataDir = null; // override datadir for single core mode
-
-    /**
-     * @deprecated all cores now abort on configuration error regardless of configuration
-     */
-    @Deprecated
-    public boolean isAbortOnConfigurationError() {
-      return true;
-    }
-    
-    /**
-     * @exception generates an error if you attempt to set this value to false
-     * @deprecated all cores now abort on configuration error regardless of configuration
-     */
-    @Deprecated
-    public void setAbortOnConfigurationError(boolean abortOnConfigurationError) {
-      if (false == abortOnConfigurationError)
-        throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-           "Setting abortOnConfigurationError==false is no longer supported");
-    }
 
     // core container instantiation
     public CoreContainer initialize() throws IOException,
         ParserConfigurationException, SAXException {
       CoreContainer cores = null;
       String solrHome = SolrResourceLoader.locateSolrHome();
-      // TODO : fix broken logic confusing solr.xml with solrconfig.xml
-      File fconf = new File(solrHome, solrConfigFilename == null ? "solr.xml"
-          : solrConfigFilename);
+      File fconf = new File(solrHome, containerConfigFilename == null ? "solr.xml"
+          : containerConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
       cores = new CoreContainer();
       
@@ -257,7 +236,7 @@ public class CoreContainer
         cores.configFile = fconf;
       }
       
-      solrConfigFilename = cores.getConfigFile().getName();
+      containerConfigFilename = cores.getConfigFile().getName();
       
       return cores;
     }
@@ -658,6 +637,12 @@ public class CoreContainer
     }
 
     SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
+
+    if (zkController == null) {
+      // always kick off recovery if we are in standalone mode.
+      core.getUpdateHandler().getUpdateLog().recoverFromLog();
+    }
+
     return core;
   }
     

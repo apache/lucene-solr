@@ -66,7 +66,6 @@ public class SolrDispatchFilter implements Filter
 
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
-  protected String solrConfigFilename = null;
   protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
   protected final SolrRequestParsers adminRequestParser;
   
@@ -92,7 +91,6 @@ public class SolrDispatchFilter implements Filter
       this.pathPrefix = config.getInitParameter( "path-prefix" );
 
       this.cores = init.initialize();
-      abortOnConfigurationError = init.isAbortOnConfigurationError();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {

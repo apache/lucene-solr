@@ -82,8 +82,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       h.close();
       createCore();
-      // TODO: kick off this from solr if leader (at a minimum)
-      h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+      // Solr should kick this off now
+      // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // verify that previous close didn't do a commit
       // recovery should be blocked by our hook
@@ -108,8 +108,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       h.close();
       createCore();
-      // TODO: kick off this from solr if leader (at a minimum)
-      h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+      // Solr should kick this off now
+      // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
@@ -120,8 +120,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       int permits = logReplay.availablePermits();
       createCore();
-      // TODO: kick off this from solr if leader (at a minimum)
-      h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+      // Solr should kick this off now
+      // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       assertJQ(req("q","*:*") ,"/response/numFound==3");
       Thread.sleep(100);
