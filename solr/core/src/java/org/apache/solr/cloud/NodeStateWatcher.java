@@ -30,11 +30,15 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Watcher for node state changes.
  */
 public class NodeStateWatcher implements Watcher {
+
+  private static Logger log = LoggerFactory.getLogger(NodeStateWatcher.class);
 
   public static interface NodeStateChangeListener {
     void coreCreated(String shardZkNodeName, Set<CoreState> cores) throws IOException, KeeperException;
@@ -77,8 +81,8 @@ public class NodeStateWatcher implements Watcher {
       processStateChange(data);
     } catch (KeeperException e) {
       // nocommit: stop working on any keeper error
-      e.printStackTrace();
-      stop = true;
+      log.warn("Could not talk to ZK", e);
+//      stop = true;
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -127,7 +131,8 @@ public class NodeStateWatcher implements Watcher {
             listener.coreCreated(nodeName, Collections.unmodifiableSet(newCores));
           } catch (KeeperException e) {
             //zk error, stop
-            stop=true;
+//            stop=true;
+            log.warn("Could not talk to ZK", e);
           }
         }
         if (deadCores.size() > 0) {
@@ -138,8 +143,9 @@ public class NodeStateWatcher implements Watcher {
           try {
           listener.coreChanged(nodeName, Collections.unmodifiableSet(changedCores));
           } catch (KeeperException e) {
+            log.warn("Could not talk to ZK", e);
             //zk error, stop
-            stop=true;
+  //          stop=true;
           }
         }
 

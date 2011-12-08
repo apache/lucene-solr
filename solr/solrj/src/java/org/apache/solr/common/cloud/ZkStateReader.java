@@ -52,6 +52,7 @@ public class ZkStateReader {
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   public static final String SHARD_ID_PROP = "shard_id";
+  public static final String NUM_SHARDS_PROP = "numShards";
   
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String CLUSTER_STATE = "/clusterstate.json";
@@ -64,7 +65,7 @@ public class ZkStateReader {
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
-
+  
   //
   // convenience methods... should these go somewhere else?
   //

@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class CoreState implements JSONWriter.Writable {
-  private static String COLLECTION="_collection";
-  private static String CORE="_core";
+  private static String COLLECTION="collection";
+  private static String CORE="core";
 
   private final Map<String, String> properties;
 

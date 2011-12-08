@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.cloud.RecoveryStrat.OnFinish;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -773,7 +774,7 @@ public final class ZkController {
             }
           }
           
-          collectionProps.put("num_shards", Integer.toString(numShards));
+          collectionProps.put(ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards));
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
          
@@ -837,22 +838,24 @@ public final class ZkController {
 
   private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor) {
     final String shardZkNodeName = getNodeName() + "_" + coreName;
-    while (true) {
+    int retryCount = 20;
+    while (retryCount-->0) {
       synchronized (assignments) {
         CoreAssignment assignment = assignments.get(shardZkNodeName);
         if (assignment != null
-            && assignment.getProperties().get("shard_name") != null) {
-          return assignment.getProperties().get("shard_name");
+            && assignment.getProperties().get(ZkStateReader.SHARD_ID_PROP) != null) {
+          return assignment.getProperties().get(ZkStateReader.SHARD_ID_PROP);
         }
         
 //        System.out.println("current assignments:" + assignments);
         try {
-          assignments.wait(1000);
+          assignments.wait(500);
         } catch (InterruptedException e) {
           // TODO Auto-generated catch block
         }
       }
     }
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get shard_id for core: " + coreName);
   }
 
   /**

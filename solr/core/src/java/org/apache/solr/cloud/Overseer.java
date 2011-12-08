@@ -39,6 +39,8 @@ import org.apache.zookeeper.KeeperException.Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sun.rmi.transport.LiveRef;
+
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
  */
@@ -161,18 +163,11 @@ public class Overseer implements NodeStateChangeListener {
           @Override
           public void process(WatchedEvent event) {
             try {
-              synchronized (cloudState) {
                 List<String> liveNodes = zkClient.getChildren(
                     ZkStateReader.LIVE_NODES_ZKNODE, this);
                 Set<String> liveNodesSet = new HashSet<String>();
                 liveNodesSet.addAll(liveNodes);
                 processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
-                
-                cloudState = new CloudState(liveNodesSet, cloudState
-                    .getCollectionStates());
-                // TODO: why are we syncing on cloudState and not the update
-                // lock?
-              }
             } catch (KeeperException e) {
               if (e.code() == KeeperException.Code.SESSIONEXPIRED
                   || e.code() == KeeperException.Code.CONNECTIONLOSS) {
@@ -192,16 +187,6 @@ public class Overseer implements NodeStateChangeListener {
           }
         });
     
-
-    Set<String> liveNodesSet = new HashSet<String>();
-    liveNodesSet.addAll(liveNodes);
-    processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
-    synchronized (cloudState) {
-      cloudState = new CloudState(liveNodesSet,
-          this.cloudState.getCollectionStates());
-      // TODO: why are we syncing on cloudState and not the update
-      // lock?
-    }
     processLiveNodesChanged(Collections.EMPTY_SET, liveNodes);
   }
   
@@ -220,8 +205,6 @@ public class Overseer implements NodeStateChangeListener {
   private void processLiveNodesChanged(Collection<String> oldLiveNodes,
       Collection<String> liveNodes) {
     
-    System.out.println("Nodes changed:" + oldLiveNodes + " -> " + liveNodes);
-    
     Set<String> downNodes = complement(oldLiveNodes, liveNodes);
     if (downNodes.size() > 0) {
       nodesDown(downNodes);
@@ -239,11 +222,12 @@ public class Overseer implements NodeStateChangeListener {
       String path = "/node_states/" + nodeName;
       synchronized (nodeStateWatches) {
         if (!nodeStateWatches.containsKey(nodeName)) {
-
           try {
-            zkClient.makePath(path);
+            if (!zkClient.exists(path)) {
+              zkClient.makePath(path);
+            }
           } catch (KeeperException e1) {
-            if(e1.code()!=Code.NODEEXISTS) {
+            if (e1.code() != Code.NODEEXISTS) {
               e1.printStackTrace();
             }
           } catch (InterruptedException e) {
@@ -282,11 +266,11 @@ public class Overseer implements NodeStateChangeListener {
     
     synchronized (cloudState) {
       String shardId;
-      if (coreState.getProperties().get("shard_id") == null) {
+      if (coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP) == null) {
         shardId = AssignShard.assignShard(collection,
             collections.get(collection), cloudState);
       } else {
-        shardId = coreState.getProperties().get("shard_id");
+        shardId = coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP);
       }
       
       Map<String,String> props = new HashMap<String,String>();
@@ -340,7 +324,20 @@ public class Overseer implements NodeStateChangeListener {
   }
   
   protected void nodesDown(Set<String> nodes) {
-    log.debug("Nodes down: " + nodes);
+    synchronized (cloudState) {
+      HashSet<String> currentNodes = new HashSet<String>();
+      currentNodes.addAll(cloudState.getLiveNodes());
+      currentNodes.removeAll(nodes);
+      CloudState state = new CloudState(currentNodes,
+          cloudState.getCollectionStates());
+      cloudState = state;
+    }
+    for(String node: nodes) {
+      NodeStateWatcher watcher = nodeStateWatches.remove(node);
+      if(watcher!=null) {
+        watcher.close();
+      }
+    }
   }
   
   private void collectionsUp(Set<String> upCollections) {
@@ -406,7 +403,7 @@ public class Overseer implements NodeStateChangeListener {
       for(Entry<String, Slice> entry: slices.entrySet()) {
         ZkNodeProps myProps = entry.getValue().getShards().get(coreName);
         if(myProps!=null) {
-          coreProperties.put("shard_name", entry.getKey());
+          coreProperties.put(ZkStateReader.SHARD_ID_PROP, entry.getKey());
         }
       }
       
@@ -417,7 +414,18 @@ public class Overseer implements NodeStateChangeListener {
     //serialize
     byte[] content = ZkStateReader.toJSON(assignments);
     try {
-      zkClient.setData("/node_assignments/" + node, content);
+      final String nodeName = "/node_assignments/" + node;
+      if(!zkClient.exists(nodeName)) {
+        try {
+          zkClient.makePath(nodeName);
+        } catch (KeeperException ke) {
+          if(ke.code() != Code.NODEEXISTS) {
+            throw ke;
+          }
+        }
+      }
+      
+      zkClient.setData(nodeName, content);
     } catch (InterruptedException e) {
       // nocommit
       e.printStackTrace();

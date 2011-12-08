@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 
 public class AssignShard {
@@ -47,7 +48,7 @@ public class AssignShard {
     int shards = 0;
     String numShardsString = null;
     if (collectionProperties != null) {
-      numShardsString = collectionProperties.get("num_shards");
+      numShardsString = collectionProperties.get(ZkStateReader.NUM_SHARDS_PROP);
     }
 
     if (numShardsString == null) {
