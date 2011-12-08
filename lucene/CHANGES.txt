@@ -676,6 +676,13 @@ Bug fixes
   to correctly respect deletions on reopened SegmentReaders. Factored out
   FieldCacheDocIdSet to be a top-level class.  (Uwe Schindler, Simon Willnauer)
 
+* LUCENE-3627: Don't let an errant 0-byte segments_N file corrupt the index.
+  (Ken McCracken via Mike McCandless)
+
+Documentation
+
+* LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
+
 Build
 
 * LUCENE-3228: Stop downloading external javadoc package-list files:
