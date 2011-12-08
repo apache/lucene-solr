@@ -672,8 +672,7 @@ public class TestGrouping extends LuceneTestCase {
         do {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string groups.
-//          randomValue = _TestUtil.randomRealisticUnicodeString(random);
-          randomValue = _TestUtil.randomSimpleString(random);
+          randomValue = _TestUtil.randomRealisticUnicodeString(random);
         } while ("".equals(randomValue));
 
         groups.add(new BytesRef(randomValue));
