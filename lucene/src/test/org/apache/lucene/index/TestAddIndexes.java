@@ -416,7 +416,6 @@ public class TestAddIndexes extends LuceneTestCase {
     aux.close();
   }
 
-  /* nocommit: reactivate these tests
   // case 4: tail segments, invariants hold, copy, invariants not hold
   public void testMergeAfterCopy() throws IOException {
     // main directory
@@ -424,16 +423,20 @@ public class TestAddIndexes extends LuceneTestCase {
     // auxiliary directory
     Directory aux = newDirectory();
 
-    setUpDirs(dir, aux);
+    setUpDirs(dir, aux, true);
 
-    IndexReader reader = IndexReader.open(aux);
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriter writer = new IndexWriter(aux, dontMergeConfig);
     for (int i = 0; i < 20; i++) {
-      reader.deleteDocument(i);
+      writer.deleteDocuments(new Term("id", "" + i));
     }
+    writer.close();
+    IndexReader reader = IndexReader.open(aux);
     assertEquals(10, reader.numDocs());
     reader.close();
 
-    IndexWriter writer = newWriter(
+    writer = newWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.APPEND).
@@ -449,6 +452,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux.close();
   }
 
+  /* nocommit: re-enable
   // case 5: tail segments, invariants not hold
   public void testMoreMerges() throws IOException {
     // main directory
@@ -545,11 +549,19 @@ public class TestAddIndexes extends LuceneTestCase {
   }
 
   private void setUpDirs(Directory dir, Directory aux) throws IOException {
+    setUpDirs(dir, aux, false);
+  }
+  
+  private void setUpDirs(Directory dir, Directory aux, boolean withID) throws IOException {
     IndexWriter writer = null;
 
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(1000));
     // add 1000 documents in 1 segment
-    addDocs(writer, 1000);
+    if (withID) {
+      addDocsWithID(writer, 1000, 0);
+    } else {
+      addDocs(writer, 1000);
+    }
     assertEquals(1000, writer.maxDoc());
     assertEquals(1, writer.getSegmentCount());
     writer.close();
@@ -563,7 +575,11 @@ public class TestAddIndexes extends LuceneTestCase {
     );
     // add 30 documents in 3 segments
     for (int i = 0; i < 3; i++) {
-      addDocs(writer, 10);
+      if (withID) {
+        addDocsWithID(writer, 10, 10*i);
+      } else {
+        addDocs(writer, 10);
+      }
       writer.close();
       writer = newWriter(
           aux,
@@ -974,11 +990,12 @@ public class TestAddIndexes extends LuceneTestCase {
 
   }
   
-  private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
+  // just like addDocs but with ID, starting from docStart
+  private void addDocsWithID(IndexWriter writer, int numDocs, int docStart) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + i, TextField.TYPE_STORED));
+      doc.add(newField("id", "" + (docStart + i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
   }
@@ -995,7 +1012,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(codec));
     // add 100 documents
-    addDocs3(writer, 100);
+    addDocsWithID(writer, 100, 0);
     assertEquals(100, writer.maxDoc());
     writer.commit();
     writer.close();
