@@ -48,6 +48,7 @@ import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -266,7 +267,13 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         new ClassLoaderLocator(core.getResourceLoader().getClassLoader())));
 
     this.controller.init(initAttributes);
-    this.idFieldName = core.getSchema().getUniqueKeyField().getName();
+    
+    SchemaField uniqueField = core.getSchema().getUniqueKeyField();
+    if (uniqueField == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+          CarrotClusteringEngine.class.getSimpleName() + " requires the schema to have a uniqueKeyField");
+    }
+    this.idFieldName = uniqueField.getName();
 
     // Make sure the requested Carrot2 clustering algorithm class is available
     String carrotAlgorithmClassName = initParams.get(CarrotParams.ALGORITHM);

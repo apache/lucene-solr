@@ -29,6 +29,9 @@ $Id$
 * SOLR-2940: Passing values for custom Carrot2 fields. The custom field
   mapping are defined using the carrot.custom parameter (Stanislaw Osinski).
 
+* SOLR-2941: NullPointerException on clustering component initialization 
+  when schema does not have a unique key field (Stanislaw Osinski).
+
 ================== Release 3.5.0 ==================
 
 (No Changes)
