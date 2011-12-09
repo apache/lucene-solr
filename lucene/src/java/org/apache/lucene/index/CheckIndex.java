@@ -683,6 +683,7 @@ public class CheckIndex {
       }
      
       DocsEnum docs = null;
+      DocsEnum docsAndFreqs = null;
       DocsAndPositionsEnum postings = null;
 
       final FieldsEnum fieldsEnum = fields.iterator();
@@ -740,7 +741,8 @@ public class CheckIndex {
           status.totFreq += docFreq;
           sumDocFreq += docFreq;
 
-          docs = termsEnum.docs(liveDocs, docs);
+          docs = termsEnum.docs(liveDocs, docs, false);
+          docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
           postings = termsEnum.docsAndPositions(liveDocs, postings);
 
           if (hasOrd) {
@@ -762,13 +764,24 @@ public class CheckIndex {
           status.termCount++;
 
           final DocsEnum docs2;
+          final DocsEnum docsAndFreqs2;
           final boolean hasPositions;
+          final boolean hasFreqs;
           if (postings != null) {
             docs2 = postings;
+            docsAndFreqs2 = postings;
             hasPositions = true;
+            hasFreqs = true;
+          } else if (docsAndFreqs != null) {
+            docs2 = docsAndFreqs;
+            docsAndFreqs2 = docsAndFreqs;
+            hasPositions = false;
+            hasFreqs = true;
           } else {
             docs2 = docs;
+            docsAndFreqs2 = null;
             hasPositions = false;
+            hasFreqs = false;
           }
 
           int lastDoc = -1;
@@ -780,9 +793,15 @@ public class CheckIndex {
               break;
             }
             visitedDocs.set(doc);
-            final int freq = docs2.freq();
-            status.totPos += freq;
-            totalTermFreq += freq;
+            int freq = -1;
+            if (hasFreqs) {
+              freq = docsAndFreqs2.freq();
+              if (freq <= 0) {
+                throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
+              }
+              status.totPos += freq;
+              totalTermFreq += freq;
+            }
             docCount++;
 
             if (doc <= lastDoc) {
@@ -793,12 +812,9 @@ public class CheckIndex {
             }
 
             lastDoc = doc;
-            if (freq <= 0) {
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
-            }
             
             int lastPos = -1;
-            if (postings != null) {
+            if (hasPositions) {
               for(int j=0;j<freq;j++) {
                 final int pos = postings.nextPosition();
                 if (pos < -1) {
@@ -820,13 +836,23 @@ public class CheckIndex {
 
           // Re-count if there are deleted docs:
           if (reader.hasDeletions()) {
-            final DocsEnum docsNoDel = termsEnum.docs(null, docs);
-            docCount = 0;
-            totalTermFreq = 0;
-            while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(docsNoDel.docID());
-              docCount++;
-              totalTermFreq += docsNoDel.freq();
+            if (hasFreqs) {
+              final DocsEnum docsNoDel = termsEnum.docs(null, docsAndFreqs, true);
+              docCount = 0;
+              totalTermFreq = 0;
+              while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                visitedDocs.set(docsNoDel.docID());
+                docCount++;
+                totalTermFreq += docsNoDel.freq();
+              }
+            } else {
+              final DocsEnum docsNoDel = termsEnum.docs(null, docs, false);
+              docCount = 0;
+              totalTermFreq = -1;
+              while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                visitedDocs.set(docsNoDel.docID());
+                docCount++;
+              }
             }
           }
 
@@ -883,7 +909,7 @@ public class CheckIndex {
           } else {
             for(int idx=0;idx<7;idx++) {
               final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-              docs = termsEnum.docs(liveDocs, docs);
+              docs = termsEnum.docs(liveDocs, docs, false);
               final int docID = docs.advance(skipDocID);
               if (docID == DocsEnum.NO_MORE_DOCS) {
                 break;
@@ -986,7 +1012,7 @@ public class CheckIndex {
                   throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
                 }
               
-                docs = termsEnum.docs(liveDocs, docs);
+                docs = termsEnum.docs(liveDocs, docs, false);
                 if (docs == null) {
                   throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
                 }
@@ -1168,6 +1194,7 @@ public class CheckIndex {
 
       // TODO: maybe we can factor out testTermIndex and reuse here?
       DocsEnum docs = null;
+      DocsEnum docsAndFreqs = null;
       DocsAndPositionsEnum postings = null;
       final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
@@ -1210,50 +1237,53 @@ public class CheckIndex {
                 if (totalTermFreq != -1 && totalTermFreq <= 0) {
                   throw new RuntimeException("totalTermFreq: " + totalTermFreq + " is out of bounds");
                 }
-                
-                DocsEnum docsEnum;
-                DocsAndPositionsEnum dp = termsEnum.docsAndPositions(null, postings);
-                if (dp == null) {
-                  DocsEnum d = termsEnum.docs(null, docs);
-                  docsEnum = docs = d;
+
+                postings = termsEnum.docsAndPositions(null, postings);
+                if (postings == null) {
+                  docsAndFreqs = termsEnum.docs(null, docsAndFreqs, true);
+                  if (docsAndFreqs == null) {
+                    docs = termsEnum.docs(null, docs, false);
+                  } else {
+                    docs = docsAndFreqs;
+                  }
                 } else {
-                  docsEnum = postings = dp;
+                  docs = docsAndFreqs = postings;
                 }
-                  
-                final int doc = docsEnum.nextDoc();
+
+                final int doc = docs.nextDoc();
                   
                 if (doc != 0) {
                   throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
                 }
-                  
-                final int tf = docsEnum.freq();
-                tfvComputedSumTotalTermFreq += tf;
+
+                if (docsAndFreqs != null) {
+                  final int tf = docsAndFreqs.freq();
+                  if (tf <= 0) {
+                    throw new RuntimeException("vector freq " + tf + " is out of bounds");
+                  }
+                  if (totalTermFreq != -1 && totalTermFreq != tf) {
+                    throw new RuntimeException("vector totalTermFreq " + totalTermFreq + " != tf " + tf);
+                  }
+                  tfvComputedSumTotalTermFreq += tf;
                 
-                if (tf <= 0) {
-                  throw new RuntimeException("vector freq " + tf + " is out of bounds");
-                }
-                
-                if (totalTermFreq != -1 && totalTermFreq != tf) {
-                  throw new RuntimeException("vector totalTermFreq " + totalTermFreq + " != tf " + tf);
-                }
-                
-                if (dp != null) {
-                  int lastPosition = -1;
-                  for (int i = 0; i < tf; i++) {
-                    int pos = dp.nextPosition();
-                    if (pos != -1 && pos < 0) {
-                      throw new RuntimeException("vector position " + pos + " is out of bounds");
-                    }
+                  if (postings != null) {
+                    int lastPosition = -1;
+                    for (int i = 0; i < tf; i++) {
+                      int pos = postings.nextPosition();
+                      if (pos != -1 && pos < 0) {
+                        throw new RuntimeException("vector position " + pos + " is out of bounds");
+                      }
                     
-                    if (pos < lastPosition) {
-                      throw new RuntimeException("vector position " + pos + " < lastPos " + lastPosition);
-                    }
+                      if (pos < lastPosition) {
+                        throw new RuntimeException("vector position " + pos + " < lastPos " + lastPosition);
+                      }
                     
-                    lastPosition = pos;
+                      lastPosition = pos;
+                    }
                   }
                 }
                   
-                if (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                   throw new RuntimeException("vector for doc " + j + " references multiple documents!");
                 }
               }

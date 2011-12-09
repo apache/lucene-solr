@@ -59,7 +59,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
     TermsEnum te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
-      reuse = te.docs(null, reuse);
+      reuse = te.docs(null, reuse, false);
       allEnums.put(reuse, true);
     }
     
@@ -101,7 +101,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
     TermsEnum te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
-      reuse = te.docs(null, reuse);
+      reuse = te.docs(null, reuse, false);
       allEnums.put(reuse, true);
     }
     

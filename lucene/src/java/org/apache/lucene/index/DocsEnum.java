@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.AttributeSource;
 
-/** Iterates through the documents, term freq and positions.
+/** Iterates through the documents and term freqs.
  *  NOTE: you must first call {@link #nextDoc} before using
  *  any of the per-doc methods. */
 public abstract class DocsEnum extends DocIdSetIterator {

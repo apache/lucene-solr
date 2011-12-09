@@ -686,7 +686,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       segmentInfos.setUserData(commitUserData);
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
-      // nocommit: Decide what to do with InfoStream here? Use default or keep NO_OUTPUT?
+      // TODO: Decide what to do with InfoStream here? Use default or keep NO_OUTPUT?
       IndexFileDeleter deleter = new IndexFileDeleter(directory,
                                                       deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
                                                       segmentInfos, InfoStream.NO_OUTPUT, null);

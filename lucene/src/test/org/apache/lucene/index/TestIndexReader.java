@@ -320,18 +320,20 @@ public class TestIndexReader extends LuceneTestCase
                                      Term term,
                                      int expected)
     throws IOException {
-        DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
-                                                     MultiFields.getLiveDocs(reader),
-                                                     term.field(),
-                                                     new BytesRef(term.text()));
-        int count = 0;
-        if (tdocs != null) {
-          while(tdocs.nextDoc()!= DocIdSetIterator.NO_MORE_DOCS) {
-            count++;
-          }
-        }
-        assertEquals(msg + ", count mismatch", expected, count);
+    DocsEnum tdocs = _TestUtil.docs(random, reader,
+                                    term.field(),
+                                    new BytesRef(term.text()),
+                                    MultiFields.getLiveDocs(reader),
+                                    null,
+                                    false);
+    int count = 0;
+    if (tdocs != null) {
+      while(tdocs.nextDoc()!= DocIdSetIterator.NO_MORE_DOCS) {
+        count++;
+      }
     }
+    assertEquals(msg + ", count mismatch", expected, count);
+  }
 
     
     public void testBinaryFields() throws IOException {

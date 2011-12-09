@@ -51,8 +51,9 @@ public abstract class TermsConsumer {
   public abstract Comparator<BytesRef> getComparator() throws IOException;
 
   /** Default merge impl */
-  private MappingMultiDocsEnum docsEnum = null;
-  private MappingMultiDocsAndPositionsEnum postingsEnum = null;
+  private MappingMultiDocsEnum docsEnum;
+  private MappingMultiDocsEnum docsAndFreqsEnum;
+  private MappingMultiDocsAndPositionsEnum postingsEnum;
 
   public void merge(MergeState mergeState, TermsEnum termsEnum) throws IOException {
 
@@ -63,7 +64,7 @@ public abstract class TermsConsumer {
     long sumDFsinceLastAbortCheck = 0;
     FixedBitSet visitedDocs = new FixedBitSet(mergeState.mergedDocCount);
 
-    if (mergeState.fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
       if (docsEnum == null) {
         docsEnum = new MappingMultiDocsEnum();
       }
@@ -74,14 +75,14 @@ public abstract class TermsConsumer {
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn);
+        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn, false);
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
           final TermStats stats = postingsConsumer.merge(mergeState, docsEnum, visitedDocs);
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
-            sumTotalTermFreq += stats.totalTermFreq;
+            sumTotalTermFreq += stats.docFreq;
             sumDFsinceLastAbortCheck += stats.docFreq;
             sumDocFreq += stats.docFreq;
             if (sumDFsinceLastAbortCheck > 60000) {
@@ -91,7 +92,35 @@ public abstract class TermsConsumer {
           }
         }
       }
+    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS) {
+      if (docsAndFreqsEnum == null) {
+        docsAndFreqsEnum = new MappingMultiDocsEnum();
+      }
+      docsAndFreqsEnum.setMergeState(mergeState);
+
+      MultiDocsEnum docsAndFreqsEnumIn = null;
+
+      while((term = termsEnum.next()) != null) {
+        // We can pass null for liveDocs, because the
+        // mapping enum will skip the non-live docs:
+        docsAndFreqsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsAndFreqsEnumIn, true);
+        assert docsAndFreqsEnumIn != null;
+        docsAndFreqsEnum.reset(docsAndFreqsEnumIn);
+        final PostingsConsumer postingsConsumer = startTerm(term);
+        final TermStats stats = postingsConsumer.merge(mergeState, docsAndFreqsEnum, visitedDocs);
+        if (stats.docFreq > 0) {
+          finishTerm(term, stats);
+          sumTotalTermFreq += stats.totalTermFreq;
+          sumDFsinceLastAbortCheck += stats.docFreq;
+          sumDocFreq += stats.docFreq;
+          if (sumDFsinceLastAbortCheck > 60000) {
+            mergeState.checkAbort.work(sumDFsinceLastAbortCheck/5.0);
+            sumDFsinceLastAbortCheck = 0;
+          }
+        }
+      }
     } else {
+      assert mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       if (postingsEnum == null) {
         postingsEnum = new MappingMultiDocsAndPositionsEnum();
       }
@@ -101,27 +130,26 @@ public abstract class TermsConsumer {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
         postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
-        if (postingsEnumIn != null) {
-          postingsEnum.reset(postingsEnumIn);
-          // set PayloadProcessor
-          if (mergeState.payloadProcessorProvider != null) {
-            for (int i = 0; i < mergeState.readers.size(); i++) {
-              if (mergeState.dirPayloadProcessor[i] != null) {
-                mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
-              }
+        assert postingsEnumIn != null;
+        postingsEnum.reset(postingsEnumIn);
+        // set PayloadProcessor
+        if (mergeState.payloadProcessorProvider != null) {
+          for (int i = 0; i < mergeState.readers.size(); i++) {
+            if (mergeState.dirPayloadProcessor[i] != null) {
+              mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
             }
           }
-          final PostingsConsumer postingsConsumer = startTerm(term);
-          final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
-          if (stats.docFreq > 0) {
-            finishTerm(term, stats);
-            sumTotalTermFreq += stats.totalTermFreq;
-            sumDFsinceLastAbortCheck += stats.docFreq;
-            sumDocFreq += stats.docFreq;
-            if (sumDFsinceLastAbortCheck > 60000) {
-              mergeState.checkAbort.work(sumDFsinceLastAbortCheck/5.0);
-              sumDFsinceLastAbortCheck = 0;
-            }
+        }
+        final PostingsConsumer postingsConsumer = startTerm(term);
+        final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
+        if (stats.docFreq > 0) {
+          finishTerm(term, stats);
+          sumTotalTermFreq += stats.totalTermFreq;
+          sumDFsinceLastAbortCheck += stats.docFreq;
+          sumDocFreq += stats.docFreq;
+          if (sumDFsinceLastAbortCheck > 60000) {
+            mergeState.checkAbort.work(sumDFsinceLastAbortCheck/5.0);
+            sumDFsinceLastAbortCheck = 0;
           }
         }
       }

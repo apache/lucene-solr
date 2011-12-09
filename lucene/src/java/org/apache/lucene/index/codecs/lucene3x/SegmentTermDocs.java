@@ -112,7 +112,10 @@ public class SegmentTermDocs {
   }
 
   public final int doc() { return doc; }
-  public final int freq() { return freq; }
+  public final int freq() {
+    assert indexOptions != IndexOptions.DOCS_ONLY;
+    return freq;
+  }
 
   protected void skippingDoc() throws IOException {
   }
@@ -125,7 +128,6 @@ public class SegmentTermDocs {
       
       if (indexOptions == IndexOptions.DOCS_ONLY) {
         doc += docCode;
-        freq = 1;
       } else {
         doc += docCode >>> 1;       // shift off low bit
         if ((docCode & 1) != 0)       // if low bit is set

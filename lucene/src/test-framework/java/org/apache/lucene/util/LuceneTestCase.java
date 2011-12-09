@@ -40,6 +40,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.codecs.appending.AppendingCodec;
 import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
@@ -148,8 +149,12 @@ public abstract class LuceneTestCase extends Assert {
   public static final int TEST_ITER_MIN = Integer.parseInt(System.getProperty("tests.iter.min", Integer.toString(TEST_ITER)));
   /** Get the random seed for tests */
   public static final String TEST_SEED = System.getProperty("tests.seed", "random");
-  /** whether or not nightly tests should run */
+  /** whether or not @nightly tests should run */
   public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
+  /** whether or not @weekly tests should run */
+  public static final boolean TEST_WEEKLY = Boolean.parseBoolean(System.getProperty("tests.weekly", "false"));
+  /** whether or not @slow tests should run */
+  public static final boolean TEST_SLOW = Boolean.parseBoolean(System.getProperty("tests.slow", "false"));
   /** the line file used by LineFileDocs */
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
@@ -282,6 +287,8 @@ public abstract class LuceneTestCase extends Assert {
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9)) {
       codec = new SimpleTextCodec();
+    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8)) {
+      codec = new AppendingCodec();
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {
@@ -1348,6 +1355,22 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Nightly {}
+
+  /**
+   * Annotation for tests that should only be run during weekly builds
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Weekly{}
+
+  /**
+   * Annotation for tests that are slow and should be run only when specifically asked to run
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Slow{}
 
   /**
    * Annotation for test classes that should only use codecs that are not memory expensive (avoid SimpleText, MemoryCodec).

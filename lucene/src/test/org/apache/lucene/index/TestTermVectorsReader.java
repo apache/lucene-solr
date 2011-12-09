@@ -24,9 +24,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -37,6 +37,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestTermVectorsReader extends LuceneTestCase {
   //Must be lexicographically sorted, will do in setup, versus trying to maintain here
@@ -231,7 +232,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         //System.out.println("Term: " + term);
         assertEquals(testTerms[i], term);
         
-        docsEnum = termsEnum.docs(null, docsEnum);
+        docsEnum = _TestUtil.docs(random, termsEnum, null, docsEnum, false);
         assertNotNull(docsEnum);
         int doc = docsEnum.docID();
         assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);

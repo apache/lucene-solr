@@ -87,8 +87,8 @@ public class TestSort extends LuceneTestCase {
 
     File sorted = new File(tempDir, "sorted");
     SortInfo sortInfo = sort.sort(unsorted, sorted);
-    System.out.println("Input size [MB]: " + unsorted.length() / (1024 * 1024));
-    System.out.println(sortInfo);
+    //System.out.println("Input size [MB]: " + unsorted.length() / (1024 * 1024));
+    //System.out.println(sortInfo);
 
     assertFilesIdentical(golden, sorted);
     return sortInfo;

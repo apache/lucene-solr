@@ -37,12 +37,18 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
@@ -519,5 +525,52 @@ public class _TestUtil {
     }
 
     return doc2;
+  }
+
+  // Returns a DocsEnum, but randomly sometimes uses a
+  // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
+  // if field/term doesn't exist:
+  public static DocsEnum docs(Random random, IndexReader r, String field, BytesRef term, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    final Terms terms = MultiFields.getTerms(r, field);
+    if (terms == null) {
+      return null;
+    }
+    final TermsEnum termsEnum = terms.iterator(null);
+    if (!termsEnum.seekExact(term, random.nextBoolean())) {
+      return null;
+    }
+    if (random.nextBoolean()) {
+      if (random.nextBoolean()) {
+        // TODO: cast re-use to D&PE if we can...?
+        final DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null);
+        if (docsAndPositions != null) {
+          return docsAndPositions;
+        }
+      }
+      final DocsEnum docsAndFreqs = termsEnum.docs(liveDocs, reuse, true);
+      if (docsAndFreqs != null) {
+        return docsAndFreqs;
+      }
+    }
+    return termsEnum.docs(liveDocs, reuse, needsFreqs);
+  }
+
+  // Returns a DocsEnum from a positioned TermsEnum, but
+  // randomly sometimes uses a DocsAndFreqsEnum, DocsAndPositionsEnum.
+  public static DocsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+    if (random.nextBoolean()) {
+      if (random.nextBoolean()) {
+        // TODO: cast re-use to D&PE if we can...?
+        final DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null);
+        if (docsAndPositions != null) {
+          return docsAndPositions;
+        }
+      }
+      final DocsEnum docsAndFreqs = termsEnum.docs(liveDocs, null, true);
+      if (docsAndFreqs != null) {
+        return docsAndFreqs;
+      }
+    }
+    return termsEnum.docs(liveDocs, null, needsFreqs);
   }
 }

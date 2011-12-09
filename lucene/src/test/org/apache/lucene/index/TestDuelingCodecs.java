@@ -270,18 +270,42 @@ public class TestDuelingCodecs extends LuceneTestCase {
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
             leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
             rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+
+        // with freqs:
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, true),
+            true);
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, true),
+            true);
+
+        // w/o freqs:
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, false),
+            false);
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, false),
+            false);
         
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs),
-            rightDocs = rightTermsEnum.docs(null, rightDocs));
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs));
-        
+        // with freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(null, leftDocs),
-            rightDocs = rightTermsEnum.docs(null, rightDocs));
+            leftDocs = leftTermsEnum.docs(null, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, true),
+            true);
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs));
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, true),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, true),
+            true);
+
+        // w/o freqs:
+        assertDocsSkipping(leftTermsEnum.docFreq(), 
+            leftDocs = leftTermsEnum.docs(null, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, false),
+            false);
+        assertDocsSkipping(leftTermsEnum.docFreq(), 
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, false),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, false),
+            false);
       }
     }
     assertNull(info, rightTermsEnum.next());
@@ -327,13 +351,19 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /**
    * checks docs + freqs, sequentially
    */
-  public void assertDocsEnum(DocsEnum leftDocs, DocsEnum rightDocs) throws Exception {
+  public void assertDocsEnum(DocsEnum leftDocs, DocsEnum rightDocs, boolean hasFreqs) throws Exception {
+    if (leftDocs == null) {
+      assertNull(rightDocs);
+      return;
+    }
     assertTrue(info, leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(info, rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(info, docid, rightDocs.nextDoc());
-      assertEquals(info, leftDocs.freq(), rightDocs.freq());
+      if (hasFreqs) {
+        assertEquals(info, leftDocs.freq(), rightDocs.freq());
+      }
     }
     assertEquals(info, DocIdSetIterator.NO_MORE_DOCS, rightDocs.nextDoc());
   }
@@ -341,7 +371,11 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /**
    * checks advancing docs
    */
-  public void assertDocsSkipping(int docFreq, DocsEnum leftDocs, DocsEnum rightDocs) throws Exception {
+  public void assertDocsSkipping(int docFreq, DocsEnum leftDocs, DocsEnum rightDocs, boolean hasFreqs) throws Exception {
+    if (leftDocs == null) {
+      assertNull(rightDocs);
+      return;
+    }
     int docid = -1;
     int averageGap = leftReader.maxDoc() / (1+docFreq);
     int skipInterval = 16;
@@ -361,7 +395,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
       if (docid == DocIdSetIterator.NO_MORE_DOCS) {
         return;
       }
-      assertEquals(info, leftDocs.freq(), rightDocs.freq());
+      if (hasFreqs) {
+        assertEquals(info, leftDocs.freq(), rightDocs.freq());
+      }
     }
   }
   

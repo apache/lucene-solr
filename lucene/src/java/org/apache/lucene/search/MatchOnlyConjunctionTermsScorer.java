@@ -1,6 +1,6 @@
-package org.apache.lucene.index.codecs.appending;
+package org.apache.lucene.search;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,27 +19,19 @@ package org.apache.lucene.index.codecs.appending;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.CodecUtil;
-
-public class AppendingTermsIndexWriter extends FixedGapTermsIndexWriter {
-  final static String CODEC_NAME = "APPENDING_TERMS_INDEX";
-  final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
-
-  public AppendingTermsIndexWriter(SegmentWriteState state) throws IOException {
-    super(state);
-  }
-  
-  @Override
-  protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);    
+/** Scorer for conjunctions, sets of terms, all of which are required. */
+final class MatchOnlyConjunctionTermScorer extends ConjunctionTermScorer {
+  MatchOnlyConjunctionTermScorer(Weight weight, float coord,
+      DocsAndFreqs[] docsAndFreqs) throws IOException {
+    super(weight, coord, docsAndFreqs);
   }
 
   @Override
-  protected void writeTrailer(long dirStart) throws IOException {
-    out.writeLong(dirStart);
+  public float score() throws IOException {
+    float sum = 0.0f;
+    for (DocsAndFreqs docs : docsAndFreqs) {
+      sum += docs.docScorer.score(lastDoc, 1);
+    }
+    return sum * coord;
   }
 }

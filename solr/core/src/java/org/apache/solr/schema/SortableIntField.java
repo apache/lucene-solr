@@ -35,9 +35,21 @@ import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
+
 /**
+ * A legacy numeric field type that encodes "Integer" values as Strings such 
+ * that Term enumeration order matches the natural numeric order.  This class 
+ * should not be used except by people with existing indexes that already 
+ * contain fields of this type.  New schemas should use {@link TrieIntField}.
  *
+ * <p>
+ * The naming convention "Sortable" comes from the fact that both the numeric 
+ * values and encoded String representations Sort identically (as opposed to 
+ * a direct String representation where values such as "11" sort before values 
+ * such as "2").
+ * </p>
  * 
+ * @see TrieIntField
  * @deprecated use {@link IntField} or {@link TrieIntField} - will be removed in 5.x
  */
 @Deprecated

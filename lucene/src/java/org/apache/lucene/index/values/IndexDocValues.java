@@ -210,18 +210,18 @@ public abstract class IndexDocValues implements Closeable {
 
     /**
      * Returns the internal array representation iff this {@link Source} uses an
-     * array as its inner representation, otherwise <code>null</code>.
+     * array as its inner representation, otherwise <code>UOE</code>.
      */
     public Object getArray() {
-      return null;
+      throw new UnsupportedOperationException("getArray is not supported");
     }
     
     /**
      * If this {@link Source} is sorted this method will return an instance of
-     * {@link SortedSource} otherwise <code>null</code>
+     * {@link SortedSource} otherwise <code>UOE</code>
      */
     public SortedSource asSortedSource() {
-      return null;
+      throw new UnsupportedOperationException("asSortedSource is not supported");
     }
   }
 

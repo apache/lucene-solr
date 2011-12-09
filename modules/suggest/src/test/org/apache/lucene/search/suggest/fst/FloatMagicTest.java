@@ -36,6 +36,7 @@ public class FloatMagicTest extends LuceneTestCase {
     for (int i = 0; i < floats.size(); i++) {
       int4[i] = FloatMagic.toSortable(floats.get(i)) & 0xffffffffL;
 
+      /*
       System.out.println(
           String.format("raw %8s sortable %8s %8s numutils %8s %s",
               Integer.toHexString(Float.floatToRawIntBits(floats.get(i))),
@@ -43,6 +44,7 @@ public class FloatMagicTest extends LuceneTestCase {
               Integer.toHexString(FloatMagic.unsignedOrderedToFloatBits(FloatMagic.toSortable(floats.get(i)))),
               Integer.toHexString(NumericUtils.floatToSortableInt(floats.get(i))),
               floats.get(i)));
+      */
     }
 
     // Sort and compare. Should be identical order.
@@ -52,10 +54,12 @@ public class FloatMagicTest extends LuceneTestCase {
       backFromFixed.add(FloatMagic.fromSortable((int) int4[i]));
     }
 
+    /*
     for (int i = 0; i < int4.length; i++) {
       System.out.println(
           floats.get(i) + " " + FloatMagic.fromSortable((int) int4[i]));
     }
+    */
     
     assertEquals(floats, backFromFixed);
   }

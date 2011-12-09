@@ -13,7 +13,6 @@
 	<classpathentry kind="src" path="lucene/contrib/memory/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/memory/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/misc/src/java"/>
-	<classpathentry kind="src" output="bin.misc" path="lucene/contrib/misc/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/misc/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/test"/>

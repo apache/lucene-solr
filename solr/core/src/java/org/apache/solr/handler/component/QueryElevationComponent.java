@@ -199,7 +199,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             elevationCache.put(null, loadElevationMap( cfg ));
           } 
         }
-        
+        //in other words, we think this is in the data dir, not the conf dir
         if (!exists){
           // preload the first data
           RefCounted<SolrIndexSearcher> searchHolder = null;
@@ -215,10 +215,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     catch( Exception ex ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error initializing QueryElevationComponent.", ex );
+          "Error initializing QueryElevationComponent.", ex, false );
     }
   }
-
+  //get the elevation map from the data dir
   Map<String, ElevationObj> getElevationMap( IndexReader reader, SolrCore core ) throws Exception
   {
     synchronized( elevationCache ) {
@@ -242,7 +242,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return map;
     }
   }
-  
+  //load up the elevation map
   private Map<String, ElevationObj> loadElevationMap( Config cfg ) throws IOException
   {
     XPath xpath = XPathFactory.newInstance().newXPath();

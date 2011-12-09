@@ -175,8 +175,8 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
-      return in.docs(liveDocs, reuse);
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
+      return in.docs(liveDocs, reuse, needsFreqs);
     }
 
     @Override

@@ -54,11 +54,6 @@
     <outputDirectory>${build-directory}/classes/java</outputDirectory>
     <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
     <sourceDirectory>src/java</sourceDirectory>
-    <resources>
-      <resource>
-        <directory>src/resources</directory>
-      </resource>
-    </resources>
     <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>

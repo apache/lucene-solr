@@ -17,20 +17,21 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
-import org.apache.lucene.search.similarities.SimilarityProvider;
-import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
-import org.apache.lucene.search.TermQuery.TermWeight;
-
 import java.io.IOException;
 import java.util.*;
+
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
+import org.apache.lucene.search.TermQuery.TermWeight;
+import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
+import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -349,6 +350,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     private Scorer createConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs)
         throws IOException {
+
+      // TODO: fix scorer API to specify "needsScores" up
+      // front, so we can do match-only if caller doesn't
+      // needs scores
+
       final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
       for (int i = 0; i < docsAndFreqs.length; i++) {
         final TermWeight weight = (TermWeight) weights.get(i);
@@ -357,10 +363,44 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           return null;
         }
         final ExactDocScorer docScorer = weight.createDocScorer(context);
-        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docs(
-            acceptDocs, null), termsEnum.docFreq(), docScorer);
+        final DocsEnum docsAndFreqsEnum = termsEnum.docs(acceptDocs, null, true);
+        if (docsAndFreqsEnum == null) {
+          // TODO: we could carry over TermState from the
+          // terms we already seek'd to, to save re-seeking
+          // to make the match-only scorer, but it's likely
+          // rare that BQ mixes terms from omitTf and
+          // non-omitTF fields:
+
+          // At least one sub cannot provide freqs; abort
+          // and fallback to full match-only scorer:
+          return createMatchOnlyConjunctionTermScorer(context, acceptDocs);
+        }
+
+        docsAndFreqs[i] = new DocsAndFreqs(docsAndFreqsEnum,
+                                           docsAndFreqsEnum,
+                                           termsEnum.docFreq(), docScorer);
       }
       return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
+          docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
+    }
+
+    private Scorer createMatchOnlyConjunctionTermScorer(AtomicReaderContext context, Bits acceptDocs)
+        throws IOException {
+
+      final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
+      for (int i = 0; i < docsAndFreqs.length; i++) {
+        final TermWeight weight = (TermWeight) weights.get(i);
+        final TermsEnum termsEnum = weight.getTermsEnum(context);
+        if (termsEnum == null) {
+          return null;
+        }
+        final ExactDocScorer docScorer = weight.createDocScorer(context);
+        docsAndFreqs[i] = new DocsAndFreqs(null,
+                                           termsEnum.docs(acceptDocs, null, false),
+                                           termsEnum.docFreq(), docScorer);
+      }
+
+      return new MatchOnlyConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
           docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
     }
     

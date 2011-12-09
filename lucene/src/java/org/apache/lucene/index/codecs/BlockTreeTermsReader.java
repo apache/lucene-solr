@@ -166,16 +166,16 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTreeTermsWriter.CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
+                          BlockTreeTermsWriter.TERMS_VERSION_START,
+                          BlockTreeTermsWriter.TERMS_VERSION_CURRENT);
     dirOffset = input.readLong();    
   }
 
   protected void readIndexHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTreeTermsWriter.CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+                          BlockTreeTermsWriter.TERMS_INDEX_VERSION_START,
+                          BlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
     indexDirOffset = input.readLong();    
   }
   
@@ -875,9 +875,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
         currentFrame.decodeMetaData();
-        return postingsReader.docs(fieldInfo, currentFrame.termState, skipDocs, reuse);
+        return postingsReader.docs(fieldInfo, currentFrame.termState, skipDocs, reuse, needsFreqs);
       }
 
       @Override
@@ -2082,7 +2082,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
         assert !eof;
         //if (DEBUG) {
         //System.out.println("BTTR.docs seg=" + segment);
@@ -2091,10 +2091,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         //if (DEBUG) {
         //System.out.println("  state=" + currentFrame.state);
         //}
-        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, currentFrame.state, skipDocs, reuse);
-
-        assert docsEnum != null;
-        return docsEnum;
+        return postingsReader.docs(fieldInfo, currentFrame.state, skipDocs, reuse, needsFreqs);
       }
 
       @Override

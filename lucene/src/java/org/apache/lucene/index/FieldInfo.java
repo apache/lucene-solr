@@ -44,6 +44,7 @@ public final class FieldInfo {
    */
   public static enum IndexOptions { 
     /** only documents are indexed: term frequencies and positions are omitted */
+    // TODO: maybe rename to just DOCS?
     DOCS_ONLY,
     /** only documents and term frequencies are indexed: positions are omitted */  
     DOCS_AND_FREQS,

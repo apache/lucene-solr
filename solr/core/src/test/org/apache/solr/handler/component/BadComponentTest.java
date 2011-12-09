@@ -1,4 +1,7 @@
-/**
+package org.apache.solr.handler.component;
+
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +18,26 @@
  * limitations under the License.
  */
 
-package org.apache.solr.schema;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.junit.Test;
 
 /**
- * A numeric field that can contain 32-bit signed two's complement integer values.
+ * SOLR-1730, tests what happens when a component fails to initialize properly
  *
- * <ul>
- *  <li>Min Value Allowed: -2147483648</li>
- *  <li>Max Value Allowed: 2147483647</li>
- * </ul>
- * 
- * @see Integer
- */
-public class TrieIntField extends TrieField {
-  {
-    type=TrieTypes.INTEGER;
+ **/
+public class BadComponentTest extends SolrTestCaseJ4{
+  @Test
+  public void testBadElevate() throws Exception {
+    try {
+      System.setProperty("elevate.file", "foo.xml");
+      initCore("solrconfig-elevate.xml", "schema12.xml");
+      assertTrue(false);
+    } catch (Throwable e) {
+      log.error("Exception", e);
+      assertTrue(true);
+    } finally {
+      System.clearProperty("elevate.file");
+    }
   }
 }

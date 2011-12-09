@@ -1651,7 +1651,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     if (!termsEnum.seekExact(termBytes, false)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null);
+    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null, false);
     int id = docs.nextDoc();
     if (id != DocIdSetIterator.NO_MORE_DOCS) {
       int next = docs.nextDoc();

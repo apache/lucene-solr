@@ -23,19 +23,16 @@ import java.util.Set;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.codecs.BlockTreeTermsReader;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsReader;
 import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.BlockTermsReader;
-import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Appending postings impl
@@ -48,72 +45,39 @@ class AppendingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
-          throws IOException {
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
     boolean success = false;
-    AppendingTermsIndexWriter indexWriter = null;
     try {
-      indexWriter = new AppendingTermsIndexWriter(state);
+      FieldsConsumer ret = new AppendingTermsWriter(state, docsWriter, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
       success = true;
+      return ret;
     } finally {
       if (!success) {
         docsWriter.close();
       }
     }
-    success = false;
-    try {
-      FieldsConsumer ret = new AppendingTermsDictWriter(indexWriter, state, docsWriter);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        try {
-          docsWriter.close();
-        } finally {
-          indexWriter.close();
-        }
-      }
-    }
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state)
-          throws IOException {
-    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
-    TermsIndexReaderBase indexReader;
-
+  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
+    
     boolean success = false;
     try {
-      indexReader = new AppendingTermsIndexReader(state.dir,
-              state.fieldInfos,
-              state.segmentInfo.name,
-              state.termsIndexDivisor,
-              BytesRef.getUTF8SortedAsUnicodeComparator(),
-              state.segmentSuffix, state.context);
-      success = true;
-    } finally {
-      if (!success) {
-        docsReader.close();
-      }
-    }
-    success = false;
-    try {
-      FieldsProducer ret = new AppendingTermsDictReader(indexReader,
-              state.dir, state.fieldInfos, state.segmentInfo.name,
-              docsReader,
-              state.context,
-              Lucene40PostingsFormat.TERMS_CACHE_SIZE,
-              state.segmentSuffix);
+      FieldsProducer ret = new AppendingTermsReader(
+                                                    state.dir,
+                                                    state.fieldInfos,
+                                                    state.segmentInfo.name,
+                                                    postings,
+                                                    state.context,
+                                                    state.segmentSuffix,
+                                                    state.termsIndexDivisor);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        try {
-          docsReader.close();
-        } finally {
-          indexReader.close();
-        }
+        postings.close();
       }
     }
   }
@@ -122,7 +86,6 @@ class AppendingPostingsFormat extends PostingsFormat {
   public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files)
           throws IOException {
     Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
   }
 }

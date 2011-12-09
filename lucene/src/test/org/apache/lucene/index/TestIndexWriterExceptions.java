@@ -500,10 +500,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
-    DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
-                                              MultiFields.getLiveDocs(reader),
-                                              t.field(),
-                                              new BytesRef(t.text()));
+    DocsEnum tdocs = _TestUtil.docs(random, reader,
+                                    t.field(),
+                                    new BytesRef(t.text()),
+                                    MultiFields.getLiveDocs(reader),
+                                    null,
+                                    false);
 
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
