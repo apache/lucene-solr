@@ -34,6 +34,7 @@ public interface CarrotParams {
   String NUM_DESCRIPTIONS = CARROT_PREFIX + "numDescriptions";
   String OUTPUT_SUB_CLUSTERS = CARROT_PREFIX + "outputSubClusters";
   String SUMMARY_FRAGSIZE = CARROT_PREFIX + "fragSize";
+  String SUMMARY_SNIPPETS = CARROT_PREFIX + "summarySnippets";
 
   String LEXICAL_RESOURCES_DIR = CARROT_PREFIX + "lexicalResourcesDir";
 

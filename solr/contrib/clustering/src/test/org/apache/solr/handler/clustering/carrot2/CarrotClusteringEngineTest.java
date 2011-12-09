@@ -88,10 +88,15 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   private List<NamedList<Object>> clusterWithHighlighting(
       boolean enableHighlighting, int fragSize) throws IOException {
-    
-    final TermQuery query = new TermQuery(new Term("snippet", "mine"));
     // Two documents don't have mining in the snippet
-    int expectedNumDocuments = numberOfDocs - 2;
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 2);
+  }
+
+  private List<NamedList<Object>> clusterWithHighlighting(
+      boolean enableHighlighting, int fragSize, int summarySnippets,
+      String term, int expectedNumDocuments) throws IOException {
+    
+    final TermQuery query = new TermQuery(new Term("snippet", term));
 
     final ModifiableSolrParams summaryParams = new ModifiableSolrParams();
     summaryParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
@@ -99,6 +104,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         Boolean.toString(enableHighlighting));
     summaryParams
         .add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(fragSize));
+    summaryParams
+        .add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(summarySnippets));
     final List<NamedList<Object>> summaryClusters = checkEngine(
         getClusteringEngine("echo"), expectedNumDocuments,
         expectedNumDocuments, query, summaryParams);
@@ -228,6 +235,23 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
     assertEquals(ImmutableList.of("solrownstopword"),
         getLabels(clusters.get(1)));
+  }
+  
+  @Test
+  public void highlightingOfMultiValueField() throws Exception {
+    final String snippetWithoutSummary = getLabels(clusterWithHighlighting(
+        false, 30, 3, "multi", 1).get(0)).get(1);
+    assertTrue("Snippet contains first value", snippetWithoutSummary.contains("First"));
+    assertTrue("Snippet contains second value", snippetWithoutSummary.contains("Second"));
+    assertTrue("Snippet contains third value", snippetWithoutSummary.contains("Third"));
+
+    final String snippetWithSummary = getLabels(clusterWithHighlighting(
+        true, 30, 3, "multi", 1).get(0)).get(1);
+    assertTrue("Snippet with summary shorter than full snippet",
+        snippetWithoutSummary.length() > snippetWithSummary.length());
+    assertTrue("Summary covers first value", snippetWithSummary.contains("First"));
+    assertTrue("Summary covers second value", snippetWithSummary.contains("Second"));
+    assertTrue("Summary covers third value", snippetWithSummary.contains("Third"));
   }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {

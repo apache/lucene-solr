@@ -17,6 +17,7 @@ package org.apache.solr.handler.clustering;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
 
@@ -34,6 +35,17 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
       assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));
       numberOfDocs++;
     }
+    
+    // Add a multi-valued snippet
+    final SolrInputDocument multiValuedSnippet = new SolrInputDocument();
+    multiValuedSnippet.addField("id", numberOfDocs++);
+    multiValuedSnippet.addField("title", "Title");
+    multiValuedSnippet.addField("url", "URL");
+    multiValuedSnippet.addField("snippet", "First value of multi field. Some more text. And still more.");
+    multiValuedSnippet.addField("snippet", "Second value of multi field. Some more text. And still more.");
+    multiValuedSnippet.addField("snippet", "Third value of multi field. Some more text. And still more.");
+    assertNull(h.validateUpdate(adoc(multiValuedSnippet)));
+
     assertNull(h.validateUpdate(commit()));
   }
 

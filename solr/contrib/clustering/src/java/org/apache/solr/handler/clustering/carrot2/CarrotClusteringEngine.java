@@ -331,6 +331,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         args.put(HighlightParams.SIMPLE_PRE, ""); //we don't care about actually highlighting the area
         args.put(HighlightParams.SIMPLE_POST, "");
         args.put(HighlightParams.FRAGSIZE, solrParams.getInt(CarrotParams.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
+        args.put(HighlightParams.SNIPPETS, solrParams.getInt(CarrotParams.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
         req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
           @Override
           public SolrIndexSearcher getSearcher() {
@@ -364,8 +365,16 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           @SuppressWarnings("unchecked")
           NamedList<String []> tmp = (NamedList<String[]>) highlights.getVal(0);
           String [] highlt = tmp.get(snippetField);
-          if (highlt != null && highlt.length == 1) {
-            snippet = highlt[0];
+          
+          // Join fragments with a period, so that Carrot2 does not create
+          // cross-fragment phrases, such phrases rarely make sense.
+          if (highlt != null && highlt.length > 0) {
+            final StringBuilder sb = new StringBuilder(highlt[0]);
+            for (int i = 1; i < highlt.length; i++) {
+              sb.append(" . ");
+              sb.append(highlt[i]);
+            }
+            snippet = sb.toString();
           }
         }
       }
