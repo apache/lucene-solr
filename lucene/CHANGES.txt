@@ -217,7 +217,7 @@ Changes in backwards compatibility policy
   instances. Furthermore, IndexReader.setNorm() was removed. If you need
   customized norm values, the recommended way to do this is by modifying
   SimilarityProvider to use an external byte[] or one of the new DocValues
-  fields (LUCENE-3108). If you want to dynamically change norms (boost
+  fields (LUCENE-3108). Alternatively, to dynamically change norms (boost
   *and* length norm) at query time, wrap your IndexReader using
   FilterIndexReader, overriding FilterIndexReader.norms(). To persist the
   changes on disk, copy the FilteredIndexReader to a new index using
