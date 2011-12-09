@@ -32,6 +32,9 @@ $Id$
 * SOLR-2941: NullPointerException on clustering component initialization 
   when schema does not have a unique key field (Stanislaw Osinski).
 
+* SOLR-2942: ClassCastException when passing non-textual fields for 
+  clustering (Stanislaw Osinski).
+
 ================== Release 3.5.0 ==================
 
 (No Changes)

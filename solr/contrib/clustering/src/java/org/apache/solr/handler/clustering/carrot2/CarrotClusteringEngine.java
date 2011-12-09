@@ -69,7 +69,6 @@ import org.carrot2.util.resource.ResourceLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -430,7 +429,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       
       // Create a Carrot2 document
       Document carrotDocument = new Document(getConcatenated(sdoc, titleFieldSpec),
-              snippet, (String)sdoc.getFieldValue(urlField));
+              snippet, ObjectUtils.toString(sdoc.getFieldValue(urlField), ""));
       
       // Store Solr id of the document, we need it to map document instances 
       // found in clusters back to identifiers.
@@ -510,7 +509,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         // Join multiple values with a period so that Carrot2 does not pick up
         // phrases that cross field value boundaries (in most cases it would
         // create useless phrases).
-        result.append((String)ite.next()).append(" . ");
+        result.append(ObjectUtils.toString(ite.next())).append(" . ");
       }
     }
     return result.toString().trim();
