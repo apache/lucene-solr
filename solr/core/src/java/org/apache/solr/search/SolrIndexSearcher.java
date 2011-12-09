@@ -131,6 +131,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if (dir instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) dir;
       indexDir = fsDirectory.getDirectory().getAbsolutePath();
+    } else {
+      log.warn("WARNING: Directory impl does not support setting indexDir: " + dir.getClass().getName());
     }
 
     this.closeReader = closeReader;

@@ -21,7 +21,7 @@
 		the default, is filesystem based. solr.RAMDirectoryFactory is memory based 
 		and not persistent. -->
 	<directoryFactory name="DirectoryFactory"
-		class="${solr.directoryFactory:solr.StandardDirectoryFactory}" />
+		class="solr.StandardDirectoryFactory" />
 
 	<updateHandler class="solr.DirectUpdateHandler2">
 
@@ -39,7 +39,9 @@
 	</requestDispatcher>
 	
 	<requestHandler name="/replication" class="solr.ReplicationHandler">
-
+      <lst name="master">
+        <str name="replicateAfter">commit</str>
+      </lst>
     </requestHandler>
     
     <query>

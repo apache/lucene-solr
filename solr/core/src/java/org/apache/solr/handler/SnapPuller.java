@@ -33,6 +33,7 @@ import static org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,16 +173,12 @@ public class SnapPuller {
 
   /**
    * Gets the latest commit version and generation from the master
-   * @param force 
    */
   @SuppressWarnings("unchecked")
-  NamedList getLatestVersion(boolean force) throws IOException {
+  NamedList getLatestVersion() throws IOException {
     PostMethod post = new PostMethod(masterUrl);
     post.addParameter(COMMAND, CMD_INDEX_VERSION);
     post.addParameter("wt", "javabin");
-    if (force) {
-      post.addParameter(ReplicationHandler.CMD_FORCE, "true");
-    }
     return getNamedListResponse(post);
   }
 
@@ -247,20 +244,20 @@ public class SnapPuller {
   @SuppressWarnings("unchecked")
   boolean successfulInstall = false;
 
-  public boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException {
+  boolean fetchLatestIndex(SolrCore core) throws IOException {
     replicationStartTime = System.currentTimeMillis();
     try {
       //get the current 'replicateable' index version in the master
       NamedList response = null;
       try {
-        response = getLatestVersion(force);
+        response = getLatestVersion();
       } catch (Exception e) {
         LOG.error("Master at: " + masterUrl + " is not available. Index fetch failed. Exception: " + e.getMessage());
         return false;
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
-      if (latestVersion == 0L && !force) {
+      if (latestVersion == 0L) {
         //there is nothing to be replicated
         return false;
       }
@@ -273,7 +270,7 @@ public class SnapPuller {
         if (searcherRefCounted != null)
           searcherRefCounted.decref();
       }
-      if (!force && commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
+      if (commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
         //master and slave are alsready in sync just return
         LOG.info("Slave in sync with master.");
         return false;
@@ -301,7 +298,7 @@ public class SnapPuller {
       boolean deleteTmpIdxDir = true;
       File indexDir = null ;
       try {
-        indexDir = new File(core.getNewIndexDir());
+        indexDir = new File(core.getIndexDir());
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
@@ -328,7 +325,7 @@ public class SnapPuller {
           }
           if (successfulInstall) {
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
-            doCommit(isFullCopyNeeded);
+            doCommit();
           }
         }
         replicationStartTime = 0;
@@ -473,12 +470,20 @@ public class SnapPuller {
     return sb;
   }
 
-  private void doCommit(boolean isFullCopyNeeded) throws IOException {
-    // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter();
-    solrCore.getSearcher(true, false, null);
-
-    replicationHandler.refreshCommitpoint(isFullCopyNeeded);
+  private void doCommit() throws IOException {
+    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
+        new ModifiableSolrParams());
+    try {
+      
+      // reboot the writer on the new index and get a new searcher
+      solrCore.getUpdateHandler().newIndexWriter();
+      // update our commit point to the right dir
+      solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+      
+      replicationHandler.refreshCommitpoint();
+    } finally {
+      req.close();
+    }
   }
 
 
@@ -540,7 +545,7 @@ public class SnapPuller {
    */
   private void downloadIndexFiles(boolean downloadCompleteIndex, File tmpIdxDir, long latestVersion) throws Exception {
     for (Map<String, Object> file : filesToDownload) {
-      File localIndexFile = new File(solrCore.getNewIndexDir(), (String) file.get(NAME));
+      File localIndexFile = new File(solrCore.getIndexDir(), (String) file.get(NAME));
       if (!localIndexFile.exists() || downloadCompleteIndex) {
         fileFetcher = new FileFetcher(tmpIdxDir, file, (String) file.get(NAME), false, latestVersion);
         currentFile = file;
@@ -560,7 +565,7 @@ public class SnapPuller {
    */
   private boolean isIndexStale() {
     for (Map<String, Object> file : filesToDownload) {
-      File localIndexFile = new File(solrCore.getNewIndexDir(), (String) file
+      File localIndexFile = new File(solrCore.getIndexDir(), (String) file
               .get(NAME));
       if (localIndexFile.exists()
               && localIndexFile.length() != (Long) file.get(SIZE)) {

@@ -119,7 +119,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
     final SolrParams solrParams = req.getParams();
-    boolean force = solrParams.getBool(CMD_FORCE, false);
     String command = solrParams.get(COMMAND);
     if (command == null) {
       rsp.add(STATUS, OK_STATUS);
@@ -130,14 +129,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
-      
-      // this is only set after commit or optimize or something - if it's not set,
-      // just use the most recent
-      if (commitPoint == null || force) {
-        commitPoint = core.getDeletionPolicy().getLatestCommit();
-        indexCommitPoint = commitPoint;
-      }
-      
       if (commitPoint != null && replicationEnabled.get()) {
         //
         // There is a race condition here.  The commit point may be changed / deleted by the time
@@ -285,22 +276,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (!snapPullLock.tryLock())
       return;
     try {
-      
+      tempSnapPuller = snapPuller;
       if (masterUrl != null) {
         NamedList<Object> nl = solrParams.toNamedList();
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
-      } else {
-        tempSnapPuller = snapPuller;
       }
-      
-      tempSnapPuller.fetchLatestIndex(core, solrParams == null ? false : solrParams.getBool(CMD_FORCE, false));
+      tempSnapPuller.fetchLatestIndex(core);
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {
-      if (snapPuller != null) {
-        tempSnapPuller = snapPuller;
-      }
+      tempSnapPuller = snapPuller;
       snapPullLock.unlock();
     }
   }
@@ -362,9 +348,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Collection<String> files = new HashSet<String>(commit.getFileNames());
       for (String fileName : files) {
         if(fileName.endsWith(".lock")) continue;
-        // use new dir in case we are replicating from a full index replication
-        // and have not yet reloaded the core
-        File file = new File(core.getNewIndexDir(), fileName);
+        File file = new File(core.getIndexDir(), fileName);
         Map<String, Object> fileMeta = getFileInfo(file);
         result.add(fileMeta);
       }
@@ -447,7 +431,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   boolean isPollingDisabled() {
-    return snapPuller == null ? false : snapPuller.isPollingDisabled();
+    return snapPuller.isPollingDisabled();
   }
 
   int getTimesReplicatedSinceStartup() {
@@ -459,7 +443,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   long getIndexSize() {
-    return FileUtils.sizeOfDirectory(new File(core.getNewIndexDir()));
+    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
   }
 
   /**
@@ -774,9 +758,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
 
-  void refreshCommitpoint(boolean force) {
+  void refreshCommitpoint() {
     IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    if(force || replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
+    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
       indexCommitPoint = commitPoint;
     }
   }
@@ -1033,9 +1017,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           file = new File(core.getResourceLoader().getConfigDir(), cfileName);
         } else {
           //else read from the indexdirectory
-          // use new dir in case we are replicating from a full index replication
-          // and have not yet reloaded the core
-          file = new File(core.getNewIndexDir(), fileName);
+          file = new File(core.getIndexDir(), fileName);
         }
         if (file.exists() && file.canRead()) {
           inputStream = new FileInputStream(file);
@@ -1097,8 +1079,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String COMMAND = "command";
 
-  public static final String CMD_FORCE = "force";
-  
   public static final String CMD_DETAILS = "details";
 
   public static final String CMD_BACKUP = "backup";

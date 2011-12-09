@@ -135,7 +135,6 @@ public class RecoveryStrat {
       
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
-      solrParams.set(ReplicationHandler.CMD_FORCE, true);
       
       replicationHandler.doFetch(solrParams);
       
