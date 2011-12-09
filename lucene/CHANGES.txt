@@ -207,6 +207,18 @@ Changes in backwards compatibility policy
 * LUCENE-3533: Removed SpanFilters, they created large lists of objects and 
   did not scale. (Robert Muir)
   
+* LUCENE-3606: IndexReader was made read-only. It is no longer possible to
+  delete or undelete documents using IndexReader; you have to use IndexWriter
+  now. As deleting by internal Lucene docID is no longer possible, this
+  requires adding a unique identifier field to your index. Deleting/relying
+  upon Lucene docIDs is not recommended anyway, because they can change.
+  Consequently commit() was removed and IndexReader.open(), openIfChanged(),
+  and clone() no longer take readOnly booleans or IndexDeletionPolicy
+  instances. Furthermore, IndexReader.setNorm() was removed. If you need
+  customized norm values, the recommended way to do this is by modifying
+  SimilarityProvider to use an external byte[] or one of the new DocValues
+  fields (LUCENE-3108).  (Uwe Schindler, Robert Muir)
+  
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -649,6 +661,13 @@ Changes in backwards compatibility policy
   FieldCacheTermsFilter.FieldCacheTermsFilterDocIdSet was removed and
   replaced by another internal implementation.  (Uwe Schindler)
 
+* LUCENE-3620: FilterIndexReader now overrides all methods of IndexReader that 
+  it should (note that some are still not overridden, as they should be 
+  overridden by sub-classes only). In the process, some methods of IndexReader 
+  were made final. This is not expected to affect many apps, since these methods
+  already delegate to abstract methods, which you had to already override 
+  anyway. (Shai Erera)
+  
 Security fixes
 
 * LUCENE-3588: Try harder to prevent SIGSEGV on cloned MMapIndexInputs:
@@ -668,6 +687,13 @@ Bug fixes
 * LUCENE-3595: Fixed FieldCacheRangeFilter and FieldCacheTermsFilter
   to correctly respect deletions on reopened SegmentReaders. Factored out
   FieldCacheDocIdSet to be a top-level class.  (Uwe Schindler, Simon Willnauer)
+
+* LUCENE-3627: Don't let an errant 0-byte segments_N file corrupt the index.
+  (Ken McCracken via Mike McCandless)
+
+Documentation
+
+* LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
 
 Build
 

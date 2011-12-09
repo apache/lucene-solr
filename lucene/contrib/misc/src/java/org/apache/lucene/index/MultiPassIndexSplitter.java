@@ -49,7 +49,7 @@ public class MultiPassIndexSplitter {
   
   /**
    * Split source index into multiple parts.
-   * @param input source index, can be read-only, can have deletions, can have
+   * @param in source index, can have deletions, can have
    * multiple segments (or multiple readers).
    * @param outputs list of directories where the output parts will be stored.
    * @param seq if true, then the source index will be split into equal
@@ -57,18 +57,18 @@ public class MultiPassIndexSplitter {
    * assigned in a deterministic round-robin fashion to one of the output splits.
    * @throws IOException
    */
-  public void split(Version version, IndexReader input, Directory[] outputs, boolean seq) throws IOException {
+  public void split(Version version, IndexReader in, Directory[] outputs, boolean seq) throws IOException {
     if (outputs == null || outputs.length < 2) {
       throw new IOException("Invalid number of outputs.");
     }
-    if (input == null || input.numDocs() < 2) {
+    if (in == null || in.numDocs() < 2) {
       throw new IOException("Not enough documents for splitting");
     }
     int numParts = outputs.length;
     // wrap a potentially read-only input
     // this way we don't have to preserve original deletions because neither
     // deleteDocument(int) or undeleteAll() is applied to the wrapped input index.
-    input = new FakeDeleteIndexReader(input);
+    FakeDeleteIndexReader input = new FakeDeleteIndexReader(in);
     int maxDoc = input.maxDoc();
     int partLen = maxDoc / numParts;
     for (int i = 0; i < numParts; i++) {
@@ -143,7 +143,7 @@ public class MultiPassIndexSplitter {
           System.err.println("Invalid input index - skipping: " + file);
           continue;
         }
-        indexes.add(IndexReader.open(dir, true));
+        indexes.add(IndexReader.open(dir));
       }
     }
     if (outDir == null) {
@@ -183,7 +183,7 @@ public class MultiPassIndexSplitter {
 
     public FakeDeleteIndexReader(IndexReader in) {
       super(new SlowMultiReaderWrapper(in));
-      doUndeleteAll(); // initialize main bitset
+      undeleteAll(); // initialize main bitset
     }
 
     @Override
@@ -191,12 +191,7 @@ public class MultiPassIndexSplitter {
       return liveDocs.cardinality();
     }
 
-    /**
-     * Just removes our overlaid deletions - does not undelete the original
-     * deletions.
-     */
-    @Override
-    protected void doUndeleteAll()  {
+    void undeleteAll()  {
       final int maxDoc = in.maxDoc();
       liveDocs = new FixedBitSet(in.maxDoc());
       if (in.hasDeletions()) {
@@ -212,8 +207,7 @@ public class MultiPassIndexSplitter {
       }
     }
 
-    @Override
-    protected void doDelete(int n) {
+    void deleteDocument(int n) {
       liveDocs.clear(n);
     }
 

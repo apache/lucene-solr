@@ -41,8 +41,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   
  /**
   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-  * Directory locking for delete, undeleteAll, and setNorm operations is
-  * left to the subreaders. </p>
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
   */
@@ -52,8 +50,6 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   /**
    * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-   * Directory locking for delete, undeleteAll, and setNorm operations is
-   * left to the subreaders. </p>
    * @param closeSubReaders indicates whether the subreaders should be closed
    * when this MultiReader is closed
    * @param subReaders set of (sub)readers
@@ -84,11 +80,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     starts[subReaders.length] = maxDoc;
     readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     return ReaderUtil.buildReaderContext(this);
-  }
-
-  @Override
-  public long getUniqueTermCount() throws IOException {
-    throw new UnsupportedOperationException("");
   }
 
   @Override
@@ -243,23 +234,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     return hasDeletions;
   }
 
-  @Override
-  protected void doDelete(int n) throws CorruptIndexException, IOException {
-    numDocs = -1;                             // invalidate cache
-    int i = readerIndex(n);                   // find segment num
-    subReaders[i].deleteDocument(n - starts[i]);      // dispatch to segment reader
-    hasDeletions = true;
-  }
-
-  @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].undeleteAll();
-
-    hasDeletions = false;
-    numDocs = -1;                                 // invalidate cache
-  }
-
   private int readerIndex(int n) {    // find reader for doc n:
     return DirectoryReader.readerIndex(n, this.starts, this.subReaders.length);
   }
@@ -277,22 +251,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   public synchronized byte[] norms(String field) throws IOException {
     throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
   }
-
-  @Override
-  protected void doSetNorm(int n, String field, byte value)
-    throws CorruptIndexException, IOException {
-    int i = readerIndex(n);                           // find segment num
-    subReaders[i].setNorm(n-starts[i], field, value); // dispatch
-  }
-
-  @Override
-  public int docFreq(Term t) throws IOException {
-    ensureOpen();
-    int total = 0;          // sum freqs in segments
-    for (int i = 0; i < subReaders.length; i++)
-      total += subReaders[i].docFreq(t);
-    return total;
-  }
   
   @Override
   public int docFreq(String field, BytesRef t) throws IOException {
@@ -302,12 +260,6 @@ public class MultiReader extends IndexReader implements Cloneable {
       total += subReaders[i].docFreq(field, t);
     }
     return total;
-  }
-  
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].commit(commitUserData);
   }
 
   @Override

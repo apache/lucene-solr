@@ -62,7 +62,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
    * keeps a lock on the snapshots directory).
    */
   public static Map<String, String> readSnapshotsInfo(Directory dir) throws IOException {
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     Map<String, String> snapshots = new HashMap<String, String>();
     try {
       int numDocs = r.numDocs();

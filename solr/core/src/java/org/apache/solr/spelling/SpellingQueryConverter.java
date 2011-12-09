@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -111,12 +112,13 @@ public class SpellingQueryConverter extends QueryConverter  {
           TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
           PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
           PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+          OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
           stream.reset();
           while (stream.incrementToken()) {
             Token token = new Token();
             token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-            token.setStartOffset(matcher.start());
-            token.setEndOffset(matcher.end());
+            token.setStartOffset(matcher.start() + offsetAtt.startOffset());
+            token.setEndOffset(matcher.start() + offsetAtt.endOffset());
             token.setFlags(flagsAtt.getFlags());
             token.setType(typeAtt.type());
             token.setPayload(payloadAtt.getPayload());

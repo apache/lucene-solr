@@ -36,20 +36,19 @@ public class TestCheckIndex extends LuceneTestCase {
   public void testDeletedDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    doc.add(newField("field", "aaa", customType));
     for(int i=0;i<19;i++) {
+      Document doc = new Document();
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectorOffsets(true);
+      doc.add(newField("field", "aaa"+i, customType));
       writer.addDocument(doc);
     }
     writer.forceMerge(1);
+    writer.commit();
+    writer.deleteDocuments(new Term("field","aaa5"));
     writer.close();
-    IndexReader reader = IndexReader.open(dir, false);
-    reader.deleteDocument(5);
-    reader.close();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
@@ -73,7 +72,7 @@ public class TestCheckIndex extends LuceneTestCase {
 
     assertNotNull(seg.termIndexStatus);
     assertNull(seg.termIndexStatus.error);
-    assertEquals(1, seg.termIndexStatus.termCount);
+    assertEquals(19, seg.termIndexStatus.termCount);
     assertEquals(19, seg.termIndexStatus.totFreq);
     assertEquals(18, seg.termIndexStatus.totPos);
 

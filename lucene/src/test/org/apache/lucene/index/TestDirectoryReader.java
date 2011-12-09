@@ -64,7 +64,7 @@ public class TestDirectoryReader extends LuceneTestCase {
 
   protected IndexReader openReader() throws IOException {
     IndexReader reader;
-    reader = IndexReader.open(dir, false);
+    reader = IndexReader.open(dir);
     assertTrue(reader instanceof DirectoryReader);
 
     assertTrue(dir != null);
@@ -74,12 +74,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     return reader;
   }
 
-  public void test() throws Exception {
-    doTestDocument();
-    doTestUndeleteAll();
-  }    
-
-  public void doTestDocument() throws IOException {
+  public void testDocument() throws IOException {
     sis.read(dir);
     IndexReader reader = openReader();
     assertTrue(reader != null);
@@ -94,50 +89,13 @@ public class TestDirectoryReader extends LuceneTestCase {
     TestSegmentReader.checkNorms(reader);
     reader.close();
   }
-
-  public void doTestUndeleteAll() throws IOException {
-    sis.read(dir);
-    IndexReader reader = openReader();
-    assertTrue(reader != null);
-    assertEquals( 2, reader.numDocs() );
-    reader.deleteDocument(0);
-    assertEquals( 1, reader.numDocs() );
-    reader.undeleteAll();
-    assertEquals( 2, reader.numDocs() );
-
-    // Ensure undeleteAll survives commit/close/reopen:
-    reader.commit();
-    reader.close();
-
-    if (reader instanceof MultiReader)
-      // MultiReader does not "own" the directory so it does
-      // not write the changes to sis on commit:
-      sis.commit(dir, sis.codecFormat());
-
-    sis.read(dir);
-    reader = openReader();
-    assertEquals( 2, reader.numDocs() );
-
-    reader.deleteDocument(0);
-    assertEquals( 1, reader.numDocs() );
-    reader.commit();
-    reader.close();
-    if (reader instanceof MultiReader)
-      // MultiReader does not "own" the directory so it does
-      // not write the changes to sis on commit:
-      sis.commit(dir, sis.codecFormat());
-    sis.read(dir);
-    reader = openReader();
-    assertEquals( 1, reader.numDocs() );
-    reader.close();
-  }
         
   public void testIsCurrent() throws IOException {
     Directory ramDir1=newDirectory();
     addDoc(random, ramDir1, "test foo", true);
     Directory ramDir2=newDirectory();
     addDoc(random, ramDir2, "test blah", true);
-    IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
+    IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2)};
     MultiReader mr = new MultiReader(readers);
     assertTrue(mr.isCurrent());   // just opened, must be current
     addDoc(random, ramDir1, "more text", false);
@@ -163,8 +121,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     Directory ramDir3=newDirectory();
     addDoc(random, ramDir3, "test wow", true);
 
-    IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
-    IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false), IndexReader.open(ramDir3, false)};
+    IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir3)};
+    IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2), IndexReader.open(ramDir3)};
     MultiReader mr2 = new MultiReader(readers1);
     MultiReader mr3 = new MultiReader(readers2);
 

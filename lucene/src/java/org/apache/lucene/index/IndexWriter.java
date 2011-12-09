@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
@@ -618,7 +619,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo(), "key=" + ent.getKey());
-          sr.doCommit(null);
+          sr.doCommit();
 
           // Must checkpoint w/ deleter, because this
           // segment reader will have created new _X_N.del
@@ -650,7 +651,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final SegmentReader sr = readerMap.get(new SegmentCacheKey(info, IOContext.Context.READ));
         if (sr != null && sr.hasChanges) {
           assert infoIsLive(info);
-          sr.doCommit(null);
+          sr.doCommit();
           // Must checkpoint w/ deleter, because this
           // segment reader will have created new _X_N.del
           // file.
@@ -697,7 +698,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // TODO: we may want to avoid doing this while
         // synchronized
         // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(false, info.dir, info, doOpenStores, context.context == IOContext.Context.MERGE ? -1 : config.getReaderTermsIndexDivisor(), context);
+        sr = SegmentReader.getRW(info, doOpenStores, context.context == IOContext.Context.MERGE ? -1 : config.getReaderTermsIndexDivisor(), context);
         sr.readerFinishedListeners = readerFinishedListeners;
 
         if (info.dir == directory) {
@@ -3980,7 +3981,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       for (String file : files) {
         assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
                   : ".del file is not allowed in .cfs: " + file;
-        assert !IndexFileNames.isSeparateNormsFile(file) 
+        assert !isSeparateNormsFile(file) 
                   : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
@@ -3990,5 +3991,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     return files;
+  }
+  
+  
+  /**
+   * Returns true if the given filename ends with the separate norms file
+   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
+   * @deprecated only for asserting
+   */
+  @Deprecated
+  private static boolean isSeparateNormsFile(String filename) {
+    int idx = filename.lastIndexOf('.');
+    if (idx == -1) return false;
+    String ext = filename.substring(idx + 1);
+    return Pattern.matches("s[0-9]+", ext);
   }
 }

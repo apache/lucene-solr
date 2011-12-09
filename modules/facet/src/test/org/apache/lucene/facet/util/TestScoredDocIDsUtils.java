@@ -231,14 +231,11 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     for (int docNum = 0; docNum < nDocs; docNum++) {
       writer.addDocument(docFactory.getDoc(docNum));
     }
+    // Delete documents marked for deletion
+    writer.deleteDocuments(new Term(DocumentFactory.field, DocumentFactory.delTxt));
     writer.close();
 
-    // Delete documents marked for deletion
-    IndexReader reader = IndexReader.open(dir, false);
-    reader.deleteDocuments(new Term(DocumentFactory.field, DocumentFactory.delTxt));
-    reader.close();
-
     // Open a fresh read-only reader with the deletions in place
-    return IndexReader.open(dir, true);
+    return IndexReader.open(dir);
   }
 }

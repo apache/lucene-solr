@@ -58,8 +58,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         iw2.close();
 
-        this.ir1 = IndexReader.open(rd1, true);
-        this.ir2 = IndexReader.open(rd2, true);
+        this.ir1 = IndexReader.open(rd1);
+        this.ir2 = IndexReader.open(rd2);
     }
 
     @Override

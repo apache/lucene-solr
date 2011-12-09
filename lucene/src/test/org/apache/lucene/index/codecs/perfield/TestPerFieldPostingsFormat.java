@@ -190,7 +190,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
-    IndexReader reader = IndexReader.open(dir, null, true, 1);
+    IndexReader reader = IndexReader.open(dir, 1);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);

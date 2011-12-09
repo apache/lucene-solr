@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.regex.Pattern;
-
 import org.apache.lucene.index.codecs.Codec;  // for javadocs
 
 // TODO: put all files under codec and remove all the static extensions here
@@ -49,9 +47,6 @@ public final class IndexFileNames {
   
   /** Name of the generation reference file name */
   public static final String SEGMENTS_GEN = "segments." +  GEN_EXTENSION;
-  
-  /** Extension of norms file */
-  public static final String NORMS_EXTENSION = "nrm";
 
   /** Extension of compound file */
   public static final String COMPOUND_FILE_EXTENSION = "cfs";
@@ -65,9 +60,6 @@ public final class IndexFileNames {
   /** Extension of deletes */
   public static final String DELETES_EXTENSION = "del";
 
-  /** Extension of separate norms */
-  public static final String SEPARATE_NORMS_EXTENSION = "s";
-
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with one exception, namely the
@@ -80,12 +72,7 @@ public final class IndexFileNames {
     COMPOUND_FILE_ENTRIES_EXTENSION,
     DELETES_EXTENSION,
     GEN_EXTENSION,
-    NORMS_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
-  };
-
-  public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
-    NORMS_EXTENSION
   };
 
   /**
@@ -188,17 +175,5 @@ public final class IndexFileNames {
       filename = filename.substring(0, idx);
     }
     return filename;
-  }
-  
-  /**
-   * Returns true if the given filename ends with the separate norms file
-   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
-   */
-  public static boolean isSeparateNormsFile(String filename) {
-    int idx = filename.lastIndexOf('.');
-    if (idx == -1) return false;
-    String ext = filename.substring(idx + 1);
-    return Pattern.matches(SEPARATE_NORMS_EXTENSION + "[0-9]+", ext);
-  }
-  
+  }  
 }

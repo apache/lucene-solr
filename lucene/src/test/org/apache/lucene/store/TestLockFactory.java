@@ -345,7 +345,7 @@ public class TestLockFactory extends LuceneTestCase {
             Query query = new TermQuery(new Term("content", "aaa"));
             for(int i=0;i<this.numIteration;i++) {
                 try{
-                    reader = IndexReader.open(dir, false);
+                    reader = IndexReader.open(dir);
                     searcher = new IndexSearcher(reader);
                 } catch (Exception e) {
                     hitException = true;

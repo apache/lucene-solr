@@ -25,7 +25,7 @@ import org.apache.lucene.util.ArrayUtil;
  *  just look at the length for the field (docState.length)
  *  and record the norm. */
 
-final class NormsWriterPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsWriterPerField> {
+final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
 
   final FieldInfo fieldInfo;
   final DocumentsWriterPerThread.DocState docState;
@@ -45,7 +45,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     upto = 0;
   }
 
-  public NormsWriterPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
+  public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     docState = docInverterPerField.docState;
     fieldState = docInverterPerField.fieldState;
@@ -57,7 +57,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     upto = 0;
   }
 
-  public int compareTo(NormsWriterPerField other) {
+  public int compareTo(NormsConsumerPerField other) {
     return fieldInfo.name.compareTo(other.fieldInfo.name);
   }
   

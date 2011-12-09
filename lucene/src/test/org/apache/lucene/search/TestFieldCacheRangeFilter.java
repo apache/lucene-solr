@@ -544,7 +544,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     writer.deleteDocuments(new Term("id","0"));
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     IndexSearcher search = newSearcher(reader);
     assertTrue(reader.hasDeletions());
 

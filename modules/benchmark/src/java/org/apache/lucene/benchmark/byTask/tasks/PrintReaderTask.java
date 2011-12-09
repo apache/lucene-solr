@@ -44,11 +44,9 @@ public class PrintReaderTask extends PerfTask {
     Directory dir = getRunData().getDirectory();
     IndexReader r = null;
     if (userData == null) 
-      r = IndexReader.open(dir, true);
+      r = IndexReader.open(dir);
     else
-      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, userData),
-                           null,
-                           true);
+      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, userData));
     System.out.println("--> numDocs:"+r.numDocs()+" dels:"+r.numDeletedDocs());
     r.close();
     return 1;

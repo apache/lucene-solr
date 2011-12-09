@@ -84,7 +84,7 @@ public abstract class ReadTask extends PerfTask {
     if (searcher == null) {
       // open our own reader
       Directory dir = getRunData().getDirectory();
-      reader = IndexReader.open(dir, true);
+      reader = IndexReader.open(dir);
       searcher = new IndexSearcher(reader);
       closeSearcher = true;
     } else {

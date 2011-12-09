@@ -417,7 +417,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   public boolean hasNorms() {
     for (FieldInfo fi : this) {
-      if (!fi.omitNorms) {
+      if (fi.isIndexed && !fi.omitNorms) {
         return true;
       }
     }

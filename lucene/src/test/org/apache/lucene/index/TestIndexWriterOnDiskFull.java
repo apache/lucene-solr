@@ -113,7 +113,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             assertNoUnreferencedFiles(dir, "after disk full during addDocument");
             
             // Make sure reader can open the index:
-            IndexReader.open(dir, true).close();
+            IndexReader.open(dir).close();
           }
             
           dir.close();
@@ -189,7 +189,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     
     // Make sure starting index seems to be working properly:
     Term searchTerm = new Term("content", "aaa");        
-    IndexReader reader = IndexReader.open(startDir, true);
+    IndexReader reader = IndexReader.open(startDir);
     assertEquals("first docFreq", 57, reader.docFreq(searchTerm));
     
     IndexSearcher searcher = newSearcher(reader);
@@ -306,7 +306,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             } else if (1 == method) {
               IndexReader readers[] = new IndexReader[dirs.length];
               for(int i=0;i<dirs.length;i++) {
-                readers[i] = IndexReader.open(dirs[i], true);
+                readers[i] = IndexReader.open(dirs[i]);
               }
               try {
                 writer.addIndexes(readers);
@@ -355,7 +355,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // failed, we see either all docs or no docs added
           // (transactional semantics):
           try {
-            reader = IndexReader.open(dir, true);
+            reader = IndexReader.open(dir);
           } catch (IOException e) {
             e.printStackTrace(System.out);
             fail(testName + ": exception when creating IndexReader: " + e);

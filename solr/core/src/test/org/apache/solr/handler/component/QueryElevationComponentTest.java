@@ -30,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.QueryElevationParams;
+import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
@@ -45,7 +46,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-elevate.xml","schema12.xml");
+    //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
+    createTempDir();
+    File parent = new File(TEST_HOME(), "conf");
+    File elevateFile = new File(parent, "elevate.xml");
+    File elevateDataFile = new File(dataDir, "elevate-data.xml");
+    FileUtils.copyFile(elevateFile, elevateDataFile);
+    initCore("solrconfig-elevate.xml", "schema12.xml");
   }
 
   @Before

@@ -22,20 +22,17 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 /**
  * Open an index reader.
  * <br>Other side effects: index reader object in perfRunData is set.
- * <br> Optional params readOnly,commitUserData eg. OpenReader(false,commit1)
+ * <br> Optional params commitUserData eg. OpenReader(false,commit1)
  */
 public class OpenReaderTask extends PerfTask {
   public static final String USER_DATA = "userData";
-  private boolean readOnly = true;
   private String commitUserData = null;
 
   public OpenReaderTask(PerfRunData runData) {
@@ -45,22 +42,11 @@ public class OpenReaderTask extends PerfTask {
   @Override
   public int doLogic() throws IOException {
     Directory dir = getRunData().getDirectory();
-    Config config = getRunData().getConfig();
     IndexReader r = null;
-    final IndexDeletionPolicy deletionPolicy;
-    if (readOnly) {
-      deletionPolicy = null;
-    } else {
-      deletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
-    }
     if (commitUserData != null) {
-      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData),
-                           deletionPolicy,
-                           readOnly); 
+      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
     } else {
-      r = IndexReader.open(dir,
-                           deletionPolicy,
-                           readOnly); 
+      r = IndexReader.open(dir); 
     }
     getRunData().setIndexReader(r);
     // We transfer reference to the run data
@@ -74,10 +60,7 @@ public class OpenReaderTask extends PerfTask {
     if (params != null) {
       String[] split = params.split(",");
       if (split.length > 0) {
-        readOnly = Boolean.valueOf(split[0]).booleanValue();
-      }
-      if (split.length > 1) {
-        commitUserData = split[1];
+        commitUserData = split[0];
       }
     }
   }

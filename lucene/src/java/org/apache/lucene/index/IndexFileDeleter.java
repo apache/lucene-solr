@@ -179,7 +179,7 @@ final class IndexFileDeleter {
             }
             sis = null;
           } catch (IOException e) {
-            if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen) {
+            if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen && directory.fileLength(fileName) > 0) {
               throw e;
             } else {
               // Most likely we are opening an index that

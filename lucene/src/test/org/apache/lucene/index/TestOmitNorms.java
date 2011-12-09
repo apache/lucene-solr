@@ -66,7 +66,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitNorms);
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitNorms);
@@ -120,7 +120,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitNorms);
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitNorms);
@@ -168,7 +168,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitNorms field bit should not be set.", !fi.fieldInfo("f1").omitNorms);
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitNorms);
@@ -180,7 +180,8 @@ public class TestOmitNorms extends LuceneTestCase {
   private void assertNoNrm(Directory dir) throws Throwable {
     final String[] files = dir.listAll();
     for (int i = 0; i < files.length; i++) {
-      assertFalse(files[i].endsWith(".nrm"));
+      // TODO: this relies upon filenames
+      assertFalse(files[i].endsWith(".nrm") || files[i].endsWith(".len"));
     }
   }
 

@@ -111,7 +111,7 @@ public class TestPayloads extends LuceneTestCase {
         // flush
         writer.close();
 
-      SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
+      SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
         FieldInfos fi = reader.fieldInfos();
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
@@ -138,7 +138,7 @@ public class TestPayloads extends LuceneTestCase {
         // flush
         writer.close();
 
-      reader = getOnlySegmentReader(IndexReader.open(ram, false));
+      reader = getOnlySegmentReader(IndexReader.open(ram));
         fi = reader.fieldInfos();
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
@@ -213,7 +213,7 @@ public class TestPayloads extends LuceneTestCase {
          * Verify the index
          * first we test if all payloads are stored correctly
          */        
-        IndexReader reader = IndexReader.open(dir, true);
+        IndexReader reader = IndexReader.open(dir);
 
         byte[] verifyPayloadData = new byte[payloadDataLength];
         offset = 0;
@@ -326,7 +326,7 @@ public class TestPayloads extends LuceneTestCase {
         // flush
         writer.close();
         
-        reader = IndexReader.open(dir, true);
+        reader = IndexReader.open(dir);
         tp = MultiFields.getTermPositionsEnum(reader,
                                               MultiFields.getLiveDocs(reader),
                                               fieldName,
@@ -526,7 +526,7 @@ public class TestPayloads extends LuceneTestCase {
           ingesters[i].join();
         }
         writer.close();
-        IndexReader reader = IndexReader.open(dir, true);
+        IndexReader reader = IndexReader.open(dir);
         TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
         Bits liveDocs = MultiFields.getLiveDocs(reader);
         DocsAndPositionsEnum tp = null;

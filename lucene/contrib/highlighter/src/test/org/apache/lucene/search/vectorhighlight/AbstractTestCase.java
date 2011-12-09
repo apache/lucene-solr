@@ -364,7 +364,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     writer.addDocument( doc );
     writer.close();
     if (reader != null) reader.close();
-    reader = IndexReader.open( dir, true );
+    reader = IndexReader.open(dir);
   }
   
   // make 1 doc with multi valued & not analyzed field
@@ -383,7 +383,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     writer.addDocument( doc );
     writer.close();
     if (reader != null) reader.close();
-    reader = IndexReader.open( dir, true );
+    reader = IndexReader.open(dir);
   }
   
   protected void makeIndexShortMV() throws Exception {
