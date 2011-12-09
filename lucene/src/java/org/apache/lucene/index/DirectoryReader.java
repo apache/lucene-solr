@@ -59,7 +59,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private final boolean applyAllDeletes;
 
-  public static IndexReader open(final Directory directory, final IndexCommit commit,
+  static IndexReader open(final Directory directory, final IndexCommit commit,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override

@@ -295,11 +295,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(directory, null, DEFAULT_TERMS_INDEX_DIVISOR);
   }
   
-  /** Returns a IndexReader reading the index in the given
-   *  Directory
+  /** Expert: Returns a IndexReader reading the index in the given
+   *  Directory with the given termInfosIndexDivisor.
    * @param directory the index directory
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
@@ -315,7 +315,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(directory, null, termInfosIndexDivisor);
+    return DirectoryReader.open(directory, null, termInfosIndexDivisor);
   }
   
   /**
@@ -348,13 +348,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), commit, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(commit.getDirectory(), commit, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
 
   /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit}.
-   * @param directory the index directory
+   *  {@link IndexCommit} and termInfosIndexDivisor.
    * @param commit the commit point to open
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
@@ -369,8 +368,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static IndexReader open(final Directory directory, final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, commit, termInfosIndexDivisor);
+  public static IndexReader open(final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(commit.getDirectory(), commit, termInfosIndexDivisor);
   }
 
   /**
