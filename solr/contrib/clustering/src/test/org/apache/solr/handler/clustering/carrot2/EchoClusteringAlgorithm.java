@@ -15,6 +15,7 @@ package org.apache.solr.handler.clustering.carrot2;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.Collections;
 import java.util.List;
 
 import org.carrot2.core.Cluster;
@@ -48,6 +49,12 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
   @Attribute(key = AttributeNames.CLUSTERS)
   private List<Cluster> clusters;
 
+  @Input
+  @Processing
+  @Attribute(key = "custom-fields")
+  private String customFields = "";
+
+  
   @Override
   public void process() throws ProcessingException {
     clusters = Lists.newArrayListWithCapacity(documents.size());
@@ -57,6 +64,12 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
       cluster.addPhrases(document.getTitle(), document.getSummary());
       if (document.getLanguage() != null) {
         cluster.addPhrases(document.getLanguage().name());
+      }
+      for (String field : customFields.split(",")) {
+        Object value = document.getField(field);
+        if (value != null) {
+          cluster.addPhrases(value.toString());
+        }
       }
       cluster.addDocuments(document);
       clusters.add(cluster);

@@ -26,6 +26,9 @@ $Id$
   language field be passed in the carrot.lang parameter, the carrot.lcmap
   parameter enables mapping of language codes to ISO 639 (Stanislaw Osinski).
 
+* SOLR-2940: Passing values for custom Carrot2 fields. The custom field
+  mapping are defined using the carrot.custom parameter (Stanislaw Osinski).
+
 ================== Release 3.5.0 ==================
 
 (No Changes)

@@ -90,7 +90,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   private List<NamedList<Object>> clusterWithHighlighting(
       boolean enableHighlighting, int fragSize) throws IOException {
     // Some documents don't have mining in the snippet
-    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 6);
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 7);
   }
 
   private List<NamedList<Object>> clusterWithHighlighting(
@@ -331,6 +331,25 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
             "one_supported_language_of_many")), params).get(0));
     assertEquals(3, labels.size());
     assertEquals("Correct Carrot2 language", LanguageCode.POLISH.name(), labels.get(2));
+  }
+  
+  @Test
+  public void passingOfCustomFields() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.CUSTOM_FIELD_NAME, "intfield_i:intfield");
+    params.add(CarrotParams.CUSTOM_FIELD_NAME, "floatfield_f:floatfield");
+    params.add(CarrotParams.CUSTOM_FIELD_NAME, "heading:multi");
+    
+    // Let the echo mock clustering algorithm know which custom field to echo
+    params.add("custom-fields", "intfield,floatfield,multi");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "custom_fields")), params).get(0));
+    assertEquals(5, labels.size());
+    assertEquals("Integer field", "10", labels.get(2));
+    assertEquals("Float field", "10.5", labels.get(3));
+    assertEquals("List field", "[first, second]", labels.get(4));
   }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {

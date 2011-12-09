@@ -73,6 +73,16 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     docWithOneSupprtedLanguageOfMany.addField("lang", "de");
     assertNull(h.validateUpdate(adoc(docWithOneSupprtedLanguageOfMany)));
     
+    // Add a document with more languages, one supported by Carrot2
+    final SolrInputDocument docWithCustomFields = new SolrInputDocument();
+    docWithCustomFields.addField("id", numberOfDocs++);
+    docWithCustomFields.addField("url", "custom_fields");
+    docWithCustomFields.addField("intfield_i", 10);
+    docWithCustomFields.addField("floatfield_f", 10.5);
+    docWithCustomFields.addField("heading", "first");
+    docWithCustomFields.addField("heading", "second");
+    assertNull(h.validateUpdate(adoc(docWithCustomFields)));
+    
     assertNull(h.validateUpdate(commit()));
   }
 

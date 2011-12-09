@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
@@ -324,6 +325,22 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     String titleFieldSpec = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
     String snippetFieldSpec = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleFieldSpec);
     String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME, null);
+    
+    // Maps Solr field names to Carrot2 custom field names
+    Map<String, String> customFields = null;
+    String [] customFieldsSpec = solrParams.getParams(CarrotParams.CUSTOM_FIELD_NAME);
+    if (customFieldsSpec != null) {
+      customFields = Maps.newHashMap();
+      for (String customFieldSpec : customFieldsSpec) {
+        String [] split = customFieldSpec.split(":"); 
+        if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
+          customFields.put(split[0], split[1]);
+        } else {
+          log.warn("Unsupported format for " + CarrotParams.CUSTOM_FIELD_NAME
+              + ": '" + customFieldSpec + "'. Skipping this field definition.");
+        }
+      }
+    }
 
     // Parse language code map string into a map
     Map<String, String> languageCodeMap = Maps.newHashMap();
@@ -447,6 +464,14 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           }
         }
       }
+      
+      // Add custom fields
+      if (customFields != null) {
+        for (Entry<String, String> entry : customFields.entrySet()) {
+          carrotDocument.setField(entry.getValue(), sdoc.getFieldValue(entry.getKey()));
+        }
+      }
+      
       result.add(carrotDocument);
     }
 

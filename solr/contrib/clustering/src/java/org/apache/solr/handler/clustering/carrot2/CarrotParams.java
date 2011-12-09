@@ -32,6 +32,7 @@ public interface CarrotParams {
   String URL_FIELD_NAME = CARROT_PREFIX + "url";
   String SNIPPET_FIELD_NAME = CARROT_PREFIX + "snippet";
   String LANGUAGE_FIELD_NAME = CARROT_PREFIX + "lang";
+  String CUSTOM_FIELD_NAME = CARROT_PREFIX + "custom";
   
   String PRODUCE_SUMMARY = CARROT_PREFIX + "produceSummary";
   String SUMMARY_FRAGSIZE = CARROT_PREFIX + "fragSize";
