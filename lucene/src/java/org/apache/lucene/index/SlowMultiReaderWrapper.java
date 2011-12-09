@@ -26,7 +26,6 @@ import org.apache.lucene.util.ReaderUtil; // javadoc
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.MultiReader; // javadoc
-import org.apache.lucene.index.codecs.PerDocValues;
 
 /**
  * This class forces a composite reader (eg a {@link

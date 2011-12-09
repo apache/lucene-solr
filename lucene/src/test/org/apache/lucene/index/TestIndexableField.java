@@ -28,8 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -162,7 +161,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public ValueType docValuesType() {
+    public DocValues.Type docValuesType() {
       return null;
     }
 

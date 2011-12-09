@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,15 +19,17 @@ package org.apache.lucene.index.values;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.DocValues.Type;
+
 /**
- * Type promoter that promotes {@link IndexDocValues} during merge based on
- * their {@link ValueType} and {@link #getValueSize()}
+ * Type promoter that promotes {@link DocValues} during merge based on
+ * their {@link Type} and {@link #getValueSize()}
  * 
  * @lucene.internal
  */
-public class TypePromoter {
+class TypePromoter {
 
-  private final static Map<Integer, ValueType> FLAGS_MAP = new HashMap<Integer, ValueType>();
+  private final static Map<Integer, Type> FLAGS_MAP = new HashMap<Integer, Type>();
   private static final TypePromoter IDENTITY_PROMOTER = new IdentityTypePromoter();
   public static final int VAR_TYPE_VALUE_SIZE = -1;
 
@@ -49,7 +51,7 @@ public class TypePromoter {
   private static final int IS_32_BIT = 1 << 10 | 1 << 11;
   private static final int IS_64_BIT = 1 << 11;
 
-  private final ValueType type;
+  private final Type type;
   private final int flags;
   private final int valueSize;
 
@@ -65,7 +67,7 @@ public class TypePromoter {
   }
 
   static {
-    for (ValueType type : ValueType.values()) {
+    for (Type type : Type.values()) {
       TypePromoter create = create(type, VAR_TYPE_VALUE_SIZE);
       FLAGS_MAP.put(create.flags, type);
     }
@@ -75,13 +77,13 @@ public class TypePromoter {
    * Creates a new {@link TypePromoter}
    * 
    * @param type
-   *          the {@link ValueType} this promoter represents
+   *          the {@link Type} this promoter represents
    * @param flags
    *          the promoters flags
    * @param valueSize
    *          the value size if {@link #IS_FIXED} or <code>-1</code> otherwise.
    */
-  protected TypePromoter(ValueType type, int flags, int valueSize) {
+  protected TypePromoter(Type type, int flags, int valueSize) {
     this.type = type;
     this.flags = flags;
     this.valueSize = valueSize;
@@ -117,11 +119,11 @@ public class TypePromoter {
   }
 
   /**
-   * Returns the {@link ValueType} of this {@link TypePromoter}
+   * Returns the {@link Type} of this {@link TypePromoter}
    * 
-   * @return the {@link ValueType} of this {@link TypePromoter}
+   * @return the {@link Type} of this {@link TypePromoter}
    */
-  public ValueType type() {
+  public Type type() {
     return type;
   }
 
@@ -134,13 +136,13 @@ public class TypePromoter {
    * Creates a new {@link TypePromoter} for the given type and size per value.
    * 
    * @param type
-   *          the {@link ValueType} to create the promoter for
+   *          the {@link Type} to create the promoter for
    * @param valueSize
    *          the size per value in bytes or <code>-1</code> iff the types have
    *          variable length.
    * @return a new {@link TypePromoter}
    */
-  public static TypePromoter create(ValueType type, int valueSize) {
+  public static TypePromoter create(Type type, int valueSize) {
     if (type == null) {
       return null;
     }

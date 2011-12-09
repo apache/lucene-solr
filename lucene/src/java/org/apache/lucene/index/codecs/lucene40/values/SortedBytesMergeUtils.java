@@ -22,12 +22,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.MergeState.IndexReaderAndLiveDocs;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.SortedSource;
-import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -43,11 +43,11 @@ final class SortedBytesMergeUtils {
     // no instance
   }
 
-  static MergeContext init(ValueType type, IndexDocValues[] docValues,
+  static MergeContext init(Type type, DocValues[] docValues,
       Comparator<BytesRef> comp, MergeState mergeState) {
     int size = -1;
-    if (type == ValueType.BYTES_FIXED_SORTED) {
-      for (IndexDocValues indexDocValues : docValues) {
+    if (type == Type.BYTES_FIXED_SORTED) {
+      for (DocValues indexDocValues : docValues) {
         if (indexDocValues != null) {
           size = indexDocValues.getValueSize();
           break;
@@ -62,13 +62,13 @@ final class SortedBytesMergeUtils {
     private final Comparator<BytesRef> comp;
     private final BytesRef missingValue = new BytesRef();
     final int sizePerValues; // -1 if var length
-    final ValueType type;
+    final Type type;
     final int[] docToEntry;
     long[] offsets; // if non-null #mergeRecords collects byte offsets here
 
     public MergeContext(Comparator<BytesRef> comp, MergeState mergeState,
-        int size, ValueType type) {
-      assert type == ValueType.BYTES_FIXED_SORTED || type == ValueType.BYTES_VAR_SORTED;
+        int size, Type type) {
+      assert type == Type.BYTES_FIXED_SORTED || type == Type.BYTES_VAR_SORTED;
       this.comp = comp;
       this.sizePerValues = size;
       this.type = type;
@@ -81,7 +81,7 @@ final class SortedBytesMergeUtils {
   }
 
   static List<SortedSourceSlice> buildSlices(MergeState mergeState,
-      IndexDocValues[] docValues, MergeContext ctx) throws IOException {
+      DocValues[] docValues, MergeContext ctx) throws IOException {
     final List<SortedSourceSlice> slices = new ArrayList<SortedSourceSlice>();
     for (int i = 0; i < docValues.length; i++) {
       final SortedSourceSlice nextSlice;

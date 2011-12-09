@@ -21,12 +21,12 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesWriterBase;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -180,7 +180,7 @@ class FixedStraightBytesImpl {
       }
     }
     
-    protected boolean tryBulkMerge(IndexDocValues docValues) {
+    protected boolean tryBulkMerge(DocValues docValues) {
       return docValues instanceof FixedStraightReader;
     }
     
@@ -256,10 +256,10 @@ class FixedStraightBytesImpl {
     protected final int maxDoc;
     
     FixedStraightReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      this(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, ValueType.BYTES_FIXED_STRAIGHT);
+      this(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, Type.BYTES_FIXED_STRAIGHT);
     }
 
-    protected FixedStraightReader(Directory dir, String id, String codec, int version, int maxDoc, IOContext context, ValueType type) throws IOException {
+    protected FixedStraightReader(Directory dir, String id, String codec, int version, int maxDoc, IOContext context, Type type) throws IOException {
       super(dir, id, codec, version, false, context, type);
       size = datIn.readInt();
       this.maxDoc = maxDoc;
@@ -292,7 +292,7 @@ class FixedStraightBytesImpl {
     private final byte[] data;
 
     public SingleByteSource(IndexInput datIn, int maxDoc) throws IOException {
-      super(ValueType.BYTES_FIXED_STRAIGHT);
+      super(Type.BYTES_FIXED_STRAIGHT);
       try {
         data = new byte[maxDoc];
         datIn.readBytes(data, 0, data.length, false);
@@ -324,7 +324,7 @@ class FixedStraightBytesImpl {
   private final static class FixedStraightSource extends BytesSourceBase {
     private final int size;
 
-    public FixedStraightSource(IndexInput datIn, int size, int maxDoc, ValueType type)
+    public FixedStraightSource(IndexInput datIn, int size, int maxDoc, Type type)
         throws IOException {
       super(datIn, null, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc,
           type);
@@ -340,7 +340,7 @@ class FixedStraightBytesImpl {
   public final static class DirectFixedStraightSource extends DirectSource {
     private final int size;
 
-    DirectFixedStraightSource(IndexInput input, int size, ValueType type) {
+    DirectFixedStraightSource(IndexInput input, int size, Type type) {
       super(input, type);
       this.size = size;
     }

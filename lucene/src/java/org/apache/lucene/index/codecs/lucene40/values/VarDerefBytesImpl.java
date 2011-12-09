@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -93,7 +93,7 @@ class VarDerefBytesImpl {
   public static class VarDerefReader extends BytesReaderBase {
     private final long totalBytes;
     VarDerefReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, ValueType.BYTES_VAR_DEREF);
+      super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_VAR_DEREF);
       totalBytes = idxIn.readLong();
     }
 
@@ -115,7 +115,7 @@ class VarDerefBytesImpl {
     public VarDerefSource(IndexInput datIn, IndexInput idxIn, long totalBytes)
         throws IOException {
       super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), totalBytes,
-          ValueType.BYTES_VAR_DEREF);
+          Type.BYTES_VAR_DEREF);
       addresses = PackedInts.getReader(idxIn);
     }
 
@@ -130,7 +130,7 @@ class VarDerefBytesImpl {
   final static class DirectVarDerefSource extends DirectSource {
     private final PackedInts.Reader index;
 
-    DirectVarDerefSource(IndexInput data, IndexInput index, ValueType type)
+    DirectVarDerefSource(IndexInput data, IndexInput index, Type type)
         throws IOException {
       super(data, type);
       this.index = PackedInts.getDirectReader(index);

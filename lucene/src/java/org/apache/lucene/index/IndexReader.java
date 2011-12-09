@@ -28,8 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
@@ -1148,7 +1146,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
-  public final IndexDocValues docValues(String field) throws IOException {
+  public final DocValues docValues(String field) throws IOException {
     ensureOpen();
     final PerDocValues perDoc = perDocValues();
     if (perDoc == null) {

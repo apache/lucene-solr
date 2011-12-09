@@ -30,8 +30,7 @@ import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
@@ -311,12 +310,12 @@ final class DocFieldProcessor extends DocConsumer {
   final private Map<String, DocValuesConsumerAndDocID> docValues = new HashMap<String, DocValuesConsumerAndDocID>();
   final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
 
-  DocValuesConsumer docValuesConsumer(ValueType valueType, DocState docState, FieldInfo fieldInfo) 
+  DocValuesConsumer docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
       throws IOException {
     DocValuesConsumerAndDocID docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
     if (docValuesConsumerAndDocID != null) {
       if (docState.docID == docValuesConsumerAndDocID.docID) {
-        throw new IllegalArgumentException("IndexDocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
+        throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
       }
       assert docValuesConsumerAndDocID.docID < docState.docID;
       docValuesConsumerAndDocID.docID = docState.docID;

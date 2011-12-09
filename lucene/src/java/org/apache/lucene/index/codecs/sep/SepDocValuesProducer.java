@@ -22,9 +22,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.DocValuesReaderBase;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -32,18 +32,18 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public class SepDocValuesProducer extends DocValuesReaderBase {
-  private final TreeMap<String, IndexDocValues> docValues;
+  private final TreeMap<String, DocValues> docValues;
 
   /**
    * Creates a new {@link SepDocValuesProducer} instance and loads all
-   * {@link IndexDocValues} instances for this segment and codec.
+   * {@link DocValues} instances for this segment and codec.
    */
   public SepDocValuesProducer(SegmentReadState state) throws IOException {
     docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, state.dir, state.context);
   }
   
   @Override
-  protected Map<String,IndexDocValues> docValues() {
+  protected Map<String,DocValues> docValues() {
     return docValues;
   }
   

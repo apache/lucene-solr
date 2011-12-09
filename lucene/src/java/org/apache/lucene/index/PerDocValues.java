@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +18,8 @@ package org.apache.lucene.index.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PostingsFormat;
 
 /**
  * Abstract API that provides access to one or more per-document storage
@@ -34,15 +35,15 @@ import org.apache.lucene.index.values.IndexDocValues;
  */
 public abstract class PerDocValues implements Closeable {
   /**
-   * Returns {@link IndexDocValues} for the current field.
+   * Returns {@link DocValues} for the current field.
    * 
    * @param field
    *          the field name
-   * @return the {@link IndexDocValues} for this field or <code>null</code> if not
+   * @return the {@link DocValues} for this field or <code>null</code> if not
    *         applicable.
    * @throws IOException
    */
-  public abstract IndexDocValues docValues(String field) throws IOException;
+  public abstract DocValues docValues(String field) throws IOException;
 
   public static final PerDocValues[] EMPTY_ARRAY = new PerDocValues[0];
 }

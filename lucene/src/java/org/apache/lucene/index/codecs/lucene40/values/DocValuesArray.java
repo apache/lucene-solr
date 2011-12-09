@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -31,30 +31,30 @@ import org.apache.lucene.util.RamUsageEstimator;
 /**
  * @lucene.experimental
  */
-abstract class IndexDocValuesArray extends Source {
+abstract class DocValuesArray extends Source {
 
-  static final Map<ValueType, IndexDocValuesArray> TEMPLATES;
+  static final Map<Type, DocValuesArray> TEMPLATES;
 
   static {
-    EnumMap<ValueType, IndexDocValuesArray> templates = new EnumMap<ValueType, IndexDocValuesArray>(
-        ValueType.class);
-    templates.put(ValueType.FIXED_INTS_16, new ShortValues());
-    templates.put(ValueType.FIXED_INTS_32, new IntValues());
-    templates.put(ValueType.FIXED_INTS_64, new LongValues());
-    templates.put(ValueType.FIXED_INTS_8, new ByteValues());
-    templates.put(ValueType.FLOAT_32, new FloatValues());
-    templates.put(ValueType.FLOAT_64, new DoubleValues());
+    EnumMap<Type, DocValuesArray> templates = new EnumMap<Type, DocValuesArray>(
+        Type.class);
+    templates.put(Type.FIXED_INTS_16, new ShortValues());
+    templates.put(Type.FIXED_INTS_32, new IntValues());
+    templates.put(Type.FIXED_INTS_64, new LongValues());
+    templates.put(Type.FIXED_INTS_8, new ByteValues());
+    templates.put(Type.FLOAT_32, new FloatValues());
+    templates.put(Type.FLOAT_64, new DoubleValues());
     TEMPLATES = Collections.unmodifiableMap(templates);
   }
 
   protected final int bytesPerValue;
 
-  IndexDocValuesArray(int bytesPerValue, ValueType type) {
+  DocValuesArray(int bytesPerValue, Type type) {
     super(type);
     this.bytesPerValue = bytesPerValue;
   }
 
-  public abstract IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+  public abstract DocValuesArray newFromInput(IndexInput input, int numDocs)
       throws IOException;
 
   @Override
@@ -70,16 +70,16 @@ abstract class IndexDocValuesArray extends Source {
     BytesRefUtils.copyLong(bytesRef, Double.doubleToRawLongBits(value));
   }
 
-  final static class ByteValues extends IndexDocValuesArray {
+  final static class ByteValues extends DocValuesArray {
     private final byte[] values;
 
     ByteValues() {
-      super(1, ValueType.FIXED_INTS_8);
+      super(1, Type.FIXED_INTS_8);
       values = new byte[0];
     }
 
     private ByteValues(IndexInput input, int numDocs) throws IOException {
-      super(1, ValueType.FIXED_INTS_8);
+      super(1, Type.FIXED_INTS_8);
       values = new byte[numDocs];
       input.readBytes(values, 0, values.length, false);
     }
@@ -96,7 +96,7 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     @Override
-    public IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+    public DocValuesArray newFromInput(IndexInput input, int numDocs)
         throws IOException {
       return new ByteValues(input, numDocs);
     }
@@ -107,16 +107,16 @@ abstract class IndexDocValuesArray extends Source {
 
   };
 
-  final static class ShortValues extends IndexDocValuesArray {
+  final static class ShortValues extends DocValuesArray {
     private final short[] values;
 
     ShortValues() {
-      super(RamUsageEstimator.NUM_BYTES_SHORT, ValueType.FIXED_INTS_16);
+      super(RamUsageEstimator.NUM_BYTES_SHORT, Type.FIXED_INTS_16);
       values = new short[0];
     }
 
     private ShortValues(IndexInput input, int numDocs) throws IOException {
-      super(RamUsageEstimator.NUM_BYTES_SHORT, ValueType.FIXED_INTS_16);
+      super(RamUsageEstimator.NUM_BYTES_SHORT, Type.FIXED_INTS_16);
       values = new short[numDocs];
       for (int i = 0; i < values.length; i++) {
         values[i] = input.readShort();
@@ -135,7 +135,7 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     @Override
-    public IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+    public DocValuesArray newFromInput(IndexInput input, int numDocs)
         throws IOException {
       return new ShortValues(input, numDocs);
     }
@@ -146,16 +146,16 @@ abstract class IndexDocValuesArray extends Source {
 
   };
 
-  final static class IntValues extends IndexDocValuesArray {
+  final static class IntValues extends DocValuesArray {
     private final int[] values;
 
     IntValues() {
-      super(RamUsageEstimator.NUM_BYTES_INT, ValueType.FIXED_INTS_32);
+      super(RamUsageEstimator.NUM_BYTES_INT, Type.FIXED_INTS_32);
       values = new int[0];
     }
 
     private IntValues(IndexInput input, int numDocs) throws IOException {
-      super(RamUsageEstimator.NUM_BYTES_INT, ValueType.FIXED_INTS_32);
+      super(RamUsageEstimator.NUM_BYTES_INT, Type.FIXED_INTS_32);
       values = new int[numDocs];
       for (int i = 0; i < values.length; i++) {
         values[i] = input.readInt();
@@ -174,7 +174,7 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     @Override
-    public IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+    public DocValuesArray newFromInput(IndexInput input, int numDocs)
         throws IOException {
       return new IntValues(input, numDocs);
     }
@@ -185,16 +185,16 @@ abstract class IndexDocValuesArray extends Source {
 
   };
 
-  final static class LongValues extends IndexDocValuesArray {
+  final static class LongValues extends DocValuesArray {
     private final long[] values;
 
     LongValues() {
-      super(RamUsageEstimator.NUM_BYTES_LONG, ValueType.FIXED_INTS_64);
+      super(RamUsageEstimator.NUM_BYTES_LONG, Type.FIXED_INTS_64);
       values = new long[0];
     }
 
     private LongValues(IndexInput input, int numDocs) throws IOException {
-      super(RamUsageEstimator.NUM_BYTES_LONG, ValueType.FIXED_INTS_64);
+      super(RamUsageEstimator.NUM_BYTES_LONG, Type.FIXED_INTS_64);
       values = new long[numDocs];
       for (int i = 0; i < values.length; i++) {
         values[i] = input.readLong();
@@ -213,23 +213,23 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     @Override
-    public IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+    public DocValuesArray newFromInput(IndexInput input, int numDocs)
         throws IOException {
       return new LongValues(input, numDocs);
     }
 
   };
 
-  final static class FloatValues extends IndexDocValuesArray {
+  final static class FloatValues extends DocValuesArray {
     private final float[] values;
 
     FloatValues() {
-      super(RamUsageEstimator.NUM_BYTES_FLOAT, ValueType.FLOAT_32);
+      super(RamUsageEstimator.NUM_BYTES_FLOAT, Type.FLOAT_32);
       values = new float[0];
     }
 
     private FloatValues(IndexInput input, int numDocs) throws IOException {
-      super(RamUsageEstimator.NUM_BYTES_FLOAT, ValueType.FLOAT_32);
+      super(RamUsageEstimator.NUM_BYTES_FLOAT, Type.FLOAT_32);
       values = new float[numDocs];
       /*
        * we always read BIG_ENDIAN here since the writer serialized plain bytes
@@ -258,22 +258,22 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     @Override
-    public IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+    public DocValuesArray newFromInput(IndexInput input, int numDocs)
         throws IOException {
       return new FloatValues(input, numDocs);
     }
   };
 
-  final static class DoubleValues extends IndexDocValuesArray {
+  final static class DoubleValues extends DocValuesArray {
     private final double[] values;
 
     DoubleValues() {
-      super(RamUsageEstimator.NUM_BYTES_DOUBLE, ValueType.FLOAT_64);
+      super(RamUsageEstimator.NUM_BYTES_DOUBLE, Type.FLOAT_64);
       values = new double[0];
     }
 
     private DoubleValues(IndexInput input, int numDocs) throws IOException {
-      super(RamUsageEstimator.NUM_BYTES_DOUBLE, ValueType.FLOAT_64);
+      super(RamUsageEstimator.NUM_BYTES_DOUBLE, Type.FLOAT_64);
       values = new double[numDocs];
       /*
        * we always read BIG_ENDIAN here since the writer serialized plain bytes
@@ -296,7 +296,7 @@ abstract class IndexDocValuesArray extends Source {
     }
 
     @Override
-    public IndexDocValuesArray newFromInput(IndexInput input, int numDocs)
+    public DocValuesArray newFromInput(IndexInput input, int numDocs)
         throws IOException {
       return new DoubleValues(input, numDocs);
     }

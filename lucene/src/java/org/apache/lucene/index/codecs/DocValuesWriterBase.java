@@ -23,7 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.codecs.lucene40.values.Writer;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
@@ -33,6 +33,7 @@ import org.apache.lucene.util.Counter;
  * Abstract base class for PerDocConsumer implementations
  * @lucene.experimental
  */
+//TODO: this needs to go under lucene40 codec (its specific to its impl)
 public abstract class DocValuesWriterBase extends PerDocConsumer {
   protected final String segmentName;
   protected final String segmentSuffix;
@@ -53,7 +54,7 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   }
 
   @Override
-  public DocValuesConsumer addValuesField(ValueType valueType, FieldInfo field) throws IOException {
+  public DocValuesConsumer addValuesField(DocValues.Type valueType, FieldInfo field) throws IOException {
     return Writer.create(valueType,
         docValuesId(segmentName, field.number), 
         getDirectory(), getComparator(), bytesUsed, context);

@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.SortedSource;
-import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -150,13 +150,13 @@ public final class Bytes {
   }
 
   /**
-   * Creates a new {@link IndexDocValues} instance that provides either memory
+   * Creates a new {@link DocValues} instance that provides either memory
    * resident or iterative access to a per-document stored <tt>byte[]</tt>
-   * value. The returned {@link IndexDocValues} instance will be initialized without
+   * value. The returned {@link DocValues} instance will be initialized without
    * consuming a significant amount of memory.
    * 
    * @param dir
-   *          the directory to load the {@link IndexDocValues} from.
+   *          the directory to load the {@link DocValues} from.
    * @param id
    *          the file ID in the {@link Directory} to load the values from.
    * @param mode
@@ -169,11 +169,11 @@ public final class Bytes {
    * @param sortComparator {@link BytesRef} comparator used by sorted variants. 
    *        If <code>null</code> {@link BytesRef#getUTF8SortedAsUnicodeComparator()}
    *        is used instead
-   * @return an initialized {@link IndexDocValues} instance.
+   * @return an initialized {@link DocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  public static IndexDocValues getValues(Directory dir, String id, Mode mode,
+  public static DocValues getValues(Directory dir, String id, Mode mode,
       boolean fixedSize, int maxDoc, Comparator<BytesRef> sortComparator, IOContext context) throws IOException {
     if (sortComparator == null) {
       sortComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
@@ -185,7 +185,7 @@ public final class Bytes {
       } else if (mode == Mode.DEREF) {
         return new FixedDerefBytesImpl.FixedDerefReader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Reader(dir, id, maxDoc, context, ValueType.BYTES_FIXED_SORTED, sortComparator);
+        return new FixedSortedBytesImpl.Reader(dir, id, maxDoc, context, Type.BYTES_FIXED_SORTED, sortComparator);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
@@ -193,7 +193,7 @@ public final class Bytes {
       } else if (mode == Mode.DEREF) {
         return new VarDerefBytesImpl.VarDerefReader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Reader(dir, id, maxDoc,context, ValueType.BYTES_VAR_SORTED, sortComparator);
+        return new VarSortedBytesImpl.Reader(dir, id, maxDoc,context, Type.BYTES_VAR_SORTED, sortComparator);
       }
     }
 
@@ -211,7 +211,7 @@ public final class Bytes {
     
 
     protected BytesSourceBase(IndexInput datIn, IndexInput idxIn,
-        PagedBytes pagedBytes, long bytesToRead, ValueType type) throws IOException {
+        PagedBytes pagedBytes, long bytesToRead, Type type) throws IOException {
       super(type);
       assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "
           + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
@@ -314,15 +314,15 @@ public final class Bytes {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static abstract class BytesReaderBase extends IndexDocValues {
+  static abstract class BytesReaderBase extends DocValues {
     protected final IndexInput idxIn;
     protected final IndexInput datIn;
     protected final int version;
     protected final String id;
-    protected final ValueType type;
+    protected final Type type;
 
     protected BytesReaderBase(Directory dir, String id, String codecName,
-        int maxVersion, boolean doIndex, IOContext context, ValueType type) throws IOException {
+        int maxVersion, boolean doIndex, IOContext context, Type type) throws IOException {
       IndexInput dataIn = null;
       IndexInput indexIn = null;
       boolean success = false;
@@ -375,7 +375,7 @@ public final class Bytes {
     }
 
     @Override
-    public ValueType type() {
+    public Type type() {
       return type;
     }
     
@@ -559,12 +559,12 @@ public final class Bytes {
     protected final PagedBytes.Reader data;
 
     protected BytesSortedSourceBase(IndexInput datIn, IndexInput idxIn,
-        Comparator<BytesRef> comp, long bytesToRead, ValueType type, boolean hasOffsets) throws IOException {
+        Comparator<BytesRef> comp, long bytesToRead, Type type, boolean hasOffsets) throws IOException {
       this(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), bytesToRead, type, hasOffsets);
     }
     
     protected BytesSortedSourceBase(IndexInput datIn, IndexInput idxIn,
-        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead, ValueType type, boolean hasOffsets)
+        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead, Type type, boolean hasOffsets)
         throws IOException {
       super(type, comp);
       assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "

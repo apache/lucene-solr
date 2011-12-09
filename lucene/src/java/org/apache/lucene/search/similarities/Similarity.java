@@ -20,7 +20,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.IndexDocValuesField; // javadoc
+import org.apache.lucene.document.DocValuesField; // javadoc
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader; // javadoc
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -71,11 +71,11 @@ import org.apache.lucene.util.TermContext;
  * <p>
  * Because index-time boost is handled entirely at the application level anyway,
  * an application can alternatively store the index-time boost separately using an 
- * {@link IndexDocValuesField}, and access this at query-time with 
+ * {@link DocValuesField}, and access this at query-time with 
  * {@link IndexReader#docValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
- * via IndexDocValues), is an inefficient way to boost the scores of different fields if the
+ * via DocValues), is an inefficient way to boost the scores of different fields if the
  * boost will be the same for every document, instead the Similarity can simply take a constant
  * boost parameter <i>C</i>, and the SimilarityProvider can return different instances with
  * different boosts depending upon field name.

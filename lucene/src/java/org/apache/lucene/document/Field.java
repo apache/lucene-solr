@@ -25,10 +25,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.PerDocFieldValues;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -302,7 +302,7 @@ public class Field implements IndexableField {
   }
   
   @Override
-  public ValueType docValuesType() {
+  public DocValues.Type docValuesType() {
     return null;
   }
 

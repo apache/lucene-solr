@@ -25,7 +25,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 
 /** Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -299,7 +299,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {
+                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
     return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
                                storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
   }
@@ -322,7 +322,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
       boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {
+      boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
@@ -351,7 +351,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValuesType) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValuesType) {
     // don't check modifiable here since we use that to initially build up FIs
     if (globalFieldNumbers != null) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);

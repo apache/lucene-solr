@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,13 +18,15 @@ package org.apache.lucene.index.values;
  */
 import java.util.Comparator;
 
-import org.apache.lucene.document.IndexDocValuesField;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
+import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
+import org.apache.lucene.index.codecs.DocValuesConsumer; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Per document and field values consumed by {@link DocValuesConsumer}. 
- * @see IndexDocValuesField
+ * @see DocValuesField
  * 
  * @lucene.experimental
  */
@@ -46,19 +48,19 @@ public interface PerDocFieldValues {
   public void setFloat(double value);
 
   /**
-   * Sets the given {@link BytesRef} value and the field's {@link ValueType}. The
+   * Sets the given {@link BytesRef} value and the field's {@link Type}. The
    * comparator for this field is set to <code>null</code>. If a
    * <code>null</code> comparator is set the default comparator for the given
-   * {@link ValueType} is used.
+   * {@link Type} is used.
    */
-  public void setBytes(BytesRef value, ValueType type);
+  public void setBytes(BytesRef value, DocValues.Type type);
 
   /**
-   * Sets the given {@link BytesRef} value, the field's {@link ValueType} and the
+   * Sets the given {@link BytesRef} value, the field's {@link Type} and the
    * field's comparator. If the {@link Comparator} is set to <code>null</code>
-   * the default for the given {@link ValueType} is used instead.
+   * the default for the given {@link Type} is used instead.
    */
-  public void setBytes(BytesRef value, ValueType type, Comparator<BytesRef> comp);
+  public void setBytes(BytesRef value, DocValues.Type type, Comparator<BytesRef> comp);
 
   /**
    * Returns the set {@link BytesRef} or <code>null</code> if not set.
@@ -82,17 +84,17 @@ public interface PerDocFieldValues {
 
   /**
    * Sets the {@link BytesRef} comparator for this field. If the field has a
-   * numeric {@link ValueType} the comparator will be ignored.
+   * numeric {@link Type} the comparator will be ignored.
    */
   public void setBytesComparator(Comparator<BytesRef> comp);
 
   /**
-   * Sets the {@link ValueType}
+   * Sets the {@link Type}
    */
-  public void setDocValuesType(ValueType type);
+  public void setDocValuesType(DocValues.Type type);
 
   /**
-  * Returns the {@link ValueType}
+  * Returns the {@link Type}
   */
-  public ValueType docValuesType();
+  public DocValues.Type docValuesType();
 }

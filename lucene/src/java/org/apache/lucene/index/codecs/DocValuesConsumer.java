@@ -18,10 +18,10 @@ package org.apache.lucene.index.codecs;
  */
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.PerDocFieldValues;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -70,11 +70,11 @@ public abstract class DocValuesConsumer {
    *          the state to merge
    * @param docValues docValues array containing one instance per reader (
    *          {@link org.apache.lucene.index.MergeState#readers}) or <code>null</code> if the reader has
-   *          no {@link IndexDocValues} instance.
+   *          no {@link DocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  public void merge(MergeState mergeState, IndexDocValues[] docValues) throws IOException {
+  public void merge(MergeState mergeState, DocValues[] docValues) throws IOException {
     assert mergeState != null;
     boolean hasMerged = false;
     for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
@@ -115,7 +115,7 @@ public abstract class DocValuesConsumer {
      * the source reader for this MergeState - merged values should be read from
      * this instance
      */
-    public final IndexDocValues reader;
+    public final DocValues reader;
     /** the absolute docBase for this MergeState within the resulting segment */
     public final int docBase;
     /** the number of documents in this MergeState */
@@ -123,7 +123,7 @@ public abstract class DocValuesConsumer {
     /** the not deleted bits for this MergeState */
     public final Bits liveDocs;
 
-    public SingleSubMergeState(IndexDocValues reader, int docBase, int docCount, Bits liveDocs) {
+    public SingleSubMergeState(DocValues reader, int docBase, int docCount, Bits liveDocs) {
       assert reader != null;
       this.reader = reader;
       this.docBase = docBase;

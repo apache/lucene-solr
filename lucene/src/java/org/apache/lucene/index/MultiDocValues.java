@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,20 +24,20 @@ import org.apache.lucene.util.ReaderUtil;
 
 /**
  * A wrapper for compound IndexReader providing access to per segment
- * {@link IndexDocValues}
+ * {@link DocValues}
  * 
  * @lucene.experimental
  * @lucene.internal
  */
-public class MultiIndexDocValues extends IndexDocValues {
+public class MultiDocValues extends DocValues {
 
   public static class DocValuesIndex {
     public final static DocValuesIndex[] EMPTY_ARRAY = new DocValuesIndex[0];
     final int start;
     final int length;
-    final IndexDocValues docValues;
+    final DocValues docValues;
 
-    public DocValuesIndex(IndexDocValues docValues, int start, int length) {
+    public DocValuesIndex(DocValues docValues, int start, int length) {
       this.docValues = docValues;
       this.start = start;
       this.length = length;
@@ -46,15 +46,15 @@ public class MultiIndexDocValues extends IndexDocValues {
 
   private DocValuesIndex[] docValuesIdx;
   private int[] starts;
-  private ValueType type;
+  private Type type;
   private int valueSize;
 
-  public MultiIndexDocValues() {
+  public MultiDocValues() {
     starts = new int[0];
     docValuesIdx = new DocValuesIndex[0];
   }
 
-  public MultiIndexDocValues(DocValuesIndex[] docValuesIdx) {
+  public MultiDocValues(DocValuesIndex[] docValuesIdx) {
     reset(docValuesIdx);
   }
 
@@ -63,7 +63,7 @@ public class MultiIndexDocValues extends IndexDocValues {
     return new MultiSource(docValuesIdx, starts, false);
   }
 
-  public IndexDocValues reset(DocValuesIndex[] docValuesIdx) {
+  public DocValues reset(DocValuesIndex[] docValuesIdx) {
     final int[] start = new int[docValuesIdx.length];
     TypePromoter promoter = TypePromoter.getIdentityPromoter();
     for (int i = 0; i < docValuesIdx.length; i++) {
@@ -86,11 +86,11 @@ public class MultiIndexDocValues extends IndexDocValues {
     return this;
   }
 
-  public static class EmptyDocValues extends IndexDocValues {
+  public static class EmptyDocValues extends DocValues {
     final int maxDoc;
     final Source emptySource;
 
-    public EmptyDocValues(int maxDoc, ValueType type) {
+    public EmptyDocValues(int maxDoc, Type type) {
       this.maxDoc = maxDoc;
       this.emptySource = new EmptySource(type);
     }
@@ -101,7 +101,7 @@ public class MultiIndexDocValues extends IndexDocValues {
     }
 
     @Override
-    public ValueType type() {
+    public Type type() {
       return emptySource.type();
     }
 
@@ -169,10 +169,10 @@ public class MultiIndexDocValues extends IndexDocValues {
     }
   }
 
-  // TODO: this is dup of IndexDocValues.getDefaultSource()?
+  // TODO: this is dup of DocValues.getDefaultSource()?
   private static class EmptySource extends Source {
 
-    public EmptySource(ValueType type) {
+    public EmptySource(Type type) {
       super(type);
     }
 
@@ -195,7 +195,7 @@ public class MultiIndexDocValues extends IndexDocValues {
   }
 
   @Override
-  public ValueType type() {
+  public Type type() {
     return type;
   }
 

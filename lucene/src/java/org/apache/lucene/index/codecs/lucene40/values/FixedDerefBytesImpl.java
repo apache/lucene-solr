@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -71,7 +71,7 @@ class FixedDerefBytesImpl {
     private final int size;
     private final int numValuesStored;
     FixedDerefReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, ValueType.BYTES_FIXED_DEREF);
+      super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_FIXED_DEREF);
       size = datIn.readInt();
       numValuesStored = idxIn.readInt();
     }
@@ -100,7 +100,7 @@ class FixedDerefBytesImpl {
 
     protected FixedDerefSource(IndexInput datIn, IndexInput idxIn, int size, long numValues) throws IOException {
       super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * numValues,
-          ValueType.BYTES_FIXED_DEREF);
+          Type.BYTES_FIXED_DEREF);
       this.size = size;
       addresses = PackedInts.getReader(idxIn);
     }
@@ -117,7 +117,7 @@ class FixedDerefBytesImpl {
     private final PackedInts.Reader index;
     private final int size;
 
-    DirectFixedDerefSource(IndexInput data, IndexInput index, int size, ValueType type)
+    DirectFixedDerefSource(IndexInput data, IndexInput index, int size, Type type)
         throws IOException {
       super(data, type);
       this.size = size;

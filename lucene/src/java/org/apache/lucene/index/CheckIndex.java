@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.codecs.Codec;
 import java.io.File;
 import java.io.IOException;
@@ -38,9 +39,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1133,7 +1131,7 @@ public class CheckIndex {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
           final PerDocValues perDocValues = reader.perDocValues();
-          final IndexDocValues docValues = perDocValues.docValues(fieldInfo.name);
+          final DocValues docValues = perDocValues.docValues(fieldInfo.name);
           if (docValues == null) {
             continue;
           }

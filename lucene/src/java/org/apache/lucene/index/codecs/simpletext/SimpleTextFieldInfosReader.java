@@ -26,8 +26,8 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.codecs.FieldInfosReader;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -98,12 +98,12 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
-        final ValueType docValuesType;
+        final DocValues.Type docValuesType;
         
         if ("false".equals(dvType)) {
           docValuesType = null;
         } else {
-          docValuesType = ValueType.valueOf(dvType);
+          docValuesType = DocValues.Type.valueOf(dvType);
         }
         
         SimpleTextUtil.readLine(input, scratch);

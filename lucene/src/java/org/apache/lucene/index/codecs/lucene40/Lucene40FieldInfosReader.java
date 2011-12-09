@@ -12,7 +12,7 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.FieldInfosReader;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -95,7 +95,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         hasVectors |= storeTermVector;
         hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
-        ValueType docValuesType = null;
+        DocValues.Type docValuesType = null;
         if (format <= Lucene40FieldInfosWriter.FORMAT_FLEX) {
           final byte b = input.readByte();
           switch(b) {
@@ -103,43 +103,43 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
               docValuesType = null;
               break;
             case 1:
-              docValuesType = ValueType.VAR_INTS;
+              docValuesType = DocValues.Type.VAR_INTS;
               break;
             case 2:
-              docValuesType = ValueType.FLOAT_32;
+              docValuesType = DocValues.Type.FLOAT_32;
               break;
             case 3:
-              docValuesType = ValueType.FLOAT_64;
+              docValuesType = DocValues.Type.FLOAT_64;
               break;
             case 4:
-              docValuesType = ValueType.BYTES_FIXED_STRAIGHT;
+              docValuesType = DocValues.Type.BYTES_FIXED_STRAIGHT;
               break;
             case 5:
-              docValuesType = ValueType.BYTES_FIXED_DEREF;
+              docValuesType = DocValues.Type.BYTES_FIXED_DEREF;
               break;
             case 6:
-              docValuesType = ValueType.BYTES_VAR_STRAIGHT;
+              docValuesType = DocValues.Type.BYTES_VAR_STRAIGHT;
               break;
             case 7:
-              docValuesType = ValueType.BYTES_VAR_DEREF;
+              docValuesType = DocValues.Type.BYTES_VAR_DEREF;
               break;
             case 8:
-              docValuesType = ValueType.FIXED_INTS_16;
+              docValuesType = DocValues.Type.FIXED_INTS_16;
               break;
             case 9:
-              docValuesType = ValueType.FIXED_INTS_32;
+              docValuesType = DocValues.Type.FIXED_INTS_32;
               break;
             case 10:
-              docValuesType = ValueType.FIXED_INTS_64;
+              docValuesType = DocValues.Type.FIXED_INTS_64;
               break;
             case 11:
-              docValuesType = ValueType.FIXED_INTS_8;
+              docValuesType = DocValues.Type.FIXED_INTS_8;
               break;
             case 12:
-              docValuesType = ValueType.BYTES_FIXED_SORTED;
+              docValuesType = DocValues.Type.BYTES_FIXED_SORTED;
               break;
             case 13:
-              docValuesType = ValueType.BYTES_VAR_SORTED;
+              docValuesType = DocValues.Type.BYTES_VAR_SORTED;
               break;
         
             default:

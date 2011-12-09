@@ -28,8 +28,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask
@@ -166,7 +166,7 @@ public class LazyDocument {
     }
 
     @Override
-    public ValueType docValuesType() {
+    public DocValues.Type docValuesType() {
       if (num == 0) {
         return getDocument().getField(name).docValuesType();
       } else {

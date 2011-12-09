@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.lucene3x;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.PerDocValues;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -29,7 +30,6 @@ import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.NormsFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;

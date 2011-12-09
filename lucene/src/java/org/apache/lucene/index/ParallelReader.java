@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MapBackedSet;
@@ -472,7 +470,7 @@ public class ParallelReader extends IndexReader {
   
   // Single instance of this, per ParallelReader instance
   private static final class ParallelPerDocs extends PerDocValues {
-    final TreeMap<String,IndexDocValues> fields = new TreeMap<String,IndexDocValues>();
+    final TreeMap<String,DocValues> fields = new TreeMap<String,DocValues>();
 
     void addField(String field, IndexReader r) throws IOException {
       PerDocValues perDocs = MultiPerDocValues.getPerDocs(r);
@@ -487,7 +485,7 @@ public class ParallelReader extends IndexReader {
     }
 
     @Override
-    public IndexDocValues docValues(String field) throws IOException {
+    public DocValues docValues(String field) throws IOException {
       return fields.get(field);
     }
   }

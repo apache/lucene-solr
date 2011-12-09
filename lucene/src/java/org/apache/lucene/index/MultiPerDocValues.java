@@ -17,17 +17,12 @@ package org.apache.lucene.index;
  */
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.MultiIndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.MultiIndexDocValues.DocValuesIndex;
+import org.apache.lucene.index.MultiDocValues.DocValuesIndex;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;
@@ -48,7 +43,7 @@ import org.apache.lucene.util.ReaderUtil.Gather;
 public class MultiPerDocValues extends PerDocValues {
   private final PerDocValues[] subs;
   private final ReaderUtil.Slice[] subSlices;
-  private final Map<String, IndexDocValues> docValues = new ConcurrentHashMap<String, IndexDocValues>();
+  private final Map<String, DocValues> docValues = new ConcurrentHashMap<String, DocValues>();
 
   public MultiPerDocValues(PerDocValues[] subs, ReaderUtil.Slice[] subSlices) {
     this.subs = subs;
@@ -106,40 +101,40 @@ public class MultiPerDocValues extends PerDocValues {
     return perDocValues;
   }
 
-  public IndexDocValues docValues(String field) throws IOException {
-    IndexDocValues result = docValues.get(field);
+  public DocValues docValues(String field) throws IOException {
+    DocValues result = docValues.get(field);
     if (result == null) {
       // Lazy init: first time this field is requested, we
       // create & add to docValues:
-      final List<MultiIndexDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiIndexDocValues.DocValuesIndex>();
+      final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
       int docsUpto = 0;
-      ValueType type = null;
+      DocValues.Type type = null;
       // Gather all sub-readers that share this field
       for (int i = 0; i < subs.length; i++) {
-        IndexDocValues values = subs[i].docValues(field);
+        DocValues values = subs[i].docValues(field);
         final int start = subSlices[i].start;
         final int length = subSlices[i].length;
         if (values != null) {
           if (docsUpto != start) {
             type = values.type();
-            docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(
-                new MultiIndexDocValues.EmptyDocValues(start, type), docsUpto, start
+            docValuesIndex.add(new MultiDocValues.DocValuesIndex(
+                new MultiDocValues.EmptyDocValues(start, type), docsUpto, start
                     - docsUpto));
           }
-          docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(values, start,
+          docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start,
               length));
           docsUpto = start + length;
 
         } else if (i + 1 == subs.length && !docValuesIndex.isEmpty()) {
-          docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(
-              new MultiIndexDocValues.EmptyDocValues(start, type), docsUpto, start
+          docValuesIndex.add(new MultiDocValues.DocValuesIndex(
+              new MultiDocValues.EmptyDocValues(start, type), docsUpto, start
                   - docsUpto));
         }
       }
       if (docValuesIndex.isEmpty()) {
         return null;
       }
-      result = new MultiIndexDocValues(
+      result = new MultiDocValues(
           docValuesIndex.toArray(DocValuesIndex.EMPTY_ARRAY));
       docValues.put(field, result);
     }

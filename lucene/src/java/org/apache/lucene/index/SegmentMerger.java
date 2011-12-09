@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
@@ -33,9 +34,6 @@ import org.apache.lucene.index.codecs.NormsWriter;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.TermVectorsWriter;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.TypePromoter;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -191,7 +189,7 @@ final class SegmentMerger {
   
   // returns an updated typepromoter (tracking type and size) given a previous one,
   // and a newly encountered docvalues
-  private TypePromoter mergeDocValuesType(TypePromoter previous, IndexDocValues docValues) {
+  private TypePromoter mergeDocValuesType(TypePromoter previous, DocValues docValues) {
     TypePromoter incoming = TypePromoter.create(docValues.type(),  docValues.getValueSize());
     if (previous == null) {
       previous = TypePromoter.getIdentityPromoter();
@@ -199,7 +197,7 @@ final class SegmentMerger {
     TypePromoter promoted = previous.promote(incoming);
     if (promoted == null) {
       // type is incompatible: promote to BYTES_VAR_STRAIGHT
-      return TypePromoter.create(ValueType.BYTES_VAR_STRAIGHT, TypePromoter.VAR_TYPE_VALUE_SIZE);
+      return TypePromoter.create(DocValues.Type.BYTES_VAR_STRAIGHT, TypePromoter.VAR_TYPE_VALUE_SIZE);
     } else {
       return promoted;
     }
@@ -237,7 +235,7 @@ final class SegmentMerger {
         mergeState.fieldInfos.addOrUpdate(dvNames, false);
         for (String dvName : dvNames) {
           FieldInfo merged = mergeState.fieldInfos.fieldInfo(dvName);
-          IndexDocValues docValues = reader.docValues(dvName);
+          DocValues docValues = reader.docValues(dvName);
           merged.setDocValuesType(docValues.type());
           TypePromoter previous = docValuesTypes.get(merged);
           docValuesTypes.put(merged, mergeDocValuesType(previous, docValues));

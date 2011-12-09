@@ -20,12 +20,12 @@ package org.apache.lucene.index.codecs.mocksep;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.PerDocValues;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.sep.SepDocValuesConsumer;
 import org.apache.lucene.index.codecs.sep.SepDocValuesProducer;
 import org.apache.lucene.store.Directory;

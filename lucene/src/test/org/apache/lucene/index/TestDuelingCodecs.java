@@ -25,10 +25,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.IndexDocValues.Source;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -536,8 +532,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     FieldsEnum fieldsEnum = leftFields.iterator();
     String field;
     while ((field = fieldsEnum.next()) != null) {
-      IndexDocValues leftDocValues = leftPerDoc.docValues(field);
-      IndexDocValues rightDocValues = rightPerDoc.docValues(field);
+      DocValues leftDocValues = leftPerDoc.docValues(field);
+      DocValues rightDocValues = rightPerDoc.docValues(field);
       if (leftDocValues == null || rightDocValues == null) {
         assertNull(info, leftDocValues);
         assertNull(info, rightDocValues);
@@ -551,8 +547,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /**
    * checks source API
    */
-  public void assertDocValuesSource(Source left, Source right) throws Exception {
-    ValueType leftType = left.type();
+  public void assertDocValuesSource(DocValues.Source left, DocValues.Source right) throws Exception {
+    DocValues.Type leftType = left.type();
     assertEquals(info, leftType, right.type());
     switch(leftType) {
       case VAR_INTS:

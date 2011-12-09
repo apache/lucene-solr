@@ -24,10 +24,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.DocValuesReaderBase;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -37,12 +37,12 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public class Lucene40DocValuesProducer extends DocValuesReaderBase {
-  protected final TreeMap<String,IndexDocValues> docValues;
+  protected final TreeMap<String,DocValues> docValues;
   private final Directory cfs;
 
   /**
    * Creates a new {@link Lucene40DocValuesProducer} instance and loads all
-   * {@link IndexDocValues} instances for this segment and codec.
+   * {@link DocValues} instances for this segment and codec.
    */
   public Lucene40DocValuesProducer(SegmentReadState state) throws IOException {
     if (state.fieldInfos.anyDocValuesFields()) {
@@ -53,12 +53,12 @@ public class Lucene40DocValuesProducer extends DocValuesReaderBase {
       docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
     } else {
       cfs = null;
-      docValues = new TreeMap<String,IndexDocValues>();
+      docValues = new TreeMap<String,DocValues>();
     }
   }
   
   @Override
-  protected Map<String,IndexDocValues> docValues() {
+  protected Map<String,DocValues> docValues() {
     return docValues;
   }
 

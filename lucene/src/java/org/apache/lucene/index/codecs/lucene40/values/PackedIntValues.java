@@ -18,13 +18,13 @@ package org.apache.lucene.index.codecs.lucene40.values;
  */
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.codecs.lucene40.values.FixedStraightBytesImpl.FixedBytesWriterBase;
-import org.apache.lucene.index.codecs.lucene40.values.IndexDocValuesArray.LongValues;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.index.codecs.lucene40.values.DocValuesArray.LongValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -160,7 +160,7 @@ class PackedIntValues {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static class PackedIntsReader extends IndexDocValues {
+  static class PackedIntsReader extends DocValues {
     private final IndexInput datIn;
     private final byte type;
     private final int numDocs;
@@ -220,14 +220,14 @@ class PackedIntValues {
 
 
     @Override
-    public ValueType type() {
-      return ValueType.VAR_INTS;
+    public Type type() {
+      return Type.VAR_INTS;
     }
 
 
     @Override
     public Source getDirectSource() throws IOException {
-      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource((IndexInput) datIn.clone(), 8, ValueType.FIXED_INTS_64) : new PackedIntsSource((IndexInput) datIn.clone(), true);
+      return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource((IndexInput) datIn.clone(), 8, Type.FIXED_INTS_64) : new PackedIntsSource((IndexInput) datIn.clone(), true);
     }
   }
 
@@ -238,7 +238,7 @@ class PackedIntValues {
     private final PackedInts.Reader values;
 
     public PackedIntsSource(IndexInput dataIn, boolean direct) throws IOException {
-      super(ValueType.VAR_INTS);
+      super(Type.VAR_INTS);
       minValue = dataIn.readLong();
       defaultValue = dataIn.readLong();
       values = direct ? PackedInts.getDirectReader(dataIn) : PackedInts.getReader(dataIn);

@@ -21,15 +21,15 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSortedSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
 import org.apache.lucene.index.codecs.lucene40.values.SortedBytesMergeUtils.MergeContext;
 import org.apache.lucene.index.codecs.lucene40.values.SortedBytesMergeUtils.SortedSourceSlice;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -62,11 +62,11 @@ final class VarSortedBytesImpl {
       size = 0;
     }
     @Override
-    public void merge(MergeState mergeState, IndexDocValues[] docValues)
+    public void merge(MergeState mergeState, DocValues[] docValues)
         throws IOException {
       boolean success = false;
       try {
-        MergeContext ctx = SortedBytesMergeUtils.init(ValueType.BYTES_VAR_SORTED, docValues, comp, mergeState);
+        MergeContext ctx = SortedBytesMergeUtils.init(Type.BYTES_VAR_SORTED, docValues, comp, mergeState);
         final List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(mergeState, docValues, ctx);
         IndexOutput datOut = getOrCreateDataOut();
         
@@ -149,14 +149,14 @@ final class VarSortedBytesImpl {
     private final Comparator<BytesRef> comparator;
 
     Reader(Directory dir, String id, int maxDoc,
-        IOContext context, ValueType type, Comparator<BytesRef> comparator)
+        IOContext context, Type type, Comparator<BytesRef> comparator)
         throws IOException {
       super(dir, id, CODEC_NAME, VERSION_START, true, context, type);
       this.comparator = comparator;
     }
 
     @Override
-    public org.apache.lucene.index.values.IndexDocValues.Source load()
+    public org.apache.lucene.index.DocValues.Source load()
         throws IOException {
       return new VarSortedSource(cloneData(), cloneIndex(), comparator);
     }
@@ -172,7 +172,7 @@ final class VarSortedBytesImpl {
 
     VarSortedSource(IndexInput datIn, IndexInput idxIn,
         Comparator<BytesRef> comp) throws IOException {
-      super(datIn, idxIn, comp, idxIn.readLong(), ValueType.BYTES_VAR_SORTED, true);
+      super(datIn, idxIn, comp, idxIn.readLong(), Type.BYTES_VAR_SORTED, true);
       valueCount = ordToOffsetIndex.size()-1; // the last value here is just a dummy value to get the length of the last value
       closeIndexInput();
     }
@@ -199,7 +199,7 @@ final class VarSortedBytesImpl {
     private final int valueCount;
     
     DirectSortedSource(IndexInput datIn, IndexInput idxIn,
-        Comparator<BytesRef> comparator, ValueType type) throws IOException {
+        Comparator<BytesRef> comparator, Type type) throws IOException {
       super(type, comparator);
       idxIn.readLong();
       ordToOffsetIndex = PackedInts.getDirectReader(idxIn);

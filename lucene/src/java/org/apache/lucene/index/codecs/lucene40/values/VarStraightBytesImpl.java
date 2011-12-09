@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesWriterBase;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -229,7 +229,7 @@ class VarStraightBytesImpl {
     private final int maxDoc;
 
     VarStraightReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, context, ValueType.BYTES_VAR_STRAIGHT);
+      super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_VAR_STRAIGHT);
       this.maxDoc = maxDoc;
     }
 
@@ -250,7 +250,7 @@ class VarStraightBytesImpl {
 
     public VarStraightSource(IndexInput datIn, IndexInput idxIn) throws IOException {
       super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong(),
-          ValueType.BYTES_VAR_STRAIGHT);
+          Type.BYTES_VAR_STRAIGHT);
       addresses = PackedInts.getReader(idxIn);
     }
 
@@ -266,7 +266,7 @@ class VarStraightBytesImpl {
 
     private final PackedInts.Reader index;
 
-    DirectVarStraightSource(IndexInput data, IndexInput index, ValueType type)
+    DirectVarStraightSource(IndexInput data, IndexInput index, Type type)
         throws IOException {
       super(data, type);
       index.readVLong();

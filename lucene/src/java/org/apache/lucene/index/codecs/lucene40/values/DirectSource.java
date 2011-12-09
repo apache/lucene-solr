@@ -19,9 +19,9 @@ package org.apache.lucene.index.codecs.lucene40.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 
@@ -35,7 +35,7 @@ public abstract class DirectSource extends Source {
   private final ToNumeric toNumeric;
   protected final long baseOffset;
 
-  public DirectSource(IndexInput input, ValueType type) {
+  public DirectSource(IndexInput input, Type type) {
     super(type);
     this.data = input;
     baseOffset = input.getFilePointer();
