@@ -17,7 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +52,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return Collections.unmodifiableMap(propMap);
   }
 
-  public static ZkNodeProps load(byte[] bytes) throws IOException {
+  public static ZkNodeProps load(byte[] bytes) {
     Map<String, String> props = (Map<String, String>) ZkStateReader.fromJSON(bytes);
     return new ZkNodeProps(props);
   }

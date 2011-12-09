@@ -17,7 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.noggit.*;
@@ -104,13 +103,13 @@ public class CloudState implements JSONWriter.Writable {
 		return sb.toString();
 	}
 
-	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException, IOException {
+	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, null);
     return load(state, liveNodes);
 	}
 	
-	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException, IOException {
+	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException {
     if (bytes == null || bytes.length == 0) {
       return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }

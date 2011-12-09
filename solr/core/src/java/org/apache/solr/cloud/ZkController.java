@@ -93,7 +93,7 @@ public final class ZkController {
 
   private OverseerElector overseerElector;
   
-  private int numShards;
+  private int numShards; //not used anywhere now
 
   private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
 
@@ -305,7 +305,7 @@ public final class ZkController {
       
       createEphemeralLiveNode();
       setUpCollectionsNode();
-      setupOverseerNodes();
+      createAssignmentsNode();
       
       byte[] assignments = zkClient.getData(getAssignmentsNode(), new Watcher(){
 
@@ -336,7 +336,7 @@ public final class ZkController {
 
       processAssignmentsUpdate(assignments);
       
-      overseerElector = new OverseerElector(zkClient);
+      overseerElector = new OverseerElector(zkClient, zkStateReader);
       ElectionContext context = new OverseerElectionContext(getNodeName());
       overseerElector.setup(context);
       overseerElector.joinElection(context);
@@ -502,8 +502,7 @@ public final class ZkController {
     ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, ZkStateReader.toJSON(zkProps));
     
     leaderElector.setup(context);
-    // leader election
-    doLeaderElectionProcess(context);
+    leaderElector.joinElection(context);
     
     // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
@@ -586,10 +585,8 @@ public final class ZkController {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.URL_PROP, shardUrl);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    finalProps.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, shardId);
-    
     publishState(cloudDesc, shardZkNodeName, finalProps);
   }
 
@@ -615,12 +612,6 @@ public final class ZkController {
       }
     }
     return true;
-  }
-
-  private void doLeaderElectionProcess(ElectionContext context) throws KeeperException,
-      InterruptedException, IOException {
-   
-    leaderElector.joinElection(context);
   }
 
   /**
@@ -684,7 +675,7 @@ public final class ZkController {
     
   }
   
-  private void setupOverseerNodes() throws KeeperException, InterruptedException {
+  private void createAssignmentsNode() throws KeeperException, InterruptedException {
     String nodeName = getAssignmentsNode();
     
     try {
@@ -709,7 +700,6 @@ public final class ZkController {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "", e);
     }
-
   }
 
   public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
@@ -788,7 +778,6 @@ public final class ZkController {
             }
           }
           
-          collectionProps.put(ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards));
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
          
@@ -861,7 +850,6 @@ public final class ZkController {
           return assignment.getProperties().get(ZkStateReader.SHARD_ID_PROP);
         }
         
-//        System.out.println("current assignments:" + assignments);
         try {
           assignments.wait(500);
         } catch (InterruptedException e) {

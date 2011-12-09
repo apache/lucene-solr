@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,11 +40,8 @@ public class NodeStateWatcher implements Watcher {
   private static Logger log = LoggerFactory.getLogger(NodeStateWatcher.class);
 
   public static interface NodeStateChangeListener {
-    void coreCreated(String shardZkNodeName, Set<CoreState> cores) throws IOException, KeeperException;
-
-    void coreDeleted(String shardZkNodeName, Set<CoreState> cores);
-
-    void coreChanged(String nodeName, Set<CoreState> cores) throws IOException, KeeperException;
+    void coreCreated(String shardZkNodeName, Set<CoreState> cores) throws KeeperException;
+    void coreChanged(String nodeName, Set<CoreState> cores) throws KeeperException;
   }
 
   private final SolrZkClient zkClient;
@@ -92,18 +88,11 @@ public class NodeStateWatcher implements Watcher {
 
   void processStateChange(byte[] data) {
     if (data != null) {
-      try {
         CoreState[] states = CoreState.load(data);
         List<CoreState> stateList = Arrays.asList(states);
-        
-        // get new cores:
         HashSet<CoreState> newCores = new HashSet<CoreState>();
         newCores.addAll(stateList);
         newCores.removeAll(currentState);
-
-        HashSet<CoreState> deadCores = new HashSet<CoreState>();
-        deadCores.addAll(currentState);
-        deadCores.removeAll(stateList);
 
         HashSet<CoreState> newState = new HashSet<CoreState>();
         newState.addAll(stateList);
@@ -130,13 +119,8 @@ public class NodeStateWatcher implements Watcher {
           try {
             listener.coreCreated(nodeName, Collections.unmodifiableSet(newCores));
           } catch (KeeperException e) {
-            //zk error, stop
-//            stop=true;
             log.warn("Could not talk to ZK", e);
           }
-        }
-        if (deadCores.size() > 0) {
-          listener.coreDeleted(nodeName, Collections.unmodifiableSet(deadCores));
         }
 
         if (changedCores.size() > 0) {
@@ -144,16 +128,8 @@ public class NodeStateWatcher implements Watcher {
           listener.coreChanged(nodeName, Collections.unmodifiableSet(changedCores));
           } catch (KeeperException e) {
             log.warn("Could not talk to ZK", e);
-            //zk error, stop
-  //          stop=true;
           }
         }
-
-
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-
     } else {
       // ignore null state
     }

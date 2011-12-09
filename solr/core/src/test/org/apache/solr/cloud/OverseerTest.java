@@ -1,5 +1,22 @@
 package org.apache.solr.cloud;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
@@ -47,8 +64,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
 
+      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "3");
+
       zkController = new ZkController(server.getZkAddress(), TIMEOUT, 10000,
-          "localhost", "8983", "solr", 3, new CurrentCoreDescriptorProvider() {
+          "localhost", "8983", "solr",3, new CurrentCoreDescriptorProvider() {
 
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -59,20 +78,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       System.setProperty("bootstrap_confdir", getFile("solr/conf")
           .getAbsolutePath());
-
+      
       CloudDescriptor collection1Desc = new CloudDescriptor();
       collection1Desc.setCollectionName("collection1");
 
-      CloudDescriptor collection2Desc = new CloudDescriptor();
-      collection2Desc.setCollectionName("collection2");
-
-      //create collection specs
-      Map<String,String> props = new HashMap<String,String>();
-   
-      props.put(ZkStateReader.NUM_SHARDS_PROP, "3");
-      ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps));
-      
       CoreDescriptor desc = new CoreDescriptor(null, "core1", "");
       desc.setCloudDescriptor(collection1Desc);
       String shard1 = zkController.register("core1", desc);
@@ -119,29 +128,28 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       server.shutdown();
     }
-
+    
+    System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
   }
   
-  private String getCoreName(String core) {
-    return "localhost:8983_solr_" + core;
-  }
-
   //wait until i slices for collection have appeared 
   private void waitForSliceCount(ZkStateReader stateReader, String collection, int i) throws InterruptedException {
     waitForCollections(stateReader, collection);
-    while (true) {
+    int maxIterations = 100;
+    while (0 < maxIterations--) {
       CloudState state = stateReader.getCloudState();
       Map<String,Slice> sliceMap = state.getSlices(collection);
       if (sliceMap.keySet().size() == i) {
         return;
       }
-      Thread.sleep(10);
+      Thread.sleep(50);
     }
   }
 
   //wait until collections are available
   private void waitForCollections(ZkStateReader stateReader, String... collections) throws InterruptedException {
-    while(true) {
+    int maxIterations = 100;
+    while (0 < maxIterations--) {
       Set<String> availableCollections = stateReader.getCloudState().getCollections();
       int availableCount = 0;
       for(String requiredCollection: collections) {
@@ -149,7 +157,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           availableCount++;
         }
         if(availableCount == collections.length) return;
-        Thread.sleep(10);
+        Thread.sleep(50);
       }
     }
   }
@@ -171,18 +179,17 @@ public class OverseerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       zkClient.makePath("/live_nodes");
-      
-      // create collections
-      Map<String,String> props = new HashMap<String,String>();
-      props.put(ZkStateReader.NUM_SHARDS_PROP, "2");
-      ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps));
+
+      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "2");
 
       //live node
       String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + "node1";
       zkClient.makePath(nodePath,CreateMode.EPHEMERAL);
-      
-      OverseerElector elector1 = new OverseerElector(zkClient);
+
+      reader = new ZkStateReader(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      OverseerElector elector1 = new OverseerElector(zkClient, reader);
       
       ElectionContext ec = new OverseerElectionContext("node1");
       elector1.setup(ec);
@@ -190,8 +197,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       Thread.sleep(1000);
       
-      reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
       
       HashMap<String, String> coreProps = new HashMap<String,String>();
       coreProps.put(ZkStateReader.URL_PROP, "http://127.0.0.1/solr");
@@ -231,6 +236,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertEquals("Illegal state", ZkStateReader.ACTIVE, reader.getCloudState().getSlice("collection1", "shard1").getShards().get("core1").get(ZkStateReader.STATE_PROP));
 
     } finally {
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+
       if (zkClient != null) {
         zkClient.close();
       }
@@ -239,6 +246,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       server.shutdown();
     }
+    
+
   }
   
   @Test
@@ -267,16 +276,20 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkNodeProps zkProps = new ZkNodeProps(props);
       zkClient.makePath("/collections/collection1",
           ZkStateReader.toJSON(zkProps));
-      
-      OverseerElector elector1 = new OverseerElector(zkClient);
+
+      reader = new ZkStateReader(zkClient2);
+      reader.createClusterStateWatchersAndUpdate();
+
+      OverseerElector elector1 = new OverseerElector(zkClient, reader);
       
       ElectionContext ec = new OverseerElectionContext("node1");
       elector1.setup(ec);
       elector1.joinElection(ec);
       
       Thread.sleep(50);
-      
-      OverseerElector elector2 = new OverseerElector(zkClient2);
+
+
+      OverseerElector elector2 = new OverseerElector(zkClient2, reader);
       
       elector2.setup(ec);
       elector2.joinElection(ec);
@@ -285,13 +298,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + "node1";
       zkClient2.makePath(nodePath, CreateMode.EPHEMERAL);
       
-      reader = new ZkStateReader(zkClient2);
-      reader.createClusterStateWatchersAndUpdate();
       
       HashMap<String,String> coreProps = new HashMap<String,String>();
-      coreProps.put(ZkStateReader.URL_PROP, "http://127.0.0.1/solr");
-      coreProps.put(ZkStateReader.NODE_NAME_PROP, "node1");
-      coreProps.put(ZkStateReader.ROLES_PROP, "");
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
       CoreState state = new CoreState("core1", "collection1", coreProps);
       
@@ -327,7 +335,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient2
           .setData(nodePath, ZkStateReader.toJSON(new CoreState[] {state}));
       
-      Thread.sleep(200); // wait for data to update
+      Thread.sleep(1000); // wait for data to update
       
       // zkClient2.printLayoutToStdOut();
       

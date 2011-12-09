@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,8 +38,6 @@ import org.apache.zookeeper.KeeperException.Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.rmi.transport.LiveRef;
-
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
  */
@@ -48,35 +45,18 @@ public class Overseer implements NodeStateChangeListener {
   
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
-  private SolrZkClient zkClient;
-  
-  private volatile CloudState cloudState = new CloudState();
-  
-  // desired collection configuration
-  private HashMap<String,ZkNodeProps> collections = new HashMap<String, ZkNodeProps>();
-  
-//  // live nodes
-//  private HashMap<String,ZkNodeProps> liveNodes = new HashMap<String, ZkNodeProps>();
+  private final SolrZkClient zkClient;
+  private final ZkStateReader reader;
   
   // node stateWatches
   private HashMap<String,NodeStateWatcher> nodeStateWatches = new HashMap<String,NodeStateWatcher>();
   
-  public Overseer(final SolrZkClient zkClient) throws KeeperException {
+  public Overseer(final SolrZkClient zkClient, final ZkStateReader reader) throws KeeperException, InterruptedException {
     log.info("Constructing new Overseer");
     this.zkClient = zkClient;
-   
-    try {
-      createZkNodes(zkClient);
-      createClusterStateWatchersAndUpdate();
-    } catch (InterruptedException e) {
-      // nocommit
-      e.printStackTrace();
-    } catch (KeeperException e) {
-      // nocommit
-      e.printStackTrace();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"",e);
-    }
+    this.reader = reader;
+    createZkNodes(zkClient);
+    createWatches();
   }
   
   public static void createZkNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
@@ -88,15 +68,12 @@ public class Overseer implements NodeStateChangeListener {
         if (e.code() != KeeperException.Code.NODEEXISTS) {
           throw e;
         }
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
       }
     }
   }
 
-  public synchronized void createClusterStateWatchersAndUpdate()
-      throws KeeperException, InterruptedException, IOException {
+  public synchronized void createWatches()
+      throws KeeperException, InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
     
     if (!zkClient.exists(ZkStateReader.CLUSTER_STATE)) {
@@ -111,48 +88,7 @@ public class Overseer implements NodeStateChangeListener {
       }
     }
     
-    log.info("Getting the existing cluster state from ZooKeeper... ");
-    cloudState = CloudStateUtility.get(zkClient, null);
-    
-    //watch for live nodes
     addLiveNodesWatch();
-    
-    // watch collections
-    addCollectionsWatch();
-  }
-
-  private void addCollectionsWatch() throws KeeperException,
-      InterruptedException {
-    final List<String> collections = zkClient.getChildren(
-        ZkStateReader.COLLECTIONS_ZKNODE, new Watcher() {
-          
-          @Override
-          public void process(WatchedEvent event) {
-            log.info("Updating collections");
-            try {
-              List<String> collections = zkClient.getChildren(
-                  ZkStateReader.COLLECTIONS_ZKNODE, this);
-              processCollectionChange(cloudState.getCollections(), collections);
-            } catch (KeeperException e) {
-              if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-                return;
-              }
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            }
-          }
-        });
-    
-    processCollectionChange(cloudState.getCollections(), collections);
   }
 
   private void addLiveNodesWatch() throws KeeperException,
@@ -167,7 +103,7 @@ public class Overseer implements NodeStateChangeListener {
                     ZkStateReader.LIVE_NODES_ZKNODE, this);
                 Set<String> liveNodesSet = new HashSet<String>();
                 liveNodesSet.addAll(liveNodes);
-                processLiveNodesChanged(cloudState.getLiveNodes(), liveNodes);
+                processLiveNodesChanged(nodeStateWatches.keySet(), liveNodes);
             } catch (KeeperException e) {
               if (e.code() == KeeperException.Code.SESSIONEXPIRED
                   || e.code() == KeeperException.Code.CONNECTIONLOSS) {
@@ -190,29 +126,20 @@ public class Overseer implements NodeStateChangeListener {
     processLiveNodesChanged(Collections.EMPTY_SET, liveNodes);
   }
   
-  private void processCollectionChange(Set<String> oldCollections,
-      List<String> newCollections) {
-    Set<String> downCollections = complement(oldCollections, newCollections);
-    if (downCollections.size() > 0) {
-      collectionsDown(downCollections);
-    }
-    Set<String> upCollections = complement(newCollections, oldCollections);
-    if (upCollections.size() > 0) {
-      collectionsUp(upCollections);
-    }
-  }
-  
   private void processLiveNodesChanged(Collection<String> oldLiveNodes,
       Collection<String> liveNodes) {
     
-    Set<String> downNodes = complement(oldLiveNodes, liveNodes);
-    if (downNodes.size() > 0) {
-      nodesDown(downNodes);
-    }
     Set<String> upNodes = complement(liveNodes, oldLiveNodes);
     if (upNodes.size() > 0) {
-      nodesUp(upNodes);
       addNodeStateWatches(upNodes);
+    }
+    
+    Set<String> downNodes = complement(oldLiveNodes, liveNodes);
+    for(String node: downNodes) {
+      NodeStateWatcher watcher = nodeStateWatches.remove(node);
+      if(watcher!=null) {
+        watcher.close();
+      }
     }
   }
   
@@ -228,11 +155,13 @@ public class Overseer implements NodeStateChangeListener {
             }
           } catch (KeeperException e1) {
             if (e1.code() != Code.NODEEXISTS) {
-              e1.printStackTrace();
+              throw new SolrException(
+                  SolrException.ErrorCode.SERVER_ERROR, "Could not create node for watch. Connection lost?", e1);
             }
           } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Could not create node for watch. Connection lost?", e);
           }
 
           NodeStateWatcher nsw = new NodeStateWatcher(zkClient, nodeName, path, this);
@@ -241,14 +170,15 @@ public class Overseer implements NodeStateChangeListener {
             byte[] state = zkClient.getData(path, nsw, null);
             nsw.processStateChange(state);
           } catch (KeeperException e) {
-            //nocommit
-            log.error("", e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Could not read initial node state. Connection lost?", e);
           } catch (InterruptedException e) {
-          //nocommit
+            Thread.currentThread().interrupt();
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Could not read initial node state. Connection lost?", e);
           }
-          
         } else {
-          log.info("watch already added");
+          log.debug("watch already added");
         }
       }
     }
@@ -257,18 +187,15 @@ public class Overseer implements NodeStateChangeListener {
   /**
    * Try to assign core to the cluster
    */
-  private void updateState(CoreState coreState) {
-    
-    //System.out.println("updateState called for core:" + coreState);
-    
+  private void updateState(String nodeName, CoreState coreState) {
     String collection = coreState.getCollectionName();
     String coreName = coreState.getCoreName();
     
-    synchronized (cloudState) {
+    synchronized (reader.getUpdateLock()) {
       String shardId;
+      CloudState state = reader.getCloudState();
       if (coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP) == null) {
-        shardId = AssignShard.assignShard(collection,
-            collections.get(collection), cloudState);
+        shardId = AssignShard.assignShard(collection, state);
       } else {
         shardId = coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP);
       }
@@ -278,122 +205,53 @@ public class Overseer implements NodeStateChangeListener {
         props.put(entry.getKey(), entry.getValue());
       }
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      Slice slice = cloudState.getSlice(collection, shardId);
+      Slice slice = state.getSlice(collection, shardId);
       Map<String,ZkNodeProps> shardProps;
       if (slice == null) {
         shardProps = new HashMap<String,ZkNodeProps>();
       } else {
-        shardProps = cloudState.getSlice(collection, shardId).getShardsCopy();
+        shardProps = state.getSlice(collection, shardId).getShardsCopy();
       }
       shardProps.put(coreName, zkProps);
 
       slice = new Slice(shardId, shardProps);
-      CloudState state = new CloudState(cloudState.getLiveNodes(),
-          cloudState.getCollectionStates());
-      state.addSlice(collection, slice);
-      cloudState = state;
-      publishCloudState();
-    }
-  }
-  
-  /*
-   * Let others know about state change.
-   */
-  private void publishCloudState() {
-    try {
-      CloudStateUtility.update(zkClient, cloudState, null);
-    } catch (KeeperException e) {
-      log.error("Could not publish cloud state.", e);
-    } catch (InterruptedException e) {
-      log.error("Could not publish cloud state.", e);
-    } catch (IOException e) {
-      log.error("Could not publish cloud state.", e);
-    }
-  }
-  
-  protected void nodesUp(Set<String> nodes) {
-    log.debug("nodes appeared: " + nodes);
-    synchronized (cloudState) {
-      HashSet<String> currentNodes = new HashSet<String>();
-      currentNodes.addAll(cloudState.getLiveNodes());
-      currentNodes.addAll(nodes);
-      CloudState state = new CloudState(currentNodes,
-          cloudState.getCollectionStates());
-      cloudState = state;
-    }
-  }
-  
-  protected void nodesDown(Set<String> nodes) {
-    synchronized (cloudState) {
-      HashSet<String> currentNodes = new HashSet<String>();
-      currentNodes.addAll(cloudState.getLiveNodes());
-      currentNodes.removeAll(nodes);
-      CloudState state = new CloudState(currentNodes,
-          cloudState.getCollectionStates());
-      cloudState = state;
-    }
-    for(String node: nodes) {
-      NodeStateWatcher watcher = nodeStateWatches.remove(node);
-      if(watcher!=null) {
-        watcher.close();
-      }
-    }
-  }
-  
-  private void collectionsUp(Set<String> upCollections) {
-    log.debug("Collections up: " + upCollections);
-    for (String collection : upCollections) {
+      CloudState newCloudState = new CloudState(state.getLiveNodes(),
+          state.getCollectionStates());
+      newCloudState.addSlice(collection, slice);
       try {
-        byte[] data = zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/"
-            + collection, null, null);
-        if (data != null) {
-          ZkNodeProps props = new ZkNodeProps();
-          try {
-            props = ZkNodeProps.load(data);
-          } catch (IOException e) {
-            log.error("Could not load ZkNodeProps", e);
-          }
-          collections.put(collection, props);
-          log.info("Registered collection " + collection + " with following properties: "
-              + props);
-        } else {
-          log.info("Collection " + collection + " had no properties.");
-        }
-        
+        zkClient.setData(ZkStateReader.CLUSTER_STATE,
+            ZkStateReader.toJSON(newCloudState));
+        publishNodeAssignments(nodeName, newCloudState, nodeStateWatches.get(nodeName).getCurrentState());
       } catch (KeeperException e) {
-        log.error("Could not read collection settings.", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not publish new state. Connection lost?", e);
       } catch (InterruptedException e) {
-        log.error("Could not read collection settings.", e);
+        Thread.currentThread().interrupt();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not publish new state. Connection lost?", e);
       }
     }
-  }
-  
-  private void collectionsDown(Set<String> downCollections) {
-    log.info("Collections deleted: " + downCollections);
+
   }
   
   @Override
-  public void coreCreated(String nodeName, Set<CoreState> states) throws IOException, KeeperException {
-    log.info("Cores created: " + nodeName + " states:" +states);
+  public void coreCreated(String nodeName, Set<CoreState> states) throws KeeperException {
+    log.debug("Cores created: " + nodeName + " states:" +states);
     for (CoreState state : states) {
-      updateState(state);
+      updateState(nodeName, state);
     }
-    
-    publishNodeAssignments(nodeName, cloudState, nodeStateWatches.get(nodeName).getCurrentState());
-  }
-  
-  @Override
-  public void coreDeleted(String nodeName, Set<CoreState> states) {
-    log.info("Cores " + states + " deleted from node:" + nodeName);
   }
   
   /**
    * Publish assignments for node
+   * 
    * @param node
-   * @throws IOException 
+   * @param cloudState
+   * @param states
+   * @throws KeeperException
    */
   private void publishNodeAssignments(String node, CloudState cloudState,
-      Set<CoreState> states) throws IOException, KeeperException {
+      Set<CoreState> states) throws KeeperException, InterruptedException {
     ArrayList<CoreAssignment> assignments = new ArrayList<CoreAssignment>();
     for(CoreState coreState: states) {
       final String coreName = coreState.getCoreName();
@@ -406,30 +264,23 @@ public class Overseer implements NodeStateChangeListener {
           coreProperties.put(ZkStateReader.SHARD_ID_PROP, entry.getKey());
         }
       }
-      
       CoreAssignment assignment = new CoreAssignment(coreName, collection, coreProperties);
       assignments.add(assignment);
     }
     
     //serialize
     byte[] content = ZkStateReader.toJSON(assignments);
-    try {
-      final String nodeName = "/node_assignments/" + node;
-      if(!zkClient.exists(nodeName)) {
-        try {
-          zkClient.makePath(nodeName);
-        } catch (KeeperException ke) {
-          if(ke.code() != Code.NODEEXISTS) {
-            throw ke;
-          }
+    final String nodeName = "/node_assignments/" + node;
+    if (!zkClient.exists(nodeName)) {
+      try {
+        zkClient.makePath(nodeName);
+      } catch (KeeperException ke) {
+        if (ke.code() != Code.NODEEXISTS) {
+          throw ke;
         }
       }
-      
-      zkClient.setData(nodeName, content);
-    } catch (InterruptedException e) {
-      // nocommit
-      e.printStackTrace();
     }
+    zkClient.setData(nodeName, content);
   }
   
   private Set<String> complement(Collection<String> next,
@@ -441,13 +292,10 @@ public class Overseer implements NodeStateChangeListener {
   }
 
   @Override
-  public void coreChanged(String nodeName, Set<CoreState> states) throws IOException, KeeperException  {
-    log.info("Cores changed: " + nodeName + " states:" + states);
+  public void coreChanged(String nodeName, Set<CoreState> states) throws KeeperException  {
+    log.debug("Cores changed: " + nodeName + " states:" + states);
     for (CoreState state : states) {
-      updateState(state);
+      updateState(nodeName, state);
     }
-    
-    publishNodeAssignments(nodeName, cloudState, nodeStateWatches.get(nodeName).getCurrentState());
   }
-
 }

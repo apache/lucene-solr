@@ -357,7 +357,7 @@ public class SolrCmdDistributor {
                     newMsg, se.getCause());
               } else {
                 e = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                    "newMsg", e);
+                    newMsg, e);
               }
               rsp.setException(e);
             }

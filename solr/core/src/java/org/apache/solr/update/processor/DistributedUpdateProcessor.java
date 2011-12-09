@@ -186,10 +186,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
-      } catch (IOException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      }
+      } 
     }
     
     return shards;

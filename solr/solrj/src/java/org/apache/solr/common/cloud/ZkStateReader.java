@@ -135,28 +135,24 @@ public class ZkStateReader {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                   "", e);
-            } catch (IOException e) {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"",e);
-            }
+            } 
 
           }
         });
   }
   
   // load and publish a new CollectionInfo
-  public void updateCloudState(boolean immediate) throws KeeperException, InterruptedException,
-      IOException {
+  public void updateCloudState(boolean immediate) throws KeeperException, InterruptedException {
     updateCloudState(immediate, false);
   }
   
   // load and publish a new CollectionInfo
-  public void updateLiveNodes() throws KeeperException, InterruptedException,
-      IOException {
+  public void updateLiveNodes() throws KeeperException, InterruptedException {
     updateCloudState(true, true);
   }
   
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
-      InterruptedException, IOException {
+      InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
@@ -205,9 +201,6 @@ public class ZkStateReader {
           Thread.currentThread().interrupt();
           log.warn("", e);
           return;
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Could not serialize cloud state", e);
         } 
       }
       
@@ -261,7 +254,7 @@ public class ZkStateReader {
   // load and publish a new CollectionInfo
   private synchronized void updateCloudState(boolean immediate,
       final boolean onlyLiveNodes) throws KeeperException,
-      InterruptedException, IOException {
+      InterruptedException {
     log.info("Manual update of cluster state initiated");
     // build immutable CloudInfo
     
@@ -330,9 +323,7 @@ public class ZkStateReader {
               log.error("", e);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (IOException e) {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "",e);
-            }
+            } 
             // update volatile
             ZkStateReader.this.cloudState = cloudState;
           }

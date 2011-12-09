@@ -24,7 +24,6 @@ import java.util.*;
 
 public class CoreAssignment implements JSONWriter.Writable {
 
-  private static String COLLECTION="collection";
   private static String CORE="core";
 
   private final Map<String, String> properties;
@@ -40,17 +39,12 @@ public class CoreAssignment implements JSONWriter.Writable {
   public CoreAssignment(String coreName, String collectionName, Map<String,String> properties) {
     HashMap<String,String> props = new HashMap<String,String>();
     props.putAll(properties);
-    props.put(COLLECTION, collectionName);
     props.put(CORE, coreName);
     this.properties = Collections.unmodifiableMap(props);
   }
 
   public String getCoreName() {
     return properties.get(CORE);
-  }
-
-  public String getCollectionName() {
-    return properties.get(COLLECTION);
   }
 
   @Override
@@ -82,7 +76,7 @@ public class CoreAssignment implements JSONWriter.Writable {
   
   @Override
   public String toString() {
-    return "coll:" + getCollectionName() + " core:" + getCoreName() + " props:" + properties;
+    return "Core:" + getCoreName() + " props:" + properties;
   }
 
 }

@@ -17,26 +17,35 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Overseer Election process. Simplify this.
+ * Overseer Elector.
  */
 public class OverseerElector extends LeaderElector {
-  SolrZkClient client;
+  private final SolrZkClient client;
+  private final ZkStateReader reader;
+  private static Logger log = LoggerFactory.getLogger(OverseerElector.class);
   
-  public OverseerElector(SolrZkClient client) {
+  public OverseerElector(SolrZkClient client, ZkStateReader stateReader) {
     super(client);
     this.client = client;
+    this.reader = stateReader;
   }
   
   @Override
-  protected void runIamLeaderProcess(ElectionContext context)
-      throws KeeperException, InterruptedException, IOException {
-    Overseer overseer = new Overseer(client);
+  protected void runIamLeaderProcess(ElectionContext context) {
+    try {
+      new Overseer(client, reader);
+    } catch (KeeperException e) {
+      log.error("Could not start overseer.", e);
+    } catch (InterruptedException e) {
+      log.error("Could not start overseer.", e);
+    }
   }
   
 }

@@ -58,7 +58,7 @@ public class CoreState implements JSONWriter.Writable {
   }
 
 
-  public static CoreState[] load(byte[] bytes) throws IOException {
+  public static CoreState[] load(byte[] bytes) {
     List<Map<String, String>> stateMaps = (List<Map<String, String>>) ZkStateReader.fromJSON(bytes);
 
     CoreState[] states = new CoreState[stateMaps.size()];

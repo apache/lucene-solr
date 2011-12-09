@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 
@@ -42,31 +41,9 @@ public class AssignShard {
    * @throws InterruptedException
    * @throws KeeperException
    */
-  public static String assignShard(String collection,
-      ZkNodeProps collectionProperties, CloudState state) {
+  public static String assignShard(String collection, CloudState state) {
 
-    int shards = 0;
-    String numShardsString = null;
-    if (collectionProperties != null) {
-      numShardsString = collectionProperties.get(ZkStateReader.NUM_SHARDS_PROP);
-    }
-
-    if (numShardsString == null) {
-      System.out.println("no shards count specified for collection "
-          + collection);
-      if (System.getProperty("numShards") == null) {
-        System.out.println("no shards count specified in system property, using 1");
-        shards = 1;
-      } else {
-        shards = Integer.parseInt(System.getProperty("numShards")); // XXXX
-        System.out.println("Shard count (System.property): " + shards);
-      }
-    } else {
-      shards = Integer.parseInt(numShardsString);
-    }
-
-    
-    //System.out.println("final shard count: " + shards);
+    int shards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP,1);
 
     String returnShardId = null;
     Map<String, Slice> sliceMap = state.getSlices(collection);
