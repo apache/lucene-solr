@@ -88,8 +88,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   private List<NamedList<Object>> clusterWithHighlighting(
       boolean enableHighlighting, int fragSize) throws IOException {
-    // Two documents don't have mining in the snippet
-    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 2);
+    // Some documents don't have mining in the snippet
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 4);
   }
 
   private List<NamedList<Object>> clusterWithHighlighting(
@@ -252,6 +252,47 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     assertTrue("Summary covers first value", snippetWithSummary.contains("First"));
     assertTrue("Summary covers second value", snippetWithSummary.contains("Second"));
     assertTrue("Summary covers third value", snippetWithSummary.contains("Third"));
+  }
+  
+  @Test
+  public void concatenatingMultipleFields() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
+
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("body",
+            "snippet")), params).get(0));
+    assertTrue("Snippet contains third value", labels.get(0).contains("Title field"));
+    assertTrue("Snippet contains third value", labels.get(0).contains("Heading field"));
+    assertTrue("Snippet contains third value", labels.get(1).contains("Snippet field"));
+    assertTrue("Snippet contains third value", labels.get(1).contains("Body field"));
+  }
+
+  @Test
+  public void highlightingMultipleFields() throws Exception {
+    final TermQuery query = new TermQuery(new Term("snippet", "content"));
+
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
+    params.add(CarrotParams.PRODUCE_SUMMARY, Boolean.toString(false));
+    
+    final String snippetWithoutSummary = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, query, params).get(0)).get(1);
+    assertTrue("Snippet covers snippet field", snippetWithoutSummary.contains("snippet field"));
+    assertTrue("Snippet covers body field", snippetWithoutSummary.contains("body field"));
+
+    params.set(CarrotParams.PRODUCE_SUMMARY, Boolean.toString(true));
+    params.add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(30));
+    params.add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(2));
+    final String snippetWithSummary = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, query, params).get(0)).get(1);    
+    assertTrue("Snippet with summary shorter than full snippet",
+        snippetWithoutSummary.length() > snippetWithSummary.length());
+    assertTrue("Snippet covers snippet field", snippetWithSummary.contains("snippet field"));
+    assertTrue("Snippet covers body field", snippetWithSummary.contains("body field"));
+
   }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {

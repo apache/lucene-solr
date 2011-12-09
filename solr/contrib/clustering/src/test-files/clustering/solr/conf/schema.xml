@@ -282,6 +282,7 @@
    <field name="url" type="string" indexed="true" stored="true" required="true" />
 
    <field name="title" type="text" indexed="true" stored="true" multiValued="true"/>
+   <field name="heading" type="text" indexed="true" stored="true" multiValued="true"/>
    <field name="snippet" type="text" indexed="true" stored="true" multiValued="true"/>
    <field name="body" type="text" indexed="true" stored="true" multiValued="true"/>
    <!-- catchall field, containing all other searchable text fields (implemented

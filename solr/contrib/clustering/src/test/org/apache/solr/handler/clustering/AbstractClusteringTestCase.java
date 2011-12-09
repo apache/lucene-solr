@@ -46,6 +46,16 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     multiValuedSnippet.addField("snippet", "Third value of multi field. Some more text. And still more.");
     assertNull(h.validateUpdate(adoc(multiValuedSnippet)));
 
+    // Add a document with multi-field title and snippet
+    final SolrInputDocument multiFieldDoc = new SolrInputDocument();
+    multiFieldDoc.addField("id", numberOfDocs++);
+    multiFieldDoc.addField("title", "Title field");
+    multiFieldDoc.addField("heading", "Heading field");
+    multiFieldDoc.addField("url", "URL");
+    multiFieldDoc.addField("snippet", "Snippet field: this is the contents of the snippet field.");
+    multiFieldDoc.addField("body", "Body field: this is the contents of the body field that will get clustered together with snippet.");
+    assertNull(h.validateUpdate(adoc(multiFieldDoc)));
+    
     assertNull(h.validateUpdate(commit()));
   }
 

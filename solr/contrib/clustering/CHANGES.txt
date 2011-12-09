@@ -18,6 +18,10 @@ $Id$
   by the clustering plugin, can be overridden by carrot.summarySnippets
   if needed (Stanislaw Osinski).
 
+* SOLR-2938: Clustering on multiple fields. The carrot.title and 
+  carrot.snippet can now take comma- or space-separated lists of
+  field names to cluster (Stanislaw Osinski).
+
 ================== Release 3.5.0 ==================
 
 (No Changes)

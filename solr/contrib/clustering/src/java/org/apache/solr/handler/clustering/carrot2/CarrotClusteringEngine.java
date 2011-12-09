@@ -19,6 +19,7 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -294,13 +295,17 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   private Set<String> getFieldsForClustering(SolrQueryRequest sreq) {
     SolrParams solrParams = sreq.getParams();
 
-    String titleField = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
-    String snippetField = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleField);
-    if (StringUtils.isBlank(snippetField)) {
+    String titleFieldSpec = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
+    String snippetFieldSpec = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleFieldSpec);
+    if (StringUtils.isBlank(snippetFieldSpec)) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, CarrotParams.SNIPPET_FIELD_NAME
               + " must not be blank.");
     }
-    return Sets.newHashSet(titleField, snippetField);
+    
+    final Set<String> fields = Sets.newHashSet();
+    fields.addAll(Arrays.asList(titleFieldSpec.split("[, ]")));
+    fields.addAll(Arrays.asList(snippetFieldSpec.split("[, ]")));
+    return fields;
   }
 
   /**
@@ -313,8 +318,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     SolrCore core = sreq.getCore();
 
     String urlField = solrParams.get(CarrotParams.URL_FIELD_NAME, "url");
-    String titleField = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
-    String snippetField = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleField);
+    String titleFieldSpec = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
+    String snippetFieldSpec = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleFieldSpec);
     
     // Get the documents
     boolean produceSummary = solrParams.getBool(CarrotParams.PRODUCE_SUMMARY, false);
@@ -325,7 +330,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       highlighter = HighlightComponent.getHighlighter(core);
       if (highlighter != null){
         Map<String, Object> args = Maps.newHashMap();
-        snippetFieldAry = new String[]{snippetField};
+        snippetFieldAry = snippetFieldSpec.split("[, ]");
         args.put(HighlightParams.FIELDS, snippetFieldAry);
         args.put(HighlightParams.HIGHLIGHT, "true");
         args.put(HighlightParams.SIMPLE_PRE, ""); //we don't care about actually highlighting the area
@@ -353,7 +358,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
     while (docsIter.hasNext()) {
       SolrDocument sdoc = docsIter.next();
-      String snippet = getValue(sdoc, snippetField);
+      String snippet = null;
+      
       // TODO: docIds will be null when running distributed search.
       // See comment in ClusteringComponent#finishStage().
       if (produceSummary && docIds != null) {
@@ -361,24 +367,32 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f);
         NamedList<Object> highlights = highlighter.doHighlighting(docAsList, theQuery, req, snippetFieldAry);
         if (highlights != null && highlights.size() == 1) {//should only be one value given our setup
-          //should only be one document with one field
+          //should only be one document
           @SuppressWarnings("unchecked")
           NamedList<String []> tmp = (NamedList<String[]>) highlights.getVal(0);
-          String [] highlt = tmp.get(snippetField);
           
-          // Join fragments with a period, so that Carrot2 does not create
-          // cross-fragment phrases, such phrases rarely make sense.
-          if (highlt != null && highlt.length > 0) {
-            final StringBuilder sb = new StringBuilder(highlt[0]);
-            for (int i = 1; i < highlt.length; i++) {
-              sb.append(" . ");
-              sb.append(highlt[i]);
+          final StringBuilder sb = new StringBuilder();
+          for (int j = 0; j < snippetFieldAry.length; j++) {
+            // Join fragments with a period, so that Carrot2 does not create
+            // cross-fragment phrases, such phrases rarely make sense.
+            String [] highlt = tmp.get(snippetFieldAry[j]);
+            if (highlt != null && highlt.length > 0) {
+              for (int i = 0; i < highlt.length; i++) {
+                sb.append(highlt[i]);
+                sb.append(" . ");
+              }
             }
-            snippet = sb.toString();
           }
+          snippet = sb.toString();
         }
       }
-      Document carrotDocument = new Document(getValue(sdoc, titleField),
+      
+      // If summaries not enabled or summary generation failed, use full content.
+      if (snippet == null) {
+        snippet = getConcatenated(sdoc, snippetFieldSpec);
+      }
+      
+      Document carrotDocument = new Document(getConcatenated(sdoc, titleFieldSpec),
               snippet, (String)sdoc.getFieldValue(urlField));
       carrotDocument.setField(SOLR_DOCUMENT_ID, sdoc.getFieldValue(idFieldName));
       result.add(carrotDocument);
@@ -387,16 +401,18 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     return result;
   }
 
-  protected String getValue(SolrDocument sdoc, String field) {
+  private String getConcatenated(SolrDocument sdoc, String fieldsSpec) {
     StringBuilder result = new StringBuilder();
-    Collection<Object> vals = sdoc.getFieldValues(field);
-    if(vals == null) return "";
-    Iterator<Object> ite = vals.iterator();
-    while(ite.hasNext()){
-      // Join multiple values with a period so that Carrot2 does not pick up
-      // phrases that cross field value boundaries (in most cases it would
-      // create useless phrases).
-      result.append((String)ite.next()).append(" . ");
+    for (String field : fieldsSpec.split("[, ]")) {
+      Collection<Object> vals = sdoc.getFieldValues(field);
+      if (vals == null) continue;
+      Iterator<Object> ite = vals.iterator();
+      while(ite.hasNext()){
+        // Join multiple values with a period so that Carrot2 does not pick up
+        // phrases that cross field value boundaries (in most cases it would
+        // create useless phrases).
+        result.append((String)ite.next()).append(" . ");
+      }
     }
     return result.toString().trim();
   }
