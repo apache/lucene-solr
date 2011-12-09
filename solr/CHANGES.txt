@@ -418,6 +418,9 @@ Bug Fixes
   
 * SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
   a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
+
+* SOLR-2955: Fixed IllegalStateException when querying with group.sort=score desc in sharded
+             environment. (Steffen Elberg Godskesen, Martijn van Groningen)
   
 Other Changes
 ----------------------
