@@ -12,6 +12,13 @@ $Id$
 
 (No Changes)
 
+==================  3.6.0 ==================
+
+New Features
+----------------------
+* SOLR-1499: Added SolrEntityProcessor that imports data from another Solr core or instance based on a specified query.
+             (Lance Norskog, Erik Hatcher, Pulkit Singhal, Ahmet Arslan, Luca Cavanna, Martijn van Groningen)
+
 ==================  3.5.0 ==================
 
 Bug Fixes
