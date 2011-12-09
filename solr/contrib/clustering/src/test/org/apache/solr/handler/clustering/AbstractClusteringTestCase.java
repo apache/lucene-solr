@@ -56,6 +56,23 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     multiFieldDoc.addField("body", "Body field: this is the contents of the body field that will get clustered together with snippet.");
     assertNull(h.validateUpdate(adoc(multiFieldDoc)));
     
+    // Add a document with one language supported by Carrot2
+    final SolrInputDocument docWithOneSupprtedLanguage = new SolrInputDocument();
+    docWithOneSupprtedLanguage.addField("id", numberOfDocs++);
+    docWithOneSupprtedLanguage.addField("title", "");
+    docWithOneSupprtedLanguage.addField("url", "one_supported_language");
+    docWithOneSupprtedLanguage.addField("lang", "zh-cn");
+    assertNull(h.validateUpdate(adoc(docWithOneSupprtedLanguage)));
+    
+    // Add a document with more languages, one supported by Carrot2
+    final SolrInputDocument docWithOneSupprtedLanguageOfMany = new SolrInputDocument();
+    docWithOneSupprtedLanguageOfMany.addField("id", numberOfDocs++);
+    docWithOneSupprtedLanguageOfMany.addField("url", "one_supported_language_of_many");
+    docWithOneSupprtedLanguageOfMany.addField("lang", "zh-tw");
+    docWithOneSupprtedLanguageOfMany.addField("lang", "POLISH");
+    docWithOneSupprtedLanguageOfMany.addField("lang", "de");
+    assertNull(h.validateUpdate(adoc(docWithOneSupprtedLanguageOfMany)));
+    
     assertNull(h.validateUpdate(commit()));
   }
 

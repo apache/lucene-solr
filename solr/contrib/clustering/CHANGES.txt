@@ -22,6 +22,10 @@ $Id$
   carrot.snippet can now take comma- or space-separated lists of
   field names to cluster (Stanislaw Osinski).
 
+* SOLR-2939: Clustering of multilingual search results. The document's
+  language field be passed in the carrot.lang parameter, the carrot.lcmap
+  parameter enables mapping of language codes to ISO 639 (Stanislaw Osinski).
+
 ================== Release 3.5.0 ==================
 
 (No Changes)

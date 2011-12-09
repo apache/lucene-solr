@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
@@ -55,6 +56,7 @@ import org.carrot2.core.Controller;
 import org.carrot2.core.ControllerFactory;
 import org.carrot2.core.Document;
 import org.carrot2.core.IClusteringAlgorithm;
+import org.carrot2.core.LanguageCode;
 import org.carrot2.core.attribute.AttributeNames;
 import org.carrot2.text.linguistic.DefaultLexicalDataFactoryDescriptor;
 import org.carrot2.text.preprocessing.pipeline.BasicPreprocessingPipelineDescriptor;
@@ -65,6 +67,7 @@ import org.carrot2.util.resource.ResourceLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -103,7 +106,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
    */
   private Controller controller = ControllerFactory.createPooling();
   private Class<? extends IClusteringAlgorithm> clusteringAlgorithmClass;
-  
+
   private static class SolrResourceLocator implements IResourceLocator {
     private final SolrResourceLoader resourceLoader;
     private final String carrot2ResourcesDir;
@@ -320,6 +323,22 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     String urlField = solrParams.get(CarrotParams.URL_FIELD_NAME, "url");
     String titleFieldSpec = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
     String snippetFieldSpec = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleFieldSpec);
+    String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME, null);
+
+    // Parse language code map string into a map
+    Map<String, String> languageCodeMap = Maps.newHashMap();
+    if (StringUtils.isNotBlank(languageField)) {
+      for (String pair : solrParams.get(CarrotParams.LANGUAGE_CODE_MAP, "")
+          .split("[, ]")) {
+        final String[] split = pair.split(":");
+        if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
+          languageCodeMap.put(split[0], split[1]);
+        } else {
+          log.warn("Unsupported format for " + CarrotParams.LANGUAGE_CODE_MAP
+              + ": '" + pair + "'. Skipping this mapping.");
+        }
+      }
+    }
     
     // Get the documents
     boolean produceSummary = solrParams.getBool(CarrotParams.PRODUCE_SUMMARY, false);
@@ -392,9 +411,42 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         snippet = getConcatenated(sdoc, snippetFieldSpec);
       }
       
+      // Create a Carrot2 document
       Document carrotDocument = new Document(getConcatenated(sdoc, titleFieldSpec),
               snippet, (String)sdoc.getFieldValue(urlField));
+      
+      // Store Solr id of the document, we need it to map document instances 
+      // found in clusters back to identifiers.
       carrotDocument.setField(SOLR_DOCUMENT_ID, sdoc.getFieldValue(idFieldName));
+      
+      // Set language
+      if (StringUtils.isNotBlank(languageField)) {
+        Collection<Object> languages = sdoc.getFieldValues(languageField);
+        if (languages != null) {
+          
+          // Use the first Carrot2-supported language
+          for (Object l : languages) {
+            String lang = ObjectUtils.toString(l, "");
+            
+            if (languageCodeMap.containsKey(lang)) {
+              lang = languageCodeMap.get(lang);
+            }
+            
+            // Language detection Library for Java uses dashes to separate
+            // language variants, such as 'zh-cn', but Carrot2 uses underscores.
+            if (lang.indexOf('-') > 0) {
+              lang = lang.replace('-', '_');
+            }
+            
+            // If the language is supported by Carrot2, we'll get a non-null value
+            final LanguageCode carrot2Language = LanguageCode.forISOCode(lang);
+            if (carrot2Language != null) {
+              carrotDocument.setLanguage(carrot2Language);
+              break;
+            }
+          }
+        }
+      }
       result.add(carrotDocument);
     }
 

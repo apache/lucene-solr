@@ -280,6 +280,7 @@
 
    <field name="id" type="string" indexed="true" stored="true" required="true" />
    <field name="url" type="string" indexed="true" stored="true" required="true" />
+   <field name="lang" type="string" indexed="true" stored="true" required="false" multiValued="true" />
 
    <field name="title" type="text" indexed="true" stored="true" multiValued="true"/>
    <field name="heading" type="text" indexed="true" stored="true" multiValued="true"/>

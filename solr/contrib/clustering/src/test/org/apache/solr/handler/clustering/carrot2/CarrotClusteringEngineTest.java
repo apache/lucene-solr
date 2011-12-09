@@ -39,6 +39,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
+import org.carrot2.core.LanguageCode;
 import org.carrot2.util.attribute.AttributeUtils;
 import org.junit.Test;
 
@@ -89,7 +90,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   private List<NamedList<Object>> clusterWithHighlighting(
       boolean enableHighlighting, int fragSize) throws IOException {
     // Some documents don't have mining in the snippet
-    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 4);
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 6);
   }
 
   private List<NamedList<Object>> clusterWithHighlighting(
@@ -295,6 +296,43 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   }
 
+  @Test
+  public void oneCarrot2SupportedLanguage() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
+
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "one_supported_language")), params).get(0));
+    assertEquals(3, labels.size());
+    assertEquals("Correct Carrot2 language", LanguageCode.CHINESE_SIMPLIFIED.name(), labels.get(2));
+  }
+  
+  @Test
+  public void oneCarrot2SupportedLanguageOfMany() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "one_supported_language_of_many")), params).get(0));
+    assertEquals(3, labels.size());
+    assertEquals("Correct Carrot2 language", LanguageCode.GERMAN.name(), labels.get(2));
+  }
+  
+  @Test
+  public void languageCodeMapping() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
+    params.add(CarrotParams.LANGUAGE_CODE_MAP, "POLISH:pl");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "one_supported_language_of_many")), params).get(0));
+    assertEquals(3, labels.size());
+    assertEquals("Correct Carrot2 language", LanguageCode.POLISH.name(), labels.get(2));
+  }
+
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
             .getSearchComponent("clustering");
@@ -367,7 +405,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     List<Object> docs = getDocs(cluster);
     assertNotNull("docs is null and it shouldn't be", docs);
     for (int j = 0; j < docs.size(); j++) {
-      String id = (String) docs.get(j);
+      Object id = docs.get(j);
       assertNotNull("id is null and it shouldn't be", id);
     }
 

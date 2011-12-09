@@ -55,6 +55,9 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
     for (Document document : documents) {
       final Cluster cluster = new Cluster();
       cluster.addPhrases(document.getTitle(), document.getSummary());
+      if (document.getLanguage() != null) {
+        cluster.addPhrases(document.getLanguage().name());
+      }
       cluster.addDocuments(document);
       clusters.add(cluster);
     }
