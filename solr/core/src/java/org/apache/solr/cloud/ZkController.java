@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +38,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -513,6 +515,25 @@ public final class ZkController {
       if (leaderUrl.equals(shardUrl)) {
         iamleader = true;
         doRecovery = false;
+
+        // recover from local transaction log and wait for it to complete before going active
+        // TODO: should this be moved to another thread?  To recoveryStrat?
+        // TODO: should this actually be done earlier, before (or as part of) leader election perhaps?
+        // TODO: ensure that a replica that is trying to recover waits until I'm active (or don't make me the
+        //       leader until my local replay is done.  But this replay is only needed on the leader - replicas
+        //       will do recovery anyway
+        CoreContainer cc = desc.getCoreContainer();
+        if (cc != null) {  // TODO: CoreContainer only null in tests?
+        core = cc.getCore(desc.getName());
+        if (!core.isReloaded()) {
+          Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
+          if (recoveryFuture != null) {
+            recoveryFuture.get();  // NOTE: this could potentially block for minutes or more!
+            // TODO: public as recovering in the mean time?
+          }
+        }
+        }
+        
         // publish new props
         publishAsActive(shardUrl, cloudDesc, shardZkNodeName, shardId);
       } else {
