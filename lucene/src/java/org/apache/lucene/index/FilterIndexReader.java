@@ -277,8 +277,6 @@ public class FilterIndexReader extends IndexReader {
 
   /**
    * <p>Construct a FilterIndexReader based on the specified base reader.
-   * Directory locking for delete, undeleteAll, and setNorm operations is
-   * left to the base reader.</p>
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
    */
@@ -332,9 +330,6 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {in.undeleteAll();}
-
-  @Override
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
     return in.hasNorms(field);
@@ -347,28 +342,9 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
-    in.setNorm(d, f, b);
-  }
-
-  @Override
-  public int docFreq(Term t) throws IOException {
-    ensureOpen();
-    return in.docFreq(t);
-  }
-
-  @Override
   public int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
     return in.docFreq(field, t);
-  }
-
-  @Override
-  protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
-  
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    in.commit(commitUserData);
   }
   
   @Override
@@ -450,4 +426,14 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.perDocValues();
   }
+
+  @Override
+  public IndexCommit getIndexCommit() throws IOException {
+    return in.getIndexCommit();
+  }
+
+  @Override
+  public int getTermInfosIndexDivisor() {
+    return in.getTermInfosIndexDivisor();
+  }  
 }

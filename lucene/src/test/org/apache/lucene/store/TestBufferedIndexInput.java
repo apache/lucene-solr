@@ -256,24 +256,32 @@ public class TestBufferedIndexInput extends LuceneTestCase {
           doc.add(newField("id", "" + i, TextField.TYPE_STORED));
           writer.addDocument(doc);
         }
-        writer.close();
 
         dir.allIndexInputs.clear();
 
-        IndexReader reader = IndexReader.open(dir, false);
+        IndexReader reader = IndexReader.open(writer, true);
         Term aaa = new Term("content", "aaa");
         Term bbb = new Term("content", "bbb");
-        Term ccc = new Term("content", "ccc");
-        assertEquals(37, reader.docFreq(ccc));
-        reader.deleteDocument(0);
-        assertEquals(37, reader.docFreq(aaa));
+        
+        reader.close();
+        
         dir.tweakBufferSizes();
-        reader.deleteDocument(4);
-        assertEquals(reader.docFreq(bbb), 37);
-        dir.tweakBufferSizes();
-
+        writer.deleteDocuments(new Term("id", "0"));
+        reader = IndexReader.open(writer, true);
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;
+        dir.tweakBufferSizes();
+        assertEquals(36, hits.length);
+        
+        reader.close();
+        searcher.close();
+        
+        dir.tweakBufferSizes();
+        writer.deleteDocuments(new Term("id", "4"));
+        reader = IndexReader.open(writer, true);
+        searcher = newSearcher(reader);
+
+        hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
         dir.tweakBufferSizes();
@@ -283,6 +291,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
+        writer.close();
         searcher.close();
         reader.close();
       } finally {

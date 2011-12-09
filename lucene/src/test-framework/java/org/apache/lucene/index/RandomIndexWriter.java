@@ -385,7 +385,7 @@ public class RandomIndexWriter implements Closeable {
       w.commit();
       switchDoDocValues();
       if (r.nextBoolean()) {
-        return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10));
+        return IndexReader.open(w.getDirectory(), _TestUtil.nextInt(r, 1, 10));
       } else {
         return w.getReader(applyDeletions);
       }

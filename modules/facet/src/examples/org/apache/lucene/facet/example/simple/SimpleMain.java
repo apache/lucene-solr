@@ -57,7 +57,7 @@ public class SimpleMain {
 
     // open readers
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader indexReader = IndexReader.open(indexDir, true);
+    IndexReader indexReader = IndexReader.open(indexDir);
 
     ExampleUtils.log("search the sample documents...");
     List<FacetResult> facetRes = SimpleSearcher.searchWithFacets(indexReader, taxo);
@@ -82,7 +82,7 @@ public class SimpleMain {
 
     // open readers
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-    IndexReader indexReader = IndexReader.open(indexDir, true);
+    IndexReader indexReader = IndexReader.open(indexDir);
 
     ExampleUtils.log("search the sample documents...");
     List<FacetResult> facetRes = SimpleSearcher.searchWithDrillDown(indexReader, taxo);

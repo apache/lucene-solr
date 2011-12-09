@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -28,13 +27,13 @@ import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.NormsWriter;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.TermVectorsWriter;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
@@ -122,7 +121,11 @@ final class SegmentMerger {
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, segment, mergeState.fieldInfos, mergeState.mergedDocCount, termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
     mergePerDoc(segmentWriteState);
-    mergeNorms();
+    
+    if (mergeState.fieldInfos.hasNorms()) {
+      int numMerged = mergeNorms(segmentWriteState);
+      assert numMerged == mergeState.mergedDocCount;
+    }
 
     if (mergeState.fieldInfos.hasVectors()) {
       int numMerged = mergeVectors();
@@ -329,48 +332,19 @@ final class SegmentMerger {
       }
   }
 
-  private void mergeNorms() throws IOException {
-    IndexOutput output = null;
+  private int mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
+    final NormsWriter writer = codec.normsFormat().normsWriter(segmentWriteState);
+    
     boolean success = false;
     try {
-      for (FieldInfo fi : mergeState.fieldInfos) {
-        if (fi.isIndexed && !fi.omitNorms) {
-          if (output == null) {
-            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), context);
-            output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
-          }
-          for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-            final int maxDoc = reader.reader.maxDoc();
-            byte normBuffer[] = reader.reader.norms(fi.name);
-            if (normBuffer == null) {
-              // Can be null if this segment doesn't have
-              // any docs with this field
-              normBuffer = new byte[maxDoc];
-              Arrays.fill(normBuffer, (byte)0);
-            }
-            if (reader.liveDocs == null) {
-              //optimized case for segments without deleted docs
-              output.writeBytes(normBuffer, maxDoc);
-            } else {
-              // this segment has deleted docs, so we have to
-              // check for every doc if it is deleted or not
-              final Bits liveDocs = reader.liveDocs;
-              for (int k = 0; k < maxDoc; k++) {
-                if (liveDocs.get(k)) {
-                  output.writeByte(normBuffer[k]);
-                }
-              }
-            }
-            mergeState.checkAbort.work(maxDoc);
-          }
-        }
-      }
+      int numMerged = writer.merge(mergeState);
       success = true;
+      return numMerged;
     } finally {
       if (success) {
-        IOUtils.close(output);
+        IOUtils.close(writer);
       } else {
-        IOUtils.closeWhileHandlingException(output);
+        IOUtils.closeWhileHandlingException(writer);
       }
     }
   }

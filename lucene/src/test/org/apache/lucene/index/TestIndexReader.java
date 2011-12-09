@@ -52,64 +52,8 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
-public class TestIndexReader extends LuceneTestCase
-{
-    
-    public void testCommitUserData() throws Exception {
-      Directory d = newDirectory();
-
-      Map<String,String> commitUserData = new HashMap<String,String>();
-      commitUserData.put("foo", "fighters");
-      
-      // set up writer
-      IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random))
-      .setMaxBufferedDocs(2));
-      for(int i=0;i<27;i++)
-        addDocumentWithFields(writer);
-      writer.close();
-      
-      IndexReader r = IndexReader.open(d, false);
-      r.deleteDocument(5);
-      r.flush(commitUserData);
-      IndexCommit c = r.getIndexCommit();
-      r.close();
-      
-      SegmentInfos sis = new SegmentInfos();
-      sis.read(d);
-      IndexReader r2 = IndexReader.open(d, false);
-      assertEquals(c.getUserData(), commitUserData);
-
-      assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
-
-      // Change the index
-      writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random)).setOpenMode(
-              OpenMode.APPEND).setMaxBufferedDocs(2));
-      for(int i=0;i<7;i++)
-        addDocumentWithFields(writer);
-      writer.close();
-
-      IndexReader r3 = IndexReader.openIfChanged(r2);
-      assertNotNull(r3);
-      assertFalse(c.equals(r3.getIndexCommit()));
-      assertFalse(r2.getIndexCommit().getSegmentCount() == 1 && !r2.hasDeletions());
-      r3.close();
-
-      writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random))
-        .setOpenMode(OpenMode.APPEND));
-      writer.forceMerge(1);
-      writer.close();
-
-      r3 = IndexReader.openIfChanged(r2);
-      assertNotNull(r3);
-      assertEquals(1, r3.getIndexCommit().getSegmentCount());
-      r2.close();
-      r3.close();
-      d.close();
-    }
-    
+public class TestIndexReader extends LuceneTestCase {
+        
     public void testIsCurrent() throws Exception {
       Directory d = newDirectory();
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig( 
@@ -117,7 +61,7 @@ public class TestIndexReader extends LuceneTestCase
       addDocumentWithFields(writer);
       writer.close();
       // set up reader:
-      IndexReader reader = IndexReader.open(d, false);
+      IndexReader reader = IndexReader.open(d);
       assertTrue(reader.isCurrent());
       // modify index by adding another document:
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -160,7 +104,7 @@ public class TestIndexReader extends LuceneTestCase
 
         writer.close();
         // set up reader
-        IndexReader reader = IndexReader.open(d, false);
+        IndexReader reader = IndexReader.open(d);
         Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
         assertTrue(fieldNames.contains("keyword"));
         assertTrue(fieldNames.contains("text"));
@@ -220,7 +164,7 @@ public class TestIndexReader extends LuceneTestCase
         
         writer.close();
         // verify fields again
-        reader = IndexReader.open(d, false);
+        reader = IndexReader.open(d);
         fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
         assertEquals(13, fieldNames.size());    // the following fields
         assertTrue(fieldNames.contains("keyword"));
@@ -355,7 +299,7 @@ public class TestIndexReader extends LuceneTestCase
         doc.add(new TextField("junk", "junk text"));
         writer.addDocument(doc);
         writer.close();
-        IndexReader reader = IndexReader.open(dir, false);
+        IndexReader reader = IndexReader.open(dir);
         Document doc2 = reader.document(reader.maxDoc() - 1);
         IndexableField[] fields = doc2.getFields("bin1");
         assertNotNull(fields);
@@ -374,7 +318,7 @@ public class TestIndexReader extends LuceneTestCase
         writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         writer.forceMerge(1);
         writer.close();
-        reader = IndexReader.open(dir, false);
+        reader = IndexReader.open(dir);
         doc2 = reader.document(reader.maxDoc() - 1);
         fields = doc2.getFields("bin1");
         assertNotNull(fields);
@@ -387,170 +331,6 @@ public class TestIndexReader extends LuceneTestCase
           assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
         }
         reader.close();
-        dir.close();
-    }
-
-    // Make sure attempts to make changes after reader is
-    // closed throws IOException:
-    public void testChangesAfterClose() throws IOException {
-        Directory dir = newDirectory();
-
-        IndexWriter writer = null;
-        IndexReader reader = null;
-        Term searchTerm = new Term("content", "aaa");
-
-        //  add 11 documents with term : aaa
-        writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        for (int i = 0; i < 11; i++) {
-            addDoc(writer, searchTerm.text());
-        }
-        writer.close();
-
-        reader = IndexReader.open(dir, false);
-
-        // Close reader:
-        reader.close();
-
-        // Then, try to make changes:
-        try {
-          reader.deleteDocument(4);
-          fail("deleteDocument after close failed to throw IOException");
-        } catch (AlreadyClosedException e) {
-          // expected
-        }
-
-        DefaultSimilarity sim = new DefaultSimilarity();
-        try {
-          reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
-          fail("setNorm after close failed to throw IOException");
-        } catch (AlreadyClosedException e) {
-          // expected
-        }
-
-        try {
-          reader.undeleteAll();
-          fail("undeleteAll after close failed to throw IOException");
-        } catch (AlreadyClosedException e) {
-          // expected
-        }
-        dir.close();
-    }
-
-    // Make sure we get lock obtain failed exception with 2 writers:
-    public void testLockObtainFailed() throws IOException {
-        Directory dir = newDirectory();
-
-        Term searchTerm = new Term("content", "aaa");
-
-        //  add 11 documents with term : aaa
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        writer.commit();
-        for (int i = 0; i < 11; i++) {
-            addDoc(writer, searchTerm.text());
-        }
-
-        // Create reader:
-        IndexReader reader = IndexReader.open(dir, false);
-
-        // Try to make changes
-        try {
-          reader.deleteDocument(4);
-          fail("deleteDocument should have hit LockObtainFailedException");
-        } catch (LockObtainFailedException e) {
-          // expected
-        }
-
-        DefaultSimilarity sim = new DefaultSimilarity();
-        try {
-          reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
-          fail("setNorm should have hit LockObtainFailedException");
-        } catch (LockObtainFailedException e) {
-          // expected
-        }
-
-        try {
-          reader.undeleteAll();
-          fail("undeleteAll should have hit LockObtainFailedException");
-        } catch (LockObtainFailedException e) {
-          // expected
-        }
-        writer.close();
-        reader.close();
-        dir.close();
-    }
-
-    // Make sure you can set norms & commit even if a reader
-    // is open against the index:
-    public void testWritingNorms() throws IOException {
-        Directory dir = newDirectory();
-        Term searchTerm = new Term("content", "aaa");
-
-        //  add 1 documents with term : aaa
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        addDoc(writer, searchTerm.text());
-        writer.close();
-
-        //  now open reader & set norm for doc 0
-        IndexReader reader = IndexReader.open(dir, false);
-        DefaultSimilarity sim = new DefaultSimilarity();
-        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
-
-        // we should be holding the write lock now:
-        assertTrue("locked", IndexWriter.isLocked(dir));
-
-        reader.commit();
-
-        // we should not be holding the write lock now:
-        assertTrue("not locked", !IndexWriter.isLocked(dir));
-
-        // open a 2nd reader:
-        IndexReader reader2 = IndexReader.open(dir, false);
-
-        // set norm again for doc 0
-        reader.setNorm(0, "content", sim.encodeNormValue(3.0f));
-        assertTrue("locked", IndexWriter.isLocked(dir));
-
-        reader.close();
-
-        // we should not be holding the write lock now:
-        assertTrue("not locked", !IndexWriter.isLocked(dir));
-
-        reader2.close();
-        dir.close();
-    }
-
-
-    // Make sure you can set norms & commit, and there are
-    // no extra norms files left:
-    public void testWritingNormsNoReader() throws IOException {
-        Directory dir = newDirectory();
-        IndexWriter writer = null;
-        IndexReader reader = null;
-        Term searchTerm = new Term("content", "aaa");
-
-        //  add 1 documents with term : aaa
-        writer  = new IndexWriter(
-            dir,
-            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-                setMergePolicy(newLogMergePolicy(false))
-        );
-        addDoc(writer, searchTerm.text());
-        writer.close();
-
-        DefaultSimilarity sim = new DefaultSimilarity();
-        //  now open reader & set norm for doc 0 (writes to
-        //  _0_1.s0)
-        reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
-        reader.close();
-        
-        //  now open reader again & set norm for doc 0 (writes to _0_2.s0)
-        reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
-        reader.close();
-        assertFalse("failed to remove first generation norms file on writing second generation",
-                    dir.fileExists("_0_1.s0"));
-        
         dir.close();
     }
 
@@ -590,7 +370,7 @@ public class TestIndexReader extends LuceneTestCase
 
         // Now open existing directory and test that reader closes all files
         dir = newFSDirectory(dirFile);
-        IndexReader reader1 = IndexReader.open(dir, false);
+        IndexReader reader1 = IndexReader.open(dir);
         reader1.close();
         dir.close();
 
@@ -608,7 +388,7 @@ public class TestIndexReader extends LuceneTestCase
         assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
         writer.close();
         assertTrue(IndexReader.indexExists(dir));
-        IndexReader reader = IndexReader.open(dir, false);
+        IndexReader reader = IndexReader.open(dir);
         assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
         long version = IndexReader.lastModified(dir);
         if (i == 1) {
@@ -623,7 +403,7 @@ public class TestIndexReader extends LuceneTestCase
         writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
         addDocumentWithFields(writer);
         writer.close();
-        reader = IndexReader.open(dir, false);
+        reader = IndexReader.open(dir);
         assertTrue("old lastModified is " + version + "; new lastModified is " + IndexReader.lastModified(dir), version <= IndexReader.lastModified(dir));
         reader.close();
         dir.close();
@@ -638,7 +418,7 @@ public class TestIndexReader extends LuceneTestCase
       assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
       writer.close();
       assertTrue(IndexReader.indexExists(dir));
-      IndexReader reader = IndexReader.open(dir, false);
+      IndexReader reader = IndexReader.open(dir);
       assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
       long version = IndexReader.getCurrentVersion(dir);
       reader.close();
@@ -647,106 +427,9 @@ public class TestIndexReader extends LuceneTestCase
       writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
       addDocumentWithFields(writer);
       writer.close();
-      reader = IndexReader.open(dir, false);
+      reader = IndexReader.open(dir);
       assertTrue("old version is " + version + "; new version is " + IndexReader.getCurrentVersion(dir), version < IndexReader.getCurrentVersion(dir));
       reader.close();
-      dir.close();
-    }
-
-    public void testLock() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      addDocumentWithFields(writer);
-      writer.close();
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-      IndexReader reader = IndexReader.open(dir, false);
-      try {
-        reader.deleteDocument(0);
-        fail("expected lock");
-      } catch(IOException e) {
-        // expected exception
-      }
-      try {
-        IndexWriter.unlock(dir);		// this should not be done in the real world! 
-      } catch (LockReleaseFailedException lrfe) {
-        writer.close();
-      }
-      reader.deleteDocument(0);
-      reader.close();
-      writer.close();
-      dir.close();
-    }
-
-    public void testDocsOutOfOrderJIRA140() throws IOException {
-      Directory dir = newDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      for(int i=0;i<11;i++) {
-        addDoc(writer, "aaa");
-      }
-      writer.close();
-      IndexReader reader = IndexReader.open(dir, false);
-
-      // Try to delete an invalid docId, yet, within range
-      // of the final bits of the BitVector:
-
-      boolean gotException = false;
-      try {
-        reader.deleteDocument(11);
-      } catch (ArrayIndexOutOfBoundsException e) {
-        gotException = true;
-      }
-      reader.close();
-
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
-
-      // We must add more docs to get a new segment written
-      for(int i=0;i<11;i++) {
-        addDoc(writer, "aaa");
-      }
-
-      // Without the fix for LUCENE-140 this call will
-      // [incorrectly] hit a "docs out of order"
-      // IllegalStateException because above out-of-bounds
-      // deleteDocument corrupted the index:
-      writer.forceMerge(1);
-      writer.close();
-      if (!gotException) {
-        fail("delete of out-of-bounds doc number failed to hit exception");
-      }
-      dir.close();
-    }
-
-    public void testExceptionReleaseWriteLockJIRA768() throws IOException {
-
-      Directory dir = newDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      addDoc(writer, "aaa");
-      writer.close();
-
-      IndexReader reader = IndexReader.open(dir, false);
-      try {
-        reader.deleteDocument(1);
-        fail("did not hit exception when deleting an invalid doc number");
-      } catch (ArrayIndexOutOfBoundsException e) {
-        // expected
-      }
-      reader.close();
-      if (IndexWriter.isLocked(dir)) {
-        fail("write lock is still held after close");
-      }
-
-      reader = IndexReader.open(dir, false);
-      DefaultSimilarity sim = new DefaultSimilarity();
-      try {
-        reader.setNorm(1, "content", sim.encodeNormValue(2.0f));
-        fail("did not hit exception when calling setNorm on an invalid doc number");
-      } catch (ArrayIndexOutOfBoundsException e) {
-        // expected
-      }
-      reader.close();
-      if (IndexWriter.isLocked(dir)) {
-        fail("write lock is still held after close");
-      }
       dir.close();
     }
 
@@ -754,7 +437,7 @@ public class TestIndexReader extends LuceneTestCase
       File dirFile = _TestUtil.getTempDir("deletetest");
       Directory dir = newFSDirectory(dirFile);
       try {
-        IndexReader.open(dir, false);
+        IndexReader.open(dir);
         fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
@@ -764,7 +447,7 @@ public class TestIndexReader extends LuceneTestCase
 
       // Make sure we still get a CorruptIndexException (not NPE):
       try {
-        IndexReader.open(dir, false);
+        IndexReader.open(dir);
         fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
@@ -946,7 +629,7 @@ public class TestIndexReader extends LuceneTestCase
 
       SegmentInfos sis = new SegmentInfos();
       sis.read(d);
-      IndexReader r = IndexReader.open(d, false);
+      IndexReader r = IndexReader.open(d);
       IndexCommit c = r.getIndexCommit();
 
       assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
@@ -987,96 +670,6 @@ public class TestIndexReader extends LuceneTestCase
       d.close();
     }      
 
-    public void testReadOnly() throws Throwable {
-      Directory d = newDirectory();
-      IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      addDocumentWithFields(writer);
-      writer.commit();
-      addDocumentWithFields(writer);
-      writer.close();
-
-      IndexReader r = IndexReader.open(d, true);
-      try {
-        r.deleteDocument(0);
-        fail();
-      } catch (UnsupportedOperationException uoe) {
-        // expected
-      }
-
-      writer = new IndexWriter(
-          d,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-              setOpenMode(OpenMode.APPEND).
-              setMergePolicy(newLogMergePolicy(10))
-      );
-      addDocumentWithFields(writer);
-      writer.close();
-
-      // Make sure reopen is still readonly:
-      IndexReader r2 = IndexReader.openIfChanged(r);
-      assertNotNull(r2);
-      r.close();
-
-      assertFalse(r == r2);
-
-      try {
-        r2.deleteDocument(0);
-        fail();
-      } catch (UnsupportedOperationException uoe) {
-        // expected
-      }
-
-      writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random))
-        .setOpenMode(OpenMode.APPEND));
-      writer.forceMerge(1);
-      writer.close();
-
-      // Make sure reopen to a single segment is still readonly:
-      IndexReader r3 = IndexReader.openIfChanged(r2);
-      assertNotNull(r3);
-      assertFalse(r3 == r2);
-      r2.close();
-      
-      assertFalse(r == r2);
-
-      try {
-        r3.deleteDocument(0);
-        fail();
-      } catch (UnsupportedOperationException uoe) {
-        // expected
-      }
-
-      // Make sure write lock isn't held
-      writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random))
-      .setOpenMode(OpenMode.APPEND));
-      writer.close();
-
-      r3.close();
-      d.close();
-    }
-
-
-  // LUCENE-1474
-  public void testIndexReader() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    writer.addDocument(createDocument("a"));
-    writer.addDocument(createDocument("b"));
-    writer.addDocument(createDocument("c"));
-    writer.close();
-    IndexReader reader = IndexReader.open(dir, false);
-    reader.deleteDocuments(new Term("id", "a"));
-    reader.flush();
-    reader.deleteDocuments(new Term("id", "b"));
-    reader.close();
-    IndexReader.open(dir,true).close();
-    dir.close();
-  }
-
   static Document createDocument(String id) {
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -1093,7 +686,7 @@ public class TestIndexReader extends LuceneTestCase
   public void testNoDir() throws Throwable {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("doesnotexist"));
     try {
-      IndexReader.open(dir, true);
+      IndexReader.open(dir);
       fail("did not hit expected exception");
     } catch (NoSuchDirectoryException nsde) {
       // expected
@@ -1138,7 +731,7 @@ public class TestIndexReader extends LuceneTestCase
     writer.close();
 
     // Open reader
-    IndexReader r = getOnlySegmentReader(IndexReader.open(dir, false));
+    IndexReader r = getOnlySegmentReader(IndexReader.open(dir));
     final int[] ints = FieldCache.DEFAULT.getInts(r, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
@@ -1173,7 +766,7 @@ public class TestIndexReader extends LuceneTestCase
     writer.commit();
 
     // Open reader1
-    IndexReader r = IndexReader.open(dir, false);
+    IndexReader r = IndexReader.open(dir);
     IndexReader r1 = getOnlySegmentReader(r);
     final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
     assertEquals(1, ints.length);
@@ -1207,7 +800,7 @@ public class TestIndexReader extends LuceneTestCase
     writer.addDocument(doc);
     writer.commit();
 
-    IndexReader r = IndexReader.open(dir, false);
+    IndexReader r = IndexReader.open(dir);
     IndexReader r1 = getOnlySegmentReader(r);
     assertEquals(36, r1.getUniqueTermCount());
     writer.addDocument(doc);
@@ -1237,7 +830,7 @@ public class TestIndexReader extends LuceneTestCase
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader r = IndexReader.open(dir, null, true, -1);
+    IndexReader r = IndexReader.open(dir, -1);
     try {
       r.docFreq(new Term("field", "f"));
       fail("did not hit expected exception");
@@ -1282,7 +875,7 @@ public class TestIndexReader extends LuceneTestCase
     writer.commit();
     Document doc = new Document();
     writer.addDocument(doc);
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     assertTrue(r.isCurrent());
     writer.addDocument(doc);
     writer.prepareCommit();

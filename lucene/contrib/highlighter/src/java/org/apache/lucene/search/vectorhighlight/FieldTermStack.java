@@ -58,7 +58,7 @@ public class FieldTermStack {
   //  writer.addDocument( doc );
   //  writer.close();
     
-  //  IndexReader reader = IndexReader.open( dir, true );
+  //  IndexReader reader = IndexReader.open(dir1);
   //  new FieldTermStack( reader, 0, "f", fieldQuery );
   //  reader.close();
   //}

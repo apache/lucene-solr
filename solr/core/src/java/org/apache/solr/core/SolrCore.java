@@ -314,12 +314,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return newSearcher(name, false);
-  }
-  
-  // gets a non-caching searcher
-  public SolrIndexSearcher newSearcher(String name, boolean readOnly) throws IOException {
-    return new SolrIndexSearcher(this, getNewIndexDir(), schema, getSolrConfig().mainIndexConfig, name, readOnly, false, directoryFactory);
+    return new SolrIndexSearcher(this, getNewIndexDir(), schema, getSolrConfig().mainIndexConfig, name, false, directoryFactory);
   }
 
 
@@ -1149,7 +1144,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       } else {
         // verbose("non-reopen START:");
-        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().mainIndexConfig, "main", true, true, directoryFactory);
+        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().mainIndexConfig, "main", true, directoryFactory);
         // verbose("non-reopen DONE: searcher=",tmp);
       }
     } catch (Throwable th) {

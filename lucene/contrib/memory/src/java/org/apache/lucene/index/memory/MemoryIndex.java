@@ -767,11 +767,11 @@ public class MemoryIndex {
     }
     
     @Override
-    public int docFreq(Term term) {
-      Info info = getInfo(term.field());
+    public int docFreq(String field, BytesRef term) {
+      Info info = getInfo(field);
       int freq = 0;
-      if (info != null) freq = info.getPositions(term.bytes()) != null ? 1 : 0;
-      if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + term + ", freq:" + freq);
+      if (info != null) freq = info.getPositions(term) != null ? 1 : 0;
+      if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + field + ":" + term + ", freq:" + freq);
       return freq;
     }
     
@@ -1112,11 +1112,6 @@ public class MemoryIndex {
       }
       return norms;
     }
-
-    @Override
-    protected void doSetNorm(int doc, String fieldName, byte value) {
-      throw new UnsupportedOperationException();
-    }
   
     @Override
     public int numDocs() {
@@ -1140,21 +1135,6 @@ public class MemoryIndex {
     public boolean hasDeletions() {
       if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
       return false;
-    }
-  
-    @Override
-    protected void doDelete(int docNum) {
-      throw new UnsupportedOperationException();
-    }
-  
-    @Override
-    protected void doUndeleteAll() {
-      throw new UnsupportedOperationException();
-    }
-  
-    @Override
-    protected void doCommit(Map<String,String> commitUserData) {
-      if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
     }
   
     @Override

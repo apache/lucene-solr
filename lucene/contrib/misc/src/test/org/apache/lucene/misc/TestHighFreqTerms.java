@@ -43,7 +43,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
     indexDocs(writer);
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     _TestUtil.checkIndex(dir);
   }
   

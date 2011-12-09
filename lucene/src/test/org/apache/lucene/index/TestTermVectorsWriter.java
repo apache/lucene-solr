@@ -59,7 +59,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator(null);
@@ -119,7 +119,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -156,7 +156,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -197,7 +197,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -235,7 +235,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -274,7 +274,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -325,7 +325,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -372,7 +372,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
@@ -433,7 +433,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      IndexReader reader = IndexReader.open(dir);
       for(int i=0;i<reader.numDocs();i++) {
         reader.document(i);
         reader.getTermVectors(i);
@@ -487,7 +487,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir, true);
+      IndexReader reader = IndexReader.open(dir);
       assertNull(reader.getTermVectors(0));
       assertNull(reader.getTermVectors(1));
       assertNotNull(reader.getTermVectors(2));
@@ -532,7 +532,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     for(int i=0;i<10;i++) {
       reader.getTermVectors(i);
       reader.document(i);

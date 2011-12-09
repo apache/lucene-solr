@@ -51,6 +51,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     // TODO: segmentInfosFormat should be allowed to declare additional files
     // if it wants, in addition to segments_N
     docValuesFormat().files(dir, info, files);
+    normsFormat().files(dir, info, files);
   }
   
   /** Encodes/decodes postings */
@@ -70,6 +71,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   /** Encodes/decodes segments file */
   public abstract SegmentInfosFormat segmentInfosFormat();
+  
+  /** Encodes/decodes document normalization values */
+  public abstract NormsFormat normsFormat();
   
   /** looks up a codec by name */
   public static Codec forName(String name) {

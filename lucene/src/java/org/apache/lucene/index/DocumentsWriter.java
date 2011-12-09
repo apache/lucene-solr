@@ -52,7 +52,7 @@ import org.apache.lucene.util.InfoStream;
  * are processing the document).
  *
  * Other consumers, eg {@link FreqProxTermsWriter} and
- * {@link NormsWriter}, buffer bytes in RAM and flush only
+ * {@link NormsConsumer}, buffer bytes in RAM and flush only
  * when a new segment is produced.
 
  * Once we have used our allowed RAM buffer, or the number

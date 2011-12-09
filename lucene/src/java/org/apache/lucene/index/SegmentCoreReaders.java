@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.NormsReader;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
@@ -48,6 +49,7 @@ final class SegmentCoreReaders {
   
   final FieldsProducer fields;
   final PerDocValues perDocProducer;
+  final NormsReader norms;
 
   final Directory dir;
   final Directory cfsDir;
@@ -92,6 +94,10 @@ final class SegmentCoreReaders {
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;
+      // ask codec for its Norms: 
+      // TODO: since we don't write any norms file if there are no norms,
+      // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
+      norms = codec.normsFormat().normsReader(cfsDir, si, fieldInfos, context, dir);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
       success = true;
     } finally {
@@ -126,7 +132,7 @@ final class SegmentCoreReaders {
   synchronized void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
-          fieldsReaderOrig, cfsReader, storeCFSReader);
+          fieldsReaderOrig, cfsReader, storeCFSReader, norms);
       // Now, notify any ReaderFinished listeners:
       if (owner != null) {
         owner.notifyReaderFinishedListeners();

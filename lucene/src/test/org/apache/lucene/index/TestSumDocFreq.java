@@ -17,9 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -38,11 +38,14 @@ public class TestSumDocFreq extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();
+    Field id = newField("id", "", StringField.TYPE_UNSTORED);
     Field field1 = newField("foo", "", TextField.TYPE_UNSTORED);
     Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
+    doc.add(id);
     doc.add(field1);
     doc.add(field2);
     for (int i = 0; i < numDocs; i++) {
+      id.setValue("" + i);
       char ch1 = (char) _TestUtil.nextInt(random, 'a', 'z');
       char ch2 = (char) _TestUtil.nextInt(random, 'a', 'z');
       field1.setValue("" + ch1 + " " + ch2);
@@ -53,26 +56,20 @@ public class TestSumDocFreq extends LuceneTestCase {
     }
     
     IndexReader ir = writer.getReader();
-    writer.close();
     
     assertSumDocFreq(ir);    
     ir.close();
     
-    ir = IndexReader.open(dir, false);
     int numDeletions = atLeast(20);
     for (int i = 0; i < numDeletions; i++) {
-      ir.deleteDocument(random.nextInt(ir.maxDoc()));
+      writer.deleteDocuments(new Term("id", "" + random.nextInt(numDocs)));
     }
-    ir.close();
+    writer.forceMerge(1);
+    writer.close();
     
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    w.forceMerge(1);
-    w.close();
-    
-    ir = IndexReader.open(dir, true);
+    ir = IndexReader.open(dir);
     assertSumDocFreq(ir);
     ir.close();
-
     dir.close();
   }
   

@@ -109,13 +109,4 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     ensureOpen();
     return readerContext;
   }
-  
-  @Override
-  protected void doSetNorm(int n, String field, byte value)
-      throws CorruptIndexException, IOException {
-    synchronized(normsCache) {
-      normsCache.remove(field);
-    }
-    in.doSetNorm(n, field, value);
-  }
 }

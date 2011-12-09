@@ -323,19 +323,6 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     assertTrue("Should be obtained from cache at 8th attempt",totalCounts == 
       TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
     
-    // delete a doc from the reader and commit - should recompute
-    origReader.close();
-    origReader = readers[0].indexReader;
-    readers[0].indexReader = IndexReader.open(origReader.directory(),false);
-    initCache();
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
-    prevGen = assertRecomputed(totalCounts, prevGen, "after opening a writable reader - 9th attempt!");
-    // now do the delete
-    readers[0].indexReader.deleteDocument(1);
-    readers[0].indexReader.commit(null);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
-    prevGen = assertRecomputed(totalCounts, prevGen, "after deleting docs the index - 10th attempt!");
-    
     origReader.close();
     readers[0].close();
     r2.close();

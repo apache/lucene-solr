@@ -147,7 +147,7 @@ public class TestIndexClose extends LuceneTestCase {
       }  
       @Override
       protected IndexReader openIndexReader(Directory dir) throws CorruptIndexException, IOException {
-        return new InstrumentedIndexReader(IndexReader.open(dir,true)); 
+        return new InstrumentedIndexReader(IndexReader.open(dir)); 
       }
 
     }

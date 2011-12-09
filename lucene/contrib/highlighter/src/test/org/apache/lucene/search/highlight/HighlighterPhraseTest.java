@@ -68,7 +68,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory, true);
+    final IndexReader indexReader = IndexReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
@@ -116,7 +116,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory, true);
+    final IndexReader indexReader = IndexReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
@@ -191,7 +191,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory, true);
+    final IndexReader indexReader = IndexReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
@@ -237,7 +237,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory, true);
+    final IndexReader indexReader = IndexReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
@@ -281,7 +281,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     } finally {
       indexWriter.close();
     }
-    final IndexReader indexReader = IndexReader.open(directory, true);
+    final IndexReader indexReader = IndexReader.open(directory);
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);

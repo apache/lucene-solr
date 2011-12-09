@@ -123,7 +123,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.addDocument(doc);
     writer.forceMerge(1);
     writer.close();
-    IndexReader reader = IndexReader.open(dir, null, true, 1);
+    IndexReader reader = IndexReader.open(dir, 1);
     assertEquals(2, reader.numDocs());
     Document doc2 = reader.document(0);
     assertEquals(text, doc2.get("f"));

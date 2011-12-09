@@ -29,12 +29,8 @@ import org.apache.lucene.store.Directory;
  */
 public class StandardIndexReaderFactory extends IndexReaderFactory {
   
-  /* (non-Javadoc)
-   * @see org.apache.solr.core.IndexReaderFactory#newReader(org.apache.lucene.store.Directory, boolean)
-   */
   @Override
-  public IndexReader newReader(Directory indexDir, boolean readOnly)
-      throws IOException {
-    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor);
+  public IndexReader newReader(Directory indexDir) throws IOException {
+    return IndexReader.open(indexDir, termInfosIndexDivisor);
   }
 }

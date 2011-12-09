@@ -48,7 +48,7 @@ public final class SegmentInfo implements Cloneable {
   // TODO: remove these from this class, for now this is the representation
   public static final int NO = -1;          // e.g. no norms; no deletes;
   public static final int YES = 1;          // e.g. have norms; have deletes;
-  static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
+  public static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
   public String name;				  // unique name in dir
   public int docCount;				  // number of docs in seg
@@ -337,23 +337,10 @@ public final class SegmentInfo implements Cloneable {
   }
 
   /**
-   * Returns true if this field for this segment has saved a separate norms file (_<segment>_N.sX).
-   *
-   * @param fieldNumber the field index to check
+   * @deprecated separate norms are not supported in >= 4.0
    */
-  public boolean hasSeparateNorms(int fieldNumber) {
-    if (normGen == null) {
-      return false;
-    }
-
-    Long gen = normGen.get(fieldNumber);
-    return gen != null && gen.longValue() != NO;
-  }
-
-  /**
-   * Returns true if any fields in this segment have separate norms.
-   */
-  public boolean hasSeparateNorms() {
+  @Deprecated
+  boolean hasSeparateNorms() {
     if (normGen == null) {
       return false;
     } else {
@@ -365,42 +352,6 @@ public final class SegmentInfo implements Cloneable {
     }
 
     return false;
-  }
-
-  void initNormGen() {
-    if (normGen == null) { // normGen is null if this segments file hasn't had any norms set against it yet
-      normGen = new HashMap<Integer, Long>();
-    }
-  }
-
-  /**
-   * Increment the generation count for the norms file for
-   * this field.
-   *
-   * @param fieldIndex field whose norm file will be rewritten
-   */
-  void advanceNormGen(int fieldIndex) {
-    Long gen = normGen.get(fieldIndex);
-    if (gen == null || gen.longValue() == NO) {
-      normGen.put(fieldIndex, new Long(YES));
-    } else {
-      normGen.put(fieldIndex, gen+1);
-    }
-    clearFilesCache();
-  }
-
-  /**
-   * Get the file name for the norms file for this field.
-   *
-   * @param number field index
-   */
-  public String getNormFileName(int number) {
-    if (hasSeparateNorms(number)) {
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
-    } else {
-      // single file for all norms
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);
-    }
   }
 
   /**
@@ -516,11 +467,6 @@ public final class SegmentInfo implements Cloneable {
     return codec;
   }
 
-  private void addIfExists(Set<String> files, String fileName) throws IOException {
-    if (dir.fileExists(fileName))
-      files.add(fileName);
-  }
-
   /*
    * Return all files referenced by this SegmentInfo.  The
    * returns List is a locally cached List so you should not
@@ -546,9 +492,6 @@ public final class SegmentInfo implements Cloneable {
             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
       }
     } else {
-      for(String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS) {
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));
-      }
       codec.files(dir, this, fileSet);
     }
 
@@ -566,15 +509,12 @@ public final class SegmentInfo implements Cloneable {
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       fileSet.add(delFileName);
     }
-   
+
+    // because separate norm files are unconditionally stored outside cfs,
+    // we must explicitly ask for their filenames if we might have separate norms:
+    // remove this when 3.x indexes are no longer supported
     if (normGen != null) {
-      for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        long gen = entry.getValue();
-        if (gen >= YES) {
-          // Definitely a separate norm file, with generation:
-          fileSet.add(IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
-        }
-      }
+      codec.normsFormat().separateFiles(dir, this, fileSet);
     }
 
     files = new ArrayList<String>(fileSet);

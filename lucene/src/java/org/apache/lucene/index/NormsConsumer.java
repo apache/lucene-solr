@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.index.codecs.NormsFormat;
+import org.apache.lucene.index.codecs.NormsWriter;
 import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store
@@ -32,8 +32,12 @@ import org.apache.lucene.util.IOUtils;
  *  merges all of these together into a single _X.nrm file.
  */
 
-final class NormsWriter extends InvertedDocEndConsumer {
-
+final class NormsConsumer extends InvertedDocEndConsumer {
+  final NormsFormat normsFormat;
+  
+  public NormsConsumer(DocumentsWriterPerThread dwpt) {
+    normsFormat = dwpt.codec.normsFormat();
+  }
 
   @Override
   public void abort() {}
@@ -49,29 +53,25 @@ final class NormsWriter extends InvertedDocEndConsumer {
       return;
     }
 
-    final String normsFileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.NORMS_EXTENSION);
-    IndexOutput normsOut = state.directory.createOutput(normsFileName, state.context);
+    NormsWriter normsOut = null;
     boolean success = false;
     try {
-      normsOut.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);
-
-      int normCount = 0;
+      normsOut = normsFormat.normsWriter(state);
 
       for (FieldInfo fi : state.fieldInfos) {
-        final NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fi);
+        final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
         int upto = 0;
         // we must check the final value of omitNorms for the fieldinfo, it could have 
         // changed for this field since the first time we added it.
         if (!fi.omitNorms && toWrite != null && toWrite.upto > 0) {
-          normCount++;
-
+          normsOut.startField(fi);
           int docID = 0;
           for (; docID < state.numDocs; docID++) {
             if (upto < toWrite.upto && toWrite.docIDs[upto] == docID) {
-              normsOut.writeByte(toWrite.norms[upto]);
+              normsOut.writeNorm(toWrite.norms[upto]);
               upto++;
             } else {
-              normsOut.writeByte((byte) 0);
+              normsOut.writeNorm((byte) 0);
             }
           }
 
@@ -80,14 +80,13 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
           toWrite.reset();
         } else if (fi.isIndexed && !fi.omitNorms) {
-          normCount++;
           // Fill entire field with default norm:
+          normsOut.startField(fi);
           for(;upto<state.numDocs;upto++)
-            normsOut.writeByte((byte) 0);
+            normsOut.writeNorm((byte) 0);
         }
-
-        assert 4+normCount*(long)state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*(long)state.numDocs) + " actual=" + normsOut.getFilePointer();
       }
+      normsOut.finish(state.numDocs);
       success = true;
     } finally {
       if (success) {
@@ -107,6 +106,6 @@ final class NormsWriter extends InvertedDocEndConsumer {
   @Override
   InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField,
       FieldInfo fieldInfo) {
-    return new NormsWriterPerField(docInverterPerField, fieldInfo);
+    return new NormsConsumerPerField(docInverterPerField, fieldInfo);
   }
 }

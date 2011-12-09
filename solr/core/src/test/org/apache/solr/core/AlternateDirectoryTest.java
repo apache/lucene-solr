@@ -61,10 +61,9 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     static volatile boolean newReaderCalled = false;
 
     @Override
-    public IndexReader newReader(Directory indexDir, boolean readOnly)
-        throws IOException {
+    public IndexReader newReader(Directory indexDir) throws IOException {
       TestIndexReaderFactory.newReaderCalled = true;
-      return IndexReader.open(indexDir, readOnly);
+      return IndexReader.open(indexDir);
     }
   }
 

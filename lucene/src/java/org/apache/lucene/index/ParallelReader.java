@@ -332,24 +332,6 @@ public class ParallelReader extends IndexReader {
     return hasDeletions;
   }
 
-  // delete in all readers
-  @Override
-  protected void doDelete(int n) throws CorruptIndexException, IOException {
-    for (final IndexReader reader : readers) {
-      reader.deleteDocument(n);
-    }
-    hasDeletions = true;
-  }
-
-  // undeleteAll in all readers
-  @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (final IndexReader reader : readers) {
-      reader.undeleteAll();
-    }
-    hasDeletions = false;
-  }
-
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
@@ -403,25 +385,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  protected void doSetNorm(int n, String field, byte value)
-    throws CorruptIndexException, IOException {
-    IndexReader reader = fieldToReader.get(field);
-    if (reader!=null) {
-      synchronized(normsCache) {
-        normsCache.remove(field);
-      }
-      reader.doSetNorm(n, field, value);
-    }
-  }
-
-  @Override
-  public int docFreq(Term term) throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(term.field());
-    return reader==null ? 0 : reader.docFreq(term);
-  }
-
-  @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);
@@ -455,12 +418,6 @@ public class ParallelReader extends IndexReader {
   // for testing
   IndexReader[] getSubReaders() {
     return readers.toArray(new IndexReader[readers.size()]);
-  }
-
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    for (final IndexReader reader : readers)
-      reader.commit(commitUserData);
   }
 
   @Override

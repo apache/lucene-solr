@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.lucene40;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
+import org.apache.lucene.index.codecs.NormsFormat;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
@@ -40,6 +41,7 @@ public class Lucene40Codec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
   private final DocValuesFormat docValuesFormat = new Lucene40DocValuesFormat();
   private final SegmentInfosFormat infosFormat = new Lucene40SegmentInfosFormat();
+  private final NormsFormat normsFormat = new Lucene40NormsFormat();
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
@@ -79,6 +81,11 @@ public class Lucene40Codec extends Codec {
   @Override
   public SegmentInfosFormat segmentInfosFormat() {
     return infosFormat;
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return normsFormat;
   }
 
   /** Returns the postings format that should be used for writing 

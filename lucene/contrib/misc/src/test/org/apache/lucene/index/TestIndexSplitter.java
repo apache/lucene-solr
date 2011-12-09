@@ -69,7 +69,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     String splitSegName = is.infos.info(1).name;
     is.split(destDir, new String[] {splitSegName});
     Directory fsDirDest = newFSDirectory(destDir);
-    IndexReader r = IndexReader.open(fsDirDest, true);
+    IndexReader r = IndexReader.open(fsDirDest);
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest.close();
@@ -81,76 +81,17 @@ public class TestIndexSplitter extends LuceneTestCase {
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
     assertEquals(4, destDir2.listFiles().length);
     Directory fsDirDest2 = newFSDirectory(destDir2);
-    r = IndexReader.open(fsDirDest2, true);
+    r = IndexReader.open(fsDirDest2);
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest2.close();
     
     // now remove the copied segment from src
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), "-d", splitSegName});
-    r = IndexReader.open(fsDir, true);
+    r = IndexReader.open(fsDir);
     assertEquals(2, r.getSequentialSubReaders().length);
     r.close();
     fsDir.close();
   }
 
-  public void testDeleteThenFullMerge() throws Exception {
-    // Create directories where the indexes will reside
-    File indexPath = new File(TEMP_DIR, "testfilesplitter");
-    _TestUtil.rmDir(indexPath);
-    indexPath.mkdirs();
-    File indexSplitPath = new File(TEMP_DIR, "testfilesplitterdest");
-    _TestUtil.rmDir(indexSplitPath);
-    indexSplitPath.mkdirs();
-    
-    // Create the original index
-    LogMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-    mergePolicy.setNoCFSRatio(1);
-    IndexWriterConfig iwConfig
-        = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-              .setOpenMode(OpenMode.CREATE)
-              .setMergePolicy(mergePolicy);
-    Directory fsDir = newFSDirectory(indexPath);
-    IndexWriter indexWriter = new IndexWriter(fsDir, iwConfig);
-    Document doc = new Document();
-    doc.add(new Field("content", "doc 1", StringField.TYPE_STORED));
-    indexWriter.addDocument(doc);
-    doc = new Document();
-    doc.add(new Field("content", "doc 2", StringField.TYPE_STORED));
-    indexWriter.addDocument(doc);
-    indexWriter.close();
-    fsDir.close();
-    
-    // Create the split index
-    IndexSplitter indexSplitter = new IndexSplitter(indexPath);
-    String splitSegName = indexSplitter.infos.info(0).name;
-    indexSplitter.split(indexSplitPath, new String[] {splitSegName});
-
-    // Delete the first document in the split index
-    Directory fsDirDest = newFSDirectory(indexSplitPath);
-    IndexReader indexReader = IndexReader.open(fsDirDest, false);
-    indexReader.deleteDocument(0);
-    assertEquals(1, indexReader.numDocs());
-    indexReader.close();
-    fsDirDest.close();
-
-    // Fully merge the split index
-    mergePolicy = new LogByteSizeMergePolicy();
-    mergePolicy.setNoCFSRatio(1);
-    iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-                   .setOpenMode(OpenMode.APPEND)
-                   .setMergePolicy(mergePolicy);
-    fsDirDest = newFSDirectory(indexSplitPath);
-    indexWriter = new IndexWriter(fsDirDest, iwConfig);
-    indexWriter.forceMerge(1);
-    indexWriter.close();
-    fsDirDest.close();
-
-    // Read the number of docs in the index
-    fsDirDest = newFSDirectory(indexSplitPath);
-    indexReader = IndexReader.open(fsDirDest);
-	  assertEquals(1, indexReader.numDocs());
-    indexReader.close();
-    fsDirDest.close();
-  }
 }
