@@ -220,6 +220,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
 
+  /** {@inheritDoc} */
   @Deprecated
   @Override
   public boolean isOptimized() {
@@ -268,7 +269,8 @@ public class MultiReader extends IndexReader implements Cloneable {
     return hasDeletions;
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doDelete(int n) throws CorruptIndexException, IOException {
     numDocs = -1;                             // invalidate cache
     int i = readerIndex(n);                   // find segment num
@@ -276,7 +278,8 @@ public class MultiReader extends IndexReader implements Cloneable {
     hasDeletions = true;
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doUndeleteAll() throws CorruptIndexException, IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].undeleteAll();
@@ -333,7 +336,8 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     synchronized (normsCache) {
@@ -407,7 +411,8 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit(commitUserData);

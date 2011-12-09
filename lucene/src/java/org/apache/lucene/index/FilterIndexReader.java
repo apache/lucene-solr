@@ -197,7 +197,8 @@ public class FilterIndexReader extends IndexReader {
     return in.hasDeletions();
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doUndeleteAll() throws CorruptIndexException, IOException {in.undeleteAll();}
 
   @Override
@@ -218,7 +219,8 @@ public class FilterIndexReader extends IndexReader {
     in.norms(f, bytes, offset);
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
     in.setNorm(d, f, b);
   }
@@ -259,10 +261,12 @@ public class FilterIndexReader extends IndexReader {
     return in.termPositions();
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
   
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     in.commit(commitUserData);
   }

@@ -360,7 +360,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
     // doOpenIfChanged calls ensureOpen
     DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
@@ -391,7 +392,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return doOpenIfChanged(readOnly, null);
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected final IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
     return doOpenIfChanged(openReadOnly, null);
   }
@@ -547,6 +549,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
 
+  /** {@inheritDoc} */
   @Deprecated
   @Override
   public boolean isOptimized() {
@@ -596,7 +599,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return hasDeletions;
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doDelete(int n) throws CorruptIndexException, IOException {
     numDocs = -1;                             // invalidate cache
     int i = readerIndex(n);                   // find segment num
@@ -604,7 +608,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     hasDeletions = true;
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doUndeleteAll() throws CorruptIndexException, IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].undeleteAll();
@@ -679,7 +684,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     synchronized (normsCache) {
@@ -763,8 +769,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
    *                               if another writer has this index open (<code>write.lock</code> could not be
    *                               obtained)
    * @throws IOException           if there is a low-level IO error
+   * @deprecated
    */
-  @Override
+  @Override @Deprecated
   protected void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
 
     if (readOnly) {
@@ -805,8 +812,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
    * semantics).
    *
    * @throws IOException if there is a low-level IO error
+   * @deprecated
    */
-  @Override
+  @Override @Deprecated
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     if (hasChanges) {
       segmentInfos.setUserData(commitUserData);

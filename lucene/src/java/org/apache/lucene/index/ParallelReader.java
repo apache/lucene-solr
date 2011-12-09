@@ -267,8 +267,8 @@ public class ParallelReader extends IndexReader {
     return false;
   }
 
-  // delete in all readers
-  @Override
+  /** {@inheritDoc} */
+  @Deprecated @Override
   protected void doDelete(int n) throws CorruptIndexException, IOException {
     for (final IndexReader reader : readers) {
       reader.deleteDocument(n);
@@ -276,8 +276,8 @@ public class ParallelReader extends IndexReader {
     hasDeletions = true;
   }
 
-  // undeleteAll in all readers
-  @Override
+  /** {@inheritDoc} */
+  @Deprecated @Override
   protected void doUndeleteAll() throws CorruptIndexException, IOException {
     for (final IndexReader reader : readers) {
       reader.undeleteAll();
@@ -381,7 +381,8 @@ public class ParallelReader extends IndexReader {
       reader.norms(field, result, offset);
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Deprecated @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     IndexReader reader = fieldToReader.get(field);
@@ -469,7 +470,8 @@ public class ParallelReader extends IndexReader {
     return readers.toArray(new IndexReader[readers.size()]);
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Deprecated @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     for (final IndexReader reader : readers)
       reader.commit(commitUserData);

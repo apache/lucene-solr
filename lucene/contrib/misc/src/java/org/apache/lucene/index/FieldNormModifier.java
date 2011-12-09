@@ -35,8 +35,10 @@ import org.apache.lucene.util.StringHelper;
  * <p>
  * NOTE: This will overwrite any length normalization or field/document boosts.
  * </p>
- *
+ * @deprecated This class is broken, as it does not correctly take position 
+ * overlaps into account.
  */
+@Deprecated
 public class FieldNormModifier {
 
   /**

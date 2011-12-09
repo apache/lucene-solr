@@ -15,6 +15,11 @@ API Changes
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
   openIndexWriter parameter rather than just an open-mode. (Doron Cohen) 
   
+* LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
+  setNorm() was deprecated. Furthermore, this class is broken, as it does
+  not take position overlaps into account while recalculating norms.
+  (Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
  * LUCENE-3600: BlockJoinQuery now supports parent docs that have no

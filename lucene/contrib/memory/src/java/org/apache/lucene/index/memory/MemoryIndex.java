@@ -1131,7 +1131,8 @@ public class MemoryIndex implements Serializable {
       System.arraycopy(norms, 0, bytes, offset, norms.length);
     }
   
-    @Override
+    /** {@inheritDoc} */
+    @Deprecated @Override
     protected void doSetNorm(int doc, String fieldName, byte value) {
       throw new UnsupportedOperationException();
     }
@@ -1167,17 +1168,20 @@ public class MemoryIndex implements Serializable {
       return false;
     }
   
-    @Override
+    /** {@inheritDoc} */
+    @Deprecated @Override
     protected void doDelete(int docNum) {
       throw new UnsupportedOperationException();
     }
   
-    @Override
+    /** {@inheritDoc} */
+    @Deprecated @Override
     protected void doUndeleteAll() {
       throw new UnsupportedOperationException();
     }
   
-    @Override
+    /** {@inheritDoc} */
+    @Deprecated @Override
     protected void doCommit(Map<String,String> commitUserData) {
       if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
     }

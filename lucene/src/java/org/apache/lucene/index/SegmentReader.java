@@ -44,7 +44,7 @@ import org.apache.lucene.util.StringHelper;
  * @lucene.experimental
  */
 public class SegmentReader extends IndexReader implements Cloneable {
-  protected boolean readOnly;
+  @Deprecated protected boolean readOnly;
 
   private SegmentInfo si;
   private int readBufferSize;
@@ -170,7 +170,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * Clones the norm bytes.  May be overridden by subclasses.  New and experimental.
    * @param bytes Byte array to clone
    * @return New BitVector
+   * @deprecated
    */
+  @Deprecated
   protected byte[] cloneNormBytes(byte[] bytes) {
     byte[] cloneBytes = new byte[bytes.length];
     System.arraycopy(bytes, 0, cloneBytes, 0, bytes.length);
@@ -181,7 +183,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * Clones the deleteDocs BitVector.  May be overridden by subclasses. New and experimental.
    * @param bv BitVector to clone
    * @return New BitVector
+   * @deprecated
    */
+  @Deprecated
   protected BitVector cloneDeletedDocs(BitVector bv) {
     ensureOpen();
     return (BitVector)bv.clone();
@@ -196,7 +200,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
     return reopenSegment(si, true, openReadOnly);
   }
@@ -207,7 +212,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return reopenSegment(si, false, readOnly);
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected synchronized IndexReader doOpenIfChanged(boolean openReadOnly)
     throws CorruptIndexException, IOException {
     return reopenSegment(si, false, openReadOnly);
@@ -307,7 +313,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return clone;
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     if (hasChanges) {
       startCommit();
@@ -410,7 +417,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return si.hasSeparateNorms();
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doDelete(int docNum) {
     if (deletedDocs == null) {
       deletedDocs = new BitVector(maxDoc());
@@ -431,7 +439,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doUndeleteAll() {
     deletedDocsDirty = false;
     if (deletedDocs != null) {
@@ -599,7 +608,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return norm.bytes();
   }
 
-  @Override
+  /** {@inheritDoc} */
+  @Override @Deprecated
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     SegmentNorms norm = norms.get(field);

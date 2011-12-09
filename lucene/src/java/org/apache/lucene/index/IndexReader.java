@@ -305,7 +305,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Returns an IndexReader reading the index in the given
@@ -317,9 +317,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #open(Directory)} instead
    */
+  @Deprecated
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /**
@@ -346,6 +349,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Expert: returns an IndexReader reading the index in the given
+   *  {@link IndexCommit}.
+   * @param commit the commit point to open
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(commit.getDirectory(), null, commit, true, DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+
+  /** Expert: returns an IndexReader reading the index in the given
    *  {@link IndexCommit}.  You should pass readOnly=true, since it
    *  gives much better concurrent performance, unless you
    *  intend to do write operations (delete documents or
@@ -354,9 +367,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #open(IndexCommit)} instead
    */
+  @Deprecated
   public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -372,9 +388,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #open(Directory)} instead
    */
+  @Deprecated
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -400,9 +419,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  to -1 to skip loading the terms index entirely.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #open(Directory,int)} instead
    */
+  @Deprecated
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor);
+    return DirectoryReader.open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -420,9 +442,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #open(IndexCommit)} instead
    */
+  @Deprecated
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return DirectoryReader.open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -453,13 +478,52 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #open(IndexCommit,int)} instead
    */
+  @Deprecated
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor);
+    return DirectoryReader.open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor);
   }
 
-  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor);
+  /** Expert: Returns a IndexReader reading the index in the given
+   *  Director and given termInfosIndexDivisor
+   * @param directory the index directory
+   * @param termInfosIndexDivisor Subsamples which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, null, null, true, termInfosIndexDivisor);
+  }
+
+  /** Expert: returns an IndexReader reading the index in the given
+   *  {@link IndexCommit} and termInfosIndexDivisor.
+   * @param commit the commit point to open
+   * @param termInfosIndexDivisor Subsamples which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(commit.getDirectory(), null, commit, true, termInfosIndexDivisor);
   }
 
   /**
@@ -513,7 +577,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * null.
    *
    * @see #openIfChanged(IndexReader)
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #openIfChanged(IndexReader)} instead
    */
+  @Deprecated
   public static IndexReader openIfChanged(IndexReader oldReader, boolean readOnly) throws IOException {
     if (oldReader.hasNewReopenAPI2) {
       final IndexReader newReader = oldReader.doOpenIfChanged(readOnly);
@@ -673,7 +740,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated Use IndexReader#openIfChanged(IndexReader) instead
+   * @deprecated Use {@link #openIfChanged(IndexReader)} instead
    */
   @Deprecated
   public IndexReader reopen() throws CorruptIndexException, IOException {
@@ -689,8 +756,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  readOnly of the original reader.  If the index is
    *  unchanged but readOnly is different then a new reader
    *  will be returned.
-   * @deprecated Use
-   * IndexReader#openIfChanged(IndexReader,boolean) instead */
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #openIfChanged(IndexReader)} instead
+   */
   @Deprecated
   public IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
     final IndexReader newReader = IndexReader.openIfChanged(this, openReadOnly);
@@ -707,7 +775,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  already on, and this reader is already readOnly, then
    *  this same instance is returned; if it is not already
    *  readOnly, a readOnly clone is returned.
-   * @deprecated Use IndexReader#openIfChanged(IndexReader,IndexCommit) instead
+   * @deprecated Use {@link #openIfChanged(IndexReader,IndexCommit)} instead
    */
   @Deprecated
   public IndexReader reopen(IndexCommit commit) throws CorruptIndexException, IOException {
@@ -786,7 +854,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException
    *
    * @lucene.experimental
-   * @deprecated Use IndexReader#openIfChanged(IndexReader,IndexReader,boolean) instead
+   * @deprecated Use {@link #openIfChanged(IndexReader,IndexWriter,boolean)} instead
    */
   @Deprecated
   public IndexReader reopen(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
@@ -813,7 +881,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * else, return {@code null}.
    * 
    * @see #openIfChanged(IndexReader, boolean)
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #doOpenIfChanged()} instead
    */
+  @Deprecated
   protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
@@ -865,7 +936,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * reader cannot open a writeable reader.  
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #clone()} instead.
    */
+  @Deprecated
   public synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not implement clone()");
   }
@@ -1196,7 +1270,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  be obtained)
    * @throws IOException if there is a low-level IO error
    * @throws IllegalStateException if the field does not index norms
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * There will be no replacement for this method.
    */
+  @Deprecated
   public final synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
@@ -1205,7 +1282,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
     doSetNorm(doc, field, value);
   }
 
-  /** Implements setNorm in subclass.*/
+  /** Implements setNorm in subclass.
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * There will be no replacement for this method.
+   */
+  @Deprecated
   protected abstract void doSetNorm(int doc, String field, byte value)
           throws CorruptIndexException, IOException;
 
@@ -1222,9 +1303,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link #setNorm(int, String, byte)} instead, encoding the
-   * float to byte with your Similarity's {@link Similarity#encodeNormValue(float)}.
-   * This method will be removed in Lucene 4.0
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * There will be no replacement for this method.
    */
   @Deprecated
   public final void setNorm(int doc, String field, float value)
@@ -1332,7 +1412,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link IndexWriter#deleteDocuments(Term)} instead
    */
+  @Deprecated
   public final synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
@@ -1343,7 +1426,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** Implements deletion of the document numbered <code>docNum</code>.
    * Applications should call {@link #deleteDocument(int)} or {@link #deleteDocuments(Term)}.
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link IndexWriter#deleteDocuments(Term)} instead
    */
+  @Deprecated
   protected abstract void doDelete(int docNum) throws CorruptIndexException, IOException;
 
 
@@ -1363,7 +1449,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link IndexWriter#deleteDocuments(Term)} instead
    */
+  @Deprecated
   public final int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     TermDocs docs = termDocs(term);
@@ -1398,7 +1487,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  be obtained)
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * There will be no replacement for this method.
    */
+  @Deprecated
   public final synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
@@ -1406,11 +1498,18 @@ public abstract class IndexReader implements Cloneable,Closeable {
     doUndeleteAll();
   }
 
-  /** Implements actual undeleteAll() in subclass. */
+  /** Implements actual undeleteAll() in subclass.
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * There will be no replacement for this method.
+   */
+  @Deprecated
   protected abstract void doUndeleteAll() throws CorruptIndexException, IOException;
 
   /** Does nothing by default. Subclasses that require a write lock for
-   *  index modifications must implement this method. */
+   *  index modifications must implement this method.
+   * @deprecated Write support will be removed in Lucene 4.0.
+   */
+  @Deprecated
   protected synchronized void acquireWriteLock() throws IOException {
     /* NOOP */
   }
@@ -1418,7 +1517,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /**
    * 
    * @throws IOException
+   * @deprecated Write support will be removed in Lucene 4.0.
    */
+  @Deprecated
   public final synchronized void flush() throws IOException {
     ensureOpen();
     commit();
@@ -1430,7 +1531,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  and retrievable by {@link
    *  IndexReader#getCommitUserData}.
    * @throws IOException
+   * @deprecated Write support will be removed in Lucene 4.0.
    */
+  @Deprecated
   public final synchronized void flush(Map<String, String> commitUserData) throws IOException {
     ensureOpen();
     commit(commitUserData);
@@ -1444,7 +1547,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * changes will have been committed to the index
    * (transactional semantics).
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
    */
+  @Deprecated
   protected final synchronized void commit() throws IOException {
     commit(null);
   }
@@ -1457,14 +1562,19 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * changes will have been committed to the index
    * (transactional semantics).
    * @throws IOException if there is a low-level IO error
+   * @deprecated Write support will be removed in Lucene 4.0.
    */
+  @Deprecated
   public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
     // Don't call ensureOpen since we commit() on close
     doCommit(commitUserData);
     hasChanges = false;
   }
 
-  /** Implements commit.  */
+  /** Implements commit.
+   * @deprecated Write support will be removed in Lucene 4.0.
+   */
+  @Deprecated
   protected abstract void doCommit(Map<String, String> commitUserData) throws IOException;
 
   /**
