@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesWriterBase;
-import org.apache.lucene.index.values.DirectSource;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.IndexDocValues.Source;
