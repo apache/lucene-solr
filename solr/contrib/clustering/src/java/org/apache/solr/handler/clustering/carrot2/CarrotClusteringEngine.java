@@ -295,6 +295,12 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     HashSet<String> fields = Sets.newHashSet(getFieldsForClustering(sreq));
     fields.add(idFieldName);
     fields.add(solrParams.get(CarrotParams.URL_FIELD_NAME, "url"));
+    fields.addAll(getCustomFieldsMap(solrParams).keySet());
+
+    String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME);
+    if (StringUtils.isNotBlank(languageField)) { 
+      fields.add(languageField);
+    }
     return fields;
   }
 
@@ -334,20 +340,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME, null);
     
     // Maps Solr field names to Carrot2 custom field names
-    Map<String, String> customFields = null;
-    String [] customFieldsSpec = solrParams.getParams(CarrotParams.CUSTOM_FIELD_NAME);
-    if (customFieldsSpec != null) {
-      customFields = Maps.newHashMap();
-      for (String customFieldSpec : customFieldsSpec) {
-        String [] split = customFieldSpec.split(":"); 
-        if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
-          customFields.put(split[0], split[1]);
-        } else {
-          log.warn("Unsupported format for " + CarrotParams.CUSTOM_FIELD_NAME
-              + ": '" + customFieldSpec + "'. Skipping this field definition.");
-        }
-      }
-    }
+    Map<String, String> customFields = getCustomFieldsMap(solrParams);
 
     // Parse language code map string into a map
     Map<String, String> languageCodeMap = Maps.newHashMap();
@@ -483,6 +476,28 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
 
     return result;
+  }
+
+  /**
+   * Prepares a map of Solr field names (keys) to the corresponding Carrot2
+   * custom field names.
+   */
+  private Map<String, String> getCustomFieldsMap(SolrParams solrParams) {
+    Map<String, String> customFields = Maps.newHashMap();
+    String [] customFieldsSpec = solrParams.getParams(CarrotParams.CUSTOM_FIELD_NAME);
+    if (customFieldsSpec != null) {
+      customFields = Maps.newHashMap();
+      for (String customFieldSpec : customFieldsSpec) {
+        String [] split = customFieldSpec.split(":"); 
+        if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
+          customFields.put(split[0], split[1]);
+        } else {
+          log.warn("Unsupported format for " + CarrotParams.CUSTOM_FIELD_NAME
+              + ": '" + customFieldSpec + "'. Skipping this field definition.");
+        }
+      }
+    }
+    return customFields;
   }
 
   private String getConcatenated(SolrDocument sdoc, String fieldsSpec) {
