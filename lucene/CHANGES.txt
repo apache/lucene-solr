@@ -217,7 +217,11 @@ Changes in backwards compatibility policy
   instances. Furthermore, IndexReader.setNorm() was removed. If you need
   customized norm values, the recommended way to do this is by modifying
   SimilarityProvider to use an external byte[] or one of the new DocValues
-  fields (LUCENE-3108).  (Uwe Schindler, Robert Muir)
+  fields (LUCENE-3108). If you want to dynamically change norms (boost
+  *and* length norm) at query time, wrap your IndexReader using
+  FilterIndexReader, overriding FilterIndexReader.norms(). To persist the
+  changes on disk, copy the FilteredIndexReader to a new index using
+  IndexWriter.addIndexes().  (Uwe Schindler, Robert Muir)
   
 Changes in Runtime Behavior
 
@@ -675,6 +679,22 @@ Security fixes
   the clone of an IndexInput retrieved from MMapDirectory. This security fix
   prevents this as best as it can by throwing AlreadyClosedException
   also on clones.  (Uwe Schindler, Robert Muir)
+
+API Changes
+
+* LUCENE-3606: IndexReader will be made read-only in Lucene 4.0, so all
+  methods allowing to delete or undelete documents using IndexReader were
+  deprecated; you should use IndexWriter now. Consequently
+  IndexReader.commit() and all open(), openIfChanged(), clone() methods
+  taking readOnly booleans (or IndexDeletionPolicy instances) were
+  deprecated. IndexReader.setNorm() is superfluous and was deprecated.
+  If you have to change per-document boost use CustomScoreQuery.
+  If you want to dynamically change norms (boost *and* length norm) at
+  query time, wrap your IndexReader using FilterIndexReader, overriding
+  FilterIndexReader.norms(). To persist the changes on disk, copy the
+  FilteredIndexReader to a new index using IndexWriter.addIndexes().
+  In Lucene 4.0, SimilarityProvider will allow you to customize scoring
+  using external norms, too.  (Uwe Schindler, Robert Muir)
 
 New Features
 

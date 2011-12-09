@@ -76,6 +76,11 @@ API Changes
  * LUCENE-3308: DuplicateFilter keepMode and processingMode have been converted to
    enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode repsectively.
    
+* LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
+  setNorm() was deprecated. Furthermore, this class is broken, as it does
+  not take position overlaps into account while recalculating norms.
+  (Uwe Schindler, Robert Muir)
+
 Bug Fixes
 
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
