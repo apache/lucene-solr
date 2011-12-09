@@ -110,11 +110,8 @@ public class RecoveryStrat {
       throws Exception, SolrServerException, IOException {
     
     // start buffer updates to tran log
-    // and do recovery - either replay via realtime get
+    // and do recovery - either replay via realtime get (eventually)
     // or full index replication
-    
-    // seems perhaps we cannot do this here since we are not fully running -
-    // we may need to trigger a recovery that happens later
     
     if (!iamleader) {
       // if we are the leader, either we are trying to recover faster
