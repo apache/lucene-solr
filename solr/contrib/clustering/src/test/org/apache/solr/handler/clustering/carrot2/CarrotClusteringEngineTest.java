@@ -50,10 +50,10 @@ import com.google.common.collect.ImmutableList;
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {
-  	// Note: the expected number of clusters may change after upgrading Carrot2
-  	// due to e.g. internal improvements or tuning of Carrot2 clustering.
+    // Note: the expected number of clusters may change after upgrading Carrot2
+    // due to e.g. internal improvements or tuning of Carrot2 clustering.
     final int expectedNumClusters = 10;
-		checkEngine(getClusteringEngine("default"), expectedNumClusters);
+    checkEngine(getClusteringEngine("default"), expectedNumClusters);
   }
 
   @Test
@@ -169,66 +169,66 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
             params), 1, 3, 0);
   }
 
-	@Test
-	public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
-		checkLexicalResourcesFromSolrConfig("lexical-resource-check",
-				"online,customsolrstopword,customsolrstoplabel");
-	}
+  @Test
+  public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
+    checkLexicalResourcesFromSolrConfig("lexical-resource-check",
+        "online,customsolrstopword,customsolrstoplabel");
+  }
 
-	@Test
-	public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
-		checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
-				"online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
-	}
+  @Test
+  public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
+    checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
+        "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
+  }
 
-	private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
-			throws IOException {
-		ModifiableSolrParams params = new ModifiableSolrParams();
-		params.set("merge-resources", false);
-		params.set(AttributeUtils.getKey(
-				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-				wordsToCheck);
+  private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
+      throws IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("merge-resources", false);
+    params.set(AttributeUtils.getKey(
+        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+        wordsToCheck);
 
-		// "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
-		// stoplabels.mt, so we're expecting only one cluster with label "online".
-		final List<NamedList<Object>> clusters = checkEngine(
-				getClusteringEngine(engineName), 1, params);
-		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
-	}
+    // "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
+    // stoplabels.mt, so we're expecting only one cluster with label "online".
+    final List<NamedList<Object>> clusters = checkEngine(
+        getClusteringEngine(engineName), 1, params);
+    assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+  }
 
-	@Test
-	public void solrStopWordsUsedInCarrot2Clustering() throws Exception {
-		ModifiableSolrParams params = new ModifiableSolrParams();
-		params.set("merge-resources", false);
-		params.set(AttributeUtils.getKey(
-				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-		"online,solrownstopword");
+  @Test
+  public void solrStopWordsUsedInCarrot2Clustering() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("merge-resources", false);
+    params.set(AttributeUtils.getKey(
+        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+    "online,solrownstopword");
 
-		// "solrownstopword" is in stopwords.txt, so we're expecting
-		// only one cluster with label "online".
-		final List<NamedList<Object>> clusters = checkEngine(
-				getClusteringEngine("lexical-resource-check"), 1, params);
-		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
-	}
+    // "solrownstopword" is in stopwords.txt, so we're expecting
+    // only one cluster with label "online".
+    final List<NamedList<Object>> clusters = checkEngine(
+        getClusteringEngine("lexical-resource-check"), 1, params);
+    assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+  }
 
-	@Test
-	public void solrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
-		ModifiableSolrParams params = new ModifiableSolrParams();
-		// Force string fields to be used for clustering. Does not make sense
-		// in a real word, but does the job in the test.
-		params.set(CarrotParams.TITLE_FIELD_NAME, "url");
-		params.set(CarrotParams.SNIPPET_FIELD_NAME, "url");
-		params.set("merge-resources", false);
-		params.set(AttributeUtils.getKey(
-				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-		"online,solrownstopword");
+  @Test
+  public void solrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    // Force string fields to be used for clustering. Does not make sense
+    // in a real word, but does the job in the test.
+    params.set(CarrotParams.TITLE_FIELD_NAME, "url");
+    params.set(CarrotParams.SNIPPET_FIELD_NAME, "url");
+    params.set("merge-resources", false);
+    params.set(AttributeUtils.getKey(
+        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+    "online,solrownstopword");
 
-		final List<NamedList<Object>> clusters = checkEngine(
-				getClusteringEngine("lexical-resource-check"), 2, params);
-		assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
-		assertEquals(ImmutableList.of("solrownstopword"),
-				getLabels(clusters.get(1)));
-	}
+    final List<NamedList<Object>> clusters = checkEngine(
+        getClusteringEngine("lexical-resource-check"), 2, params);
+    assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
+    assertEquals(ImmutableList.of("solrownstopword"),
+        getLabels(clusters.get(1)));
+  }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
@@ -273,7 +273,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
 
       @SuppressWarnings("unchecked")
-			List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);
+      List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);
       req.close();
       assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
       checkClusters(results, false);
@@ -331,26 +331,26 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     }
   }
 
-	@SuppressWarnings("unchecked")
-	private List<NamedList<Object>> getSubclusters(NamedList<Object> cluster) {
-		return (List<NamedList<Object>>) cluster.get("clusters");
-	}
+  @SuppressWarnings("unchecked")
+  private List<NamedList<Object>> getSubclusters(NamedList<Object> cluster) {
+    return (List<NamedList<Object>>) cluster.get("clusters");
+  }
 
-	@SuppressWarnings("unchecked")
-	private List<String> getLabels(NamedList<Object> cluster) {
-		return (List<String>) cluster.get("labels");
-	}
+  @SuppressWarnings("unchecked")
+  private List<String> getLabels(NamedList<Object> cluster) {
+    return (List<String>) cluster.get("labels");
+  }
 
-	private Double getScore(NamedList<Object> cluster) {
-	  return (Double) cluster.get("score");
-	}
+  private Double getScore(NamedList<Object> cluster) {
+    return (Double) cluster.get("score");
+  }
 
-	private Boolean isOtherTopics(NamedList<Object> cluster) {
-	  return (Boolean)cluster.get("other-topics");
-	}
+  private Boolean isOtherTopics(NamedList<Object> cluster) {
+    return (Boolean)cluster.get("other-topics");
+  }
 
-	@SuppressWarnings("unchecked")
-	private List<Object> getDocs(NamedList<Object> cluster) {
-		return (List<Object>) cluster.get("docs");
-	}
+  @SuppressWarnings("unchecked")
+  private List<Object> getDocs(NamedList<Object> cluster) {
+    return (List<Object>) cluster.get("docs");
+  }
 }

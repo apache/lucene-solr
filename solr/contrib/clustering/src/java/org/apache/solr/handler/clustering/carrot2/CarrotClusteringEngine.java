@@ -77,13 +77,13 @@ import com.google.common.io.Closeables;
  * @see "http://project.carrot2.org"
  */
 public class CarrotClusteringEngine extends SearchClusteringEngine {
-	private transient static Logger log = LoggerFactory
+  private transient static Logger log = LoggerFactory
           .getLogger(CarrotClusteringEngine.class);
 
-	/**
-	 * The subdirectory in Solr config dir to read customized Carrot2 resources from.
-	 */
-	private static final String CARROT_RESOURCES_PREFIX = "clustering/carrot2";
+  /**
+   * The subdirectory in Solr config dir to read customized Carrot2 resources from.
+   */
+  private static final String CARROT_RESOURCES_PREFIX = "clustering/carrot2";
 
   /**
    * Name of Carrot2 document's field containing Solr document's identifier.
@@ -227,8 +227,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
   }
 
-	@Override
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+  @Override
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   public String init(NamedList config, final SolrCore core) {
     String result = super.init(config, core);
     final SolrParams initParams = SolrParams.toSolrParams(config);
@@ -243,13 +243,13 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // Additionally, we set a custom lexical resource factory for Carrot2 that
     // will use both Carrot2 default stop words as well as stop words from
     // the StopFilter defined on the field.
-		BasicPreprocessingPipelineDescriptor.attributeBuilder(initAttributes)
-				.stemmerFactory(LuceneCarrot2StemmerFactory.class)
-				.tokenizerFactory(LuceneCarrot2TokenizerFactory.class)
-				.lexicalDataFactory(SolrStopwordsCarrot2LexicalDataFactory.class);
+    BasicPreprocessingPipelineDescriptor.attributeBuilder(initAttributes)
+        .stemmerFactory(LuceneCarrot2StemmerFactory.class)
+        .tokenizerFactory(LuceneCarrot2TokenizerFactory.class)
+        .lexicalDataFactory(SolrStopwordsCarrot2LexicalDataFactory.class);
 
-		// Pass the schema to SolrStopwordsCarrot2LexicalDataFactory.
-		initAttributes.put("solrIndexSchema", core.getSchema());
+    // Pass the schema to SolrStopwordsCarrot2LexicalDataFactory.
+    initAttributes.put("solrIndexSchema", core.getSchema());
 
     // Customize Carrot2's resource lookup to first look for resources
     // using Solr's resource loader. If that fails, try loading from the classpath.
@@ -283,15 +283,15 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     HashSet<String> fields = Sets.newHashSet(getFieldsForClustering(sreq));
     fields.add(idFieldName);
     fields.add(solrParams.get(CarrotParams.URL_FIELD_NAME, "url"));
-		return fields;
+    return fields;
   }
 
-	/**
-	 * Returns the names of fields that will be delivering the actual
-	 * content for clustering. Currently, there are two such fields: document
-	 * title and document content.
-	 */
-	private Set<String> getFieldsForClustering(SolrQueryRequest sreq) {
+  /**
+   * Returns the names of fields that will be delivering the actual
+   * content for clustering. Currently, there are two such fields: document
+   * title and document content.
+   */
+  private Set<String> getFieldsForClustering(SolrQueryRequest sreq) {
     SolrParams solrParams = sreq.getParams();
 
     String titleField = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
@@ -301,7 +301,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
               + " must not be blank.");
     }
     return Sets.newHashSet(titleField, snippetField);
-	}
+  }
 
   /**
    * Prepares Carrot2 documents for clustering.
@@ -362,7 +362,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         if (highlights != null && highlights.size() == 1) {//should only be one value given our setup
           //should only be one document with one field
           @SuppressWarnings("unchecked")
-					NamedList<String []> tmp = (NamedList<String[]>) highlights.getVal(0);
+          NamedList<String []> tmp = (NamedList<String[]>) highlights.getVal(0);
           String [] highlt = tmp.get(snippetField);
           if (highlt != null && highlt.length == 1) {
             snippet = highlt[0];
