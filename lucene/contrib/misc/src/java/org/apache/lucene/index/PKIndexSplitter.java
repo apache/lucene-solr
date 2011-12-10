@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -28,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -99,9 +101,14 @@ public class PKIndexSplitter {
   
   private void createIndex(IndexWriterConfig config, Directory target, IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
     boolean success = false;
-    IndexWriter w = new IndexWriter(target, config);
+    final IndexWriter w = new IndexWriter(target, config);
     try {
-      w.addIndexes(new DocumentFilteredIndexReader(reader, preserveFilter, negateFilter));
+      final AtomicReaderContext[] leaves = ReaderUtil.leaves(reader.getTopReaderContext());
+      final IndexReader[] subReaders = new IndexReader[leaves.length];
+      for (int i = 0; i < leaves.length; i++) {
+        subReaders[i] = new DocumentFilteredAtomicIndexReader(leaves[i], preserveFilter, negateFilter);
+      }
+      w.addIndexes(subReaders);
       success = true;
     } finally {
       if (success) {
@@ -112,17 +119,16 @@ public class PKIndexSplitter {
     }
   }
     
-  public static class DocumentFilteredIndexReader extends FilterIndexReader {
+  private static class DocumentFilteredAtomicIndexReader extends FilterIndexReader {
     final Bits liveDocs;
     final int numDocs;
     
-    public DocumentFilteredIndexReader(IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
-      super(new SlowMultiReaderWrapper(reader));
-      
+    public DocumentFilteredAtomicIndexReader(AtomicReaderContext context, Filter preserveFilter, boolean negateFilter) throws IOException {
+      super(context.reader);
       final int maxDoc = in.maxDoc();
       final FixedBitSet bits = new FixedBitSet(maxDoc);
       // ignore livedocs here, as we filter them later:
-      final DocIdSet docs = preserveFilter.getDocIdSet((AtomicReaderContext) in.getTopReaderContext(), null);
+      final DocIdSet docs = preserveFilter.getDocIdSet(context, null);
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
         if (it != null) {
