@@ -108,7 +108,7 @@ public class MultiReader extends IndexReader implements Cloneable {
    */
   @Override
   protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    return doOpenIfChanged(false);
+    return doReopen(false);
   }
   
   /**
@@ -123,7 +123,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public synchronized Object clone() {
     try {
-      return doOpenIfChanged(true);
+      return doReopen(true);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -141,7 +141,7 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @throws CorruptIndexException
    * @throws IOException
    */
-  protected IndexReader doOpenIfChanged(boolean doClone) throws CorruptIndexException, IOException {
+  private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean changed = false;

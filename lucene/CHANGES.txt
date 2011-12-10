@@ -711,6 +711,12 @@ Bug fixes
 * LUCENE-3627: Don't let an errant 0-byte segments_N file corrupt the index.
   (Ken McCracken via Mike McCandless)
 
+* LUCENE-3630: The internal method MultiReader.doOpenIfChanged(boolean doClone)
+  was overriding IndexReader.doOpenIfChanged(boolean readOnly), so changing the
+  contract of the overridden method. This method was renamed and made private.
+  In ParallelReader the bug was not existent, but the implementation method
+  was also made private.  (Uwe Schindler)
+
 Documentation
 
 * LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)

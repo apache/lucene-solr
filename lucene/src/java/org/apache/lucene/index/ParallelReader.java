@@ -247,7 +247,7 @@ public class ParallelReader extends IndexReader {
     return doReopen(false);
   }
     
-  protected IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
+  private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean reopened = false;
