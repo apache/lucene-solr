@@ -37,13 +37,13 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MultiPerDocValues;
-import org.apache.lucene.index.PerDocValues;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -104,7 +104,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     TopDocs search = searcher.search(query, 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
-    DocValues docValues = MultiPerDocValues.getPerDocs(reader).docValues("docId");
+    DocValues docValues = MultiDocValues.getDocValues(reader, "docId");
     Source source = docValues.getSource();
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
@@ -418,24 +418,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     d.close();
   }
 
-  private DocValues getDocValues(IndexReader reader, String field)
-      throws IOException {
-    boolean singleSeg = reader.getSequentialSubReaders().length == 1;
-    PerDocValues perDoc = singleSeg ? reader.getSequentialSubReaders()[0].perDocValues()
-        : MultiPerDocValues.getPerDocs(reader);
-    switch (random.nextInt(singleSeg ? 3 : 2)) { // case 2 only if single seg
-    case 0:
-      return perDoc.docValues(field);
-    case 1:
-      DocValues docValues = perDoc.docValues(field);
-      if (docValues != null) {
-        return docValues;
-      }
-      throw new RuntimeException("no such field " + field);
-    case 2:// this only works if we are on a single seg index!
-      return reader.getSequentialSubReaders()[0].docValues(field);
-    }
-    throw new RuntimeException();
+  private DocValues getDocValues(IndexReader reader, String field) throws IOException {
+    return MultiDocValues.getDocValues(reader, field);
   }
 
   private Source getSource(DocValues values) throws IOException {
@@ -570,7 +554,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     IndexReader r = w.getReader();
     w.close();
-    assertEquals(17, r.getSequentialSubReaders()[0].perDocValues().docValues("field").load().getInt(0));
+    assertEquals(17, r.getSequentialSubReaders()[0].docValues("field").load().getInt(0));
     r.close();
     d.close();
   }
@@ -600,7 +584,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     IndexReader r = w.getReader();
     w.close();
-    assertEquals(17, r.getSequentialSubReaders()[0].perDocValues().docValues("field").load().getInt(0));
+    assertEquals(17, r.getSequentialSubReaders()[0].docValues("field").load().getInt(0));
     r.close();
     d.close();
   }

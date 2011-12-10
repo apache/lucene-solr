@@ -421,9 +421,9 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  public PerDocValues perDocValues() throws IOException {
+  public DocValues docValues(String field) throws IOException {
     ensureOpen();
-    return in.perDocValues();
+    return in.docValues(field);
   }
 
   @Override

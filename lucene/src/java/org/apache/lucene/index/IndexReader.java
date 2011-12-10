@@ -773,21 +773,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * through them yourself. */
   public abstract Fields fields() throws IOException;
   
-  /**
-   * Returns {@link PerDocValues} for this reader.
-   * This method may return null if the reader has no per-document
-   * values stored.
-   *
-   * <p><b>NOTE</b>: if this is a multi reader ({@link
-   * #getSequentialSubReaders} is not null) then this
-   * method will throw UnsupportedOperationException.  If
-   * you really need {@link PerDocValues} for such a reader,
-   * use {@link MultiPerDocValues#getPerDocs(IndexReader)}.  However, for
-   * performance reasons, it's best to get all sub-readers
-   * using {@link ReaderUtil#gatherSubReaders} and iterate
-   * through them yourself. */
-  public abstract PerDocValues perDocValues() throws IOException;
-
   public final int docFreq(Term term) throws IOException {
     return docFreq(term.field(), term.bytes());
   }
@@ -1146,14 +1131,20 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
-  public final DocValues docValues(String field) throws IOException {
-    ensureOpen();
-    final PerDocValues perDoc = perDocValues();
-    if (perDoc == null) {
-      return null;
-    }
-    return perDoc.docValues(field);
-  }
+  /**
+   * Returns {@link DocValues} for this field.
+   * This method may return null if the reader has no per-document
+   * values stored.
+   *
+   * <p><b>NOTE</b>: if this is a multi reader ({@link
+   * #getSequentialSubReaders} is not null) then this
+   * method will throw UnsupportedOperationException.  If
+   * you really need {@link DocValues} for such a reader,
+   * use {@link MultiDocValues#getDocValues(IndexReader,String)}.  However, for
+   * performance reasons, it's best to get all sub-readers
+   * using {@link ReaderUtil#gatherSubReaders} and iterate
+   * through them yourself. */
+  public abstract DocValues docValues(String field) throws IOException;
 
   private volatile Fields fields;
 
@@ -1169,21 +1160,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return fields;
   }
   
-  private volatile PerDocValues perDocValues;
-  
-  /** @lucene.internal */
-  void storePerDoc(PerDocValues perDocValues) {
-    ensureOpen();
-    this.perDocValues = perDocValues;
-  }
-
-  /** @lucene.internal */
-  PerDocValues retrievePerDoc() {
-    ensureOpen();
-    return perDocValues;
-  }  
-  
-
   /**
    * A struct like class that represents a hierarchical relationship between
    * {@link IndexReader} instances. 

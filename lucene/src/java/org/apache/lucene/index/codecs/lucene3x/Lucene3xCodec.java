@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs.lucene3x;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocValues;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -28,6 +27,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.NormsFormat;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PostingsFormat;
@@ -75,7 +75,7 @@ public class Lucene3xCodec extends Codec {
     }
 
     @Override
-    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
       return null;
     }
 

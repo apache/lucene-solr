@@ -28,7 +28,7 @@ import org.apache.lucene.index.codecs.DocValuesReaderBase;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Implementation of PerDocValues that uses separate files.
+ * Implementation of PerDocProducer that uses separate files.
  * @lucene.experimental
  */
 public class SepDocValuesProducer extends DocValuesReaderBase {

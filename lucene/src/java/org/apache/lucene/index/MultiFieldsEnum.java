@@ -38,13 +38,8 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   // Holds sub-readers containing field we are currently
   // on, popped from queue.
   private final FieldsEnumWithSlice[] top;
-  private final FieldsEnumWithSlice[] enumWithSlices;
 
   private int numTop;
-
-  // Re-used TermsEnum
-  private final MultiTermsEnum terms;
-  private final MultiDocValues docValues;
 
   private final Fields fields;
 
@@ -54,9 +49,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
    *  (ie, {@link FieldsEnum#next} has not been called. */
   public MultiFieldsEnum(MultiFields fields, FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
     this.fields = fields;
-    terms = new MultiTermsEnum(subSlices);
     queue = new FieldMergeQueue(subs.length);
-    docValues = new MultiDocValues();
     top = new FieldsEnumWithSlice[subs.length];
     List<FieldsEnumWithSlice> enumWithSlices = new ArrayList<FieldsEnumWithSlice>();
 
@@ -72,8 +65,6 @@ public final  class MultiFieldsEnum extends FieldsEnum {
         queue.add(sub);
       }
     }
-    this.enumWithSlices = enumWithSlices.toArray(FieldsEnumWithSlice.EMPTY_ARRAY);
-
   }
 
   @Override

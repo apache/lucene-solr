@@ -34,11 +34,12 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * IndexReader#getSequentialSubReaders}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, by stepping through the sub-readers to
- * merge fields/terms, appending docs, etc.
+ * MultiFields}, {@link MultiNorms}, {@link MultiDocValues}, 
+ * by stepping through the sub-readers to merge fields/terms, 
+ * appending docs, etc.
  *
  * <p>If you ever hit an UnsupportedOperationException saying
- * "please use MultiFields.XXX instead", the simple
+ * "please use MultiXXX.YYY instead", the simple
  * but non-performant workaround is to wrap your reader
  * using this class.</p>
  *
@@ -71,9 +72,9 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   }
 
   @Override
-  public PerDocValues perDocValues() throws IOException {
+  public DocValues docValues(String field) throws IOException {
     ensureOpen();
-    return MultiPerDocValues.getPerDocs(in);
+    return MultiDocValues.getDocValues(in, field);
   }
 
   @Override

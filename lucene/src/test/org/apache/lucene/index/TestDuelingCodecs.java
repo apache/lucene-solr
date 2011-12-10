@@ -18,12 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -516,29 +519,15 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks that docvalues across all fields are equivalent
    */
   public void assertDocValues(IndexReader leftReader, IndexReader rightReader) throws Exception {
-    PerDocValues leftPerDoc = MultiPerDocValues.getPerDocs(leftReader);
-    PerDocValues rightPerDoc = MultiPerDocValues.getPerDocs(rightReader);
-    
-    Fields leftFields = MultiFields.getFields(leftReader);
-    Fields rightFields = MultiFields.getFields(rightReader);
-    // Fields could be null if there are no postings,
-    // but then it must be null for both
-    if (leftFields == null || rightFields == null) {
-      assertNull(info, leftFields);
-      assertNull(info, rightFields);
-      return;
-    }
-    
-    FieldsEnum fieldsEnum = leftFields.iterator();
-    String field;
-    while ((field = fieldsEnum.next()) != null) {
-      DocValues leftDocValues = leftPerDoc.docValues(field);
-      DocValues rightDocValues = rightPerDoc.docValues(field);
-      if (leftDocValues == null || rightDocValues == null) {
-        assertNull(info, leftDocValues);
-        assertNull(info, rightDocValues);
-        continue;
-      }
+    Set<String> leftValues = new HashSet<String>(leftReader.getFieldNames(FieldOption.DOC_VALUES));
+    Set<String> rightValues = new HashSet<String>(rightReader.getFieldNames(FieldOption.DOC_VALUES));
+    assertEquals(info, leftValues, rightValues);
+
+    for (String field : leftValues) {
+      DocValues leftDocValues = MultiDocValues.getDocValues(leftReader, field);
+      DocValues rightDocValues = MultiDocValues.getDocValues(rightReader, field);
+      assertNotNull(info, leftDocValues);
+      assertNotNull(info, rightDocValues);
       assertDocValuesSource(leftDocValues.getDirectSource(), rightDocValues.getDirectSource());
       assertDocValuesSource(leftDocValues.getSource(), rightDocValues.getSource());
     }

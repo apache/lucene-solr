@@ -28,7 +28,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
-import org.apache.lucene.index.PerDocValues;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes;
 import org.apache.lucene.index.codecs.lucene40.values.Floats;
 import org.apache.lucene.index.codecs.lucene40.values.Ints;
@@ -37,11 +36,11 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract base class for PerDocValues implementations
+ * Abstract base class for PerDocProducer implementations
  * @lucene.experimental
  */
 // TODO: this needs to go under lucene40 codec (its specific to its impl)
-public abstract class DocValuesReaderBase extends PerDocValues {
+public abstract class DocValuesReaderBase extends PerDocProducer {
   
   protected abstract void closeInternal(Collection<? extends Closeable> closeables) throws IOException;
   protected abstract Map<String, DocValues> docValues();

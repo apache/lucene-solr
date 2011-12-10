@@ -1284,7 +1284,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.close();
     IndexReader sr = getOnlySegmentReader(r3);
     assertEquals(2, sr.numDocs());
-    DocValues docValues = sr.perDocValues().docValues("dv");
+    DocValues docValues = sr.docValues("dv");
     assertNotNull(docValues);
     r3.close();
     d3.close();

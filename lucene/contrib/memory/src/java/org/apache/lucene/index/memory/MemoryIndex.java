@@ -40,8 +40,8 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.PerDocValues;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -1159,7 +1159,7 @@ public class MemoryIndex {
     }
 
     @Override
-    public PerDocValues perDocValues() throws IOException {
+    public DocValues docValues(String field) throws IOException {
       return null;
     }
   }

@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.index.codecs;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +18,7 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PostingsFormat;
+import org.apache.lucene.index.DocValues;
 
 /**
  * Abstract API that provides access to one or more per-document storage
@@ -27,13 +26,13 @@ import org.apache.lucene.index.codecs.PostingsFormat;
  * storage on a per-document basis corresponding to their actual
  * {@link PerDocConsumer} counterpart.
  * <p>
- * The {@link PerDocValues} API is accessible through the
+ * The {@link PerDocProducer} API is accessible through the
  * {@link PostingsFormat} - API providing per field consumers and producers for inverted
  * data (terms, postings) as well as per-document data.
  * 
  * @lucene.experimental
  */
-public abstract class PerDocValues implements Closeable {
+public abstract class PerDocProducer implements Closeable {
   /**
    * Returns {@link DocValues} for the current field.
    * 
@@ -45,5 +44,5 @@ public abstract class PerDocValues implements Closeable {
    */
   public abstract DocValues docValues(String field) throws IOException;
 
-  public static final PerDocValues[] EMPTY_ARRAY = new PerDocValues[0];
+  public static final PerDocProducer[] EMPTY_ARRAY = new PerDocProducer[0];
 }

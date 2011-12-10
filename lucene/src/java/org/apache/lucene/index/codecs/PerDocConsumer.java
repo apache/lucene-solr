@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.PerDocValues;
 
 /**
  * Abstract API that consumes per document values. Concrete implementations of
@@ -39,30 +38,22 @@ public abstract class PerDocConsumer implements Closeable{
       throws IOException;
 
   /**
-   * Consumes and merges the given {@link PerDocValues} producer
+   * Consumes and merges the given {@link PerDocProducer} producer
    * into this consumers format.   
    */
   public void merge(MergeState mergeState) throws IOException {
     final DocValues[] docValues = new DocValues[mergeState.readers.size()];
-    final PerDocValues[] perDocValues = new PerDocValues[mergeState.readers.size()];
-    // pull all PerDocValues 
-    for (int i = 0; i < perDocValues.length; i++) {
-      perDocValues[i] = mergeState.readers.get(i).reader.perDocValues();
-    }
+
     for (FieldInfo fieldInfo : mergeState.fieldInfos) {
       mergeState.fieldInfo = fieldInfo; // set the field we are merging
       if (fieldInfo.hasDocValues()) {
-        for (int i = 0; i < perDocValues.length; i++) {
-          if (perDocValues[i] != null) { // get all IDV to merge
-            docValues[i] = perDocValues[i].docValues(fieldInfo.name);
-          }
+        for (int i = 0; i < docValues.length; i++) {
+          docValues[i] = mergeState.readers.get(i).reader.docValues(fieldInfo.name);
         }
         final DocValuesConsumer docValuesConsumer = addValuesField(fieldInfo.getDocValuesType(), fieldInfo);
         assert docValuesConsumer != null;
         docValuesConsumer.merge(mergeState, docValues);
       }
     }
-    /* NOTE: don't close the perDocProducers here since they are private segment producers
-     * and will be closed once the SegmentReader goes out of scope */ 
   }  
 }

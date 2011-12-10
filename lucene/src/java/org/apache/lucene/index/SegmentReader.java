@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.IOContext;
@@ -424,9 +425,13 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   }
   
   @Override
-  public PerDocValues perDocValues() throws IOException {
+  public DocValues docValues(String field) throws IOException {
     ensureOpen();
-    return core.perDocProducer;
+    final PerDocProducer perDoc = core.perDocProducer;
+    if (perDoc == null) {
+      return null;
+    }
+    return perDoc.docValues(field);
   }
 
   /**

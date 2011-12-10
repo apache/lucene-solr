@@ -33,7 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Default PerDocValues implementation that uses compound file.
+ * Default PerDocProducer implementation that uses compound file.
  * @lucene.experimental
  */
 public class Lucene40DocValuesProducer extends DocValuesReaderBase {

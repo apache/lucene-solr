@@ -20,12 +20,12 @@ package org.apache.lucene.index.codecs.lucene40;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocValues;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.store.Directory;
 
 public class Lucene40DocValuesFormat extends DocValuesFormat {
@@ -36,7 +36,7 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   }
 
   @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+  public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
     return new Lucene40DocValuesProducer(state);
   }
 

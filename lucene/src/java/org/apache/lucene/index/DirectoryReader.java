@@ -31,11 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.MapBackedSet;
 
 /** 
@@ -716,7 +713,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public PerDocValues perDocValues() throws IOException {
-    throw new UnsupportedOperationException("please use MultiPerDocValues#getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
+  public DocValues docValues(String field) throws IOException {
+    throw new UnsupportedOperationException("please use MultiDocValues#getDocValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level DocValues");
   }
 }

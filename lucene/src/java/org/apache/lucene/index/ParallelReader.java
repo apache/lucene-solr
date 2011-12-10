@@ -57,7 +57,6 @@ public class ParallelReader extends IndexReader {
   private boolean hasDeletions;
 
   private final ParallelFields fields = new ParallelFields();
-  private final ParallelPerDocs perDocs = new ParallelPerDocs();
 
  /** Construct a ParallelReader. 
   * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
@@ -130,7 +129,6 @@ public class ParallelReader extends IndexReader {
       if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
         this.fields.addField(field, MultiFields.getFields(reader).terms(field));
-        this.perDocs.addField(field, reader);
       }
     }
 
@@ -463,35 +461,8 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public PerDocValues perDocValues() throws IOException {
-    ensureOpen();
-    return perDocs;
-  }
-  
-  // Single instance of this, per ParallelReader instance
-  private static final class ParallelPerDocs extends PerDocValues {
-    final TreeMap<String,DocValues> fields = new TreeMap<String,DocValues>();
-
-    void addField(String field, IndexReader r) throws IOException {
-      PerDocValues perDocs = MultiPerDocValues.getPerDocs(r);
-      if (perDocs != null) {
-        fields.put(field, perDocs.docValues(field));
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      // nothing to do here
-    }
-
-    @Override
-    public DocValues docValues(String field) throws IOException {
-      return fields.get(field);
-    }
+  public DocValues docValues(String field) throws IOException {
+    IndexReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.docValues(field);
   }
 }
-
-
-
-
-

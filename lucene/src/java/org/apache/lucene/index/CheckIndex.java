@@ -27,6 +27,8 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PerDocProducer;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -1130,8 +1132,7 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : fieldInfos) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          final PerDocValues perDocValues = reader.perDocValues();
-          final DocValues docValues = perDocValues.docValues(fieldInfo.name);
+          final DocValues docValues = reader.docValues(fieldInfo.name);
           if (docValues == null) {
             continue;
           }
