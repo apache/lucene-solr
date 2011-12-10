@@ -173,7 +173,22 @@ public class ParallelReader extends IndexReader {
     // doReopen calls ensureOpen
     return doReopen(false);
   }
-    
+  
+  /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, boolean)
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #doOpenIfChanged()} instead
+   */
+  @Deprecated @Override
+  protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
+    if (!openReadOnly)
+      throw new UnsupportedOperationException("ParallelReader does not support reopening in read/write mode");
+    return doReopen(false);
+  }
+
   private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     

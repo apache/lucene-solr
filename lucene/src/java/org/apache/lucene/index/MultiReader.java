@@ -113,6 +113,21 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
   
   /**
+   * If the index has changed since it was opened, open and return a new reader;
+   * else, return {@code null}.
+   * 
+   * @see #openIfChanged(IndexReader, boolean)
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #doOpenIfChanged()} instead
+   */
+  @Deprecated @Override
+  protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
+    if (!openReadOnly)
+      throw new UnsupportedOperationException("MultiReader does not support reopening in read/write mode");
+    return doReopen(false);
+  }
+
+  /**
    * Clones the subreaders.
    * (see {@link IndexReader#clone()}).
    * <br>
