@@ -20,7 +20,7 @@ import java.io.Reader;
 import java.util.Comparator;
 
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.util.BytesRef;
@@ -69,7 +69,7 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * */
-public class DocValuesField extends Field implements PerDocFieldValues {
+public class DocValuesField extends Field implements DocValue {
 
   protected BytesRef bytes;
   protected double doubleValue;
@@ -94,7 +94,7 @@ public class DocValuesField extends Field implements PerDocFieldValues {
   }
 
   @Override
-  public PerDocFieldValues docValues() {
+  public DocValue docValue() {
     return this;
   }
 
@@ -307,7 +307,7 @@ public class DocValuesField extends Field implements PerDocFieldValues {
   }
 
   @Override
-  public DocValues.Type docValuesType() {
+  public DocValues.Type docValueType() {
     return type;
   }
 

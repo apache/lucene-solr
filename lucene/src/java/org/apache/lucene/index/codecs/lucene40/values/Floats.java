@@ -19,7 +19,7 @@ package org.apache.lucene.index.codecs.lucene40.values;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
@@ -85,8 +85,8 @@ public class Floats {
     }
     
     @Override
-    public void add(int docID, PerDocFieldValues docValues) throws IOException {
-      add(docID, docValues.getFloat());
+    public void add(int docID, DocValue docValue) throws IOException {
+      add(docID, docValue.getFloat());
     }
     
     @Override

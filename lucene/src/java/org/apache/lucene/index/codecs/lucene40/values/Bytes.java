@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -302,9 +302,9 @@ public final class Bytes {
     }
 
     @Override
-    public void add(int docID, PerDocFieldValues docValues) throws IOException {
+    public void add(int docID, DocValue docValue) throws IOException {
       final BytesRef ref;
-      if ((ref = docValues.getBytes()) != null) {
+      if ((ref = docValue.getBytes()) != null) {
         add(docID, ref);
       }
     }

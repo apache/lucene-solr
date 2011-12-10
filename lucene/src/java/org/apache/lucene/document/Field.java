@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -51,7 +51,7 @@ public class Field implements IndexableField {
   // pre-analyzed tokenStream for indexed fields
   protected TokenStream tokenStream;
   // length/offset for all primitive types
-  protected PerDocFieldValues docValues;
+  protected DocValue docValue;
   
   protected float boost = 1.0f;
 
@@ -292,17 +292,17 @@ public class Field implements IndexableField {
     return result.toString();
   }
   
-  public void setDocValues(PerDocFieldValues docValues) {
-    this.docValues = docValues;
+  public void setDocValue(DocValue docValue) {
+    this.docValue = docValue;
   }
 
   @Override
-  public PerDocFieldValues docValues() {
+  public DocValue docValue() {
     return null;
   }
   
   @Override
-  public DocValues.Type docValuesType() {
+  public DocValues.Type docValueType() {
     return null;
   }
 

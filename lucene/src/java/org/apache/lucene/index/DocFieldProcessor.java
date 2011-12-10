@@ -259,9 +259,9 @@ final class DocFieldProcessor extends DocConsumer {
       if (field.fieldType().stored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
-      final PerDocFieldValues docValues = field.docValues();
-      if (docValues != null) {
-        docValuesConsumer(field.docValuesType(), docState, fp.fieldInfo).add(docState.docID, docValues);
+      final DocValue docValue = field.docValue();
+      if (docValue != null) {
+        docValuesConsumer(field.docValueType(), docState, fp.fieldInfo).add(docState.docID, docValue);
       }
     }
 

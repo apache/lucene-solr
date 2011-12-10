@@ -30,7 +30,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @lucene.experimental
  */
-public interface PerDocFieldValues {
+public interface DocValue {
 
   /**
    * Sets the given <code>long</code> value.
@@ -96,5 +96,5 @@ public interface PerDocFieldValues {
   /**
   * Returns the {@link Type}
   */
-  public DocValues.Type docValuesType();
+  public DocValues.Type docValueType();
 }

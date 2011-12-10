@@ -28,7 +28,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -157,20 +157,20 @@ public class LazyDocument {
     }
 
     @Override
-    public PerDocFieldValues docValues() {
+    public DocValue docValue() {
       if (num == 0) {
-        return getDocument().getField(name).docValues();
+        return getDocument().getField(name).docValue();
       } else {
-        return getDocument().getFields(name)[num].docValues();
+        return getDocument().getFields(name)[num].docValue();
       }
     }
 
     @Override
-    public DocValues.Type docValuesType() {
+    public DocValues.Type docValueType() {
       if (num == 0) {
-        return getDocument().getField(name).docValuesType();
+        return getDocument().getField(name).docValueType();
       } else {
-        return getDocument().getFields(name)[num].docValuesType();
+        return getDocument().getFields(name)[num].docValueType();
       }
     }
 

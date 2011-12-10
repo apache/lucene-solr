@@ -156,12 +156,12 @@ public class TestIndexableField extends LuceneTestCase {
 
     // TODO: randomly enable doc values
     @Override
-    public PerDocFieldValues docValues() {
+    public DocValue docValue() {
       return null;
     }
 
     @Override
-    public DocValues.Type docValuesType() {
+    public DocValues.Type docValueType() {
       return null;
     }
 

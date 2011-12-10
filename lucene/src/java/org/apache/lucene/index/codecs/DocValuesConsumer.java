@@ -21,14 +21,14 @@ import java.io.IOException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.PerDocFieldValues;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.util.Bits;
 
 /**
- * Abstract API that consumes {@link PerDocFieldValues}.
+ * Abstract API that consumes {@link DocValue}s.
  * {@link DocValuesConsumer} are always associated with a specific field and
  * segments. Concrete implementations of this API write the given
- * {@link PerDocFieldValues} into a implementation specific format depending on
+ * {@link DocValue} into a implementation specific format depending on
  * the fields meta-data.
  * 
  * @lucene.experimental
@@ -36,28 +36,28 @@ import org.apache.lucene.util.Bits;
 public abstract class DocValuesConsumer {
 
   /**
-   * Adds the given {@link PerDocFieldValues} instance to this
+   * Adds the given {@link DocValue} instance to this
    * {@link DocValuesConsumer}
    * 
    * @param docID
    *          the document ID to add the value for. The docID must always
    *          increase or be <tt>0</tt> if it is the first call to this method.
-   * @param docValues
-   *          the values to add
+   * @param docValue
+   *          the value to add
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  public abstract void add(int docID, PerDocFieldValues docValues)
+  public abstract void add(int docID, DocValue docValue)
       throws IOException;
 
   /**
    * Called when the consumer of this API is doc with adding
-   * {@link PerDocFieldValues} to this {@link DocValuesConsumer}
+   * {@link DocValue} to this {@link DocValuesConsumer}
    * 
    * @param docCount
    *          the total number of documents in this {@link DocValuesConsumer}.
    *          Must be greater than or equal the last given docID to
-   *          {@link #add(int, PerDocFieldValues)}.
+   *          {@link #add(int, DocValue)}.
    * @throws IOException
    */
   public abstract void finish(int docCount) throws IOException;

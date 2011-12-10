@@ -76,10 +76,10 @@ public interface IndexableField {
   public IndexableFieldType fieldType();
   
   /** Non-null if doc values should be indexed */
-  public PerDocFieldValues docValues();
+  public DocValue docValue();
 
-  /** DocValues type; only used if docValues is non-null */
-  public DocValues.Type docValuesType();
+  /** DocValues type; only used if docValue is non-null */
+  public DocValues.Type docValueType();
 
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,
