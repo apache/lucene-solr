@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.lucene40.values;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,8 +22,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -37,13 +35,18 @@ import org.apache.lucene.util.packed.PackedInts;
 /**
  * @lucene.internal
  */
-final class SortedBytesMergeUtils {
+// TODO: generalize this a bit more:
+//       * remove writing (like indexoutput) from here
+//       * just take IndexReaders (not IR&LiveDocs), doesnt care about liveDocs
+//       * hook into MultiDocValues to make a MultiSortedSource
+//       * maybe DV merging should then just use MultiDocValues for simplicity?
+public final class SortedBytesMergeUtils {
 
   private SortedBytesMergeUtils() {
     // no instance
   }
 
-  static MergeContext init(Type type, DocValues[] docValues,
+  public static MergeContext init(Type type, DocValues[] docValues,
       Comparator<BytesRef> comp, MergeState mergeState) {
     int size = -1;
     if (type == Type.BYTES_FIXED_SORTED) {
@@ -61,10 +64,10 @@ final class SortedBytesMergeUtils {
   public static final class MergeContext {
     private final Comparator<BytesRef> comp;
     private final BytesRef missingValue = new BytesRef();
-    final int sizePerValues; // -1 if var length
+    public final int sizePerValues; // -1 if var length
     final Type type;
-    final int[] docToEntry;
-    long[] offsets; // if non-null #mergeRecords collects byte offsets here
+    public final int[] docToEntry;
+    public long[] offsets; // if non-null #mergeRecords collects byte offsets here
 
     public MergeContext(Comparator<BytesRef> comp, MergeState mergeState,
         int size, Type type) {
@@ -80,7 +83,7 @@ final class SortedBytesMergeUtils {
     }
   }
 
-  static List<SortedSourceSlice> buildSlices(MergeState mergeState,
+  public static List<SortedSourceSlice> buildSlices(MergeState mergeState,
       DocValues[] docValues, MergeContext ctx) throws IOException {
     final List<SortedSourceSlice> slices = new ArrayList<SortedSourceSlice>();
     for (int i = 0; i < docValues.length; i++) {
@@ -142,7 +145,7 @@ final class SortedBytesMergeUtils {
     }
   }
 
-  static int mergeRecords(MergeContext ctx, IndexOutput datOut,
+  public static int mergeRecords(MergeContext ctx, IndexOutput datOut,
       List<SortedSourceSlice> slices) throws IOException {
     final RecordMerger merger = new RecordMerger(new MergeQueue(slices.size(),
         ctx.comp), slices.toArray(new SortedSourceSlice[0]));
@@ -217,7 +220,7 @@ final class SortedBytesMergeUtils {
     }
   }
 
-  static class SortedSourceSlice {
+  public static class SortedSourceSlice {
     final SortedSource source;
     final int readerIdx;
     /* global array indexed by docID containg the relative ord for the doc */
@@ -267,7 +270,7 @@ final class SortedBytesMergeUtils {
       return null;
     }
 
-    void writeOrds(PackedInts.Writer writer) throws IOException {
+    public void writeOrds(PackedInts.Writer writer) throws IOException {
       for (int i = docToOrdStart; i < docToOrdEnd; i++) {
         final int mappedOrd = docIDToRelativeOrd[i];
         assert mappedOrd < ordMapping.length;

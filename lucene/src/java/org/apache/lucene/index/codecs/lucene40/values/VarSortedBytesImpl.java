@@ -22,14 +22,15 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.SortedBytesMergeUtils;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.SortedBytesMergeUtils.MergeContext;
+import org.apache.lucene.index.SortedBytesMergeUtils.SortedSourceSlice;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSortedSourceBase;
 import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
-import org.apache.lucene.index.codecs.lucene40.values.SortedBytesMergeUtils.MergeContext;
-import org.apache.lucene.index.codecs.lucene40.values.SortedBytesMergeUtils.SortedSourceSlice;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
