@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.0 ================
 
+Changes in backwards compatibility policy
+
+ * LUCENE-3626: The internal implementation classes in PKIndexSplitter
+   and MultiPassIndexSplitter were made private as they now work
+   per segment.  (Uwe Schindler)
+
 New Features
 
 * LUCENE-3596: DirectoryTaxonomyWriter extensions can override createIndexWriterConfig() 
@@ -19,6 +25,11 @@ API Changes
   setNorm() was deprecated. Furthermore, this class is broken, as it does
   not take position overlaps into account while recalculating norms.
   (Uwe Schindler, Robert Muir)
+
+Changes in runtime behavior:
+
+ * LUCENE-3626: PKIndexSplitter and MultiPassIndexSplitter now work
+   per segment.  (Uwe Schindler)
 
 Bug Fixes
 

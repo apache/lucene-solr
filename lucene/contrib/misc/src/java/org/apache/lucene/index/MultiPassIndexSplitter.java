@@ -22,11 +22,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -194,12 +194,32 @@ public class MultiPassIndexSplitter {
    * Instead, deletions are buffered in a bitset and overlaid with the original
    * list of deletions.
    */
-  public static class FakeDeleteIndexReader extends FilterIndexReader {
+  private static final class FakeDeleteIndexReader extends MultiReader {
+
+    public FakeDeleteIndexReader(IndexReader reader) throws IOException {
+      super(initSubReaders(reader), false /* dont close */);
+    }
+    
+    private static IndexReader[] initSubReaders(IndexReader reader) throws IOException {
+      final ArrayList<IndexReader> subs = new ArrayList<IndexReader>();
+      new ReaderUtil.Gather(reader) {
+        @Override
+        protected void add(int base, IndexReader r) {
+          subs.add(new FakeDeleteAtomicIndexReader(r));
+        }
+      }.run();
+      return subs.toArray(new IndexReader[subs.size()]);
+    }
+
+  }
+  
+  private static final class FakeDeleteAtomicIndexReader extends FilterIndexReader {
     FixedBitSet dels;
     FixedBitSet oldDels;
 
-    public FakeDeleteIndexReader(IndexReader in) {
+    public FakeDeleteAtomicIndexReader(IndexReader in) {
       super(in);
+      assert in.getSequentialSubReaders() == null;
       dels = new FixedBitSet(in.maxDoc());
       if (in.hasDeletions()) {
         oldDels = new FixedBitSet(in.maxDoc());

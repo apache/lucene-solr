@@ -35,10 +35,10 @@ import org.apache.lucene.util.MapBackedSet;
 /** An IndexReader which reads multiple indexes, appending
  * their content. */
 public class MultiReader extends IndexReader implements Cloneable {
-  protected IndexReader[] subReaders;
-  private int[] starts;                           // 1st docno for each segment
+  protected final IndexReader[] subReaders;
+  protected final int[] starts;                           // 1st docno for each segment
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
-  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
+  private final Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -51,7 +51,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   * @param subReaders set of (sub)readers
   */
   public MultiReader(IndexReader... subReaders) {
-    initialize(subReaders, true);
+    this(subReaders, true);
   }
 
   /**
@@ -63,10 +63,6 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @param subReaders set of (sub)readers
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
-    initialize(subReaders, closeSubReaders);
-  }
-  
-  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) {
     this.subReaders =  subReaders.clone();
     starts = new int[subReaders.length + 1];    // build starts array
     decrefOnClose = new boolean[subReaders.length];
@@ -282,7 +278,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     numDocs = -1;                                 // invalidate cache
   }
 
-  private int readerIndex(int n) {    // find reader for doc n:
+  protected int readerIndex(int n) {    // find reader for doc n:
     return DirectoryReader.readerIndex(n, this.starts, this.subReaders.length);
   }
   

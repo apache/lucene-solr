@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -27,6 +28,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -122,9 +124,15 @@ public class PKIndexSplitter {
   
   private void createIndex(IndexWriterConfig config, Directory target, IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
     boolean success = false;
-    IndexWriter w = new IndexWriter(target, config);
+    final IndexWriter w = new IndexWriter(target, config);
     try {
-      w.addIndexes(new DocumentFilteredIndexReader(reader, preserveFilter, negateFilter));
+      final ArrayList<IndexReader> leaves = new ArrayList<IndexReader>();
+      ReaderUtil.gatherSubReaders(leaves, reader);
+      final IndexReader[] subReaders = new IndexReader[leaves.size()];
+      for (int i = 0; i < subReaders.length; i++) {
+        subReaders[i] = new DocumentFilteredAtomicIndexReader(leaves.get(i), preserveFilter, negateFilter);
+      }
+      w.addIndexes(subReaders);
       success = true;
     } finally {
       if (success) {
@@ -135,13 +143,13 @@ public class PKIndexSplitter {
     }
   }
     
-  public static class DocumentFilteredIndexReader extends FilterIndexReader {
+  private static class DocumentFilteredAtomicIndexReader extends FilterIndexReader {
     final FixedBitSet readerDels;
     final int numDocs;
     
-    public DocumentFilteredIndexReader(IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
+    public DocumentFilteredAtomicIndexReader(IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
       super(reader);
-      
+      assert in.getSequentialSubReaders() == null;
       final FixedBitSet bits = new FixedBitSet(in.maxDoc());
       final DocIdSet docs = preserveFilter.getDocIdSet(in);
       if (docs != null) {
