@@ -757,7 +757,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
   }  
   
-  private void assertReaderClosed(IndexReader reader, boolean checkSubReaders, boolean checkNormsClosed) {
+  static void assertReaderClosed(IndexReader reader, boolean checkSubReaders, boolean checkNormsClosed) {
     assertEquals(0, reader.getRefCount());
     
     if (checkNormsClosed && reader instanceof SegmentReader) {
