@@ -362,7 +362,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // just like we do when loading segments_N
         synchronized(this) {
           maybeApplyDeletes(applyAllDeletes);
-          r = new DirectoryReader(this, segmentInfos, applyAllDeletes);
+          r = DirectoryReader.open(this, segmentInfos, applyAllDeletes);
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
           }
