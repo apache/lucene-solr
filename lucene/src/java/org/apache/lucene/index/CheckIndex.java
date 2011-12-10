@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocProducer;
@@ -638,11 +639,26 @@ public class CheckIndex {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
+      FieldInfos infos = reader.fieldInfos();
       byte[] b;
       for (final String fieldName : fieldNames) {
+        FieldInfo info = infos.fieldInfo(fieldName);
         if (reader.hasNorms(fieldName)) {
           b = reader.norms(fieldName);
+          if (b.length != reader.maxDoc()) {
+            throw new RuntimeException("norms for field: " + fieldName + " are of the wrong size");
+          }
+          if (!info.isIndexed || info.omitNorms) {
+            throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
+          }
           ++status.totFields;
+        } else {
+          if (reader.norms(fieldName) != null) {
+            throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
+          }
+          if (info.isIndexed && !info.omitNorms) {
+            throw new RuntimeException("field: " + fieldName + " should have norms but omits them!");
+          }
         }
       }
 
@@ -1134,10 +1150,15 @@ public class CheckIndex {
           status.totalValueFields++;
           final DocValues docValues = reader.docValues(fieldInfo.name);
           if (docValues == null) {
-            continue;
+            throw new RuntimeException("field: " + fieldInfo.name + " omits docvalues but should have them!");
+          }
+          DocValues.Type type = docValues.type();
+          if (type != fieldInfo.getDocValuesType()) {
+            throw new RuntimeException("field: " + fieldInfo.name + " has type: " + type + " but fieldInfos says:" + fieldInfo.getDocValuesType());
           }
           final Source values = docValues.getDirectSource();
           final int maxDoc = reader.maxDoc();
+          int size = docValues.getValueSize();
           for (int i = 0; i < maxDoc; i++) {
             switch (fieldInfo.getDocValuesType()) {
             case BYTES_FIXED_SORTED:
@@ -1146,23 +1167,72 @@ public class CheckIndex {
             case BYTES_FIXED_STRAIGHT:
             case BYTES_VAR_DEREF:
             case BYTES_VAR_STRAIGHT:
-              values.getBytes(i, new BytesRef());
+              BytesRef bytes = new BytesRef();
+              values.getBytes(i, bytes);
+              if (size != -1 && size != bytes.length) {
+                throw new RuntimeException("field: " + fieldInfo.name + " returned wrongly sized bytes, was: " + bytes.length + " should be: " + size);
+              }
               break;
             case FLOAT_32:
+              assert size == 4;
+              values.getFloat(i);
+              break;
             case FLOAT_64:
+              assert size == 8;
               values.getFloat(i);
               break;
             case VAR_INTS:
+              assert size == -1;
+              values.getInt(i);
+              break;
             case FIXED_INTS_16:
+              assert size == 2;
+              values.getInt(i);
+              break;
             case FIXED_INTS_32:
+              assert size == 4;
+              values.getInt(i);
+              break;
             case FIXED_INTS_64:
+              assert size == 8;
+              values.getInt(i);
+              break;
             case FIXED_INTS_8:
+              assert size == 1;
               values.getInt(i);
               break;
             default:
               throw new IllegalArgumentException("Field: " + fieldInfo.name
                           + " - no such DocValues type: " + fieldInfo.getDocValuesType());
             }
+          }
+          if (type == DocValues.Type.BYTES_FIXED_SORTED || type == DocValues.Type.BYTES_VAR_SORTED) {
+            // check sorted bytes
+            SortedSource sortedValues = values.asSortedSource();
+            Comparator<BytesRef> comparator = sortedValues.getComparator();
+            int lastOrd = -1;
+            BytesRef lastBytes = new BytesRef();
+            for (int i = 0; i < maxDoc; i++) {
+              int ord = sortedValues.ord(i);
+              if (ord < 0 || ord > maxDoc) {
+                throw new RuntimeException("field: " + fieldInfo.name + " ord is out of bounds: " + ord);
+              }
+              BytesRef bytes = new BytesRef();
+              sortedValues.getByOrd(ord, bytes);
+              if (lastOrd != -1) {
+                int ordComp = Integer.signum(new Integer(ord).compareTo(new Integer(lastOrd)));
+                int bytesComp = Integer.signum(comparator.compare(bytes, lastBytes));
+                if (ordComp != bytesComp) {
+                  throw new RuntimeException("field: " + fieldInfo.name + " ord comparison is wrong: " + ordComp + " comparator claims: " + bytesComp);
+                }
+              }
+              lastOrd = ord;
+              lastBytes = bytes;
+            }
+          }
+        } else {
+          if (reader.docValues(fieldInfo.name) != null) {
+            throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
           }
         }
       }
