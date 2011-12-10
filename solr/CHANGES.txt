@@ -195,6 +195,8 @@ New Features
   "multiterm" analyzer in our schema.xml, but Solr should "do the right thing" if you don't
   specify <fieldType="multiterm"> (Pete Sturge Erick Erickson, Mentoring from Seeley and Muir)
 
+* SOLR-2481: Add support for commitWithin in DataImportHandler (Sami Siren via yonik)
+
 
 Optimizations
 ----------------------
@@ -408,8 +410,6 @@ New Features
 
 * SOLR-2919: Added support for localized range queries when the analysis chain uses 
   CollationKeyFilter or ICUCollationKeyFilter.  (Michael Sokolov, rmuir)
-
-* SOLR-2481: Add support for commitWithin in DataImportHandler (Sami Siren via yonik)
 
 
 Bug Fixes
