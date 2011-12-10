@@ -409,6 +409,9 @@ New Features
 * SOLR-2919: Added support for localized range queries when the analysis chain uses 
   CollationKeyFilter or ICUCollationKeyFilter.  (Michael Sokolov, rmuir)
 
+* SOLR-2481: Add support for commitWithin in DataImportHandler (Sami Siren via yonik)
+
+
 Bug Fixes
 ----------------------
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)

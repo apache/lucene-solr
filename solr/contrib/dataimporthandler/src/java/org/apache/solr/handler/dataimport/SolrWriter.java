@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -27,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * <p> Writes documents to SOLR. </p>
@@ -43,12 +42,14 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
   static final String LAST_INDEX_KEY = "last_index_time";
 
   private final UpdateRequestProcessor processor;
-
+  private final int commitWithin;
+  
   SolrQueryRequest req;
 
   public SolrWriter(UpdateRequestProcessor processor, SolrQueryRequest req) {
     this.processor = processor;
     this.req = req;
+    commitWithin = (req != null) ? req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1): -1;
   }
   
   @Override
@@ -65,6 +66,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     try {
       AddUpdateCommand command = new AddUpdateCommand(req);
       command.solrDoc = d;
+      command.commitWithin = commitWithin;
       processor.processAdd(command);
     } catch (Exception e) {
       log.warn("Error creating document : " + d, e);

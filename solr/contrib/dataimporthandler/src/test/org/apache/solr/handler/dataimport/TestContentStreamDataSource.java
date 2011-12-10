@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -80,6 +81,33 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
   }
 
+  @Test
+  public void testCommitWithin() throws Exception {
+    DirectXmlRequest req = new DirectXmlRequest("/dataimport", xml);
+    ModifiableSolrParams params = params("command", "full-import", 
+        "clean", "false", UpdateParams.COMMIT, "false", 
+        UpdateParams.COMMIT_WITHIN, "1000");
+    req.setParams(params);
+    String url = "http://localhost:" + jetty.getLocalPort() + "/solr";
+    CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(url);
+    solrServer.request(req);
+    Thread.sleep(100);
+    ModifiableSolrParams queryAll = params("q", "*");
+    QueryResponse qres = solrServer.query(queryAll);
+    SolrDocumentList results = qres.getResults();
+    assertEquals(0, results.getNumFound());
+    Thread.sleep(1000);
+    for (int i = 0; i < 10; i++) {
+      qres = solrServer.query(queryAll);
+      results = qres.getResults();
+      if (2 == results.getNumFound()) {
+        return;
+      }
+      Thread.sleep(500);
+    }
+    fail("Commit should have occured but it did not");
+  }
+  
   private class SolrInstance {
     String name;
     Integer port;
