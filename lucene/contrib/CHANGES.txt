@@ -88,6 +88,32 @@ Bug Fixes
 
 ======================= Lucene 3.6.0 ================
 
+Changes in backwards compatibility policy
+
+ * LUCENE-3626: The internal implementation classes in PKIndexSplitter
+   and MultiPassIndexSplitter were made private as they now work
+   per segment.  (Uwe Schindler)
+
+New Features
+
+* LUCENE-3596: DirectoryTaxonomyWriter extensions can override createIndexWriterConfig() 
+  and modify how its internal index writer is opened. (Doron Cohen)
+
+API Changes
+
+* LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
+  openIndexWriter parameter rather than just an open-mode. (Doron Cohen) 
+  
+* LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
+  setNorm() was deprecated. Furthermore, this class is broken, as it does
+  not take position overlaps into account while recalculating norms.
+  (Uwe Schindler, Robert Muir)
+
+Changes in runtime behavior:
+
+ * LUCENE-3626: PKIndexSplitter and MultiPassIndexSplitter now work
+   per segment.  (Uwe Schindler)
+
 Bug Fixes
 
  * LUCENE-3600: BlockJoinQuery now supports parent docs that have no
