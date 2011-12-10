@@ -135,7 +135,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   //wait until i slices for collection have appeared 
   private void waitForSliceCount(ZkStateReader stateReader, String collection, int i) throws InterruptedException {
     waitForCollections(stateReader, collection);
-    int maxIterations = 100;
+    int maxIterations = 1000;
     while (0 < maxIterations--) {
       CloudState state = stateReader.getCloudState();
       Map<String,Slice> sliceMap = state.getSlices(collection);
