@@ -13,7 +13,27 @@ $Id$
 
 ================== Release 3.6.0 ==================
 
-(No Changes)
+* SOLR-2937: Configuring the number of contextual snippets used for 
+  search results clustering. The hl.snippets parameter is now respected
+  by the clustering plugin, can be overridden by carrot.summarySnippets
+  if needed (Stanislaw Osinski).
+
+* SOLR-2938: Clustering on multiple fields. The carrot.title and 
+  carrot.snippet can now take comma- or space-separated lists of
+  field names to cluster (Stanislaw Osinski).
+
+* SOLR-2939: Clustering of multilingual search results. The document's
+  language field be passed in the carrot.lang parameter, the carrot.lcmap
+  parameter enables mapping of language codes to ISO 639 (Stanislaw Osinski).
+
+* SOLR-2940: Passing values for custom Carrot2 fields. The custom field
+  mapping are defined using the carrot.custom parameter (Stanislaw Osinski).
+
+* SOLR-2941: NullPointerException on clustering component initialization 
+  when schema does not have a unique key field (Stanislaw Osinski).
+
+* SOLR-2942: ClassCastException when passing non-textual fields for 
+  clustering (Stanislaw Osinski).
 
 ================== Release 3.5.0 ==================
 
@@ -21,10 +41,10 @@ $Id$
 
 ================== Release 3.4.0 ==================
 
-SOLR-2706: The carrot.lexicalResourcesDir parameter now works 
-   with absolute directories (Stanislaw Osinski)
+* SOLR-2706: The carrot.lexicalResourcesDir parameter now works 
+  with absolute directories (Stanislaw Osinski)
   
-SOLR-2692: Typo in param name fixed: "carrot.fragzise" changed to 
+* SOLR-2692: Typo in param name fixed: "carrot.fragzise" changed to 
   "carrot.fragSize" (Stanislaw Osinski).
 
 ================== Release 3.3.0 ==================

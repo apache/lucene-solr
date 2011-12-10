@@ -30,11 +30,37 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestIndexReaderClone extends LuceneTestCase {
 
-  private void assertDelDocsRefCountEquals(int refCount, SegmentReader reader) {
-    assertEquals(refCount, reader.liveDocsRef.get());
+  public void testDirectoryReader() throws Exception {
+    final Directory dir = createIndex(0);
+    performDefaultTests(IndexReader.open(dir));
+    dir.close();
   }
-
-  public void testCloseStoredFields() throws Exception {
+  
+  public void testMultiReader() throws Exception {
+    final Directory dir1 = createIndex(0);
+    final IndexReader r1 = IndexReader.open(dir1);
+    final Directory dir2 = createIndex(0);
+    final IndexReader r2 = IndexReader.open(dir2);
+    final MultiReader mr = new MultiReader(r1, r2);
+    performDefaultTests(mr);
+    dir1.close();
+    dir2.close();
+  }
+  
+  public void testParallelReader() throws Exception {
+    final Directory dir1 = createIndex(0);
+    final IndexReader r1 = IndexReader.open(dir1);
+    final Directory dir2 = createIndex(1);
+    final IndexReader r2 = IndexReader.open(dir2);
+    final ParallelReader pr = new ParallelReader();
+    pr.add(r1);
+    pr.add(r2);
+    performDefaultTests(pr);
+    dir1.close();
+    dir2.close();
+  }
+  
+  private Directory createIndex(int no) throws Exception {
     final Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(
         dir,
@@ -42,13 +68,19 @@ public class TestIndexReaderClone extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false))
     );
     Document doc = new Document();
-    doc.add(newField("field", "yes it's stored", TextField.TYPE_STORED));
+    doc.add(newField("field"+no, "yes it's stored", TextField.TYPE_STORED));
     w.addDocument(doc);
     w.close();
-    IndexReader r1 = IndexReader.open(dir);
+    return dir;
+  }
+
+  private void performDefaultTests(IndexReader r1) throws Exception {
     IndexReader r2 = (IndexReader) r1.clone();
+    assertTrue(r1 != r2);
+    TestIndexReader.assertIndexEquals(r1, r2);
     r1.close();
     r2.close();
-    dir.close();
+    TestIndexReaderReopen.assertReaderClosed(r1, true, true);
+    TestIndexReaderReopen.assertReaderClosed(r2, true, true);
   }
 }
