@@ -88,54 +88,22 @@ public class MultiReader extends IndexReader implements Cloneable {
     readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
   
-  /**
-   * Tries to reopen the subreaders.
-   * <br>
-   * If one or more subreaders could be re-opened (i. e. IndexReader.openIfChanged(subReader) 
-   * returned a new instance), then a new MultiReader instance 
-   * is returned, otherwise this instance is returned.
-   * <p>
-   * A re-opened instance might share one or more subreaders with the old 
-   * instance. Index modification operations result in undefined behavior
-   * when performed before the old instance is closed.
-   * (see {@link IndexReader#openIfChanged}).
-   * <p>
-   * If subreaders are shared, then the reference count of those
-   * readers is increased to ensure that the subreaders remain open
-   * until the last referring reader is closed.
-   * 
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error 
-   */
   @Override
   protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     return doReopen(false);
   }
   
   /**
-   * If the index has changed since it was opened, open and return a new reader;
-   * else, return {@code null}.
-   * 
-   * @see #openIfChanged(IndexReader, boolean)
+   * @throws UnsupportedOperationException MultiReaders cannot support changing the readOnly flag
    * @deprecated Write support will be removed in Lucene 4.0.
-   * Use {@link #doOpenIfChanged()} instead
+   * Use {@link #doOpenIfChanged()} instead.
    */
   @Deprecated @Override
   protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
-    if (!openReadOnly)
-      throw new UnsupportedOperationException("MultiReader does not support reopening in read/write mode");
-    return doReopen(false);
+    throw new UnsupportedOperationException("MultiReader does not support reopening with changing readOnly flag. "+
+      "Use IndexReader.openIfChanged(IndexReader) instead.");
   }
 
-  /**
-   * Clones the subreaders.
-   * (see {@link IndexReader#clone()}).
-   * <br>
-   * <p>
-   * If subreaders are shared, then the reference count of those
-   * readers is increased to ensure that the subreaders remain open
-   * until the last referring reader is closed.
-   */
   @Override
   public synchronized Object clone() {
     try {
@@ -145,6 +113,17 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
   
+  /**
+   * @throws UnsupportedOperationException MultiReaders cannot support changing the readOnly flag
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #clone()} instead.
+   */
+  @Override @Deprecated
+  public IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("MultiReader does not support cloning with changing readOnly flag. "+
+      "Use IndexReader.clone() instead.");
+  }
+
   /**
    * If clone is true then we clone each of the subreaders
    * @param doClone

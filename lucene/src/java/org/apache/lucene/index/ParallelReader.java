@@ -140,8 +140,23 @@ public class ParallelReader extends IndexReader {
   }
   
   @Override
+  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
+    return doReopen(false);
+  }
+  
+  /**
+   * @throws UnsupportedOperationException ParallelReaders cannot support changing the readOnly flag
+   * @deprecated Write support will be removed in Lucene 4.0.
+   * Use {@link #doOpenIfChanged()} instead.
+   */
+  @Deprecated @Override
+  protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("ParallelReader does not support reopening with changing readOnly flag. "+
+      "Use IndexReader.openIfChanged(IndexReader) instead.");
+  }
+
+  @Override
   public synchronized Object clone() {
-    // doReopen calls ensureOpen
     try {
       return doReopen(true);
     } catch (Exception ex) {
@@ -150,43 +165,14 @@ public class ParallelReader extends IndexReader {
   }
   
   /**
-   * Tries to reopen the subreaders.
-   * <br>
-   * If one or more subreaders could be re-opened (i. e. subReader.reopen() 
-   * returned a new instance != subReader), then a new ParallelReader instance 
-   * is returned, otherwise null is returned.
-   * <p>
-   * A re-opened instance might share one or more subreaders with the old 
-   * instance. Index modification operations result in undefined behavior
-   * when performed before the old instance is closed.
-   * (see {@link IndexReader#openIfChanged}).
-   * <p>
-   * If subreaders are shared, then the reference count of those
-   * readers is increased to ensure that the subreaders remain open
-   * until the last referring reader is closed.
-   * 
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error 
-   */
-  @Override
-  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    // doReopen calls ensureOpen
-    return doReopen(false);
-  }
-  
-  /**
-   * If the index has changed since it was opened, open and return a new reader;
-   * else, return {@code null}.
-   * 
-   * @see #openIfChanged(IndexReader, boolean)
+   * @throws UnsupportedOperationException ParallelReaders cannot support changing the readOnly flag
    * @deprecated Write support will be removed in Lucene 4.0.
-   * Use {@link #doOpenIfChanged()} instead
+   * Use {@link #clone()} instead.
    */
-  @Deprecated @Override
-  protected IndexReader doOpenIfChanged(boolean openReadOnly) throws CorruptIndexException, IOException {
-    if (!openReadOnly)
-      throw new UnsupportedOperationException("ParallelReader does not support reopening in read/write mode");
-    return doReopen(false);
+  @Override @Deprecated
+  public IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("ParallelReader does not support cloning with changing readOnly flag. "+
+      "Use IndexReader.clone() instead.");
   }
 
   private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
