@@ -460,9 +460,10 @@ public class ParallelReader extends IndexReader {
     }
   }
 
+  // TODO: I suspect this is completely untested!!!!!
   @Override
   public DocValues docValues(String field) throws IOException {
     IndexReader reader = fieldToReader.get(field);
-    return reader == null ? null : reader.docValues(field);
+    return reader == null ? null : MultiDocValues.getDocValues(reader, field);
   }
 }
