@@ -38,11 +38,7 @@
 		<httpCaching never304="true" />
 	</requestDispatcher>
 	
-	<requestHandler name="/replication" class="solr.ReplicationHandler">
-      <lst name="master">
-        <str name="replicateAfter">commit</str>
-      </lst>
-    </requestHandler>
+	<requestHandler name="/replication" class="solr.ReplicationHandler" />
     
     <query>
     	<maxWarmingSearchers>4</maxWarmingSearchers>
