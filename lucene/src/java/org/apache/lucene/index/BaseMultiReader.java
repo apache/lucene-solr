@@ -105,29 +105,11 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   }
 
   /** Helper method for subclasses to get the corresponding reader for a doc ID */
-  protected final int readerIndex(int n) {    // find reader for doc n:
-    return readerIndex(n, this.starts, this.subReaders.length);
-  }
-
-  final static int readerIndex(int n, int[] starts, int numSubReaders) {    // find reader for doc n:
-    int lo = 0;                                      // search starts array
-    int hi = numSubReaders - 1;                  // for first element less
-
-    while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
-      int midValue = starts[mid];
-      if (n < midValue)
-        hi = mid - 1;
-      else if (n > midValue)
-        lo = mid + 1;
-      else {                                      // found a match
-        while (mid+1 < numSubReaders && starts[mid+1] == midValue) {
-          mid++;                                  // scan to last match
-        }
-        return mid;
-      }
+  protected final int readerIndex(int docID) {
+    if (docID < 0 || docID >= maxDoc) {
+      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc + " (got docID=" + docID + ")");
     }
-    return hi;
+    return ReaderUtil.subIndex(docID, this.starts);
   }
 
   @Override
@@ -158,10 +140,9 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
     // maintain a unique set of field names
-    Set<String> fieldSet = new HashSet<String>();
+    final Set<String> fieldSet = new HashSet<String>();
     for (IndexReader reader : subReaders) {
-      Collection<String> names = reader.getFieldNames(fieldNames);
-      fieldSet.addAll(names);
+      fieldSet.addAll(reader.getFieldNames(fieldNames));
     }
     return fieldSet;
   }  
