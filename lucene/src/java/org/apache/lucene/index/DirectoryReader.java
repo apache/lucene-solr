@@ -31,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MapBackedSet;
 
 /** 
@@ -67,22 +68,17 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
         sis.read(directory, segmentFileName);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         for (int i = sis.size()-1; i >= 0; i--) {
+          IOException prior = null;
           boolean success = false;
           try {
             readers[i] = SegmentReader.get(sis.info(i), termInfosIndexDivisor, IOContext.READ);
             readers[i].readerFinishedListeners = readerFinishedListeners;
             success = true;
+          } catch(IOException ex) {
+            prior = ex;
           } finally {
-            if (!success) {
-              // Close all readers we had opened:
-              for(i++;i<sis.size();i++) {
-                try {
-                  readers[i].close();
-                } catch (Throwable ignore) {
-                  // keep going - we want to clean up as much as possible
-                }
-              }
-            }
+            if (!success)
+              IOUtils.closeWhileHandlingException(prior, readers);
           }
         }
         return new DirectoryReader(readers, directory, null, sis, termInfosIndexDivisor,
@@ -104,6 +100,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     final SegmentInfos segmentInfos = (SegmentInfos) infos.clone();
     int infosUpto = 0;
     for (int i=0;i<numSegments;i++) {
+      IOException prior = null;
       boolean success = false;
       try {
         final SegmentInfo info = infos.info(i);
@@ -118,17 +115,11 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
           segmentInfos.remove(infosUpto);
         }
         success = true;
+      } catch(IOException ex) {
+        prior = ex;
       } finally {
-        if (!success) {
-          // Close all readers we had opened:
-          for(SegmentReader reader : readers) {
-            try {
-              reader.close();
-            } catch (Throwable ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
+        if (!success)
+          IOUtils.closeWhileHandlingException(prior, readers);
       }
     }
     return new DirectoryReader(readers.toArray(new SegmentReader[readers.size()]),
@@ -169,6 +160,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       }
 
       boolean success = false;
+      IOException prior = null;
       try {
         SegmentReader newReader;
         if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
@@ -196,6 +188,8 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
           }
         }
         success = true;
+      } catch (IOException ex) {
+        prior = ex;
       } finally {
         if (!success) {
           for (i++; i < infos.size(); i++) {
@@ -210,12 +204,14 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
                   // closing we must decRef it
                   newReaders[i].decRef();
                 }
-              } catch (IOException ignore) {
-                // keep going - we want to clean up as much as possible
+              } catch (IOException ex) {
+                if (prior == null) prior = ex;
               }
             }
           }
         }
+        // throw the first exception
+        if (prior != null) throw prior;
       }
     }    
     return new DirectoryReader(newReaders,

@@ -75,7 +75,7 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    int i = readerIndex(docID);        // find segment num
+    final int i = readerIndex(docID);        // find segment num
     return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to segment
   }
 
@@ -86,7 +86,7 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   }
 
   @Override
-  public int maxDoc() {
+  public final int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return maxDoc;
   }
@@ -94,13 +94,13 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
-    int i = readerIndex(docID);                          // find segment num
+    final int i = readerIndex(docID);                          // find segment num
     subReaders[i].document(docID - starts[i], visitor);    // dispatch to segment reader
   }
 
   @Override
   public boolean hasDeletions() {
-    ensureOpen();
+    // Don't call ensureOpen() here (it could affect performance)
     return hasDeletions;
   }
 
@@ -154,12 +154,11 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   
   @Override
   public ReaderContext getTopReaderContext() {
-    ensureOpen();
     return topLevelContext;
   }
 
   @Override
   public PerDocValues perDocValues() throws IOException {
-    throw new UnsupportedOperationException("please use MultiPerDocValues#getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
+    throw new UnsupportedOperationException("please use MultiPerDocValues.getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
 }
