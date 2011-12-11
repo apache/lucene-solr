@@ -28,12 +28,14 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.search.NRTManagerReopenThread;
+import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -190,7 +192,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   private NRTManager nrt;
   private NRTManagerReopenThread nrtThread;
   @Override
-  protected void doAfterWriter(ExecutorService es) throws Exception {
+  protected void doAfterWriter(final ExecutorService es) throws Exception {
     final double minReopenSec = 0.01 + 0.05 * random.nextDouble();
     final double maxReopenSec = minReopenSec * (1.0 + 10 * random.nextDouble());
 
@@ -198,14 +200,16 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
       System.out.println("TEST: make NRTManager maxReopenSec=" + maxReopenSec + " minReopenSec=" + minReopenSec);
     }
 
-    nrt = new NRTManager(writer, es,
-                         new SearcherWarmer() {
-                           @Override
-                           public void warm(IndexSearcher s) throws IOException {
-                             TestNRTManager.this.warmCalled = true;
-                             s.search(new TermQuery(new Term("body", "united")), 10);
-                           }
-                         }, false);
+    nrt = new NRTManager(writer,
+                         new SearcherFactory() {
+                          @Override
+                          public IndexSearcher newSearcher(IndexReader r) throws IOException {
+                            TestNRTManager.this.warmCalled = true;
+                            IndexSearcher s = new IndexSearcher(r, es);
+                            s.search(new TermQuery(new Term("body", "united")), 10);
+                            return s;
+                          }
+                        }, false);
                          
     nrtThread = new NRTManagerReopenThread(nrt, maxReopenSec, minReopenSec);
     nrtThread.setName("NRT Reopen Thread");
@@ -267,7 +271,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final CountDownLatch signal = new CountDownLatch(1);
 
     LatchedIndexWriter writer = new LatchedIndexWriter(d, conf, latch, signal);
-    final NRTManager manager = new NRTManager(writer, null, null, false);
+    final NRTManager manager = new NRTManager(writer, null, false);
     Document doc = new Document();
     doc.add(newField("test","test", TextField.TYPE_STORED));
     long gen = manager.addDocument(doc);

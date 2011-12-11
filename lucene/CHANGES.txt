@@ -671,6 +671,13 @@ Changes in backwards compatibility policy
   were made final. This is not expected to affect many apps, since these methods
   already delegate to abstract methods, which you had to already override 
   anyway. (Shai Erera)
+
+* LUCENE-3636: Added SearcherFactory, used by SearcherManager and NRTManager
+  to create new IndexSearchers. You can provide your own implementation to
+  warm new searchers, set an ExecutorService, set a custom Similarity, or
+  even return your own subclass of IndexSearcher. The SearcherWarmer and
+  ExecutorService parameters on these classes were removed, as they are
+  subsumed by SearcherFactory.  (Shai Erera, Mike McCandless, Robert Muir)
   
 Security fixes
 
