@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
 
@@ -65,7 +66,7 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 
-public final class SearcherManager {
+public final class SearcherManager implements Closeable {
 
   private volatile IndexSearcher currentSearcher;
   private final SearcherFactory searcherFactory;
