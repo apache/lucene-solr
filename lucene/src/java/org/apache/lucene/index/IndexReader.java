@@ -257,8 +257,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public final void decRef() throws IOException {
     ensureOpen();
-    final int rc = refCount.getAndDecrement();
-    if (rc == 1) {
+    final int rc = refCount.decrementAndGet();
+    if (rc == 0) {
       boolean success = false;
       try {
         doClose();
@@ -270,8 +270,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
         }
       }
       readerFinished();
-    } else if (rc <= 0) {
-      throw new IllegalStateException("too many decRef calls: refCount was " + rc + " before decrement");
+    } else if (rc < 0) {
+      throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
     }
   }
   
