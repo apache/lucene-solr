@@ -56,9 +56,6 @@ final class DocInverter extends DocFieldConsumer {
     }
   }
 
-  // Used to read a string value for a field
-  final ReusableStringReader stringReader = new ReusableStringReader();
-
   public DocInverter(DocumentsWriterPerThread.DocState docState, InvertedDocConsumer consumer, InvertedDocEndConsumer endConsumer) {
     this.docState = docState;
     this.consumer = consumer;
