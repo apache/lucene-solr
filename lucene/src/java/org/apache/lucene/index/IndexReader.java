@@ -246,12 +246,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * Expert: decreases the refCount of this IndexReader
-   * instance.  If the refCount drops to 0, then pending
-   * changes (if any) are committed to the index and this
+   * instance.  If the refCount drops to 0, then this
    * reader is closed.  If an exception is hit, the refCount
    * is unchanged.
    *
-   * @throws IOException in case an IOException occurs in commit() or doClose()
+   * @throws IOException in case an IOException occurs in  doClose()
    *
    * @see #incRef
    */
