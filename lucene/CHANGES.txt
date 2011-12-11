@@ -724,6 +724,9 @@ Bug fixes
   In ParallelReader the bug was not existent, but the implementation method
   was also made private.  (Uwe Schindler)
 
+* LUCENE-3641: Fixed MultiReader to correctly propagate readerFinishedListeners
+  to clones/reopened readers.  (Uwe Schindler)
+
 Documentation
 
 * LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)

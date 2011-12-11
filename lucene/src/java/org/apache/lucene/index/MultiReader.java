@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.MapBackedSet;
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
 public class MultiReader extends BaseMultiReader<IndexReader> {
-  private boolean[] decrefOnClose; // remember which subreaders to decRef on close
+  private final boolean[] decrefOnClose; // remember which subreaders to decRef on close
   
  /**
   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
@@ -46,7 +47,7 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     super(subReaders.clone());
-    this.readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     decrefOnClose = new boolean[subReaders.length];
     for (int i = 0; i < subReaders.length; i++) {
       if (!closeSubReaders) {
@@ -56,6 +57,15 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
         decrefOnClose[i] = false;
       }
     }
+  }
+  
+  // used only by openIfChaged
+  private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose,
+                      Collection<ReaderFinishedListener> readerFinishedListeners)
+                      throws IOException {
+    super(subReaders);
+    this.decrefOnClose = decrefOnClose;
+    this.readerFinishedListeners = readerFinishedListeners;
   }
 
   @Override
@@ -117,9 +127,7 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
           newDecrefOnClose[i] = true;
         }
       }
-      MultiReader mr = new MultiReader(newSubReaders);
-      mr.decrefOnClose = newDecrefOnClose;
-      return mr;
+      return new MultiReader(newSubReaders, newDecrefOnClose, readerFinishedListeners);
     } else {
       return null;
     }
