@@ -320,7 +320,7 @@ final class FieldsReader implements Cloneable, Closeable {
         numBytes = 8;
         break;
       default:
-        throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
+        throw new CorruptIndexException("Invalid numeric type: " + Integer.toHexString(numeric));
     }
     
     skipFieldBytes(binary, compressed, numBytes);
@@ -347,7 +347,7 @@ final class FieldsReader implements Cloneable, Closeable {
       case FieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
         return new NumericField(fi.name, Field.Store.YES, fi.isIndexed).setDoubleValue(Double.longBitsToDouble(fieldsStream.readLong()));
       default:
-        throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
+        throw new CorruptIndexException("Invalid numeric type: " + Integer.toHexString(numeric));
     }
   }
 
@@ -453,7 +453,7 @@ final class FieldsReader implements Cloneable, Closeable {
         size = bytesize = 8;
         break;
       default:
-        throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
+        throw new CorruptIndexException("Invalid numeric type: " + Integer.toHexString(numeric));
     }
     byte[] sizebytes = new byte[4];
     sizebytes[0] = (byte) (bytesize>>>24);
