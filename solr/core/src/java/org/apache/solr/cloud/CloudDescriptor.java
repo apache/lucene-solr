@@ -1,8 +1,5 @@
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.params.SolrParams;
-
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +16,8 @@ import org.apache.solr.common.params.SolrParams;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.solr.common.params.SolrParams;
 
 public class CloudDescriptor {
   private String shardId;

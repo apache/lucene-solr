@@ -778,6 +778,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     NamedList master = (NamedList) initArgs.get("master");
     boolean enableMaster = isEnabled( master );
+    
+    if (!enableSlave && !enableMaster) {
+      enableMaster = true;
+      master = new NamedList<Object>();
+    }
+    
     if (enableMaster) {
       includeConfFiles = (String) master.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
@@ -797,6 +803,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
 
+      if (!replicateOnCommit && ! replicateOnOptimize) {
+        replicateOnCommit = true;
+      }
+      
       // if we only want to replicate on optimize, we need the deletion policy to
       // save the last optimized commit point.
       if (replicateOnOptimize) {

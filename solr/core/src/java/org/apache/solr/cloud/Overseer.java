@@ -123,11 +123,11 @@ public class Overseer implements NodeStateChangeListener {
           }
         });
     
-    processLiveNodesChanged(Collections.EMPTY_SET, liveNodes);
+    processLiveNodesChanged(Collections.<String>emptySet(), liveNodes);
   }
   
   private void processLiveNodesChanged(Collection<String> oldLiveNodes,
-      Collection<String> liveNodes) {
+      Collection<String> liveNodes) throws InterruptedException, KeeperException {
     
     Set<String> upNodes = complement(liveNodes, oldLiveNodes);
     if (upNodes.size() > 0) {
@@ -143,7 +143,7 @@ public class Overseer implements NodeStateChangeListener {
     }
   }
   
-  private void addNodeStateWatches(Set<String> nodeNames) {
+  private void addNodeStateWatches(Set<String> nodeNames) throws InterruptedException, KeeperException {
     
     for (String nodeName : nodeNames) {
       String path = "/node_states/" + nodeName;
@@ -153,30 +153,18 @@ public class Overseer implements NodeStateChangeListener {
             if (!zkClient.exists(path)) {
               zkClient.makePath(path);
             }
-          } catch (KeeperException e1) {
-            if (e1.code() != Code.NODEEXISTS) {
-              throw new SolrException(
-                  SolrException.ErrorCode.SERVER_ERROR, "Could not create node for watch. Connection lost?", e1);
+          } catch (KeeperException e) {
+            if (e.code() != Code.NODEEXISTS) {
+              throw e;
             }
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR, "Could not create node for watch. Connection lost?", e);
           }
 
           NodeStateWatcher nsw = new NodeStateWatcher(zkClient, nodeName, path, this);
           nodeStateWatches.put(nodeName, nsw);
-          try {
-            byte[] state = zkClient.getData(path, nsw, null);
-            nsw.processStateChange(state);
-          } catch (KeeperException e) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR, "Could not read initial node state. Connection lost?", e);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR, "Could not read initial node state. Connection lost?", e);
-          }
+          
+          byte[] state = zkClient.getData(path, nsw, null);
+          nsw.processStateChange(state);
+
         } else {
           log.debug("watch already added");
         }
@@ -186,8 +174,9 @@ public class Overseer implements NodeStateChangeListener {
   
   /**
    * Try to assign core to the cluster
+   * @throws KeeperException 
    */
-  private void updateState(String nodeName, CoreState coreState) {
+  private void updateState(String nodeName, CoreState coreState) throws KeeperException {
     String collection = coreState.getCollectionName();
     String coreName = coreState.getCoreName();
     
@@ -222,13 +211,10 @@ public class Overseer implements NodeStateChangeListener {
         zkClient.setData(ZkStateReader.CLUSTER_STATE,
             ZkStateReader.toJSON(newCloudState));
         publishNodeAssignments(nodeName, newCloudState, nodeStateWatches.get(nodeName).getCurrentState());
-      } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not publish new state. Connection lost?", e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not publish new state. Connection lost?", e);
+            "Interrupted while publishing new state", e);
       }
     }
 

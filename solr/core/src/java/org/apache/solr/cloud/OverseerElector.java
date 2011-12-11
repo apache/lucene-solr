@@ -17,8 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +44,16 @@ public class OverseerElector extends LeaderElector {
     try {
       new Overseer(client, reader);
     } catch (KeeperException e) {
-      log.error("Could not start overseer.", e);
+      if (e.code() == KeeperException.Code.SESSIONEXPIRED
+          || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+        log.warn("Cannot run overseer leader process, Solr cannot talk to ZK");
+        return;
+      }
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR, "", e);
     } catch (InterruptedException e) {
-      log.error("Could not start overseer.", e);
+      Thread.currentThread().interrupt();
+      log.warn("Could not run leader process", e);
     }
   }
   
