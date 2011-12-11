@@ -37,7 +37,7 @@ import org.apache.lucene.util.MapBackedSet;
 public class MultiReader extends IndexReader implements Cloneable {
   protected final IndexReader[] subReaders;
   protected final int[] starts;                           // 1st docno for each segment
-  private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
+  private final boolean[] decrefOnClose;                // remember which subreaders to decRef on close
   private final Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   private int maxDoc = 0;
   private int numDocs = -1;
@@ -84,6 +84,23 @@ public class MultiReader extends IndexReader implements Cloneable {
     readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
   
+  // used only by openIfChaged
+  private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose,
+                      Collection<ReaderFinishedListener> readerFinishedListeners)
+                      throws IOException {
+    this.subReaders =  subReaders.clone();
+    this.decrefOnClose = decrefOnClose;
+    this.readerFinishedListeners = readerFinishedListeners;
+    starts = new int[subReaders.length + 1];    // build starts array
+    for (int i = 0; i < subReaders.length; i++) {
+      starts[i] = maxDoc;
+      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
+      if (subReaders[i].hasDeletions())
+        hasDeletions = true;
+    }
+    starts[subReaders.length] = maxDoc;
+  }
+
   @Override
   protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     return doReopen(false);
@@ -172,9 +189,7 @@ public class MultiReader extends IndexReader implements Cloneable {
           newDecrefOnClose[i] = true;
         }
       }
-      MultiReader mr = new MultiReader(newSubReaders);
-      mr.decrefOnClose = newDecrefOnClose;
-      return mr;
+      return new MultiReader(newSubReaders, newDecrefOnClose, readerFinishedListeners);
     } else {
       return null;
     }
