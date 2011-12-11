@@ -410,13 +410,20 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   @Override
   protected synchronized void doClose() throws IOException {
+    IOException ioe = null;
     for (int i = 0; i < subReaders.length; i++) {
-      if (decrefOnClose[i]) {
-        subReaders[i].decRef();
-      } else {
-        subReaders[i].close();
+      try {
+        if (decrefOnClose[i]) {
+          subReaders[i].decRef();
+        } else {
+          subReaders[i].close();
+        }
+      } catch (IOException e) {
+        if (ioe == null) ioe = e;
       }
     }
+    // throw the first exception
+    if (ioe != null) throw ioe;
   }
   
   @Override

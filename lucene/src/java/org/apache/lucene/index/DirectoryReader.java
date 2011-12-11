@@ -37,6 +37,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MapBackedSet;
 
 /** 
@@ -108,22 +109,17 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
     SegmentReader[] readers = new SegmentReader[sis.size()];
     for (int i = sis.size()-1; i >= 0; i--) {
+      IOException prior = null;
       boolean success = false;
       try {
         readers[i] = SegmentReader.get(readOnly, sis.info(i), termInfosIndexDivisor);
         readers[i].readerFinishedListeners = this.readerFinishedListeners;
         success = true;
+      } catch(IOException ex) {
+        prior = ex;
       } finally {
-        if (!success) {
-          // Close all readers we had opened:
-          for(i++;i<sis.size();i++) {
-            try {
-              readers[i].close();
-            } catch (Throwable ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
+        if (!success)
+          IOUtils.closeWhileHandlingException(prior, readers);
       }
     }
 
@@ -150,6 +146,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     segmentInfos = (SegmentInfos) infos.clone();
     int infosUpto = 0;
     for (int i=0;i<numSegments;i++) {
+      IOException prior = null;
       boolean success = false;
       try {
         final SegmentInfo info = infos.info(i);
@@ -164,17 +161,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
           segmentInfos.remove(infosUpto);
         }
         success = true;
+      } catch(IOException ex) {
+        prior = ex;
       } finally {
-        if (!success) {
-          // Close all readers we had opened:
-          for(SegmentReader reader : readers) {
-            try {
-              reader.close();
-            } catch (Throwable ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
+        if (!success)
+          IOUtils.closeWhileHandlingException(prior, readers);
       }
     }
 
@@ -223,6 +214,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
         newReaders[i] = oldReaders[oldReaderIndex.intValue()];
       }
 
+      IOException prior = null;
       boolean success = false;
       try {
         SegmentReader newReader;
@@ -251,6 +243,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
           }
         }
         success = true;
+      } catch (IOException ex) {
+        prior = ex;
       } finally {
         if (!success) {
           for (i++; i < infos.size(); i++) {
@@ -265,12 +259,14 @@ class DirectoryReader extends IndexReader implements Cloneable {
                   // closing we must decRef it
                   newReaders[i].decRef();
                 }
-              } catch (IOException ignore) {
-                // keep going - we want to clean up as much as possible
+              } catch (IOException ex) {
+                if (prior == null) prior = ex;
               }
             }
           }
         }
+        // throw the first exception
+        if (prior != null) throw prior;
       }
     }    
     
