@@ -332,7 +332,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final long tStart = System.currentTimeMillis();
 
-    infoStream.message("IW", "flush at getReader");
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "flush at getReader");
+    }
     // Do this up front before flushing so that the readers
     // obtained during this flush are pooled, the first time
     // this method is called:
@@ -372,8 +374,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // never reached but javac disagrees:
         return null;
       } finally {
-        if (!success && infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "hit exception during NRT reader");
+        if (!success) {
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "hit exception during NRT reader");
+          }
         }
         // Done: finish the full flush!
         docWriter.finishFullFlush(success);
@@ -873,8 +877,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           segmentInfos.replace(oldInfos);
           changeCount++;
           segmentInfos.changed();
-          if (infoStream.isEnabled("IW"))
+          if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
+          }
         }
       }
 
@@ -910,7 +915,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     } finally {
       if (!success) {
-        infoStream.message("IW", "init: hit exception on init; releasing write lock");
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "init: hit exception on init; releasing write lock");
+        }
         try {
           writeLock.release();
         } catch (Throwable t) {
@@ -1078,14 +1085,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       mergeScheduler.close();
 
-      infoStream.message("IW", "now call final commit()");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "now call final commit()");
+      }
 
       if (!hitOOM) {
         commitInternal(null);
       }
 
-      if (infoStream.isEnabled("IW"))
+      if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "at close: " + segString());
+      }
       // used by assert below
       final DocumentsWriter oldWriter = docWriter;
       synchronized(this) {
@@ -1109,7 +1119,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         closing = false;
         notifyAll();
         if (!closed) {
-          infoStream.message("IW", "hit exception while closing");
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "hit exception while closing");
+          }
         }
       }
     }
@@ -1338,8 +1350,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         anySegmentFlushed = docWriter.updateDocuments(docs, analyzer, delTerm);
         success = true;
       } finally {
-        if (!success && infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "hit exception updating document");
+        if (!success) {
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "hit exception updating document");
+          }
         }
       }
       if (anySegmentFlushed) {
@@ -1485,8 +1499,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         anySegmentFlushed = docWriter.updateDocument(doc, analyzer, term);
         success = true;
       } finally {
-        if (!success && infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "hit exception updating document");
+        if (!success) {
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "hit exception updating document");
+          }
         }
       }
 
@@ -1744,8 +1760,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     flush(true, true);
 
-    if (infoStream.isEnabled("IW"))
+    if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "forceMergeDeletes: index now " + segString());
+    }
 
     MergePolicy.MergeSpecification spec;
 
@@ -1938,7 +1955,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     boolean success = false;
 
-    infoStream.message("IW", "rollback");
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "rollback");
+    }
 
     try {
       synchronized(this) {
@@ -1946,7 +1965,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         stopMerges = true;
       }
 
-      infoStream.message("IW", "rollback: done finish merges");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "rollback: done finish merges");
+      }
 
       // Must pre-close these two, in case they increment
       // changeCount so that we can then set it to false
@@ -1998,7 +2019,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (!success) {
           closing = false;
           notifyAll();
-          infoStream.message("IW", "hit exception during rollback");
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "hit exception during rollback");
+          }
         }
       }
     }
@@ -2050,8 +2073,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteAll");
     } finally {
-      if (!success && infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "hit exception during deleteAll");
+      if (!success) {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "hit exception during deleteAll");
+        }
       }
     }
   }
@@ -2063,16 +2088,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Abort all pending & running merges:
       for (final MergePolicy.OneMerge merge : pendingMerges) {
-        if (infoStream.isEnabled("IW"))
+        if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "now abort pending merge " + merge.segString(directory));
+        }
         merge.abort();
         mergeFinish(merge);
       }
       pendingMerges.clear();
 
       for (final MergePolicy.OneMerge merge : runningMerges) {
-        if (infoStream.isEnabled("IW"))
+        if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "now abort running merge " + merge.segString(directory));
+        }
         merge.abort();
       }
 
@@ -2082,8 +2109,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // because the merge threads periodically check if
       // they are aborted.
       while(runningMerges.size() > 0) {
-        if (infoStream.isEnabled("IW"))
+        if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge to abort");
+        }
         doWait();
       }
 
@@ -2092,7 +2120,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       assert 0 == mergingSegments.size();
 
-      infoStream.message("IW", "all running merges have aborted");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "all running merges have aborted");
+      }
 
     } else {
       // waitForMerges() will ensure any running addIndexes finishes.
@@ -2112,7 +2142,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public synchronized void waitForMerges() {
     ensureOpen(false);
-    infoStream.message("IW", "waitForMerges");
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "waitForMerges");
+    }
     while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
       doWait();
     }
@@ -2120,7 +2152,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // sanity check
     assert 0 == mergingSegments.size();
 
-    infoStream.message("IW", "waitForMerges done");
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "waitForMerges done");
+    }
   }
 
   /**
@@ -2247,7 +2281,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
     // Lock order IW -> BDS
     synchronized (bufferedDeletesStream) {
-      infoStream.message("IW", "publishFlushedSegment");  
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "publishFlushedSegment");
+      }
       
       if (globalPacket != null && globalPacket.any()) {
         bufferedDeletesStream.push(globalPacket);
@@ -2341,7 +2377,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     noDupDirs(dirs);
 
     try {
-      infoStream.message("IW", "flush at addIndexes(Directory...)");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "flush at addIndexes(Directory...)");
+      }
+
       flush(false, true);
 
       List<SegmentInfo> infos = new ArrayList<SegmentInfo>();
@@ -2410,7 +2449,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     int numDocs = 0;
 
     try {
-      infoStream.message("IW", "flush at addIndexes(IndexReader...)");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "flush at addIndexes(IndexReader...)");
+      }
       flush(false, true);
 
       String mergedName = newSegmentName();
@@ -2638,7 +2679,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           success = true;
         } finally {
           if (!success) {
-            infoStream.message("IW", "hit exception during prepareCommit");
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception during prepareCommit");
+            }
           }
           // Done: finish the full flush!
           docWriter.finishFullFlush(flushSuccess);
@@ -2722,16 +2765,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   private final void commitInternal(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
 
-    infoStream.message("IW", "commit: start");
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "commit: start");
+    }
 
     synchronized(commitLock) {
-      infoStream.message("IW", "commit: enter lock");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "commit: enter lock");
+      }
 
       if (pendingCommit == null) {
-        infoStream.message("IW", "commit: now prepare");
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "commit: now prepare");
+        }
         prepareCommit(commitUserData);
       } else {
-        infoStream.message("IW", "commit: already prepared");
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "commit: already prepared");
+        }
       }
 
       finishCommit();
@@ -2742,10 +2793,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     if (pendingCommit != null) {
       try {
-        infoStream.message("IW", "commit: pendingCommit != null");
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "commit: pendingCommit != null");
+        }
         pendingCommit.finishCommit(directory, codec);
-        if (infoStream.isEnabled("IW"))
+        if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
+        }
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
         segmentInfos.setUserData(pendingCommit.getUserData());
@@ -2760,10 +2814,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
     } else {
-      infoStream.message("IW", "commit: pendingCommit == null; skip");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "commit: pendingCommit == null; skip");
+      }
     }
 
-    infoStream.message("IW", "commit: done");
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "commit: done");
+    }
   }
 
   // Ensures only one flush() is actually flushing segments
@@ -2833,14 +2891,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // never hit
       return false;
     } finally {
-      if (!success)
-        infoStream.message("IW", "hit exception during flush");
+      if (!success) {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "hit exception during flush");
+        }
+      }
     }
   }
   
   final synchronized void maybeApplyDeletes(boolean applyAllDeletes) throws IOException {
     if (applyAllDeletes) {
-      infoStream.message("IW", "apply all deletes during flush");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "apply all deletes during flush");
+      }
       applyAllDeletes();
     } else if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "don't apply deletes now delTermCount=" + bufferedDeletesStream.numTerms() + " bytesUsed=" + bufferedDeletesStream.bytesUsed());
@@ -2920,8 +2983,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final List<SegmentInfo> sourceSegments = merge.segments;
 
-    if (infoStream.isEnabled("IW"))
+    if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "commitMergeDeletes " + merge.segString(directory));
+    }
 
     // Carefully merge deletes that occurred after we
     // started merging:
@@ -3018,8 +3082,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot complete merge");
     }
 
-    if (infoStream.isEnabled("IW"))
+    if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "commitMerge: " + merge.segString(directory) + " index=" + segString());
+    }
 
     assert merge.registerDone;
 
@@ -3030,8 +3095,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // file that current segments does not reference), we
     // abort this merge
     if (merge.isAborted()) {
-      if (infoStream.isEnabled("IW"))
+      if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "commitMerge: skipping merge " + merge.segString(directory) + ": it was aborted");
+      }
       return false;
     }
 
@@ -3046,8 +3112,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final boolean allDeleted = mergedReader.numDocs() == 0;
 
-    if (allDeleted && infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "merged segment " + merge.info + " is 100% deleted" +  (keepFullyDeletedSegments ? "" : "; skipping insert"));
+    if (allDeleted) {
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "merged segment " + merge.info + " is 100% deleted" +  (keepFullyDeletedSegments ? "" : "; skipping insert"));
+      }
     }
 
     final boolean dropSegment = allDeleted && !keepFullyDeletedSegments;
@@ -3133,8 +3201,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         try {
           mergeInit(merge);
 
-          if (infoStream.isEnabled("IW"))
+          if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
+          }
 
           mergeMiddle(merge);
           mergeSuccess(merge);
@@ -3147,9 +3216,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           mergeFinish(merge);
 
           if (!success) {
-            infoStream.message("IW", "hit exception during merge");
-            if (merge.info != null && !segmentInfos.contains(merge.info))
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception during merge");
+            }
+            if (merge.info != null && !segmentInfos.contains(merge.info)) {
               deleter.refresh(merge.info.name);
+            }
           }
 
           // This merge (and, generally, any change to the
@@ -3163,8 +3235,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "merge");
     }
-    if (merge.info != null && infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
+    if (merge.info != null) {
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
+      }
     }
     //System.out.println(Thread.currentThread().getName() + ": merge end");
   }
@@ -3209,8 +3283,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     pendingMerges.add(merge);
 
-    if (infoStream.isEnabled("IW"))
+    if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "add merge to pendingMerges: " + merge.segString(directory) + " [total " + pendingMerges.size() + " pending]");
+    }
 
     merge.mergeGen = mergeGen;
     merge.isExternal = isExternal;
@@ -3227,7 +3302,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       builder.append("]");
       // don't call mergingSegments.toString() could lead to ConcurrentModException
       // since merge updates the segments FieldInfos
-      infoStream.message("IW", builder.toString());  
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", builder.toString());  
+      }
     }
     for(SegmentInfo info : merge.segments) {
       if (infoStream.isEnabled("IW")) {
@@ -3251,7 +3328,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       success = true;
     } finally {
       if (!success) {
-        infoStream.message("IW", "hit exception in mergeInit");
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "hit exception in mergeInit");
+        }
         mergeFinish(merge);
       }
     }
@@ -3544,7 +3623,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           handleMergeException(t, merge);
         } finally {
           if (!success) {
-            infoStream.message("IW", "hit exception creating compound file during merge");
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception creating compound file during merge");
+            }
 
             synchronized(this) {
               deleter.deleteFile(compoundFileName);
@@ -3563,7 +3644,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           deleter.deleteNewFiles(merge.info.files());
 
           if (merge.isAborted()) {
-            infoStream.message("IW", "abort merge after building CFS");
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "abort merge after building CFS");
+            }
             deleter.deleteFile(compoundFileName);
             return 0;
           }
@@ -3746,14 +3829,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     try {
 
-      infoStream.message("IW", "startCommit(): start");
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "startCommit(): start");
+      }
 
       synchronized(this) {
 
         assert lastCommitChangeCount <= changeCount;
 
         if (pendingCommitChangeCount == lastCommitChangeCount) {
-          infoStream.message("IW", "  skip startCommit(): no changes pending");
+          if (infoStream.isEnabled("IW")) {
+            infoStream.message("IW", "  skip startCommit(): no changes pending");
+          }
           deleter.decRef(filesToCommit);
           filesToCommit = null;
           return;
@@ -3796,7 +3883,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           pendingCommit = toSync;
         }
 
-        infoStream.message("IW", "done all syncs");
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "done all syncs");
+        }
 
         assert testPoint("midStartCommitSuccess");
 
@@ -3809,7 +3898,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           segmentInfos.updateGeneration(toSync);
 
           if (!pendingCommitSet) {
-            infoStream.message("IW", "hit exception committing segments file");
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception committing segments file");
+            }
 
             // Hit exception
             deleter.decRef(filesToCommit);

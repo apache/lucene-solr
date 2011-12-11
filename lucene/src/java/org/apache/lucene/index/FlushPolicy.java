@@ -20,7 +20,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -129,7 +128,9 @@ public abstract class FlushPolicy {
   }
   
   private boolean assertMessage(String s) {
-    writer.get().infoStream.message("FP", s);
+    if (writer.get().infoStream.isEnabled("FP")) {
+      writer.get().infoStream.message("FP", s);
+    }
     return true;
   }
 

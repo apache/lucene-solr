@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.CollectionUtil;
 
@@ -336,8 +335,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // merges to do first (the easiest ones?), etc.
       MergePolicy.OneMerge merge = writer.getNextMerge();
       if (merge == null) {
-        if (verbose())
+        if (verbose()) {
           message("  no more merges pending; now return");
+        }
         return;
       }
 
@@ -348,7 +348,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       boolean success = false;
       try {
         synchronized(this) {
-          message("  consider merge " + merge.segString(dir));
+          if (verbose()) {
+            message("  consider merge " + merge.segString(dir));
+          }
 
           // OK to spawn a new merge thread to handle this
           // merge:
@@ -440,8 +442,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       
       try {
 
-        if (verbose())
+        if (verbose()) {
           message("  merge thread: start");
+        }
 
         while(true) {
           setRunningMerge(merge);
@@ -453,15 +456,17 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           if (merge != null) {
             tWriter.mergeInit(merge);
             updateMergeThreads();
-            if (verbose())
+            if (verbose()) {
               message("  merge thread: do another merge " + merge.segString(dir));
+            }
           } else {
             break;
           }
         }
 
-        if (verbose())
+        if (verbose()) {
           message("  merge thread: done");
+        }
 
       } catch (Throwable exc) {
 
