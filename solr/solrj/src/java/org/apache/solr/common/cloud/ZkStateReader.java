@@ -370,9 +370,14 @@ public class ZkStateReader {
   // and if we find out we cannot talk to zk anymore, we should probably realize we are not
   // a leader anymore - we shouldn't accept updates at all??
   public String getLeader(String collection, String shard) throws Exception {
+    ZkNodeProps props = getLeaderProps(collection,shard);
     
-    String url = null;
+    return props.get(ZkStateReader.URL_PROP);
+  }
+  
+  public ZkNodeProps getLeaderProps(String collection, String shard) throws Exception {
     int tries = 30;
+    ZkNodeProps props;
     while (true) {
       if (!zkClient
           .exists("/collections/" + collection + "/leader_elect/" + shard + "/leader")) {
@@ -388,8 +393,7 @@ public class ZkStateReader {
       if (leaderChildren.size() > 0) {
         String leader = leaderChildren.get(0);
         byte[] data = zkClient.getData(leaderPath + "/" + leader, null, null);
-        ZkNodeProps props = ZkNodeProps.load(data);
-        url = props.get(ZkStateReader.URL_PROP);
+        props = ZkNodeProps.load(data);
         break;
       } else {
         if (tries-- == 0) {
@@ -398,7 +402,7 @@ public class ZkStateReader {
         Thread.sleep(1000);
       }
     }
-    return url;
+    return props;
   }
   
 }

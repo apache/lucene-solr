@@ -103,7 +103,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     // bring shard replica down
     System.out.println("bring shard down");
-    JettySolrRunner replica = chaosMonkey.killShard("shard1", 1);
+    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1);
 
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
