@@ -136,8 +136,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
  
-    // TODO: right now the control and distrib are usually off by a few docs...
-    //query("q", "*:*", "distrib", true, "sort", i1 + " desc");
+    query("q", "*:*", "distrib", true, "sort", "id desc");
   }
   
   protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
