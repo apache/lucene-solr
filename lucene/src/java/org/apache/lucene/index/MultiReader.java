@@ -39,7 +39,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   protected final int[] starts;                           // 1st docno for each segment
   private final boolean[] decrefOnClose;                // remember which subreaders to decRef on close
   private final Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
-  private int maxDoc = 0;
+  private final int maxDoc;
   private int numDocs = -1;
   private boolean hasDeletions = false;
   
@@ -63,42 +63,32 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @param subReaders set of (sub)readers
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
-    this.subReaders =  subReaders.clone();
-    starts = new int[subReaders.length + 1];    // build starts array
-    decrefOnClose = new boolean[subReaders.length];
+    this(subReaders.clone(), new boolean[subReaders.length],
+      new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>()));
     for (int i = 0; i < subReaders.length; i++) {
-      starts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
-
       if (!closeSubReaders) {
         subReaders[i].incRef();
         decrefOnClose[i] = true;
       } else {
         decrefOnClose[i] = false;
       }
-      
-      if (subReaders[i].hasDeletions())
-        hasDeletions = true;
     }
-    starts[subReaders.length] = maxDoc;
-    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
   
-  // used only by openIfChaged
   private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose,
-                      Collection<ReaderFinishedListener> readerFinishedListeners)
-                      throws IOException {
-    this.subReaders =  subReaders;
+                      Collection<ReaderFinishedListener> readerFinishedListeners) {
+    this.subReaders = subReaders;
     this.decrefOnClose = decrefOnClose;
     this.readerFinishedListeners = readerFinishedListeners;
     starts = new int[subReaders.length + 1];    // build starts array
+    int maxDoc = 0;
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
       if (subReaders[i].hasDeletions())
         hasDeletions = true;
     }
-    starts[subReaders.length] = maxDoc;
+    this.maxDoc = starts[subReaders.length] = maxDoc;
   }
 
   @Override
