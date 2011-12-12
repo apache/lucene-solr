@@ -731,6 +731,10 @@ Bug fixes
 * LUCENE-3641: Fixed MultiReader to correctly propagate readerFinishedListeners
   to clones/reopened readers.  (Uwe Schindler)
 
+* LUCENE-3642: Fixed bugs in CharTokenizer, n-gram filters, and smart chinese 
+  where they would create invalid offsets in some situations, leading to problems
+  in highlighting. (Max Beutel via Robert Muir)
+
 Documentation
 
 * LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)

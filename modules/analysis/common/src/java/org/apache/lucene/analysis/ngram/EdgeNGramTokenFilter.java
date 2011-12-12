@@ -71,6 +71,8 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int curTermLength;
   private int curGramSize;
   private int tokStart;
+  private int tokEnd; // only used if the length changed before this filter
+  private boolean hasIllegalOffsets; // only if the length changed before this filter
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -126,6 +128,10 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           curTermLength = termAtt.length();
           curGramSize = minGram;
           tokStart = offsetAtt.startOffset();
+          tokEnd = offsetAtt.endOffset();
+          // if length by start + end offsets doesn't match the term text then assume
+          // this is a synonym and don't adjust the offsets.
+          hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
       if (curGramSize <= maxGram) {
@@ -135,7 +141,11 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           int start = side == Side.FRONT ? 0 : curTermLength - curGramSize;
           int end = start + curGramSize;
           clearAttributes();
-          offsetAtt.setOffset(tokStart + start, tokStart + end);
+          if (hasIllegalOffsets) {
+            offsetAtt.setOffset(tokStart, tokEnd);
+          } else {
+            offsetAtt.setOffset(tokStart + start, tokStart + end);
+          }
           termAtt.copyBuffer(curTermBuffer, start, curGramSize);
           curGramSize++;
           return true;
