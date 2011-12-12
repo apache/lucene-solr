@@ -99,7 +99,7 @@ public abstract class DocValuesConsumer {
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  // nocommit: can't we have a default implementation here that merges naively with our apis?
+  // TODO: can't we have a default implementation here that merges naively with our apis?
   // this is how stored fields and term vectors work. its a pain to have to impl merging
   // (should be an optimization to override it)
   protected abstract void merge(SingleSubMergeState mergeState) throws IOException;
