@@ -17,11 +17,17 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
+import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ASCIIFoldingFilter;
 import org.apache.lucene.util.Version;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
@@ -194,6 +200,24 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     stream.reset();
     while (stream.incrementToken()) {
     }
+  }
+  
+  // LUCENE-3642
+  public void testInvalidOffset() throws Exception {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
+        filters = new WordTokenFilter(filters);
+        return new TokenStreamComponents(tokenizer, filters);
+      }
+    };
+    
+    assertAnalyzesTo(analyzer, "mosfellsbær", 
+        new String[] { "mosfellsbaer" },
+        new int[]    { 0 },
+        new int[]    { 11 });
   }
   
   /** blast some random strings through the analyzer */

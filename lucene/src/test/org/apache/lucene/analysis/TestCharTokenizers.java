@@ -22,6 +22,12 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.util.Version;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Testcase for {@link CharTokenizer} subclasses
@@ -218,5 +224,81 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     protected boolean isTokenChar(char c) {
       return Character.isLetter(c);
     }
+  }
+  
+  // LUCENE-3642: normalize SMP->BMP and check that offsets are correct
+  public void testCrossPlaneNormalization() throws IOException {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader) {
+          @Override
+          protected int normalize(int c) {
+            if (c > 0xffff) {
+              return 'δ';
+            } else {
+              return c;
+            }
+          }
+        };
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    int num = 10000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
+      String s = _TestUtil.randomUnicodeString(random);
+      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
+      ts.reset();
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      while (ts.incrementToken()) {
+        String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+        for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
+          cp = highlightedText.codePointAt(j);
+          assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+        }
+      }
+      ts.end();
+      ts.close();
+    }
+    // just for fun
+    checkRandomData(random, analyzer, num);
+  }
+  
+  // LUCENE-3642: normalize BMP->SMP and check that offsets are correct
+  public void testCrossPlaneNormalization2() throws IOException {
+    Analyzer analyzer = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader) {
+          @Override
+          protected int normalize(int c) {
+            if (c <= 0xffff) {
+              return 0x1043C;
+            } else {
+              return c;
+            }
+          }
+        };
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    int num = 10000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
+      String s = _TestUtil.randomUnicodeString(random);
+      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
+      ts.reset();
+      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+      while (ts.incrementToken()) {
+        String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+        for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
+          cp = highlightedText.codePointAt(j);
+          assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+        }
+      }
+      ts.end();
+      ts.close();
+    }
+    // just for fun
+    checkRandomData(random, analyzer, num);
   }
 }
