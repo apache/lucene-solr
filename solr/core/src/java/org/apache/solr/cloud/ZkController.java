@@ -877,6 +877,7 @@ public final class ZkController {
       newAssignments.put(assignment.getCoreName(), assignment);
     }
 
+    // nocommit: is this right? It locks on the ref'd object, not the field.
     synchronized (this.assignments) {
       this.assignments.notifyAll();
       this.assignments = newAssignments;
