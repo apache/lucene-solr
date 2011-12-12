@@ -861,7 +861,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
       assertEquals(nDocs, hits.totalHits);
       reader.close();
-      searcher.close();
       dir.close();
     }
     if(snapDir[0].exists()) {

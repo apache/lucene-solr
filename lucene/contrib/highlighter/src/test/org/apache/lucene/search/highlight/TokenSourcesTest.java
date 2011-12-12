@@ -114,31 +114,27 @@ public class TokenSourcesTest extends LuceneTestCase {
       indexWriter.close();
     }
     final IndexReader indexReader = IndexReader.open(directory);
+    assertEquals(1, indexReader.numDocs());
+    final IndexSearcher indexSearcher = newSearcher(indexReader);
     try {
-      assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
-        query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
-        query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
+      query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
+      query.add(new SpanTermQuery(new Term(FIELD, "fox")));
         // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
         // new SpanTermQuery(new Term(FIELD, "{fox}")),
         // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
 
-        TopDocs hits = indexSearcher.search(query, 1);
-        assertEquals(1, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(query));
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(
-                indexReader.getTermVector(0, FIELD),
-                false);
-        assertEquals("<B>the fox</B> did not jump",
-            highlighter.getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      TopDocs hits = indexSearcher.search(query, 1);
+      assertEquals(1, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(query));
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(
+              indexReader.getTermVector(0, FIELD),
+              false);
+      assertEquals("<B>the fox</B> did not jump",
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -166,28 +162,24 @@ public class TokenSourcesTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
-        query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
-        query.add(new SpanTermQuery(new Term(FIELD, "fox")));
-        // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-        // new SpanTermQuery(new Term(FIELD, "{fox}")),
-        // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
+      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
+      query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
+      query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+      // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+      // new SpanTermQuery(new Term(FIELD, "{fox}")),
+      // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
 
-        TopDocs hits = indexSearcher.search(query, 1);
-        assertEquals(1, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(query));
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(
-                indexReader.getTermVector(0, FIELD),
-                false);
-        assertEquals("<B>the fox</B> did not jump",
-            highlighter.getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      TopDocs hits = indexSearcher.search(query, 1);
+      assertEquals(1, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(query));
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(
+              indexReader.getTermVector(0, FIELD),
+              false);
+      assertEquals("<B>the fox</B> did not jump",
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -214,28 +206,24 @@ public class TokenSourcesTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
-        // query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
-        // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
-        final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-            new SpanTermQuery(new Term(FIELD, "the")),
-            new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
+      // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
+      // query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
+      // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+          new SpanTermQuery(new Term(FIELD, "the")),
+          new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
 
-        TopDocs hits = indexSearcher.search(phraseQuery, 1);
-        assertEquals(1, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(
-                indexReader.getTermVector(0, FIELD),
-                false);
-        assertEquals("<B>the fox</B> did not jump",
-            highlighter.getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      TopDocs hits = indexSearcher.search(phraseQuery, 1);
+      assertEquals(1, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(
+              indexReader.getTermVector(0, FIELD),
+              false);
+      assertEquals("<B>the fox</B> did not jump",
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -263,28 +251,24 @@ public class TokenSourcesTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
-        // query.add(new SpanTermQuery(new Term(FIELD, "the")));
-        // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
-        final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-            new SpanTermQuery(new Term(FIELD, "the")),
-            new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
+      // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
+      // query.add(new SpanTermQuery(new Term(FIELD, "the")));
+      // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+          new SpanTermQuery(new Term(FIELD, "the")),
+          new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
 
-        TopDocs hits = indexSearcher.search(phraseQuery, 1);
-        assertEquals(1, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(
-                indexReader.getTermVector(0, FIELD),
-                false);
-        assertEquals("<B>the fox</B> did not jump",
-            highlighter.getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      TopDocs hits = indexSearcher.search(phraseQuery, 1);
+      assertEquals(1, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(
+              indexReader.getTermVector(0, FIELD),
+              false);
+      assertEquals("<B>the fox</B> did not jump",
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();

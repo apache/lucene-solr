@@ -195,7 +195,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("first number of hits", 57, hits.length);
-    searcher.close();
     reader.close();
     
     // Iterate with larger and larger amounts of free
@@ -395,7 +394,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             }
           }
           
-          searcher.close();
           reader.close();
           if (VERBOSE) {
             System.out.println("  count is " + result);

@@ -84,7 +84,6 @@ public class TestParser extends LuceneTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
-    searcher.close();
     dir.close();
     reader = null;
     searcher = null;

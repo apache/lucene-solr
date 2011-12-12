@@ -59,7 +59,6 @@ public class TestRegexpQuery extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     directory.close();
     super.tearDown();

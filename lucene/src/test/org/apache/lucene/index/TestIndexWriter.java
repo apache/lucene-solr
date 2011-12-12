@@ -456,7 +456,6 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
       assertEquals(300, hits.length);
-      searcher.close();
       reader.close();
 
       dir.close();
@@ -488,7 +487,6 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(10, hits.length);
-      searcher.close();
       reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -511,7 +509,6 @@ public class TestIndexWriter extends LuceneTestCase {
       searcher = new IndexSearcher(reader);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(27, hits.length);
-      searcher.close();
       reader.close();
 
       reader = IndexReader.open(dir);
@@ -590,7 +587,6 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
-      searcher.close();
       reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -1013,7 +1009,6 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(0, tps.nextPosition());
     w.close();
 
-    s.close();
     r.close();
     dir.close();
   }
@@ -1708,7 +1703,6 @@ public class TestIndexWriter extends LuceneTestCase {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
           }
         }
-        s.close();
         r.close();
         w.forceMerge(1);
       }

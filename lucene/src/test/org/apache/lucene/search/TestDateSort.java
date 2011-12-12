@@ -88,7 +88,6 @@ public class TestDateSort extends LuceneTestCase {
       String text = document.get(TEXT_FIELD);
       actualOrder[i] = text;
     }
-    searcher.close();
 
     // Set up the expected order (i.e. Document 5, 4, 3, 2, 1).
     String[] expectedOrder = new String[5];

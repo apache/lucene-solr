@@ -138,7 +138,6 @@ public class FacetTestUtils {
     public IndexSearcher indexSearcher;
 
     public void close() throws IOException {
-      indexSearcher.close();
       indexReader.close();
       taxReader.close();
     }

@@ -121,7 +121,6 @@ public class TestDocIdSet extends LuceneTestCase {
     };
     
     Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
-    searcher.close();
     reader.close();
     dir.close();
   }

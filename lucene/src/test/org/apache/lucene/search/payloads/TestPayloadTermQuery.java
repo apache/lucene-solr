@@ -141,7 +141,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     searcher = null;
     reader.close();
     reader = null;
@@ -271,7 +270,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     while (spans.next()) {
       count++;
     }
-    theSearcher.close();
     reader.close();
   }
 

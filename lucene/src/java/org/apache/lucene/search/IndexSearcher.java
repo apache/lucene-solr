@@ -42,8 +42,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -73,7 +71,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * synchronize on the <code>IndexSearcher</code> instance;
  * use your own (non-Lucene) objects instead.</p>
  */
-public class IndexSearcher implements Closeable {
+public class IndexSearcher {
   final IndexReader reader; // package private for testing!
   
   // NOTE: these members might change in incompatible ways
@@ -197,10 +195,6 @@ public class IndexSearcher implements Closeable {
 
   public SimilarityProvider getSimilarityProvider() {
     return similarityProvider;
-  }
-
-  @Override
-  public void close() throws IOException {
   }
   
   /** @lucene.internal */

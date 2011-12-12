@@ -89,7 +89,6 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     for (int i = 0; i < sd.length; i++) {
       assertTrue("only positive scores should return: " + sd[i].score, sd[i].score > 0);
     }
-    searcher.close();
     ir.close();
     directory.close();
   }

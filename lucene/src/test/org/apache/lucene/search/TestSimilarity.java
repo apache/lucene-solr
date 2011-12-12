@@ -169,7 +169,6 @@ public class TestSimilarity extends LuceneTestCase {
       }
     });
 
-    searcher.close();
     reader.close();
     store.close();
   }

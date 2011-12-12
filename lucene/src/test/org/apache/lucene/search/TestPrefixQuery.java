@@ -61,7 +61,6 @@ public class TestPrefixQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("everything", 3, hits.length);
     writer.close();
-    searcher.close();
     reader.close();
     directory.close();
   }

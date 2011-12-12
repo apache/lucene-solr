@@ -174,7 +174,6 @@ public class TestDocument extends LuceneTestCase {
     
     doAssert(searcher.doc(hits[0].doc), true);
     writer.close();
-    searcher.close();
     reader.close();
     dir.close();
   }
@@ -270,7 +269,6 @@ public class TestDocument extends LuceneTestCase {
       else fail("unexpected id field");
     }
     writer.close();
-    searcher.close();
     reader.close();
     dir.close();
     assertEquals("did not see all IDs", 7, result);

@@ -125,7 +125,6 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       checkHits(searcher, bq, csq1.getBoost() + csq2.getBoost(), bucketScorerClass, null);
       checkHits(searcher, csqbq, csqbq.getBoost(), ConstantScoreQuery.ConstantScorer.class.getName(), bucketScorerClass);
     } finally {
-      if (searcher != null) searcher.close();
       if (reader != null) reader.close();
       if (directory != null) directory.close();
     }

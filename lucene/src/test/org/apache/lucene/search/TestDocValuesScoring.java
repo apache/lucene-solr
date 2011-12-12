@@ -133,9 +133,6 @@ public class TestDocValuesScoring extends LuceneTestCase {
     
     assertEquals(boost.scoreDocs[0].score, noboost.scoreDocs[0].score, SCORE_EPSILON);
 
-    
-    searcher1.close();
-    searcher2.close();
     ir.close();
     dir.close();
   }

@@ -231,7 +231,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   /** Close all indexes */
   protected void closeAll() throws Exception {
     // close and nullify everything
-    IOUtils.close(taxoReader, indexReader, searcher);
+    IOUtils.close(taxoReader, indexReader);
     taxoReader = null;
     indexReader = null;
     searcher = null;

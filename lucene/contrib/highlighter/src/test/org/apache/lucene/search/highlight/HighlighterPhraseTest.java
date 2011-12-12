@@ -72,26 +72,21 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final PhraseQuery phraseQuery = new PhraseQuery();
-        phraseQuery.add(new Term(FIELD, "fox"));
-        phraseQuery.add(new Term(FIELD, "jumped"));
-        phraseQuery.setSlop(0);
-        TopDocs hits = indexSearcher.search(phraseQuery, 1);
-        assertEquals(1, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
+      final PhraseQuery phraseQuery = new PhraseQuery();
+      phraseQuery.add(new Term(FIELD, "fox"));
+      phraseQuery.add(new Term(FIELD, "jumped"));
+      phraseQuery.setSlop(0);
+      TopDocs hits = indexSearcher.search(phraseQuery, 1);
+      assertEquals(1, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
 
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(indexReader.getTermVector(
-                0, FIELD), false);
-        assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
-            TEXT), highlighter.getBestFragment(tokenStream, TEXT));
-
-      } finally {
-        indexSearcher.close();
-      }
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(indexReader.getTermVector(
+              0, FIELD), false);
+      assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
+          TEXT), highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -120,52 +115,48 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-            new SpanTermQuery(new Term(FIELD, "fox")),
-            new SpanTermQuery(new Term(FIELD, "jumped")) }, 0, true);
-        final FixedBitSet bitset = new FixedBitSet(indexReader.maxDoc());
-        indexSearcher.search(phraseQuery, new Collector() {
-          private int baseDoc;
+      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+          new SpanTermQuery(new Term(FIELD, "fox")),
+          new SpanTermQuery(new Term(FIELD, "jumped")) }, 0, true);
+      final FixedBitSet bitset = new FixedBitSet(indexReader.maxDoc());
+      indexSearcher.search(phraseQuery, new Collector() {
+        private int baseDoc;
 
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return true;
-          }
-
-          @Override
-          public void collect(int i) throws IOException {
-            bitset.set(this.baseDoc + i);
-          }
-
-          @Override
-          public void setNextReader(AtomicReaderContext context)
-              throws IOException {
-            this.baseDoc = context.docBase;
-          }
-
-          @Override
-          public void setScorer(org.apache.lucene.search.Scorer scorer)
-              throws IOException {
-            // Do Nothing
-          }
-        });
-        assertEquals(1, bitset.cardinality());
-        final int maxDoc = indexReader.maxDoc();
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
-        for (int position = bitset.nextSetBit(0); position >= 0 && position < maxDoc-1; position = bitset
-            .nextSetBit(position + 1)) {
-          assertEquals(0, position);
-          final TokenStream tokenStream = TokenSources.getTokenStream(
-              indexReader.getTermVector(position,
-                  FIELD), false);
-          assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
-              TEXT), highlighter.getBestFragment(tokenStream, TEXT));
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
         }
-      } finally {
-        indexSearcher.close();
+
+        @Override
+        public void collect(int i) throws IOException {
+          bitset.set(this.baseDoc + i);
+        }
+
+        @Override
+        public void setNextReader(AtomicReaderContext context)
+            throws IOException {
+          this.baseDoc = context.docBase;
+        }
+
+        @Override
+        public void setScorer(org.apache.lucene.search.Scorer scorer)
+            throws IOException {
+          // Do Nothing
+        }
+      });
+      assertEquals(1, bitset.cardinality());
+      final int maxDoc = indexReader.maxDoc();
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
+      for (int position = bitset.nextSetBit(0); position >= 0 && position < maxDoc-1; position = bitset
+          .nextSetBit(position + 1)) {
+        assertEquals(0, position);
+        final TokenStream tokenStream = TokenSources.getTokenStream(
+            indexReader.getTermVector(position,
+                FIELD), false);
+        assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
+            TEXT), highlighter.getBestFragment(tokenStream, TEXT));
       }
     } finally {
       indexReader.close();
@@ -195,25 +186,21 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final PhraseQuery phraseQuery = new PhraseQuery();
-        phraseQuery.add(new Term(FIELD, "did"));
-        phraseQuery.add(new Term(FIELD, "jump"));
-        phraseQuery.setSlop(0);
-        TopDocs hits = indexSearcher.search(phraseQuery, 1);
-        assertEquals(0, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(indexReader.getTermVector(
-                0, FIELD), false);
-        assertEquals(
-            highlighter.getBestFragment(new TokenStreamSparse(), TEXT),
-            highlighter.getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      final PhraseQuery phraseQuery = new PhraseQuery();
+      phraseQuery.add(new Term(FIELD, "did"));
+      phraseQuery.add(new Term(FIELD, "jump"));
+      phraseQuery.setSlop(0);
+      TopDocs hits = indexSearcher.search(phraseQuery, 1);
+      assertEquals(0, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(indexReader.getTermVector(
+              0, FIELD), false);
+      assertEquals(
+          highlighter.getBestFragment(new TokenStreamSparse(), TEXT),
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -241,23 +228,19 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final PhraseQuery phraseQuery = new PhraseQuery();
-        phraseQuery.add(new Term(FIELD, "did"));
-        phraseQuery.add(new Term(FIELD, "jump"));
-        phraseQuery.setSlop(1);
-        TopDocs hits = indexSearcher.search(phraseQuery, 1);
-        assertEquals(1, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
-        final TokenStream tokenStream = TokenSources.getTokenStream(
-            indexReader.getTermVector(0, FIELD), true);
-        assertEquals("the fox <B>did</B> not <B>jump</B>", highlighter
-            .getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      final PhraseQuery phraseQuery = new PhraseQuery();
+      phraseQuery.add(new Term(FIELD, "did"));
+      phraseQuery.add(new Term(FIELD, "jump"));
+      phraseQuery.setSlop(1);
+      TopDocs hits = indexSearcher.search(phraseQuery, 1);
+      assertEquals(1, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
+      final TokenStream tokenStream = TokenSources.getTokenStream(
+          indexReader.getTermVector(0, FIELD), true);
+      assertEquals("the fox <B>did</B> not <B>jump</B>", highlighter
+          .getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -285,25 +268,21 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      try {
-        final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-            new SpanTermQuery(new Term(FIELD, "did")),
-            new SpanTermQuery(new Term(FIELD, "jump")) }, 0, true);
+      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+          new SpanTermQuery(new Term(FIELD, "did")),
+          new SpanTermQuery(new Term(FIELD, "jump")) }, 0, true);
 
-        TopDocs hits = indexSearcher.search(phraseQuery, 1);
-        assertEquals(0, hits.totalHits);
-        final Highlighter highlighter = new Highlighter(
-            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-            new QueryScorer(phraseQuery));
-        final TokenStream tokenStream = TokenSources
-            .getTokenStream(indexReader.getTermVector(
-                0, FIELD), false);
-        assertEquals(
-            highlighter.getBestFragment(new TokenStreamSparse(), TEXT),
-            highlighter.getBestFragment(tokenStream, TEXT));
-      } finally {
-        indexSearcher.close();
-      }
+      TopDocs hits = indexSearcher.search(phraseQuery, 1);
+      assertEquals(0, hits.totalHits);
+      final Highlighter highlighter = new Highlighter(
+          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+          new QueryScorer(phraseQuery));
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(indexReader.getTermVector(
+              0, FIELD), false);
+      assertEquals(
+          highlighter.getBestFragment(new TokenStreamSparse(), TEXT),
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();

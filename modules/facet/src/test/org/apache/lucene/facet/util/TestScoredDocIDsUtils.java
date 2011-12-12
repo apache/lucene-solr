@@ -144,7 +144,6 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       Query q = new TermQuery(new Term(DocumentFactory.field, DocumentFactory.alphaTxt));
       IndexSearcher searcher = newSearcher(reader);
       searcher.search(q, collector);
-      searcher.close();
 
       ScoredDocIDs scoredDocIds = collector.getScoredDocIDs();
       OpenBitSet resultSet = new OpenBitSetDISI(scoredDocIds.getDocIDs().iterator(), reader.maxDoc());

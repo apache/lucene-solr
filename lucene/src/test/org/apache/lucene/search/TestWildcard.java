@@ -97,7 +97,6 @@ public class TestWildcard
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
       assertEquals(q.getBoost(), wq.getBoost(), 0.1);
-      searcher.close();
       reader.close();
       indexStore.close();
   }
@@ -116,7 +115,6 @@ public class TestWildcard
     Query q = searcher.rewrite(wq);
     assertTrue(q instanceof BooleanQuery);
     assertEquals(0, ((BooleanQuery) q).clauses().size());
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -140,7 +138,6 @@ public class TestWildcard
     assertMatches(searcher, wq, 2);
     assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -181,7 +178,6 @@ public class TestWildcard
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tall")), 0);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal")), 1);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal*")), 2);
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -210,7 +206,6 @@ public class TestWildcard
     assertMatches(searcher, query4, 3);
     assertMatches(searcher, query5, 0);
     assertMatches(searcher, query6, 1); // Query: 'meta??' matches 'metals' not 'metal'
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -244,7 +239,6 @@ public class TestWildcard
     WildcardQuery atEnd = new WildcardQuery(new Term("field", "foo\\"));
     assertMatches(searcher, atEnd, 1);
     
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -399,7 +393,6 @@ public class TestWildcard
       }
     }
 
-    searcher.close();
     reader.close();
     dir.close();
   }

@@ -364,7 +364,6 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
             assertEquals(expectedGroupHeads[i], actualGroupHeads[i]);
           }
         }
-        s.close();
       } finally {
         FieldCache.DEFAULT.purge(r);
       }

@@ -1095,7 +1095,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "f", a);
     Query q = qp.parse("\"wizard of ozzy\"");
     assertEquals(1, s.search(q, 1).totalHits);
-    s.close();
     r.close();
     dir.close();
   }

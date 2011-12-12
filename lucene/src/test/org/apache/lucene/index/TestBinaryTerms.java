@@ -70,7 +70,6 @@ public class TestBinaryTerms extends LuceneTestCase {
       assertEquals("" + i, is.doc(docs.scoreDocs[0].doc).get("id"));
     }
     
-    is.close();
     ir.close();
     dir.close();
   }

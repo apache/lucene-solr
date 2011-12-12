@@ -179,7 +179,6 @@ public abstract class ReadTask extends PerfTask {
     }
 
     if (closeSearcher) {
-      searcher.close();
       reader.close();
     } else {
       // Release our +1 ref from above

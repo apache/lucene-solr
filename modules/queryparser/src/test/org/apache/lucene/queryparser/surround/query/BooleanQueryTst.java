@@ -127,7 +127,6 @@ public class BooleanQueryTst {
     try {
       searcher.search(query, tc);
     } finally {
-      searcher.close();
       reader.close();
     }
     tc.checkNrHits();

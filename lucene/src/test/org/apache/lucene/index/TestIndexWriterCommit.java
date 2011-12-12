@@ -55,7 +55,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("first number of hits", 14, hits.length);
-      searcher.close();
       reader.close();
 
       reader = IndexReader.open(dir);
@@ -69,7 +68,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
         searcher = new IndexSearcher(r);
         hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
         assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
-        searcher.close();
         r.close();
         assertTrue("reader should have still been current", reader.isCurrent());
       }
@@ -82,7 +80,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       searcher = new IndexSearcher(r);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("reader did not see changes after writer was closed", 47, hits.length);
-      searcher.close();
       r.close();
       reader.close();
       dir.close();
@@ -109,7 +106,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("first number of hits", 14, hits.length);
-    searcher.close();
     reader.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -124,7 +120,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
-    searcher.close();
     reader.close();
 
     // Now, close the writer:
@@ -136,7 +131,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("saw changes after writer.abort", 14, hits.length);
-    searcher.close();
     reader.close();
 
     // Now make sure we can re-open the index, add docs,
@@ -156,7 +150,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       searcher = new IndexSearcher(r);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
-      searcher.close();
       r.close();
     }
 
@@ -165,7 +158,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     searcher = new IndexSearcher(r);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
     assertEquals("didn't see changes after close", 218, hits.length);
-    searcher.close();
     r.close();
 
     dir.close();

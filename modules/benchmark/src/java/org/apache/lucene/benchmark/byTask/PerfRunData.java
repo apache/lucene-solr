@@ -126,7 +126,7 @@ public class PerfRunData implements Closeable {
   }
   
   public void close() throws IOException {
-    IOUtils.close(indexWriter, indexReader, indexSearcher, directory, 
+    IOUtils.close(indexWriter, indexReader, directory, 
                   taxonomyWriter, taxonomyReader, taxonomyDir, 
                   docMaker, facetSource);
   }

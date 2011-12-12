@@ -60,7 +60,6 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     assertEquals(1, searcher.search(sfq, 10).totalHits);
     
     writer.close();
-    searcher.close();
     reader.close();
     dir.close();
   }

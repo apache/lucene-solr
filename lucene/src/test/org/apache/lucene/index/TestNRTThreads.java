@@ -100,7 +100,6 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
     if (s != fixedSearcher) {
       // Final searcher:
       s.getIndexReader().close();
-      s.close();
     }
   }
 

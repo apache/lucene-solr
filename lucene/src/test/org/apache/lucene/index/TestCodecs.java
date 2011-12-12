@@ -393,7 +393,6 @@ public class TestCodecs extends LuceneTestCase {
       return searcher.search(q, null, n).scoreDocs;
     }
     finally {
-      searcher.close();
       reader.close();
     }
   }

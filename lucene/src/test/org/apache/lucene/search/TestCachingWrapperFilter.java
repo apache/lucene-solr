@@ -179,7 +179,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(doc);
 
     reader = refreshReader(reader);
-    searcher.close();
     searcher = newSearcher(reader, false);
 
     TopDocs docs = searcher.search(new MatchAllDocsQuery(), 1);
@@ -205,7 +204,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     writer.addDocument(doc);
     reader = refreshReader(reader);
-    searcher.close();
     searcher = newSearcher(reader, false);
         
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
@@ -227,7 +225,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.deleteDocuments(new Term("id", "1"));
 
     reader = refreshReader(reader);
-    searcher.close();
     searcher = newSearcher(reader, false);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
@@ -245,7 +242,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertTrue(oldReader != null);
     assertTrue(oldReader2 != null);
 
-    searcher.close();
     reader.close();
     writer.close();
     dir.close();

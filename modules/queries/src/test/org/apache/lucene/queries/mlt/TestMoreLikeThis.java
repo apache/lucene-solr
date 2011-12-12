@@ -59,7 +59,6 @@ public class TestMoreLikeThis extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     reader.close();
-    searcher.close();
     directory.close();
     super.tearDown();
   }

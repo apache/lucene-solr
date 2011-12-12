@@ -119,7 +119,6 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     for (int i = 0; i < scores.length; i++) {
       assertEquals(scores[i], scc.mscores[i], 0f);
     }
-    searcher.close();
     ir.close();
     directory.close();
   }

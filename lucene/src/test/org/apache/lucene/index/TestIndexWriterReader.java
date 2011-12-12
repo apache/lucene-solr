@@ -695,7 +695,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     assertEquals(100, searcher.search(q, 10).totalHits);
-    searcher.close();
     try {
       IndexReader.openIfChanged(r);
       fail("failed to hit AlreadyClosedException");
@@ -761,7 +760,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Query q = new TermQuery(new Term("indexname", "test"));
       IndexSearcher searcher = newSearcher(r);
       final int count = searcher.search(q, 10).totalHits;
-      searcher.close();
       assertTrue(count >= lastCount);
       lastCount = count;
     }
@@ -778,7 +776,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     final int count = searcher.search(q, 10).totalHits;
-    searcher.close();
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
@@ -850,7 +847,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Query q = new TermQuery(new Term("indexname", "test"));
       IndexSearcher searcher = newSearcher(r);
       sum += searcher.search(q, 10).totalHits;
-      searcher.close();
     }
 
     for(int i=0;i<numThreads;i++) {
@@ -865,7 +861,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     sum += searcher.search(q, 10).totalHits;
-    searcher.close();
     assertTrue("no documents found at all", sum > 0);
 
     assertEquals(0, excs.size());
@@ -954,7 +949,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
                 assertEquals(20, hits.totalHits);
                 didWarm.set(true);
-                s.close();
               }
             }).
             setMergePolicy(newLogMergePolicy(10))

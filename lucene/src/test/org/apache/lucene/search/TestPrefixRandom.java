@@ -75,7 +75,6 @@ public class TestPrefixRandom extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     reader.close();
-    searcher.close();
     dir.close();
     super.tearDown();
   }

@@ -274,7 +274,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         assertEquals(36, hits.length);
         
         reader.close();
-        searcher.close();
         
         dir.tweakBufferSizes();
         writer.deleteDocuments(new Term("id", "4"));
@@ -292,7 +291,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
         writer.close();
-        searcher.close();
         reader.close();
       } finally {
         _TestUtil.rmDir(indexDir);

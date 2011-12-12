@@ -128,7 +128,6 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     rd.close();
     super.tearDown();

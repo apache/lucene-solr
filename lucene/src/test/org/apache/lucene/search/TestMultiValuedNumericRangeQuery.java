@@ -73,7 +73,6 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       TopDocs nrTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
     }
-    searcher.close();
     reader.close();
     directory.close();
   }

@@ -58,7 +58,6 @@ public class TestFieldValueFilter extends LuceneTestCase {
     }
     
     reader.close();
-    searcher.close();
     directory.close();
   }
   
@@ -86,7 +85,6 @@ public class TestFieldValueFilter extends LuceneTestCase {
     }
     
     reader.close();
-    searcher.close();
     directory.close();
   }
 

@@ -238,7 +238,6 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       _TestUtil.assertEquals(topHits, mergedHits);
     }
-    searcher.close();
     reader.close();
     dir.close();
   }

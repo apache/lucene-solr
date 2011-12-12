@@ -90,7 +90,6 @@ public class TestRAMDirectory extends LuceneTestCase {
 
     // cleanup
     reader.close();
-    searcher.close();
   }
   
   private final int numThreads = 10;

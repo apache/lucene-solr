@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.ReaderFinishedListener;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.appending.AppendingCodec;
@@ -731,7 +732,8 @@ public abstract class LuceneTestCase extends Assert {
           rogueThreads.put(t, true);
           rogueCount++;
           if (t.getName().startsWith("LuceneTestCase")) {
-            System.err.println("PLEASE CLOSE YOUR INDEXSEARCHERS IN YOUR TEST!!!!");
+            // TODO: should we fail here now? really test should be failing?
+            System.err.println("PLEASE CLOSE YOUR INDEXREADERS IN YOUR TEST!!!!");
             continue;
           } else {
             // wait on the thread to die of natural causes
@@ -1228,23 +1230,25 @@ public abstract class LuceneTestCase extends Assert {
       final ExecutorService ex = (random.nextBoolean()) ? null
           : Executors.newFixedThreadPool(threads = _TestUtil.nextInt(random, 1, 8),
                       new NamedThreadFactory("LuceneTestCase"));
-      if (ex != null && VERBOSE) {
+      if (ex != null) {
+       if (VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
+       }
+       final IndexReader r0 = r;
+       r.addReaderFinishedListener(new ReaderFinishedListener() {
+         @Override
+         public void finished(IndexReader reader) {
+           // readerFinishedListener bogusly calls us with other random readers
+           // so we must check that its *actually* the one we registered it on.
+           if (reader == r0) {
+             shutdownExecutorService(ex);
+           }
+         }
+       });
       }
-      IndexSearcher ret = random.nextBoolean() ? 
-        new AssertingIndexSearcher(random, r, ex) {
-          @Override
-          public void close() throws IOException {
-            super.close();
-            shutdownExecutorService(ex);
-          }
-        } : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex) {
-          @Override
-          public void close() throws IOException {
-            super.close();
-            shutdownExecutorService(ex);
-          }
-        };
+      IndexSearcher ret = random.nextBoolean() 
+          ? new AssertingIndexSearcher(random, r, ex)
+          : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex);
       ret.setSimilarityProvider(similarityProvider);
       return ret;
     }

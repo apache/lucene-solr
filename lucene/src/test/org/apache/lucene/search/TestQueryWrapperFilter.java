@@ -81,7 +81,6 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     assertEquals(0, hits.totalHits);
     hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
     assertEquals(0, hits.totalHits);
-    searcher.close();
     reader.close();
     dir.close();
   }
@@ -148,7 +147,6 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
       assertEquals(1, td.totalHits);
     }
     
-    searcher.close();
     reader.close();
     dir.close();
   }

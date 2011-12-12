@@ -17,6 +17,7 @@
 
 package org.apache.solr.search;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
@@ -63,7 +64,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
+public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrInfoMBean {
 
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
@@ -220,7 +221,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    *
    * In particular, the underlying reader and any cache's in use are closed.
    */
-  @Override
   public void close() throws IOException {
     if (cachingEnabled) {
       StringBuilder sb = new StringBuilder();

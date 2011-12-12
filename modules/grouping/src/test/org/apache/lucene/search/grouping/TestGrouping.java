@@ -1139,8 +1139,6 @@ public class TestGrouping extends LuceneTestCase {
           assertEquals(docIDToIDBlocks, expectedGroups, groupsResultBlocks, false, true, true, getScores, false);
           assertEquals(docIDToIDBlocks, expectedGroups, topGroupsBlockShards, false, false, fillFields, getScores, false);
         }
-        s.close();
-        sBlocks.close();
       } finally {
         FieldCache.DEFAULT.purge(r);
         if (rBlocks != null) {

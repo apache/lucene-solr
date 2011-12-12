@@ -61,7 +61,6 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
       }
     }
     writer.close();
-    searcher.close();
     reader.close();
     dir.close();
   }

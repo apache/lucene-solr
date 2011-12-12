@@ -149,8 +149,6 @@ public class DrillDownTest extends LuceneTestCase {
     Query q4 = DrillDown.query(defaultParams, fooQuery, new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
-    
-    searcher.close();
   }
   
   @Test
@@ -172,8 +170,6 @@ public class DrillDownTest extends LuceneTestCase {
     Query q4 = DrillDown.query(fooQuery, new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
-    
-    searcher.close();
   }
   
   @AfterClass

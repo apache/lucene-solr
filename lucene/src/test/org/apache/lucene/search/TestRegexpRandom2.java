@@ -95,8 +95,6 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     reader.close();
-    searcher1.close();
-    searcher2.close();
     dir.close();
     super.tearDown();
   }
