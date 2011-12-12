@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * TODO: every now and then, this leaves a dir open for some odd reason
+ * 
+ * TODO: Why do we see add fails but it still matches control? Because its successful
+ * locally and gets picked up in distrib search...
  */
 public class RecoveryZkTest extends FullDistributedZkTest {
 
