@@ -178,7 +178,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.out.println("before full class");
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("CLOUD_UPDATE_DELAY", "0");
     System.setProperty("enable.update.log", "true");
     System.setProperty("remove.version.field", "true");
@@ -186,6 +186,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @AfterClass
   public static void afterClass() {
+    System.clearProperty("solr.directoryFactory");
     System.clearProperty("CLOUD_UPDATE_DELAY");
     System.clearProperty("enable.update.log");
     System.clearProperty("remove.version.field");

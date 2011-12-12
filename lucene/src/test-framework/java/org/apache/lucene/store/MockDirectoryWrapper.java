@@ -106,10 +106,6 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   public MockDirectoryWrapper(Random random, Directory delegate) {
-    String checkIndex = System.getProperty("mockdir.checkindex");
-    if (checkIndex != null && checkIndex.equalsIgnoreCase("false")) {
-      this.checkIndexOnClose = false;
-    }
     this.delegate = delegate;
     // must make a private random since our methods are
     // called from different threads; else test failures may

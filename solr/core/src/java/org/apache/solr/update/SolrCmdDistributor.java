@@ -18,6 +18,7 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -333,6 +334,7 @@ public class SolrCmdDistributor {
   void checkResponses(boolean block) {
     
     int expectedResponses = pending == null ? 0 : pending.size();
+    int failedAfterConnect = 0;
     int failed = 0;
     while (pending != null && pending.size() > 0) {
       try {
@@ -345,10 +347,16 @@ public class SolrCmdDistributor {
           Request sreq = future.get();
           if (sreq.rspCode != 0) {
             // error during request
+            Exception e = sreq.exception;
+            
+            // if it failed due to connect, assume we simply have not yet
+            // learned it is down TODO: how about if we are cut off? Are we assuming too much?
+            if (!(e instanceof ConnectException)) failedAfterConnect++;
             failed++;
             // use the first exception encountered
+            // TODO: perhaps we should do more?
             if (rsp.getException() == null) {
-              Exception e = sreq.exception;
+              
               String newMsg = "shard update error (" + sreq.shards + "):"
                   + e.getMessage();
               if (e instanceof SolrException) {
@@ -379,8 +387,7 @@ public class SolrCmdDistributor {
       }
     }
     
-    // nocommit: just for kicks at the moment...
-    if (failed <= (expectedResponses / 2) - 1) {
+    if (failed <= failedAfterConnect && failed != expectedResponses) {
       rsp.setException(null);
     }
   }

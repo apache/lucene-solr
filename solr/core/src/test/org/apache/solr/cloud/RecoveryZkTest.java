@@ -38,12 +38,12 @@ public class RecoveryZkTest extends FullDistributedZkTest {
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    System.setProperty("mockdir.checkindex", "false");
+
   }
   
   @AfterClass
   public static void afterSuperClass() throws Exception {
-    System.clearProperty("mockdir.checkindex");
+
   }
   
   public RecoveryZkTest() {
