@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
@@ -50,7 +50,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException
   {
     final DocTerms terms = cache.getTerms(readerContext.reader, field, true );
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader;

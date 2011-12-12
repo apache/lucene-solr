@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache;
@@ -56,7 +56,7 @@ public class IntFieldSource extends FieldCacheSource {
 
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final int[] arr = cache.getInts(readerContext.reader, field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader, field);
     

@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.FieldCache;
 
 /**
@@ -50,10 +50,10 @@ public class ByteFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final byte[] arr = cache.getBytes(readerContext.reader, field, parser, false);
     
-    return new DocValues() {
+    return new FunctionValues() {
       @Override
       public byte byteVal(int doc) {
         return arr[doc];

@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -37,11 +37,11 @@ public abstract class MultiBoolFunction extends BoolFunction {
 
   protected abstract String name();
 
-  protected abstract boolean func(int doc, DocValues[] vals);
+  protected abstract boolean func(int doc, FunctionValues[] vals);
 
   @Override
   public BoolDocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues[] vals =  new DocValues[sources.size()];
+    final FunctionValues[] vals =  new FunctionValues[sources.size()];
     int i=0;
     for (ValueSource source : sources) {
       vals[i++] = source.getValues(context, readerContext);
@@ -58,7 +58,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
         StringBuilder sb = new StringBuilder(name());
         sb.append('(');
         boolean first = true;
-        for (DocValues dv : vals) {
+        for (FunctionValues dv : vals) {
           if (first) {
             first = false;
           } else {

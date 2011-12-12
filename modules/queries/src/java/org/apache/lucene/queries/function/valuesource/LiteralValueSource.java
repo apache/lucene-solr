@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function.valuesource;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StrDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -45,7 +45,7 @@ public class LiteralValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
     return new StrDocValues(this) {
       @Override

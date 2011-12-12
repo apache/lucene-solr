@@ -33,7 +33,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
- * Instantiates {@link DocValues} for a particular reader.
+ * Instantiates {@link FunctionValues} for a particular reader.
  * <br>
  * Often used when creating a {@link FunctionQuery}.
  *
@@ -45,7 +45,7 @@ public abstract class ValueSource implements Serializable {
    * Gets the values for this reader and the context that was previously
    * passed to createWeight()
    */
-  public abstract DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException;
+  public abstract FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException;
 
   @Override
   public abstract boolean equals(Object o);
@@ -129,12 +129,12 @@ public abstract class ValueSource implements Serializable {
 
   /**
    * Implement a {@link org.apache.lucene.search.FieldComparator} that works
-   * off of the {@link DocValues} for a ValueSource
+   * off of the {@link FunctionValues} for a ValueSource
    * instead of the normal Lucene FieldComparator that works off of a FieldCache.
    */
   class ValueSourceComparator extends FieldComparator<Double> {
     private final double[] values;
-    private DocValues docVals;
+    private FunctionValues docVals;
     private double bottom;
     private Map fcontext;
 

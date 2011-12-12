@@ -17,7 +17,7 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -57,7 +57,7 @@ public class NvlValueSourceParser extends ValueSourceParser {
 	    }
 
 	    @Override
-      protected float func(int doc, DocValues vals) {
+      protected float func(int doc, FunctionValues vals) {
 		float v = vals.floatVal(doc);
 		if (v == nvlFloatValue) {
 		    return nvl;

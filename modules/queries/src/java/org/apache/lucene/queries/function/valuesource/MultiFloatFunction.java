@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function.valuesource;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -39,7 +39,7 @@ public abstract class MultiFloatFunction extends ValueSource {
   }
 
   abstract protected String name();
-  abstract protected float func(int doc, DocValues[] valsArr);
+  abstract protected float func(int doc, FunctionValues[] valsArr);
 
   @Override
   public String description() {
@@ -59,8 +59,8 @@ public abstract class MultiFloatFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues[] valsArr = new DocValues[sources.length];
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues[] valsArr = new FunctionValues[sources.length];
     for (int i=0; i<sources.length; i++) {
       valsArr[i] = sources[i].getValues(context, readerContext);
     }
@@ -75,7 +75,7 @@ public abstract class MultiFloatFunction extends ValueSource {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         boolean firstTime=true;
-        for (DocValues vals : valsArr) {
+        for (FunctionValues vals : valsArr) {
           if (firstTime) {
             firstTime=false;
           } else {

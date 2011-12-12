@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class ConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {

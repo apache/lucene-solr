@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
@@ -462,7 +462,7 @@ class DateFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new StringIndexDocValues(this, readerContext, field) {
       @Override
       protected String toTerm(String readableValue) {

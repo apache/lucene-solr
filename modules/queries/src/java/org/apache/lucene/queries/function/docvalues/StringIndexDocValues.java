@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.FieldCache;
@@ -32,9 +32,9 @@ import org.apache.lucene.util.mutable.MutableValueStr;
 import java.io.IOException;
 
 /** Internal class, subject to change.
- *  Serves as base class for DocValues based on StringIndex 
+ *  Serves as base class for FunctionValues based on StringIndex 
  **/
-public abstract class StringIndexDocValues extends DocValues {
+public abstract class StringIndexDocValues extends FunctionValues {
   protected final FieldCache.DocTermsIndex termsIndex;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
@@ -158,7 +158,7 @@ public abstract class StringIndexDocValues extends DocValues {
     public StringIndexException(final String fieldName,
                                 final RuntimeException cause) {
       super("Can't initialize StringIndex to generate (function) " +
-              "DocValues for field: " + fieldName, cause);
+              "FunctionValues for field: " + fieldName, cause);
     }
   }
 

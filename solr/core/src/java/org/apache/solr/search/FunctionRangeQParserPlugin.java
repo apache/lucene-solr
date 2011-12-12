@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -114,7 +114,7 @@ class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFilter {
     @Override
     public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
       maxdoc = context.reader.maxDoc();
-      DocValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
+      FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
       scorer = dv.getRangeScorer(context.reader, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
       super.setNextReader(context);
     }

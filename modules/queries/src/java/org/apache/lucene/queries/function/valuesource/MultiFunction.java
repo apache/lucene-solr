@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function.valuesource;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
@@ -58,8 +58,8 @@ public abstract class MultiFunction extends ValueSource {
     return sb.toString();
   }
 
-  public static DocValues[] valsArr(List<ValueSource> sources, Map fcontext, AtomicReaderContext readerContext) throws IOException {
-    final DocValues[] valsArr = new DocValues[sources.size()];
+  public static FunctionValues[] valsArr(List<ValueSource> sources, Map fcontext, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues[] valsArr = new FunctionValues[sources.size()];
     int i=0;
     for (ValueSource source : sources) {
       valsArr[i++] = source.getValues(fcontext, readerContext);
@@ -67,10 +67,10 @@ public abstract class MultiFunction extends ValueSource {
     return valsArr;
   }
 
-  public class Values extends DocValues {
-    final DocValues[] valsArr;
+  public class Values extends FunctionValues {
+    final FunctionValues[] valsArr;
 
-    public Values(DocValues[] valsArr) {
+    public Values(FunctionValues[] valsArr) {
       this.valsArr = valsArr;
     }
 
@@ -87,11 +87,11 @@ public abstract class MultiFunction extends ValueSource {
   }
 
 
-  public static String toString(String name, DocValues[] valsArr, int doc) {
+  public static String toString(String name, FunctionValues[] valsArr, int doc) {
     StringBuilder sb = new StringBuilder();
     sb.append(name).append('(');
     boolean firstTime=true;
-    for (DocValues vals : valsArr) {
+    for (FunctionValues vals : valsArr) {
       if (firstTime) {
         firstTime=false;
       } else {

@@ -19,7 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -146,7 +146,7 @@ public class DocFreqValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
     return new ConstIntDocValues(docfreq, this);

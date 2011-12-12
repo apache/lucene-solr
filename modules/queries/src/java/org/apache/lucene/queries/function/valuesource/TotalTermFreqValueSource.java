@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -54,8 +54,8 @@ public class TotalTermFreqValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader.AtomicReaderContext readerContext) throws IOException {
-    return (DocValues)context.get(this);
+  public FunctionValues getValues(Map context, IndexReader.AtomicReaderContext readerContext) throws IOException {
+    return (FunctionValues)context.get(this);
   }
 
   @Override

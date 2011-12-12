@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function.valuesource;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
@@ -27,8 +27,8 @@ import java.util.Map;
 
 
 /**
- * Converts individual ValueSource instances to leverage the DocValues *Val functions that work with multiple values,
- * i.e. {@link org.apache.lucene.queries.function.DocValues#doubleVal(int, double[])}
+ * Converts individual ValueSource instances to leverage the FunctionValues *Val functions that work with multiple values,
+ * i.e. {@link org.apache.lucene.queries.function.FunctionValues#doubleVal(int, double[])}
  */
 //Not crazy about the name, but...
 public class VectorValueSource extends MultiValueSource {
@@ -53,14 +53,14 @@ public class VectorValueSource extends MultiValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     int size = sources.size();
 
     // special-case x,y and lat,lon since it's so common
     if (size==2) {
-      final DocValues x = sources.get(0).getValues(context, readerContext);
-      final DocValues y = sources.get(1).getValues(context, readerContext);
-      return new DocValues() {
+      final FunctionValues x = sources.get(0).getValues(context, readerContext);
+      final FunctionValues y = sources.get(1).getValues(context, readerContext);
+      return new FunctionValues() {
         @Override
         public void byteVal(int doc, byte[] vals) {
           vals[0] = x.byteVal(doc);
@@ -105,12 +105,12 @@ public class VectorValueSource extends MultiValueSource {
     }
 
 
-    final DocValues[] valsArr = new DocValues[size];
+    final FunctionValues[] valsArr = new FunctionValues[size];
     for (int i = 0; i < size; i++) {
       valsArr[i] = sources.get(i).getValues(context, readerContext);
     }
 
-    return new DocValues() {
+    return new FunctionValues() {
       @Override
       public void byteVal(int doc, byte[] vals) {
         for (int i = 0; i < valsArr.length; i++) {
@@ -165,7 +165,7 @@ public class VectorValueSource extends MultiValueSource {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         boolean firstTime = true;
-        for (DocValues vals : valsArr) {
+        for (FunctionValues vals : valsArr) {
           if (firstTime) {
             firstTime = false;
           } else {

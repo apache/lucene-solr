@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
@@ -34,9 +34,9 @@ public class ProductFloatFunction extends MultiFloatFunction {
   }
 
   @Override
-  protected float func(int doc, DocValues[] valsArr) {
+  protected float func(int doc, FunctionValues[] valsArr) {
     float val = 1.0f;
-    for (DocValues vals : valsArr) {
+    for (FunctionValues vals : valsArr) {
       val *= vals.floatVal(doc);
     }
     return val;

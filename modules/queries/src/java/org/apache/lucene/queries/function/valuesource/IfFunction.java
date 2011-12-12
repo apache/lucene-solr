@@ -19,7 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -43,12 +43,12 @@ public class IfFunction extends BoolFunction {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues ifVals = ifSource.getValues(context, readerContext);
-    final DocValues trueVals = trueSource.getValues(context, readerContext);
-    final DocValues falseVals = falseSource.getValues(context, readerContext);
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues ifVals = ifSource.getValues(context, readerContext);
+    final FunctionValues trueVals = trueSource.getValues(context, readerContext);
+    final FunctionValues falseVals = falseSource.getValues(context, readerContext);
 
-    return new DocValues() {
+    return new FunctionValues() {
       @Override
       public byte byteVal(int doc) {
         return ifVals.boolVal(doc) ? trueVals.byteVal(doc) : falseVals.byteVal(doc);

@@ -106,7 +106,7 @@ public class FunctionQuery extends Query {
     final int maxDoc;
     final float qWeight;
     int doc=-1;
-    final DocValues vals;
+    final FunctionValues vals;
     final Bits liveDocs;
 
     public AllScorer(AtomicReaderContext context, Bits acceptDocs, FunctionWeight w, float qWeight) throws IOException {

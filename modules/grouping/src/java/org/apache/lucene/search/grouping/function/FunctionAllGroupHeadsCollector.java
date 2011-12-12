@@ -18,7 +18,7 @@ package org.apache.lucene.search.grouping.function;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
@@ -45,7 +45,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
   private final Map<MutableValue, GroupHead> groups;
   private final Sort sortWithinGroup;
 
-  private DocValues.ValueFiller filler;
+  private FunctionValues.ValueFiller filler;
   private MutableValue mval;
   private IndexReader.AtomicReaderContext readerContext;
   private Scorer scorer;
@@ -105,7 +105,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
   public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
     this.readerContext = context;
-    DocValues docValues = groupBy.getValues(vsContext, context);
+    FunctionValues docValues = groupBy.getValues(vsContext, context);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
 

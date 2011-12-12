@@ -30,13 +30,13 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
  *
  */
 
-// DocValues is distinct from ValueSource because
+// FunctionValues is distinct from ValueSource because
 // there needs to be an object created at query evaluation time that
 // is not referenced by the query itself because:
 // - Query objects should be MT safe
 // - For caching, Query objects are often used as keys... you don't
 //   want the Query carrying around big objects
-public abstract class DocValues {
+public abstract class FunctionValues {
 
   public byte byteVal(int doc) { throw new UnsupportedOperationException(); }
   public short shortVal(int doc) { throw new UnsupportedOperationException(); }
@@ -65,7 +65,7 @@ public abstract class DocValues {
 
   /** Native Java Object representation of the value */
   public Object objectVal(int doc) {
-    // most DocValues are functions, so by default return a Float()
+    // most FunctionValues are functions, so by default return a Float()
     return floatVal(doc);
   }
 
