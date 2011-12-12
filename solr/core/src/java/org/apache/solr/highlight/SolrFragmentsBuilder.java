@@ -20,7 +20,6 @@ package org.apache.solr.highlight;
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrInfoMBean;
@@ -40,9 +39,8 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
    */
   public FragmentsBuilder getFragmentsBuilder(SolrParams params, BoundaryScanner bs) {
     numRequests++;
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
+    params = SolrParams.wrapDefaults(params, defaults);
+
     return getFragmentsBuilder( params, getPreTags( params, null ), getPostTags( params, null ), bs );
   }
   
@@ -55,9 +53,8 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
   }
   
   private String[] getTags( SolrParams params, String paramName, String fieldName, String def ){
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
+    params = SolrParams.wrapDefaults(params, defaults);
+
     String value = null;
     if( fieldName == null )
       value = params.get( paramName, def );

@@ -32,7 +32,7 @@ import org.apache.solr.common.util.StrUtils;
  *
  */
 public abstract class SolrParams implements Serializable {
-  
+
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
 
@@ -247,6 +247,24 @@ public abstract class SolrParams implements Serializable {
     catch( Exception ex ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
+  }
+
+  @SuppressWarnings({"deprecation"})
+  public static SolrParams wrapDefaults(SolrParams params, SolrParams defaults) {
+    if (params == null)
+      return defaults;
+    if (defaults == null)
+      return params;
+    return new DefaultSolrParams(params,defaults);
+  }
+
+  @SuppressWarnings({"deprecation"})
+  public static SolrParams wrapAppended(SolrParams params, SolrParams defaults) {
+    if (params == null)
+      return defaults;
+    if (defaults == null)
+      return params;
+    return new AppendedSolrParams(params,defaults);
   }
 
   /** Create a Map<String,String> from a NamedList given no keys are repeated */

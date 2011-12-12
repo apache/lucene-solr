@@ -18,7 +18,6 @@ package org.apache.solr.highlight;
 
 import org.apache.lucene.search.highlight.Formatter;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -30,10 +29,8 @@ public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatt
   public Formatter getFormatter(String fieldName, SolrParams params ) 
   {
     numRequests++;
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
-    
+    params = SolrParams.wrapDefaults(params, defaults);
+
     return new SimpleHTMLFormatter(
         params.getFieldParam(fieldName, HighlightParams.SIMPLE_PRE,  "<em>" ), 
         params.getFieldParam(fieldName, HighlightParams.SIMPLE_POST, "</em>"));

@@ -18,18 +18,18 @@
 package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 public class SimpleFragListBuilder extends HighlightingPluginBase implements
     SolrFragListBuilder {
 
   public FragListBuilder getFragListBuilder(SolrParams params) {
+    // NOTE: This class (currently) makes no use of params
+    // If that ever changes, it should wrap them with defaults...
+    // params = SolrParams.wrapDefaults(params, defaults)
+
     numRequests++;
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
-    
+
     return new org.apache.lucene.search.vectorhighlight.SimpleFragListBuilder();
   }
 
