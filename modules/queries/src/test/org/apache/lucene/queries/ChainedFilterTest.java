@@ -94,7 +94,6 @@ public class ChainedFilterTest extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     directory.close();
     super.tearDown();
@@ -211,7 +210,6 @@ public class ChainedFilterTest extends LuceneTestCase {
   
     // throws java.lang.ClassCastException: org.apache.lucene.util.OpenBitSet cannot be cast to java.util.BitSet
     searcher.search(new MatchAllDocsQuery(), cf, 1);
-    searcher.close();
     reader.close();
     dir.close();
   }

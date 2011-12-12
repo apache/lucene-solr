@@ -160,7 +160,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       }
       assertEquals("Wrong field value", storedField, searcher.doc(0).get(storedField));
     } finally {
-      IOUtils.close(searcher, reader, runData);
+      IOUtils.close(reader, runData);
     }
 
   }

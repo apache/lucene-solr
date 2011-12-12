@@ -93,7 +93,6 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     
     result = searcher.search(query2, null, 1000).scoreDocs;
     assertEquals(0, result.length);
-    searcher.close();
     reader.close();
     indexStore.close();
   }

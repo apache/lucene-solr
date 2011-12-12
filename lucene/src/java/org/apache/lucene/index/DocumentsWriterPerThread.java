@@ -21,7 +21,6 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.text.NumberFormat;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -88,14 +87,15 @@ public class DocumentsWriterPerThread {
   static class DocState {
     final DocumentsWriterPerThread docWriter;
     Analyzer analyzer;
-    PrintStream infoStream;
+    InfoStream infoStream;
     SimilarityProvider similarityProvider;
     int docID;
     Iterable<? extends IndexableField> doc;
     String maxTermPrefix;
 
-    DocState(DocumentsWriterPerThread docWriter) {
+    DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
       this.docWriter = docWriter;
+      this.infoStream = infoStream;
     }
 
     // Only called by asserts
@@ -131,7 +131,9 @@ public class DocumentsWriterPerThread {
   void abort() throws IOException {
     hasAborted = aborting = true;
     try {
-      infoStream.message("DWPT", "now abort");
+      if (infoStream.isEnabled("DWPT")) {
+        infoStream.message("DWPT", "now abort");
+      }
       try {
         consumer.abort();
       } catch (Throwable t) {
@@ -144,7 +146,9 @@ public class DocumentsWriterPerThread {
 
     } finally {
       aborting = false;
-      infoStream.message("DWPT", "done abort");
+      if (infoStream.isEnabled("DWPT")) {
+        infoStream.message("DWPT", "done abort");
+      }
     }
   }
   private final static boolean INFO_VERBOSE = false;
@@ -181,7 +185,7 @@ public class DocumentsWriterPerThread {
     this.writer = parent.indexWriter;
     this.infoStream = parent.infoStream;
     this.codec = parent.codec;
-    this.docState = new DocState(this);
+    this.docState = new DocState(this, infoStream);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();
     bytesUsed = Counter.newCounter();

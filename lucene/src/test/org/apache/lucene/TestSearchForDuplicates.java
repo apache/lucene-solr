@@ -115,8 +115,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 
-      searcher.close();
-
       // try a new search with OR
       searcher = new IndexSearcher(reader);
       hits = null;
@@ -130,7 +128,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 
-      searcher.close();
       reader.close();
       directory.close();
   }

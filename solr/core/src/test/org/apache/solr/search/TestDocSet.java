@@ -337,10 +337,15 @@ public class TestDocSet extends LuceneTestCase {
   ***/
 
   public IndexReader dummyIndexReader(final int maxDoc) {
-
+    // TODO FIXME: THIS IS HEAVY BROKEN AND ILLEGAL TO DO (null delegate):
     IndexReader r = new FilterIndexReader(null) {
       @Override
       public int maxDoc() {
+        return maxDoc;
+      }
+
+      @Override
+      public int numDocs() {
         return maxDoc;
       }
 

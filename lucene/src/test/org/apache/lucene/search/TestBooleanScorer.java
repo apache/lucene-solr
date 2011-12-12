@@ -62,7 +62,6 @@ public class TestBooleanScorer extends LuceneTestCase
     IndexSearcher indexSearcher = newSearcher(ir);
     ScoreDoc[] hits = indexSearcher.search(query, null, 1000).scoreDocs;
     assertEquals("Number of matched documents", 2, hits.length);
-    indexSearcher.close();
     ir.close();
     directory.close();
   }
@@ -122,7 +121,6 @@ public class TestBooleanScorer extends LuceneTestCase
 
     assertEquals("should have only 1 hit", 1, hits.size());
     assertEquals("hit should have been docID=3000", 3000, hits.get(0).intValue());
-    searcher.close();
     ir.close();
     directory.close();
   }
@@ -176,7 +174,6 @@ public class TestBooleanScorer extends LuceneTestCase
 
     assertEquals(1, count[0]);
     
-    s.close();
     r.close();
     d.close();
   }

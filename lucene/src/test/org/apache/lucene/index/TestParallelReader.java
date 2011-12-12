@@ -46,9 +46,7 @@ public class TestParallelReader extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     single.getIndexReader().close();
-    single.close();
     parallel.getIndexReader().close();
-    parallel.close();
     dir.close();
     dir1.close();
     dir2.close();

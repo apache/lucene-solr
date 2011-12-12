@@ -108,7 +108,6 @@ public class TestSearchWithThreads extends LuceneTestCase {
     
     if (VERBOSE) System.out.println(NUM_SEARCH_THREADS + " threads did " + netSearch.get() + " searches");
 
-    s.close();
     r.close();
     dir.close();
   }

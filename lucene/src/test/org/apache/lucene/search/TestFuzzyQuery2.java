@@ -139,7 +139,6 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
         assertEquals(Float.parseFloat(scoreDoc[1]), docs.scoreDocs[i].score, epsilon);
       }
     }
-    searcher.close();
     r.close();
     dir.close();
   }

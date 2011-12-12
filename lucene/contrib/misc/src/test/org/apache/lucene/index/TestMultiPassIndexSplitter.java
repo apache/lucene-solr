@@ -33,13 +33,14 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
       doc.add(newField("id", i + "", StringField.TYPE_STORED));
       doc.add(newField("f", i + " " + i, TextField.TYPE_STORED));
       w.addDocument(doc);
+      if (i%3==0) w.commit();
     }
     w.commit();
     w.deleteDocuments(new Term("id", "" + (NUM_DOCS-1)));

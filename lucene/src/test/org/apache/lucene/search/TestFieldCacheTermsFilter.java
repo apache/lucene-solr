@@ -68,7 +68,6 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
     results = searcher.search(q, new FieldCacheTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match 2", 2, results.length);
 
-    searcher.close();
     reader.close();
     rd.close();
   }

@@ -334,9 +334,6 @@ public class TestSort extends LuceneTestCase {
     full.reader.close();
     searchX.reader.close();
     searchY.reader.close();
-    full.close();
-    searchX.close();
-    searchY.close();
     for (Directory dir : dirs)
       dir.close();
     super.tearDown();
@@ -559,7 +556,6 @@ public class TestSort extends LuceneTestCase {
     }
     assertFalse("Found sort results out of order", fail);
     searcher.getIndexReader().close();
-    searcher.close();
   }
   
   /** 
@@ -816,7 +812,6 @@ public class TestSort extends LuceneTestCase {
                   new SortField ("string", SortField.Type.STRING),
                   new SortField ("float", SortField.Type.FLOAT, true) );
     assertMatches (parallelSearcher, queryG, sort, "ZYXW");
-    parallelSearcher.close();
     exec.shutdown();
     exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
   }
@@ -855,7 +850,6 @@ public class TestSort extends LuceneTestCase {
                                        new IndexReader[] {searchX.getIndexReader(),
                                                           searchY.getIndexReader()}), exec);
     runMultiSorts(searcher, false);
-    searcher.close();
     exec.shutdown();
     exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
   }
@@ -1284,7 +1278,6 @@ public class TestSort extends LuceneTestCase {
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
     assertEquals(0, hits.scoreDocs[1].doc);
-    s.close();
     r.close();
     dir.close();
   }
@@ -1308,7 +1301,6 @@ public class TestSort extends LuceneTestCase {
     IndexReader reader = IndexReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.search(new MatchAllDocsQuery(), null, 500, sort);
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -1329,7 +1321,6 @@ public class TestSort extends LuceneTestCase {
     TotalHitCountCollector c = new TotalHitCountCollector();
     searcher.search(new MatchAllDocsQuery(), null, c);
     assertEquals(5, c.getTotalHits());
-    searcher.close();
     reader.close();
     indexStore.close();
   }

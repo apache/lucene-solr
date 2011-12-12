@@ -96,7 +96,6 @@ public class TestExternalCodecs extends LuceneTestCase {
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     r.close();
-    s.close();
 
     if (VERBOSE) {
       System.out.println("\nTEST: now delete 2nd doc");
@@ -114,7 +113,6 @@ public class TestExternalCodecs extends LuceneTestCase {
     assertEquals(0, s.search(new TermQuery(new Term("id", "44")), 1).totalHits);
 
     r.close();
-    s.close();
 
     w.close();
 

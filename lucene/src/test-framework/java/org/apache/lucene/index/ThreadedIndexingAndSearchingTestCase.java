@@ -472,7 +472,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
         IndexSearcher searcher = newSearcher(reader);
         sum += searcher.search(new TermQuery(new Term("body", "united")), 10).totalHits;
-        searcher.close();
 
         if (VERBOSE) {
           System.out.println("TEST: warm visited " + sum + " fields");

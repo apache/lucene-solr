@@ -105,7 +105,6 @@ public class TestStressIndexing extends LuceneTestCase {
       for (int i=0; i<100; i++) {
         IndexReader ir = IndexReader.open(directory);
         IndexSearcher is = new IndexSearcher(ir);
-        is.close();
         ir.close();
       }
       count += 100;

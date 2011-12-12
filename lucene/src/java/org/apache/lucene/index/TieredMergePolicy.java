@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.util.InfoStream;
 
 /**
  *  Merges segments of approximately equal size, subject to
@@ -346,7 +345,9 @@ public class TieredMergePolicy extends MergePolicy {
 
       final boolean maxMergeIsRunning = mergingBytes >= maxMergedSegmentBytes;
 
-      message("  allowedSegmentCount=" + allowedSegCountInt + " vs count=" + infosSorted.size() + " (eligible count=" + eligible.size() + ") tooBigCount=" + tooBigCount);
+      if (verbose()) {
+        message("  allowedSegmentCount=" + allowedSegCountInt + " vs count=" + infosSorted.size() + " (eligible count=" + eligible.size() + ") tooBigCount=" + tooBigCount);
+      }
 
       if (eligible.size() == 0) {
         return spec;
@@ -386,7 +387,9 @@ public class TieredMergePolicy extends MergePolicy {
           }
 
           final MergeScore score = score(candidate, hitTooLarge, mergingBytes);
-          message("  maybe=" + writer.get().segString(candidate) + " score=" + score.getScore() + " " + score.getExplanation() + " tooLarge=" + hitTooLarge + " size=" + String.format("%.3f MB", totAfterMergeBytes/1024./1024.));
+          if (verbose()) {
+            message("  maybe=" + writer.get().segString(candidate) + " score=" + score.getScore() + " " + score.getExplanation() + " tooLarge=" + hitTooLarge + " size=" + String.format("%.3f MB", totAfterMergeBytes/1024./1024.));
+          }
 
           // If we are already running a max sized merge
           // (maxMergeIsRunning), don't allow another max
@@ -649,9 +652,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   private void message(String message) {
-    if (verbose()) {
-      writer.get().infoStream.message("TMP", message);
-    }
+    writer.get().infoStream.message("TMP", message);
   }
 
   @Override

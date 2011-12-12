@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -216,7 +215,9 @@ final class DocumentsWriter {
     }
 
     try {
-      infoStream.message("DW", "abort");
+      if (infoStream.isEnabled("DW")) {
+        infoStream.message("DW", "abort");
+      }
 
       final Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
       while (threadsIterator.hasNext()) {
@@ -298,8 +299,10 @@ final class DocumentsWriter {
           maybeMerge |= doFlush(flushingDWPT);
         }
   
-        if (infoStream.isEnabled("DW") && flushControl.anyStalledThreads()) {
-          infoStream.message("DW", "WARNING DocumentsWriter has stalled threads; waiting");
+        if (infoStream.isEnabled("DW")) {
+          if (flushControl.anyStalledThreads()) {
+            infoStream.message("DW", "WARNING DocumentsWriter has stalled threads; waiting");
+          }
         }
         
         flushControl.waitIfStalled(); // block if stalled

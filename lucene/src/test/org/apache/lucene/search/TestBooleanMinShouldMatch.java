@@ -73,7 +73,6 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     
     @AfterClass
     public static void afterClass() throws Exception {
-      s.close();
       s = null;
       r.close();
       r = null;

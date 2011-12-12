@@ -260,7 +260,6 @@ public class TestCartesian extends LuceneTestCase {
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
-    searcher.close();
     reader.close();
   }
 
@@ -332,7 +331,6 @@ public class TestCartesian extends LuceneTestCase {
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
-    searcher.close();
     reader.close();
   }
   
@@ -404,7 +402,6 @@ public class TestCartesian extends LuceneTestCase {
         lastDistance = geo_distance;
       }
     }
-    searcher.close();
     reader.close();
   }
   
@@ -476,7 +473,6 @@ public class TestCartesian extends LuceneTestCase {
 	      
       }
     }
-    searcher.close();
     reader.close();
   }
 }

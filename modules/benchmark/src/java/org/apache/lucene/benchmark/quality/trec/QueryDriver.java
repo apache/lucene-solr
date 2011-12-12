@@ -88,7 +88,6 @@ public class QueryDriver {
     // print an avarage sum of the results
     QualityStats avg = QualityStats.average(stats);
     avg.log("SUMMARY", 2, logger, "  ");
-    searcher.close();
     reader.close();
     dir.close();
   }

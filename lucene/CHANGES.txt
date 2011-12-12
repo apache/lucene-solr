@@ -222,6 +222,10 @@ Changes in backwards compatibility policy
   FilterIndexReader, overriding FilterIndexReader.norms(). To persist the
   changes on disk, copy the FilteredIndexReader to a new index using
   IndexWriter.addIndexes().  (Uwe Schindler, Robert Muir)
+
+* LUCENE-3640: Removed IndexSearcher.close(), because IndexSearcher no longer
+  takes a Directory and no longer "manages" IndexReaders, it is a no-op.
+  (Robert Muir)
   
 Changes in Runtime Behavior
 
@@ -671,6 +675,13 @@ Changes in backwards compatibility policy
   were made final. This is not expected to affect many apps, since these methods
   already delegate to abstract methods, which you had to already override 
   anyway. (Shai Erera)
+
+* LUCENE-3636: Added SearcherFactory, used by SearcherManager and NRTManager
+  to create new IndexSearchers. You can provide your own implementation to
+  warm new searchers, set an ExecutorService, set a custom Similarity, or
+  even return your own subclass of IndexSearcher. The SearcherWarmer and
+  ExecutorService parameters on these classes were removed, as they are
+  subsumed by SearcherFactory.  (Shai Erera, Mike McCandless, Robert Muir)
   
 Security fixes
 
@@ -716,6 +727,9 @@ Bug fixes
   contract of the overridden method. This method was renamed and made private.
   In ParallelReader the bug was not existent, but the implementation method
   was also made private.  (Uwe Schindler)
+
+* LUCENE-3641: Fixed MultiReader to correctly propagate readerFinishedListeners
+  to clones/reopened readers.  (Uwe Schindler)
 
 Documentation
 

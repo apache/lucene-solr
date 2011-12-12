@@ -96,7 +96,7 @@ public final class IOUtils {
   }
 
   /** @see #closeWhileHandlingException(Exception, Closeable...) */
-  public static <E extends Exception> void closeWhileHandlingException(E priorException, Iterable<Closeable> objects) throws E, IOException {
+  public static <E extends Exception> void closeWhileHandlingException(E priorException, Iterable<? extends Closeable> objects) throws E, IOException {
     Throwable th = null;
 
     for (Closeable object : objects) {

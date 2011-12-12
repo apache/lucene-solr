@@ -76,7 +76,6 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     searcher = null;
     reader.close();
     reader = null;

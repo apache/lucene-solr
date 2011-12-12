@@ -97,7 +97,6 @@ public class TestDateFilter extends LuceneTestCase {
     
     result = searcher.search(query2, df2, 1000).scoreDocs;
     assertEquals(0, result.length);
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -164,7 +163,6 @@ public class TestDateFilter extends LuceneTestCase {
     
     result = searcher.search(query2, df2, 1000).scoreDocs;
     assertEquals(0, result.length);
-    searcher.close();
     reader.close();
     indexStore.close();
   }

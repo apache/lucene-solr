@@ -660,7 +660,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16, hits.length);
         reader.close();
-        searcher.close();
 
         writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -685,7 +684,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 0;
       
-      searcher.close();
       rwReader.close();
 
       for(int i=0;i<N+1;i++) {
@@ -697,7 +695,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
           searcher = newSearcher(reader);
           hits = searcher.search(query, null, 1000).scoreDocs;
           assertEquals(expectedCount, hits.length);
-          searcher.close();
           if (expectedCount == 0) {
             expectedCount = 16;
           } else if (expectedCount == 16) {

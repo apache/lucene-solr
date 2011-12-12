@@ -122,7 +122,6 @@ public class TestSearch extends LuceneTestCase {
           out.println(i + " " + hits[i].score + " " + d.get("contents"));
         }
       }
-      searcher.close();
       reader.close();
       directory.close();
   }

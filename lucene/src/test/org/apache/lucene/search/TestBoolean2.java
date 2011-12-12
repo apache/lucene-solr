@@ -101,12 +101,10 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     reader.close();
     littleReader.close();
     dir2.close();
     directory.close();
-    bigSearcher.close();
     searcher = null;
     reader = null;
     littleReader = null;

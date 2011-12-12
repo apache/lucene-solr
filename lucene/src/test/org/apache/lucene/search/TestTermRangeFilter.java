@@ -134,8 +134,6 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     result = search.search(q, TermRangeFilter.newStringRange("id", medIP, medIP, T, T),
         numDocs).scoreDocs;
     assertEquals("med,med,T,T", 1, result.length);
-    
-    search.close();
   }
   
   @Test
@@ -212,7 +210,5 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     result = search.search(q, TermRangeFilter.newStringRange("rand", maxRP, null, T, F),
         numDocs).scoreDocs;
     assertEquals("max,nul,T,T", 1, result.length);
-    
-    search.close();
   }
 }

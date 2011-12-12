@@ -68,7 +68,6 @@ public class TestSpans extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     directory.close();
     super.tearDown();
@@ -505,7 +504,6 @@ public class TestSpans extends LuceneTestCase {
                  searcher.search(createSpan(0, true,                                 
                                             new SpanQuery[] {createSpan(4, false, "chased", "cat"),
                                                              createSpan("ate")}), 10).totalHits);
-    searcher.close();
     reader.close();
     dir.close();
   }

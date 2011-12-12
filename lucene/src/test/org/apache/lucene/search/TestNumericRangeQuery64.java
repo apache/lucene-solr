@@ -99,7 +99,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     searcher = null;
     reader.close();
     reader = null;
@@ -354,7 +353,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     topDocs = s.search(q, 10);
     assertEquals("Score doc count", TestNumericUtils.DOUBLE_NANs.length,  topDocs.scoreDocs.length );
 
-    s.close();
     r.close();
     dir.close();
   }

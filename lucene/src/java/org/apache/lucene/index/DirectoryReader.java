@@ -23,95 +23,70 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MapBackedSet;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
  */
-class DirectoryReader extends IndexReader implements Cloneable {
-  protected Directory directory;
-
-  IndexWriter writer;
-
+final class DirectoryReader extends BaseMultiReader<SegmentReader> {
+  protected final Directory directory;
+  private final IndexWriter writer;
   private final SegmentInfos segmentInfos;
   private final int termInfosIndexDivisor;
-
-  private SegmentReader[] subReaders;
-  private ReaderContext topLevelReaderContext;
-  private int[] starts;                           // 1st docno for each segment
-  private int maxDoc = 0;
-  private int numDocs = -1;
-  private boolean hasDeletions = false;
-
   private final boolean applyAllDeletes;
+  
+  DirectoryReader(SegmentReader[] readers, Directory directory, IndexWriter writer,
+    SegmentInfos sis, int termInfosIndexDivisor, boolean applyAllDeletes,
+    Collection<ReaderFinishedListener> readerFinishedListeners
+  ) throws IOException {
+    super(readers);
+    this.directory = directory;
+    this.writer = writer;
+    this.segmentInfos = sis;
+    this.termInfosIndexDivisor = termInfosIndexDivisor;
+    this.readerFinishedListeners = readerFinishedListeners;
+    this.applyAllDeletes = applyAllDeletes;
+  }
 
   static IndexReader open(final Directory directory, final IndexCommit commit,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-        SegmentInfos infos = new SegmentInfos();
-        infos.read(directory, segmentFileName);
-        return new DirectoryReader(directory, infos, termInfosIndexDivisor);
+        final Collection<ReaderFinishedListener> readerFinishedListeners =
+          new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(directory, segmentFileName);
+        final SegmentReader[] readers = new SegmentReader[sis.size()];
+        for (int i = sis.size()-1; i >= 0; i--) {
+          IOException prior = null;
+          boolean success = false;
+          try {
+            readers[i] = SegmentReader.get(sis.info(i), termInfosIndexDivisor, IOContext.READ);
+            readers[i].readerFinishedListeners = readerFinishedListeners;
+            success = true;
+          } catch(IOException ex) {
+            prior = ex;
+          } finally {
+            if (!success)
+              IOUtils.closeWhileHandlingException(prior, readers);
+          }
+        }
+        return new DirectoryReader(readers, directory, null, sis, termInfosIndexDivisor,
+          false, readerFinishedListeners);
       }
     }.run(commit);
   }
-  
-  /** Construct reading the named set of readers. */
-  DirectoryReader(Directory directory, SegmentInfos sis, int termInfosIndexDivisor) throws IOException {
-    this.directory = directory;
-    this.segmentInfos = sis;
-    this.termInfosIndexDivisor = termInfosIndexDivisor;
-    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
-    applyAllDeletes = false;
-
-    // To reduce the chance of hitting FileNotFound
-    // (and having to retry), we open segments in
-    // reverse because IndexWriter merges & deletes
-    // the newest segments first.
-
-    SegmentReader[] readers = new SegmentReader[sis.size()];
-    for (int i = sis.size()-1; i >= 0; i--) {
-      boolean success = false;
-      try {
-        readers[i] = SegmentReader.get(sis.info(i), termInfosIndexDivisor, IOContext.READ);
-        readers[i].readerFinishedListeners = readerFinishedListeners;
-        success = true;
-      } finally {
-        if (!success) {
-          // Close all readers we had opened:
-          for(i++;i<sis.size();i++) {
-            try {
-              readers[i].close();
-            } catch (Throwable ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
-      }
-    }
-
-    initialize(readers);
-  }
 
   // Used by near real-time search
-  DirectoryReader(IndexWriter writer, SegmentInfos infos, boolean applyAllDeletes) throws IOException {
-    this.directory = writer.getDirectory();
-    this.applyAllDeletes = applyAllDeletes;       // saved for reopen
-
-    this.termInfosIndexDivisor = writer.getConfig().getReaderTermsIndexDivisor();
-    readerFinishedListeners = writer.getReaderFinishedListeners();
-
+  static DirectoryReader open(IndexWriter writer, SegmentInfos infos, boolean applyAllDeletes) throws IOException {
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
     // no need to process segments in reverse order
@@ -120,16 +95,17 @@ class DirectoryReader extends IndexReader implements Cloneable {
     List<SegmentReader> readers = new ArrayList<SegmentReader>();
     final Directory dir = writer.getDirectory();
 
-    segmentInfos = (SegmentInfos) infos.clone();
+    final SegmentInfos segmentInfos = (SegmentInfos) infos.clone();
     int infosUpto = 0;
     for (int i=0;i<numSegments;i++) {
+      IOException prior = null;
       boolean success = false;
       try {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
         final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, IOContext.READ);
         if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
-          reader.readerFinishedListeners = readerFinishedListeners;
+          reader.readerFinishedListeners = writer.getReaderFinishedListeners();
           readers.add(reader);
           infosUpto++;
         } else {
@@ -137,37 +113,25 @@ class DirectoryReader extends IndexReader implements Cloneable {
           segmentInfos.remove(infosUpto);
         }
         success = true;
+      } catch(IOException ex) {
+        prior = ex;
       } finally {
-        if (!success) {
-          // Close all readers we had opened:
-          for(SegmentReader reader : readers) {
-            try {
-              reader.close();
-            } catch (Throwable ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
+        if (!success)
+          IOUtils.closeWhileHandlingException(prior, readers);
       }
     }
-
-    this.writer = writer;
-
-    initialize(readers.toArray(new SegmentReader[readers.size()]));
+    return new DirectoryReader(readers.toArray(new SegmentReader[readers.size()]),
+      dir, writer, segmentInfos, writer.getConfig().getReaderTermsIndexDivisor(),
+      applyAllDeletes, writer.getReaderFinishedListeners());
   }
 
   /** This constructor is only used for {@link #doOpenIfChanged()} */
-  DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders,
-                  boolean doClone, int termInfosIndexDivisor, Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
-    this.directory = directory;
-    this.segmentInfos = infos;
-    this.termInfosIndexDivisor = termInfosIndexDivisor;
-    this.readerFinishedListeners = readerFinishedListeners;
-    applyAllDeletes = false;
-
+  static DirectoryReader open(Directory directory, IndexWriter writer, SegmentInfos infos, SegmentReader[] oldReaders,
+    boolean doClone, int termInfosIndexDivisor, Collection<ReaderFinishedListener> readerFinishedListeners
+  ) throws IOException {
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
-    Map<String,Integer> segmentReaders = new HashMap<String,Integer>();
+    final Map<String,Integer> segmentReaders = new HashMap<String,Integer>();
 
     if (oldReaders != null) {
       // create a Map SegmentName->SegmentReader
@@ -194,6 +158,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       }
 
       boolean success = false;
+      IOException prior = null;
       try {
         SegmentReader newReader;
         if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
@@ -221,6 +186,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
           }
         }
         success = true;
+      } catch (IOException ex) {
+        prior = ex;
       } finally {
         if (!success) {
           for (i++; i < infos.size(); i++) {
@@ -235,17 +202,19 @@ class DirectoryReader extends IndexReader implements Cloneable {
                   // closing we must decRef it
                   newReaders[i].decRef();
                 }
-              } catch (IOException ignore) {
-                // keep going - we want to clean up as much as possible
+              } catch (IOException ex) {
+                if (prior == null) prior = ex;
               }
             }
           }
         }
+        // throw the first exception
+        if (prior != null) throw prior;
       }
     }    
-    
-    // initialize the readers to calculate maxDoc before we try to reuse the old normsCache
-    initialize(newReaders);
+    return new DirectoryReader(newReaders,
+      directory, writer, infos, termInfosIndexDivisor,
+      false, readerFinishedListeners);
   }
 
   /** {@inheritDoc} */
@@ -269,41 +238,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return buffer.toString();
   }
 
-  private void initialize(SegmentReader[] subReaders) throws IOException {
-    this.subReaders = subReaders;
-    starts = new int[subReaders.length + 1];    // build starts array
-    final AtomicReaderContext[] subReaderCtx = new AtomicReaderContext[subReaders.length];
-    topLevelReaderContext = new CompositeReaderContext(this, subReaderCtx, subReaderCtx);
-    final List<Fields> subFields = new ArrayList<Fields>();
-    
-    for (int i = 0; i < subReaders.length; i++) {
-      starts[i] = maxDoc;
-      subReaderCtx[i] = new AtomicReaderContext(topLevelReaderContext, subReaders[i], i, maxDoc, i, maxDoc);
-      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
-
-      if (subReaders[i].hasDeletions()) {
-        hasDeletions = true;
-      }
-      
-      final Fields f = subReaders[i].fields();
-      if (f != null) {
-        subFields.add(f);
-      }
-    }
-    starts[subReaders.length] = maxDoc;
-  }
-
-  @Override
-  public Bits getLiveDocs() {
-    throw new UnsupportedOperationException("please use MultiFields.getLiveDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Bits liveDocs");
-  }
-
   @Override
   public final synchronized Object clone() {
     try {
-      DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true);
-      newReader.writer = writer;
-      newReader.hasDeletions = hasDeletions;
+      DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, writer);
       assert newReader.readerFinishedListeners != null;
       return newReader;
     } catch (Exception ex) {
@@ -381,13 +319,13 @@ class DirectoryReader extends IndexReader implements Cloneable {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         final SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-        return doOpenIfChanged(infos, false);
+        return doOpenIfChanged(infos, false, null);
       }
     }.run(commit);
   }
 
-  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone) throws CorruptIndexException, IOException {
-    return new DirectoryReader(directory, infos, subReaders, doClone, termInfosIndexDivisor, readerFinishedListeners);
+  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone, IndexWriter writer) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, writer, infos, subReaders, doClone, termInfosIndexDivisor, readerFinishedListeners);
   }
 
   /** Version number when this IndexReader was opened. */
@@ -398,117 +336,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
-    ensureOpen();
-    int i = readerIndex(docID);        // find segment num
-    return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to segment
-  }
-
-  @Override
-  public int numDocs() {
-    // Don't call ensureOpen() here (it could affect performance)
-
-    // NOTE: multiple threads may wind up init'ing
-    // numDocs... but that's harmless
-    if (numDocs == -1) {        // check cache
-      int n = 0;                // cache miss--recompute
-      for (int i = 0; i < subReaders.length; i++)
-        n += subReaders[i].numDocs();      // sum from readers
-      numDocs = n;
-    }
-    return numDocs;
-  }
-
-  @Override
-  public int maxDoc() {
-    // Don't call ensureOpen() here (it could affect performance)
-    return maxDoc;
-  }
-
-  @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
-    ensureOpen();
-    int i = readerIndex(docID);                          // find segment num
-    subReaders[i].document(docID - starts[i], visitor);    // dispatch to segment reader
-  }
-
-  @Override
-  public boolean hasDeletions() {
-    ensureOpen();
-    return hasDeletions;
-  }
-
-  private int readerIndex(int n) {    // find reader for doc n:
-    return readerIndex(n, this.starts, this.subReaders.length);
-  }
-  
-  final static int readerIndex(int n, int[] starts, int numSubReaders) {    // find reader for doc n:
-    int lo = 0;                                      // search starts array
-    int hi = numSubReaders - 1;                  // for first element less
-
-    while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
-      int midValue = starts[mid];
-      if (n < midValue)
-        hi = mid - 1;
-      else if (n > midValue)
-        lo = mid + 1;
-      else {                                      // found a match
-        while (mid+1 < numSubReaders && starts[mid+1] == midValue) {
-          mid++;                                  // scan to last match
-        }
-        return mid;
-      }
-    }
-    return hi;
-  }
-
-  @Override
-  public boolean hasNorms(String field) throws IOException {
-    ensureOpen();
-    for (int i = 0; i < subReaders.length; i++) {
-      if (subReaders[i].hasNorms(field)) return true;
-    }
-    return false;
-  }
-
-  @Override
-  public synchronized byte[] norms(String field) throws IOException {
-    ensureOpen();
-    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
-  }
-
-  @Override
-  public int docFreq(String field, BytesRef term) throws IOException {
-    ensureOpen();
-    int total = 0;          // sum freqs in segments
-    for (int i = 0; i < subReaders.length; i++) {
-      total += subReaders[i].docFreq(field, term);
-    }
-    return total;
-  }
-
-  @Override
-  public Fields fields() throws IOException {
-    throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
-  }
-
-  @Override
   public Map<String,String> getCommitUserData() {
     ensureOpen();
     return segmentInfos.getUserData();
   }
 
-  /**
-   * Check whether this IndexReader is still using the current (i.e., most recently committed) version of the index.  If
-   * a writer has committed any changes to the index since this reader was opened, this will return <code>false</code>,
-   * in which case you must open a new IndexReader in order
-   * to see the changes.  Use {@link IndexWriter#commit} to
-   * commit changes to the index.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException           if there is a low-level IO error
-   */
   @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
@@ -540,33 +372,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
     // throw the first exception
     if (ioe != null) throw ioe;
-  }
-
-  @Override
-  public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    return getFieldNames(fieldNames, this.subReaders);
-  }
-  
-  static Collection<String> getFieldNames (IndexReader.FieldOption fieldNames, IndexReader[] subReaders) {
-    // maintain a unique set of field names
-    Set<String> fieldSet = new HashSet<String>();
-    for (IndexReader reader : subReaders) {
-      Collection<String> names = reader.getFieldNames(fieldNames);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  }
-  
-  @Override
-  public ReaderContext getTopReaderContext() {
-    ensureOpen();
-    return topLevelReaderContext;
-  }
-  
-  @Override
-  public IndexReader[] getSequentialSubReaders() {
-    return subReaders;
   }
 
   /** Returns the directory this index resides in. */
@@ -710,10 +515,5 @@ class DirectoryReader extends IndexReader implements Cloneable {
     public void delete() {
       throw new UnsupportedOperationException("This IndexCommit does not support deletions");
     }
-  }
-
-  @Override
-  public DocValues docValues(String field) throws IOException {
-    throw new UnsupportedOperationException("please use MultiDocValues#getDocValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level DocValues");
   }
 }

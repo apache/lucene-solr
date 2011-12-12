@@ -63,7 +63,6 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     directory.close();
     super.tearDown();

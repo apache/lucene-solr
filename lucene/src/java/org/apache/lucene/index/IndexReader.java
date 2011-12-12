@@ -244,19 +244,18 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * Expert: decreases the refCount of this IndexReader
-   * instance.  If the refCount drops to 0, then pending
-   * changes (if any) are committed to the index and this
+   * instance.  If the refCount drops to 0, then this
    * reader is closed.  If an exception is hit, the refCount
    * is unchanged.
    *
-   * @throws IOException in case an IOException occurs in commit() or doClose()
+   * @throws IOException in case an IOException occurs in  doClose()
    *
    * @see #incRef
    */
   public final void decRef() throws IOException {
     ensureOpen();
-    final int rc = refCount.getAndDecrement();
-    if (rc == 1) {
+    final int rc = refCount.decrementAndGet();
+    if (rc == 0) {
       boolean success = false;
       try {
         doClose();
@@ -268,8 +267,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
         }
       }
       readerFinished();
-    } else if (rc <= 0) {
-      throw new IllegalStateException("too many decRef calls: refCount was " + rc + " before decrement");
+    } else if (rc < 0) {
+      throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
     }
   }
   
@@ -731,9 +730,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // IndexableField
   public final Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
-    if (docID < 0 || docID >= maxDoc()) {
-      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
-    }
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();

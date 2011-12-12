@@ -403,7 +403,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     int hitCount = searcher.search(new TermQuery(term), null, 1000).totalHits;
-    searcher.close();
     reader.close();
     return hitCount;
   }
@@ -612,7 +611,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                  + result2 + " instead of expected " + START_COUNT + " or " + END_COUNT);
           }
         }
-        searcher.close();
         newReader.close();
         if (result2 == END_COUNT) {
           break;

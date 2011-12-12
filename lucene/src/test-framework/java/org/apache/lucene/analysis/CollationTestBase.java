@@ -102,7 +102,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
       (query, new TermRangeFilter("content", secondBeg, secondEnd, true, true), 1).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
 
-    searcher.close();
     reader.close();
   }
  
@@ -131,7 +130,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
     query = new TermRangeQuery("content", secondBeg, secondEnd, true, true);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, hits.length);
-    searcher.close();
     reader.close();
   }
 
@@ -164,7 +162,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
       ("content", secondBeg, secondEnd, true, true);
     result = search.search(csrq, null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
-    search.close();
   }
   
   // Test using various international locales with accented characters (which
@@ -240,7 +237,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     sort.setSort(new SortField("Denmark", SortField.Type.STRING));
     assertMatches(searcher, queryY, sort, dkResult);
-    searcher.close();
     reader.close();
   }
     

@@ -73,7 +73,6 @@ public class TestDemo extends LuceneTestCase {
     phraseQuery.add(new Term("fieldname", "be"));
     assertEquals(1, isearcher.search(phraseQuery, null, 1).totalHits);
 
-    isearcher.close();
     ireader.close();
     directory.close();
   }

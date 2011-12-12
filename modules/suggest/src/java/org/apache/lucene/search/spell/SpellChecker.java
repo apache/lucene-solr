@@ -639,7 +639,6 @@ public class SpellChecker implements java.io.Closeable {
       closed = true;
       if (searcher != null) {
         searcher.getIndexReader().close();
-        searcher.close();
       }
       searcher = null;
     }
@@ -655,12 +654,10 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (searcherLock) {
       if(closed){
         indexSearcher.getIndexReader().close();
-        indexSearcher.close();
         throw new AlreadyClosedException("Spellchecker has been closed");
       }
       if (searcher != null) {
         searcher.getIndexReader().close();
-        searcher.close();
       }
       // set the spellindex in the sync block - ensure consistency.
       searcher = indexSearcher;

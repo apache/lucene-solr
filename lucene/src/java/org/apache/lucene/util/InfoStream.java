@@ -26,10 +26,14 @@ public abstract class InfoStream implements Closeable {
   public static final InfoStream NO_OUTPUT = new NoOutput();
   private static final class NoOutput extends InfoStream {
     @Override
-    public void message(String component, String message) {}
+    public void message(String component, String message) {
+      assert false: "message() should not be called when isEnabled returns false";
+    }
     
     @Override
-    public boolean isEnabled(String component) { return false; }
+    public boolean isEnabled(String component) {
+      return false;
+    }
 
     @Override
     public void close() {}

@@ -71,7 +71,6 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     reader.close();
     dir.close();
     collator = null;

@@ -363,7 +363,6 @@ public class TestLockFactory extends LuceneTestCase {
                 }
                 // System.out.println(hits.length() + " total results");
                 try {
-                  searcher.close();
                   reader.close();
                 } catch (IOException e) {
                   hitException = true;

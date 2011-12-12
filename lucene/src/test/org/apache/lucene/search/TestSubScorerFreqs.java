@@ -61,7 +61,6 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   @AfterClass
   public static void finish() throws Exception {
     s.getIndexReader().close();
-    s.close();
     s = null;
     dir.close();
     dir = null;

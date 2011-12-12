@@ -189,7 +189,7 @@ public final class ReaderUtil {
         
         int newDocBase = 0;
         for (int i = 0; i < sequentialSubReaders.length; i++) {
-          build(newParent, sequentialSubReaders[i], i, newDocBase);
+          children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);
           newDocBase += sequentialSubReaders[i].maxDoc();
         }
         return newParent;

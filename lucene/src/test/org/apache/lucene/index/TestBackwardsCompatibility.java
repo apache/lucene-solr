@@ -336,7 +336,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
     assertEquals(34, hits.length);
 
-    searcher.close();
     reader.close();
     dir.close();
   }
@@ -374,7 +373,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
-    searcher.close();
     reader.close();
 
     // fully merge
@@ -389,7 +387,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     d = searcher.doc(hits[0].doc);
     doTestHits(hits, 44, searcher.getIndexReader());
     assertEquals("wrong first document", "21", d.get("id"));
-    searcher.close();
     reader.close();
 
     dir.close();
@@ -406,7 +403,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", 34, hits.length);
     Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
-    searcher.close();
     reader.close();
 
     // fully merge
@@ -419,7 +415,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
     doTestHits(hits, 34, searcher.getIndexReader());
-    searcher.close();
     reader.close();
 
     dir.close();
@@ -664,7 +659,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
       
-      searcher.close();
       reader.close();
       dir.close();
       _TestUtil.rmDir(oldIndexDir);

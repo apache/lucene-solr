@@ -115,13 +115,10 @@ public class QueryUtils {
           IndexSearcher wrapped;
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, -1), false);
           FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // // our wrapping can create insanity otherwise
-          wrapped.close();
           check(random, q1, wrapped = wrapUnderlyingReader(random, s,  0), false);
           FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // // our wrapping can create insanity otherwise
-          wrapped.close();
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, +1), false);
           FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // // our wrapping can create insanity otherwise
-          wrapped.close();
         }
         checkExplanations(q1,s);
         
@@ -309,7 +306,6 @@ public class QueryUtils {
                 Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
               }
               leafPtr++;
-              indexSearcher.close();
             }
             lastReader[0] = context.reader;
             assert readerContextArray[leafPtr].reader == context.reader;
@@ -335,7 +331,6 @@ public class QueryUtils {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
           }
-          indexSearcher.close();
         }
       }
   }
@@ -394,7 +389,6 @@ public class QueryUtils {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
           }
-          indexSearcher.close();
           leafPtr++;
         }
 
@@ -419,7 +413,6 @@ public class QueryUtils {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
       }
-      indexSearcher.close();
     }
   }
 }

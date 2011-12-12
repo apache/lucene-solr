@@ -70,7 +70,6 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
 
     iw.deleteDocuments(new Term("key", "one"));
-    is.close();
     ir.close();
     ir = IndexReader.open(iw, true);
     is = newSearcher(ir);
@@ -79,7 +78,6 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(2, hits.length);
 
     iw.close();
-    is.close();
     ir.close();
     dir.close();
   }

@@ -194,7 +194,6 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
-    searcher.close();
     reader.close();
 
   }

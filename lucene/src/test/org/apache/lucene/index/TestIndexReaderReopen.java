@@ -515,7 +515,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 if (hits.length > 0) {
                   searcher.doc(hits[0].doc);
                 }
-                searcher.close();
                 if (refreshed != r) {
                   refreshed.close();
                 }

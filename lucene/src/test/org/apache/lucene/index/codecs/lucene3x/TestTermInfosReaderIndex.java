@@ -136,7 +136,6 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
       TopDocs topDocs = searcher.search(query, 10);
       assertTrue(topDocs.totalHits > 0);
     }
-    searcher.close();
   }
 
   private List<Term> sample(IndexReader reader, int size) throws IOException {

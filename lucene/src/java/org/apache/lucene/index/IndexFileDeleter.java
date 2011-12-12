@@ -501,8 +501,10 @@ final class IndexFileDeleter {
   void incRef(String fileName) throws IOException {
     assert locked();
     RefCount rc = getRefCount(fileName);
-    if (infoStream.isEnabled("IFD") && VERBOSE_REF_COUNTS) {
-      infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
+    if (infoStream.isEnabled("IFD")) {
+      if (VERBOSE_REF_COUNTS) {
+        infoStream.message("IFD", "  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
+      }
     }
     rc.IncRef();
   }
@@ -517,8 +519,10 @@ final class IndexFileDeleter {
   void decRef(String fileName) throws IOException {
     assert locked();
     RefCount rc = getRefCount(fileName);
-    if (infoStream.isEnabled("IFD") && VERBOSE_REF_COUNTS) {
-      infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
+    if (infoStream.isEnabled("IFD")) {
+      if (VERBOSE_REF_COUNTS) {
+        infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
+      }
     }
     if (0 == rc.DecRef()) {
       // This file is no longer referenced by any past
