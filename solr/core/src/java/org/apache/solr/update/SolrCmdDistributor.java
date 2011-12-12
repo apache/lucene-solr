@@ -393,6 +393,9 @@ public class SolrCmdDistributor {
     }
     //System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + failedAfterConnect);
 
+    // TODO: this is a somewhat weak success guarantee - if the request was successful on every replica considered up
+    // and that does not return a connect exception, it was successful.
+    //should we optionally fail when there is only a single leader for a shard? (no replication)
     if (failed <= failedAfterConnect && failed != expectedResponses) {
       rsp.setException(null);
     }
