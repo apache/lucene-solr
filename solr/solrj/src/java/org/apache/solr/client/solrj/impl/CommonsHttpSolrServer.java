@@ -47,7 +47,9 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -266,16 +268,8 @@ public class CommonsHttpSolrServer extends SolrServer
     ModifiableSolrParams wparams = new ModifiableSolrParams();
     wparams.set( CommonParams.WT, parser.getWriterType() );
     wparams.set( CommonParams.VERSION, parser.getVersion());
-    if( params == null ) {
-      params = wparams;
-    }
-    else {
-      params = new DefaultSolrParams( wparams, params );
-    }
-    
-    if( _invariantParams != null ) {
-      params = new DefaultSolrParams( _invariantParams, params );
-    }
+    params = SolrParams.wrapDefaults(wparams, params);
+    params = SolrParams.wrapDefaults(_invariantParams, params);
 
     int tries = _maxRetries + 1;
     try {

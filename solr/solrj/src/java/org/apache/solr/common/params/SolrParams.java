@@ -32,7 +32,7 @@ import org.apache.solr.common.util.StrUtils;
  * @version $Id$
  */
 public abstract class SolrParams implements Serializable {
-  
+
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
 
@@ -249,7 +249,6 @@ public abstract class SolrParams implements Serializable {
     }
   }
 
-  
   /** how to transform a String into a boolean... more flexible than
    * Boolean.parseBoolean() to enable easier integration with html forms.
    * @deprecated Use org.apache.solr.common.util.StrUtils.parseBool
@@ -257,6 +256,24 @@ public abstract class SolrParams implements Serializable {
   @Deprecated
   protected boolean parseBool(String s) {
     return StrUtils.parseBool(s);
+  }
+
+  @SuppressWarnings({"deprecation"})
+  public static SolrParams wrapDefaults(SolrParams params, SolrParams defaults) {
+    if (params == null)
+      return defaults;
+    if (defaults == null)
+      return params;
+    return new DefaultSolrParams(params,defaults);
+  }
+
+  @SuppressWarnings({"deprecation"})
+  public static SolrParams wrapAppended(SolrParams params, SolrParams defaults) {
+    if (params == null)
+      return defaults;
+    if (defaults == null)
+      return params;
+    return new AppendedSolrParams(params,defaults);
   }
 
   /** Create a Map<String,String> from a NamedList given no keys are repeated */

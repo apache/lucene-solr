@@ -22,9 +22,6 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.DefaultSolrParams;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 
 /**
  */
@@ -158,7 +155,7 @@ public class SolrParamTest extends LuceneTestCase
     dmap.put( "dint"               , "123"       );
     // these are defined in params
     dmap.put( "int"                , "456"       );
-    SolrParams defaults = new DefaultSolrParams( params, new MapSolrParams( dmap ) );
+    SolrParams defaults = SolrParams.wrapDefaults(params, new MapSolrParams(dmap));
   
     // in params, not in default
     assertEquals( pstr                  , defaults.get( "str"      ) );

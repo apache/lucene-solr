@@ -28,7 +28,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -104,7 +103,7 @@ class ExtendedDismaxQParser extends QParser {
     SolrParams localParams = getLocalParams();
     SolrParams params = getParams();
     
-    SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
+    SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
     queryFields = U.parseFieldBoosts(solrParams.getParams(DMP.QF));
     if (0 == queryFields.size()) {

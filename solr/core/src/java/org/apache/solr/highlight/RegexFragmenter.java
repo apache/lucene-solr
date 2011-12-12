@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.NullFragmenter;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -66,10 +65,9 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
 
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   { 
-    numRequests++;        
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
+    numRequests++;
+    params = SolrParams.wrapDefaults(params, defaults);
+
     int fragsize  = params.getFieldInt(   fieldName, HighlightParams.FRAGSIZE,  LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE );
     int increment = params.getFieldInt(   fieldName, HighlightParams.INCREMENT, LuceneRegexFragmenter.DEFAULT_INCREMENT_GAP );
     float slop    = params.getFieldFloat( fieldName, HighlightParams.SLOP,      LuceneRegexFragmenter.DEFAULT_SLOP );
