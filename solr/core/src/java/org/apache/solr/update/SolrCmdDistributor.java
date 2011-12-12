@@ -351,7 +351,12 @@ public class SolrCmdDistributor {
             
             // if it failed due to connect, assume we simply have not yet
             // learned it is down TODO: how about if we are cut off? Are we assuming too much?
-            if (!(e instanceof ConnectException)) failedAfterConnect++;
+            // the problem is there are other exceptions thrown due to a machine going down mid connection... I've
+            // seen Interrupted exceptions.
+            
+            // we have to match against the msg...:(
+            if (!e.getMessage().contains("java.net.ConnectException: Connection refused")) failedAfterConnect++;
+            
             failed++;
             // use the first exception encountered
             // TODO: perhaps we should do more?
@@ -386,7 +391,8 @@ public class SolrCmdDistributor {
             "interrupted waiting for shard update response", e);
       }
     }
-    
+    //System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + failedAfterConnect);
+
     if (failed <= failedAfterConnect && failed != expectedResponses) {
       rsp.setException(null);
     }
