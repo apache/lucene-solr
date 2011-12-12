@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -38,6 +37,8 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 
@@ -126,7 +127,11 @@ public class CloudSolrServer extends SolrServer {
     
     CloudState cloudState = zkStateReader.getCloudState();
 
-    String collection = request.getParams().get("collection", defaultCollection);
+    SolrParams reqParams = request.getParams();
+    if (reqParams == null) {
+      reqParams = new ModifiableSolrParams();
+    }
+    String collection = reqParams.get("collection", defaultCollection);
 
     // TODO: allow multiple collections to be specified via comma separated list
 

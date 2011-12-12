@@ -20,9 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Super basic testing, no shard restarting or anything.
@@ -80,7 +78,7 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     assertEquals(1, results.getResults().getNumFound());
     
     UpdateRequest uReq = new UpdateRequest();
-    uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
     uReq.deleteById(docId).process(clients.get(0));
     
     commit();

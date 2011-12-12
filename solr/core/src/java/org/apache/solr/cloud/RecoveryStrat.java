@@ -25,8 +25,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.util.RefCounted;
@@ -34,6 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RecoveryStrat {
+  private static final String REPLICATION_HANDLER = "/replication";
+
   private static Logger log = LoggerFactory.getLogger(RecoveryStrat.class);
   
   private volatile RecoveryListener recoveryListener;
@@ -125,8 +129,11 @@ public class RecoveryStrat {
       
       // use rep handler directly, so we can do this sync rather than async
       
-      ReplicationHandler replicationHandler = (ReplicationHandler) core
-          .getRequestHandler("/replication");
+      SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
+      if (handler instanceof LazyRequestHandlerWrapper) {
+        handler = ((LazyRequestHandlerWrapper)handler).getWrappedHandler();
+      }
+      ReplicationHandler replicationHandler = (ReplicationHandler) handler;
       
       if (replicationHandler == null) {
         log.error("Skipping recovery, no /replication handler found");

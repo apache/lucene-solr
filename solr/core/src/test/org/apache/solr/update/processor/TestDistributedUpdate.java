@@ -76,7 +76,7 @@ public class TestDistributedUpdate extends SolrTestCaseJ4 {
       
       if (sb.length() > 0) sb.append(',');
       JettySolrRunner jetty = createJetty(testDir, testDir + "/shard" + i
-          + "/data", "solrconfig-distrib-update.xml");
+          + "/data", "solrconfig.xml");
       jettys.add(jetty);
       int port = jetty.getLocalPort();
       clients.add(createNewSolrServer(port));
@@ -105,7 +105,7 @@ public class TestDistributedUpdate extends SolrTestCaseJ4 {
   public JettySolrRunner createJetty(File baseDir, String dataDir,
       String shardId) throws Exception {
     return createJetty(baseDir, dataDir, shardId,
-        "solrconfig-distrib-update.xml");
+        "solrconfig.xml");
   }
   
   public JettySolrRunner createJetty(File baseDir, String dataDir,

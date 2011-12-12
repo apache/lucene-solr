@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RecoveryZkTest extends FullDistributedZkTest {
 
+  //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -145,7 +146,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     // nocommit: look into why cloudClient.addDoc returns NPE
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ureq.setParam("update.chain", "distrib-update-chain");
+    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
     ureq.process(cloudClient);
   }
   

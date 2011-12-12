@@ -46,18 +46,17 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
  *
+ * TODO: we should still test this works as a custom update chain as well as what we test now - the default update chain
  */
 public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
-  
-  static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
 
   private static final String DEFAULT_COLLECTION = "collection1";
 
@@ -179,9 +178,17 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.out.println("before full class");
     System.setProperty("CLOUD_UPDATE_DELAY", "0");
-    
+    System.setProperty("enable.update.log", "true");
     System.setProperty("remove.version.field", "true");
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("CLOUD_UPDATE_DELAY");
+    System.clearProperty("enable.update.log");
+    System.clearProperty("remove.version.field");
   }
   
   public FullDistributedZkTest() {
@@ -254,7 +261,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + this.i.incrementAndGet(), null, "solrconfig-distrib-update.xml");
+      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + this.i.incrementAndGet(), null, "solrconfig.xml");
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);
@@ -381,7 +388,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ureq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    //ureq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
     ureq.process(client);
   }
   
@@ -396,7 +403,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
     ureq.process(client);
   }
   
@@ -408,7 +415,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
     ureq.process(client);
     
     // add to control second in case adding to shards fails
@@ -419,7 +426,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     controlClient.deleteByQuery(q);
     for (SolrServer client : clients) {
       UpdateRequest ureq = new UpdateRequest();
-      ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+      //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
       ureq.deleteByQuery(q).process(client);
     }
   }// serial commit...
@@ -617,7 +624,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
     ureq.process(cloudClient);
     
     commit();
@@ -718,7 +725,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     assertEquals(1, results.getResults().getNumFound());
     
     UpdateRequest uReq = new UpdateRequest();
-    uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
     uReq.deleteById(docId).process(clients.get(0));
     
     commit();
@@ -833,9 +840,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       zkStateReader.close();
     }
     super.tearDown();
-    System.clearProperty("CLOUD_UPDATE_DELAY");
+ 
     System.clearProperty("zkHost");
-    System.clearProperty("remove.version.field");
   }
   
   protected void commit() throws Exception {
