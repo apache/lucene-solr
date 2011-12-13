@@ -28,10 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.FieldCache; // javadocs
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SearcherManager; // javadocs
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.VirtualMethod;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
@@ -1625,17 +1626,28 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public static void main(String [] args) {
     String filename = null;
     boolean extract = false;
+    String dirImpl = null;
 
-    for (int i = 0; i < args.length; ++i) {
-      if (args[i].equals("-extract")) {
+    int j = 0;
+    while(j < args.length) {
+      String arg = args[j];
+      if ("-extract".equals(arg)) {
         extract = true;
+      } else if ("-dir-impl".equals(arg)) {
+        if (j == args.length - 1) {
+          System.out.println("ERROR: missing value for -dir-impl option");
+          System.exit(1);
+        }
+        j++;
+        dirImpl = args[j];
       } else if (filename == null) {
-        filename = args[i];
+        filename = arg;
       }
+      j++;
     }
 
     if (filename == null) {
-      System.out.println("Usage: org.apache.lucene.index.IndexReader [-extract] <cfsfile>");
+      System.out.println("Usage: org.apache.lucene.index.IndexReader [-extract] [-dir-impl X] <cfsfile>");
       return;
     }
 
@@ -1646,7 +1658,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
       File file = new File(filename);
       String dirname = file.getAbsoluteFile().getParent();
       filename = file.getName();
-      dir = FSDirectory.open(new File(dirname));
+      if (dirImpl == null) {
+        dir = FSDirectory.open(new File(dirname));
+      } else {
+        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(dirname));
+      }
+      
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.listAll();
