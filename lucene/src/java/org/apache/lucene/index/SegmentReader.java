@@ -30,6 +30,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
 import org.apache.lucene.index.codecs.TermVectorsReader;
+import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
@@ -413,16 +414,6 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
-
-  @Override
-  protected void readerFinished() {
-    // Do nothing here -- we have more careful control on
-    // when to notify that a SegmentReader has finished,
-    // because a given core is shared across many cloned
-    // SegmentReaders.  We only notify once that core is no
-    // longer used (all SegmentReaders sharing it have been
-    // closed).
-  }
   
   @Override
   public DocValues docValues(String field) throws IOException {
@@ -474,7 +465,6 @@ public final class SegmentReader extends IndexReader implements Cloneable {
       core.incRef();
       clone.core = core;
       clone.pendingDeleteCount = pendingDeleteCount;
-      clone.readerFinishedListeners = readerFinishedListeners;
 
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
@@ -606,5 +596,34 @@ public final class SegmentReader extends IndexReader implements Cloneable {
     if (liveDocs.getAndClear(docNum)) {
       pendingDeleteCount++;
     }
+  }
+  
+  /**
+   * Called when the shared core for this SegmentReader
+   * is closed.
+   * <p>
+   * This listener is called only once all SegmentReaders 
+   * sharing the same core are closed.  At this point it 
+   * is safe for apps to evict this reader from any caches 
+   * keyed on {@link #getCoreCacheKey}.  This is the same 
+   * interface that {@link FieldCache} uses, internally, 
+   * to evict entries.</p>
+   * 
+   * @lucene.experimental
+   */
+  public static interface CoreClosedListener {
+    public void onClose(SegmentReader owner);
+  }
+  
+  /** Expert: adds a CoreClosedListener to this reader's shared core */
+  public void addCoreClosedListener(CoreClosedListener listener) {
+    ensureOpen();
+    core.coreClosedListeners.add(listener);
+  }
+  
+  /** Expert: removes a CoreClosedListener from this reader's shared core */
+  public void removeCoreClosedListener(CoreClosedListener listener) {
+    ensureOpen();
+    core.coreClosedListeners.remove(listener);
   }
 }

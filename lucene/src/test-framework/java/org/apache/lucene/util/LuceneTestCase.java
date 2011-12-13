@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.ReaderFinishedListener;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.appending.AppendingCodec;
@@ -1222,15 +1222,10 @@ public abstract class LuceneTestCase extends Assert {
        if (VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
        }
-       final IndexReader r0 = r;
-       r.addReaderFinishedListener(new ReaderFinishedListener() {
+       r.addReaderClosedListener(new ReaderClosedListener() {
          @Override
-         public void finished(IndexReader reader) {
-           // readerFinishedListener bogusly calls us with other random readers
-           // so we must check that its *actually* the one we registered it on.
-           if (reader == r0) {
-             shutdownExecutorService(ex);
-           }
+         public void onClose(IndexReader reader) {
+           shutdownExecutorService(ex);
          }
        });
       }

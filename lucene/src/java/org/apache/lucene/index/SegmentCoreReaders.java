@@ -18,8 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.SegmentReader.CoreClosedListener;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.NormsReader;
 import org.apache.lucene.index.codecs.PerDocProducer;
@@ -31,6 +34,7 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.MapBackedSet;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -63,7 +67,8 @@ final class SegmentCoreReaders {
   CompoundFileDirectory cfsReader;
   CompoundFileDirectory storeCFSReader;
 
-  
+  final Set<CoreClosedListener> coreClosedListeners = 
+      new MapBackedSet<CoreClosedListener>(new ConcurrentHashMap<CoreClosedListener, Boolean>());
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, IOContext context, int termsIndexDivisor) throws IOException {
     
@@ -133,9 +138,8 @@ final class SegmentCoreReaders {
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
           fieldsReaderOrig, cfsReader, storeCFSReader, norms);
-      // Now, notify any ReaderFinished listeners:
-      if (owner != null) {
-        owner.notifyReaderFinishedListeners();
+      for (CoreClosedListener listener : coreClosedListeners) {
+        listener.onClose(owner);
       }
     }
   }

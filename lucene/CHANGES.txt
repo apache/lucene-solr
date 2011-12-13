@@ -686,6 +686,14 @@ Changes in backwards compatibility policy
   even return your own subclass of IndexSearcher. The SearcherWarmer and
   ExecutorService parameters on these classes were removed, as they are
   subsumed by SearcherFactory.  (Shai Erera, Mike McCandless, Robert Muir)
+
+* LUCENE-3644: The expert ReaderFinishedListener api suffered problems (propagated
+  down to subreaders, but was not called on SegmentReaders, unless they were
+  the owner of the reader core, and other ambiguities). The API is revised:
+  You can set ReaderClosedListeners on any IndexReader, and onClose is called
+  when that reader is closed.  SegmentReader has CoreClosedListeners that you
+  can register to know when a shared reader core is closed.  
+  (Uwe Schindler, Mike McCandless, Robert Muir)
   
 Security fixes
 

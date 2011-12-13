@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -53,7 +52,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.TwoPhaseCommit;
 
 /**
@@ -393,13 +391,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return r;
   }
 
-  // Used for all SegmentReaders we open
-  private final Collection<IndexReader.ReaderFinishedListener> readerFinishedListeners = new MapBackedSet<IndexReader.ReaderFinishedListener>(new ConcurrentHashMap<IndexReader.ReaderFinishedListener,Boolean>());
-
-  Collection<IndexReader.ReaderFinishedListener> getReaderFinishedListeners() throws IOException {
-    return readerFinishedListeners;
-  }
-
   /** Holds shared SegmentReader instances. IndexWriter uses
    *  SegmentReaders for 1) applying deletes, 2) doing
    *  merges, 3) handing out a real-time reader.  This pool
@@ -703,7 +694,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // synchronized
         // Returns a ref, which we xfer to readerMap:
         sr = SegmentReader.getRW(info, doOpenStores, context.context == IOContext.Context.MERGE ? -1 : config.getReaderTermsIndexDivisor(), context);
-        sr.readerFinishedListeners = readerFinishedListeners;
 
         if (info.dir == directory) {
           // Only pool if reader is not external

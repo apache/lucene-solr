@@ -25,8 +25,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Random;
 import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -41,12 +39,9 @@ import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
@@ -958,29 +953,26 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
     final IndexReader reader = writer.getReader();
     final int[] closeCount = new int[1];
-    final IndexReader.ReaderFinishedListener listener = new IndexReader.ReaderFinishedListener() {
-      public void finished(IndexReader reader) {
+    final IndexReader.ReaderClosedListener listener = new IndexReader.ReaderClosedListener() {
+      public void onClose(IndexReader reader) {
         closeCount[0]++;
       }
     };
 
-    reader.addReaderFinishedListener(listener);
+    reader.addReaderClosedListener(listener);
 
     reader.close();
 
-    // Just the top reader
+    // Close the top reader, its the only one that should be closed
     assertEquals(1, closeCount[0]);
     writer.close();
 
-    // Now also the subs
-    assertEquals(3, closeCount[0]);
-
     IndexReader reader2 = IndexReader.open(dir);
-    reader2.addReaderFinishedListener(listener);
+    reader2.addReaderClosedListener(listener);
 
     closeCount[0] = 0;
     reader2.close();
-    assertEquals(3, closeCount[0]);
+    assertEquals(1, closeCount[0]);
     dir.close();
   }
 

@@ -32,6 +32,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -145,11 +146,12 @@ class FieldCacheImpl implements FieldCache {
    */
   static final class StopFillCacheException extends RuntimeException {
   }
-
-  final static IndexReader.ReaderFinishedListener purgeReader = new IndexReader.ReaderFinishedListener() {
+  
+  // per-segment fieldcaches don't purge until the shared core closes.
+  final static SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
     // @Override -- not until Java 1.6
-    public void finished(IndexReader reader) {
-      FieldCache.DEFAULT.purge(reader);
+    public void onClose(SegmentReader owner) {
+      FieldCache.DEFAULT.purge(owner);
     }
   };
 
@@ -188,7 +190,16 @@ class FieldCacheImpl implements FieldCache {
           // First time this reader is using FieldCache
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
-          reader.addReaderFinishedListener(purgeReader);
+          if (reader instanceof SegmentReader) {
+            ((SegmentReader) reader).addCoreClosedListener(purgeCore);
+          } else {
+            reader.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
+              @Override
+              public void onClose(IndexReader reader) {
+                FieldCache.DEFAULT.purge(reader);
+              }
+            });
+          }
         }
         if (innerCache.get(key) == null) {
           innerCache.put(key, value);
@@ -209,7 +220,16 @@ class FieldCacheImpl implements FieldCache {
           // First time this reader is using FieldCache
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
-          reader.addReaderFinishedListener(purgeReader);
+          if (reader instanceof SegmentReader) {
+            ((SegmentReader) reader).addCoreClosedListener(purgeCore);
+          } else {
+            reader.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
+              @Override
+              public void onClose(IndexReader reader) {
+                FieldCache.DEFAULT.purge(reader);
+              }
+            });           
+          }
           value = null;
         } else {
           value = innerCache.get(key);

@@ -18,10 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.lucene.util.MapBackedSet;
 
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
@@ -45,7 +41,6 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     super(subReaders.clone());
-    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     decrefOnClose = new boolean[subReaders.length];
     for (int i = 0; i < subReaders.length; i++) {
       if (!closeSubReaders) {
@@ -58,12 +53,10 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
   }
   
   // used only by openIfChaged
-  private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose,
-                      Collection<ReaderFinishedListener> readerFinishedListeners)
+  private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose)
                       throws IOException {
     super(subReaders);
     this.decrefOnClose = decrefOnClose;
-    this.readerFinishedListeners = readerFinishedListeners;
   }
 
   @Override
@@ -125,7 +118,7 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
           newDecrefOnClose[i] = true;
         }
       }
-      return new MultiReader(newSubReaders, newDecrefOnClose, readerFinishedListeners);
+      return new MultiReader(newSubReaders, newDecrefOnClose);
     } else {
       return null;
     }
@@ -168,21 +161,5 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
   @Override
   public long getVersion() {
     throw new UnsupportedOperationException("MultiReader does not support this method.");
-  }
-
-  @Override
-  public void addReaderFinishedListener(ReaderFinishedListener listener) {
-    super.addReaderFinishedListener(listener);
-    for(IndexReader sub : subReaders) {
-      sub.addReaderFinishedListener(listener);
-    }
-  }
-
-  @Override
-  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
-    super.removeReaderFinishedListener(listener);
-    for(IndexReader sub : subReaders) {
-      sub.removeReaderFinishedListener(listener);
-    }
   }
 }
