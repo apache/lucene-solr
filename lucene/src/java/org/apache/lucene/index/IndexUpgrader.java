@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
@@ -54,36 +55,56 @@ public final class IndexUpgrader {
   private static void printUsage() {
     System.err.println("Upgrades an index so all segments created with a previous Lucene version are rewritten.");
     System.err.println("Usage:");
-    System.err.println("  java " + IndexUpgrader.class.getName() + " [-delete-prior-commits] [-verbose] indexDir");
+    System.err.println("  java " + IndexUpgrader.class.getName() + " [-delete-prior-commits] [-verbose] [-dir-impl X] indexDir");
     System.err.println("This tool keeps only the last commit in an index; for this");
     System.err.println("reason, if the incoming index has more than one commit, the tool");
     System.err.println("refuses to run by default. Specify -delete-prior-commits to override");
     System.err.println("this, allowing the tool to delete all but the last commit.");
+    System.err.println("Specify a " + FSDirectory.class.getSimpleName() + 
+        " implementation through the -dir-impl option to force its use. If no package is specified the " 
+        + FSDirectory.class.getPackage().getName() + " package will be used.");
     System.err.println("WARNING: This tool may reorder document IDs!");
     System.exit(1);
   }
 
   @SuppressWarnings("deprecation")
   public static void main(String[] args) throws IOException {
-    String dir = null;
+    String path = null;
     boolean deletePriorCommits = false;
     PrintStream out = null;
-    for (String arg : args) {
+    String dirImpl = null;
+    int i = 0;
+    while (i<args.length) {
+      String arg = args[i];
       if ("-delete-prior-commits".equals(arg)) {
         deletePriorCommits = true;
       } else if ("-verbose".equals(arg)) {
         out = System.out;
-      } else if (dir == null) {
-        dir = arg;
-      } else {
+      } else if (path == null) {
+        path = arg;
+      } else if ("-dir-impl".equals(arg)) {
+        if (i == args.length - 1) {
+          System.out.println("ERROR: missing value for -dir-impl option");
+          System.exit(1);
+        }
+        i++;
+        dirImpl = args[i];
+      }else {
         printUsage();
       }
+      i++;
     }
-    if (dir == null) {
+    if (path == null) {
       printUsage();
     }
     
-    new IndexUpgrader(FSDirectory.open(new File(dir)), Version.LUCENE_CURRENT, out, deletePriorCommits).upgrade();
+    Directory dir = null;
+    if (dirImpl == null) {
+      dir = FSDirectory.open(new File(path));
+    } else {
+      dir = CommandLineUtil.newFSDirectory(dirImpl, new File(path));
+    }
+    new IndexUpgrader(dir, Version.LUCENE_CURRENT, out, deletePriorCommits).upgrade();
   }
   
   private final Directory dir;

@@ -716,6 +716,10 @@ New Features
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either
   have at least one or no value at all in a specific field. (Simon Willnauer,
   Uwe Schindler, Robert Muir)
+
+* LUCENE-3586: CheckIndex and IndexUpgrader allow you to specify the
+  specific FSDirectory implementation to use (with the new -dir-impl
+  command-line option).  (Luca Cavanna via Mike McCandless)
   
 Bug fixes
 

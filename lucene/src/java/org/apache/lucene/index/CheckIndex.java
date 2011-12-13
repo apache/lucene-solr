@@ -17,15 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.FieldType; // for javadocs
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.Codec;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -37,6 +28,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.codecs.Codec;
+
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
@@ -44,6 +45,7 @@ import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
@@ -1408,41 +1410,48 @@ public class CheckIndex {
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
+    String dirImpl = null;
     int i = 0;
     while(i < args.length) {
-      if (args[i].equals("-fix")) {
+      String arg = args[i];
+      if ("-fix".equals(arg)) {
         doFix = true;
-        i++;
-      } else if (args[i].equals("-codec")) {
+      } else if ("-codec".equals(arg)) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -codec option");
           System.exit(1);
         }
-        codec = Codec.forName(args[i+1]);
-        i+=2;
-      } else if (args[i].equals("-verbose")) {
-        verbose = true;
         i++;
-      } else if (args[i].equals("-segment")) {
+        codec = Codec.forName(args[i]);
+      } else if (arg.equals("-verbose")) {
+        verbose = true;
+      } else if (arg.equals("-segment")) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -segment option");
           System.exit(1);
         }
-        onlySegments.add(args[i+1]);
-        i += 2;
+        i++;
+        onlySegments.add(args[i]);
+      } else if ("-dir-impl".equals(arg)) {
+        if (i == args.length - 1) {
+          System.out.println("ERROR: missing value for -dir-impl option");
+          System.exit(1);
+        }
+        i++;
+        dirImpl = args[i];
       } else {
         if (indexPath != null) {
           System.out.println("ERROR: unexpected extra argument '" + args[i] + "'");
           System.exit(1);
         }
         indexPath = args[i];
-        i++;
       }
+      i++;
     }
 
     if (indexPath == null) {
       System.out.println("\nERROR: index path not specified");
-      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
+      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -codec X: when fixing, codec to write the new segments_N file with\n" +
@@ -1450,7 +1459,8 @@ public class CheckIndex {
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
                          "              You can't use this with the -fix option\n" +
-                         "\n" + 
+                         "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
+                         		"If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
                          "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
                          "a backup copy of your index before running this!  Do not run this tool on an index\n" +
@@ -1480,7 +1490,11 @@ public class CheckIndex {
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
     try {
-      dir = FSDirectory.open(new File(indexPath));
+      if (dirImpl == null) {
+        dir = FSDirectory.open(new File(indexPath));
+      } else {
+        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(indexPath));
+      }
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(System.out);
