@@ -89,6 +89,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<String> shards;
 
   private boolean zkEnabled = false;
+  private boolean alreadySetup = false;
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -116,6 +117,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private List<String> setupRequest(int hash) {
+    if (alreadySetup) {
+      return shards;
+    }
+    alreadySetup = true;
+    
     List<String> shards = null;
     
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();

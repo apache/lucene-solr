@@ -17,8 +17,11 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 
@@ -49,7 +52,7 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     
     // add a doc, update it, and delete it
     
-    String docId = "99999999";
+    long docId = 99999999L;
     indexr("id", docId, t1, "originalcontent");
     
     commit();
@@ -79,7 +82,7 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     
     UpdateRequest uReq = new UpdateRequest();
     //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
-    uReq.deleteById(docId).process(clients.get(0));
+    uReq.deleteById(Long.toString(docId)).process(clients.get(0));
     
     commit();
     
@@ -87,6 +90,25 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     
     results = clients.get(0).query(params);
     assertEquals(0, results.getResults().getNumFound());
+    
+    // add 2 docs in a request
+    uReq = new UpdateRequest();
+    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    SolrInputDocument doc1 = new SolrInputDocument();
+
+    addFields(doc1, "id", docId++);
+    uReq.add(doc1);
+    SolrInputDocument doc2 = new SolrInputDocument();
+    addFields(doc2, "id", docId++);
+    uReq.add(doc2);
+    
+    uReq.process(cloudClient);
+    uReq.process(controlClient);
+    
+    commit();
+    
+    results = cloudClient.query(new SolrQuery("*:*"));
+    assertEquals(2, results.getResults().getNumFound());
   }
   
   @Override
