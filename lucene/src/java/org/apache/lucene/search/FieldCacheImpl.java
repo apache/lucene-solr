@@ -183,7 +183,6 @@ class FieldCacheImpl implements FieldCache {
             ((SegmentReader) reader).addCoreClosedListener(purgeCore);
           } else {
             reader.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
-              @Override
               public void onClose(IndexReader reader) {
                 FieldCache.DEFAULT.purge(reader);
               }
@@ -213,7 +212,6 @@ class FieldCacheImpl implements FieldCache {
             ((SegmentReader) reader).addCoreClosedListener(purgeCore);
           } else {
             reader.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
-              @Override
               public void onClose(IndexReader reader) {
                 FieldCache.DEFAULT.purge(reader);
               }
