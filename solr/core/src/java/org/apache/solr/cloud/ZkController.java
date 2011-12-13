@@ -679,13 +679,13 @@ public final class ZkController {
     String nodeName = getAssignmentsNode();
     
     try {
-      if (!zkClient.exists(nodeName)) {
-        if (log.isInfoEnabled()) {
-          log.info("creating node:" + nodeName);
-        }
-        // makes collections zkNode if it doesn't exist
-        zkClient.makePath(nodeName, CreateMode.PERSISTENT, null);
+      
+      if (log.isInfoEnabled()) {
+        log.info("creating node:" + nodeName);
       }
+      // makes collections zkNode if it doesn't exist
+      zkClient.makePath(nodeName, CreateMode.PERSISTENT, null);
+
     } catch (KeeperException e) {
       // its okay if another beats us creating the node
       if (e.code() != KeeperException.Code.NODEEXISTS) {
