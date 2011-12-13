@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -255,7 +256,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       clone.si = si;
       clone.readBufferSize = readBufferSize;
       clone.pendingDeleteCount = pendingDeleteCount;
-      clone.readerFinishedListeners = readerFinishedListeners;
 
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
@@ -936,14 +936,33 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
-
-  @Override
-  protected void readerFinished() {
-    // Do nothing here -- we have more careful control on
-    // when to notify that a SegmentReader has finished,
-    // because a given core is shared across many cloned
-    // SegmentReaders.  We only notify once that core is no
-    // longer used (all SegmentReaders sharing it have been
-    // closed).
+  
+  /**
+   * Called when the shared core for this SegmentReader
+   * is closed.
+   * <p>
+   * This listener is called only once all SegmentReaders 
+   * sharing the same core are closed.  At this point it 
+   * is safe for apps to evict this reader from any caches 
+   * keyed on {@link #getCoreCacheKey}.  This is the same 
+   * interface that {@link FieldCache} uses, internally, 
+   * to evict entries.</p>
+   * 
+   * @lucene.experimental
+   */
+  public static interface CoreClosedListener {
+    public void onClose(SegmentReader owner);
+  }
+  
+  /** Expert: adds a CoreClosedListener to this reader's shared core */
+  public void addCoreClosedListener(CoreClosedListener listener) {
+    ensureOpen();
+    core.coreClosedListeners.add(listener);
+  }
+  
+  /** Expert: removes a CoreClosedListener from this reader's shared core */
+  public void removeCoreClosedListener(CoreClosedListener listener) {
+    ensureOpen();
+    core.coreClosedListeners.remove(listener);
   }
 }

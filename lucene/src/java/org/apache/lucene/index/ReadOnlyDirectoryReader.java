@@ -21,17 +21,15 @@ import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Collection;
 
 class ReadOnlyDirectoryReader extends DirectoryReader {
-  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, int termInfosIndexDivisor,
-                          Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
-    super(directory, sis, deletionPolicy, true, termInfosIndexDivisor, readerFinishedListeners);
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, int termInfosIndexDivisor) throws IOException {
+    super(directory, sis, deletionPolicy, true, termInfosIndexDivisor);
   }
 
   ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,  Map<String,byte[]> oldNormsCache, boolean doClone,
-                          int termInfosIndexDivisor, Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
-    super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor, readerFinishedListeners);
+                          int termInfosIndexDivisor) throws IOException {
+    super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor);
   }
   
   ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, boolean applyAllDeletes) throws IOException {

@@ -29,7 +29,6 @@ import java.util.List;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -38,7 +37,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MapBackedSet;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
@@ -79,27 +77,21 @@ class DirectoryReader extends IndexReader implements Cloneable {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
         if (readOnly)
-          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy, termInfosIndexDivisor, null);
+          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy, termInfosIndexDivisor);
         else
-          return new DirectoryReader(directory, infos, deletionPolicy, false, termInfosIndexDivisor, null);
+          return new DirectoryReader(directory, infos, deletionPolicy, false, termInfosIndexDivisor);
       }
     }.run(commit);
   }
 
   /** Construct reading the named set of readers. */
-  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor,
-                  Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
+  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
     this.segmentInfos = sis;
     this.deletionPolicy = deletionPolicy;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
 
-    if (readerFinishedListeners == null) {
-      this.readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
-    } else {
-      this.readerFinishedListeners = readerFinishedListeners;
-    }
     applyAllDeletes = false;
 
     // To reduce the chance of hitting FileNotFound
@@ -113,7 +105,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
       boolean success = false;
       try {
         readers[i] = SegmentReader.get(readOnly, sis.info(i), termInfosIndexDivisor);
-        readers[i].readerFinishedListeners = this.readerFinishedListeners;
         success = true;
       } catch(IOException ex) {
         prior = ex;
@@ -133,7 +124,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.applyAllDeletes = applyAllDeletes;       // saved for reopen
 
     this.termInfosIndexDivisor = termInfosIndexDivisor;
-    readerFinishedListeners = writer.getReaderFinishedListeners();
 
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
@@ -153,7 +143,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
         assert info.dir == dir;
         final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
         if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
-          reader.readerFinishedListeners = readerFinishedListeners;
           readers.add(reader);
           infosUpto++;
         } else {
@@ -176,14 +165,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   /** This constructor is only used for {@link #doOpenIfChanged()} */
   DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
-                  Map<String,byte[]> oldNormsCache, boolean readOnly, boolean doClone, int termInfosIndexDivisor,
-                  Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
+                  Map<String,byte[]> oldNormsCache, boolean readOnly, boolean doClone, int termInfosIndexDivisor) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
     this.segmentInfos = infos;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
-    assert readerFinishedListeners != null;
-    this.readerFinishedListeners = readerFinishedListeners;
     applyAllDeletes = false;
 
     // we put the old SegmentReaders in a map, that allows us
@@ -225,7 +211,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = SegmentReader.get(readOnly, infos.info(i), termInfosIndexDivisor);
-          newReader.readerFinishedListeners = readerFinishedListeners;
           readerShared[i] = false;
           newReaders[i] = newReader;
         } else {
@@ -236,7 +221,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
             readerShared[i] = true;
             newReaders[i].incRef();
           } else {
-            assert newReader.readerFinishedListeners == readerFinishedListeners;
             readerShared[i] = false;
             // Steal ref returned to us by reopenSegment:
             newReaders[i] = newReader;
@@ -377,7 +361,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
       writeLock = null;
       hasChanges = false;
     }
-    assert newReader.readerFinishedListeners != null;
 
     return newReader;
   }
@@ -431,7 +414,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
       return null;
     }
 
-    reader.readerFinishedListeners = readerFinishedListeners;
     return reader;
   }
 
@@ -501,9 +483,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
     if (openReadOnly) {
-      reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone, termInfosIndexDivisor, readerFinishedListeners);
+      reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone, termInfosIndexDivisor);
     } else {
-      reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone, termInfosIndexDivisor, readerFinishedListeners);
+      reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone, termInfosIndexDivisor);
     }
     return reader;
   }

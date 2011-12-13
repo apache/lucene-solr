@@ -20,12 +20,10 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.MapBackedSet;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -114,7 +112,6 @@ public class FilterIndexReader extends IndexReader {
   public FilterIndexReader(IndexReader in) {
     super();
     this.in = in;
-    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
 
   @Override
@@ -335,17 +332,4 @@ public class FilterIndexReader extends IndexReader {
     buffer.append(')');
     return buffer.toString();
   }
-
-  @Override
-  public void addReaderFinishedListener(ReaderFinishedListener listener) {
-    super.addReaderFinishedListener(listener);
-    in.addReaderFinishedListener(listener);
-  }
-
-  @Override
-  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
-    super.removeReaderFinishedListener(listener);
-    in.removeReaderFinishedListener(listener);
-  }
 }
-

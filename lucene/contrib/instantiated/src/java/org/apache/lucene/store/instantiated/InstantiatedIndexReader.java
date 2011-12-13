@@ -47,7 +47,6 @@ public class InstantiatedIndexReader extends IndexReader {
   public InstantiatedIndexReader(InstantiatedIndex index) {
     super();
     this.index = index;
-    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
   }
 
   @Deprecated
