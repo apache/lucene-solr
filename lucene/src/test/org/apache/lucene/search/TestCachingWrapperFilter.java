@@ -30,8 +30,9 @@ import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
   
@@ -164,6 +165,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
             // asserts below requires no unexpected merges:
             setMergePolicy(newLogMergePolicy(10))
     );
+    _TestUtil.keepFullyDeletedSegments(writer.w);
 
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,
@@ -173,7 +175,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // same reason we don't wrap?
     IndexSearcher searcher = newSearcher(reader, false);
 
-    // add a doc, refresh the reader, and check that its there
+    // add a doc, refresh the reader, and check that it's there
     Document doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
     writer.addDocument(doc);
@@ -186,23 +188,76 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     final Filter startFilter = new QueryWrapperFilter(new TermQuery(new Term("id", "1")));
 
-    CachingWrapperFilter filter = new CachingWrapperFilter(startFilter);
+    // force cache to regenerate after deletions:
+    CachingWrapperFilter filter = new CachingWrapperFilter(startFilter, true);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
+
     assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
-    int missCount = filter.missCount;
-    assertTrue(missCount > 0);
+
     Query constantScore = new ConstantScoreQuery(filter);
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
+
+    // make sure we get a cache hit when we reopen reader
+    // that had no change to deletions
+
+    // fake delete (deletes nothing):
+    writer.deleteDocuments(new Term("foo", "bar"));
+
+    IndexReader oldReader = reader;
+    reader = refreshReader(reader);
+    assertTrue(reader == oldReader);
+    int missCount = filter.missCount;
+    docs = searcher.search(constantScore, 1);
+    assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
+
+    // cache hit:
     assertEquals(missCount, filter.missCount);
+
+    // now delete the doc, refresh the reader, and see that it's not there
+    writer.deleteDocuments(new Term("id", "1"));
 
     // NOTE: important to hold ref here so GC doesn't clear
     // the cache entry!  Else the assert below may sometimes
     // fail:
-    IndexReader oldReader = reader;
+    oldReader = reader;
+    reader = refreshReader(reader);
+
+    searcher = newSearcher(reader, false);
+
+    missCount = filter.missCount;
+    docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
+    assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
+
+    // cache miss, because we asked CWF to recache when
+    // deletes changed:
+    assertEquals(missCount+1, filter.missCount);
+    docs = searcher.search(constantScore, 1);
+    assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
+
+    // apply deletes dynamically:
+    filter = new CachingWrapperFilter(startFilter);
+    writer.addDocument(doc);
+    reader = refreshReader(reader);
+    searcher = newSearcher(reader, false);
+
+    docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
+    assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
+    missCount = filter.missCount;
+    assertTrue(missCount > 0);
+    constantScore = new ConstantScoreQuery(filter);
+    docs = searcher.search(constantScore, 1);
+    assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
+    assertEquals(missCount, filter.missCount);
 
     writer.addDocument(doc);
+
+    // NOTE: important to hold ref here so GC doesn't clear
+    // the cache entry!  Else the assert below may sometimes
+    // fail:
+    oldReader = reader;
+
     reader = refreshReader(reader);
     searcher = newSearcher(reader, false);
         
@@ -216,11 +271,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertEquals("[just filter] Should find a hit...", 2, docs.totalHits);
     assertEquals(missCount, filter.missCount);
 
-    // NOTE: important to hold ref here so GC doesn't clear
-    // the cache entry!  Else the assert below may sometimes
-    // fail:
-    IndexReader oldReader2 = reader;
-
     // now delete the doc, refresh the reader, and see that it's not there
     writer.deleteDocuments(new Term("id", "1"));
 
@@ -229,10 +279,12 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
+    // CWF reused the same entry (it dynamically applied the deletes):
     assertEquals(missCount, filter.missCount);
 
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
+    // CWF reused the same entry (it dynamically applied the deletes):
     assertEquals(missCount, filter.missCount);
 
     // NOTE: silliness to make sure JRE does not eliminate
@@ -240,7 +292,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // CachingWrapperFilter's WeakHashMap from dropping the
     // entry:
     assertTrue(oldReader != null);
-    assertTrue(oldReader2 != null);
 
     reader.close();
     writer.close();

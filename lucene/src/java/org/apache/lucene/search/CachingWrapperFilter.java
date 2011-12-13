@@ -38,28 +38,27 @@ public class CachingWrapperFilter extends Filter {
   Filter filter;
 
   protected final FilterCache<DocIdSet> cache;
+  private final boolean recacheDeletes;
 
-  static class FilterCache<T> {
+  private static class FilterCache<T> {
 
     /**
      * A transient Filter cache (package private because of test)
      */
-    // NOTE: not final so that we can dynamically re-init
-    // after de-serialize
-    transient Map<Object,T> cache;
+    private final Map<Object,Map<Object,T>> cache = new WeakHashMap<Object,Map<Object,T>>();
 
-    public synchronized T get(IndexReader reader, Object coreKey) throws IOException {
-      T value;
-
-      if (cache == null) {
-        cache = new WeakHashMap<Object,T>();
+    public synchronized T get(IndexReader reader, Object coreKey, Object coreSubKey) throws IOException {
+      Map<Object,T> innerCache = cache.get(coreKey);
+      if (innerCache == null) {
+        innerCache = new WeakHashMap<Object,T>();
+        cache.put(coreKey, innerCache);
       }
 
-      return cache.get(coreKey);
+      return innerCache.get(coreSubKey);
     }
 
-    public synchronized void put(Object coreKey, T value) {
-      cache.put(coreKey, value);
+    public synchronized void put(Object coreKey, Object coreSubKey, T value) {
+      cache.get(coreKey).put(coreSubKey, value);
     }
   }
 
@@ -67,7 +66,19 @@ public class CachingWrapperFilter extends Filter {
    * @param filter Filter to cache results of
    */
   public CachingWrapperFilter(Filter filter) {
+    this(filter, false);
+  }
+
+  /** Wraps another filter's result and caches it.  If
+   *  recacheDeletes is true, then new deletes (for example
+   *  after {@link IndexReader#openIfChanged}) will be AND'd
+   *  and cached again.
+   *
+   *  @param filter Filter to cache results of
+   */
+  public CachingWrapperFilter(Filter filter, boolean recacheDeletes) {
     this.filter = filter;
+    this.recacheDeletes = recacheDeletes;
     cache = new FilterCache<DocIdSet>();
   }
 
@@ -106,33 +117,48 @@ public class CachingWrapperFilter extends Filter {
     final IndexReader reader = context.reader;
     final Object coreKey = reader.getCoreCacheKey();
 
-    DocIdSet docIdSet = cache.get(reader, coreKey);
+    // Only cache if incoming acceptDocs is == live docs;
+    // if Lucene passes in more interesting acceptDocs in
+    // the future we don't want to over-cache:
+    final boolean doCacheSubAcceptDocs = recacheDeletes && acceptDocs == reader.getLiveDocs();
+
+    final Bits subAcceptDocs;
+    if (doCacheSubAcceptDocs) {
+      subAcceptDocs = acceptDocs;
+    } else {
+      subAcceptDocs = null;
+    }
+
+    DocIdSet docIdSet = cache.get(reader, coreKey, subAcceptDocs);
     if (docIdSet != null) {
       hitCount++;
     } else {
       missCount++;
-      // cache miss: we use no acceptDocs here
-      // (this saves time on building DocIdSet, the acceptDocs will be applied on the cached set)
-      docIdSet = docIdSetToCache(filter.getDocIdSet(context, null/**!!!*/), reader);
-      cache.put(coreKey, docIdSet);
+      docIdSet = docIdSetToCache(filter.getDocIdSet(context, subAcceptDocs), reader);
+      cache.put(coreKey, subAcceptDocs, docIdSet);
     }
-    
-    return BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
+
+    if (doCacheSubAcceptDocs) {
+      return docIdSet;
+    } else {
+      return BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
+    }
   }
 
   @Override
   public String toString() {
-    return "CachingWrapperFilter("+filter+")";
+    return "CachingWrapperFilter("+filter+",recacheDeletes=" + recacheDeletes + ")";
   }
 
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof CachingWrapperFilter)) return false;
-    return this.filter.equals(((CachingWrapperFilter)o).filter);
+    final CachingWrapperFilter other = (CachingWrapperFilter) o;
+    return this.filter.equals(other.filter) && this.recacheDeletes == other.recacheDeletes;
   }
 
   @Override
   public int hashCode() {
-    return filter.hashCode() ^ 0x1117BF25;  
+    return (filter.hashCode() ^ 0x1117BF25) + (recacheDeletes ? 0 : 1);
   }
 }
