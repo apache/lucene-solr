@@ -33,7 +33,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>via {@link #getSource()} providing RAM resident random access</li>
  * <li>via {@link #getDirectSource()} providing on disk random access</li>
  * </ul> {@link DocValues} are exposed via
- * {@link IndexReader#perDocValues()} on a per-segment basis. For best
+ * {@link IndexReader#docValues(String)} on a per-segment basis. For best
  * performance {@link DocValues} should be consumed per-segment just like
  * IndexReader.
  * <p>
