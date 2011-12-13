@@ -638,6 +638,10 @@ Optimizations
   boolean clauses are required and instances of TermQuery. 
   (Simon Willnauer, Robert Muir)
   
+* LUCENE-3643: FilteredQuery and IndexSearcher.search(Query, Filter,...)
+  now optimize the special case query instanceof MatchAllDocsQuery to
+  execute as ConstantScoreQuery.  (Uwe Schindler)
+  
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
