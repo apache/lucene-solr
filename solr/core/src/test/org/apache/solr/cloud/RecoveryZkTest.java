@@ -139,6 +139,7 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
  
+    // won't always pass yet...
     query("q", "*:*", "distrib", true, "sort", "id desc");
   }
   
