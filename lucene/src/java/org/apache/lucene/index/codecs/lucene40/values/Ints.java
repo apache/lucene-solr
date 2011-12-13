@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,9 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -40,33 +43,33 @@ public final class Ints {
   }
   
   public static Writer getWriter(Directory dir, String id, Counter bytesUsed,
-      ValueType type, IOContext context) throws IOException {
-    return type == ValueType.VAR_INTS ? new PackedIntValues.PackedIntsWriter(dir, id,
+      Type type, IOContext context) throws IOException {
+    return type == Type.VAR_INTS ? new PackedIntValues.PackedIntsWriter(dir, id,
         bytesUsed, context) : new IntsWriter(dir, id, bytesUsed, context, type);
   }
 
-  public static IndexDocValues getValues(Directory dir, String id, int numDocs,
-      ValueType type, IOContext context) throws IOException {
-    return type == ValueType.VAR_INTS ? new PackedIntValues.PackedIntsReader(dir, id,
+  public static DocValues getValues(Directory dir, String id, int numDocs,
+      Type type, IOContext context) throws IOException {
+    return type == Type.VAR_INTS ? new PackedIntValues.PackedIntsReader(dir, id,
         numDocs, context) : new IntsReader(dir, id, numDocs, context, type);
   }
   
-  private static ValueType sizeToType(int size) {
+  private static Type sizeToType(int size) {
     switch (size) {
     case 1:
-      return ValueType.FIXED_INTS_8;
+      return Type.FIXED_INTS_8;
     case 2:
-      return ValueType.FIXED_INTS_16;
+      return Type.FIXED_INTS_16;
     case 4:
-      return ValueType.FIXED_INTS_32;
+      return Type.FIXED_INTS_32;
     case 8:
-      return ValueType.FIXED_INTS_64;
+      return Type.FIXED_INTS_64;
     default:
       throw new IllegalStateException("illegal size " + size);
     }
   }
   
-  private static int typeToSize(ValueType type) {
+  private static int typeToSize(Type type) {
     switch (type) {
     case FIXED_INTS_16:
       return 2;
@@ -83,20 +86,20 @@ public final class Ints {
 
 
   static class IntsWriter extends FixedStraightBytesImpl.Writer {
-    private final IndexDocValuesArray template;
+    private final DocValuesArray template;
 
     public IntsWriter(Directory dir, String id, Counter bytesUsed,
-        IOContext context, ValueType valueType) throws IOException {
+        IOContext context, Type valueType) throws IOException {
       this(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, valueType);
     }
 
     protected IntsWriter(Directory dir, String id, String codecName,
-        int version, Counter bytesUsed, IOContext context, ValueType valueType) throws IOException {
+        int version, Counter bytesUsed, IOContext context, Type valueType) throws IOException {
       super(dir, id, codecName, version, bytesUsed, context);
       size = typeToSize(valueType);
       this.bytesRef = new BytesRef(size);
       bytesRef.length = size;
-      template = IndexDocValuesArray.TEMPLATES.get(valueType);
+      template = DocValuesArray.TEMPLATES.get(valueType);
     }
     
     @Override
@@ -106,8 +109,8 @@ public final class Ints {
     }
 
     @Override
-    public void add(int docID, PerDocFieldValues docValues) throws IOException {
-      add(docID, docValues.getInt());
+    public void add(int docID, DocValue docValue) throws IOException {
+      add(docID, docValue.getInt());
     }
     
     @Override
@@ -117,20 +120,20 @@ public final class Ints {
     }
     
     @Override
-    protected boolean tryBulkMerge(IndexDocValues docValues) {
+    protected boolean tryBulkMerge(DocValues docValues) {
       // only bulk merge if value type is the same otherwise size differs
       return super.tryBulkMerge(docValues) && docValues.type() == template.type();
     }
   }
   
   final static class IntsReader extends FixedStraightBytesImpl.FixedStraightReader {
-    private final IndexDocValuesArray arrayTemplate;
+    private final DocValuesArray arrayTemplate;
 
-    IntsReader(Directory dir, String id, int maxDoc, IOContext context, ValueType type)
+    IntsReader(Directory dir, String id, int maxDoc, IOContext context, Type type)
         throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc,
           context, type);
-      arrayTemplate = IndexDocValuesArray.TEMPLATES.get(type);
+      arrayTemplate = DocValuesArray.TEMPLATES.get(type);
       assert arrayTemplate != null;
       assert type == sizeToType(size);
     }

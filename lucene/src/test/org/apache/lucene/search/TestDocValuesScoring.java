@@ -21,15 +21,15 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IndexDocValuesField;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.SimilarityProvider;
@@ -48,7 +48,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
   private static final float SCORE_EPSILON = 0.001f; /* for comparing floats */
 
   public void testSimple() throws Exception {
-    assumeFalse("PreFlex codec cannot work with IndexDocValues!", 
+    assumeFalse("PreFlex codec cannot work with DocValues!", 
         "Lucene3x".equals(Codec.getDefault().getName()));
     
     Directory dir = newDirectory();
@@ -56,7 +56,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Document doc = new Document();
     Field field = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(field);
-    IndexDocValuesField dvField = new IndexDocValuesField("foo_boost");
+    DocValuesField dvField = new DocValuesField("foo_boost");
     doc.add(dvField);
     Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(field2);

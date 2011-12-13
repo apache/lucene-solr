@@ -113,7 +113,6 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     // of a given field in the doc.  At this point we flush
     // our hash into the DocWriter.
 
-    assert fieldInfo.storeTermVector;
     assert termsWriter.vectorFieldsInOrder(fieldInfo);
 
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
@@ -150,8 +149,9 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     }
 
     termsHashPerField.reset();
+
     // commit the termVectors once successful success - FI will otherwise reset them
-    fieldInfo.commitVectors();
+    fieldInfo.setStoreTermVectors(doVectorPositions, doVectorOffsets);
   }
 
   void shrinkHash() {

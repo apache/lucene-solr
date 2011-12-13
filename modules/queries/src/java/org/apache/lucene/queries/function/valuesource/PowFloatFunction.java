@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /** Function to raise the base "a" to the power "b"
@@ -37,7 +37,7 @@ public class PowFloatFunction extends DualFloatFunction {
   }
 
   @Override
-  protected float func(int doc, DocValues aVals, DocValues bVals) {
+  protected float func(int doc, FunctionValues aVals, FunctionValues bVals) {
     return (float)Math.pow(aVals.floatVal(doc), bVals.floatVal(doc));
   }
 }

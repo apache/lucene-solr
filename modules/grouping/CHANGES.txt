@@ -17,4 +17,4 @@ LUCENE-3483: Move Function grouping collectors from Solr to
 
 New features
 
-LUCENE-3496: Support grouping by IndexDocValues. (Martijn van Groningen)
+LUCENE-3496: Support grouping by DocValues. (Martijn van Groningen)

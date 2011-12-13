@@ -28,11 +28,11 @@ public class ValueSourceScorer extends Scorer {
   protected IndexReader reader;
   private int doc = -1;
   protected final int maxDoc;
-  protected final DocValues values;
+  protected final FunctionValues values;
   protected boolean checkDeletes;
   private final Bits liveDocs;
 
-  protected ValueSourceScorer(IndexReader reader, DocValues values) {
+  protected ValueSourceScorer(IndexReader reader, FunctionValues values) {
     super(null);
     this.reader = reader;
     this.maxDoc = reader.maxDoc();

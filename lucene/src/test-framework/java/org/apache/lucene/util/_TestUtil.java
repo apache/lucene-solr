@@ -440,7 +440,7 @@ public class _TestUtil {
   /** Adds field info for a Document. */
   public static void add(Document doc, FieldInfos fieldInfos) {
     for (IndexableField field : doc) {
-      fieldInfos.addOrUpdate(field.name(), field.fieldType(), false, field.docValuesType());
+      fieldInfos.addOrUpdate(field.name(), field.fieldType());
     }
   }
   

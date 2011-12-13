@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
@@ -34,10 +34,10 @@ public class MinFloatFunction extends MultiFloatFunction {
   }
 
   @Override
-  protected float func(int doc, DocValues[] valsArr) {
+  protected float func(int doc, FunctionValues[] valsArr) {
     boolean first = true;
     float val = 0.0f;
-    for (DocValues vals : valsArr) {
+    for (FunctionValues vals : valsArr) {
       if (first) {
         first = false;
         val = vals.floatVal(doc);

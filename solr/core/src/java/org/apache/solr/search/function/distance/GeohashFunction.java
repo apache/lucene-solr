@@ -17,7 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 
@@ -46,12 +46,12 @@ public class GeohashFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues latDV = lat.getValues(context, readerContext);
-    final DocValues lonDV = lon.getValues(context, readerContext);
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues latDV = lat.getValues(context, readerContext);
+    final FunctionValues lonDV = lon.getValues(context, readerContext);
 
 
-    return new DocValues() {
+    return new FunctionValues() {
 
       @Override
       public String strVal(int doc) {

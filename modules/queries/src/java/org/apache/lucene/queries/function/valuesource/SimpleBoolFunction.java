@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -36,11 +36,11 @@ public abstract class SimpleBoolFunction extends BoolFunction {
 
   protected abstract String name();
 
-  protected abstract boolean func(int doc, DocValues vals);
+  protected abstract boolean func(int doc, FunctionValues vals);
 
   @Override
   public BoolDocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues vals =  source.getValues(context, readerContext);
+    final FunctionValues vals =  source.getValues(context, readerContext);
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {

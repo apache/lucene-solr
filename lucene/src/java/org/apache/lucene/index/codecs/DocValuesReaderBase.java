@@ -26,23 +26,24 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.values.Bytes;
-import org.apache.lucene.index.values.Floats;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.Ints;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
+import org.apache.lucene.index.codecs.lucene40.values.Bytes;
+import org.apache.lucene.index.codecs.lucene40.values.Floats;
+import org.apache.lucene.index.codecs.lucene40.values.Ints;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract base class for PerDocValues implementations
+ * Abstract base class for PerDocProducer implementations
  * @lucene.experimental
  */
-public abstract class DocValuesReaderBase extends PerDocValues {
+// TODO: this needs to go under lucene40 codec (its specific to its impl)
+public abstract class DocValuesReaderBase extends PerDocProducer {
   
   protected abstract void closeInternal(Collection<? extends Closeable> closeables) throws IOException;
-  protected abstract Map<String, IndexDocValues> docValues();
+  protected abstract Map<String, DocValues> docValues();
   
   @Override
   public void close() throws IOException {
@@ -50,13 +51,8 @@ public abstract class DocValuesReaderBase extends PerDocValues {
   }
   
   @Override
-  public IndexDocValues docValues(String field) throws IOException {
+  public DocValues docValues(String field) throws IOException {
     return docValues().get(field);
-  }
-
-  @Override
-  public Collection<String> fields() {
-    return docValues().keySet();
   }
   
   public Comparator<BytesRef> getComparator() throws IOException {
@@ -64,10 +60,10 @@ public abstract class DocValuesReaderBase extends PerDocValues {
   }
 
   // Only opens files... doesn't actually load any values
-  protected TreeMap<String, IndexDocValues> load(FieldInfos fieldInfos,
+  protected TreeMap<String, DocValues> load(FieldInfos fieldInfos,
       String segment, int docCount, Directory dir, IOContext context)
       throws IOException {
-    TreeMap<String, IndexDocValues> values = new TreeMap<String, IndexDocValues>();
+    TreeMap<String, DocValues> values = new TreeMap<String, DocValues>();
     boolean success = false;
     try {
 
@@ -79,7 +75,7 @@ public abstract class DocValuesReaderBase extends PerDocValues {
           final String id = DocValuesWriterBase.docValuesId(segment,
               fieldInfo.number);
           values.put(field,
-              loadDocValues(docCount, dir, id, fieldInfo.getDocValues(), context));
+              loadDocValues(docCount, dir, id, fieldInfo.getDocValuesType(), context));
         }
       }
       success = true;
@@ -93,26 +89,26 @@ public abstract class DocValuesReaderBase extends PerDocValues {
   }
   
   /**
-   * Loads a {@link IndexDocValues} instance depending on the given {@link ValueType}.
-   * Codecs that use different implementations for a certain {@link ValueType} can
+   * Loads a {@link DocValues} instance depending on the given {@link Type}.
+   * Codecs that use different implementations for a certain {@link Type} can
    * simply override this method and return their custom implementations.
    * 
    * @param docCount
    *          number of documents in the segment
    * @param dir
-   *          the {@link Directory} to load the {@link IndexDocValues} from
+   *          the {@link Directory} to load the {@link DocValues} from
    * @param id
    *          the unique file ID within the segment
    * @param type
    *          the type to load
-   * @return a {@link IndexDocValues} instance for the given type
+   * @return a {@link DocValues} instance for the given type
    * @throws IOException
    *           if an {@link IOException} occurs
    * @throws IllegalArgumentException
-   *           if the given {@link ValueType} is not supported
+   *           if the given {@link Type} is not supported
    */
-  protected IndexDocValues loadDocValues(int docCount, Directory dir, String id,
-      ValueType type, IOContext context) throws IOException {
+  protected DocValues loadDocValues(int docCount, Directory dir, String id,
+      DocValues.Type type, IOContext context) throws IOException {
     switch (type) {
     case FIXED_INTS_16:
     case FIXED_INTS_32:

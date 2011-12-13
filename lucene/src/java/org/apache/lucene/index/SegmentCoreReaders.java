@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.NormsReader;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -48,7 +48,7 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
-  final PerDocValues perDocProducer;
+  final PerDocProducer perDocProducer;
   final NormsReader norms;
 
   final Directory dir;

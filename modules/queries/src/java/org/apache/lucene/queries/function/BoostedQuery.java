@@ -108,7 +108,7 @@ public class BoostedQuery extends Query {
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
-      DocValues vals = boostVal.getValues(fcontext, readerContext);
+      FunctionValues vals = boostVal.getValues(fcontext, readerContext);
       float sc = subQueryExpl.getValue() * vals.floatVal(doc);
       Explanation res = new ComplexExplanation(
         true, sc, BoostedQuery.this.toString() + ", product of:");
@@ -123,7 +123,7 @@ public class BoostedQuery extends Query {
     private final BoostedQuery.BoostedWeight weight;
     private final float qWeight;
     private final Scorer scorer;
-    private final DocValues vals;
+    private final FunctionValues vals;
     private final AtomicReaderContext readerContext;
 
     private CustomScorer(AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w, float qWeight,

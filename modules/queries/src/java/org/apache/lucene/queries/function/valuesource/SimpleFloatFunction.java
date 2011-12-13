@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 
@@ -32,11 +32,11 @@ import java.util.Map;
     super(source);
   }
 
-  protected abstract float func(int doc, DocValues vals);
+  protected abstract float func(int doc, FunctionValues vals);
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues vals =  source.getValues(context, readerContext);
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues vals =  source.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {

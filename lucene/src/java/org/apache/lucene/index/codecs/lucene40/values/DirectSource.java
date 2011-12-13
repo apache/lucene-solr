@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,7 +19,9 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 
@@ -27,13 +29,13 @@ import org.apache.lucene.util.BytesRef;
  * Base class for disk resident source implementations
  * @lucene.internal
  */
-abstract class DirectSource extends Source {
+public abstract class DirectSource extends Source {
 
   protected final IndexInput data;
   private final ToNumeric toNumeric;
   protected final long baseOffset;
 
-  DirectSource(IndexInput input, ValueType type) {
+  public DirectSource(IndexInput input, Type type) {
     super(type);
     this.data = input;
     baseOffset = input.getFilePointer();

@@ -27,9 +27,9 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
 import org.apache.lucene.index.codecs.NormsFormat;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;
@@ -75,7 +75,7 @@ public class Lucene3xCodec extends Codec {
     }
 
     @Override
-    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
       return null;
     }
 

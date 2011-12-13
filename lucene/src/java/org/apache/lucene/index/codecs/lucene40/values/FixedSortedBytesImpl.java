@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,13 +21,16 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.SortedBytesMergeUtils;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.SortedBytesMergeUtils.MergeContext;
+import org.apache.lucene.index.SortedBytesMergeUtils.SortedSourceSlice;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.values.Bytes.BytesReaderBase;
-import org.apache.lucene.index.values.Bytes.BytesSortedSourceBase;
-import org.apache.lucene.index.values.Bytes.DerefBytesWriterBase;
-import org.apache.lucene.index.values.IndexDocValues.SortedSource;
-import org.apache.lucene.index.values.SortedBytesMergeUtils.MergeContext;
-import org.apache.lucene.index.values.SortedBytesMergeUtils.SortedSourceSlice;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesReaderBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.BytesSortedSourceBase;
+import org.apache.lucene.index.codecs.lucene40.values.Bytes.DerefBytesWriterBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -59,11 +62,11 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public void merge(MergeState mergeState, IndexDocValues[] docValues)
+    public void merge(MergeState mergeState, DocValues[] docValues)
         throws IOException {
       boolean success = false;
       try {
-        final MergeContext ctx = SortedBytesMergeUtils.init(ValueType.BYTES_FIXED_SORTED, docValues, comp, mergeState);
+        final MergeContext ctx = SortedBytesMergeUtils.init(Type.BYTES_FIXED_SORTED, docValues, comp, mergeState);
         List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(mergeState, docValues, ctx);
         final IndexOutput datOut = getOrCreateDataOut();
         datOut.writeInt(ctx.sizePerValues);
@@ -122,7 +125,7 @@ class FixedSortedBytesImpl {
     private final Comparator<BytesRef> comparator;
 
     public Reader(Directory dir, String id, int maxDoc, IOContext context,
-        ValueType type, Comparator<BytesRef> comparator) throws IOException {
+        Type type, Comparator<BytesRef> comparator) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_START, true, context, type);
       size = datIn.readInt();
       valueCount = idxIn.readInt();
@@ -153,7 +156,7 @@ class FixedSortedBytesImpl {
 
     FixedSortedSource(IndexInput datIn, IndexInput idxIn, int size,
         int numValues, Comparator<BytesRef> comp) throws IOException {
-      super(datIn, idxIn, comp, size * numValues, ValueType.BYTES_FIXED_SORTED,
+      super(datIn, idxIn, comp, size * numValues, Type.BYTES_FIXED_SORTED,
           false);
       this.size = size;
       this.valueCount = numValues;
@@ -179,7 +182,7 @@ class FixedSortedBytesImpl {
     private final int valueCount;
 
     DirectFixedSortedSource(IndexInput datIn, IndexInput idxIn, int size,
-        int valueCount, Comparator<BytesRef> comp, ValueType type)
+        int valueCount, Comparator<BytesRef> comp, Type type)
         throws IOException {
       super(type, comp);
       docToOrdIndex = PackedInts.getDirectReader(idxIn);
@@ -192,6 +195,11 @@ class FixedSortedBytesImpl {
     @Override
     public int ord(int docID) {
       return (int) docToOrdIndex.get(docID);
+    }
+
+    @Override
+    public boolean hasPackedDocToOrd() {
+      return true;
     }
 
     @Override

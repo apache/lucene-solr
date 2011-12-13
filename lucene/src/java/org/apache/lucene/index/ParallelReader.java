@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MapBackedSet;
@@ -59,7 +57,6 @@ public class ParallelReader extends IndexReader {
   private boolean hasDeletions;
 
   private final ParallelFields fields = new ParallelFields();
-  private final ParallelPerDocs perDocs = new ParallelPerDocs();
 
  /** Construct a ParallelReader. 
   * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
@@ -132,7 +129,6 @@ public class ParallelReader extends IndexReader {
       if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
         this.fields.addField(field, MultiFields.getFields(reader).terms(field));
-        this.perDocs.addField(field, reader);
       }
     }
 
@@ -464,41 +460,10 @@ public class ParallelReader extends IndexReader {
     }
   }
 
+  // TODO: I suspect this is completely untested!!!!!
   @Override
-  public PerDocValues perDocValues() throws IOException {
-    ensureOpen();
-    return perDocs;
-  }
-  
-  // Single instance of this, per ParallelReader instance
-  private static final class ParallelPerDocs extends PerDocValues {
-    final TreeMap<String,IndexDocValues> fields = new TreeMap<String,IndexDocValues>();
-
-    void addField(String field, IndexReader r) throws IOException {
-      PerDocValues perDocs = MultiPerDocValues.getPerDocs(r);
-      if (perDocs != null) {
-        fields.put(field, perDocs.docValues(field));
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      // nothing to do here
-    }
-
-    @Override
-    public IndexDocValues docValues(String field) throws IOException {
-      return fields.get(field);
-    }
-
-    @Override
-    public Collection<String> fields() {
-      return fields.keySet();
-    }
+  public DocValues docValues(String field) throws IOException {
+    IndexReader reader = fieldToReader.get(field);
+    return reader == null ? null : MultiDocValues.getDocValues(reader, field);
   }
 }
-
-
-
-
-

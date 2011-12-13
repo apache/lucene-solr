@@ -24,11 +24,11 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.IndexDocValuesField;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -167,12 +167,12 @@ public class RandomIndexWriter implements Closeable {
   
   private void randomPerDocFieldValues(Random random, Document doc) {
     
-    ValueType[] values = ValueType.values();
-    ValueType type = values[random.nextInt(values.length)];
+    DocValues.Type[] values = DocValues.Type.values();
+    DocValues.Type type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
     if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null)
         return;
-    IndexDocValuesField docValuesField = new IndexDocValuesField(name);
+    DocValuesField docValuesField = new DocValuesField(name);
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_STRAIGHT:

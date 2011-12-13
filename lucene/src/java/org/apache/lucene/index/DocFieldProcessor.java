@@ -26,11 +26,11 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
+import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
@@ -224,7 +224,7 @@ final class DocFieldProcessor extends DocConsumer {
         // needs to be more "pluggable" such that if I want
         // to have a new "thing" my Fields can do, I can
         // easily add it
-        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.fieldType(), false, field.docValuesType());
+        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.fieldType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -235,7 +235,7 @@ final class DocFieldProcessor extends DocConsumer {
           rehash();
         }
       } else {
-        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.fieldType(), false, field.docValuesType());
+        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.fieldType());
       }
 
       if (thisFieldGen != fp.lastGen) {
@@ -259,9 +259,9 @@ final class DocFieldProcessor extends DocConsumer {
       if (field.fieldType().stored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
-      final PerDocFieldValues docValues = field.docValues();
-      if (docValues != null) {
-        docValuesConsumer(docState, fp.fieldInfo).add(docState.docID, docValues);
+      final DocValue docValue = field.docValue();
+      if (docValue != null) {
+        docValuesConsumer(field.docValueType(), docState, fp.fieldInfo).add(docState.docID, docValue);
       }
     }
 
@@ -310,12 +310,12 @@ final class DocFieldProcessor extends DocConsumer {
   final private Map<String, DocValuesConsumerAndDocID> docValues = new HashMap<String, DocValuesConsumerAndDocID>();
   final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
 
-  DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo) 
+  DocValuesConsumer docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
       throws IOException {
     DocValuesConsumerAndDocID docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
     if (docValuesConsumerAndDocID != null) {
       if (docState.docID == docValuesConsumerAndDocID.docID) {
-        throw new IllegalArgumentException("IndexDocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
+        throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
       }
       assert docValuesConsumerAndDocID.docID < docState.docID;
       docValuesConsumerAndDocID.docID = docState.docID;
@@ -329,17 +329,9 @@ final class DocFieldProcessor extends DocConsumer {
       perDocConsumer = dvFormat.docsConsumer(perDocWriteState);
       perDocConsumers.put(0, perDocConsumer);
     }
-    boolean success = false;
-    DocValuesConsumer docValuesConsumer = null;
-    try {
-      docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
-      fieldInfo.commitDocValues();
-      success = true;
-    } finally {
-      if (!success) {
-        fieldInfo.revertUncommitted();
-      }
-    }
+
+    DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
+    fieldInfo.setDocValuesType(valueType);
 
     docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;

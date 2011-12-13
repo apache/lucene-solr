@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MapBackedSet;
 
 /** An IndexReader which reads multiple indexes, appending
@@ -187,5 +185,4 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
       sub.removeReaderFinishedListener(listener);
     }
   }
-
 }

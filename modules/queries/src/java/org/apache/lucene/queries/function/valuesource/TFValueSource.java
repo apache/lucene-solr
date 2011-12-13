@@ -19,7 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -41,7 +41,7 @@ public class TFValueSource extends TermFreqValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader.fields();
     final Terms terms = fields.terms(field);
     final Similarity sim = ((IndexSearcher)context.get("searcher")).getSimilarityProvider().get(field);

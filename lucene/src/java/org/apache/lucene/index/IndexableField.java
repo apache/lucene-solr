@@ -23,8 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
@@ -77,10 +76,10 @@ public interface IndexableField {
   public IndexableFieldType fieldType();
   
   /** Non-null if doc values should be indexed */
-  public PerDocFieldValues docValues();
+  public DocValue docValue();
 
-  /** DocValues type; only used if docValues is non-null */
-  public ValueType docValuesType();
+  /** DocValues type; only used if docValue is non-null */
+  public DocValues.Type docValueType();
 
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,

@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
@@ -156,9 +155,9 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
   public ReaderContext getTopReaderContext() {
     return topLevelContext;
   }
-
+  
   @Override
-  public PerDocValues perDocValues() throws IOException {
-    throw new UnsupportedOperationException("please use MultiPerDocValues.getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
+  public DocValues docValues(String field) throws IOException {
+    throw new UnsupportedOperationException("please use MultiDocValues#getDocValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level DocValues");
   }
 }

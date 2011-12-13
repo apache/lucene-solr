@@ -1,4 +1,4 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.index.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,8 +19,9 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
-import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -41,6 +42,8 @@ import org.apache.lucene.util.Counter;
  */
 public abstract class Writer extends DocValuesConsumer {
   protected Source currentMergeSource;
+  protected final Counter bytesUsed;
+
   /**
    * Creates a new {@link Writer}.
    * 
@@ -50,7 +53,7 @@ public abstract class Writer extends DocValuesConsumer {
    *          once {@link #finish(int)} has been called.
    */
   protected Writer(Counter bytesUsed) {
-    super(bytesUsed);
+    this.bytesUsed = bytesUsed;
   }
 
   /**
@@ -162,20 +165,20 @@ public abstract class Writer extends DocValuesConsumer {
   /**
    * Factory method to create a {@link Writer} instance for a given type. This
    * method returns default implementations for each of the different types
-   * defined in the {@link ValueType} enumeration.
+   * defined in the {@link Type} enumeration.
    * 
    * @param type
-   *          the {@link ValueType} to create the {@link Writer} for
+   *          the {@link Type} to create the {@link Writer} for
    * @param id
    *          the file name id used to create files within the writer.
    * @param directory
    *          the {@link Directory} to create the files from.
    * @param bytesUsed
    *          a byte-usage tracking reference
-   * @return a new {@link Writer} instance for the given {@link ValueType}
+   * @return a new {@link Writer} instance for the given {@link Type}
    * @throws IOException
    */
-  public static Writer create(ValueType type, String id, Directory directory,
+  public static Writer create(Type type, String id, Directory directory,
       Comparator<BytesRef> comp, Counter bytesUsed, IOContext context) throws IOException {
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();

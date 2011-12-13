@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.*;
@@ -41,8 +41,8 @@ import java.util.*;
 
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
-  private static final ValueType[] vts = new ValueType[]{
-      ValueType.BYTES_VAR_DEREF, ValueType.BYTES_VAR_STRAIGHT, ValueType.BYTES_VAR_SORTED
+  private static final Type[] vts = new Type[]{
+      Type.BYTES_VAR_DEREF, Type.BYTES_VAR_STRAIGHT, Type.BYTES_VAR_SORTED
   };
 
   public void testBasic() throws Exception {
@@ -54,7 +54,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
-    ValueType valueType = vts[random.nextInt(vts.length)];
+    Type valueType = vts[random.nextInt(vts.length)];
 
     // 0
     Document doc = new Document();
@@ -203,15 +203,15 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
               new MockAnalyzer(random)));
       boolean preFlex = "Lucene3x".equals(w.w.getConfig().getCodec().getName());
       boolean canUseIDV = !preFlex;
-      ValueType valueType = vts[random.nextInt(vts.length)];
+      Type valueType = vts[random.nextInt(vts.length)];
 
       Document doc = new Document();
       Document docNoGroup = new Document();
       Field group = newField("group", "", StringField.TYPE_UNSTORED);
       doc.add(group);
-      IndexDocValuesField valuesField = null;
+      DocValuesField valuesField = null;
       if (canUseIDV) {
-        valuesField = new IndexDocValuesField("group");
+        valuesField = new DocValuesField("group");
         doc.add(valuesField);
       }
       Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
@@ -505,7 +505,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     };
   }
 
-  private AbstractAllGroupHeadsCollector createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, ValueType valueType) throws IOException {
+  private AbstractAllGroupHeadsCollector createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
     AbstractAllGroupHeadsCollector collector;
     if (random.nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
@@ -524,10 +524,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return collector;
   }
 
-  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, ValueType valueType) {
+  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, Type valueType) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      IndexDocValuesField valuesField = new IndexDocValuesField(groupField);
+      DocValuesField valuesField = new DocValuesField(groupField);
       valuesField.setBytes(new BytesRef(value), valueType);
       doc.add(valuesField);
     }

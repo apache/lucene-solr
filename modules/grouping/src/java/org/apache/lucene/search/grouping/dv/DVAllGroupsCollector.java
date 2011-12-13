@@ -17,9 +17,9 @@ package org.apache.lucene.search.grouping.dv;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
 import org.apache.lucene.search.grouping.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
@@ -29,7 +29,7 @@ import java.util.*;
 
 /**
  * Implementation of {@link AbstractAllGroupsCollector} that groups documents based on
- * {@link IndexDocValues} fields.
+ * {@link DocValues} fields.
  *
  * @lucene.experimental
  */
@@ -39,20 +39,20 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
 
   /**
    * Expert: Constructs a {@link DVAllGroupsCollector}.
-   * Selects and constructs the most optimal all groups collector implementation for grouping by {@link IndexDocValues}.
+   * Selects and constructs the most optimal all groups collector implementation for grouping by {@link DocValues}.
    * 
    *
    * @param groupField  The field to group by
-   * @param type The {@link ValueType} which is used to select a concrete implementation.
+   * @param type The {@link Type} which is used to select a concrete implementation.
    * @param diskResident Whether the values to group by should be disk resident
    * @param initialSize The initial allocation size of the
    *                    internal int set and group list
    *                    which should roughly match the total
    *                    number of expected unique groups. Be aware that the
    *                    heap usage is 4 bytes * initialSize. Not all concrete implementions use this!
-   * @return the most optimal all groups collector implementation for grouping by {@link IndexDocValues}
+   * @return the most optimal all groups collector implementation for grouping by {@link DocValues}
    */
-  public static DVAllGroupsCollector create(String groupField, ValueType type, boolean diskResident, int initialSize) {
+  public static DVAllGroupsCollector create(String groupField, DocValues.Type type, boolean diskResident, int initialSize) {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
@@ -78,25 +78,25 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
 
   /**
    * Constructs a {@link DVAllGroupsCollector}.
-   * Selects and constructs the most optimal all groups collector implementation for grouping by {@link IndexDocValues}.
+   * Selects and constructs the most optimal all groups collector implementation for grouping by {@link DocValues}.
    * If implementations require an initial allocation size then this will be set to 128.
    *
    *
    * @param groupField  The field to group by
-   * @param type The {@link ValueType} which is used to select a concrete implementation.
+   * @param type The {@link Type} which is used to select a concrete implementation.
    * @param diskResident Wether the values to group by should be disk resident
-   * @return the most optimal all groups collector implementation for grouping by {@link IndexDocValues}
+   * @return the most optimal all groups collector implementation for grouping by {@link DocValues}
    */
-  public static DVAllGroupsCollector create(String groupField, ValueType type, boolean diskResident) {
+  public static DVAllGroupsCollector create(String groupField, DocValues.Type type, boolean diskResident) {
     return create(groupField, type, diskResident, DEFAULT_INITIAL_SIZE);
   }
 
   final String groupField;
-  final ValueType valueType;
+  final DocValues.Type valueType;
   final boolean diskResident;
   final Collection<GROUP_VALUE_TYPE> groups;
 
-  DVAllGroupsCollector(String groupField, ValueType valueType, boolean diskResident, Collection<GROUP_VALUE_TYPE> groups) {
+  DVAllGroupsCollector(String groupField, DocValues.Type valueType, boolean diskResident, Collection<GROUP_VALUE_TYPE> groups) {
     this.groupField = groupField;
     this.valueType = valueType;
     this.diskResident = diskResident;
@@ -105,8 +105,8 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
 
   @Override
   public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
-    final IndexDocValues dv = readerContext.reader.docValues(groupField);
-    final IndexDocValues.Source dvSource;
+    final DocValues dv = readerContext.reader.docValues(groupField);
+    final DocValues.Source dvSource;
     if (dv != null) {
       dvSource = diskResident ? dv.getDirectSource() : dv.getSource();
     } else {
@@ -121,21 +121,21 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
    * @param source The idv source to be used by concrete implementations
    * @param readerContext The current reader context
    */
-  protected abstract void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext);
+  protected abstract void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext);
 
   /**
    * @return The default source when no doc values are available.
    * @param readerContext The current reader context
    */
-  protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-    return IndexDocValues.getDefaultSource(valueType);
+  protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+    return DocValues.getDefaultSource(valueType);
   }
 
   static class Lng extends DVAllGroupsCollector<Long> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    Lng(String groupField, ValueType valueType, boolean diskResident) {
+    Lng(String groupField, DocValues.Type valueType, boolean diskResident) {
       super(groupField, valueType, diskResident, new TreeSet<Long>());
     }
 
@@ -150,7 +150,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       return groups;
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source;
     }
 
@@ -158,9 +158,9 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
 
   static class Dbl extends DVAllGroupsCollector<Double> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    Dbl(String groupField, ValueType valueType, boolean diskResident) {
+    Dbl(String groupField, DocValues.Type valueType, boolean diskResident) {
       super(groupField, valueType, diskResident, new TreeSet<Double>());
     }
 
@@ -175,7 +175,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       return groups;
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source;
     }
 
@@ -185,9 +185,9 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
 
     private final BytesRef spare = new BytesRef();
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    BR(String groupField, ValueType valueType, boolean diskResident) {
+    BR(String groupField, DocValues.Type valueType, boolean diskResident) {
       super(groupField, valueType, diskResident, new TreeSet<BytesRef>());
     }
 
@@ -202,7 +202,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       return groups;
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source;
     }
 
@@ -213,9 +213,9 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
     private final SentinelIntSet ordSet;
     private final BytesRef spare = new BytesRef();
 
-    private IndexDocValues.SortedSource source;
+    private DocValues.SortedSource source;
 
-    SortedBR(String groupField, ValueType valueType, boolean diskResident, int initialSize) {
+    SortedBR(String groupField, DocValues.Type valueType, boolean diskResident, int initialSize) {
       super(groupField, valueType, diskResident, new ArrayList<BytesRef>(initialSize));
       ordSet = new SentinelIntSet(initialSize, -1);
     }
@@ -233,7 +233,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       return groups;
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source.asSortedSource();
 
       ordSet.clear();
@@ -246,8 +246,8 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
     }
 
     @Override
-    protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-      return IndexDocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
+    protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+      return DocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
     }
 
   }

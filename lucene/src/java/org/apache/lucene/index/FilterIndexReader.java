@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -422,9 +421,9 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  public PerDocValues perDocValues() throws IOException {
+  public DocValues docValues(String field) throws IOException {
     ensureOpen();
-    return in.perDocValues();
+    return in.docValues(field);
   }
 
   @Override

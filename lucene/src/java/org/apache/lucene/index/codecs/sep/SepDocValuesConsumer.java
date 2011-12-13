@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.codecs.DocValuesWriterBase;
-import org.apache.lucene.index.values.Writer;
+import org.apache.lucene.index.codecs.lucene40.values.Writer;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -53,7 +53,7 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
         String filename = docValuesId(segmentInfo.name, fieldInfo.number);
-        switch (fieldInfo.getDocValues()) {
+        switch (fieldInfo.getDocValuesType()) {
           case BYTES_FIXED_DEREF:
           case BYTES_VAR_DEREF:
           case BYTES_VAR_STRAIGHT:
