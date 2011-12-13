@@ -421,39 +421,215 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     assertDocCounts();
     
-    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
-    );
-    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow"
-    );
-    indexr(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog"
-    );
-    indexr(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog"
-    );
-    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
-    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
-    indexr(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
-    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
-    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
-    indexr(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
-    indexr(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
-    indexr(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
-
-    indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
-    indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
-    indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
-    String[] vals = new String[100];
-    for (int i=0; i<100; i++) {
-      vals[i] = "test " + i;
-    }
-    indexr(id, 17, "SubjectTerms_mfacet", vals);
-
-    for (int i=100; i<150; i++) {
-      indexr(id, i);      
-    }
+    indexAbunchOfDocs();
 
     commit();
     
     assertDocCounts();
+    checkQueries();
+    
+    // TODO: this is failing because the counts per shard don't add up to the control - distrib total
+    // counts do match, so the same doc (same id) must be on different shards.
+    // our hash is not stable yet in distrib update proc
+    assertDocCounts();
+
+    query("q", "*:*", "sort", "n_tl1 desc");
+    
+    brindDownShardIndexSomeDocsAndRecover();
+    
+    query("q", "*:*", "sort", "n_tl1 desc");
+    
+    // test adding another replica to a shard - it should do a recovery/replication to pick up the index from the leader
+    addNewReplica();
+    
+    long docId = testUpdateAndDelete();
+    
+    // index a bad doc...
+    try {
+      ignoreException("Document is missing mandatory uniqueKey field: id");
+      indexr(t1,"a doc with no id");
+      fail("this should fail");
+    } catch (SolrException e) {
+      // expected
+    } finally {
+      resetExceptionIgnores();
+    }
+    
+    // TODO: bring this to it's own method?
+    // try indexing to a leader that has no replicas up
+    ZkNodeProps leaderProps = zkStateReader.getLeaderProps(DEFAULT_COLLECTION, SHARD2);
+    
+    String nodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
+    chaosMonkey.stopShardExcept(SHARD2, nodeName);
+    
+    SolrServer client = getClient(nodeName);
+    
+    System.out.println("what happens here?");
+    index_specific(client, "id", docId + 1, t1, "what happens here?");
+    
+    // expire a session...
+    CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
+    chaosMonkey.expireSession(cloudJetty);
+    
+    indexr("id", docId + 1, t1, "slip this doc in");
+    
+    waitForRecovery(cloudJetty.jetty);
+    
+    checkShardConsistency("shard1");
+    
+  }
+
+  private long testUpdateAndDelete() throws Exception, SolrServerException,
+      IOException {
+    long docId = 99999999L;
+    indexr("id", docId, t1, "originalcontent");
+    
+    commit();
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("distrib", "true");
+    params.add("q", t1 + ":originalcontent");
+    QueryResponse results = clients.get(0).query(params);
+    assertEquals(1, results.getResults().getNumFound());
+    System.out.println("results:" + results);
+    
+    // update doc
+    indexr("id", docId, t1, "updatedcontent");
+    
+    commit();
+    
+    results = clients.get(0).query(params);
+    assertEquals(0, results.getResults().getNumFound());
+    
+    params.set("q", t1 + ":updatedcontent");
+    
+    results = clients.get(0).query(params);
+    assertEquals(1, results.getResults().getNumFound());
+    
+    UpdateRequest uReq = new UpdateRequest();
+    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    uReq.deleteById(Long.toString(docId)).process(clients.get(0));
+    
+    commit();
+    
+    results = clients.get(0).query(params);
+    assertEquals(0, results.getResults().getNumFound());
+    return docId;
+  }
+
+  private void addNewReplica() throws Exception, InterruptedException,
+      TimeoutException, IOException, KeeperException, URISyntaxException,
+      SolrServerException {
+    JettySolrRunner newReplica = createJettys(1).get(0);
+    
+    waitForRecovery(newReplica);
+    
+    // new server should be part of first shard
+    // how many docs are on the new shard?
+    for (SolrServer client : shardToClient.get("shard1")) {
+      if (VERBOSE) System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+
+    checkShardConsistency(SHARD2);
+
+    assertDocCounts();
+  }
+
+  private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
+      SolrServerException, IOException, InterruptedException {
+    // kill a shard
+    JettySolrRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
+    
+    // ensure shard is dead
+    try {
+      // TODO: ignore fail
+      index_specific(shardToClient.get(SHARD2).get(0), id, 999, i1, 107, t1,
+        "specific doc!");
+      fail("This server should be down and this update should have failed");
+    } catch (SolrServerException e) {
+      // expected..
+    }
+    
+    // try to index to a living shard at shard2
+    // TODO: this can fail with connection refused !????
+    index_specific(shardToClient.get(SHARD2).get(1), id, 1000, i1, 108, t1,
+        "specific doc!");
+
+    commit();
+    
+    query("q", "*:*", "sort", "n_tl1 desc");
+    
+    // try adding a doc with CloudSolrServer
+    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
+    SolrQuery query = new SolrQuery("*:*");
+    query.add("distrib", "true");
+    long numFound1 = cloudClient.query(query).getResults().getNumFound();
+    
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", 1001);
+    
+    controlClient.add(doc);
+
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.add(doc);
+    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    ureq.process(cloudClient);
+    
+    commit();
+    
+    query("q", "*:*", "sort", "n_tl1 desc");
+    
+    long numFound2 = cloudClient.query(query).getResults().getNumFound();
+    
+    // lets just check that the one doc since last commit made it in...
+    assertEquals(numFound1 + 1, numFound2);
+    
+    // test debugging
+    testDebugQueries();
+
+    
+    if (VERBOSE) {
+      System.out.println(controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    
+    for (SolrServer client : clients) {
+      try {
+        System.out.println(client.query(new SolrQuery("*:*")).getResults().getNumFound());
+      } catch(Exception e) {
+        
+      }
+    }
+    }
+    // TODO: This test currently fails because debug info is obtained only
+    // on shards with matches.
+    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
+
+    // this should trigger a recovery phase on deadShard
+
+    deadShard.start(true);
+    
+    waitForRecovery(deadShard);
+    
+    List<SolrServer> s2c = shardToClient.get(SHARD2);
+
+    // if we properly recovered, we should now have the couple missing docs that
+    // came in while shard was down
+    assertEquals(s2c.get(0).query(new SolrQuery("*:*")).getResults()
+        .getNumFound(), s2c.get(1).query(new SolrQuery("*:*"))
+        .getResults().getNumFound());
+  }
+
+  private void testDebugQueries() throws Exception {
+    handle.put("explain", UNORDERED);
+    handle.put("debug", UNORDERED);
+    handle.put("time", SKIPVAL);
+    query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+  }
+
+  private void checkQueries() throws Exception {
     query("q", "*:*", "sort", "n_tl1 desc");
 
     // random value sort
@@ -552,185 +728,38 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       query("q","fox duplicate horses", "hl","true", "hl.fl", t1);
       query("q","*:*", "rows",100);
     }
-    
-    // TODO: this is failing because the counts per shard don't add up to the control - distrib total
-    // counts do match, so the same doc (same id) must be on different shards.
-    // our hash is not stable yet in distrib update proc
-    assertDocCounts();
+  }
 
-    query("q", "*:*", "sort", "n_tl1 desc");
-    
-    // kill a shard
-    JettySolrRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
-    
-    // ensure shard is dead
-    try {
-      // TODO: ignore fail
-      index_specific(shardToClient.get(SHARD2).get(0), id, 999, i1, 107, t1,
-        "specific doc!");
-      fail("This server should be down and this update should have failed");
-    } catch (SolrServerException e) {
-      // expected..
+  private void indexAbunchOfDocs() throws Exception {
+    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
+    );
+    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow"
+    );
+    indexr(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog"
+    );
+    indexr(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog"
+    );
+    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
+    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
+    indexr(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
+    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
+    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
+    indexr(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
+    indexr(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
+    indexr(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
+
+    indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
+    indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
+    indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
+    String[] vals = new String[100];
+    for (int i=0; i<100; i++) {
+      vals[i] = "test " + i;
     }
-    
-    // try to index to a living shard at shard2
-    // TODO: this can fail with connection refused !????
-    index_specific(shardToClient.get(SHARD2).get(1), id, 1000, i1, 108, t1,
-        "specific doc!");
+    indexr(id, 17, "SubjectTerms_mfacet", vals);
 
-    commit();
-    
-    query("q", "*:*", "sort", "n_tl1 desc");
-    
-    // try adding a doc with CloudSolrServer
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
-    SolrQuery query = new SolrQuery("*:*");
-    query.add("distrib", "true");
-    long numFound1 = cloudClient.query(query).getResults().getNumFound();
-    
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", 1001);
-    
-    controlClient.add(doc);
-
-    UpdateRequest ureq = new UpdateRequest();
-    ureq.add(doc);
-    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
-    ureq.process(cloudClient);
-    
-    commit();
-    
-    query("q", "*:*", "sort", "n_tl1 desc");
-    
-    long numFound2 = cloudClient.query(query).getResults().getNumFound();
-    
-    // lets just check that the one doc since last commit made it in...
-    assertEquals(numFound1 + 1, numFound2);
-    
-    // test debugging
-    handle.put("explain", UNORDERED);
-    handle.put("debug", UNORDERED);
-    handle.put("time", SKIPVAL);
-    query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
-
-    
-    if (VERBOSE) {
-      System.out.println(controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    
-    for (SolrServer client : clients) {
-      try {
-        System.out.println(client.query(new SolrQuery("*:*")).getResults().getNumFound());
-      } catch(Exception e) {
-        
-      }
+    for (int i=100; i<150; i++) {
+      indexr(id, i);      
     }
-    }
-    // TODO: This test currently fails because debug info is obtained only
-    // on shards with matches.
-    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
-
-    // this should trigger a recovery phase on deadShard
-
-    deadShard.start(true);
-    
-    waitForRecovery(deadShard);
-    
-    List<SolrServer> s2c = shardToClient.get(SHARD2);
-
-    // if we properly recovered, we should now have the couple missing docs that
-    // came in while shard was down
-    assertEquals(s2c.get(0).query(new SolrQuery("*:*")).getResults()
-        .getNumFound(), s2c.get(1).query(new SolrQuery("*:*"))
-        .getResults().getNumFound());
-    
-    query("q", "*:*", "sort", "n_tl1 desc");
-    
-    // test adding another replica to a shard - it should do a recovery/replication to pick up the index from the leader
-    JettySolrRunner newReplica = createJettys(1).get(0);
-    
-    waitForRecovery(newReplica);
-    
-    // new server should be part of first shard
-    // how many docs are on the new shard?
-    for (SolrServer client : shardToClient.get("shard1")) {
-      if (VERBOSE) System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
-
-    checkShardConsistency(SHARD2);
-
-    assertDocCounts();
-    
-    long docId = 99999999L;
-    indexr("id", docId, t1, "originalcontent");
-    
-    commit();
-    
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("distrib", "true");
-    params.add("q", t1 + ":originalcontent");
-    QueryResponse results = clients.get(0).query(params);
-    assertEquals(1, results.getResults().getNumFound());
-    System.out.println("results:" + results);
-    
-    // update doc
-    indexr("id", docId, t1, "updatedcontent");
-    
-    commit();
-    
-    results = clients.get(0).query(params);
-    assertEquals(0, results.getResults().getNumFound());
-    
-    params.set("q", t1 + ":updatedcontent");
-    
-    results = clients.get(0).query(params);
-    assertEquals(1, results.getResults().getNumFound());
-    
-    UpdateRequest uReq = new UpdateRequest();
-    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
-    uReq.deleteById(Long.toString(docId)).process(clients.get(0));
-    
-    commit();
-    
-    results = clients.get(0).query(params);
-    assertEquals(0, results.getResults().getNumFound());
-    
-    // index a bad doc...
-    try {
-      ignoreException("Document is missing mandatory uniqueKey field: id");
-      indexr(t1,"a doc with no id");
-      fail("this should fail");
-    } catch (SolrException e) {
-      // expected
-    } finally {
-      resetExceptionIgnores();
-    }
-    
-    // TODO: bring this to it's own method?
-    // try indexing to a leader that has no replicas up
-    ZkNodeProps leaderProps = zkStateReader.getLeaderProps(DEFAULT_COLLECTION, SHARD2);
-    
-    String nodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
-    chaosMonkey.stopShardExcept(SHARD2, nodeName);
-    
-    SolrServer client = getClient(nodeName);
-    
-    System.out.println("what happens here?");
-    index_specific(client, "id", docId + 1, t1, "what happens here?");
-    
-    // expire a session...
-    CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
-    chaosMonkey.expireSession(cloudJetty);
-    
-    indexr("id", docId + 1, t1, "slip this doc in");
-    
-    waitForRecovery(cloudJetty.jetty);
-    
-    checkShardConsistency("shard1");
-    
   }
 
   private void checkShardConsistency(String shard) throws SolrServerException {
