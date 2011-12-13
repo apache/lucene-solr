@@ -84,6 +84,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private SolrParams initArgs = null;
   private Analyzer analyzer = null;
   private String idField = null;
+  private FieldType idSchemaFT;
 
   boolean forceElevation = false;
   // For each IndexReader, keep a query->elevation map
@@ -115,6 +116,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       this.priority = new HashMap<BytesRef, Integer>();
       int max = elevate.size()+5;
       for( String id : elevate ) {
+        id = idSchemaFT.readableToIndexed(id);
         ids.add(id);
         TermQuery tq = new TermQuery( new Term( idField, id ) );
         include.add( tq, BooleanClause.Occur.SHOULD );
@@ -127,7 +129,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       else {
         this.exclude = new BooleanClause[exclude.size()];
         for( int i=0; i<exclude.size(); i++ ) {
-          TermQuery tq = new TermQuery( new Term( idField, exclude.get(i) ) );
+          TermQuery tq = new TermQuery( new Term( idField, idSchemaFT.readableToIndexed(exclude.get(i)) ) );
           this.exclude[i] = new BooleanClause( tq, BooleanClause.Occur.MUST_NOT );
         }
       }
@@ -155,10 +157,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     SchemaField sf = core.getSchema().getUniqueKeyField();
-    if( sf == null || !(sf.getType() instanceof StrField)) {
+    if( sf == null || sf.getType().isTokenized() == true) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using StrField" );
+          "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using a non-tokenized field" );
     }
+    idSchemaFT = sf.getType();
     idField = sf.getName();
     //register the EditorialMarkerFactory
     EditorialMarkerFactory factory = new EditorialMarkerFactory();
