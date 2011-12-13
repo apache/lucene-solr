@@ -36,7 +36,7 @@ public final class CommandLineUtil {
   
   /**
    * Creates a specific FSDirectory instance starting from its class name
-   * @param className The name of the FSDirectory class to load
+   * @param clazzName The name of the FSDirectory class to load
    * @param file The file to be used as parameter constructor
    * @return the new FSDirectory instance
    */
@@ -60,7 +60,7 @@ public final class CommandLineUtil {
   
   /**
    * Loads a specific Directory implementation 
-   * @param className The name of the Directory class to load
+   * @param clazzName The name of the Directory class to load
    * @return The Directory class loaded
    * @throws ClassNotFoundException
    */
@@ -71,7 +71,7 @@ public final class CommandLineUtil {
   
   /**
    * Loads a specific FSDirectory implementation
-   * @param className The name of the FSDirectory class to load
+   * @param clazzName The name of the FSDirectory class to load
    * @return The FSDirectory class loaded
    * @throws ClassNotFoundException
    */
