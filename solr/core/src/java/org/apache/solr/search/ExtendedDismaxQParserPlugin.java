@@ -31,8 +31,6 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -42,8 +40,6 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.analysis.*;
 
 import java.util.*;
-import java.io.Reader;
-import java.io.IOException;
 
 /**
  * An advanced multi-field query parser.
@@ -102,7 +98,7 @@ class ExtendedDismaxQParser extends QParser {
     SolrParams localParams = getLocalParams();
     SolrParams params = getParams();
     
-    SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
+    SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
     final String minShouldMatch = 
       DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams);

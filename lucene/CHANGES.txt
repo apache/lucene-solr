@@ -638,6 +638,10 @@ Optimizations
   boolean clauses are required and instances of TermQuery. 
   (Simon Willnauer, Robert Muir)
   
+* LUCENE-3643: FilteredQuery and IndexSearcher.search(Query, Filter,...)
+  now optimize the special case query instanceof MatchAllDocsQuery to
+  execute as ConstantScoreQuery.  (Uwe Schindler)
+  
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
@@ -712,6 +716,10 @@ New Features
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either
   have at least one or no value at all in a specific field. (Simon Willnauer,
   Uwe Schindler, Robert Muir)
+
+* LUCENE-3586: CheckIndex and IndexUpgrader allow you to specify the
+  specific FSDirectory implementation to use (with the new -dir-impl
+  command-line option).  (Luca Cavanna via Mike McCandless)
   
 Bug fixes
 
@@ -730,6 +738,10 @@ Bug fixes
 
 * LUCENE-3641: Fixed MultiReader to correctly propagate readerFinishedListeners
   to clones/reopened readers.  (Uwe Schindler)
+
+* LUCENE-3642: Fixed bugs in CharTokenizer, n-gram filters, and smart chinese 
+  where they would create invalid offsets in some situations, leading to problems
+  in highlighting. (Max Beutel via Robert Muir)
 
 Documentation
 

@@ -17,11 +17,16 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 
+import java.io.Reader;
 import java.io.StringReader;
 
 /**
@@ -92,5 +97,25 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
       assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
       tokenizer.reset(new StringReader("abcde"));
       assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
+    }
+    
+    // LUCENE-3642
+    // EdgeNgram blindly adds term length to offset, but this can take things out of bounds
+    // wrt original text if a previous filter increases the length of the word (in this case æ -> ae)
+    // so in this case we behave like WDF, and preserve any modified offsets
+    public void testInvalidOffsets() throws Exception {
+      Analyzer analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
+          filters = new NGramTokenFilter(filters, 2, 2);
+          return new TokenStreamComponents(tokenizer, filters);
+        }
+      };
+      assertAnalyzesTo(analyzer, "mosfellsbær",
+          new String[] { "mo", "os", "sf", "fe", "el", "ll", "ls", "sb", "ba", "ae", "er" },
+          new int[]    {    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0 },
+          new int[]    {   11,   11,   11,   11,   11,   11,   11,   11,   11,   11,   11 });
     }
 }

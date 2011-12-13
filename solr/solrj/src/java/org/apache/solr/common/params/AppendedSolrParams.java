@@ -23,6 +23,11 @@ package org.apache.solr.common.params;
  * that all of the values are returned. 
  */
 public class AppendedSolrParams extends DefaultSolrParams {
+
+  /**
+   * @deprecated (3.6) Use {@link SolrParams#wrapAppended(SolrParams, SolrParams)} instead.
+   */
+  @Deprecated
   public AppendedSolrParams(SolrParams main, SolrParams extra) {
     super(main, extra);
   }

@@ -25,10 +25,8 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.AppendedSolrParams;
-import org.apache.solr.common.params.DefaultSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -81,15 +79,10 @@ public class SolrPluginUtils {
                                  SolrParams appends, SolrParams invariants) {
 
       SolrParams p = req.getParams();
-      if (defaults != null) {
-        p = new DefaultSolrParams(p,defaults);
-      }
-      if (appends != null) {
-        p = new AppendedSolrParams(p,appends);
-      }
-      if (invariants != null) {
-        p = new DefaultSolrParams(invariants,p);
-      }
+      p = SolrParams.wrapDefaults(p, defaults);
+      p = SolrParams.wrapAppended(p, appends);
+      p = SolrParams.wrapDefaults(invariants, p);
+
       req.setParams(p);
   }
 

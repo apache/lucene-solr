@@ -43,6 +43,10 @@ public final class WordTokenFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  
+  private int tokStart; // only used if the length changed before this filter
+  private int tokEnd; // only used if the length changed before this filter
+  private boolean hasIllegalOffsets; // only if the length changed before this filter
 
   /**
    * Construct a new WordTokenizer.
@@ -59,6 +63,11 @@ public final class WordTokenFilter extends TokenFilter {
     if (tokenIter == null || !tokenIter.hasNext()) {
       // there are no remaining tokens from the current sentence... are there more sentences?
       if (input.incrementToken()) {
+        tokStart = offsetAtt.startOffset();
+        tokEnd = offsetAtt.endOffset();
+        // if length by start + end offsets doesn't match the term text then assume
+        // this is a synonym and don't adjust the offsets.
+        hasIllegalOffsets = (tokStart + termAtt.length()) != tokEnd;
         // a new sentence is available: process it.
         tokenBuffer = wordSegmenter.segmentSentence(termAtt.toString(), offsetAtt.startOffset());
         tokenIter = tokenBuffer.iterator();
@@ -77,7 +86,11 @@ public final class WordTokenFilter extends TokenFilter {
     // There are remaining tokens from the current sentence, return the next one. 
     SegToken nextWord = tokenIter.next();
     termAtt.copyBuffer(nextWord.charArray, 0, nextWord.charArray.length);
-    offsetAtt.setOffset(nextWord.startOffset, nextWord.endOffset);
+    if (hasIllegalOffsets) {
+      offsetAtt.setOffset(tokStart, tokEnd);
+    } else {
+      offsetAtt.setOffset(nextWord.startOffset, nextWord.endOffset);
+    }
     typeAtt.setType("word");
     return true;
   }

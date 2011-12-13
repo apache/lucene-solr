@@ -79,8 +79,8 @@ public class QueryUtils {
   }
 
   public static void checkUnequal(Query q1, Query q2) {
-    Assert.assertTrue(!q1.equals(q2));
-    Assert.assertTrue(!q2.equals(q1));
+    Assert.assertFalse(q1 + " equal to " + q2, q1.equals(q2));
+    Assert.assertFalse(q2 + " equal to " + q1, q2.equals(q1));
 
     // possible this test can fail on a hash collision... if that
     // happens, please change test to use a different example.

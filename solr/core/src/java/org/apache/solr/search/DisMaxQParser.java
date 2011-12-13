@@ -23,7 +23,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -81,7 +80,8 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public Query parse() throws ParseException {
-    SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
+    SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
+
     queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
     if (0 == queryFields.size()) {
       queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);

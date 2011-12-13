@@ -429,6 +429,10 @@ Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
 
+* SOLR-2920: Refactor frequent conditional use of DefaultSolrParams and 
+  AppendedSolrParams into factory methods.
+  (David Smiley via hossman)
+
 ==================  3.5.0  ==================
 
 New Features

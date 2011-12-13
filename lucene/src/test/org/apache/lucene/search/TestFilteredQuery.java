@@ -132,6 +132,11 @@ public class TestFilteredQuery extends LuceneTestCase {
     assertEquals (2, hits.length);
     QueryUtils.check(random, filteredquery,searcher);
 
+    filteredquery = new FilteredQueryRA(new MatchAllDocsQuery(), filter, useRandomAccess);
+    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    assertEquals (2, hits.length);
+    QueryUtils.check(random, filteredquery,searcher);
+
     filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "x")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
@@ -220,9 +225,9 @@ public class TestFilteredQuery extends LuceneTestCase {
 
   private void tBooleanMUST(final boolean useRandomAccess) throws Exception {
     BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(0), useRandomAccess);
+    Query query = new FilteredQueryRA(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(0), useRandomAccess);
     bq.add(query, BooleanClause.Occur.MUST);
-    query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(1), useRandomAccess);
+    query = new FilteredQueryRA(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(1), useRandomAccess);
     bq.add(query, BooleanClause.Occur.MUST);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -238,9 +243,9 @@ public class TestFilteredQuery extends LuceneTestCase {
 
   private void tBooleanSHOULD(final boolean useRandomAccess) throws Exception {
     BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(0), useRandomAccess);
+    Query query = new FilteredQueryRA(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(0), useRandomAccess);
     bq.add(query, BooleanClause.Occur.SHOULD);
-    query = new FilteredQueryRA(new MatchAllDocsQuery(), new SingleDocTestFilter(1), useRandomAccess);
+    query = new FilteredQueryRA(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(1), useRandomAccess);
     bq.add(query, BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
@@ -287,6 +292,76 @@ public class TestFilteredQuery extends LuceneTestCase {
     hits = searcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random, query, searcher);    
+  }
+  
+  public void testEqualsHashcode() throws Exception {
+    // some tests before, if the used queries and filters work:
+    assertEquals(new PrefixFilter(new Term("field", "o")), new PrefixFilter(new Term("field", "o")));
+    assertFalse(new PrefixFilter(new Term("field", "a")).equals(new PrefixFilter(new Term("field", "o"))));
+    QueryUtils.checkHashEquals(new TermQuery(new Term("field", "one")));
+    QueryUtils.checkUnequal(
+      new TermQuery(new Term("field", "one")), new TermQuery(new Term("field", "two"))
+    );
+    // now test FilteredQuery equals/hashcode:
+    QueryUtils.checkHashEquals(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o"))));
+    QueryUtils.checkUnequal(
+      new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o"))), 
+      new FilteredQuery(new TermQuery(new Term("field", "two")), new PrefixFilter(new Term("field", "o")))
+    );
+    QueryUtils.checkUnequal(
+      new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "a"))), 
+      new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")))
+    );
+  }
+  
+  public void testInvalidArguments() throws Exception {
+    try {
+      new FilteredQuery(null, null);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    try {
+      new FilteredQuery(new TermQuery(new Term("field", "one")), null);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    try {
+      new FilteredQuery(null, new PrefixFilter(new Term("field", "o")));
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+  }
+  
+  private void assertRewrite(FilteredQuery fq, Class<? extends Query> clazz) throws Exception {
+    // assign crazy boost to FQ
+    final float boost = random.nextFloat() * 100.f;
+    fq.setBoost(boost);
+    
+    // assign crazy boost to inner
+    final float innerBoost = random.nextFloat() * 100.f;
+    fq.getQuery().setBoost(innerBoost);
+    
+    // check the class and boosts of rewritten query
+    final Query rewritten = searcher.rewrite(fq);
+    assertTrue("is not instance of " + clazz.getName(), clazz.isInstance(rewritten));
+    if (rewritten instanceof FilteredQuery) {
+      assertEquals(boost, rewritten.getBoost(), 1.E-5f);
+      assertEquals(innerBoost, ((FilteredQuery) rewritten).getQuery().getBoost(), 1.E-5f);
+    } else {
+      assertEquals(boost * innerBoost, rewritten.getBoost(), 1.E-5f);
+    }
+    
+    // check that the original query was not modified
+    assertEquals(boost, fq.getBoost(), 1.E-5f);
+    assertEquals(innerBoost, fq.getQuery().getBoost(), 1.E-5f);
+  }
+
+  public void testRewrite() throws Exception {
+    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o"))), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new MatchAllDocsQuery(), new PrefixFilter(new Term("field", "o"))), ConstantScoreQuery.class);
   }
 
   public static final class FilteredQueryRA extends FilteredQuery {

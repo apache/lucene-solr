@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.NullFragmenter;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -31,9 +30,7 @@ public class GapFragmenter extends HighlightingPluginBase implements SolrFragmen
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   {
     numRequests++;
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
+    params = SolrParams.wrapDefaults(params, defaults);
     
     int fragsize = params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 );
     return (fragsize <= 0) ? new NullFragmenter() : new LuceneGapFragmenter(fragsize);
