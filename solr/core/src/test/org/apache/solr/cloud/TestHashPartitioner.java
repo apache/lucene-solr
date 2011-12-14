@@ -20,7 +20,8 @@ package org.apache.solr.cloud;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.HashPartitioner.Range;
+import org.apache.solr.common.cloud.HashPartitioner;
+import org.apache.solr.common.cloud.HashPartitioner.Range;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
   

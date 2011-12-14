@@ -19,22 +19,19 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.HashPartitioner;
-import org.apache.solr.cloud.HashPartitioner.Range;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.HashPartitioner;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -183,30 +180,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
   
   private String getShard(int hash, String collection, CloudState cloudState) {
-    // nocommit: we certainly don't want to do this every update request...
+    // ranges should be part of the cloud state and eventually gotten from zk
+
     // get the shard names
-    Map<String,Slice> slices = cloudState.getSlices(collection);
-    
-    if (slices == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
-          + collection + " in " + cloudState);
-    }
-    
-    Set<String> shards = slices.keySet();
-    List<String> shardList = new ArrayList<String>(shards.size());
-    shardList.addAll(shards);
-    Collections.sort(shardList);
-    hp = new HashPartitioner();
-    List<Range> ranges = hp.partitionRange(shards.size());
-    int cnt = 0;
-    for (Range range : ranges) {
-      if (hash < range.max) {
-        return shardList.get(cnt);
-      }
-      cnt++;
-    }
-    
-    throw new IllegalStateException("The HashPartitioner failed");
+    return cloudState.getShard(hash, collection);
   }
 
   @Override

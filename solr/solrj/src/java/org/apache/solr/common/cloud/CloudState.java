@@ -17,9 +17,19 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import org.apache.noggit.*;
+import org.apache.noggit.JSONWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.HashPartitioner.Range;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +39,11 @@ public class CloudState implements JSONWriter.Writable {
 	protected static Logger log = LoggerFactory.getLogger(CloudState.class);
 	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
+  
+  private HashPartitioner hp = new HashPartitioner();
+  
+  private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
+
 
 	public CloudState() {
 		this.liveNodes = new HashSet<String>();
@@ -87,13 +102,56 @@ public class CloudState implements JSONWriter.Writable {
 		return Collections.unmodifiableSet(liveNodes);
 	}
 
-//	public void setLiveNodes(Set<String> liveNodes) {
-//		this.liveNodes = liveNodes;
-//	}
-
 	public boolean liveNodesContain(String name) {
 		return liveNodes.contains(name);
 	}
+	
+	public RangeInfo getRanges(String collection) {
+	  List<Range> ranges;
+    RangeInfo rangeInfo;
+    // TODO: store this in zk
+    // we could double check lock?
+	  synchronized (rangeInfos) {
+      rangeInfo = rangeInfos.get(collection);
+      if (rangeInfo == null) {
+        rangeInfo = new RangeInfo();
+
+        Map<String,Slice> slices = getSlices(collection);
+        
+        if (slices == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
+              + collection + " in " + this);
+        }
+        
+        Set<String> shards = slices.keySet();
+        ArrayList<String> shardList = new ArrayList<String>(shards.size());
+        shardList.addAll(shards);
+        Collections.sort(shardList);
+        
+        ranges = hp.partitionRange(shards.size());
+        
+        rangeInfo.ranges = ranges;
+        rangeInfo.shardList = shardList;
+        rangeInfos.put(collection, rangeInfo);
+      }
+    }
+
+	  return rangeInfo;
+	}
+	
+  public String getShard(int hash, String collection) {
+    RangeInfo rangInfo = getRanges(collection);
+    
+    int cnt = 0;
+    for (Range range : rangInfo.ranges) {
+      if (hash < range.max) {
+        return rangInfo.shardList.get(cnt);
+      }
+      cnt++;
+    }
+    
+    throw new IllegalStateException("The HashPartitioner failed");
+  }
 
 	@Override
 	public String toString() {
@@ -137,6 +195,11 @@ public class CloudState implements JSONWriter.Writable {
   @Override
   public void write(JSONWriter jsonWriter) {
     jsonWriter.write(collectionStates);
+  }
+  
+  class RangeInfo {
+    private List<Range> ranges;
+    private ArrayList<String> shardList;
   }
 
 
