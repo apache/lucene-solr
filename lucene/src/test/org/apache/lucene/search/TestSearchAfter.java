@@ -60,15 +60,21 @@ public class TestSearchAfter extends LuceneTestCase {
   }
   
   public void testQueries() throws Exception {
-    Filter odd = new QueryWrapperFilter(new TermQuery(new Term("oddeven", "odd")));
-    assertQuery(new MatchAllDocsQuery(), null);
-    assertQuery(new TermQuery(new Term("english", "one")), null);
-    assertQuery(new MatchAllDocsQuery(), odd);
-    assertQuery(new TermQuery(new Term("english", "four")), odd);
-    BooleanQuery bq = new BooleanQuery();
-    bq.add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.SHOULD);
-    bq.add(new TermQuery(new Term("oddeven", "even")), BooleanClause.Occur.SHOULD);
-    assertQuery(bq, null);
+    // because the first page has a null 'after', we get a normal collector.
+    // so we need to run the test a few times to ensure we will collect multiple
+    // pages.
+    int n = atLeast(10);
+    for (int i = 0; i < n; i++) {
+      Filter odd = new QueryWrapperFilter(new TermQuery(new Term("oddeven", "odd")));
+      assertQuery(new MatchAllDocsQuery(), null);
+      assertQuery(new TermQuery(new Term("english", "one")), null);
+      assertQuery(new MatchAllDocsQuery(), odd);
+      assertQuery(new TermQuery(new Term("english", "four")), odd);
+      BooleanQuery bq = new BooleanQuery();
+      bq.add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.SHOULD);
+      bq.add(new TermQuery(new Term("oddeven", "even")), BooleanClause.Occur.SHOULD);
+      assertQuery(bq, null);
+    }
   }
   
   void assertQuery(Query query, Filter filter) throws Exception {
