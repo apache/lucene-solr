@@ -139,7 +139,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     while (0 < maxIterations--) {
       CloudState state = stateReader.getCloudState();
       Map<String,Slice> sliceMap = state.getSlices(collection);
-      if (sliceMap.keySet().size() == i) {
+      if (sliceMap != null && sliceMap.keySet().size() == i) {
         return;
       }
       Thread.sleep(50);
@@ -335,6 +335,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient2
           .setData(nodePath, ZkStateReader.toJSON(new CoreState[] {state}));
       
+      // nocommit - we should do short waits and poll
       Thread.sleep(1000); // wait for data to update
       
       // zkClient2.printLayoutToStdOut();
