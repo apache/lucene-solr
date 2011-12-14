@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.cloud.HashPartitioner;
 import org.apache.solr.cloud.HashPartitioner.Range;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
@@ -89,7 +90,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<String> shards;
 
   private boolean zkEnabled = false;
-  private boolean alreadySetup = false;
+
+  private String collection;
+  private ZkController zkController;
+  
+  
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -110,40 +115,37 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     this.req = req;
     
-    this.zkEnabled  = req.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware();
-    //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
+    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
-    cmdDistrib = new SolrCmdDistributor(req, rsp);
+    this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
+    //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
+
+    
+    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    
+    collection = coreDesc.getCloudDescriptor().getCollectionName();
+    
+    cmdDistrib = new SolrCmdDistributor(rsp);
   }
 
   private List<String> setupRequest(int hash) {
-    if (alreadySetup) {
-      return shards;
-    }
-    alreadySetup = true;
     
     List<String> shards = null;
-    
-    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-    
-    CloudState cloudState = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getCloudState();
-    
-    String collection = coreDesc.getCloudDescriptor().getCollectionName();
-    String shardId = getShard(hash, collection, cloudState); // get the right shard based on the hash...
 
     // if we are in zk mode...
-    if (coreDesc.getCoreContainer().getZkController() != null) {
+    if (zkEnabled) {
       // the leader is...
       // TODO: if there is no leader, wait and look again
       // TODO: we are reading the leader from zk every time - we should cache
       // this and watch for changes?? Just pull it from ZkController cluster state probably?
 
+      String shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
+      
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       
       String leaderNode = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
           + ZkStateReader.LEADER_ELECT_ZKNODE + "/" + shardId + "/leader";
-      SolrZkClient zkClient = coreDesc.getCoreContainer().getZkController()
-          .getZkClient();
+      SolrZkClient zkClient = zkController.getZkClient();
 
       try {
         List<String> leaderChildren = zkClient.getChildren(leaderNode, null);
@@ -173,9 +175,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // so get the replicas...
             shards = getReplicaUrls(req, collection, shardId,
                 shardZkNodeName);
-            
-            // mark that this req has been to the leader
-            params.set(SEEN_LEADER, true);
           } else {
             // I need to forward onto the leader...
             shards = new ArrayList<String>(1);
@@ -183,7 +182,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             forwardToLeader = true;
             isLeader = false;
           }
-          req.setParams(params);
         }
       } catch (KeeperException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
@@ -194,7 +192,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             e);
       } 
     }
-    
+
     return shards;
   }
   
@@ -227,6 +225,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    // TODO: check for id field?
+    
     int hash = 0;
     if (zkEnabled) {
       hash = hash(cmd);
@@ -246,8 +246,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
     
+    ModifiableSolrParams params = null;
     if (shards != null) {
-      cmdDistrib.distribAdd(cmd, shards);
+      params = new ModifiableSolrParams(req.getParams());
+      if (isLeader) {
+        params.set(SEEN_LEADER, true);
+      }
+      cmdDistrib.distribAdd(cmd, shards, params);
     } else {
       // nocommit: At a minimum, local updates must be protected by synchronization
       // right now we count on versionAdd to do the local add
@@ -265,6 +270,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       addsResponse.add(scratch.toString(), cmd.getVersion());
     }
 
+    if (shards != null) {
+      cmdDistrib.finish(shards, params);
+    }
+    
     // TODO: keep track of errors?  needs to be done at a higher level though since
     // an id may fail before it gets to this processor.
     // Given that, it may also make sense to move the version reporting out of this
@@ -385,7 +394,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: handle versioned and distributed deleteByQuery
 
       // even in non zk mode, tests simulate updates from a leader
-      isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      if(!zkEnabled) {
+        isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      }
+      
       processDeleteByQuery(cmd);
       return;
     }
@@ -409,8 +421,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
+    ModifiableSolrParams params = null;
     if (shards != null) {
-      cmdDistrib.distribDelete(cmd, shards);
+      params = new ModifiableSolrParams(req.getParams());
+      if (isLeader) {
+        params.set(SEEN_LEADER, true);
+      }
+      cmdDistrib.distribDelete(cmd, shards, params);
     } else {
       // super.processDelete(cmd);
     }
@@ -424,6 +441,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (scratch == null) scratch = new CharsRef();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
+    }
+    
+    if (shards != null) {
+      cmdDistrib.finish(shards, params);
     }
   }
 
@@ -560,7 +581,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-
     if (vinfo != null) {
       vinfo.lockForUpdate();
     }
@@ -578,18 +598,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
     // nocommit: we should consider this? commit everyone in the current collection
+
     if (zkEnabled) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       if (!params.getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);
-        req.setParams(params);
+
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
             .getZkController().getNodeName();
         String shardZkNodeName = nodeName + "_" + req.getCore().getName();
         shards = getReplicaUrls(req, req.getCore().getCoreDescriptor()
             .getCloudDescriptor().getCollectionName(), shardZkNodeName);
+
         if (shards != null) {
-          cmdDistrib.distribCommit(cmd, shards);
+          cmdDistrib.distribCommit(cmd, shards, params);
+          cmdDistrib.finish(shards, params);
         }
       }
     }
@@ -597,7 +620,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void finish() throws IOException {
-    if (shards != null) cmdDistrib.finish(shards);
     if (next != null && shards == null) next.finish();
   }
   

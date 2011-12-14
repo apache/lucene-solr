@@ -18,7 +18,6 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,17 +39,13 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 
+// TODO: we are not really using the buffering anymore due to DistribUpdateProc...
+// we might want to bring back a form of slots...
 public class SolrCmdDistributor {
   // TODO: shut this thing down
   static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0,
@@ -68,10 +63,10 @@ public class SolrCmdDistributor {
   CompletionService<Request> completionService;
   Set<Future<Request>> pending;
   
-  private final SolrQueryRequest req;
+  //private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
 
-  private final SchemaField idField;
+  //private final SchemaField idField;
   
   int maxBufferedAddsPerServer = 10;
   int maxBufferedDeletesPerServer = 100;
@@ -79,49 +74,41 @@ public class SolrCmdDistributor {
   private List<AddUpdateCommand> alist;
   private ArrayList<DeleteUpdateCommand> dlist;
   
-  public SolrCmdDistributor(SolrQueryRequest req,
-      SolrQueryResponse rsp) {
-    this.req = req;
+  public SolrCmdDistributor(SolrQueryResponse rsp) {
+    //this.req = req;
     this.rsp = rsp;
-    this.idField = req.getSchema().getUniqueKeyField();
   }
   
-  public void finish(List<String> shards) {
+  public void finish(List<String> shards, ModifiableSolrParams params) {
 
     // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, shards);
-    flushDeletes(1, null, shards);
+    flushAdds(1, null, shards, params);
+    flushDeletes(1, null, shards, params);
 
     checkResponses(true);
   }
   
-  public void distribDelete(DeleteUpdateCommand cmd, List<String> shards) throws IOException {
+  public void distribDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params) throws IOException {
     checkResponses(false);
     
     if (cmd.isDeleteById()) {
-      doDelete(cmd, shards);
+      doDelete(cmd, shards, params);
     } else {
       // TODO: query must be broadcast to all ??
-      doDelete(cmd, shards);
+      doDelete(cmd, shards, params);
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<String> shards) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<String> shards, ModifiableSolrParams params) throws IOException {
     
     checkResponses(false);
     
-    SolrInputDocument doc = cmd.getSolrInputDocument();
-    SolrInputField field = doc.getField(idField.getName());
-    if (field == null) {
-      throw new RuntimeException("no id field found");
-    }
-    
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, shards);
+    flushDeletes(1, null, shards, params);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
-    AddUpdateCommand clone = new AddUpdateCommand(req);
+    AddUpdateCommand clone = new AddUpdateCommand(null);
     
     clone.solrDoc = cmd.solrDoc;
     clone.commitWithin = cmd.commitWithin;
@@ -138,10 +125,10 @@ public class SolrCmdDistributor {
     }
     alist.add(clone);
     
-    flushAdds(maxBufferedAddsPerServer, null, shards);
+    flushAdds(maxBufferedAddsPerServer, null, shards, params);
   }
   
-  public void distribCommit(CommitUpdateCommand cmd, List<String> shards)
+  public void distribCommit(CommitUpdateCommand cmd, List<String> shards, ModifiableSolrParams params)
       throws IOException {
     
     // Wait for all outstanding repsonses to make sure that a commit
@@ -152,20 +139,15 @@ public class SolrCmdDistributor {
     
     // piggyback on any outstanding adds or deletes if possible.
     // TODO: review this
-    flushAdds(1, cmd, shards);
+    flushAdds(1, cmd, shards, params);
     
-    flushDeletes(1, cmd, shards);
+    flushDeletes(1, cmd, shards, params);
     
     UpdateRequestExt ureq = new UpdateRequestExt();
+    ureq.setParams(params);
 
-    if (ureq.getParams() == null) {
-      ureq.setParams(new ModifiableSolrParams());
-    }
-    passOnParams(ureq);
     addCommit(ureq, cmd);
     submit(ureq, shards);
-    
-    // if (next != null && shardStr == null) next.processCommit(cmd);
     
     // if the command wanted to block until everything was committed,
     // then do that here.
@@ -174,33 +156,17 @@ public class SolrCmdDistributor {
       checkResponses(true);
     }
   }
-
-  private void passOnParams(UpdateRequestExt ureq) {
-    String seenLeader = req.getParams().get(
-        DistributedUpdateProcessor.SEEN_LEADER);
-    if (seenLeader != null) {
-      ureq.getParams().add(DistributedUpdateProcessor.SEEN_LEADER, seenLeader);
-    }
-    String updateChain = req.getParams().get(UpdateParams.UPDATE_CHAIN);
-    if (updateChain != null) {
-      ureq.getParams().add(UpdateParams.UPDATE_CHAIN, updateChain);
-    }
-    String commitEndPoint = req.getParams().get(DistributedUpdateProcessor.COMMIT_END_POINT);
-    if (commitEndPoint != null) {
-      ureq.getParams().add(DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint);
-    }
-  }
   
-  private void doDelete(DeleteUpdateCommand cmd, List<String> shards) throws IOException {
+  private void doDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params) throws IOException {
     
-    flushAdds(1, null, shards);
+    flushAdds(1, null, shards, params);
     
     if (dlist == null) {
       dlist = new ArrayList<DeleteUpdateCommand>(2);
     }
     dlist.add(clone(cmd));
     
-    flushDeletes(maxBufferedDeletesPerServer, null, shards);
+    flushDeletes(maxBufferedDeletesPerServer, null, shards, params);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -210,17 +176,13 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls, ModifiableSolrParams params) {
     // check for pending deletes
     if (alist == null || alist.size() < limit) return false;
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    // pass on seen leader
-    if (ureq.getParams() == null) {
-      ureq.setParams(new ModifiableSolrParams());
-    }
+    ureq.setParams(params);
     
-    passOnParams(ureq);
     addCommit(ureq, ccmd);
     
     for (AddUpdateCommand cmd : alist) {
@@ -232,17 +194,13 @@ public class SolrCmdDistributor {
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> shards) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> shards, ModifiableSolrParams params) {
     // check for pending deletes
     if (dlist == null || dlist.size() < limit) return false;
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    // pass on version
-    if (ureq.getParams() == null) {
-      ureq.setParams(new ModifiableSolrParams());
-    }
-    
-    passOnParams(ureq);
+    ureq.setParams(params);
+
     addCommit(ureq, ccmd);
     
     for (DeleteUpdateCommand cmd : dlist) {
@@ -261,7 +219,6 @@ public class SolrCmdDistributor {
   private DeleteUpdateCommand clone(DeleteUpdateCommand cmd) {
     DeleteUpdateCommand c = (DeleteUpdateCommand)cmd.clone();
     // TODO: shouldnt the clone do this?
-    c.setReq(req);
     c.setFlags(cmd.getFlags());
     c.setVersion(cmd.getVersion());
     return c;

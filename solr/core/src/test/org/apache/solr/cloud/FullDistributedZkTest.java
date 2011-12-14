@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -419,19 +420,19 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     
     commit();
     
-    assertDocCounts();
+    assertDocCounts(VERBOSE);
     
     indexAbunchOfDocs();
 
     commit();
     
-    assertDocCounts();
+    assertDocCounts(VERBOSE);
     checkQueries();
     
     // TODO: this is failing because the counts per shard don't add up to the control - distrib total
     // counts do match, so the same doc (same id) must be on different shards.
     // our hash is not stable yet in distrib update proc
-    assertDocCounts();
+    assertDocCounts(VERBOSE);
 
     query("q", "*:*", "sort", "n_tl1 desc");
     
@@ -532,7 +533,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
 
     checkShardConsistency(SHARD2);
 
-    assertDocCounts();
+    assertDocCounts(VERBOSE);
   }
 
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
@@ -762,21 +763,46 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     }
   }
 
-  private void checkShardConsistency(String shard) throws SolrServerException {
+  protected void checkShardConsistency(String shard) throws SolrServerException {
     List<SolrServer> solrClients = shardToClient.get(shard);
     long num = -1;
     long lastNum = -1;
+    System.out.println("\n\ncheck const");
     for (SolrServer client : solrClients) {
       num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+      System.out.println("num:" + num + "\n\n");
       if (lastNum > -1 && lastNum != num) {
         fail("shard is not consistent, expected:" + lastNum + " and got:" + num);
       }
       lastNum = num;
     }
-    assertEquals(shardToClient.get("shard1").get(0).query(new SolrQuery("*:*"))
-        .getResults().getNumFound(),
-        shardToClient.get("shard1").get(shardToClient.get("shard1").size() - 1)
-            .query(new SolrQuery("*:*")).getResults().getNumFound());
+    
+    // now check that the right # are on each shard
+    long docs = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    Set<String> theShards = shardToClient.keySet();
+    int cnt = 0;
+    for (String s : theShards) {
+      int times = shardToClient.get(s).size();
+      for (int i = 0; i < times; i++) {
+        try {
+          cnt += shardToClient.get(s).get(i).query(new SolrQuery("*:*")).getResults().getNumFound();
+          break;
+        } catch(SolrServerException e) {
+          // if we have a problem, try the next one
+          if (i == times - 1) {
+            throw e;
+          }
+        }
+      }
+    }
+    assertEquals(docs, cnt);
+  }
+  
+  protected void checkShardConsistency() throws SolrServerException {
+    Set<String> theShards = shardToClient.keySet();
+    for (String shard : theShards) {
+      checkShardConsistency(shard);
+    }
   }
 
   private SolrServer getClient(String nodeName) {
@@ -788,10 +814,10 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     return null;
   }
 
-  protected void assertDocCounts() throws Exception {
+  protected void assertDocCounts(boolean verbose) throws Exception {
     // TODO: as we create the clients, we should build a map from shard to node/client
     // and node/client to shard?
-    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+    if (verbose) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     long controlCount = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
     // do some really inefficient mapping...
@@ -816,7 +842,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           String shardName = new URI(((CommonsHttpSolrServer)client).getBaseURL()).getPort() + "_solr_";
-          if (VERBOSE && shard.getKey().endsWith(shardName)) {
+          if (verbose && shard.getKey().endsWith(shardName)) {
             System.out.println("shard:" + slice.getKey());
             System.out.println(shard.getValue());
           }
@@ -829,9 +855,9 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         count = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       }
 
-      if (VERBOSE) System.out.println("client docs:" + count + "\n\n");
+      if (verbose) System.out.println("client docs:" + count + "\n\n");
     }
-    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+    if (verbose) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     SolrQuery query = new SolrQuery("*:*");
     query.add("distrib", "true");
     assertEquals("Doc Counts do not add up", controlCount, cloudClient.query(query).getResults().getNumFound());

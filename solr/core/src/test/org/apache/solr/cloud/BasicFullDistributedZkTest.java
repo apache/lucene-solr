@@ -17,8 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -69,7 +70,7 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     
     commit();
     
-    assertDocCounts();
+    assertDocCounts(VERBOSE);
     
     results = clients.get(0).query(params);
     System.out.println("results1:" + results.getResults());
@@ -96,9 +97,11 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
     SolrInputDocument doc1 = new SolrInputDocument();
 
+    System.out.println("add doc1:" + doc1);
     addFields(doc1, "id", docId++);
     uReq.add(doc1);
     SolrInputDocument doc2 = new SolrInputDocument();
+    System.out.println("add doc2:" + doc2);
     addFields(doc2, "id", docId++);
     uReq.add(doc2);
     
@@ -107,8 +110,71 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     
     commit();
     
-    results = cloudClient.query(new SolrQuery("*:*"));
+    checkShardConsistency();
+    
+    System.out.println("controldocs: " + query(controlClient).getResults().getNumFound());
+    System.out.println("clouddocs: " + query(cloudClient).getResults().getNumFound());
+    
+    assertDocCounts(VERBOSE);
+    
+    results = query(cloudClient);
     assertEquals(2, results.getResults().getNumFound());
+    
+    // two deletes
+    System.out.println("delete:" + Long.toString(docId-1));
+    uReq = new UpdateRequest();
+    uReq.deleteById(Long.toString(docId-1));
+    uReq.deleteById(Long.toString(docId-2)).process(cloudClient);
+    controlClient.deleteById(Long.toString(docId-1));
+    controlClient.deleteById(Long.toString(docId-2));
+    
+    commit();
+    
+    results = query(cloudClient);
+    assertEquals(0, results.getResults().getNumFound());
+    
+    results = query(controlClient);
+    assertEquals(0, results.getResults().getNumFound());
+    
+    // add two docs together, a 3rd doc and a delete
+    indexr("id", docId++, t1, "originalcontent");
+    
+    uReq = new UpdateRequest();
+    doc1 = new SolrInputDocument();
+
+    addFields(doc1, "id", docId++);
+    System.out.println("added doc:" + docId);
+    uReq.add(doc1);
+    doc2 = new SolrInputDocument();
+    addFields(doc2, "id", docId++);
+    System.out.println("added doc:" + docId);
+    uReq.add(doc2);
+ 
+    uReq.process(cloudClient);
+    uReq.process(controlClient);
+    
+    uReq = new UpdateRequest();
+    System.out.println("delete doc:" + (docId - 2));
+    uReq.deleteById(Long.toString(docId - 2)).process(cloudClient);
+    controlClient.deleteById(Long.toString(docId - 2));
+    
+    commit();
+    
+    assertDocCounts(VERBOSE);
+    
+    checkShardConsistency();
+    
+    results = query(controlClient);
+    assertEquals(2, results.getResults().getNumFound());
+    
+    results = query(cloudClient);
+    assertEquals(2, results.getResults().getNumFound());
+  }
+
+  private QueryResponse query(SolrServer server) throws SolrServerException {
+    SolrQuery query = new SolrQuery("*:*");
+    query.setParam("distrib", true);
+    return server.query(query);
   }
   
   @Override
