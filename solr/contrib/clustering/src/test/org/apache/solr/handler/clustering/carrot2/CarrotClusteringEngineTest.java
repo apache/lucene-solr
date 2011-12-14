@@ -39,6 +39,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
+import org.carrot2.core.LanguageCode;
 import org.carrot2.util.attribute.AttributeUtils;
 import org.junit.Test;
 
@@ -50,10 +51,10 @@ import com.google.common.collect.ImmutableList;
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {
-     // Note: the expected number of clusters may change after upgrading Carrot2
-     // due to e.g. internal improvements or tuning of Carrot2 clustering.
+    // Note: the expected number of clusters may change after upgrading Carrot2
+    // due to e.g. internal improvements or tuning of Carrot2 clustering.
     final int expectedNumClusters = 10;
-         checkEngine(getClusteringEngine("default"), expectedNumClusters);
+    checkEngine(getClusteringEngine("default"), expectedNumClusters);
   }
 
   @Test
@@ -88,10 +89,15 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   private List<NamedList<Object>> clusterWithHighlighting(
       boolean enableHighlighting, int fragSize) throws IOException {
+    // Some documents don't have mining in the snippet
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 7);
+  }
+
+  private List<NamedList<Object>> clusterWithHighlighting(
+      boolean enableHighlighting, int fragSize, int summarySnippets,
+      String term, int expectedNumDocuments) throws IOException {
     
-    final TermQuery query = new TermQuery(new Term("snippet", "mine"));
-    // Two documents don't have mining in the snippet
-    int expectedNumDocuments = numberOfDocs - 2;
+    final TermQuery query = new TermQuery(new Term("snippet", term));
 
     final ModifiableSolrParams summaryParams = new ModifiableSolrParams();
     summaryParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
@@ -99,6 +105,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         Boolean.toString(enableHighlighting));
     summaryParams
         .add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(fragSize));
+    summaryParams
+        .add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(summarySnippets));
     final List<NamedList<Object>> summaryClusters = checkEngine(
         getClusteringEngine("echo"), expectedNumDocuments,
         expectedNumDocuments, query, summaryParams);
@@ -169,66 +177,180 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
             params), 1, 3, 0);
   }
 
-	@Test
-	public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
-		checkLexicalResourcesFromSolrConfig("lexical-resource-check",
-				"online,customsolrstopword,customsolrstoplabel");
-	}
+  @Test
+  public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
+    checkLexicalResourcesFromSolrConfig("lexical-resource-check",
+        "online,customsolrstopword,customsolrstoplabel");
+  }
 
-	@Test
-	public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
-		checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
-				"online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
-	}
+  @Test
+  public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
+    checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
+        "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
+  }
 
-	private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
-			throws IOException {
-		ModifiableSolrParams params = new ModifiableSolrParams();
-		params.set("merge-resources", false);
-		params.set(AttributeUtils.getKey(
-				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-				wordsToCheck);
+  private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
+      throws IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("merge-resources", false);
+    params.set(AttributeUtils.getKey(
+        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+        wordsToCheck);
 
-		// "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
-		// stoplabels.mt, so we're expecting only one cluster with label "online".
-		final List<NamedList<Object>> clusters = checkEngine(
-				getClusteringEngine(engineName), 1, params);
-		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
-	}
+    // "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
+    // stoplabels.mt, so we're expecting only one cluster with label "online".
+    final List<NamedList<Object>> clusters = checkEngine(
+        getClusteringEngine(engineName), 1, params);
+    assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+  }
 
-	@Test
-	public void solrStopWordsUsedInCarrot2Clustering() throws Exception {
-		ModifiableSolrParams params = new ModifiableSolrParams();
-		params.set("merge-resources", false);
-		params.set(AttributeUtils.getKey(
-				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-		"online,solrownstopword");
+  @Test
+  public void solrStopWordsUsedInCarrot2Clustering() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("merge-resources", false);
+    params.set(AttributeUtils.getKey(
+        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+    "online,solrownstopword");
 
-		// "solrownstopword" is in stopwords.txt, so we're expecting
-		// only one cluster with label "online".
-		final List<NamedList<Object>> clusters = checkEngine(
-				getClusteringEngine("lexical-resource-check"), 1, params);
-		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
-	}
+    // "solrownstopword" is in stopwords.txt, so we're expecting
+    // only one cluster with label "online".
+    final List<NamedList<Object>> clusters = checkEngine(
+        getClusteringEngine("lexical-resource-check"), 1, params);
+    assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+  }
 
-	@Test
-	public void solrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
-		ModifiableSolrParams params = new ModifiableSolrParams();
-		// Force string fields to be used for clustering. Does not make sense
-		// in a real word, but does the job in the test.
-		params.set(CarrotParams.TITLE_FIELD_NAME, "url");
-		params.set(CarrotParams.SNIPPET_FIELD_NAME, "url");
-		params.set("merge-resources", false);
-		params.set(AttributeUtils.getKey(
-				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-		"online,solrownstopword");
+  @Test
+  public void solrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    // Force string fields to be used for clustering. Does not make sense
+    // in a real word, but does the job in the test.
+    params.set(CarrotParams.TITLE_FIELD_NAME, "url");
+    params.set(CarrotParams.SNIPPET_FIELD_NAME, "url");
+    params.set("merge-resources", false);
+    params.set(AttributeUtils.getKey(
+        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+    "online,solrownstopword");
 
-		final List<NamedList<Object>> clusters = checkEngine(
-				getClusteringEngine("lexical-resource-check"), 2, params);
-		assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
-		assertEquals(ImmutableList.of("solrownstopword"),
-				getLabels(clusters.get(1)));
-	}
+    final List<NamedList<Object>> clusters = checkEngine(
+        getClusteringEngine("lexical-resource-check"), 2, params);
+    assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
+    assertEquals(ImmutableList.of("solrownstopword"),
+        getLabels(clusters.get(1)));
+  }
+  
+  @Test
+  public void highlightingOfMultiValueField() throws Exception {
+    final String snippetWithoutSummary = getLabels(clusterWithHighlighting(
+        false, 30, 3, "multi", 1).get(0)).get(1);
+    assertTrue("Snippet contains first value", snippetWithoutSummary.contains("First"));
+    assertTrue("Snippet contains second value", snippetWithoutSummary.contains("Second"));
+    assertTrue("Snippet contains third value", snippetWithoutSummary.contains("Third"));
+
+    final String snippetWithSummary = getLabels(clusterWithHighlighting(
+        true, 30, 3, "multi", 1).get(0)).get(1);
+    assertTrue("Snippet with summary shorter than full snippet",
+        snippetWithoutSummary.length() > snippetWithSummary.length());
+    assertTrue("Summary covers first value", snippetWithSummary.contains("First"));
+    assertTrue("Summary covers second value", snippetWithSummary.contains("Second"));
+    assertTrue("Summary covers third value", snippetWithSummary.contains("Third"));
+  }
+  
+  @Test
+  public void concatenatingMultipleFields() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
+
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("body",
+            "snippet")), params).get(0));
+    assertTrue("Snippet contains third value", labels.get(0).contains("Title field"));
+    assertTrue("Snippet contains third value", labels.get(0).contains("Heading field"));
+    assertTrue("Snippet contains third value", labels.get(1).contains("Snippet field"));
+    assertTrue("Snippet contains third value", labels.get(1).contains("Body field"));
+  }
+
+  @Test
+  public void highlightingMultipleFields() throws Exception {
+    final TermQuery query = new TermQuery(new Term("snippet", "content"));
+
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
+    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
+    params.add(CarrotParams.PRODUCE_SUMMARY, Boolean.toString(false));
+    
+    final String snippetWithoutSummary = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, query, params).get(0)).get(1);
+    assertTrue("Snippet covers snippet field", snippetWithoutSummary.contains("snippet field"));
+    assertTrue("Snippet covers body field", snippetWithoutSummary.contains("body field"));
+
+    params.set(CarrotParams.PRODUCE_SUMMARY, Boolean.toString(true));
+    params.add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(30));
+    params.add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(2));
+    final String snippetWithSummary = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, query, params).get(0)).get(1);    
+    assertTrue("Snippet with summary shorter than full snippet",
+        snippetWithoutSummary.length() > snippetWithSummary.length());
+    assertTrue("Snippet covers snippet field", snippetWithSummary.contains("snippet field"));
+    assertTrue("Snippet covers body field", snippetWithSummary.contains("body field"));
+
+  }
+
+  @Test
+  public void oneCarrot2SupportedLanguage() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
+
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "one_supported_language")), params).get(0));
+    assertEquals(3, labels.size());
+    assertEquals("Correct Carrot2 language", LanguageCode.CHINESE_SIMPLIFIED.name(), labels.get(2));
+  }
+  
+  @Test
+  public void oneCarrot2SupportedLanguageOfMany() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "one_supported_language_of_many")), params).get(0));
+    assertEquals(3, labels.size());
+    assertEquals("Correct Carrot2 language", LanguageCode.GERMAN.name(), labels.get(2));
+  }
+  
+  @Test
+  public void languageCodeMapping() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
+    params.add(CarrotParams.LANGUAGE_CODE_MAP, "POLISH:pl");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "one_supported_language_of_many")), params).get(0));
+    assertEquals(3, labels.size());
+    assertEquals("Correct Carrot2 language", LanguageCode.POLISH.name(), labels.get(2));
+  }
+  
+  @Test
+  public void passingOfCustomFields() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CarrotParams.CUSTOM_FIELD_NAME, "intfield_i:intfield");
+    params.add(CarrotParams.CUSTOM_FIELD_NAME, "floatfield_f:floatfield");
+    params.add(CarrotParams.CUSTOM_FIELD_NAME, "heading:multi");
+    
+    // Let the echo mock clustering algorithm know which custom field to echo
+    params.add("custom-fields", "intfield,floatfield,multi");
+    
+    final List<String> labels = getLabels(checkEngine(
+        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
+            "custom_fields")), params).get(0));
+    assertEquals(5, labels.size());
+    assertEquals("Integer field", "10", labels.get(2));
+    assertEquals("Float field", "10.5", labels.get(3));
+    assertEquals("List field", "[first, second]", labels.get(4));
+  }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
@@ -273,7 +395,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
       
       @SuppressWarnings("unchecked")
-             List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);
+      List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);
       req.close();
       assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
       checkClusters(results, false);
@@ -302,7 +424,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     List<Object> docs = getDocs(cluster);
     assertNotNull("docs is null and it shouldn't be", docs);
     for (int j = 0; j < docs.size(); j++) {
-      String id = (String) docs.get(j);
+      Object id = docs.get(j);
       assertNotNull("id is null and it shouldn't be", id);
     }
 
@@ -340,13 +462,13 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   private List<String> getLabels(NamedList<Object> cluster) {
     return (List<String>) cluster.get("labels");
   }
-  
+
   private Double getScore(NamedList<Object> cluster) {
     return (Double) cluster.get("score");
   }
 
   private Boolean isOtherTopics(NamedList<Object> cluster) {
-    return (Boolean) cluster.get("other-topics");
+    return (Boolean)cluster.get("other-topics");
   }
 
   @SuppressWarnings("unchecked")
