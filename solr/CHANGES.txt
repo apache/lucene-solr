@@ -426,6 +426,9 @@ Bug Fixes
 
 * SOLR-2955: Fixed IllegalStateException when querying with group.sort=score desc in sharded
              environment. (Steffen Elberg Godskesen, Martijn van Groningen)
+
+* SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
+  the LukeRequestHandler (hossman)
   
 Other Changes
 ----------------------

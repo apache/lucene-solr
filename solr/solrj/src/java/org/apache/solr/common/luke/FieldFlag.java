@@ -30,7 +30,7 @@ public enum FieldFlag {
   TERM_VECTOR_OFFSET('o', "Store Offset With TermVector"),
   TERM_VECTOR_POSITION('p', "Store Position With TermVector"),
   OMIT_NORMS('O', "Omit Norms"), 
-  OMIT_TF('F', "Omit Tf"), 
+  OMIT_TF('F', "Omit Term Frequencies & Positions"), 
   OMIT_POSITIONS('P', "Omit Positions"),
   LAZY('L', "Lazy"), 
   BINARY('B', "Binary"), 
