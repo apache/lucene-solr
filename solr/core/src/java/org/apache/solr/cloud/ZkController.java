@@ -400,7 +400,7 @@ public final class ZkController {
   }
   
   public String getNodeName() {
-    return hostName + ":" + localHostPort + "_"+ localHostContext;
+    return hostName + ":" + localHostPort + "_" + localHostContext;
   }
 
   /**
@@ -505,7 +505,7 @@ public final class ZkController {
     leaderElector.joinElection(context);
     
     // should be fine if we do this rather than read from cloud state since it's rare?
-    String leaderUrl = zkStateReader.getLeader(collection, cloudDesc.getShardId());
+    String leaderUrl = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId());
     
     final boolean iamleader;
     SolrCore core = null;

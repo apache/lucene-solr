@@ -36,7 +36,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -79,23 +78,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private NamedList addsResponse = null;
   private NamedList deleteResponse = null;
   private CharsRef scratch;
-  private boolean isLeader = true;
-  private boolean forwardToLeader = false;
-
+  
   private final SchemaField idField;
   
   private final SolrCmdDistributor cmdDistrib;
-
   private HashPartitioner hp;
-
-  private List<String> shards;
-
   private boolean zkEnabled = false;
 
   private String collection;
   private ZkController zkController;
   
-  
+  // these are setup at the start of each request processing
+  // method in this update processor
+  private boolean isLeader = true;
+  private boolean forwardToLeader = false;
+  private List<String> shards;
+
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -146,49 +144,31 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // this and watch for changes?? Just pull it from ZkController cluster state probably?
 
       String shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
-      
-      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      
-      String leaderNode = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
-          + ZkStateReader.LEADER_ELECT_ZKNODE + "/" + shardId + "/leader";
-      SolrZkClient zkClient = zkController.getZkClient();
 
       try {
-        List<String> leaderChildren = zkClient.getChildren(leaderNode, null);
-        if (leaderChildren.size() > 0) {
-          String leader = leaderChildren.get(0);
-          
-          byte[] bytes = zkClient
-              .getData(leaderNode + "/" + leader, null, null);
-          ZkNodeProps zkNodeProps = ZkNodeProps.load(bytes);
-          
-          String leaderUrl = zkNodeProps.get("url");
-          
-          String nodeName = req.getCore().getCoreDescriptor()
-              .getCoreContainer().getZkController().getNodeName();
-          String shardZkNodeName = nodeName + "_" + req.getCore().getName();
-
-          if (params.getBool(SEEN_LEADER, false)) {
-            // we got a version, just go local - set no shardStr
-            
-            // still mark if i am the leader though
-            if (!shardZkNodeName.equals(leader)) {
-              isLeader = false;
-            }
-          } else if (shardZkNodeName.equals(leader)) {
-            isLeader = true;
-            // that means I want to forward onto my replicas...
-            // so get the replicas...
-            shards = getReplicaUrls(req, collection, shardId,
-                shardZkNodeName);
-          } else {
-            // I need to forward onto the leader...
-            shards = new ArrayList<String>(1);
-            shards.add(leaderUrl);
-            forwardToLeader = true;
-            isLeader = false;
-          }
+        ZkNodeProps leaderProps = zkController.getZkStateReader().getLeaderProps(
+            collection, shardId);
+        
+        String leaderUrl = leaderProps.get(ZkStateReader.URL_PROP);
+        String leaderNodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
+        
+        String nodeName = zkController.getNodeName();
+        
+        isLeader = nodeName.equals(leaderNodeName);
+        
+        if (req.getParams().getBool(SEEN_LEADER, false)) {
+          // we are coming from the leader, just go local - set no shardStr
+        } else if (isLeader) {
+          // that means I want to forward onto my replicas...
+          // so get the replicas...
+          shards = getReplicaUrls(req, collection, shardId, nodeName);
+        } else {
+          // I need to forward onto the leader...
+          shards = new ArrayList<String>(1);
+          shards.add(leaderUrl);
+          forwardToLeader = true;
         }
+        
       } catch (KeeperException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
@@ -196,7 +176,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
-      } 
+      }
     }
 
     return shards;
@@ -213,7 +193,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     Set<String> shards = slices.keySet();
-    List<String> shardList = new ArrayList<String>();
+    List<String> shardList = new ArrayList<String>(shards.size());
     shardList.addAll(shards);
     Collections.sort(shardList);
     hp = new HashPartitioner();
@@ -645,7 +625,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
-    List<String> urls = new ArrayList<String>();
+    List<String> urls = new ArrayList<String>(shardMap.size());
 
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
       if (cloudState.liveNodesContain(entry.getValue().get(

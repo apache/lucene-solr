@@ -369,13 +369,13 @@ public class ZkStateReader {
   // nocommit TODO: do this with cloud state or something along those lines
   // and if we find out we cannot talk to zk anymore, we should probably realize we are not
   // a leader anymore - we shouldn't accept updates at all??
-  public String getLeader(String collection, String shard) throws Exception {
+  public String getLeaderUrl(String collection, String shard) throws InterruptedException, KeeperException {
     ZkNodeProps props = getLeaderProps(collection,shard);
     
     return props.get(ZkStateReader.URL_PROP);
   }
   
-  public ZkNodeProps getLeaderProps(String collection, String shard) throws Exception {
+  public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException, KeeperException {
     int tries = 30;
     ZkNodeProps props;
     while (true) {
