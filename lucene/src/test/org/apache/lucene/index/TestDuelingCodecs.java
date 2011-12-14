@@ -528,6 +528,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
       DocValues rightDocValues = MultiDocValues.getDocValues(rightReader, field);
       assertNotNull(info, leftDocValues);
       assertNotNull(info, rightDocValues);
+      assertEquals(info, leftDocValues.type(), rightDocValues.type());
+      assertEquals(info, leftDocValues.getValueSize(), rightDocValues.getValueSize());
       assertDocValuesSource(leftDocValues.getDirectSource(), rightDocValues.getDirectSource());
       assertDocValuesSource(leftDocValues.getSource(), rightDocValues.getSource());
     }
