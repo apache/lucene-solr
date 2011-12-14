@@ -51,7 +51,7 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
     fields.add(createMap("column", "mrname",
             TemplateTransformer.TEMPLATE,"Mr ${e.name}"));
 
-    List<String> mails = Arrays.asList(new String[]{"a@b.com", "c@d.com"});
+    List<String> mails = Arrays.asList("a@b.com", "c@d.com");
     Map row = createMap(
             "firstName", "Shalin",
             "middleName", "Shekhar", 

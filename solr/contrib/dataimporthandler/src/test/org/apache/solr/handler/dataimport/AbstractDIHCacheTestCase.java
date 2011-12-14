@@ -46,7 +46,7 @@ public class AbstractDIHCacheTestCase {
 		data.add(new ControlData(new Object[] { new Integer(4), new BigDecimal(Math.PI), "D", "Daisy", new Float(4.44), Feb21_2011, null }));
 		data.add(new ControlData(new Object[] { new Integer(4), new BigDecimal(Math.PI), "D", "Drawing", new Float(4.44), Feb21_2011, null }));
 		data.add(new ControlData(new Object[] { new Integer(5), new BigDecimal(Math.PI), "E",
-				Arrays.asList(new String[] { "Eggplant", "Ear", "Elephant", "Engine" }), new Float(5.55), Feb21_2011, null }));
+				Arrays.asList("Eggplant", "Ear", "Elephant", "Engine"), new Float(5.55), Feb21_2011, null }));
 	}
 
 	@After

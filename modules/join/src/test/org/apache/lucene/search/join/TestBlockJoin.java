@@ -601,7 +601,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childDoc.add(newField("child", "1", StringField.TYPE_UNSTORED));
     Document parentDoc = new Document();
     parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
-    w.addDocuments(Arrays.asList(new Document[] {childDoc, parentDoc}));
+    w.addDocuments(Arrays.asList(childDoc, parentDoc));
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
@@ -624,7 +624,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Document parentDoc = new Document();
     parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
     parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
-    w.addDocuments(Arrays.asList(new Document[] {parentDoc}));
+    w.addDocuments(Arrays.asList(parentDoc));
 
     // Add another doc so scorer is not null
     parentDoc = new Document();
@@ -632,7 +632,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
     Document childDoc = new Document();
     childDoc.add(newField("child", "2", StringField.TYPE_UNSTORED));
-    w.addDocuments(Arrays.asList(new Document[] {childDoc, parentDoc}));
+    w.addDocuments(Arrays.asList(childDoc, parentDoc));
 
     // Need single seg:
     w.forceMerge(1);

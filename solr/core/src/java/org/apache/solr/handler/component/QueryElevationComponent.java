@@ -388,10 +388,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // insert documents in their proper place 
       SortSpec sortSpec = rb.getSortSpec();
       if( sortSpec.getSort() == null ) {
-        sortSpec.setSort( new Sort( new SortField[] {
+        sortSpec.setSort( new Sort( 
             new SortField(idField, booster.comparatorSource, false ),
-            new SortField(null, SortField.Type.SCORE, false)
-        }));
+            new SortField(null, SortField.Type.SCORE, false)));
       }
       else {
         // Check if the sort is based on score

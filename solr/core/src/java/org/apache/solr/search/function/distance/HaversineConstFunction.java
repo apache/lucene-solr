@@ -148,7 +148,7 @@ public class HaversineConstFunction extends ValueSource {
     } catch (InvalidGeoException e) {
       throw new ParseException("Bad spatial pt:" + pt);
     }
-    return new VectorValueSource(Arrays.asList(new ValueSource[] {new DoubleConstValueSource(point[0]),new DoubleConstValueSource(point[1])}));
+    return new VectorValueSource(Arrays.<ValueSource>asList(new DoubleConstValueSource(point[0]),new DoubleConstValueSource(point[1])));
   }
 
   private static double[] getConstants(MultiValueSource vs) {

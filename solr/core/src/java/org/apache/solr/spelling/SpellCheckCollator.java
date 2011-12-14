@@ -81,11 +81,11 @@ public class SpellCheckCollator {
         params.remove(GroupParams.GROUP);
 
         // creating a request here... make sure to close it!
-        ResponseBuilder checkResponse = new ResponseBuilder(new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),new SolrQueryResponse(), Arrays.asList(new SearchComponent[] { queryComponent }));
+        ResponseBuilder checkResponse = new ResponseBuilder(new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),new SolrQueryResponse(), Arrays.<SearchComponent>asList(queryComponent));
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
-        checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
+        checkResponse.components = Arrays.<SearchComponent>asList(queryComponent);
 
         try {
           queryComponent.prepare(checkResponse);

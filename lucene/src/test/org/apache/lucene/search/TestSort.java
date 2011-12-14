@@ -846,9 +846,8 @@ public class TestSort extends LuceneTestCase {
   public void testParallelMultiSort() throws Exception {
     ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
     IndexSearcher searcher = new IndexSearcher(
-                                  new MultiReader(
-                                       new IndexReader[] {searchX.getIndexReader(),
-                                                          searchY.getIndexReader()}), exec);
+                                  new MultiReader(searchX.getIndexReader(),
+                                                  searchY.getIndexReader()), exec);
     runMultiSorts(searcher, false);
     exec.shutdown();
     exec.awaitTermination(1000, TimeUnit.MILLISECONDS);

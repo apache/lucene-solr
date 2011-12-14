@@ -104,9 +104,8 @@ public class TestSearch extends LuceneTestCase {
 
       ScoreDoc[] hits = null;
 
-      Sort sort = new Sort(new SortField[] {
-          SortField.FIELD_SCORE,
-          new SortField("id", SortField.Type.INT)});
+      Sort sort = new Sort(SortField.FIELD_SCORE,
+                           new SortField("id", SortField.Type.INT));
 
       for (Query query : buildQueries()) {
         out.println("Query: " + query.toString("contents"));
