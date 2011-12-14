@@ -29,7 +29,10 @@ import org.junit.Test;
 import org.xml.sax.SAXParseException;
 
 /**
- *
+ * This test is not fully functional - the port registered is illegal - 
+ * so you cannot hit this with http - a nice side benifit is that it will
+ * detect if a node is trying to do an update to itself with http - it shouldn't
+ * do that.
  */
 public class BasicZkTest extends AbstractZkTestCase {
   

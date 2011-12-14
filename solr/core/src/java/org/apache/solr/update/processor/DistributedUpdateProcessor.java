@@ -610,7 +610,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
   
   private List<String> getReplicaUrls(SolrQueryRequest req, String collection,
-      String shardId, String shardZkNodeName) {
+      String shardId, String thisNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
    
@@ -628,8 +628,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     List<String> urls = new ArrayList<String>(shardMap.size());
 
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
-      if (cloudState.liveNodesContain(entry.getValue().get(
-          ZkStateReader.NODE_NAME_PROP)) && !entry.getKey().equals(shardZkNodeName)) {
+      String nodeName = entry.getValue().get(ZkStateReader.NODE_NAME_PROP);
+      if (cloudState.liveNodesContain(nodeName) && !nodeName.equals(thisNodeName)) {
         String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
         urls.add(replicaUrl);
       }
