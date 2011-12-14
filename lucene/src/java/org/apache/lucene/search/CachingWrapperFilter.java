@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -63,7 +64,7 @@ public class CachingWrapperFilter extends Filter {
 
   protected final FilterCache<DocIdSet> cache;
 
-  static abstract class FilterCache<T> implements Serializable {
+  static abstract class FilterCache<T> implements SegmentReader.CoreClosedListener, IndexReader.ReaderClosedListener, Serializable {
 
     /**
      * A transient Filter cache (package private because of test)
@@ -112,7 +113,13 @@ public class CachingWrapperFilter extends Filter {
 
     protected abstract T mergeDeletes(IndexReader reader, T value);
 
-    public synchronized void put(Object coreKey, Object delCoreKey, T value) {
+    public synchronized void put(IndexReader reader, Object coreKey, Object delCoreKey, T value) {
+      if (reader instanceof SegmentReader) {
+        ((SegmentReader) reader).addCoreClosedListener(this);
+      } else {
+        reader.addReaderClosedListener(this);
+      }
+      
       if (deletesMode == DeletesMode.IGNORE) {
         cache.put(coreKey, value);
       } else if (deletesMode == DeletesMode.RECACHE) {
@@ -121,6 +128,18 @@ public class CachingWrapperFilter extends Filter {
         cache.put(coreKey, value);
         cache.put(delCoreKey, value);
       }
+    }
+    
+    // not until Java 6: @Override
+    public synchronized void onClose(IndexReader reader) {
+      cache.remove(reader.getCoreCacheKey());
+      cache.remove(reader.getDeletesCacheKey());
+    }
+    
+    // not until Java 6: @Override
+    public synchronized void onClose(SegmentReader reader) {
+      cache.remove(reader.getCoreCacheKey());
+      cache.remove(reader.getDeletesCacheKey());
     }
   }
 
@@ -209,7 +228,7 @@ public class CachingWrapperFilter extends Filter {
     docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);
 
     if (docIdSet != null) {
-      cache.put(coreKey, delCoreKey, docIdSet);
+      cache.put(reader, coreKey, delCoreKey, docIdSet);
     }
     
     return docIdSet;
