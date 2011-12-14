@@ -23,7 +23,6 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.WeakIdentityHashMap;
@@ -41,7 +40,7 @@ public class CachingWrapperFilter extends Filter {
   private final FilterCache cache = new FilterCache();
   private final boolean recacheDeletes;
 
-  private static class FilterCache implements SegmentReader.CoreClosedListener, IndexReader.ReaderClosedListener {
+  private static class FilterCache {
     private final WeakHashMap<Object,WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>> cache =
       new WeakHashMap<Object,WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>>();
 
@@ -49,13 +48,6 @@ public class CachingWrapperFilter extends Filter {
       final Object coreKey = reader.getCoreCacheKey();
       WeakIdentityHashMap<Bits,SoftReference<DocIdSet>> innerCache = cache.get(coreKey);
       if (innerCache == null) {
-        if (reader instanceof SegmentReader) {
-          ((SegmentReader) reader).addCoreClosedListener(this);
-        } else {
-          assert reader.getSequentialSubReaders() == null : 
-            "we only operate on AtomicContext, so all cached readers must be atomic";
-          reader.addReaderClosedListener(this);
-        }
         innerCache = new WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>();
         cache.put(coreKey, innerCache);
       }
@@ -66,16 +58,6 @@ public class CachingWrapperFilter extends Filter {
 
     public synchronized void put(IndexReader reader, Bits acceptDocs, DocIdSet value) {
       cache.get(reader.getCoreCacheKey()).put(acceptDocs, new SoftReference<DocIdSet>(value));
-    }
-    
-    @Override
-    public synchronized void onClose(IndexReader reader) {
-      cache.remove(reader.getCoreCacheKey());
-    }
-    
-    @Override
-    public synchronized void onClose(SegmentReader reader) {
-      cache.remove(reader.getCoreCacheKey());
     }
   }
 
