@@ -56,6 +56,9 @@ Bug Fixes
   QueryElevationComponent fails to properly initialize (gsingers)
 
 * SOLR-1520: QueryElevationComponent now supports non-string ids (gsingers)
+
+* SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
+  the LukeRequestHandler (hossman)
   
 Other Changes
 ----------------------

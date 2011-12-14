@@ -17,7 +17,11 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.util.AbstractSolrTestCase;
+
+import java.util.EnumSet;
+import java.util.Arrays;
 
 /**
  * :TODO: currently only tests some of the utilities in the LukeRequestHandler
@@ -93,7 +97,40 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
     // test that Luke can handle all of the field types
     assertQ(req("qt","/admin/luke", "id","SOLR1000"));
+
+    final int numFlags = EnumSet.allOf(FieldFlag.class).size();
+    
+    assertQ("Not all flags ("+numFlags+") mentioned in info->key",
+            req("qt","/admin/luke"),
+            numFlags+"=count(//lst[@name='info']/lst[@name='key']/str)");
+
+    // code should be the same for all fields, but just in case do several
+    for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
+                                  "solr_td","solr_pl","solr_dt","solr_b",
+                                  "solr_sS","solr_sI")) {
+
+      final String xp = getFieldXPathPrefix(f);
+      assertQ("Not as many schema flags as expected ("+numFlags+") for " + f,
+              req("qt","/admin/luke", "fl", f),
+              numFlags+"=string-length("+xp+"[@name='schema'])");
+
+    }
+
+    // diff loop for checking 'index' flags, 
+    // only valid for fields that are indexed & stored
+    for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
+                                  "solr_td","solr_pl","solr_dt","solr_b")) {
+
+      final String xp = getFieldXPathPrefix(f);
+      assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
+              req("qt","/admin/luke", "fl", f),
+              numFlags+"=string-length("+xp+"[@name='index'])");
+    }
+
   }
 
-
+  private static String getFieldXPathPrefix(String field) {
+    return "//lst[@name='fields']/lst[@name='"+field+"']/str";
+  }
+  
 }
