@@ -109,7 +109,15 @@ public class MultiDocValues extends DocValues {
         DocValuesSlice slice = slices.get(i);
         starts[i] = slice.start;
         if (slice.docValues == null) {
-          slice.docValues = new EmptyDocValues(slice.length, promotedType[0].type());
+          Type promoted = promotedType[0].type();
+          switch(promoted) {
+            case BYTES_FIXED_DEREF:
+            case BYTES_FIXED_STRAIGHT:
+              slice.docValues = new EmptyFixedDocValues(slice.length, promoted, promotedType[0].getValueSize());
+              break;
+            default:
+              slice.docValues = new EmptyDocValues(slice.length, promoted);
+          }
         }
       }
       
@@ -145,6 +153,38 @@ public class MultiDocValues extends DocValues {
     @Override
     public Source getDirectSource() throws IOException {
       return emptySource;
+    }
+  }
+  
+  public static class EmptyFixedDocValues extends DocValues {
+    final int maxDoc;
+    final Source emptyFixedSource;
+    final int valueSize;
+
+    public EmptyFixedDocValues(int maxDoc, Type type, int valueSize) {
+      this.maxDoc = maxDoc;
+      this.emptyFixedSource = new EmptyFixedSource(type, valueSize);
+      this.valueSize = valueSize;
+    }
+
+    @Override
+    public Source load() throws IOException {
+      return emptyFixedSource;
+    }
+
+    @Override
+    public Type type() {
+      return emptyFixedSource.type();
+    }
+
+    @Override
+    public int getValueSize() {
+      return valueSize;
+    }
+
+    @Override
+    public Source getDirectSource() throws IOException {
+      return emptyFixedSource;
     }
   }
 
@@ -216,7 +256,33 @@ public class MultiDocValues extends DocValues {
     public BytesRef getBytes(int docID, BytesRef ref) {
       ref.length = 0;
       return ref;
+    }
 
+    @Override
+    public double getFloat(int docID) {
+      return 0d;
+    }
+
+    @Override
+    public long getInt(int docID) {
+      return 0;
+    }
+  }
+  
+  private static class EmptyFixedSource extends Source {
+    private final int valueSize;
+    
+    public EmptyFixedSource(Type type, int valueSize) {
+      super(type);
+      this.valueSize = valueSize;
+    }
+
+    @Override
+    public BytesRef getBytes(int docID, BytesRef ref) {
+      ref.grow(valueSize);
+      ref.length = valueSize;
+      Arrays.fill(ref.bytes, ref.offset, ref.offset+valueSize, (byte)0);
+      return ref;
     }
 
     @Override
