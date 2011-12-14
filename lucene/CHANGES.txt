@@ -612,6 +612,10 @@ New features
   (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
   Jason Rutherglen, Paul Elschot)
 
+* LUCENE-3638: Added sugar methods to IndexReader and IndexSearcher to
+  load only certain fields when loading a document.  (Peter Chang via
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

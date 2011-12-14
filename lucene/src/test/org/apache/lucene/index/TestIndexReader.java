@@ -26,7 +26,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import org.junit.Assume;
+import java.util.Set;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
@@ -35,17 +36,18 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
+import org.junit.Assume;
 
 public class TestIndexReader extends LuceneTestCase {
         
@@ -1057,5 +1059,24 @@ public class TestIndexReader extends LuceneTestCase {
         failed = e;
       }
     }
+  }
+
+  public void testLoadCertainFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    doc.add(newField("field1", "foobar", StringField.TYPE_STORED));
+    doc.add(newField("field2", "foobaz", StringField.TYPE_STORED));
+    writer.addDocument(doc);
+    IndexReader r = writer.getReader();
+    writer.close();
+    Set<String> fieldsToLoad = new HashSet<String>();
+    assertEquals(0, r.document(0, fieldsToLoad).getFields().size());
+    fieldsToLoad.add("field1");
+    Document doc2 = r.document(0, fieldsToLoad);
+    assertEquals(1, doc2.getFields().size());
+    assertEquals("foobar", doc2.get("field1"));
+    r.close();
+    dir.close();
   }
 }

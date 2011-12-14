@@ -35,8 +35,8 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.CommandLineUtil;
+import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
@@ -712,6 +712,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public final Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+    document(docID, visitor);
+    return visitor.getDocument();
+  }
+
+  /**
+   * Like {@link #document(int)} but only loads the specified
+   * fields.  Note that this is simply sugar for {@link
+   * DocumentStoredFieldVisitor#DocumentStoredFieldVisitor(Set)}.
+   */
+  public final Document document(int docID, Set<String> fieldsToLoad) throws CorruptIndexException, IOException {
+    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(fieldsToLoad);
     document(docID, visitor);
     return visitor.getDocument();
   }

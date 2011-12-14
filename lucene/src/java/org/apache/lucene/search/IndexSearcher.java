@@ -17,10 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
@@ -176,14 +176,19 @@ public class IndexSearcher {
     return reader;
   }
 
-  /* Sugar for <code>.getIndexReader().document(docID)</code> */
+  /** Sugar for <code>.getIndexReader().document(docID)</code> */
   public Document doc(int docID) throws CorruptIndexException, IOException {
     return reader.document(docID);
   }
 
-  /* Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
+  /** Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
   public void doc(int docID, StoredFieldVisitor fieldVisitor) throws CorruptIndexException, IOException {
     reader.document(docID, fieldVisitor);
+  }
+
+  /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
+  public final Document document(int docID, Set<String> fieldsToLoad) throws CorruptIndexException, IOException {
+    return reader.document(docID, fieldsToLoad);
   }
 
   /** Expert: Set the SimilarityProvider implementation used by this Searcher.
