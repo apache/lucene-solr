@@ -69,9 +69,6 @@ with the same name. The implementation part is mainly done using pre-existing
 Lucene sorting code. In-place stable mergesort was borrowed from CGLIB,
 which is Apache-licensed.
 
-The class org.apache.lucene.util.WeakIdentityHashMap was derived from
-the Apache CXF project and is Apache License 2.0.
-
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/
 
