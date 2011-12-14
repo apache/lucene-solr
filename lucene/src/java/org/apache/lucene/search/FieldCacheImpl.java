@@ -148,10 +148,18 @@ class FieldCacheImpl implements FieldCache {
   }
   
   // per-segment fieldcaches don't purge until the shared core closes.
-  final static SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
-    // @Override -- not until Java 1.6
+  final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
+    @Override
     public void onClose(SegmentReader owner) {
-      FieldCache.DEFAULT.purge(owner);
+      FieldCacheImpl.this.purge(owner);
+    }
+  };
+
+  // composite/SlowMultiReaderWrapper fieldcaches don't purge until composite reader is closed.
+  final IndexReader.ReaderClosedListener purgeReader = new IndexReader.ReaderClosedListener() {
+    @Override
+    public void onClose(IndexReader owner) {
+      FieldCacheImpl.this.purge(owner);
     }
   };
 
@@ -191,14 +199,9 @@ class FieldCacheImpl implements FieldCache {
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
           if (reader instanceof SegmentReader) {
-            ((SegmentReader) reader).addCoreClosedListener(purgeCore);
+            ((SegmentReader) reader).addCoreClosedListener(wrapper.purgeCore);
           } else {
-            reader.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
-              @Override
-              public void onClose(IndexReader reader) {
-                FieldCache.DEFAULT.purge(reader);
-              }
-            });
+            reader.addReaderClosedListener(wrapper.purgeReader);
           }
         }
         if (innerCache.get(key) == null) {
@@ -221,14 +224,9 @@ class FieldCacheImpl implements FieldCache {
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
           if (reader instanceof SegmentReader) {
-            ((SegmentReader) reader).addCoreClosedListener(purgeCore);
+            ((SegmentReader) reader).addCoreClosedListener(wrapper.purgeCore);
           } else {
-            reader.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
-              @Override
-              public void onClose(IndexReader reader) {
-                FieldCache.DEFAULT.purge(reader);
-              }
-            });           
+            reader.addReaderClosedListener(wrapper.purgeReader);           
           }
           value = null;
         } else {
