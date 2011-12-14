@@ -243,7 +243,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     IndexReader r0 = writer.getReader();
     assertTrue(r0.isCurrent());
-    writer.addIndexes(new Directory[] { dir2 });
+    writer.addIndexes(dir2);
     assertFalse(r0.isCurrent());
     r0.close();
 
@@ -284,11 +284,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
     createIndexNoClose(!doFullMerge, "index2", writer2);
     writer2.close();
 
-    writer.addIndexes(new Directory[] { dir2 });
-    writer.addIndexes(new Directory[] { dir2 });
-    writer.addIndexes(new Directory[] { dir2 });
-    writer.addIndexes(new Directory[] { dir2 });
-    writer.addIndexes(new Directory[] { dir2 });
+    writer.addIndexes(dir2);
+    writer.addIndexes(dir2);
+    writer.addIndexes(dir2);
+    writer.addIndexes(dir2);
+    writer.addIndexes(dir2);
 
     IndexReader r1 = writer.getReader();
     assertEquals(500, r1.maxDoc());

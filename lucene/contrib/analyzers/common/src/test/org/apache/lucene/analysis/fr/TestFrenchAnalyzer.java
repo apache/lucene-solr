@@ -231,7 +231,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 	public void testExclusionTableReuse() throws Exception {
 	  FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
 	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habit" });
-	  fa.setStemExclusionTable(new String[] { "habitable" });
+	  fa.setStemExclusionTable("habitable");
 	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habitable" });
 	}
 	

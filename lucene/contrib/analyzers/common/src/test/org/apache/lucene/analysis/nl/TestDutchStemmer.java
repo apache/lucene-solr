@@ -146,7 +146,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   public void testExclusionTableReuse() throws Exception {
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "lichamelijk", "licham");
-    a.setStemExclusionTable(new String[] { "lichamelijk" });
+    a.setStemExclusionTable("lichamelijk");
     checkOneTermReuse(a, "lichamelijk", "lichamelijk");
 
     

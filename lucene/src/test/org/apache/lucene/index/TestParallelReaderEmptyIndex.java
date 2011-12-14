@@ -57,7 +57,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     pr.add(IndexReader.open(rd2,true));
 		
     // When unpatched, Lucene crashes here with a NoSuchElementException (caused by ParallelTermEnum)
-    iwOut.addIndexes(new IndexReader[] { pr });
+    iwOut.addIndexes(pr);
 		
     iwOut.forceMerge(1);
     iwOut.close();
@@ -109,7 +109,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     pr.add(IndexReader.open(rd2,true));
 
     // When unpatched, Lucene crashes here with an ArrayIndexOutOfBoundsException (caused by TermVectorsWriter)
-    iwOut.addIndexes(new IndexReader[] { pr });
+    iwOut.addIndexes(pr);
 
     // ParallelReader closes any IndexReader you added to it:
     pr.close();

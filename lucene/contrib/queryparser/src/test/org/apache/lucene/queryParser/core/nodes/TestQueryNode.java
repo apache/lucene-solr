@@ -28,8 +28,8 @@ public class TestQueryNode extends LuceneTestCase {
     FieldQueryNode nodeA = new FieldQueryNode("foo", "A", 0, 1);
     FieldQueryNode nodeB = new FieldQueryNode("foo", "B", 1, 2);
     BooleanQueryNode bq = new BooleanQueryNode(
-        Arrays.asList(new QueryNode[] { nodeA }));
-    bq.add(Arrays.asList(new QueryNode[] { nodeB }));
+        Arrays.<QueryNode>asList(nodeA));
+    bq.add(Arrays.<QueryNode>asList(nodeB));
     assertEquals(2, bq.getChildren().size());
   }
   

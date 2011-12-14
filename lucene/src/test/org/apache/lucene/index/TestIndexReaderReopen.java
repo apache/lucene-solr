@@ -216,9 +216,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected IndexReader openReader() throws IOException {
-        return new MultiReader(new IndexReader[] 
-                        {IndexReader.open(dir1, false), 
-                         IndexReader.open(dir2, false)});
+        return new MultiReader(IndexReader.open(dir1, false),
+                               IndexReader.open(dir2, false));
       }
       
     });
@@ -242,12 +241,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected IndexReader openReader() throws IOException {
-        return new MultiReader(new IndexReader[] 
-                        {IndexReader.open(dir3, false), 
-                         IndexReader.open(dir4, false),
-                         // Does not implement reopen, so
-                         // hits exception:
-                         new FilterIndexReader(IndexReader.open(dir3, false))});
+        return new MultiReader(IndexReader.open(dir3, false), 
+                               IndexReader.open(dir4, false),
+                               // Does not implement reopen, so hits exception:
+                               new FilterIndexReader(IndexReader.open(dir3, false)));
       }
       
     });
@@ -283,10 +280,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         ParallelReader pr = new ParallelReader();
         pr.add(IndexReader.open(dir1, false));
         pr.add(IndexReader.open(dir2, false));
-        MultiReader mr = new MultiReader(new IndexReader[] {
-            IndexReader.open(dir3, false), IndexReader.open(dir4, false)});
-        return new MultiReader(new IndexReader[] {
-           pr, mr, IndexReader.open(dir5, false)});
+        MultiReader mr = new MultiReader(IndexReader.open(dir3, false), 
+                                         IndexReader.open(dir4, false));
+        return new MultiReader(pr, mr, IndexReader.open(dir5, false));
       }
     });
     dir1.close();

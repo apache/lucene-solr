@@ -108,9 +108,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       Query query = parser.parse(HIGH_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      final Sort sort = new Sort(new SortField[] {
-          SortField.FIELD_SCORE,
-          new SortField(ID_FIELD, SortField.INT)});
+      final Sort sort = new Sort(SortField.FIELD_SCORE,
+                                 new SortField(ID_FIELD, SortField.INT));
 
       ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);

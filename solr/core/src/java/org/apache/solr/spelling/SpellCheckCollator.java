@@ -76,7 +76,7 @@ public class SpellCheckCollator {
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
-        checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
+        checkResponse.components = Arrays.<SearchComponent>asList(queryComponent);
 
         ModifiableSolrParams params = new ModifiableSolrParams(ultimateResponse.req.getParams());
         params.set(CommonParams.Q, collationQueryStr);

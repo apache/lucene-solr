@@ -57,7 +57,7 @@ public class TestApp {
 	Class<? extends SnowballProgram> stemClass = Class.forName("org.tartarus.snowball.ext." +
 					args[0] + "Stemmer").asSubclass(SnowballProgram.class);
         SnowballProgram stemmer = stemClass.newInstance();
-	Method stemMethod = stemClass.getMethod("stem", new Class[0]);
+	Method stemMethod = stemClass.getMethod("stem");
 
 	Reader reader;
 	reader = new InputStreamReader(new FileInputStream(args[1]));

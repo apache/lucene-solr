@@ -92,7 +92,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   
   public void testEmptyListSort() {
     // should produce no exceptions
-    List<Integer> list = Arrays.asList(new Integer[0]);
+    List<Integer> list = Arrays.asList(new Integer[0]); // LUCENE-2989
     CollectionUtil.quickSort(list);
     CollectionUtil.mergeSort(list);
     CollectionUtil.insertionSort(list);

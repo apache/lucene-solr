@@ -112,9 +112,8 @@ public class TestSearch extends LuceneTestCase {
       };
       ScoreDoc[] hits = null;
 
-      Sort sort = new Sort(new SortField[] {
-          SortField.FIELD_SCORE,
-          new SortField("id", SortField.INT)});
+      Sort sort = new Sort(SortField.FIELD_SCORE,
+                           new SortField("id", SortField.INT));
 
       QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "contents", analyzer);
       parser.setPhraseSlop(4);

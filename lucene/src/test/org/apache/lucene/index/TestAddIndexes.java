@@ -77,7 +77,7 @@ public class TestAddIndexes extends LuceneTestCase {
     // test doc count before segments are merged
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     assertEquals(100, writer.maxDoc());
-    writer.addIndexes(new Directory[] { aux, aux2 });
+    writer.addIndexes(aux, aux2);
     assertEquals(190, writer.maxDoc());
     writer.close();
 
@@ -98,7 +98,7 @@ public class TestAddIndexes extends LuceneTestCase {
     // test doc count before segments are merged
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     assertEquals(190, writer.maxDoc());
-    writer.addIndexes(new Directory[] { aux3 });
+    writer.addIndexes(aux3);
     assertEquals(230, writer.maxDoc());
     writer.close();
 
@@ -129,7 +129,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     assertEquals(230, writer.maxDoc());
-    writer.addIndexes(new Directory[] { aux4 });
+    writer.addIndexes(aux4);
     assertEquals(231, writer.maxDoc());
     writer.close();
 
@@ -199,7 +199,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     
-    writer.addIndexes(new Directory[] {aux});
+    writer.addIndexes(aux);
     
     // Deletes one of the 10 added docs, leaving 9:
     PhraseQuery q = new PhraseQuery();
@@ -244,7 +244,7 @@ public class TestAddIndexes extends LuceneTestCase {
     q.add(new Term("content", "14"));
     writer.deleteDocuments(q);
 
-    writer.addIndexes(new Directory[] {aux});
+    writer.addIndexes(aux);
 
     writer.forceMerge(1);
     writer.commit();
@@ -296,7 +296,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     try {
       // cannot add self
-      writer.addIndexes(new Directory[] { aux, dir });
+      writer.addIndexes(aux, dir);
       assertTrue(false);
     }
     catch (IllegalArgumentException e) {
@@ -330,7 +330,7 @@ public class TestAddIndexes extends LuceneTestCase {
     );
     addDocs(writer, 10);
 
-    writer.addIndexes(new Directory[] { aux });
+    writer.addIndexes(aux);
     assertEquals(1040, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -359,7 +359,7 @@ public class TestAddIndexes extends LuceneTestCase {
     );
     addDocs(writer, 2);
 
-    writer.addIndexes(new Directory[] { aux });
+    writer.addIndexes(aux);
     assertEquals(1032, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -387,7 +387,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)) });
+    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -422,7 +422,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)) });
+    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
     assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -474,7 +474,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(new Directory[] { aux, aux2 });
+    writer.addIndexes(aux, aux2);
     assertEquals(1040, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -598,7 +598,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random))
         .setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(lmp));
-    writer.addIndexes(new Directory[] {dir});
+    writer.addIndexes(dir);
     writer.close();
     dir.close();
     dir2.close();

@@ -64,7 +64,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
             setMergePolicy(newLogMergePolicy(2))
     );
     writer.setInfoStream(VERBOSE ? System.out : null);
-    writer.addIndexes(new Directory[]{indexA, indexB});
+    writer.addIndexes(indexA, indexB);
     writer.forceMerge(1);
     writer.close();
 

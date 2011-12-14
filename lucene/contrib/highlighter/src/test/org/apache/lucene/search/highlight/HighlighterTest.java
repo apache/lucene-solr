@@ -302,8 +302,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testSpanRegexQuery() throws Exception {
-    query = new SpanOrQuery(new SpanQuery [] {
-        new SpanRegexQuery(new Term(FIELD_NAME, "ken.*")) });
+    query = new SpanOrQuery(new SpanRegexQuery(new Term(FIELD_NAME, "ken.*")));
     searcher = new IndexSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;

@@ -298,7 +298,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     IndexReader r1 = IndexReader.open(dir1, false);
     IndexReader r2 = IndexReader.open(dir2, false);
 
-    MultiReader multiReader = new MultiReader(new IndexReader[] { r1, r2 });
+    MultiReader multiReader = new MultiReader(r1, r2);
     performDefaultTests(multiReader);
     multiReader.close();
     dir1.close();

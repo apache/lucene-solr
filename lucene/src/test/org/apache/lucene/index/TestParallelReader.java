@@ -100,9 +100,9 @@ public class TestParallelReader extends LuceneTestCase {
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
 
-    Document doc11 = pr.document(0, new MapFieldSelector(new String[] {"f1"}));
-    Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList(new String[] {"f4"})));
-    Document doc223 = pr.document(1, new MapFieldSelector(new String[] {"f2", "f3"}));
+    Document doc11 = pr.document(0, new MapFieldSelector("f1"));
+    Document doc24 = pr.document(1, new MapFieldSelector(Arrays.<String>asList("f4")));
+    Document doc223 = pr.document(1, new MapFieldSelector("f2", "f3"));
     
     assertEquals(1, doc11.getFields().size());
     assertEquals(1, doc24.getFields().size());

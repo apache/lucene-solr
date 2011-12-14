@@ -1338,7 +1338,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     IndexReader r1 = IndexReader.open(dir2, true);
     IndexReader r2 = (IndexReader) r1.clone();
-    writer.addIndexes(new IndexReader[] {r1, r2});
+    writer.addIndexes(r1, r2);
     writer.close();
 
     IndexReader r3 = IndexReader.open(dir, true);

@@ -60,7 +60,7 @@ public class NewCollationAnalyzerTask extends PerfTask {
       throws Exception {
     final Class<?> collatorClazz = Class.forName(impl.collatorClassName);
     Method collatorMethod = collatorClazz.getMethod("getInstance",
-        new Class[] {Locale.class});
+        Locale.class);
     Object collator = collatorMethod.invoke(null, locale);
     
     final Class<? extends Analyzer> clazz = Class.forName(impl.className)

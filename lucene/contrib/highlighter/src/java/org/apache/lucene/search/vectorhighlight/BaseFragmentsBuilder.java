@@ -119,13 +119,13 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   
   @Deprecated
   protected String[] getFieldValues( IndexReader reader, int docId, String fieldName) throws IOException {
-    Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
+    Document doc = reader.document(docId, new MapFieldSelector(fieldName));
     return doc.getValues( fieldName ); // according to Document class javadoc, this never returns null
   }
   
   protected Field[] getFields( IndexReader reader, int docId, String fieldName) throws IOException {
     // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
-    Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
+    Document doc = reader.document(docId, new MapFieldSelector(fieldName));
     return doc.getFields( fieldName ); // according to Document class javadoc, this never returns null
   }
 

@@ -216,7 +216,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-      w.addIndexes(new Directory[] { dir });
+      w.addIndexes(dir);
       w.close();
       
       dir.close();
@@ -235,7 +235,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-      w.addIndexes(new IndexReader[] { reader });
+      w.addIndexes(reader);
       w.close();
       reader.close();
             

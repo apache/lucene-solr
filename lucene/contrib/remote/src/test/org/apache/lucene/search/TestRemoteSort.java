@@ -212,7 +212,7 @@ public class TestRemoteSort extends RemoteTestCase {
   @Test
   public void testRemoteSort() throws Exception {
     Searchable searcher = lookupRemote();
-    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
+    MultiSearcher multi = new MultiSearcher (searcher);
     runMultiSorts(multi, true); // this runs on the full index
   }
 
@@ -227,7 +227,7 @@ public class TestRemoteSort extends RemoteTestCase {
     HashMap<String,Float> scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
     // we'll test searching locally, remote and multi
-    MultiSearcher remote = new MultiSearcher (new Searchable[] { lookupRemote() });
+    MultiSearcher remote = new MultiSearcher (lookupRemote());
 
     // change sorting and make sure relevancy stays the same
 

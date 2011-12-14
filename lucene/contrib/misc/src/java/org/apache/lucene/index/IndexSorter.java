@@ -281,7 +281,7 @@ public class IndexSorter {
     SortingReader sorter = new SortingReader(reader, oldToNew(reader, field));
     IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_31, new WhitespaceAnalyzer(Version.LUCENE_31));
     IndexWriter writer = new IndexWriter(output, cfg);
-    writer.addIndexes(new IndexReader[] { sorter });
+    writer.addIndexes(sorter);
     writer.close();
     long end = System.currentTimeMillis();
     LOG.info("IndexSorter: done, " + (end - start)

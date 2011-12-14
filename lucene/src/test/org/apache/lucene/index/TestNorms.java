@@ -100,7 +100,7 @@ public class TestNorms extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
                                      .setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
-    iw.addIndexes(new Directory[]{dir1,dir2});
+    iw.addIndexes(dir1,dir2);
     iw.forceMerge(1);
     iw.close();
     

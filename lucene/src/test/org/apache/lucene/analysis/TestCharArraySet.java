@@ -166,7 +166,7 @@ public class TestCharArraySet extends LuceneTestCase {
     }
     
     try{
-      set.addAll(Arrays.asList(new String[]{NOT_IN_SET}));  
+      set.addAll(Arrays.asList(NOT_IN_SET));  
       fail("Modified unmodifiable set");
     }catch (UnsupportedOperationException e) {
       // expected
