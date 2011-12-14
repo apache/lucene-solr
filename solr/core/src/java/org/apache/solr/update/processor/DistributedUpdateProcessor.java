@@ -125,7 +125,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     collection = coreDesc.getCloudDescriptor().getCollectionName();
     
-    cmdDistrib = new SolrCmdDistributor(rsp);
+    cmdDistrib = new SolrCmdDistributor(rsp); // TODO: we put the last result (which could be complicated due to 
+                                              // multiple docs per req) in the rsp - this is whack
   }
 
   private List<String> setupRequest(int hash) {
