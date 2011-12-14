@@ -18,13 +18,15 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Map;
+import java.lang.ref.SoftReference;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.WeakIdentityHashMap;
 
 /**
  * Wraps another filter's result and caches it.  The purpose is to allow
@@ -35,30 +37,45 @@ public class CachingWrapperFilter extends Filter {
   // TODO: make this filter aware of ReaderContext. a cached filter could 
   // specify the actual readers key or something similar to indicate on which
   // level of the readers hierarchy it should be cached.
-  Filter filter;
-
-  protected final FilterCache<DocIdSet> cache;
+  private final Filter filter;
+  private final FilterCache cache = new FilterCache();
   private final boolean recacheDeletes;
 
-  private static class FilterCache<T> {
+  private static class FilterCache implements SegmentReader.CoreClosedListener, IndexReader.ReaderClosedListener {
+    private final WeakHashMap<Object,WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>> cache =
+      new WeakHashMap<Object,WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>>();
 
-    /**
-     * A transient Filter cache (package private because of test)
-     */
-    private final Map<Object,Map<Object,T>> cache = new WeakHashMap<Object,Map<Object,T>>();
-
-    public synchronized T get(IndexReader reader, Object coreKey, Object coreSubKey) throws IOException {
-      Map<Object,T> innerCache = cache.get(coreKey);
+    public synchronized DocIdSet get(IndexReader reader, Bits acceptDocs) throws IOException {
+      final Object coreKey = reader.getCoreCacheKey();
+      WeakIdentityHashMap<Bits,SoftReference<DocIdSet>> innerCache = cache.get(coreKey);
       if (innerCache == null) {
-        innerCache = new WeakHashMap<Object,T>();
+        if (reader instanceof SegmentReader) {
+          ((SegmentReader) reader).addCoreClosedListener(this);
+        } else {
+          assert reader.getSequentialSubReaders() == null : 
+            "we only operate on AtomicContext, so all cached readers must be atomic";
+          reader.addReaderClosedListener(this);
+        }
+        innerCache = new WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>();
         cache.put(coreKey, innerCache);
       }
 
-      return innerCache.get(coreSubKey);
+      final SoftReference<DocIdSet> innerRef = innerCache.get(acceptDocs);
+      return innerRef == null ? null : innerRef.get();
     }
 
-    public synchronized void put(Object coreKey, Object coreSubKey, T value) {
-      cache.get(coreKey).put(coreSubKey, value);
+    public synchronized void put(IndexReader reader, Bits acceptDocs, DocIdSet value) {
+      cache.get(reader.getCoreCacheKey()).put(acceptDocs, new SoftReference<DocIdSet>(value));
+    }
+    
+    @Override
+    public synchronized void onClose(IndexReader reader) {
+      cache.remove(reader.getCoreCacheKey());
+    }
+    
+    @Override
+    public synchronized void onClose(SegmentReader reader) {
+      cache.remove(reader.getCoreCacheKey());
     }
   }
 
@@ -79,7 +96,6 @@ public class CachingWrapperFilter extends Filter {
   public CachingWrapperFilter(Filter filter, boolean recacheDeletes) {
     this.filter = filter;
     this.recacheDeletes = recacheDeletes;
-    cache = new FilterCache<DocIdSet>();
   }
 
   /** Provide the DocIdSet to be cached, using the DocIdSet provided
@@ -115,7 +131,6 @@ public class CachingWrapperFilter extends Filter {
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
     final IndexReader reader = context.reader;
-    final Object coreKey = reader.getCoreCacheKey();
 
     // Only cache if incoming acceptDocs is == live docs;
     // if Lucene passes in more interesting acceptDocs in
@@ -129,13 +144,13 @@ public class CachingWrapperFilter extends Filter {
       subAcceptDocs = null;
     }
 
-    DocIdSet docIdSet = cache.get(reader, coreKey, subAcceptDocs);
+    DocIdSet docIdSet = cache.get(reader, subAcceptDocs);
     if (docIdSet != null) {
       hitCount++;
     } else {
       missCount++;
       docIdSet = docIdSetToCache(filter.getDocIdSet(context, subAcceptDocs), reader);
-      cache.put(coreKey, subAcceptDocs, docIdSet);
+      cache.put(reader, subAcceptDocs, docIdSet);
     }
 
     if (doCacheSubAcceptDocs) {

@@ -64,10 +64,13 @@ Jean-Philippe Barrette-LaPierre. This library is available under an MIT license,
 see http://sites.google.com/site/rrettesite/moman and 
 http://bitbucket.org/jpbarrette/moman/overview/
 
-The class org.apache.lucene.SorterTemplate was inspired by CGLIB's class with
-the same name. The implementation part is mainly done using pre-existing
+The class org.apache.lucene.util.SorterTemplate was inspired by CGLIB's class
+with the same name. The implementation part is mainly done using pre-existing
 Lucene sorting code. In-place stable mergesort was borrowed from CGLIB,
 which is Apache-licensed.
+
+The class org.apache.lucene.util.WeakIdentityHashMap was derived from
+the Apache CXF project and is Apache License 2.0.
 
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/

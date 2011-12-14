@@ -47,7 +47,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // first time, nested filter is called
-    cacher.getDocIdSet(context, context.reader.getLiveDocs());
+    DocIdSet strongRef = cacher.getDocIdSet(context, context.reader.getLiveDocs());
     assertTrue("first time", filter.wasCalled());
 
     // make sure no exception if cache is holding the wrong docIdSet
