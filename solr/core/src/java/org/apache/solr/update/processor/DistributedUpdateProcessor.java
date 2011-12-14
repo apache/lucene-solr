@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.HashPartitioner;
 import org.apache.solr.cloud.HashPartitioner.Range;
 import org.apache.solr.cloud.ZkController;
@@ -123,7 +124,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
     
-    collection = coreDesc.getCloudDescriptor().getCollectionName();
+    CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();
+    
+    if (cloudDesc != null) {
+      collection = cloudDesc.getCollectionName();
+    }
     
     cmdDistrib = new SolrCmdDistributor(rsp); // TODO: we put the last result (which could be complicated due to 
                                               // multiple docs per req) in the rsp - this is whack
