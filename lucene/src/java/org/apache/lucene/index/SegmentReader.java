@@ -47,7 +47,8 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
-  volatile BitVector liveDocs;
+  volatile BitVector liveDocs = null;
+  volatile Object combinedCoreAndDeletesKey;
   AtomicInteger liveDocsRef = null;
   boolean hasChanges = false;
   private boolean liveDocsDirty = false;
@@ -159,8 +160,11 @@ public final class SegmentReader extends IndexReader implements Cloneable {
       if (liveDocs.size() != si.docCount) {
         throw new CorruptIndexException("document count mismatch: deleted docs count " + liveDocs.size() + " vs segment doc count " + si.docCount + " segment=" + si.name);
       }
-    } else
+    } else {
       assert si.getDelCount() == 0;
+    }
+    // we need a key reflecting actual deletes (if existent or not):
+    combinedCoreAndDeletesKey = new Object();
   }
 
   @Override
@@ -411,6 +415,11 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return combinedCoreAndDeletesKey;
+  }
+  
+  @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
@@ -465,6 +474,7 @@ public final class SegmentReader extends IndexReader implements Cloneable {
       core.incRef();
       clone.core = core;
       clone.pendingDeleteCount = pendingDeleteCount;
+      clone.combinedCoreAndDeletesKey = combinedCoreAndDeletesKey;
 
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
@@ -592,6 +602,9 @@ public final class SegmentReader extends IndexReader implements Cloneable {
       liveDocsRef = new AtomicInteger(1);
       oldRef.decrementAndGet();
     }
+    // we need a key reflecting actual deletes (if existent or not):
+    combinedCoreAndDeletesKey = new Object();
+    // liveDocs are now dirty:
     liveDocsDirty = true;
     if (liveDocs.getAndClear(docNum)) {
       pendingDeleteCount++;

@@ -18,17 +18,17 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.lang.ref.SoftReference;
+import java.util.Collections;
+import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.WeakIdentityHashMap;
 
 /**
- * Wraps another filter's result and caches it.  The purpose is to allow
+ * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow
  * filters to simply filter, and then wrap with this class
  * to add caching.
  */
@@ -37,43 +37,33 @@ public class CachingWrapperFilter extends Filter {
   // specify the actual readers key or something similar to indicate on which
   // level of the readers hierarchy it should be cached.
   private final Filter filter;
-  private final FilterCache cache = new FilterCache();
+  private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
   private final boolean recacheDeletes;
 
-  private static class FilterCache {
-    private final WeakHashMap<Object,WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>> cache =
-      new WeakHashMap<Object,WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>>();
-
-    public synchronized DocIdSet get(IndexReader reader, Bits acceptDocs) throws IOException {
-      final Object coreKey = reader.getCoreCacheKey();
-      WeakIdentityHashMap<Bits,SoftReference<DocIdSet>> innerCache = cache.get(coreKey);
-      if (innerCache == null) {
-        innerCache = new WeakIdentityHashMap<Bits,SoftReference<DocIdSet>>();
-        cache.put(coreKey, innerCache);
-      }
-
-      final SoftReference<DocIdSet> innerRef = innerCache.get(acceptDocs);
-      return innerRef == null ? null : innerRef.get();
-    }
-
-    public synchronized void put(IndexReader reader, Bits acceptDocs, DocIdSet value) {
-      cache.get(reader.getCoreCacheKey()).put(acceptDocs, new SoftReference<DocIdSet>(value));
-    }
-  }
-
   /** Wraps another filter's result and caches it.
+   * Deletions are not cached and AND'd in on the fly, see
+   * {@link #CachingWrapperFilter(Filter,boolean)} for an explanation.
+   * This constructor is recommended for often changing indexes.
    * @param filter Filter to cache results of
+   * @see #CachingWrapperFilter(Filter,boolean)
    */
   public CachingWrapperFilter(Filter filter) {
     this(filter, false);
   }
 
-  /** Wraps another filter's result and caches it.  If
-   *  recacheDeletes is true, then new deletes (for example
-   *  after {@link IndexReader#openIfChanged}) will be AND'd
-   *  and cached again.
+  /** Wraps another filter's result and caches it. If
+   * {@code recacheDeletes} is {@code true}, then new deletes (for example
+   * after {@link IndexReader#openIfChanged}) will cause the filter
+   * {@link DocIdSet} to be recached.
    *
-   *  @param filter Filter to cache results of
+   * <p>If your index changes seldom, it is recommended to use {@code recacheDeletes=true},
+   * as recaching will only occur when the index is reopened.
+   * For near-real-time indexes or indexes that are often
+   * reopened with (e.g., {@link IndexReader#openIfChanged} is used), you should
+   * pass {@code recacheDeletes=false}. This will cache the filter results omitting
+   * deletions and will AND them in while scoring.
+   * @param filter Filter to cache results of
+   * @param recacheDeletes if deletions on the underlying index should recache
    */
   public CachingWrapperFilter(Filter filter, boolean recacheDeletes) {
     this.filter = filter;
@@ -84,7 +74,7 @@ public class CachingWrapperFilter extends Filter {
    *  by the wrapped Filter.
    *  <p>This implementation returns the given {@link DocIdSet}, if {@link DocIdSet#isCacheable}
    *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
-   *  an {@link FixedBitSet}.
+   *  a {@link FixedBitSet}.
    */
   protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) throws IOException {
     if (docIdSet == null) {
@@ -116,26 +106,31 @@ public class CachingWrapperFilter extends Filter {
 
     // Only cache if incoming acceptDocs is == live docs;
     // if Lucene passes in more interesting acceptDocs in
-    // the future we don't want to over-cache:
-    final boolean doCacheSubAcceptDocs = recacheDeletes && acceptDocs == reader.getLiveDocs();
+    // the future (@UweSays: it already does when you chain FilteredQuery) we don't want to over-cache:
+    final Bits liveDocs = reader.getLiveDocs();
+    final boolean doCacheAcceptDocs = (recacheDeletes && acceptDocs == liveDocs);
 
-    final Bits subAcceptDocs;
-    if (doCacheSubAcceptDocs) {
-      subAcceptDocs = acceptDocs;
+    final Object key;
+    final Bits cacheAcceptDocs;
+    if (doCacheAcceptDocs) {
+      assert acceptDocs == liveDocs;
+      key = reader.getCombinedCoreAndDeletesKey();
+      cacheAcceptDocs = acceptDocs;
     } else {
-      subAcceptDocs = null;
+      key = reader.getCoreCacheKey();
+      cacheAcceptDocs = null;
     }
 
-    DocIdSet docIdSet = cache.get(reader, subAcceptDocs);
+    DocIdSet docIdSet = cache.get(key);
     if (docIdSet != null) {
       hitCount++;
     } else {
       missCount++;
-      docIdSet = docIdSetToCache(filter.getDocIdSet(context, subAcceptDocs), reader);
-      cache.put(reader, subAcceptDocs, docIdSet);
+      docIdSet = docIdSetToCache(filter.getDocIdSet(context, cacheAcceptDocs), reader);
+      cache.put(key, docIdSet);
     }
 
-    if (doCacheSubAcceptDocs) {
+    if (doCacheAcceptDocs) {
       return docIdSet;
     } else {
       return BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);

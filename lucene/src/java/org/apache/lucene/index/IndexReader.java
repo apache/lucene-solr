@@ -1100,8 +1100,19 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public abstract ReaderContext getTopReaderContext();
 
-  /** Expert */
+  /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
+   * it again.
+   * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCoreCacheKey() {
+    // Don't can ensureOpen since FC calls this (to evict)
+    // on close
+    return this;
+  }
+
+  /** Expert: Returns a key for this IndexReader that also includes deletions,
+   * so FieldCache/CachingWrapperFilter can find it again.
+   * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
+  public Object getCombinedCoreAndDeletesKey() {
     // Don't can ensureOpen since FC calls this (to evict)
     // on close
     return this;

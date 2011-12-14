@@ -388,15 +388,24 @@ public class FilterIndexReader extends IndexReader {
     return in.fields();
   }
 
-  /** If the subclass of FilteredIndexReader modifies the
-   *  contents of the FieldCache, you must override this
-   *  method to provide a different key */
+  /** {@inheritDoc}
+   * <p>If the subclass of FilteredIndexReader modifies the
+   *  contents (but not liveDocs) of the index, you must override this
+   *  method to provide a different key. */
   @Override
   public Object getCoreCacheKey() {
     return in.getCoreCacheKey();
   }
 
-  /** {@inheritDoc} */
+  /** {@inheritDoc}
+   * <p>If the subclass of FilteredIndexReader modifies the
+   *  liveDocs, you must override this
+   *  method to provide a different key. */
+  @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return in.getCombinedCoreAndDeletesKey();
+  }
+
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder("FilterReader(");
