@@ -81,7 +81,7 @@ public class CachingSpanFilter extends SpanFilter {
     missCount++;
     result = filter.bitSpans(reader);
 
-    cache.put(reader, coreKey, delCoreKey, result);
+    cache.put(coreKey, delCoreKey, result);
     return result;
   }
 
