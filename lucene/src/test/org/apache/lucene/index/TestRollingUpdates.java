@@ -23,10 +23,8 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
-import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.junit.Test;
 
-@UseNoMemoryExpensiveCodec
 public class TestRollingUpdates extends LuceneTestCase {
 
   // Just updates the same set of N docs over and over, to
