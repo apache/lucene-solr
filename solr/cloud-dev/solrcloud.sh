@@ -13,14 +13,13 @@ rm -r -f build
 rm -r -f example/solr/zoo_data
 rm -f example/example.log
 
+ant example dist
+
 cp -r -f example example2
 cp -r -f example example3
 cp -r -f example example4
 cp -r -f example example5
 cp -r -f example example6
-
-
-ant example dist
 
 java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkController 127.0.0.1:9983 example/solr 8983 example/solr/conf conf1
 
