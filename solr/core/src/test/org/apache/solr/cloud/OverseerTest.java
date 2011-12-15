@@ -135,7 +135,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   //wait until i slices for collection have appeared 
   private void waitForSliceCount(ZkStateReader stateReader, String collection, int i) throws InterruptedException {
     waitForCollections(stateReader, collection);
-    int maxIterations = 2000;
+    int maxIterations = 400;
     while (0 < maxIterations--) {
       CloudState state = stateReader.getCloudState();
       Map<String,Slice> sliceMap = state.getSlices(collection);
@@ -318,6 +318,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       // wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
       
+      // nocommit: when testOverseerFailure runs last of the methods in this test case, it fails with an NPE below
       assertEquals("Illegal state", ZkStateReader.RECOVERING,
           reader.getCloudState().getSlice("collection1", "shard1").getShards()
               .get("core1").get(ZkStateReader.STATE_PROP));
