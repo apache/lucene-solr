@@ -23,9 +23,7 @@ import org.junit.Ignore;
 /**
  *
  */
-@Ignore("this test is not ready")
 public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
-  
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -38,19 +36,18 @@ public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
   
   @Override
   public void doTest() throws Exception {
+    
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
     del("*:*");
     
-    indexr(id, 1, i1, 100, tlong, 100, t1, "now is the time for all good men",
-        "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
+    chaosMonkey.startTheMonkey();
     
-    commit();
+    Thread.sleep(12000);
     
-    // these queries should be exactly ordered and scores should exactly match
-    query("q", "*:*", "sort", i1 + " desc");
+    chaosMonkey.stopTheMonkey();
   }
   
   @Override

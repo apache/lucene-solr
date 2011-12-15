@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,6 +36,7 @@ public class ChaosMonkey {
   private ZkStateReader zkStateReader;
   private String collection;
   private Random random;
+  private volatile boolean stop = false;
 
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -74,7 +76,7 @@ public class ChaosMonkey {
   public void stopShardExcept(String slice, String shardName) throws Exception {
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     for (CloudJettyRunner jetty : jetties) {
-      if (!jetty.shardName.equals(shardName)) {
+      if (!jetty.nodeName.equals(shardName)) {
         stopJetty(jetty.jetty);
       }
     }
@@ -87,10 +89,13 @@ public class ChaosMonkey {
   
   public JettySolrRunner stopRandomShard() throws Exception {
     // add all the shards to a list
-//    CloudState clusterState = zk.getCloudState();
-//    for (String collection : collections)   {
-//    Slice theShards = zk.getCloudState().getSlices(collection);
-    return null;
+    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(collection);
+    
+    List<String> sliceKeyList = new ArrayList<String>(slices.size());
+    sliceKeyList.addAll(slices.keySet());
+    String sliceName = sliceKeyList.get(random.nextInt(sliceKeyList.size()));
+    
+    return stopRandomShard(sliceName);
   }
   
   public JettySolrRunner stopRandomShard(String slice) throws Exception {
@@ -104,6 +109,9 @@ public class ChaosMonkey {
       boolean running = true;
       
       ZkNodeProps props = theShards.getShards().get(cloudJetty.shardName);
+      if (props == null) {
+        throw new RuntimeException("shard name " + cloudJetty.shardName + " not found in " + theShards.getShards().keySet());
+      }
       String state = props.get(ZkStateReader.STATE_PROP);
       String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
       
@@ -123,12 +131,55 @@ public class ChaosMonkey {
       return null;
     }
     
-    // kill random shard in shard2
+    // kill random shard
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     int index = random.nextInt(jetties.size() - 1);
     JettySolrRunner jetty = jetties.get(index).jetty;
     jetty.stop();
     return jetty;
+  }
+  
+  // synchronously starts and stops shards randomly
+  public void startTheMonkey() {
+    stop = false;
+    new Thread() {
+      private List<JettySolrRunner> deadPool = new ArrayList<JettySolrRunner>();
+
+      @Override
+      public void run() {
+        while (!stop) {
+          try {
+            Thread.sleep(500);
+            
+            if (random.nextBoolean()) {
+             if (!deadPool.isEmpty()) {
+               System.out.println("start jetty");
+               JettySolrRunner jetty = deadPool.remove(random.nextInt(deadPool.size()));
+               jetty.start();
+               continue;
+             }
+            }
+            
+            JettySolrRunner jetty = stopRandomShard();
+            if (jetty == null) {
+              System.out.println("we cannot kill");
+            } else {
+              deadPool.add(jetty);
+              System.out.println("we killed");
+            }
+          } catch (InterruptedException e) {
+            //
+          } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+        }
+      }
+    }.start();
+  }
+  
+  public void stopTheMonkey() {
+    stop = true;
   }
 
 }

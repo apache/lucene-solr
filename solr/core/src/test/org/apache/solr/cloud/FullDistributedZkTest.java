@@ -90,12 +90,13 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<String,List<CloudJettyRunner>>();
   private AtomicInteger i = new AtomicInteger(0);
   protected ChaosMonkey chaosMonkey;
-  private volatile ZkStateReader zkStateReader;
+  protected volatile ZkStateReader zkStateReader;
 
 
   
   class CloudJettyRunner {
     JettySolrRunner jetty;
+    String nodeName;
     String shardName;
   }
   
@@ -138,8 +139,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
-    
-    chaosMonkey = new ChaosMonkey(zkServer, zkStateReader, DEFAULT_COLLECTION, shardToJetty, random);
   }
   
   @BeforeClass
@@ -179,6 +178,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         
         zkStateReader.createClusterStateWatchersAndUpdate();
       }
+      
+      chaosMonkey = new ChaosMonkey(zkServer, zkStateReader, DEFAULT_COLLECTION, shardToJetty, random);
     }
     
     // wait until shards have started registering...
@@ -313,7 +314,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
             }
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
-            cjr.shardName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
+            cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
+            cjr.shardName = shard.getKey();
             list.add(cjr);
           }
         }

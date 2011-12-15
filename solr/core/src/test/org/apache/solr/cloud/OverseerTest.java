@@ -67,7 +67,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "3");
 
       zkController = new ZkController(server.getZkAddress(), TIMEOUT, 10000,
-          "localhost", "8983", "solr",3, new CurrentCoreDescriptorProvider() {
+          "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
 
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {

@@ -92,8 +92,6 @@ public final class ZkController {
   private String hostName;
 
   private OverseerElector overseerElector;
-  
-  private int numShards; //not used anywhere now
 
   private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
 
@@ -139,14 +137,13 @@ public final class ZkController {
    * @throws IOException
    */
   public ZkController(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, int numShards, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
  
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = localHost;
-    this.numShards = numShards;
 
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info

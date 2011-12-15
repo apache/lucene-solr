@@ -18,12 +18,15 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
@@ -54,6 +57,9 @@ public class RecoveryStrat {
     public void finishedRecovery();
   }
   
+  // TODO: we want to be pretty noisy if we don't properly recover?
+  // Also, if we cannot talk to the leader, we need to pause and see if there is
+  // a new leader or continue trying
   public void recover(final SolrCore core, final String leaderUrl,
       final boolean iamLeader, final OnFinish onFinish) {
     log.info("Start recovery process");
@@ -91,17 +97,14 @@ public class RecoveryStrat {
           onFinish.run();
         } catch (SolrServerException e) {
           log.error("", e);
-          // nocommit
-          e.printStackTrace();
         } catch (IOException e) {
           log.error("", e);
-          // nocommit
-          e.printStackTrace();
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
           log.error("", e);
-          // nocommit
-          e.printStackTrace();
-        }
+        } catch (ExecutionException e) {
+          log.error("", e);
+        } 
         log.info("Finished recovery process");
         // nocommit: if we get an exception, recovery failed...
       }
@@ -111,7 +114,7 @@ public class RecoveryStrat {
   }
   
   private void doRecovery(SolrCore core, String leaderUrl, boolean iamleader)
-      throws Exception, SolrServerException, IOException {
+      throws SolrServerException, IOException {
     
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get (eventually)
@@ -136,6 +139,7 @@ public class RecoveryStrat {
       ReplicationHandler replicationHandler = (ReplicationHandler) handler;
       
       if (replicationHandler == null) {
+        // nocommit: we should not just return - we don't want to falsely advertise as active
         log.error("Skipping recovery, no /replication handler found");
         return;
       }
