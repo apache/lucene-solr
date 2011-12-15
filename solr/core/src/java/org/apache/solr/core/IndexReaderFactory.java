@@ -57,10 +57,9 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * Creates a new IndexReader instance using the given Directory.
    * 
    * @param indexDir indexDir index location
-   * @param readOnly return readOnly IndexReader
    * @return An IndexReader instance
    * @throws IOException
    */
-  public abstract IndexReader newReader(Directory indexDir, boolean readOnly)
+  public abstract IndexReader newReader(Directory indexDir)
       throws IOException;
 }

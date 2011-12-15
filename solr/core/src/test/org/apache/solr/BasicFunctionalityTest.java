@@ -34,9 +34,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -448,7 +446,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.getInt("iii",5), 5);
     assertEquals(p.getFieldParam("field1","i"), "555");
 
-    req.setParams(new DefaultSolrParams(p, new MapSolrParams(m)));
+    req.setParams(SolrParams.wrapDefaults(p, new MapSolrParams(m)));
     p = req.getParams();
     assertEquals(req.getOriginalParams().get("s"), "bbb");
     assertEquals(p.get("i"), "555");
@@ -470,7 +468,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     more.add("s", "ccc");
     more.add("ss","YYY");
     more.add("xx","XXX");
-    p = new AppendedSolrParams(p, SolrParams.toSolrParams(more));
+    p = SolrParams.wrapAppended(p, SolrParams.toSolrParams(more));
     assertEquals(3, p.getParams("s").length);
     assertEquals("bbb", p.getParams("s")[0]);
     assertEquals("aaa", p.getParams("s")[1]);

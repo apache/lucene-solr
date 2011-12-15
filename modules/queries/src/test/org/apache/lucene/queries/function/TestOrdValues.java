@@ -92,7 +92,6 @@ public class TestOrdValues extends FunctionTestSetup {
       }
       prevID = resID;
     }
-    s.close();
     r.close();
   }
 
@@ -139,7 +138,6 @@ public class TestOrdValues extends FunctionTestSetup {
               : id2String(i + 1);     // reverse  ==> smaller values first
       assertTrue("id of result " + i + " shuould be " + expectedId + " != " + score, expectedId.equals(id));
     }
-    s.close();
     r.close();
   }
   

@@ -19,22 +19,23 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.NormsWriter;
 import org.apache.lucene.index.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.TermVectorsWriter;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
@@ -122,15 +123,17 @@ final class SegmentMerger {
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, segment, mergeState.fieldInfos, mergeState.mergedDocCount, termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
     mergePerDoc(segmentWriteState);
-    mergeNorms();
+    
+    if (mergeState.fieldInfos.hasNorms()) {
+      int numMerged = mergeNorms(segmentWriteState);
+      assert numMerged == mergeState.mergedDocCount;
+    }
 
     if (mergeState.fieldInfos.hasVectors()) {
       int numMerged = mergeVectors();
       assert numMerged == mergeState.mergedDocCount;
     }
-    // write FIS once merge is done. IDV might change types or drops fields
-    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
-    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
+
     return mergeState;
   }
 
@@ -183,15 +186,40 @@ final class SegmentMerger {
       }
     }
   }
+  
+  // returns an updated typepromoter (tracking type and size) given a previous one,
+  // and a newly encountered docvalues
+  private TypePromoter mergeDocValuesType(TypePromoter previous, DocValues docValues) {
+    TypePromoter incoming = TypePromoter.create(docValues.type(),  docValues.getValueSize());
+    if (previous == null) {
+      previous = TypePromoter.getIdentityPromoter();
+    }
+    TypePromoter promoted = previous.promote(incoming);
+    if (promoted == null) {
+      // type is incompatible: promote to BYTES_VAR_STRAIGHT
+      return TypePromoter.create(DocValues.Type.BYTES_VAR_STRAIGHT, TypePromoter.VAR_TYPE_VALUE_SIZE);
+    } else {
+      return promoted;
+    }
+  }
 
   private void mergeFieldInfos() throws IOException {
+    // mapping from all docvalues fields found to their promoted types
+    // this is because FieldInfos does not store the valueSize
+    Map<FieldInfo,TypePromoter> docValuesTypes = new HashMap<FieldInfo,TypePromoter>();
+
     for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : mergeState.readers) {
       final IndexReader reader = readerAndLiveDocs.reader;
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         FieldInfos readerFieldInfos = segmentReader.fieldInfos();
         for (FieldInfo fi : readerFieldInfos) {
-          mergeState.fieldInfos.add(fi);
+          FieldInfo merged = mergeState.fieldInfos.add(fi);
+          // update the type promotion mapping for this reader
+          if (fi.hasDocValues()) {
+            TypePromoter previous = docValuesTypes.get(merged);
+            docValuesTypes.put(merged, mergeDocValuesType(previous, reader.docValues(fi.name))); 
+          }
         }
       } else {
         addIndexed(reader, mergeState.fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
@@ -206,10 +234,33 @@ final class SegmentMerger {
         Collection<String> dvNames = reader.getFieldNames(FieldOption.DOC_VALUES);
         mergeState.fieldInfos.addOrUpdate(dvNames, false);
         for (String dvName : dvNames) {
-          mergeState.fieldInfos.fieldInfo(dvName).setDocValues(reader.docValues(dvName).type());
+          FieldInfo merged = mergeState.fieldInfos.fieldInfo(dvName);
+          DocValues docValues = reader.docValues(dvName);
+          merged.setDocValuesType(docValues.type());
+          TypePromoter previous = docValuesTypes.get(merged);
+          docValuesTypes.put(merged, mergeDocValuesType(previous, docValues));
         }
       }
     }
+    
+    // update any promoted doc values types:
+    for (Map.Entry<FieldInfo,TypePromoter> e : docValuesTypes.entrySet()) {
+      FieldInfo fi = e.getKey();
+      TypePromoter promoter = e.getValue();
+      if (promoter == null) {
+        fi.resetDocValuesType(null);
+      } else {
+        assert promoter != TypePromoter.getIdentityPromoter();
+        if (fi.getDocValuesType() != promoter.type()) {
+          // reset the type if we got promoted
+          fi.resetDocValuesType(promoter.type());
+        }
+      }
+    }
+    
+    // write the merged infos
+    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
+    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
   }
 
   /**
@@ -329,48 +380,19 @@ final class SegmentMerger {
       }
   }
 
-  private void mergeNorms() throws IOException {
-    IndexOutput output = null;
+  private int mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
+    final NormsWriter writer = codec.normsFormat().normsWriter(segmentWriteState);
+    
     boolean success = false;
     try {
-      for (FieldInfo fi : mergeState.fieldInfos) {
-        if (fi.isIndexed && !fi.omitNorms) {
-          if (output == null) {
-            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), context);
-            output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
-          }
-          for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {
-            final int maxDoc = reader.reader.maxDoc();
-            byte normBuffer[] = reader.reader.norms(fi.name);
-            if (normBuffer == null) {
-              // Can be null if this segment doesn't have
-              // any docs with this field
-              normBuffer = new byte[maxDoc];
-              Arrays.fill(normBuffer, (byte)0);
-            }
-            if (reader.liveDocs == null) {
-              //optimized case for segments without deleted docs
-              output.writeBytes(normBuffer, maxDoc);
-            } else {
-              // this segment has deleted docs, so we have to
-              // check for every doc if it is deleted or not
-              final Bits liveDocs = reader.liveDocs;
-              for (int k = 0; k < maxDoc; k++) {
-                if (liveDocs.get(k)) {
-                  output.writeByte(normBuffer[k]);
-                }
-              }
-            }
-            mergeState.checkAbort.work(maxDoc);
-          }
-        }
-      }
+      int numMerged = writer.merge(mergeState);
       success = true;
+      return numMerged;
     } finally {
       if (success) {
-        IOUtils.close(output);
+        IOUtils.close(writer);
       } else {
-        IOUtils.closeWhileHandlingException(output);
+        IOUtils.closeWhileHandlingException(writer);
       }
     }
   }

@@ -38,6 +38,8 @@ public final class NGramTokenFilter extends TokenFilter {
   private int curGramSize;
   private int curPos;
   private int tokStart;
+  private int tokEnd; // only used if the length changed before this filter
+  private boolean hasIllegalOffsets; // only if the length changed before this filter
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -81,13 +83,21 @@ public final class NGramTokenFilter extends TokenFilter {
           curGramSize = minGram;
           curPos = 0;
           tokStart = offsetAtt.startOffset();
+          tokEnd = offsetAtt.endOffset();
+          // if length by start + end offsets doesn't match the term text then assume
+          // this is a synonym and don't adjust the offsets.
+          hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
       while (curGramSize <= maxGram) {
         while (curPos+curGramSize <= curTermLength) {     // while there is input
           clearAttributes();
           termAtt.copyBuffer(curTermBuffer, curPos, curGramSize);
-          offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
+          if (hasIllegalOffsets) {
+            offsetAtt.setOffset(tokStart, tokEnd);
+          } else {
+            offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
+          }
           curPos++;
           return true;
         }

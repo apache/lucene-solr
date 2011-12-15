@@ -95,7 +95,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       assertTrue("res id "+resID+" should be < prev res id "+prevID, resID.compareTo(prevID)<0);
       prevID = resID;
     }
-    s.close();
     r.close();
   }
 
@@ -143,7 +142,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       float expectedScore = expectedFieldScore(id); // "ID7" --> 7.0
       assertEquals("score of " + id + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
     }
-    s.close();
     r.close();
   }
 

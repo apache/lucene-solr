@@ -64,7 +64,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = SegmentReader.get(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -125,7 +125,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = SegmentReader.get(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"));
@@ -197,7 +197,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = SegmentReader.get(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -241,7 +241,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = SegmentReader.get(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(reader.getLiveDocs(), "preanalyzed", new BytesRef("term1"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -285,7 +285,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     // f1
     Terms tfv1 = reader.getTermVectors(0).terms("f1");
     assertNotNull(tfv1);
@@ -326,7 +326,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir, false));
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir));
     FieldInfos fi = reader.fieldInfos();
     // f1
     assertFalse("f1 should have no norms", reader.hasNorms("f1"));

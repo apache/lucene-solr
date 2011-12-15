@@ -9,7 +9,7 @@ import org.junit.Test;
 
 public class FloatMagicTest extends LuceneTestCase {
   public void testFloatMagic() {
-    ArrayList<Float> floats = new ArrayList<Float>(Arrays.asList(new Float [] {
+    ArrayList<Float> floats = new ArrayList<Float>(Arrays.asList(
         Float.intBitsToFloat(0x7f800001), // NaN (invalid combination).
         Float.intBitsToFloat(0x7fffffff), // NaN (invalid combination).
         Float.intBitsToFloat(0xff800001), // NaN (invalid combination).
@@ -26,7 +26,7 @@ public class FloatMagicTest extends LuceneTestCase {
         -0.1f,
         -1f,
         -10f,
-        Float.NEGATIVE_INFINITY }));
+        Float.NEGATIVE_INFINITY));
 
     // Sort them using juc.
     Collections.sort(floats);

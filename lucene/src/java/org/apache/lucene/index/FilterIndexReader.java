@@ -17,17 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MapBackedSet;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Comparator;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -277,15 +274,12 @@ public class FilterIndexReader extends IndexReader {
 
   /**
    * <p>Construct a FilterIndexReader based on the specified base reader.
-   * Directory locking for delete, undeleteAll, and setNorm operations is
-   * left to the base reader.</p>
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
    */
   public FilterIndexReader(IndexReader in) {
     super();
     this.in = in;
-    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
 
   @Override
@@ -332,9 +326,6 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {in.undeleteAll();}
-
-  @Override
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
     return in.hasNorms(field);
@@ -347,28 +338,9 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
-    in.setNorm(d, f, b);
-  }
-
-  @Override
-  public int docFreq(Term t) throws IOException {
-    ensureOpen();
-    return in.docFreq(t);
-  }
-
-  @Override
   public int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
     return in.docFreq(field, t);
-  }
-
-  @Override
-  protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
-  
-  @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    in.commit(commitUserData);
   }
   
   @Override
@@ -416,15 +388,24 @@ public class FilterIndexReader extends IndexReader {
     return in.fields();
   }
 
-  /** If the subclass of FilteredIndexReader modifies the
-   *  contents of the FieldCache, you must override this
-   *  method to provide a different key */
+  /** {@inheritDoc}
+   * <p>If the subclass of FilteredIndexReader modifies the
+   *  contents (but not liveDocs) of the index, you must override this
+   *  method to provide a different key. */
   @Override
   public Object getCoreCacheKey() {
     return in.getCoreCacheKey();
   }
 
-  /** {@inheritDoc} */
+  /** {@inheritDoc}
+   * <p>If the subclass of FilteredIndexReader modifies the
+   *  liveDocs, you must override this
+   *  method to provide a different key. */
+  @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return in.getCombinedCoreAndDeletesKey();
+  }
+
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder("FilterReader(");
@@ -434,20 +415,18 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  public void addReaderFinishedListener(ReaderFinishedListener listener) {
-    super.addReaderFinishedListener(listener);
-    in.addReaderFinishedListener(listener);
-  }
-
-  @Override
-  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
-    super.removeReaderFinishedListener(listener);
-    in.removeReaderFinishedListener(listener);
-  }
-
-  @Override
-  public PerDocValues perDocValues() throws IOException {
+  public DocValues docValues(String field) throws IOException {
     ensureOpen();
-    return in.perDocValues();
+    return in.docValues(field);
   }
+
+  @Override
+  public IndexCommit getIndexCommit() throws IOException {
+    return in.getIndexCommit();
+  }
+
+  @Override
+  public int getTermInfosIndexDivisor() {
+    return in.getTermInfosIndexDivisor();
+  }  
 }

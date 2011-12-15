@@ -20,11 +20,10 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
@@ -155,8 +154,8 @@ public class VersionInfo {
       ValueSource vs = versionField.getType().getValueSource(versionField, null);
       Map context = ValueSource.newContext(searcher);
       vs.createWeight(context, searcher);
-      DocValues dv = vs.getValues(context, searcher.getTopReaderContext().leaves()[(int)(lookup>>32)]);
-      long ver = dv.longVal((int)lookup);
+      FunctionValues fv = vs.getValues(context, searcher.getTopReaderContext().leaves()[(int)(lookup>>32)]);
+      long ver = fv.longVal((int)lookup);
       return ver;
 
     } catch (IOException e) {

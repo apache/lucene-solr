@@ -48,7 +48,7 @@ public class TestRollback extends LuceneTestCase {
     }
     w.rollback();
 
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = IndexReader.open(dir);
     assertEquals("index should contain same number of docs post rollback", 5, r.numDocs());
     r.close();
     dir.close();

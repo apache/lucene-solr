@@ -61,7 +61,6 @@ public class TestElevationComparator extends LuceneTestCase {
     runTest(searcher, true);
     runTest(searcher, false);
 
-    searcher.close();
     r.close();
     directory.close();
   }

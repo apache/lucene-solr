@@ -35,6 +35,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_ONLY;
+import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_AND_FREQS;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
@@ -168,7 +171,10 @@ public class LukeRequestHandler extends RequestHandlerBase
    */
   private static String getFieldFlags( IndexableField f )
   {
+    IndexOptions opts = (f == null) ? null : f.fieldType().indexOptions();
+
     StringBuilder flags = new StringBuilder();
+
     flags.append( (f != null && f.fieldType().indexed())                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().tokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().stored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
@@ -177,6 +183,13 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.fieldType().storeTermVectorOffsets())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().storeTermVectorPositions()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
     flags.append( (f != null && f.fieldType().omitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
+
+    flags.append( (f != null && DOCS_ONLY == opts ) ? 
+                  FieldFlag.OMIT_TF.getAbbreviation() : '-' );
+    
+    flags.append( (f != null && DOCS_AND_FREQS == opts ) ?
+                  FieldFlag.OMIT_POSITIONS.getAbbreviation() : '-' );
+
     flags.append( (f != null && f.getClass().getSimpleName().equals("LazyField")) ? FieldFlag.LAZY.getAbbreviation() : '-' );
     flags.append( (f != null && f.binaryValue()!=null)                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
@@ -217,21 +230,11 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * @return a key to what each character means
    */
-  public static SimpleOrderedMap<String> getFieldFlagsKey()
-  {
+  public static SimpleOrderedMap<String> getFieldFlagsKey() {
     SimpleOrderedMap<String> key = new SimpleOrderedMap<String>();
-    key.add(String.valueOf(FieldFlag.INDEXED.getAbbreviation()), FieldFlag.INDEXED.getDisplay() );
-    key.add(String.valueOf(FieldFlag.TOKENIZED.getAbbreviation()), FieldFlag.TOKENIZED.getDisplay() );
-    key.add( String.valueOf(FieldFlag.STORED.getAbbreviation()), FieldFlag.STORED.getDisplay() );
-    key.add( String.valueOf(FieldFlag.MULTI_VALUED.getAbbreviation()), FieldFlag.MULTI_VALUED.getDisplay() );
-    key.add( String.valueOf(FieldFlag.TERM_VECTOR_STORED.getAbbreviation()), FieldFlag.TERM_VECTOR_STORED.getDisplay() );
-    key.add( String.valueOf(FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation()), FieldFlag.TERM_VECTOR_OFFSET.getDisplay() );
-    key.add( String.valueOf(FieldFlag.TERM_VECTOR_POSITION.getAbbreviation()), FieldFlag.TERM_VECTOR_POSITION.getDisplay() );
-    key.add( String.valueOf(FieldFlag.OMIT_NORMS.getAbbreviation()), FieldFlag.OMIT_NORMS.getDisplay() );
-    key.add( String.valueOf(FieldFlag.LAZY.getAbbreviation()), FieldFlag.LAZY.getDisplay() );
-    key.add( String.valueOf(FieldFlag.BINARY.getAbbreviation()), FieldFlag.BINARY.getDisplay() );
-    key.add( String.valueOf(FieldFlag.SORT_MISSING_FIRST.getAbbreviation()), FieldFlag.SORT_MISSING_FIRST.getDisplay() );
-    key.add( String.valueOf(FieldFlag.SORT_MISSING_LAST.getAbbreviation()), FieldFlag.SORT_MISSING_LAST.getDisplay() );
+    for (FieldFlag f : FieldFlag.values()) {
+      key.add(String.valueOf(f.getAbbreviation()), f.getDisplay() );
+    }
     return key;
   }
   

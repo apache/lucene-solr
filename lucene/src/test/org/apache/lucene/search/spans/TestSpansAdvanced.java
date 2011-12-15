@@ -74,7 +74,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     mDirectory.close();
     mDirectory = null;

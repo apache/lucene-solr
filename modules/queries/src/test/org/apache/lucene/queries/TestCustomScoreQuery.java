@@ -208,7 +208,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       final float score = hits.scoreDocs[i].score;
       assertEquals("doc=" + doc, (float) 1+(4*doc) % N_DOCS, score, 0.0001);
     }
-    s.close();
     r.close();
   }
   
@@ -232,7 +231,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     assertEquals(s.search(q,1).totalHits, s.search(original,1).totalHits);
     assertEquals(s.search(q,1).totalHits, s.search(rewritten,1).totalHits);
     
-    s.close();
     r.close();
   }
   
@@ -290,7 +288,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     verifyResults(boost, s, 
         h1, h2CustomNeutral, h3CustomMul, h4CustomAdd, h5CustomMulAdd,
         q1, q2CustomNeutral, q3CustomMul, q4CustomAdd, q5CustomMulAdd);
-    s.close();
     r.close();
   }
 

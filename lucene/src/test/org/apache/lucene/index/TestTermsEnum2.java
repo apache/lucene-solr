@@ -84,7 +84,6 @@ public class TestTermsEnum2 extends LuceneTestCase {
   }
   
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     dir.close();
     super.tearDown();

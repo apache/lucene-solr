@@ -76,7 +76,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     // open reader to test document count
-    IndexReader reader = IndexReader.open(ramDir, true);
+    IndexReader reader = IndexReader.open(ramDir);
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there
@@ -90,7 +90,6 @@ public class TestRAMDirectory extends LuceneTestCase {
 
     // cleanup
     reader.close();
-    searcher.close();
   }
   
   private final int numThreads = 10;

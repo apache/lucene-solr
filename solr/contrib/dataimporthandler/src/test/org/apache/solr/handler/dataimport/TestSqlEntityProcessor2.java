@@ -90,7 +90,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testCompositePk_FullImportNoCommit() throws Exception {
+  public void testCompositePk_FullImportWithoutCommit() throws Exception {
     List parentRow = new ArrayList();
     parentRow.add(createMap("id", "10"));
     MockDataSource.setIterator("select * from x", parentRow.iterator());

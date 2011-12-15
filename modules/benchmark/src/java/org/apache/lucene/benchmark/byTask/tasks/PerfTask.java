@@ -36,7 +36,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  * logging.
  * <li>log.step.[class Task Name] - specifies the same as 'log.step', only for a
  * particular task name. For example, log.step.AddDoc will be applied only for
- * {@link AddDocTask}, but not for {@link DeleteDocTask}. It's a way to control
+ * {@link AddDocTask}. It's a way to control
  * per task logging settings. If you want to omit logging for any other task,
  * include log.step=-1. The syntax is "log.step." together with the Task's
  * 'short' name (i.e., without the 'Task' part).

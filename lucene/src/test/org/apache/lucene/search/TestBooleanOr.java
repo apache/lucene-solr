@@ -158,7 +158,6 @@ public class TestBooleanOr extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     dir.close();
     super.tearDown();

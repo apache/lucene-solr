@@ -27,7 +27,6 @@ import org.apache.lucene.index.codecs.FieldInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -82,7 +81,6 @@ public class TestFieldInfos extends LuceneTestCase {
 
     info = readIn.fieldInfo("textField2");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == true);
     assertTrue(info.omitNorms == false);
 
     info = readIn.fieldInfo("textField3");

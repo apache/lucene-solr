@@ -107,15 +107,12 @@ public class TestSearchForDuplicates extends LuceneTestCase {
         System.out.println("TEST: search query=" + query);
       }
 
-      final Sort sort = new Sort(new SortField[] {
-          SortField.FIELD_SCORE,
-          new SortField(ID_FIELD, SortField.Type.INT)});
+      final Sort sort = new Sort(SortField.FIELD_SCORE,
+                                 new SortField(ID_FIELD, SortField.Type.INT));
 
       ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
-
-      searcher.close();
 
       // try a new search with OR
       searcher = new IndexSearcher(reader);
@@ -130,7 +127,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 
-      searcher.close();
       reader.close();
       directory.close();
   }

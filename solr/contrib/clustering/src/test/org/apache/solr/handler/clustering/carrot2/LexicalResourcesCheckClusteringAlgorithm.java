@@ -25,9 +25,7 @@ import org.carrot2.core.ProcessingComponentBase;
 import org.carrot2.core.ProcessingException;
 import org.carrot2.core.attribute.AttributeNames;
 import org.carrot2.core.attribute.Processing;
-import org.carrot2.text.linguistic.DefaultLexicalDataFactory;
 import org.carrot2.text.linguistic.ILexicalData;
-import org.carrot2.text.linguistic.ILexicalDataFactory;
 import org.carrot2.text.preprocessing.pipeline.BasicPreprocessingPipeline;
 import org.carrot2.text.util.MutableCharArray;
 import org.carrot2.util.attribute.Attribute;
@@ -46,37 +44,37 @@ import com.google.common.collect.Lists;
  */
 @Bindable(prefix = "LexicalResourcesCheckClusteringAlgorithm")
 public class LexicalResourcesCheckClusteringAlgorithm extends
-		ProcessingComponentBase implements IClusteringAlgorithm {
+    ProcessingComponentBase implements IClusteringAlgorithm {
 
-	@Output
-	@Processing
-	@Attribute(key = AttributeNames.CLUSTERS)
-	private List<Cluster> clusters;
+  @Output
+  @Processing
+  @Attribute(key = AttributeNames.CLUSTERS)
+  private List<Cluster> clusters;
 
-	@Input
-	@Processing
-	@Attribute
-	private String wordsToCheck;
+  @Input
+  @Processing
+  @Attribute
+  private String wordsToCheck;
 
-	private BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
+  private BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
 
-	@Override
-	public void process() throws ProcessingException {
-		clusters = Lists.newArrayList();
-		if (wordsToCheck == null) {
-			return;
-		}
+  @Override
+  public void process() throws ProcessingException {
+    clusters = Lists.newArrayList();
+    if (wordsToCheck == null) {
+      return;
+    }
 
-		// Test with Maltese so that the English clustering performed in other tests
-		// is not affected by the test stopwords and stoplabels.
-		ILexicalData lexicalData = preprocessing.lexicalDataFactory
-				.getLexicalData(LanguageCode.MALTESE);
+    // Test with Maltese so that the English clustering performed in other tests
+    // is not affected by the test stopwords and stoplabels.
+    ILexicalData lexicalData = preprocessing.lexicalDataFactory
+        .getLexicalData(LanguageCode.MALTESE);
 
-		for (String word : wordsToCheck.split(",")) {
-			if (!lexicalData.isCommonWord(new MutableCharArray(word))
-					&& !lexicalData.isStopLabel(word)) {
-				clusters.add(new Cluster(word));
-			}
-		}
-	}
+    for (String word : wordsToCheck.split(",")) {
+      if (!lexicalData.isCommonWord(new MutableCharArray(word))
+          && !lexicalData.isStopLabel(word)) {
+        clusters.add(new Cluster(word));
+      }
+    }
+  }
 }

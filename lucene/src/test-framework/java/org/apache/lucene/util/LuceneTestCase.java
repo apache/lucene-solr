@@ -26,18 +26,17 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.appending.AppendingCodec;
@@ -732,7 +731,8 @@ public abstract class LuceneTestCase extends Assert {
           rogueThreads.put(t, true);
           rogueCount++;
           if (t.getName().startsWith("LuceneTestCase")) {
-            System.err.println("PLEASE CLOSE YOUR INDEXSEARCHERS IN YOUR TEST!!!!");
+            // TODO: should we fail here now? really test should be failing?
+            System.err.println("PLEASE CLOSE YOUR INDEXREADERS IN YOUR TEST!!!!");
             continue;
           } else {
             // wait on the thread to die of natural causes
@@ -1034,24 +1034,16 @@ public abstract class LuceneTestCase extends Assert {
       fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
     }
 
-    if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
-      fsdirClass = "org.apache.lucene.store." + fsdirClass;
-    }
-
     Class<? extends FSDirectory> clazz;
     try {
       try {
-        clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
+        clazz = CommandLineUtil.loadFSDirectoryClass(fsdirClass);
       } catch (ClassCastException e) {
         // TEST_DIRECTORY is not a sub-class of FSDirectory, so draw one at random
         fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
-
-        if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
-          fsdirClass = "org.apache.lucene.store." + fsdirClass;
-        }
-
-        clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
+        clazz = CommandLineUtil.loadFSDirectoryClass(fsdirClass);
       }
+      
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f));
       if (lf != null) {
         dir.setLockFactory(lf);
@@ -1164,10 +1156,7 @@ public abstract class LuceneTestCase extends Assert {
       throws IOException {
     FSDirectory d = null;
     try {
-      // Assuming every FSDirectory has a ctor(File), but not all may take a
-      // LockFactory too, so setting it afterwards.
-      Constructor<? extends FSDirectory> ctor = clazz.getConstructor(File.class);
-      d = ctor.newInstance(file);
+      d = CommandLineUtil.newFSDirectory(clazz, file);
     } catch (Exception e) {
       d = FSDirectory.open(file);
     }
@@ -1185,12 +1174,12 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   static Directory newDirectoryImpl(Random random, String clazzName) {
-    if (clazzName.equals("random"))
+    if (clazzName.equals("random")) {
       clazzName = randomDirectory(random);
-    if (clazzName.indexOf(".") == -1) // if not fully qualified, assume .store
-      clazzName = "org.apache.lucene.store." + clazzName;
+    }
+    
     try {
-      final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
+      final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
         final File dir = _TestUtil.getTempDir("index");
@@ -1229,23 +1218,20 @@ public abstract class LuceneTestCase extends Assert {
       final ExecutorService ex = (random.nextBoolean()) ? null
           : Executors.newFixedThreadPool(threads = _TestUtil.nextInt(random, 1, 8),
                       new NamedThreadFactory("LuceneTestCase"));
-      if (ex != null && VERBOSE) {
+      if (ex != null) {
+       if (VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
+       }
+       r.addReaderClosedListener(new ReaderClosedListener() {
+         @Override
+         public void onClose(IndexReader reader) {
+           shutdownExecutorService(ex);
+         }
+       });
       }
-      IndexSearcher ret = random.nextBoolean() ? 
-        new AssertingIndexSearcher(random, r, ex) {
-          @Override
-          public void close() throws IOException {
-            super.close();
-            shutdownExecutorService(ex);
-          }
-        } : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex) {
-          @Override
-          public void close() throws IOException {
-            super.close();
-            shutdownExecutorService(ex);
-          }
-        };
+      IndexSearcher ret = random.nextBoolean() 
+          ? new AssertingIndexSearcher(random, r, ex)
+          : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex);
       ret.setSimilarityProvider(similarityProvider);
       return ret;
     }

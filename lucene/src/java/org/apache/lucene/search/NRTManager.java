@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -34,6 +33,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher; // javadocs
+import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -49,6 +49,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * #addWaitingListener} so your reopener is notified when a
  * caller is waiting for a specific generation searcher. </p>
  *
+ * @see SearcherFactory
+ * 
  * @lucene.experimental
  */
 
@@ -65,60 +67,30 @@ public class NRTManager implements Closeable {
   /**
    * Create new NRTManager.
    * 
-   *  @param writer IndexWriter to open near-real-time
-   *         readers
-   *  @param warmer optional {@link SearcherWarmer}.  Pass
-   *         null if you don't require the searcher to warmed
-   *         before going live.  If this is non-null then a
-   *         merged segment warmer is installed on the
-   *         provided IndexWriter's config.
-   *
-   *  <p><b>NOTE</b>: the provided {@link SearcherWarmer} is
-   *  not invoked for the initial searcher; you should
-   *  warm it yourself if necessary.
+   * @param writer IndexWriter to open near-real-time
+   *        readers
+   * @param searcherFactory An optional {@link SearcherFactory}. Pass
+   *        <code>null</code> if you don't require the searcher to be warmed
+   *        before going live or other custom behavior.
    */
-  public NRTManager(IndexWriter writer, SearcherWarmer warmer) throws IOException {
-    this(writer, null, warmer, true);
-  }
-
-  /**
-   * Create new NRTManager.
-   * 
-   *  @param writer IndexWriter to open near-real-time
-   *         readers
-   *  @param es optional ExecutorService so different segments can
-   *         be searched concurrently (see {@link IndexSearcher#IndexSearcher(IndexReader, ExecutorService)}.
-   *         Pass <code>null</code> to search segments sequentially.
-   *  @param warmer optional {@link SearcherWarmer}.  Pass
-   *         null if you don't require the searcher to warmed
-   *         before going live.  If this is non-null then a
-   *         merged segment warmer is installed on the
-   *         provided IndexWriter's config.
-   *
-   *  <p><b>NOTE</b>: the provided {@link SearcherWarmer} is
-   *  not invoked for the initial searcher; you should
-   *  warm it yourself if necessary.
-   */
-  public NRTManager(IndexWriter writer, ExecutorService es,
-      SearcherWarmer warmer) throws IOException {
-    this(writer, es, warmer, true);
+  public NRTManager(IndexWriter writer, SearcherFactory searcherFactory) throws IOException {
+    this(writer, searcherFactory, true);
   }
 
   /**
    * Expert: just like {@link
-   * #NRTManager(IndexWriter,ExecutorService,SearcherWarmer)},
+   * #NRTManager(IndexWriter,SearcherFactory)},
    * but you can also specify whether every searcher must
    * apply deletes.  This is useful for cases where certain
    * uses can tolerate seeing some deleted docs, since
    * reopen time is faster if deletes need not be applied. */
-  public NRTManager(IndexWriter writer, ExecutorService es,
-      SearcherWarmer warmer, boolean alwaysApplyDeletes) throws IOException {
+  public NRTManager(IndexWriter writer, SearcherFactory searcherFactory, boolean alwaysApplyDeletes) throws IOException {
     this.writer = writer;
     if (alwaysApplyDeletes) {
-      withoutDeletes = withDeletes = new SearcherManagerRef(true, 0,  new SearcherManager(writer, true, warmer, es));
+      withoutDeletes = withDeletes = new SearcherManagerRef(true, 0,  new SearcherManager(writer, true, searcherFactory));
     } else {
-      withDeletes = new SearcherManagerRef(true, 0, new SearcherManager(writer, true, warmer, es));
-      withoutDeletes = new SearcherManagerRef(false, 0, new SearcherManager(writer, false, warmer, es));
+      withDeletes = new SearcherManagerRef(true, 0, new SearcherManager(writer, true, searcherFactory));
+      withoutDeletes = new SearcherManagerRef(false, 0, new SearcherManager(writer, false, searcherFactory));
     }
     indexingGen = new AtomicLong(1);
   }

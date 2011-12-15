@@ -147,7 +147,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     writer.addDocument( doc );
     writer.close();
     if (reader != null) reader.close();
-    reader = IndexReader.open( dir, true );
+    reader = IndexReader.open(dir);
   }
   
   public void test1StrMV() throws Exception {

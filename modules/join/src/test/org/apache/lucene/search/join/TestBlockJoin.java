@@ -131,7 +131,6 @@ public class TestBlockJoin extends LuceneTestCase {
     Document parentDoc = s.doc(group.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
-    s.close();
     r.close();
     dir.close();
   }
@@ -149,7 +148,6 @@ public class TestBlockJoin extends LuceneTestCase {
     bq.setBoost(2f); // we boost the BQ
     bq.add(q, BooleanClause.Occur.MUST);
     s.search(bq, 10);
-    s.close();
     r.close();
     dir.close();
   }
@@ -460,9 +458,7 @@ public class TestBlockJoin extends LuceneTestCase {
       }
     }
 
-    s.close();
     r.close();
-    joinS.close();
     joinR.close();
     dir.close();
     joinDir.close();
@@ -594,7 +590,6 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals("Lisa", parentDoc.get("name"));
 
 
-    s.close();
     r.close();
     dir.close();
   }
@@ -606,7 +601,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childDoc.add(newField("child", "1", StringField.TYPE_UNSTORED));
     Document parentDoc = new Document();
     parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
-    w.addDocuments(Arrays.asList(new Document[] {childDoc, parentDoc}));
+    w.addDocuments(Arrays.asList(childDoc, parentDoc));
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
@@ -619,7 +614,6 @@ public class TestBlockJoin extends LuceneTestCase {
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(ReaderUtil.leaves(s.getIndexReader().getTopReaderContext())[0], true, true, null);
     assertEquals(1, disi.advance(1));
-    s.close();
     r.close();
     dir.close();
   }
@@ -630,7 +624,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Document parentDoc = new Document();
     parentDoc.add(newField("parent", "1", StringField.TYPE_UNSTORED));
     parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
-    w.addDocuments(Arrays.asList(new Document[] {parentDoc}));
+    w.addDocuments(Arrays.asList(parentDoc));
 
     // Add another doc so scorer is not null
     parentDoc = new Document();
@@ -638,7 +632,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parentDoc.add(newField("isparent", "yes", StringField.TYPE_UNSTORED));
     Document childDoc = new Document();
     childDoc.add(newField("child", "2", StringField.TYPE_UNSTORED));
-    w.addDocuments(Arrays.asList(new Document[] {childDoc, parentDoc}));
+    w.addDocuments(Arrays.asList(childDoc, parentDoc));
 
     // Need single seg:
     w.forceMerge(1);
@@ -654,7 +648,6 @@ public class TestBlockJoin extends LuceneTestCase {
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(ReaderUtil.leaves(s.getIndexReader().getTopReaderContext())[0], true, true, null);
     assertEquals(2, disi.advance(0));
-    s.close();
     r.close();
     dir.close();
   }

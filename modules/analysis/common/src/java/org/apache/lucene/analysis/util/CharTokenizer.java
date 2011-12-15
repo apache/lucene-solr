@@ -144,6 +144,7 @@ public abstract class CharTokenizer extends Tokenizer {
     clearAttributes();
     int length = 0;
     int start = -1; // this variable is always initialized
+    int end = -1;
     char[] buffer = termAtt.buffer();
     while (true) {
       if (bufferIndex >= dataLen) {
@@ -162,15 +163,18 @@ public abstract class CharTokenizer extends Tokenizer {
       }
       // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based methods are gone
       final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex);
-      bufferIndex += Character.charCount(c);
+      final int charCount = Character.charCount(c);
+      bufferIndex += charCount;
 
       if (isTokenChar(c)) {               // if it's a token char
         if (length == 0) {                // start of token
           assert start == -1;
-          start = offset + bufferIndex - 1;
+          start = offset + bufferIndex - charCount;
+          end = start;
         } else if (length >= buffer.length-1) { // check if a supplementary could run out of bounds
           buffer = termAtt.resizeBuffer(2+length); // make sure a supplementary fits in the buffer
         }
+        end += charCount;
         length += Character.toChars(normalize(c), buffer, length); // buffer it, normalized
         if (length >= MAX_WORD_LEN) // buffer overflow! make sure to check for >= surrogate pair could break == test
           break;
@@ -180,7 +184,7 @@ public abstract class CharTokenizer extends Tokenizer {
 
     termAtt.setLength(length);
     assert start != -1;
-    offsetAtt.setOffset(correctOffset(start), finalOffset = correctOffset(start+length));
+    offsetAtt.setOffset(correctOffset(start), finalOffset = correctOffset(end));
     return true;
     
   }

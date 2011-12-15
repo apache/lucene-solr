@@ -17,15 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MapBackedSet;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
@@ -59,7 +55,6 @@ public class ParallelReader extends IndexReader {
   private boolean hasDeletions;
 
   private final ParallelFields fields = new ParallelFields();
-  private final ParallelPerDocs perDocs = new ParallelPerDocs();
 
  /** Construct a ParallelReader. 
   * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
@@ -73,7 +68,6 @@ public class ParallelReader extends IndexReader {
   public ParallelReader(boolean closeSubReaders) throws IOException {
     super();
     this.incRefReaders = !closeSubReaders;
-    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
 
   /** {@inheritDoc} */
@@ -132,7 +126,6 @@ public class ParallelReader extends IndexReader {
       if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
         this.fields.addField(field, MultiFields.getFields(reader).terms(field));
-        this.perDocs.addField(field, reader);
       }
     }
 
@@ -247,7 +240,7 @@ public class ParallelReader extends IndexReader {
     return doReopen(false);
   }
     
-  protected IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
+  private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean reopened = false;
@@ -332,24 +325,6 @@ public class ParallelReader extends IndexReader {
     return hasDeletions;
   }
 
-  // delete in all readers
-  @Override
-  protected void doDelete(int n) throws CorruptIndexException, IOException {
-    for (final IndexReader reader : readers) {
-      reader.deleteDocument(n);
-    }
-    hasDeletions = true;
-  }
-
-  // undeleteAll in all readers
-  @Override
-  protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (final IndexReader reader : readers) {
-      reader.undeleteAll();
-    }
-    hasDeletions = false;
-  }
-
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
@@ -403,25 +378,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  protected void doSetNorm(int n, String field, byte value)
-    throws CorruptIndexException, IOException {
-    IndexReader reader = fieldToReader.get(field);
-    if (reader!=null) {
-      synchronized(normsCache) {
-        normsCache.remove(field);
-      }
-      reader.doSetNorm(n, field, value);
-    }
-  }
-
-  @Override
-  public int docFreq(Term term) throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(term.field());
-    return reader==null ? 0 : reader.docFreq(term);
-  }
-
-  @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);
@@ -458,12 +414,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    for (final IndexReader reader : readers)
-      reader.commit(commitUserData);
-  }
-
-  @Override
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < readers.size(); i++) {
       if (decrefOnClose.get(i).booleanValue()) {
@@ -491,57 +441,10 @@ public class ParallelReader extends IndexReader {
     return topLevelReaderContext;
   }
 
+  // TODO: I suspect this is completely untested!!!!!
   @Override
-  public void addReaderFinishedListener(ReaderFinishedListener listener) {
-    super.addReaderFinishedListener(listener);
-    for (IndexReader reader : readers) {
-      reader.addReaderFinishedListener(listener);
-    }
-  }
-
-  @Override
-  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
-    super.removeReaderFinishedListener(listener);
-    for (IndexReader reader : readers) {
-      reader.removeReaderFinishedListener(listener);
-    }
-  }
-
-  @Override
-  public PerDocValues perDocValues() throws IOException {
-    ensureOpen();
-    return perDocs;
-  }
-  
-  // Single instance of this, per ParallelReader instance
-  private static final class ParallelPerDocs extends PerDocValues {
-    final TreeMap<String,IndexDocValues> fields = new TreeMap<String,IndexDocValues>();
-
-    void addField(String field, IndexReader r) throws IOException {
-      PerDocValues perDocs = MultiPerDocValues.getPerDocs(r);
-      if (perDocs != null) {
-        fields.put(field, perDocs.docValues(field));
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      // nothing to do here
-    }
-
-    @Override
-    public IndexDocValues docValues(String field) throws IOException {
-      return fields.get(field);
-    }
-
-    @Override
-    public Collection<String> fields() {
-      return fields.keySet();
-    }
+  public DocValues docValues(String field) throws IOException {
+    IndexReader reader = fieldToReader.get(field);
+    return reader == null ? null : MultiDocValues.getDocValues(reader, field);
   }
 }
-
-
-
-
-

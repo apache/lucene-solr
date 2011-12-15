@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldReaderException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
@@ -225,7 +224,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
           visitor.doubleField(info, Double.longBitsToDouble(fieldsStream.readLong()));
           return;
         default:
-          throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
+          throw new CorruptIndexException("Invalid numeric type: " + Integer.toHexString(numeric));
       }
     } else { 
       final int length = fieldsStream.readVInt();
@@ -252,7 +251,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
           fieldsStream.readLong();
           return;
         default: 
-          throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
+          throw new CorruptIndexException("Invalid numeric type: " + Integer.toHexString(numeric));
       }
     } else {
       final int length = fieldsStream.readVInt();

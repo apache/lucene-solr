@@ -43,7 +43,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -337,7 +336,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
     assertEquals(34, hits.length);
 
-    searcher.close();
     reader.close();
     dir.close();
   }
@@ -375,29 +373,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
-    searcher.close();
-    reader.close();
-
-    // make sure we can do delete & setNorm against this segment:
-    reader = IndexReader.open(dir, false);
-    searcher = newSearcher(reader);
-    Term searchTerm = new Term("id", "6");
-    int delCount = reader.deleteDocuments(searchTerm);
-    assertEquals("wrong delete count", 1, delCount);
-    DefaultSimilarity sim = new DefaultSimilarity();
-    reader.setNorm(searcher.search(new TermQuery(new Term("id", "22")), 10).scoreDocs[0].doc, "content", sim.encodeNormValue(2.0f));
-    reader.close();
-    searcher.close();
-
-    // make sure they "took":
-    reader = IndexReader.open(dir, true);
-    searcher = new IndexSearcher(reader);
-    hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    assertEquals("wrong number of hits", 43, hits.length);
-    d = searcher.doc(hits[0].doc);
-    assertEquals("wrong first document", "22", d.get("id"));
-    doTestHits(hits, 43, searcher.getIndexReader());
-    searcher.close();
     reader.close();
 
     // fully merge
@@ -408,11 +383,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader = IndexReader.open(dir);
     searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    assertEquals("wrong number of hits", 43, hits.length);
+    assertEquals("wrong number of hits", 44, hits.length);
     d = searcher.doc(hits[0].doc);
-    doTestHits(hits, 43, searcher.getIndexReader());
-    assertEquals("wrong first document", "22", d.get("id"));
-    searcher.close();
+    doTestHits(hits, 44, searcher.getIndexReader());
+    assertEquals("wrong first document", "21", d.get("id"));
     reader.close();
 
     dir.close();
@@ -429,27 +403,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", 34, hits.length);
     Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
-    searcher.close();
-    reader.close();
-
-    // make sure we can do a delete & setNorm against this segment:
-    reader = IndexReader.open(dir, false);
-    Term searchTerm = new Term("id", "6");
-    int delCount = reader.deleteDocuments(searchTerm);
-    assertEquals("wrong delete count", 1, delCount);
-    DefaultSimilarity sim = new DefaultSimilarity();
-    reader.setNorm(22, "content", sim.encodeNormValue(2.0f));
-    reader.close();
-
-    // make sure they "took":
-    reader = IndexReader.open(dir);
-    searcher = new IndexSearcher(reader);
-    hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    assertEquals("wrong number of hits", 33, hits.length);
-    d = searcher.doc(hits[0].doc);
-    assertEquals("wrong first document", "22", d.get("id"));
-    doTestHits(hits, 33, searcher.getIndexReader());
-    searcher.close();
     reader.close();
 
     // fully merge
@@ -460,11 +413,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader = IndexReader.open(dir);
     searcher = new IndexSearcher(reader);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    assertEquals("wrong number of hits", 33, hits.length);
-    d = searcher.doc(hits[0].doc);
-    assertEquals("wrong first document", "22", d.get("id"));
-    doTestHits(hits, 33, searcher.getIndexReader());
-    searcher.close();
+    assertEquals("wrong number of hits", 34, hits.length);
+    doTestHits(hits, 34, searcher.getIndexReader());
     reader.close();
 
     dir.close();
@@ -504,16 +454,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       addNoProxDoc(writer);
       writer.close();
 
-      // Delete one doc so we get a .del file:
-      IndexReader reader = IndexReader.open(dir, false);
+      writer = new IndexWriter(dir,
+        conf.setMergePolicy(doCFS ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES)
+      );
       Term searchTerm = new Term("id", "7");
-      int delCount = reader.deleteDocuments(searchTerm);
-      assertEquals("didn't delete the right number of documents", 1, delCount);
-
-      // Set one norm so we get a .s0 file:
-      DefaultSimilarity sim = new DefaultSimilarity();
-      reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
-      reader.close();
+      writer.deleteDocuments(searchTerm);
+      writer.close();
     }
     
     dir.close();
@@ -549,39 +495,18 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.close();
 
       // Delete one doc so we get a .del file:
-      IndexReader reader = IndexReader.open(dir, false);
+      writer = new IndexWriter(
+          dir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+            .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+      );
       Term searchTerm = new Term("id", "7");
-      int delCount = reader.deleteDocuments(searchTerm);
-      assertEquals("didn't delete the right number of documents", 1, delCount);
-
-      // Set one norm so we get a .s0 file:
-      DefaultSimilarity sim = new DefaultSimilarity();
-      reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
-      reader.close();
-
-      // The numbering of fields can vary depending on which
-      // JRE is in use.  On some JREs we see content bound to
-      // field 0; on others, field 1.  So, here we have to
-      // figure out which field number corresponds to
-      // "content", and then set our expected file names below
-      // accordingly:
-      CompoundFileDirectory cfsReader = new CompoundFileDirectory(dir, "_0.cfs", newIOContext(random), false);
-      FieldInfosReader infosReader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
-      FieldInfos fieldInfos = infosReader.read(cfsReader, "_0", IOContext.READONCE);
-      int contentFieldIndex = -1;
-      for (FieldInfo fi : fieldInfos) {
-        if (fi.name.equals("content")) {
-          contentFieldIndex = fi.number;
-          break;
-        }
-      }
-      cfsReader.close();
-      assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
+      writer.deleteDocuments(searchTerm);
+      writer.close();
 
       // Now verify file names:
       String[] expected = new String[] {"_0.cfs", "_0.cfe",
                                "_0_1.del",
-                               "_0_1.s" + contentFieldIndex,
                                "segments_2",
                                "segments.gen"};
 
@@ -734,7 +659,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
       
-      searcher.close();
       reader.close();
       dir.close();
       _TestUtil.rmDir(oldIndexDir);

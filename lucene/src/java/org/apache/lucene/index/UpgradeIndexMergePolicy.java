@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.InfoStream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -90,7 +89,9 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
       }
     }
     
-    if (verbose()) message("findForcedMerges: segmentsToUpgrade=" + oldSegments);
+    if (verbose()) {
+      message("findForcedMerges: segmentsToUpgrade=" + oldSegments);
+    }
       
     if (oldSegments.isEmpty())
       return null;
@@ -107,9 +108,10 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
     }
 
     if (!oldSegments.isEmpty()) {
-      if (verbose())
+      if (verbose()) {
         message("findForcedMerges: " +  base.getClass().getSimpleName() +
         " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments);
+      }
       final List<SegmentInfo> newInfos = new ArrayList<SegmentInfo>();
       for (final SegmentInfo si : segmentInfos) {
         if (oldSegments.containsKey(si)) {
@@ -152,9 +154,6 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
 
   private void message(String message) {
-    if (verbose()) {
-      writer.get().infoStream.message("UPGMP", message);
-    }
+    writer.get().infoStream.message("UPGMP", message);
   }
-  
 }

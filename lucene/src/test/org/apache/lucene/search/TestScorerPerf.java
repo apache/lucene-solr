@@ -323,7 +323,6 @@ public class TestScorerPerf extends LuceneTestCase {
     sets=randBitSets(atLeast(1000), atLeast(10));
     doConjunctions(atLeast(10000), atLeast(5));
     doNestedConjunctions(atLeast(10000), atLeast(3), atLeast(3));
-    s.close();
     r.close();
     d.close();
   }

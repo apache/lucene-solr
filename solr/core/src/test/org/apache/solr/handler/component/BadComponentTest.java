@@ -30,14 +30,21 @@ public class BadComponentTest extends SolrTestCaseJ4{
   @Test
   public void testBadElevate() throws Exception {
     try {
+      ignoreException(".*constructing.*");
+      ignoreException(".*QueryElevationComponent.*");
       System.setProperty("elevate.file", "foo.xml");
       initCore("solrconfig-elevate.xml", "schema12.xml");
       assertTrue(false);
-    } catch (Throwable e) {
-      log.error("Exception", e);
-      assertTrue(true);
+    } catch (RuntimeException e) {
+      //TODO: better way of checking this?
+      if (e.getCause() instanceof SolrException){
+        assertTrue(true);
+      } else {
+        assertTrue(false);
+      }
     } finally {
       System.clearProperty("elevate.file");
+      resetExceptionIgnores();
     }
   }
 }

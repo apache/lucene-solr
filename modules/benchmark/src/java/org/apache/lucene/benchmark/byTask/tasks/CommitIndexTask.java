@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
 
 /**
  * Commits the IndexWriter.
@@ -51,14 +50,6 @@ public class CommitIndexTask extends PerfTask {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
       iw.commit(commitUserData);
-    } else {
-      IndexReader r = getRunData().getIndexReader();
-      if (r != null) {
-        r.commit(commitUserData);
-        r.decRef();
-      } else {
-        throw new IllegalStateException("neither IndexWriter nor IndexReader is currently open");
-      }
     }
     
     return 1;

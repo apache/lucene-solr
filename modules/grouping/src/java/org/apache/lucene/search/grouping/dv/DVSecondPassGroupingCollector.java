@@ -17,9 +17,9 @@ package org.apache.lucene.search.grouping.dv;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -38,11 +38,11 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
 
   /**
    * Constructs a {@link DVSecondPassGroupingCollector}.
-   * Selects and constructs the most optimal second pass collector implementation for grouping by {@link IndexDocValues}.
+   * Selects and constructs the most optimal second pass collector implementation for grouping by {@link DocValues}.
    *
    * @param groupField      The field to group by
    * @param diskResident    Whether the values to group by should be disk resident
-   * @param type            The {@link org.apache.lucene.index.values.ValueType} which is used to select a concrete implementation.
+   * @param type            The {@link Type} which is used to select a concrete implementation.
    * @param searchGroups    The groups from the first phase search
    * @param groupSort       The sort used for the groups
    * @param withinGroupSort The sort used for documents inside a group
@@ -50,13 +50,13 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
    * @param getScores       Whether to include scores for the documents inside a group
    * @param getMaxScores    Whether to keep track of the higest score per group
    * @param fillSortFields  Whether to include the sort values
-   * @return the most optimal second pass collector implementation for grouping by {@link IndexDocValues}
+   * @return the most optimal second pass collector implementation for grouping by {@link DocValues}
    * @throws IOException    If I/O related errors occur
    */
   @SuppressWarnings("unchecked")
   public static DVSecondPassGroupingCollector create(String groupField,
                                                      boolean diskResident,
-                                                     ValueType type,
+                                                     DocValues.Type type,
                                                      Collection<SearchGroup> searchGroups,
                                                      Sort groupSort,
                                                      Sort withinGroupSort,
@@ -92,10 +92,10 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
   }
 
   final String groupField;
-  final ValueType valueType;
+  final DocValues.Type valueType;
   final boolean diskResident;
 
-  DVSecondPassGroupingCollector(String groupField, ValueType valueType, boolean diskResident, Collection<SearchGroup<GROUP_VALUE>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
+  DVSecondPassGroupingCollector(String groupField, DocValues.Type valueType, boolean diskResident, Collection<SearchGroup<GROUP_VALUE>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
     super(searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     this.groupField = groupField;
     this.valueType = valueType;
@@ -106,8 +106,8 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
   public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
 
-    final IndexDocValues dv = readerContext.reader.docValues(groupField);
-    final IndexDocValues.Source dvSource;
+    final DocValues dv = readerContext.reader.docValues(groupField);
+    final DocValues.Source dvSource;
     if (dv != null) {
       dvSource = diskResident ? dv.getDirectSource() : dv.getSource();
     } else {
@@ -122,21 +122,21 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
    * @param source The idv source to be used by concrete implementations
    * @param readerContext The current reader context
    */
-  protected abstract void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext);
+  protected abstract void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext);
 
   /**
    * @return The default source when no doc values are available.
    * @param readerContext The current reader context
    */
-  protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-    return IndexDocValues.getDefaultSource(valueType);
+  protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+    return DocValues.getDefaultSource(valueType);
   }
 
   static class Lng extends DVSecondPassGroupingCollector<Long> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    Lng(String groupField, ValueType valueType, boolean diskResident, Collection<SearchGroup<Long>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
+    Lng(String groupField, DocValues.Type valueType, boolean diskResident, Collection<SearchGroup<Long>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     }
 
@@ -144,16 +144,16 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       return groupMap.get(source.getInt(doc));
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source;
     }
   }
 
   static class Dbl extends DVSecondPassGroupingCollector<Double> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    Dbl(String groupField, ValueType valueType, boolean diskResident, Collection<SearchGroup<Double>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
+    Dbl(String groupField, DocValues.Type valueType, boolean diskResident, Collection<SearchGroup<Double>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     }
 
@@ -161,17 +161,17 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       return groupMap.get(source.getFloat(doc));
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source;
     }
   }
 
   static class BR extends DVSecondPassGroupingCollector<BytesRef> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
     private final BytesRef spare = new BytesRef();
 
-    BR(String groupField, ValueType valueType, boolean diskResident, Collection<SearchGroup<BytesRef>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
+    BR(String groupField, DocValues.Type valueType, boolean diskResident, Collection<SearchGroup<BytesRef>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     }
 
@@ -180,7 +180,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
     }
 
     @Override
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source;
     }
 
@@ -188,12 +188,12 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
 
   static class SortedBR extends DVSecondPassGroupingCollector<BytesRef> {
 
-    private IndexDocValues.SortedSource source;
+    private DocValues.SortedSource source;
     private final BytesRef spare = new BytesRef();
     private final SentinelIntSet ordSet;
 
     @SuppressWarnings("unchecked")
-    SortedBR(String groupField,  ValueType valueType, boolean diskResident, Collection<SearchGroup<BytesRef>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
+    SortedBR(String groupField,  DocValues.Type valueType, boolean diskResident, Collection<SearchGroup<BytesRef>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       ordSet = new SentinelIntSet(groupMap.size(), -1);
       groupDocs = (SearchGroupDocs<BytesRef>[]) new SearchGroupDocs[ordSet.keys.length];
@@ -209,7 +209,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
     }
 
     @Override
-    protected void setDocValuesSources(IndexDocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
+    protected void setDocValuesSources(DocValues.Source source, IndexReader.AtomicReaderContext readerContext) {
       this.source = source.asSortedSource();
 
       ordSet.clear();
@@ -222,8 +222,8 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
     }
 
     @Override
-    protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-      return IndexDocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
+    protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+      return DocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
     }
   }
 

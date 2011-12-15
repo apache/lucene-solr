@@ -76,7 +76,7 @@ public class TestParser extends LuceneTestCase {
     }
     d.close();
     writer.close();
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     searcher = newSearcher(reader);
 
   }
@@ -84,7 +84,6 @@ public class TestParser extends LuceneTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
-    searcher.close();
     dir.close();
     reader = null;
     searcher = null;

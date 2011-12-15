@@ -61,7 +61,6 @@ public class TestReaderClosed extends LuceneTestCase {
   public void test() throws Exception {
     TermRangeQuery query = TermRangeQuery.newStringRange("field", "a", "z", true, true);
     searcher.search(query, 5);
-    searcher.close();
     reader.close();
     try {
       searcher.search(query, 5);

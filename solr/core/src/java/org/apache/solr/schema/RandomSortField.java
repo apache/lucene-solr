@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.*;
@@ -157,7 +157,7 @@ public class RandomSortField extends FieldType {
     }
 
     @Override
-    public DocValues getValues(Map context, final AtomicReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map context, final AtomicReaderContext readerContext) throws IOException {
       return new IntDocValues(this) {
           private final int seed = getSeed(field, readerContext);
           @Override

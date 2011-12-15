@@ -302,7 +302,6 @@ public class TestSort extends SolrTestCaseJ4 {
           assertEquals(id, collectedDocs.get(j).doc);
         }
       }
-      searcher.close();
       reader.close();
     }
     dir.close();

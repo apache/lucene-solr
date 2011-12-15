@@ -29,9 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
+import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
@@ -65,24 +67,26 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   private boolean isNRT;
 
   @Override
-  protected void doAfterWriter(ExecutorService es) throws Exception {
-    final SearcherWarmer warmer = new SearcherWarmer() {
+  protected void doAfterWriter(final ExecutorService es) throws Exception {
+    final SearcherFactory factory = new SearcherFactory() {
       @Override
-      public void warm(IndexSearcher s) throws IOException {
+      public IndexSearcher newSearcher(IndexReader r) throws IOException {
+        IndexSearcher s = new IndexSearcher(r, es);
         TestSearcherManager.this.warmCalled = true;
         s.search(new TermQuery(new Term("body", "united")), 10);
+        return s;
       }
     };
     if (random.nextBoolean()) {
       // TODO: can we randomize the applyAllDeletes?  But
       // somehow for final searcher we must apply
       // deletes...
-      mgr = new SearcherManager(writer, true, warmer, es);
+      mgr = new SearcherManager(writer, true, factory);
       isNRT = true;
     } else {
       // SearcherManager needs to see empty commit:
       writer.commit();
-      mgr = new SearcherManager(dir, warmer, es);
+      mgr = new SearcherManager(dir, factory);
       isNRT = false;
     }
     
@@ -106,8 +110,10 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             }
           }
         } catch (Throwable t) {
-          System.out.println("TEST: reopen thread hit exc");
-          t.printStackTrace(System.out);
+          if (VERBOSE) {
+            System.out.println("TEST: reopen thread hit exc");
+            t.printStackTrace(System.out);
+          }
           failed.set(true);
           throw new RuntimeException(t);
         }
@@ -191,20 +197,28 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     writer.commit();
     final CountDownLatch awaitEnterWarm = new CountDownLatch(1);
     final CountDownLatch awaitClose = new CountDownLatch(1);
+    final AtomicBoolean triedReopen = new AtomicBoolean(false);
     final ExecutorService es = random.nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
-    final SearcherWarmer warmer = new SearcherWarmer() {
+    final SearcherFactory factory = new SearcherFactory() {
       @Override
-      public void warm(IndexSearcher s) throws IOException {
+      public IndexSearcher newSearcher(IndexReader r) throws IOException {
         try {
-          awaitEnterWarm.countDown();
-          awaitClose.await();
+          if (triedReopen.get()) {
+            awaitEnterWarm.countDown();
+            awaitClose.await();
+          }
         } catch (InterruptedException e) {
           //
         }
+        return new IndexSearcher(r, es);
       }
     };
-    final SearcherManager searcherManager = random.nextBoolean() ? new SearcherManager(dir,
-        warmer, es) : new SearcherManager(writer, random.nextBoolean(), warmer, es);
+    final SearcherManager searcherManager = random.nextBoolean() 
+        ? new SearcherManager(dir, factory) 
+        : new SearcherManager(writer, random.nextBoolean(), factory);
+    if (VERBOSE) {
+      System.out.println("sm created");
+    }
     IndexSearcher searcher = searcherManager.acquire();
     try {
       assertEquals(1, searcher.getIndexReader().numDocs());
@@ -214,20 +228,24 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     writer.addDocument(new Document());
     writer.commit();
     final AtomicBoolean success = new AtomicBoolean(false);
-    final AtomicBoolean triedReopen = new AtomicBoolean(false);
     final Throwable[] exc = new Throwable[1];
     Thread thread = new Thread(new Runnable() {
       @Override
       public void run() {
         try {
           triedReopen.set(true);
+          if (VERBOSE) {
+            System.out.println("NOW call maybeReopen");
+          }
           searcherManager.maybeReopen();
           success.set(true);
         } catch (AlreadyClosedException e) {
           // expected
         } catch (Throwable e) {
-          System.out.println("FAIL: unexpected exc");
-          e.printStackTrace(System.out);
+          if (VERBOSE) {
+            System.out.println("FAIL: unexpected exc");
+            e.printStackTrace(System.out);
+          }
           exc[0] = e;
           // use success as the barrier here to make sure we see the write
           success.set(false);
@@ -236,7 +254,13 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       }
     });
     thread.start();
+    if (VERBOSE) {
+      System.out.println("THREAD started");
+    }
     awaitEnterWarm.await();
+    if (VERBOSE) {
+      System.out.println("NOW call close");
+    }
     searcherManager.close();
     awaitClose.countDown();
     thread.join();

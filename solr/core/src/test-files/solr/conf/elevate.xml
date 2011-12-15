@@ -32,5 +32,11 @@
   <doc id="2" />
   <doc id="3" />
  </query>
- 
+
+ <query text="AAAA">
+  <doc id="7.0" />
+ </query>
+
+
+
 </elevate>

@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function.valuesource;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
@@ -39,15 +39,15 @@ public class DefFunction extends MultiFunction {
 
 
   @Override
-  public DocValues getValues(Map fcontext, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map fcontext, AtomicReaderContext readerContext) throws IOException {
 
 
     return new Values(valsArr(sources, fcontext, readerContext)) {
       final int upto = valsArr.length - 1;
 
-      private DocValues get(int doc) {
+      private FunctionValues get(int doc) {
         for (int i=0; i<upto; i++) {
-          DocValues vals = valsArr[i];
+          FunctionValues vals = valsArr[i];
           if (vals.exists(doc)) {
             return vals;
           }
@@ -108,7 +108,7 @@ public class DefFunction extends MultiFunction {
       @Override
       public boolean exists(int doc) {
         // return true if any source is exists?
-        for (DocValues vals : valsArr) {
+        for (FunctionValues vals : valsArr) {
           if (vals.exists(doc)) {
             return true;
           }

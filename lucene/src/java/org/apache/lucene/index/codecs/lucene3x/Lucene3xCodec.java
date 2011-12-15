@@ -26,13 +26,15 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.index.codecs.FieldInfosFormat;
+import org.apache.lucene.index.codecs.NormsFormat;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.StoredFieldsFormat;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.SegmentInfosFormat;
 import org.apache.lucene.index.codecs.TermVectorsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40FieldInfosFormat;
+import org.apache.lucene.index.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.codecs.lucene40.Lucene40TermVectorsFormat;
@@ -62,6 +64,9 @@ public class Lucene3xCodec extends Codec {
   // this way IR.commit fails on delete/undelete/setNorm/etc ?
   private final SegmentInfosFormat infosFormat = new Lucene40SegmentInfosFormat();
   
+  // TODO: this should really be a different impl
+  private final NormsFormat normsFormat = new Lucene40NormsFormat();
+  
   // 3.x doesn't support docvalues
   private final DocValuesFormat docValuesFormat = new DocValuesFormat() {
     @Override
@@ -70,7 +75,7 @@ public class Lucene3xCodec extends Codec {
     }
 
     @Override
-    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
       return null;
     }
 
@@ -106,5 +111,10 @@ public class Lucene3xCodec extends Codec {
   @Override
   public SegmentInfosFormat segmentInfosFormat() {
     return infosFormat;
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return normsFormat;
   }
 }

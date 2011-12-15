@@ -19,16 +19,16 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * Expert: obtains numeric field values from a {@link IndexDocValues} field.
+ * Expert: obtains numeric field values from a {@link FunctionValues} field.
  * This {@link ValueSource} is compatible with all numerical
- * {@link IndexDocValues}
+ * {@link FunctionValues}
  * 
  * @lucene.experimental
  * 
@@ -42,15 +42,15 @@ public class NumericIndexDocValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final IndexDocValues.Source source = readerContext.reader.docValues(field)
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final Source source = readerContext.reader.docValues(field)
         .getSource();
-    ValueType type = source.type();
+    Type type = source.type();
     switch (type) {
     case FLOAT_32:
     case FLOAT_64:
       // TODO (chrism) Change to use FloatDocValues and IntDocValues
-      return new DocValues() {
+      return new FunctionValues() {
 
         @Override
         public String toString(int doc) {
@@ -64,7 +64,7 @@ public class NumericIndexDocValueSource extends ValueSource {
       };
 
     case VAR_INTS:
-      return new DocValues() {
+      return new FunctionValues() {
         @Override
         public String toString(int doc) {
           return "float: [" + floatVal(doc) + "]";
@@ -113,6 +113,6 @@ public class NumericIndexDocValueSource extends ValueSource {
 
   @Override
   public String toString() {
-    return "DocValues float(" + field + ')';
+    return "FunctionValues float(" + field + ')';
   }
 }

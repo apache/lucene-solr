@@ -86,7 +86,7 @@ public abstract class BaseTestTopK extends FacetTestBase {
     if (VERBOSE) {
       System.out.println("Adding CP: " + cp.toString());
     }
-    return Arrays.asList(new CategoryPath[] { cp });
+    return Arrays.asList(cp);
   }
 
   protected FacetSearchParams searchParamsWithRequests(int numResults) {

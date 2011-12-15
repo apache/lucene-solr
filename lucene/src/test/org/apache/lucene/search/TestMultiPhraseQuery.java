@@ -142,7 +142,6 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     }
     
     writer.close();
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -162,7 +161,6 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     q.add(new Term("body", "chocolate"));
     q.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
     assertEquals(2, searcher.search(q, 1).totalHits);
-    searcher.close();
     r.close();
     indexStore.close();
   }
@@ -205,7 +203,6 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     searcher.explain(q, 0);
     
     writer.close();
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -233,7 +230,6 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals("Wrong number of hits", 0, hits.length);
     writer.close();
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -256,7 +252,6 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     searcher.explain(q, 0);
     
     writer.close();
-    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -330,7 +325,6 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     assertEquals(10f * 10f, weight.getValueForNormalization(), 0.001f);
 
     writer.close();
-    searcher.close();
     reader.close();
     indexStore.close();
   }

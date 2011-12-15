@@ -159,7 +159,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     writer.close();
     assertTrue(r2.isCurrent());
     
-    IndexReader r3 = IndexReader.open(dir1, true);
+    IndexReader r3 = IndexReader.open(dir1);
     assertTrue(r3.isCurrent());
     assertTrue(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r3));
@@ -384,7 +384,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     _TestUtil.checkIndex(mainDir);
 
-    IndexReader reader = IndexReader.open(mainDir, true);
+    IndexReader reader = IndexReader.open(mainDir);
     assertEquals(addDirThreads.count.intValue(), reader.numDocs());
     //assertEquals(100 + numDirs * (3 * numIter / 4) * addDirThreads.numThreads
     //    * addDirThreads.NUM_INIT_DOCS, reader.numDocs());
@@ -420,7 +420,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       
       readers = new IndexReader[numDirs];
       for (int i = 0; i < numDirs; i++)
-        readers[i] = IndexReader.open(addDir, false);
+        readers[i] = IndexReader.open(addDir);
     }
     
     void joinThreads() {
@@ -695,7 +695,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     assertEquals(100, searcher.search(q, 10).totalHits);
-    searcher.close();
     try {
       IndexReader.openIfChanged(r);
       fail("failed to hit AlreadyClosedException");
@@ -761,7 +760,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Query q = new TermQuery(new Term("indexname", "test"));
       IndexSearcher searcher = newSearcher(r);
       final int count = searcher.search(q, 10).totalHits;
-      searcher.close();
       assertTrue(count >= lastCount);
       lastCount = count;
     }
@@ -778,7 +776,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     final int count = searcher.search(q, 10).totalHits;
-    searcher.close();
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
@@ -850,7 +847,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Query q = new TermQuery(new Term("indexname", "test"));
       IndexSearcher searcher = newSearcher(r);
       sum += searcher.search(q, 10).totalHits;
-      searcher.close();
     }
 
     for(int i=0;i<numThreads;i++) {
@@ -865,7 +861,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     sum += searcher.search(q, 10).totalHits;
-    searcher.close();
     assertTrue("no documents found at all", sum > 0);
 
     assertEquals(0, excs.size());
@@ -892,7 +887,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.forceMergeDeletes();
     w.close();
     r.close();
-    r = IndexReader.open(dir, true);
+    r = IndexReader.open(dir);
     assertEquals(1, r.numDocs());
     assertFalse(r.hasDeletions());
     r.close();
@@ -954,7 +949,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
                 assertEquals(20, hits.totalHits);
                 didWarm.set(true);
-                s.close();
               }
             }).
             setMergePolicy(newLogMergePolicy(10))

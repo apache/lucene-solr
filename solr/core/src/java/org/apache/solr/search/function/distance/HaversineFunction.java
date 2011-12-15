@@ -17,7 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
@@ -70,7 +70,7 @@ public class HaversineFunction extends ValueSource {
    * @param p2DV
    * @return The haversine distance formula
    */
-  protected double distance(int doc, DocValues p1DV, DocValues p2DV) {
+  protected double distance(int doc, FunctionValues p1DV, FunctionValues p2DV) {
 
     double[] p1D = new double[2];
     double[] p2D = new double[2];
@@ -96,10 +96,10 @@ public class HaversineFunction extends ValueSource {
 
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues vals1 = p1.getValues(context, readerContext);
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues vals1 = p1.getValues(context, readerContext);
 
-    final DocValues vals2 = p2.getValues(context, readerContext);
+    final FunctionValues vals2 = p2.getValues(context, readerContext);
     return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {

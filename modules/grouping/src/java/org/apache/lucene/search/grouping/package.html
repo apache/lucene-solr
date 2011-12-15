@@ -186,14 +186,14 @@ fields, <code>FieldCache</code>, etc.).
 </p>
 
 <p>
-  There are also IndexDocValues based implementations available for the group collectors. There are factory methods
-  available for creating idv based instances. A typical example using idv based grouping collectors:
+  There are also DocValues based implementations available for the group collectors. There are factory methods
+  available for creating dv based instances. A typical example using dv based grouping collectors:
 </p>
 
 <pre class="prettyprint">
   boolean diskResident = true; // Whether values should fetched directly from disk by passing the Java heap space.
   AbstractFirstPassGroupingCollector c1 = DVFirstPassGroupingCollector.create(
-        groupSort, groupOffset+topNGroups, "author", ValueType.BYTES_VAR_SORTED, diskResident
+        groupSort, groupOffset+topNGroups, "author", DocValues.Type.BYTES_VAR_SORTED, diskResident
   );
 
   s.search(new TermQuery(new Term("content", searchTerm)), c1);
@@ -209,7 +209,7 @@ fields, <code>FieldCache</code>, etc.).
   boolean getMaxScores = true;
   boolean fillFields = true;
   AbstractSecondPassGroupingCollector&lt;BytesRef&gt; c2 = DVSecondPassGroupingCollector.create(
-        "author", diskResident, ValueType.BYTES_VAR_SORTED, topGroups, groupSort, docSort,
+        "author", diskResident, DocValues.Type.BYTES_VAR_SORTED, topGroups, groupSort, docSort,
         docOffset+docsPerGroup, getScores, getMaxScores, fillFields
   );
 

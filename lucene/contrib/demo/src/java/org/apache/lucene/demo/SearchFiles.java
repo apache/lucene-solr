@@ -131,7 +131,6 @@ public class SearchFiles {
         break;
       }
     }
-    searcher.close();
     reader.close();
   }
 

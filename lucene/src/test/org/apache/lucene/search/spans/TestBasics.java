@@ -125,7 +125,6 @@ public class TestBasics extends LuceneTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     reader.close();
     directory.close();
     searcher = null;

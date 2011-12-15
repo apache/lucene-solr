@@ -272,8 +272,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
   public static void verifyEquals(Directory dir1, Directory dir2, String idField) throws Throwable {
-    IndexReader r1 = IndexReader.open(dir1, true);
-    IndexReader r2 = IndexReader.open(dir2, true);
+    IndexReader r1 = IndexReader.open(dir1);
+    IndexReader r2 = IndexReader.open(dir2);
     verifyEquals(r1, r2, idField);
     r1.close();
     r2.close();

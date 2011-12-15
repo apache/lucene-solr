@@ -24,6 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -52,8 +53,8 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(rd1,true));
-    pr.add(IndexReader.open(rd2,true));
+    pr.add(IndexReader.open(rd1));
+    pr.add(IndexReader.open(rd2));
 		
     // When unpatched, Lucene crashes here with a NoSuchElementException (caused by ParallelTermEnum)
     iwOut.addIndexes(pr);
@@ -75,16 +76,27 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     {
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
+      Field idField = newField("id", "", TextField.TYPE_UNSTORED);
+      doc.add(idField);
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       doc.add(newField("test", "", customType));
+      idField.setValue("1");
       iw.addDocument(doc);
       doc.add(newField("test", "", TextField.TYPE_UNSTORED));
+      idField.setValue("2");
       iw.addDocument(doc);
       iw.close();
 
-      IndexReader ir = IndexReader.open(rd1,false);
-      ir.deleteDocument(0);
+      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+      IndexWriter writer = new IndexWriter(rd1, dontMergeConfig);
+      
+      writer.deleteDocuments(new Term("id", "1"));
+      writer.close();
+      IndexReader ir = IndexReader.open(rd1);
+      assertEquals(2, ir.maxDoc());
+      assertEquals(1, ir.numDocs());
       ir.close();
 
       iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
@@ -104,8 +116,8 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(rd1,true));
-    pr.add(IndexReader.open(rd2,true));
+    pr.add(IndexReader.open(rd1));
+    pr.add(IndexReader.open(rd2));
 
     // When unpatched, Lucene crashes here with an ArrayIndexOutOfBoundsException (caused by TermVectorsWriter)
     iwOut.addIndexes(pr);

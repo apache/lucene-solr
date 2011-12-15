@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -40,7 +40,7 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   protected abstract String name();
-  protected abstract float func(int doc, DocValues aVals, DocValues bVals);
+  protected abstract float func(int doc, FunctionValues aVals, FunctionValues bVals);
 
   @Override
   public String description() {
@@ -48,9 +48,9 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues aVals =  a.getValues(context, readerContext);
-    final DocValues bVals =  b.getValues(context, readerContext);
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues aVals =  a.getValues(context, readerContext);
+    final FunctionValues bVals =  b.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {

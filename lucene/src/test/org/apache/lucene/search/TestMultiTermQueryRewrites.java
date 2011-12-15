@@ -59,16 +59,16 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     writer.forceMerge(1); swriter1.forceMerge(1); swriter2.forceMerge(1);
     writer.close(); swriter1.close(); swriter2.close();
     
-    reader = IndexReader.open(dir, true);
+    reader = IndexReader.open(dir);
     searcher = newSearcher(reader);
     
     multiReader = new MultiReader(new IndexReader[] {
-      IndexReader.open(sdir1, true), IndexReader.open(sdir2, true) 
+      IndexReader.open(sdir1), IndexReader.open(sdir2) 
     }, true);
     multiSearcher = newSearcher(multiReader);
     
     multiReaderDupls = new MultiReader(new IndexReader[] {
-      IndexReader.open(sdir1, true), IndexReader.open(dir, true) 
+      IndexReader.open(sdir1), IndexReader.open(dir) 
     }, true);
     multiSearcherDupls = newSearcher(multiReaderDupls);
   }

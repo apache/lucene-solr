@@ -140,7 +140,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     dmq.add(pq);
     assertEquals(1, s.search(dmq, 10).totalHits);
     
-    s.close();
     r.close();
     w.close();
     dir.close();

@@ -21,12 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -49,7 +49,7 @@ public class MultiPassIndexSplitter {
   
   /**
    * Split source index into multiple parts.
-   * @param input source index, can be read-only, can have deletions, can have
+   * @param in source index, can have deletions, can have
    * multiple segments (or multiple readers).
    * @param outputs list of directories where the output parts will be stored.
    * @param seq if true, then the source index will be split into equal
@@ -57,18 +57,18 @@ public class MultiPassIndexSplitter {
    * assigned in a deterministic round-robin fashion to one of the output splits.
    * @throws IOException
    */
-  public void split(Version version, IndexReader input, Directory[] outputs, boolean seq) throws IOException {
+  public void split(Version version, IndexReader in, Directory[] outputs, boolean seq) throws IOException {
     if (outputs == null || outputs.length < 2) {
       throw new IOException("Invalid number of outputs.");
     }
-    if (input == null || input.numDocs() < 2) {
+    if (in == null || in.numDocs() < 2) {
       throw new IOException("Not enough documents for splitting");
     }
     int numParts = outputs.length;
     // wrap a potentially read-only input
     // this way we don't have to preserve original deletions because neither
     // deleteDocument(int) or undeleteAll() is applied to the wrapped input index.
-    input = new FakeDeleteIndexReader(input);
+    FakeDeleteIndexReader input = new FakeDeleteIndexReader(in);
     int maxDoc = input.maxDoc();
     int partLen = maxDoc / numParts;
     for (int i = 0; i < numParts; i++) {
@@ -143,7 +143,7 @@ public class MultiPassIndexSplitter {
           System.err.println("Invalid input index - skipping: " + file);
           continue;
         }
-        indexes.add(IndexReader.open(dir, true));
+        indexes.add(IndexReader.open(dir));
       }
     }
     if (outDir == null) {
@@ -174,16 +174,61 @@ public class MultiPassIndexSplitter {
   }
   
   /**
-   * This class pretends that it can write deletions to the underlying index.
-   * Instead, deletions are buffered in a bitset and overlaid with the original
-   * list of deletions.
+   * This class emulates deletions on the underlying index.
    */
-  public static final class FakeDeleteIndexReader extends FilterIndexReader {
+  private static final class FakeDeleteIndexReader extends MultiReader {
+
+    public FakeDeleteIndexReader(IndexReader reader) throws IOException {
+      super(initSubReaders(reader), false /* dont close */);
+    }
+    
+    private static IndexReader[] initSubReaders(IndexReader reader) throws IOException {
+      final ArrayList<IndexReader> subs = new ArrayList<IndexReader>();
+      new ReaderUtil.Gather(reader) {
+        @Override
+        protected void add(int base, IndexReader r) {
+          subs.add(new FakeDeleteAtomicIndexReader(r));
+        }
+      }.run();
+      return subs.toArray(new IndexReader[subs.size()]);
+    }
+        
+    public void deleteDocument(int docID) {
+      final int i = readerIndex(docID);
+      ((FakeDeleteAtomicIndexReader) subReaders[i]).deleteDocument(docID - starts[i]);
+    }
+
+    public void undeleteAll()  {
+      for (IndexReader r : subReaders) {
+        ((FakeDeleteAtomicIndexReader) r).undeleteAll();
+      }
+    }
+
+    // override this as MultiReader precalculates the number of deletions
+    // (this method is never used by MultiPassIndexSplitter)
+    @Override
+    public int numDocs() {
+      int n = 0;
+      for (int i = 0; i < subReaders.length; i++)
+        n += subReaders[i].numDocs();
+      return n;
+    }
+  
+    // override this as MultiReader precalculates the number of deletions
+    // (this method is never used by MultiPassIndexSplitter)
+    @Override
+    public boolean hasDeletions() {
+      return (maxDoc() != numDocs());
+    }
+
+  }
+  
+  private static final class FakeDeleteAtomicIndexReader extends FilterIndexReader {
     FixedBitSet liveDocs;
 
-    public FakeDeleteIndexReader(IndexReader in) {
-      super(new SlowMultiReaderWrapper(in));
-      doUndeleteAll(); // initialize main bitset
+    public FakeDeleteAtomicIndexReader(IndexReader reader) {
+      super(reader);
+      undeleteAll(); // initialize main bitset
     }
 
     @Override
@@ -191,12 +236,7 @@ public class MultiPassIndexSplitter {
       return liveDocs.cardinality();
     }
 
-    /**
-     * Just removes our overlaid deletions - does not undelete the original
-     * deletions.
-     */
-    @Override
-    protected void doUndeleteAll()  {
+    public void undeleteAll()  {
       final int maxDoc = in.maxDoc();
       liveDocs = new FixedBitSet(in.maxDoc());
       if (in.hasDeletions()) {
@@ -212,8 +252,7 @@ public class MultiPassIndexSplitter {
       }
     }
 
-    @Override
-    protected void doDelete(int n) {
+    public void deleteDocument(int n) {
       liveDocs.clear(n);
     }
 

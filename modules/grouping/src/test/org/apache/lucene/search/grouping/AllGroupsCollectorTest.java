@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -123,8 +123,8 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      IndexDocValuesField valuesField = new IndexDocValuesField(groupField);
-      valuesField.setBytes(new BytesRef(value), ValueType.BYTES_VAR_SORTED);
+      DocValuesField valuesField = new DocValuesField(groupField);
+      valuesField.setBytes(new BytesRef(value), Type.BYTES_VAR_SORTED);
       doc.add(valuesField);
     }
   }
@@ -133,7 +133,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     AbstractAllGroupsCollector selected;
     if (random.nextBoolean() && canUseIDV) {
       boolean diskResident = random.nextBoolean();
-      selected = DVAllGroupsCollector.create(groupField, ValueType.BYTES_VAR_SORTED, diskResident);
+      selected = DVAllGroupsCollector.create(groupField, Type.BYTES_VAR_SORTED, diskResident);
     } else if (random.nextBoolean()) {
       selected = new TermAllGroupsCollector(groupField);
     } else {

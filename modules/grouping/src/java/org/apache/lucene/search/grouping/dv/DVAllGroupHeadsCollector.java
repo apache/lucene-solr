@@ -17,9 +17,9 @@ package org.apache.lucene.search.grouping.dv;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.util.BytesRef;
@@ -40,13 +40,13 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
   final String groupField;
   final boolean diskResident;
-  final ValueType valueType;
+  final DocValues.Type valueType;
   final BytesRef scratchBytesRef = new BytesRef();
 
   IndexReader.AtomicReaderContext readerContext;
   Scorer scorer;
 
-  DVAllGroupHeadsCollector(String groupField, ValueType valueType, int numberOfSorts, boolean diskResident) {
+  DVAllGroupHeadsCollector(String groupField, DocValues.Type valueType, int numberOfSorts, boolean diskResident) {
     super(numberOfSorts);
     this.groupField = groupField;
     this.valueType = valueType;
@@ -59,12 +59,12 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
    *
    * @param groupField      The field to group by
    * @param sortWithinGroup The sort within each group
-   * @param type The {@link ValueType} which is used to select a concrete implementation.
+   * @param type The {@link Type} which is used to select a concrete implementation.
    * @param diskResident Whether the values to group by should be disk resident
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector create(String groupField, Sort sortWithinGroup, ValueType type, boolean diskResident) throws IOException {
+  public static AbstractAllGroupHeadsCollector create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) throws IOException {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
@@ -126,8 +126,8 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
   public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
     this.readerContext = readerContext;
 
-    final IndexDocValues dv = readerContext.reader.docValues(groupField);
-    final IndexDocValues.Source dvSource;
+    final DocValues dv = readerContext.reader.docValues(groupField);
+    final DocValues.Source dvSource;
     if (dv != null) {
       dvSource = diskResident ? dv.getDirectSource() : dv.getSource();
     } else {
@@ -141,14 +141,14 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
    *
    * @param source The idv source to be used by concrete implementations
    */
-  protected abstract void setDocValuesSources(IndexDocValues.Source source);
+  protected abstract void setDocValuesSources(DocValues.Source source);
 
   /**
    * @return The default source when no doc values are available.
    * @param readerContext The current reader context
    */
-  protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-    return IndexDocValues.getDefaultSource(valueType);
+  protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+    return DocValues.getDefaultSource(valueType);
   }
 
   // A general impl that works for any group sort.
@@ -157,7 +157,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
     private final Sort sortWithinGroup;
     private final Map<Comparable, GroupHead> groups;
 
-    GeneralAllGroupHeadsCollector(String groupField, ValueType valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+    GeneralAllGroupHeadsCollector(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
       super(groupField, valueType, sortWithinGroup.getSort().length, diskResident);
       this.sortWithinGroup = sortWithinGroup;
       groups = new HashMap<Comparable, GroupHead>();
@@ -211,9 +211,9 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
     static class SortedBR extends GeneralAllGroupHeadsCollector {
 
-      private IndexDocValues.SortedSource source;
+      private DocValues.SortedSource source;
 
-      SortedBR(String groupField, ValueType valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      SortedBR(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -225,21 +225,21 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         return BytesRef.deepCopyOf((BytesRef) value);
       }
 
-      protected void setDocValuesSources(IndexDocValues.Source source) {
+      protected void setDocValuesSources(DocValues.Source source) {
         this.source = source.asSortedSource();
       }
 
       @Override
-      protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-        return IndexDocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
+      protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+        return DocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
       }
     }
 
     static class BR extends GeneralAllGroupHeadsCollector {
 
-      private IndexDocValues.Source source;
+      private DocValues.Source source;
 
-      BR(String groupField, ValueType valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      BR(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -251,7 +251,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         return BytesRef.deepCopyOf((BytesRef) value);
       }
 
-      protected void setDocValuesSources(IndexDocValues.Source source) {
+      protected void setDocValuesSources(DocValues.Source source) {
         this.source = source;
       }
 
@@ -259,9 +259,9 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
     static class Lng extends GeneralAllGroupHeadsCollector {
 
-      private IndexDocValues.Source source;
+      private DocValues.Source source;
 
-      Lng(String groupField, ValueType valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      Lng(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -273,16 +273,16 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         return value;
       }
 
-      protected void setDocValuesSources(IndexDocValues.Source source) {
+      protected void setDocValuesSources(DocValues.Source source) {
         this.source = source;
       }
     }
 
     static class Dbl extends GeneralAllGroupHeadsCollector {
 
-      private IndexDocValues.Source source;
+      private DocValues.Source source;
 
-      Dbl(String groupField, ValueType valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
+      Dbl(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
@@ -294,7 +294,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         return value;
       }
 
-      protected void setDocValuesSources(IndexDocValues.Source source) {
+      protected void setDocValuesSources(DocValues.Source source) {
         this.source = source;
       }
 

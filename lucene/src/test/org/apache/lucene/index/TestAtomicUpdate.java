@@ -112,7 +112,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     @Override
     public void doWork() throws Throwable {
-      IndexReader r = IndexReader.open(directory, true);
+      IndexReader r = IndexReader.open(directory);
       assertEquals(100, r.numDocs());
       r.close();
     }
@@ -144,7 +144,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     }
     writer.commit();
 
-    IndexReader r = IndexReader.open(directory, true);
+    IndexReader r = IndexReader.open(directory);
     assertEquals(100, r.numDocs());
     r.close();
 

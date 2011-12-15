@@ -143,9 +143,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       TopDocs memDocs = mem.search(qp.parse(query), 1);
       assertEquals(ramDocs.totalHits, memDocs.totalHits);
     }
-    ram.close();
     reader.close();
-    mem.close();
   }
   
   /**

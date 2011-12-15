@@ -383,6 +383,8 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
    - o.a.l.search.function.ValueSource -> o.a.l.queries.function.ValueSource
    - o.a.l.search.function.ValueSourceQuery -> o.a.l.queries.function.FunctionQuery
 
+   DocValues are now named FunctionValues, to not confuse with Lucene's per-document values.
+
 * LUCENE-2392: Enable flexible scoring:
 
   The existing "Similarity" api is now TFIDFSimilarity, if you were extending

@@ -135,7 +135,6 @@ public class TestQualityRun extends BenchmarkTestCase {
       assertTrue("avg p_at_"+j+" should be hurt: "+avg.getPrecisionAt(j), 1.0 > avg.getPrecisionAt(j));
     }
     
-    searcher.close();
     reader.close();
     dir.close();
   }

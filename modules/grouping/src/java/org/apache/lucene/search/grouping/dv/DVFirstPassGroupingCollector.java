@@ -17,9 +17,9 @@ package org.apache.lucene.search.grouping.dv;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
@@ -35,9 +35,9 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
 
   final String groupField;
   final boolean diskResident;
-  final ValueType valueType;
+  final DocValues.Type valueType;
 
-  public static DVFirstPassGroupingCollector create(Sort groupSort, int topNGroups, String groupField, ValueType type, boolean diskResident) throws IOException {
+  public static DVFirstPassGroupingCollector create(Sort groupSort, int topNGroups, String groupField, DocValues.Type type, boolean diskResident) throws IOException {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
@@ -61,7 +61,7 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
     }
   }
 
-  DVFirstPassGroupingCollector(Sort groupSort, int topNGroups, String groupField, boolean diskResident, ValueType valueType) throws IOException {
+  DVFirstPassGroupingCollector(Sort groupSort, int topNGroups, String groupField, boolean diskResident, DocValues.Type valueType) throws IOException {
     super(groupSort, topNGroups);
     this.groupField = groupField;
     this.diskResident = diskResident;
@@ -72,8 +72,8 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
   public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
 
-    final IndexDocValues dv = readerContext.reader.docValues(groupField);
-    final IndexDocValues.Source dvSource;
+    final DocValues dv = readerContext.reader.docValues(groupField);
+    final DocValues.Source dvSource;
     if (dv != null) {
       dvSource = diskResident ? dv.getDirectSource() : dv.getSource();
     } else {
@@ -87,21 +87,21 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
    *
    * @param source The idv source to be used by concrete implementations
    */
-  protected abstract void setDocValuesSources(IndexDocValues.Source source);
+  protected abstract void setDocValuesSources(DocValues.Source source);
 
   /**
    * @return The default source when no doc values are available.
    * @param readerContext The current reader context
    */
-  protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-    return IndexDocValues.getDefaultSource(valueType);
+  protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+    return DocValues.getDefaultSource(valueType);
   }
 
   static class Lng extends DVFirstPassGroupingCollector<Long> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    Lng(Sort groupSort, int topNGroups, String groupField, boolean diskResident, ValueType type) throws IOException {
+    Lng(Sort groupSort, int topNGroups, String groupField, boolean diskResident, DocValues.Type type) throws IOException {
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
@@ -113,16 +113,16 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
       return groupValue;
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source) {
+    protected void setDocValuesSources(DocValues.Source source) {
       this.source = source;
     }
   }
 
   static class Dbl extends DVFirstPassGroupingCollector<Double> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
 
-    Dbl(Sort groupSort, int topNGroups, String groupField, boolean diskResident, ValueType type) throws IOException {
+    Dbl(Sort groupSort, int topNGroups, String groupField, boolean diskResident, DocValues.Type type) throws IOException {
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
@@ -134,17 +134,17 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
       return groupValue;
     }
 
-    protected void setDocValuesSources(IndexDocValues.Source source) {
+    protected void setDocValuesSources(DocValues.Source source) {
       this.source = source;
     }
   }
 
   static class BR extends DVFirstPassGroupingCollector<BytesRef> {
 
-    private IndexDocValues.Source source;
+    private DocValues.Source source;
     private final BytesRef spare = new BytesRef();
 
-    BR(Sort groupSort, int topNGroups, String groupField, boolean diskResident, ValueType type) throws IOException {
+    BR(Sort groupSort, int topNGroups, String groupField, boolean diskResident, DocValues.Type type) throws IOException {
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
@@ -162,17 +162,17 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
     }
 
     @Override
-    protected void setDocValuesSources(IndexDocValues.Source source) {
+    protected void setDocValuesSources(DocValues.Source source) {
       this.source = source;
     }
   }
 
   static class SortedBR extends DVFirstPassGroupingCollector<BytesRef> {
 
-    private IndexDocValues.SortedSource sortedSource;
+    private DocValues.SortedSource sortedSource;
     private final BytesRef spare = new BytesRef();
 
-    SortedBR(Sort groupSort, int topNGroups, String groupField, boolean diskResident, ValueType type) throws IOException {
+    SortedBR(Sort groupSort, int topNGroups, String groupField, boolean diskResident, DocValues.Type type) throws IOException {
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
@@ -192,13 +192,13 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
     }
 
     @Override
-    protected void setDocValuesSources(IndexDocValues.Source source) {
+    protected void setDocValuesSources(DocValues.Source source) {
       this.sortedSource = source.asSortedSource();
     }
 
     @Override
-    protected IndexDocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-      return IndexDocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
+    protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+      return DocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
     }
   }
 

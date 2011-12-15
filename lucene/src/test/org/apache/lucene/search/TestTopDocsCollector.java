@@ -98,7 +98,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     TopDocsCollector<ScoreDoc> tdc = new MyTopsDocCollector(numResults);
     searcher.search(q, tdc);
-    searcher.close();
     return tdc;
   }
   

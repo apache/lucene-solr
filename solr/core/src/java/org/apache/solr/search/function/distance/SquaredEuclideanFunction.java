@@ -16,7 +16,7 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.spatial.DistanceUtils;
 
@@ -43,7 +43,7 @@ public class SquaredEuclideanFunction extends VectorDistanceFunction {
    * @param doc The doc to score
    */
   @Override
-  protected double distance(int doc, DocValues dv1, DocValues dv2) {
+  protected double distance(int doc, FunctionValues dv1, FunctionValues dv2) {
 
     double[] vals1 = new double[source1.dimension()];
     double[] vals2 = new double[source1.dimension()];

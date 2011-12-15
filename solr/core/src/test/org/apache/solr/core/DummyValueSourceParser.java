@@ -16,7 +16,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -47,7 +47,7 @@ public class DummyValueSourceParser extends ValueSourceParser {
       }
 
       @Override
-      protected float func(int doc, DocValues vals) {
+      protected float func(int doc, FunctionValues vals) {
         float result = 0;
         return result;
       }

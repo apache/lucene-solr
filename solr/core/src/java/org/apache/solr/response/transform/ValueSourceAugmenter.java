@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrDocument;
@@ -63,7 +63,7 @@ public class ValueSourceAugmenter extends DocTransformer
     try {
       IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
       readerContexts = reader.getTopReaderContext().leaves();
-      docValuesArr = new DocValues[readerContexts.length];
+      docValuesArr = new FunctionValues[readerContexts.length];
 
       searcher = qparser.getReq().getSearcher();
       fcontext = ValueSource.newContext(searcher);
@@ -77,7 +77,7 @@ public class ValueSourceAugmenter extends DocTransformer
   Map fcontext;
   SolrIndexSearcher searcher;
   IndexReader.AtomicReaderContext[] readerContexts;
-  DocValues docValuesArr[];
+  FunctionValues docValuesArr[];
 
 
   @Override
@@ -89,7 +89,7 @@ public class ValueSourceAugmenter extends DocTransformer
       // TODO: calculate this stuff just once across diff functions
       int idx = ReaderUtil.subIndex(docid, readerContexts);
       IndexReader.AtomicReaderContext rcontext = readerContexts[idx];
-      DocValues values = docValuesArr[idx];
+      FunctionValues values = docValuesArr[idx];
       if (values == null) {
         docValuesArr[idx] = values = valueSource.getValues(fcontext, rcontext);
       }

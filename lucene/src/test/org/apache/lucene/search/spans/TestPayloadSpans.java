@@ -174,7 +174,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), nestedSpanNearQuery);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{3,3});
-    searcher.close();
     closeIndexReader.close();
     directory.close();
   }
@@ -207,7 +206,6 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 1, new int[]{3});
-    searcher.close();
     closeIndexReader.close();
     directory.close();
   }
@@ -245,7 +243,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), nestedSpanNearQuery);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{8, 8});
-    searcher.close();
     closeIndexReader.close();
     directory.close();
   }
@@ -284,7 +281,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(2, payloadSet.size());
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
-    is.close();
     reader.close();
     directory.close();
   }
@@ -321,7 +317,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(2, payloadSet.size());
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
-    is.close();
     reader.close();
     directory.close();
   }
@@ -364,7 +359,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
-    is.close();
     reader.close();
     directory.close();
   }
@@ -391,7 +385,6 @@ public class TestPayloadSpans extends LuceneTestCase {
       if(VERBOSE)
         System.out.println(new String(bytes));
     }
-    searcher.close();
     reader.close();
     directory.close();
   }

@@ -1,11 +1,11 @@
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-public abstract class StrDocValues extends DocValues {
+public abstract class StrDocValues extends FunctionValues {
   protected final ValueSource vs;
 
   public StrDocValues(ValueSource vs) {

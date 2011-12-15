@@ -80,7 +80,6 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // true);
     int numHits = searcher.search(sfq, null, 1000).totalHits;
     assertEquals(1, numHits);
-    searcher.close();
     reader.close();
     directory.close();
   }

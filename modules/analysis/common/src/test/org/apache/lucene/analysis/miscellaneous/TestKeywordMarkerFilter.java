@@ -64,8 +64,8 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
                      new KeywordMarkerFilter(
                      new KeywordMarkerFilter(
                      new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
-                     new HashSet<String>(Arrays.asList(new String[] { "Birds", "Houses" }))), 
-                     new HashSet<String>(Arrays.asList(new String[] { "Dogs", "Trees" }))));
+                     new HashSet<String>(Arrays.asList("Birds", "Houses"))), 
+                     new HashSet<String>(Arrays.asList("Dogs", "Trees"))));
     
     assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
   }

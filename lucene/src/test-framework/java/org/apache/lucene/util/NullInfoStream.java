@@ -25,6 +25,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 public class NullInfoStream extends InfoStream {
+
   @Override
   public void message(String component, String message) {
     assert component != null;

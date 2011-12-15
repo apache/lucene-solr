@@ -17,7 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
@@ -69,7 +69,7 @@ public class VectorDistanceFunction extends ValueSource {
    * @param dv2 The values from the second MultiValueSource
    * @return The distance
    */
-  protected double distance(int doc, DocValues dv1, DocValues dv2) {
+  protected double distance(int doc, FunctionValues dv1, FunctionValues dv2) {
     //Handle some special cases:
     double[] vals1 = new double[source1.dimension()];
     double[] vals2 = new double[source1.dimension()];
@@ -79,11 +79,11 @@ public class VectorDistanceFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
-    final DocValues vals1 = source1.getValues(context, readerContext);
+    final FunctionValues vals1 = source1.getValues(context, readerContext);
 
-    final DocValues vals2 = source2.getValues(context, readerContext);
+    final FunctionValues vals2 = source2.getValues(context, readerContext);
 
 
     return new DoubleDocValues(this) {

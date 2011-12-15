@@ -18,18 +18,23 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.SegmentReader.CoreClosedListener;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.NormsReader;
+import org.apache.lucene.index.codecs.PerDocProducer;
 import org.apache.lucene.index.codecs.PostingsFormat;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.StoredFieldsReader;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.MapBackedSet;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -47,7 +52,8 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
-  final PerDocValues perDocProducer;
+  final PerDocProducer perDocProducer;
+  final NormsReader norms;
 
   final Directory dir;
   final Directory cfsDir;
@@ -61,7 +67,8 @@ final class SegmentCoreReaders {
   CompoundFileDirectory cfsReader;
   CompoundFileDirectory storeCFSReader;
 
-  
+  final Set<CoreClosedListener> coreClosedListeners = 
+      new MapBackedSet<CoreClosedListener>(new ConcurrentHashMap<CoreClosedListener, Boolean>());
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, IOContext context, int termsIndexDivisor) throws IOException {
     
@@ -92,6 +99,10 @@ final class SegmentCoreReaders {
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;
+      // ask codec for its Norms: 
+      // TODO: since we don't write any norms file if there are no norms,
+      // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
+      norms = codec.normsFormat().normsReader(cfsDir, si, fieldInfos, context, dir);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
       success = true;
     } finally {
@@ -126,10 +137,9 @@ final class SegmentCoreReaders {
   synchronized void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
-          fieldsReaderOrig, cfsReader, storeCFSReader);
-      // Now, notify any ReaderFinished listeners:
-      if (owner != null) {
-        owner.notifyReaderFinishedListeners();
+          fieldsReaderOrig, cfsReader, storeCFSReader, norms);
+      for (CoreClosedListener listener : coreClosedListeners) {
+        listener.onClose(owner);
       }
     }
   }

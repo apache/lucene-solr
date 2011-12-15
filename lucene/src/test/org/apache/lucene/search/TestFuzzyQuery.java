@@ -185,7 +185,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -275,7 +274,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
       // expecting exception
     }
 
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -312,7 +310,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "z123456"), 1f, 0, 2);
     TopDocs docs = searcher.search(fq, 2);
     assertEquals(5, docs.totalHits); // 5 docs, from the a and b's
-    searcher.close();
     mr.close();
     ir1.close();
     ir2.close();
@@ -353,7 +350,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -378,7 +374,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals("Lucene", reader.document(hits[0].doc).get("field"));
     assertEquals("Lucene", reader.document(hits[1].doc).get("field"));
     assertEquals("Lucenne", reader.document(hits[2].doc).get("field"));
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -416,7 +411,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
-    searcher.close();
     r.close();
     index.close();
   }
@@ -457,7 +451,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals("test", searcher.doc(hits[0].doc).get("field"));
     assertEquals("foobar", searcher.doc(hits[1].doc).get("field"));
     
-    searcher.close();
     reader.close();
     index.close();
   }

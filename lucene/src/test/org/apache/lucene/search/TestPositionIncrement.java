@@ -196,7 +196,6 @@ public class TestPositionIncrement extends LuceneTestCase {
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
-    searcher.close();
     reader.close();
     store.close();
   }

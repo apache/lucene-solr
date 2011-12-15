@@ -17,7 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
@@ -148,7 +148,7 @@ public class HaversineConstFunction extends ValueSource {
     } catch (InvalidGeoException e) {
       throw new ParseException("Bad spatial pt:" + pt);
     }
-    return new VectorValueSource(Arrays.asList(new ValueSource[] {new DoubleConstValueSource(point[0]),new DoubleConstValueSource(point[1])}));
+    return new VectorValueSource(Arrays.<ValueSource>asList(new DoubleConstValueSource(point[0]),new DoubleConstValueSource(point[1])));
   }
 
   private static double[] getConstants(MultiValueSource vs) {
@@ -198,9 +198,9 @@ public class HaversineConstFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final DocValues latVals = latSource.getValues(context, readerContext);
-    final DocValues lonVals = lonSource.getValues(context, readerContext);
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FunctionValues latVals = latSource.getValues(context, readerContext);
+    final FunctionValues lonVals = lonSource.getValues(context, readerContext);
     final double latCenterRad = this.latCenter * DistanceUtils.DEGREES_TO_RADIANS;
     final double lonCenterRad = this.lonCenter * DistanceUtils.DEGREES_TO_RADIANS;
     final double latCenterRad_cos = this.latCenterRad_cos;

@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -67,7 +67,7 @@ public class ScaleFloatFunction extends ValueSource {
 
     for (AtomicReaderContext leaf : leaves) {
       int maxDoc = leaf.reader.maxDoc();
-      DocValues vals =  source.getValues(context, leaf);
+      FunctionValues vals =  source.getValues(context, leaf);
       for (int i=0; i<maxDoc; i++) {
 
       float val = vals.floatVal(i);
@@ -98,7 +98,7 @@ public class ScaleFloatFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
     ScaleInfo scaleInfo = (ScaleInfo)context.get(source);
     if (scaleInfo == null) {
@@ -109,7 +109,7 @@ public class ScaleFloatFunction extends ValueSource {
     final float minSource = scaleInfo.minVal;
     final float maxSource = scaleInfo.maxVal;
 
-    final DocValues vals =  source.getValues(context, readerContext);
+    final FunctionValues vals =  source.getValues(context, readerContext);
 
     return new FloatDocValues(this) {
       @Override

@@ -94,7 +94,6 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     tr.close();
     ir.close();
-    searcher.close();
     iw.close();
     tw.close();
     IOUtils.close(dirs[0]);
@@ -135,7 +134,6 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     tr.close();
     ir.close();
-    searcher.close();
     iw.close();
     tw.close();
     IOUtils.close(dirs[0]);
@@ -179,7 +177,6 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     tr.close();
     ir.close();
-    searcher.close();
     iw.close();
     tw.close();
     IOUtils.close(dirs[0]);
@@ -225,7 +222,6 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     assertPostingListExists("$composers", "Composers", ir);
     tr.close();
     ir.close();
-    searcher.close();
     iw.close();
     tw.close();
     IOUtils.close(dirs[0]);
@@ -270,7 +266,6 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     tr.close();
     ir.close();
-    searcher.close();
     iw.close();
     tw.close();
     IOUtils.close(dirs[0]);

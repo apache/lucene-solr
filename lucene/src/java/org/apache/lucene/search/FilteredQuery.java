@@ -33,25 +33,23 @@ import java.util.Set;
  * <p>Note: the bits are retrieved from the filter each time this
  * query is used in a search - use a CachingWrapperFilter to avoid
  * regenerating the bits every time.
- *
- * <p>Created: Apr 20, 2004 8:58:29 AM
- *
  * @since   1.4
  * @see     CachingWrapperFilter
  */
-public class FilteredQuery
-extends Query {
+public class FilteredQuery extends Query {
 
-  Query query;
-  Filter filter;
+  private final Query query;
+  private final Filter filter;
 
   /**
    * Constructs a new query which applies a filter to the results of the original query.
-   * Filter.getDocIdSet() will be called every time this query is used in a search.
+   * {@link Filter#getDocIdSet} will be called every time this query is used in a search.
    * @param query  Query to be filtered, cannot be <code>null</code>.
    * @param filter Filter to apply to query results, cannot be <code>null</code>.
    */
   public FilteredQuery (Query query, Filter filter) {
+    if (query == null || filter == null)
+      throw new IllegalArgumentException("Query and filter cannot be null.");
     this.query = query;
     this.filter = filter;
   }
@@ -229,31 +227,45 @@ extends Query {
     };
   }
 
-  /** Rewrites the wrapped query. */
+  /** Rewrites the query. If the wrapped is an instance of
+   * {@link MatchAllDocsQuery} it returns a {@link ConstantScoreQuery}. Otherwise
+   * it returns a new {@code FilteredQuery} wrapping the rewritten query. */
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    Query rewritten = query.rewrite(reader);
-    if (rewritten != query) {
-      FilteredQuery clone = (FilteredQuery)this.clone();
-      clone.query = rewritten;
-      return clone;
+    final Query queryRewritten = query.rewrite(reader);
+    
+    if (queryRewritten instanceof MatchAllDocsQuery) {
+      // Special case: If the query is a MatchAllDocsQuery, we only
+      // return a CSQ(filter).
+      final Query rewritten = new ConstantScoreQuery(filter);
+      // Combine boost of MatchAllDocsQuery and the wrapped rewritten query:
+      rewritten.setBoost(this.getBoost() * queryRewritten.getBoost());
+      return rewritten;
+    }
+    
+    if (queryRewritten != query) {
+      // rewrite to a new FilteredQuery wrapping the rewritten query
+      final Query rewritten = new FilteredQuery(queryRewritten, filter);
+      rewritten.setBoost(this.getBoost());
+      return rewritten;
     } else {
+      // nothing to rewrite, we are done!
       return this;
     }
   }
 
-  public Query getQuery() {
+  public final Query getQuery() {
     return query;
   }
 
-  public Filter getFilter() {
+  public final Filter getFilter() {
     return filter;
   }
 
   // inherit javadoc
   @Override
   public void extractTerms(Set<Term> terms) {
-      getQuery().extractTerms(terms);
+    getQuery().extractTerms(terms);
   }
 
   /** Prints a user-readable version of this query. */
@@ -271,16 +283,21 @@ extends Query {
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (o instanceof FilteredQuery) {
-      FilteredQuery fq = (FilteredQuery) o;
-      return (query.equals(fq.query) && filter.equals(fq.filter) && getBoost()==fq.getBoost());
-    }
-    return false;
+    if (o == this)
+      return true;
+    if (!super.equals(o))
+      return false;
+    assert o instanceof FilteredQuery;
+    final FilteredQuery fq = (FilteredQuery) o;
+    return fq.query.equals(this.query) && fq.filter.equals(this.filter);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return query.hashCode() ^ filter.hashCode() + Float.floatToRawIntBits(getBoost());
+    int hash = super.hashCode();
+    hash = hash * 31 + query.hashCode();
+    hash = hash * 31 + filter.hashCode();
+    return hash;
   }
 }

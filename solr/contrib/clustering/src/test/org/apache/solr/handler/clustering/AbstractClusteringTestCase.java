@@ -17,6 +17,7 @@ package org.apache.solr.handler.clustering;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
 
@@ -34,6 +35,54 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
       assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));
       numberOfDocs++;
     }
+    
+    // Add a multi-valued snippet
+    final SolrInputDocument multiValuedSnippet = new SolrInputDocument();
+    multiValuedSnippet.addField("id", numberOfDocs++);
+    multiValuedSnippet.addField("title", "Title");
+    multiValuedSnippet.addField("url", "URL");
+    multiValuedSnippet.addField("snippet", "First value of multi field. Some more text. And still more.");
+    multiValuedSnippet.addField("snippet", "Second value of multi field. Some more text. And still more.");
+    multiValuedSnippet.addField("snippet", "Third value of multi field. Some more text. And still more.");
+    assertNull(h.validateUpdate(adoc(multiValuedSnippet)));
+
+    // Add a document with multi-field title and snippet
+    final SolrInputDocument multiFieldDoc = new SolrInputDocument();
+    multiFieldDoc.addField("id", numberOfDocs++);
+    multiFieldDoc.addField("title", "Title field");
+    multiFieldDoc.addField("heading", "Heading field");
+    multiFieldDoc.addField("url", "URL");
+    multiFieldDoc.addField("snippet", "Snippet field: this is the contents of the snippet field.");
+    multiFieldDoc.addField("body", "Body field: this is the contents of the body field that will get clustered together with snippet.");
+    assertNull(h.validateUpdate(adoc(multiFieldDoc)));
+    
+    // Add a document with one language supported by Carrot2
+    final SolrInputDocument docWithOneSupprtedLanguage = new SolrInputDocument();
+    docWithOneSupprtedLanguage.addField("id", numberOfDocs++);
+    docWithOneSupprtedLanguage.addField("title", "");
+    docWithOneSupprtedLanguage.addField("url", "one_supported_language");
+    docWithOneSupprtedLanguage.addField("lang", "zh-cn");
+    assertNull(h.validateUpdate(adoc(docWithOneSupprtedLanguage)));
+    
+    // Add a document with more languages, one supported by Carrot2
+    final SolrInputDocument docWithOneSupprtedLanguageOfMany = new SolrInputDocument();
+    docWithOneSupprtedLanguageOfMany.addField("id", numberOfDocs++);
+    docWithOneSupprtedLanguageOfMany.addField("url", "one_supported_language_of_many");
+    docWithOneSupprtedLanguageOfMany.addField("lang", "zh-tw");
+    docWithOneSupprtedLanguageOfMany.addField("lang", "POLISH");
+    docWithOneSupprtedLanguageOfMany.addField("lang", "de");
+    assertNull(h.validateUpdate(adoc(docWithOneSupprtedLanguageOfMany)));
+    
+    // Add a document with more languages, one supported by Carrot2
+    final SolrInputDocument docWithCustomFields = new SolrInputDocument();
+    docWithCustomFields.addField("id", numberOfDocs++);
+    docWithCustomFields.addField("url", "custom_fields");
+    docWithCustomFields.addField("intfield_i", 10);
+    docWithCustomFields.addField("floatfield_f", 10.5);
+    docWithCustomFields.addField("heading", "first");
+    docWithCustomFields.addField("heading", "second");
+    assertNull(h.validateUpdate(adoc(docWithCustomFields)));
+    
     assertNull(h.validateUpdate(commit()));
   }
 

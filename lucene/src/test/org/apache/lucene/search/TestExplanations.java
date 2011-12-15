@@ -61,7 +61,6 @@ public class TestExplanations extends LuceneTestCase {
   
   @AfterClass
   public static void afterClassTestExplanations() throws Exception {
-    searcher.close();
     searcher = null;
     reader.close();
     reader = null;

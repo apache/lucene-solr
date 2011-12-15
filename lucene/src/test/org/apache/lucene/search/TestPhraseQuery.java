@@ -98,7 +98,6 @@ public class TestPhraseQuery extends LuceneTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    searcher.close();
     searcher = null;
     reader.close();
     reader = null;
@@ -249,7 +248,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(random, query,searcher);
 
 
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -289,7 +287,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(random, termQuery,searcher);
 
     
-    searcher.close();
     reader.close();
     
     writer = new RandomIndexWriter(random, directory, 
@@ -336,7 +333,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(random, booleanQuery,searcher);
 
     
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -380,7 +376,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals(0.31, hits[2].score, 0.01);
     assertEquals(2, hits[2].doc);
     QueryUtils.check(random, query,searcher);
-    searcher.close();
     reader.close();
     directory.close();
   }
@@ -695,7 +690,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     }
 
     reader.close();
-    s.close();
     dir.close();
   }
 }

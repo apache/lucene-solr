@@ -68,7 +68,7 @@ public class TestCrash extends LuceneTestCase {
     IndexWriter writer = initIndex(random, true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     crash(writer);
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = IndexReader.open(dir);
     assertTrue(reader.numDocs() < 157);
     reader.close();
     dir.close();
@@ -85,7 +85,7 @@ public class TestCrash extends LuceneTestCase {
     writer = initIndex(random, dir, false);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = IndexReader.open(dir);
     assertTrue(reader.numDocs() < 314);
     reader.close();
     dir.close();
@@ -108,7 +108,7 @@ public class TestCrash extends LuceneTestCase {
     dir.fileLength(l[i]) + " bytes");
     */
 
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = IndexReader.open(dir);
     assertTrue(reader.numDocs() >= 157);
     reader.close();
     dir.close();
@@ -129,7 +129,7 @@ public class TestCrash extends LuceneTestCase {
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
 
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(157, reader.numDocs());
     reader.close();
     dir.close();
@@ -150,56 +150,8 @@ public class TestCrash extends LuceneTestCase {
     for(int i=0;i<l.length;i++)
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = IndexReader.open(dir);
     assertEquals(157, reader.numDocs());
-    reader.close();
-    dir.close();
-  }
-
-  public void testCrashReaderDeletes() throws IOException {
-    
-    IndexWriter writer = initIndex(random, false);
-    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
-
-    writer.close(false);
-    IndexReader reader = IndexReader.open(dir, false);
-    reader.deleteDocument(3);
-
-    dir.crash();
-
-    /*
-    String[] l = dir.list();
-    Arrays.sort(l);
-    for(int i=0;i<l.length;i++)
-      System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
-    */
-    reader = IndexReader.open(dir, false);
-    assertEquals(157, reader.numDocs());
-    reader.close();
-    dir.clearCrash();
-    dir.close();
-  }
-
-  public void testCrashReaderDeletesAfterClose() throws IOException {
-    
-    IndexWriter writer = initIndex(random, false);
-    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
-
-    writer.close(false);
-    IndexReader reader = IndexReader.open(dir, false);
-    reader.deleteDocument(3);
-    reader.close();
-
-    dir.crash();
-
-    /*
-    String[] l = dir.list();
-    Arrays.sort(l);
-    for(int i=0;i<l.length;i++)
-      System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
-    */
-    reader = IndexReader.open(dir, false);
-    assertEquals(156, reader.numDocs());
     reader.close();
     dir.close();
   }

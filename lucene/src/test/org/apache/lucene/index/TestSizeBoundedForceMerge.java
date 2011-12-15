@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -27,8 +29,15 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSizeBoundedForceMerge extends LuceneTestCase {
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
+    addDocs(writer, numDocs, false);
+  }
+
+  private void addDocs(IndexWriter writer, int numDocs, boolean withID) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
+      if (withID) {
+        doc.add(new Field("id", "" + i, StringField.TYPE_UNSTORED));
+      }
       writer.addDocument(doc);
     }
     writer.commit();
@@ -286,12 +295,9 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 5);
     addDocs(writer, 3);
     
-    writer.close();
-  
     // delete the last document, so that the last segment is merged.
-    IndexReader r = IndexReader.open(dir, false);
-    r.deleteDocument(r.numDocs() - 1);
-    r.close();
+    writer.deleteDocuments(new Term("id", "10"));
+    writer.close();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -315,7 +321,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    addDocs(writer, 3);
+    addDocs(writer, 3, true);
     
     writer.close();
     
@@ -340,14 +346,12 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    addDocs(writer, 5);
+    addDocs(writer, 5, true);
     
-    writer.close();
-  
     // delete the last document
-    IndexReader r = IndexReader.open(dir, false);
-    r.deleteDocument(r.numDocs() - 1);
-    r.close();
+    
+    writer.deleteDocuments(new Term("id", "4"));
+    writer.close();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();

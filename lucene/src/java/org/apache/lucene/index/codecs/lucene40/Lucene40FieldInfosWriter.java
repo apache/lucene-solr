@@ -83,7 +83,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         if (!fi.hasDocValues()) {
           b = 0;
         } else {
-          switch(fi.getDocValues()) {
+          switch(fi.getDocValuesType()) {
           case VAR_INTS:
             b = 1;
             break;
@@ -124,7 +124,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
             b = 13;
             break;
           default:
-            throw new IllegalStateException("unhandled indexValues type " + fi.getDocValues());
+            throw new IllegalStateException("unhandled indexValues type " + fi.getDocValuesType());
           }
         }
         output.writeByte(b);

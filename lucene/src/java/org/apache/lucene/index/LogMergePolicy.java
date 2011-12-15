@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.InfoStream;
 
 /** <p>This class implements a {@link MergePolicy} that tries
  *  to merge segments into levels of exponentially
@@ -424,8 +423,9 @@ public abstract class LogMergePolicy extends MergePolicy {
     final List<SegmentInfo> segments = segmentInfos.asList();
     final int numSegments = segments.size();
 
-    if (verbose())
+    if (verbose()) {
       message("findForcedDeleteMerges: " + numSegments + " segments");
+    }
 
     MergeSpecification spec = new MergeSpecification();
     int firstSegmentWithDeletions = -1;
@@ -435,15 +435,17 @@ public abstract class LogMergePolicy extends MergePolicy {
       final SegmentInfo info = segmentInfos.info(i);
       int delCount = w.numDeletedDocs(info);
       if (delCount > 0) {
-        if (verbose())
+        if (verbose()) {
           message("  segment " + info.name + " has deletions");
+        }
         if (firstSegmentWithDeletions == -1)
           firstSegmentWithDeletions = i;
         else if (i - firstSegmentWithDeletions == mergeFactor) {
           // We've seen mergeFactor segments in a row with
           // deletions, so force a merge now:
-          if (verbose())
+          if (verbose()) {
             message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
+          }
           spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, i)));
           firstSegmentWithDeletions = i;
         }
@@ -451,16 +453,18 @@ public abstract class LogMergePolicy extends MergePolicy {
         // End of a sequence of segments with deletions, so,
         // merge those past segments even if it's fewer than
         // mergeFactor segments
-        if (verbose())
+        if (verbose()) {
           message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
+        }
         spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, i)));
         firstSegmentWithDeletions = -1;
       }
     }
 
     if (firstSegmentWithDeletions != -1) {
-      if (verbose())
+      if (verbose()) {
         message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive");
+      }
       spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, numSegments)));
     }
 
@@ -500,8 +504,9 @@ public abstract class LogMergePolicy extends MergePolicy {
   public MergeSpecification findMerges(SegmentInfos infos) throws IOException {
 
     final int numSegments = infos.size();
-    if (verbose())
+    if (verbose()) {
       message("findMerges: " + numSegments + " segments");
+    }
 
     // Compute levels, which is just log (base mergeFactor)
     // of the size of each segment
@@ -582,8 +587,9 @@ public abstract class LogMergePolicy extends MergePolicy {
         }
         upto--;
       }
-      if (verbose())
+      if (verbose()) {
         message("  level " + levelBottom + " to " + maxLevel + ": " + (1+upto-start) + " segments");
+      }
 
       // Finally, record all merges that are viable at this level:
       int end = start + mergeFactor;

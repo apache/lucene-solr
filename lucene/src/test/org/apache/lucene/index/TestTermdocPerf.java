@@ -112,7 +112,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     long end = System.currentTimeMillis();
     if (VERBOSE) System.out.println("milliseconds for creation of " + ndocs + " docs = " + (end-start));
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
 
     TermsEnum tenum = MultiFields.getTerms(reader, "foo").iterator(null);
 

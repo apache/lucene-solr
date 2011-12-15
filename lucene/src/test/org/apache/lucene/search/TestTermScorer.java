@@ -65,7 +65,6 @@ public class TestTermScorer extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    indexSearcher.close();
     indexReader.close();
     directory.close();
     super.tearDown();

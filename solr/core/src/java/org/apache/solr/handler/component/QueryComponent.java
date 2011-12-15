@@ -162,13 +162,18 @@ public class QueryComponent extends SearchComponent
 
     //TODO: move weighting of sort
     Sort groupSort = searcher.weightSort(cmd.getSort());
+    if (groupSort == null) {
+      groupSort = Sort.RELEVANCE;
+    }
+
     // groupSort defaults to sort
     String groupSortStr = params.get(GroupParams.GROUP_SORT);
-    if (groupSort == null) {
-      groupSort = new Sort();
-    }
     //TODO: move weighting of sort
     Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSort(groupSortStr, req));
+    if (sortWithinGroup == null) {
+      sortWithinGroup = Sort.RELEVANCE;
+    }
+
     groupingSpec.setSortWithinGroup(sortWithinGroup);
     groupingSpec.setGroupSort(groupSort);
 

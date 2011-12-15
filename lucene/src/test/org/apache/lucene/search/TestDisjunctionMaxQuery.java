@@ -163,7 +163,6 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    s.close();
     r.close();
     index.close();
     super.tearDown();

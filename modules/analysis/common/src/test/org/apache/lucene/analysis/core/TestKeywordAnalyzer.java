@@ -63,7 +63,6 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
     reader.close();
     directory.close();
     super.tearDown();
@@ -95,7 +94,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(dir);
     DocsEnum td = _TestUtil.docs(random,
                                  reader,
                                  "partnum",

@@ -25,7 +25,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.codecs.Codec;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -37,13 +40,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.codecs.Codec;
+
 import org.apache.lucene.index.codecs.BlockTreeTermsReader;
-import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
@@ -524,7 +535,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
+        reader = SegmentReader.get(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
 
         segInfoStat.openReaderPassed = true;
 
@@ -638,11 +649,26 @@ public class CheckIndex {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
+      FieldInfos infos = reader.fieldInfos();
       byte[] b;
       for (final String fieldName : fieldNames) {
+        FieldInfo info = infos.fieldInfo(fieldName);
         if (reader.hasNorms(fieldName)) {
           b = reader.norms(fieldName);
+          if (b.length != reader.maxDoc()) {
+            throw new RuntimeException("norms for field: " + fieldName + " are of the wrong size");
+          }
+          if (!info.isIndexed || info.omitNorms) {
+            throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
+          }
           ++status.totFields;
+        } else {
+          if (reader.norms(fieldName) != null) {
+            throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
+          }
+          if (info.isIndexed && !info.omitNorms) {
+            throw new RuntimeException("field: " + fieldName + " should have norms but omits them!");
+          }
         }
       }
 
@@ -1132,38 +1158,91 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : fieldInfos) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          final PerDocValues perDocValues = reader.perDocValues();
-          final IndexDocValues docValues = perDocValues.docValues(fieldInfo.name);
+          final DocValues docValues = reader.docValues(fieldInfo.name);
           if (docValues == null) {
-            continue;
+            throw new RuntimeException("field: " + fieldInfo.name + " omits docvalues but should have them!");
+          }
+          DocValues.Type type = docValues.type();
+          if (type != fieldInfo.getDocValuesType()) {
+            throw new RuntimeException("field: " + fieldInfo.name + " has type: " + type + " but fieldInfos says:" + fieldInfo.getDocValuesType());
           }
           final Source values = docValues.getDirectSource();
           final int maxDoc = reader.maxDoc();
+          int size = docValues.getValueSize();
           for (int i = 0; i < maxDoc; i++) {
-            switch (fieldInfo.docValues) {
+            switch (fieldInfo.getDocValuesType()) {
             case BYTES_FIXED_SORTED:
             case BYTES_VAR_SORTED:
             case BYTES_FIXED_DEREF:
             case BYTES_FIXED_STRAIGHT:
             case BYTES_VAR_DEREF:
             case BYTES_VAR_STRAIGHT:
-              values.getBytes(i, new BytesRef());
+              BytesRef bytes = new BytesRef();
+              values.getBytes(i, bytes);
+              if (size != -1 && size != bytes.length) {
+                throw new RuntimeException("field: " + fieldInfo.name + " returned wrongly sized bytes, was: " + bytes.length + " should be: " + size);
+              }
               break;
             case FLOAT_32:
+              assert size == 4;
+              values.getFloat(i);
+              break;
             case FLOAT_64:
+              assert size == 8;
               values.getFloat(i);
               break;
             case VAR_INTS:
+              assert size == -1;
+              values.getInt(i);
+              break;
             case FIXED_INTS_16:
+              assert size == 2;
+              values.getInt(i);
+              break;
             case FIXED_INTS_32:
+              assert size == 4;
+              values.getInt(i);
+              break;
             case FIXED_INTS_64:
+              assert size == 8;
+              values.getInt(i);
+              break;
             case FIXED_INTS_8:
+              assert size == 1;
               values.getInt(i);
               break;
             default:
               throw new IllegalArgumentException("Field: " + fieldInfo.name
-                  + " - no such DocValues type: " + fieldInfo.docValues);
+                          + " - no such DocValues type: " + fieldInfo.getDocValuesType());
             }
+          }
+          if (type == DocValues.Type.BYTES_FIXED_SORTED || type == DocValues.Type.BYTES_VAR_SORTED) {
+            // check sorted bytes
+            SortedSource sortedValues = values.asSortedSource();
+            Comparator<BytesRef> comparator = sortedValues.getComparator();
+            int lastOrd = -1;
+            BytesRef lastBytes = new BytesRef();
+            for (int i = 0; i < maxDoc; i++) {
+              int ord = sortedValues.ord(i);
+              if (ord < 0 || ord > maxDoc) {
+                throw new RuntimeException("field: " + fieldInfo.name + " ord is out of bounds: " + ord);
+              }
+              BytesRef bytes = new BytesRef();
+              sortedValues.getByOrd(ord, bytes);
+              if (lastOrd != -1) {
+                int ordComp = Integer.signum(new Integer(ord).compareTo(new Integer(lastOrd)));
+                int bytesComp = Integer.signum(comparator.compare(bytes, lastBytes));
+                if (ordComp != bytesComp) {
+                  throw new RuntimeException("field: " + fieldInfo.name + " ord comparison is wrong: " + ordComp + " comparator claims: " + bytesComp);
+                }
+              }
+              lastOrd = ord;
+              lastBytes = bytes;
+            }
+          }
+        } else {
+          if (reader.docValues(fieldInfo.name) != null) {
+            throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
           }
         }
       }
@@ -1408,41 +1487,48 @@ public class CheckIndex {
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
+    String dirImpl = null;
     int i = 0;
     while(i < args.length) {
-      if (args[i].equals("-fix")) {
+      String arg = args[i];
+      if ("-fix".equals(arg)) {
         doFix = true;
-        i++;
-      } else if (args[i].equals("-codec")) {
+      } else if ("-codec".equals(arg)) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -codec option");
           System.exit(1);
         }
-        codec = Codec.forName(args[i+1]);
-        i+=2;
-      } else if (args[i].equals("-verbose")) {
-        verbose = true;
         i++;
-      } else if (args[i].equals("-segment")) {
+        codec = Codec.forName(args[i]);
+      } else if (arg.equals("-verbose")) {
+        verbose = true;
+      } else if (arg.equals("-segment")) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -segment option");
           System.exit(1);
         }
-        onlySegments.add(args[i+1]);
-        i += 2;
+        i++;
+        onlySegments.add(args[i]);
+      } else if ("-dir-impl".equals(arg)) {
+        if (i == args.length - 1) {
+          System.out.println("ERROR: missing value for -dir-impl option");
+          System.exit(1);
+        }
+        i++;
+        dirImpl = args[i];
       } else {
         if (indexPath != null) {
           System.out.println("ERROR: unexpected extra argument '" + args[i] + "'");
           System.exit(1);
         }
         indexPath = args[i];
-        i++;
       }
+      i++;
     }
 
     if (indexPath == null) {
       System.out.println("\nERROR: index path not specified");
-      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
+      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -codec X: when fixing, codec to write the new segments_N file with\n" +
@@ -1450,7 +1536,8 @@ public class CheckIndex {
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
                          "              You can't use this with the -fix option\n" +
-                         "\n" + 
+                         "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
+                         		"If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
                          "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
                          "a backup copy of your index before running this!  Do not run this tool on an index\n" +
@@ -1480,7 +1567,11 @@ public class CheckIndex {
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
     try {
-      dir = FSDirectory.open(new File(indexPath));
+      if (dirImpl == null) {
+        dir = FSDirectory.open(new File(indexPath));
+      } else {
+        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(indexPath));
+      }
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(System.out);
