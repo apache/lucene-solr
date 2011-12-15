@@ -683,7 +683,7 @@ public final class ZkController {
       if (log.isInfoEnabled()) {
         log.info("creating node:" + nodeName);
       }
-      // makes collections zkNode if it doesn't exist
+
       zkClient.makePath(nodeName, CreateMode.PERSISTENT, null);
 
     } catch (KeeperException e) {
