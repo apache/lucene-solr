@@ -667,7 +667,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     public synchronized SegmentReader getReadOnlyClone(SegmentInfo info, boolean doOpenStores, IOContext context) throws IOException {
       SegmentReader sr = get(info, doOpenStores, context);
       try {
-        return (SegmentReader) sr.clone(true);
+        return (SegmentReader) sr.clone(); // cloning is always readOnly
       } finally {
         sr.decRef();
       }
@@ -3024,7 +3024,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
               assert !currentLiveDocs.get(j);
             } else {
               if (!currentLiveDocs.get(j)) {
-                mergedReader.doDelete(docUpto);
+                mergedReader.deleteDocument(docUpto);
                 delCount++;
               }
               docUpto++;
@@ -3039,7 +3039,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // does:
         for(int j=0; j<docCount; j++) {
           if (!currentLiveDocs.get(j)) {
-            mergedReader.doDelete(docUpto);
+            mergedReader.deleteDocument(docUpto);
             delCount++;
           }
           docUpto++;
