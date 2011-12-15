@@ -157,9 +157,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     SchemaField sf = core.getSchema().getUniqueKeyField();
-    if( sf == null || sf.getType().isTokenized() == true) {
+    if( sf == null) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using a non-tokenized field" );
+          "QueryElevationComponent requires the schema to have a uniqueKeyField." );
     }
     idSchemaFT = sf.getType();
     idField = sf.getName();

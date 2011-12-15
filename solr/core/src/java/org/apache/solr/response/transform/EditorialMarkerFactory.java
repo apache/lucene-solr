@@ -20,9 +20,12 @@ package org.apache.solr.response.transform;
 import java.util.Set;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 
 /**
  *
@@ -32,8 +35,9 @@ public class EditorialMarkerFactory extends TransformerFactory
 {
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
-    String idfield = req.getSchema().getUniqueKeyField().getName();
-    return new MarkTransformer(field,idfield);
+    SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
+    String idfield = uniqueKeyField.getName();
+    return new MarkTransformer(field,idfield, uniqueKeyField.getType());
   }
 }
 
@@ -41,11 +45,13 @@ class MarkTransformer extends TransformerWithContext
 {
   final String name;
   final String idFieldName;
+  final FieldType ft;
 
-  public MarkTransformer( String name, String idFieldName)
+  public MarkTransformer( String name, String idFieldName, FieldType ft)
   {
     this.name = name;
     this.idFieldName = idFieldName;
+    this.ft = ft;
   }
 
   @Override
@@ -60,11 +66,15 @@ class MarkTransformer extends TransformerWithContext
     if(ids!=null) {
       String key;
       Object field = doc.get(idFieldName);
-      if (field instanceof Field){
+      if (field instanceof NumericField){
+        key = ((Field)field).stringValue();
+        key = ft.readableToIndexed(key);
+      } else if (field instanceof Field){
         key = ((Field)field).stringValue();
       } else {
         key = field.toString();
       }
+
       doc.setField(name, ids.contains(key));
     } else {
       //if we have no ids, that means we weren't boosting, but the user still asked for the field to be added, so just mark everything as false
