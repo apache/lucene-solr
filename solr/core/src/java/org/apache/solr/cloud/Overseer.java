@@ -150,7 +150,9 @@ public class Overseer implements NodeStateChangeListener {
       synchronized (nodeStateWatches) {
         if (!nodeStateWatches.containsKey(nodeName)) {
           try {
-            zkClient.makePath(path);
+            if (!zkClient.exists(path)) {
+              zkClient.makePath(path);
+            }
           } catch (KeeperException e) {
             if (e.code() != Code.NODEEXISTS) {
               throw e;
