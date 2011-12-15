@@ -318,7 +318,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       // wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
       
-      // nocommit: when testOverseerFailure runs after testStateChange, it fails with an NPE below
       assertEquals("Illegal state", ZkStateReader.RECOVERING,
           reader.getCloudState().getSlice("collection1", "shard1").getShards()
               .get("core1").get(ZkStateReader.STATE_PROP));

@@ -32,6 +32,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.KeeperException.Code;
@@ -153,10 +155,8 @@ public class Overseer implements NodeStateChangeListener {
             if (!zkClient.exists(path)) {
               zkClient.makePath(path);
             }
-          } catch (KeeperException e) {
-            if (e.code() != Code.NODEEXISTS) {
-              throw e;
-            }
+          } catch (NodeExistsException e) {
+            // thats okay...
           }
 
           NodeStateWatcher nsw = new NodeStateWatcher(zkClient, nodeName, path, this);
