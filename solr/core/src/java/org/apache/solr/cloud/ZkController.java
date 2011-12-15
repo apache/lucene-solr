@@ -565,11 +565,6 @@ public final class ZkController {
       }
     }
     
-    // nocommit: GRRRR - sometimes nodes are hit before they know about cluster
-    // state - this doesnt help much though...
-    while (!zkStateReader.getCloudState().getCollections().contains(collection)) {
-      Thread.sleep(500);
-    }
     // make sure we have an update cluster state right away
     zkStateReader.updateCloudState(true);
 

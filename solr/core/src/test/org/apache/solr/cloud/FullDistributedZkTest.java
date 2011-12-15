@@ -771,7 +771,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     long lastNum = -1;
     System.out.println("\n\ncheck const");
     for (SolrServer client : solrClients) {
-      num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+      try {
+        num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+      } catch (SolrServerException e) {
+        if (e.getMessage().contains("Connection refused")) continue;
+        throw e;
+      }
       System.out.println("num:" + num + "\n\n");
       if (lastNum > -1 && lastNum != num) {
         fail("shard is not consistent, expected:" + lastNum + " and got:" + num);
@@ -900,6 +905,48 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     QueryResponse rsp = cloudClient.query(params);
     return rsp;
   }
+  
+  class StopableIndexingThread extends Thread {
+    private volatile boolean stop = false;
+    private int startI;
+    
+    
+    public StopableIndexingThread(int startI) {
+      this.startI = startI;
+      setDaemon(true);
+    }
+    
+    @Override
+    public void run() {
+      int i = startI;
+      boolean success = false;
+      while (true && !stop) {
+        success = false;
+        ++i;
+        while (!success) {
+          try {
+            indexr(id, i, i1, 50, tlong, 50, t1,
+                "to come to the aid of their country.");
+            success = true;
+          } catch (Exception e) {
+            // on failure, we pause and repeat
+            try {
+              sleep(10);
+            } catch (InterruptedException e1) {
+
+            }
+          }
+        }
+      }
+      
+      System.err.println("added docs:" + i);
+    }
+    
+    public void safeStop() {
+      stop = true;
+    }
+    
+  };
   
   @Override
   public void tearDown() throws Exception {

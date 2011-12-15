@@ -17,12 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore("until we have done more")
 public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
   
   @BeforeClass
@@ -43,11 +45,27 @@ public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
     
     del("*:*");
     
+    StopableIndexingThread indexThread = new StopableIndexingThread(0);
+    indexThread.start();
+    
     chaosMonkey.startTheMonkey();
     
     Thread.sleep(12000);
     
     chaosMonkey.stopTheMonkey();
+    
+    indexThread.safeStop();
+    
+    Thread.sleep(8000);
+    
+    commit();
+    
+    // does not pass yet
+    //checkShardConsistency();
+    
+    System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+    
+    printLayout();
   }
   
   @Override

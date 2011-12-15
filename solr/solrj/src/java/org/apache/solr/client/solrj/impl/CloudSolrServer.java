@@ -156,8 +156,8 @@ public class CloudSolrServer extends SolrServer {
         String node = nodeProps.get(ZkStateReader.NODE_NAME_PROP);
         if (!liveNodes.contains(nodeProps
             .get(ZkStateReader.NODE_NAME_PROP))
-            && !nodeProps.get(ZkStateReader.STATE_PROP).equals(
-                ZkStateReader.RECOVERING)) continue;
+            && nodeProps.get(ZkStateReader.STATE_PROP).equals(
+                ZkStateReader.ACTIVE)) continue;
         if (nodes.put(node, nodeProps) == null) {
           String url = nodeProps.get(ZkStateReader.URL_PROP);
           urlList.add(url);

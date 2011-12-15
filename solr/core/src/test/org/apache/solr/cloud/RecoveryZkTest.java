@@ -65,39 +65,10 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     // start a couple indexing threads
     
-    class StopableThread extends Thread {
-      private volatile boolean stop = false;
-      private int startI;
-      
-      
-      public StopableThread(int startI) {
-        this.startI = startI;
-        setDaemon(true);
-      }
-      
-      @Override
-      public void run() {
-        int i = startI;
-        while (true && !stop) {
-          try {
-            indexr(id, i++, i1, 50, tlong, 50, t1,
-                "to come to the aid of their country.");
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }
-      }
-      
-      public void safeStop() {
-        stop = true;
-      }
-      
-    };
-    
-    StopableThread indexThread = new StopableThread(0);
+    StopableIndexingThread indexThread = new StopableIndexingThread(0);
     indexThread.start();
     
-    StopableThread indexThread2 = new StopableThread(10000);
+    StopableIndexingThread indexThread2 = new StopableIndexingThread(10000);
     
     indexThread2.start();
 
@@ -111,9 +82,6 @@ public class RecoveryZkTest extends FullDistributedZkTest {
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(4000);
-
-    
-
     
     // bring shard replica up
     replica.start();

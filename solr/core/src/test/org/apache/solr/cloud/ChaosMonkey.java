@@ -116,7 +116,7 @@ public class ChaosMonkey {
       String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
       
       if (!cloudJetty.jetty.isRunning()
-          || state.equals(ZkStateReader.RECOVERING)
+          || !state.equals(ZkStateReader.ACTIVE)
           || !zkStateReader.getCloudState().liveNodesContain(nodeName)) {
         running = false;
       }
