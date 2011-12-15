@@ -8,16 +8,17 @@ rm -r -f example4
 rm -r -f example5
 rm -r -f example6
 
+rm -r -f dist
+rm -r -f build
+rm -r -f example/solr/zoo_data
+rm -f example/example.log
+
 cp -r -f example example2
 cp -r -f example example3
 cp -r -f example example4
 cp -r -f example example5
 cp -r -f example example6
 
-rm -r -f dist
-rm -r -f build
-rm -r -f example/solr/zoo_data
-rm -f example/example.log
 
 ant example dist
 
