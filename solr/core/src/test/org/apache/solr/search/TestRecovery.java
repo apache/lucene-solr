@@ -276,6 +276,28 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
 
+  // make sure that on a restart, versions don't start too low
+  @Test
+  public void testVersionsOnRestart() throws Exception {
+    clearIndex();
+    assertU(commit());
+
+    assertU(adoc("id","1", "val_i","1"));
+    assertU(adoc("id","2", "val_i","1"));
+    assertU(commit());
+    long v1 = getVer(req("q","id:1"));
+
+    h.close();
+    createCore();
+
+    assertU(adoc("id","1", "val_i","2"));
+    assertU(commit());
+    long v2 = getVer(req("q","id:1"));
+
+    assert(v2 > v1);
+  }
+
+
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
     String response = JQ(req);

@@ -74,6 +74,7 @@ public class VersionInfo {
     lock.writeLock().unlock();
   }
 
+  /***
   // todo: initialize... use current time to start?
   // a clock that increments by 1 for every operation makes it easier to detect missing
   // messages, but raises other issues:
@@ -91,12 +92,16 @@ public class VersionInfo {
   public long getOldClock() {
     return clock.get();
   }
+  ***/
 
-  /***
+  /** We are currently using this time-based clock to avoid going back in time on a
+   * server restart (i.e. we don't want version numbers to start at 1 again).
+   */
+
   // Time-based lamport clock.  Good for introducing some reality into clocks (to the degree
   // that times are somewhat synchronized in the cluster).
   // Good if we want to relax some constraints to scale down to where only one node may be
-  // up at a time.  Harder to detect missing messages (because versions are not contiguous.
+  // up at a time.  Possibly harder to detect missing messages (because versions are not contiguous.
   long vclock;
   long time;
   private final Object clockSync = new Object();
@@ -125,7 +130,7 @@ public class VersionInfo {
       vclock = Math.max(vclock, clock);
     }
   }
-  ***/
+
 
   public VersionBucket bucket(int hash) {
     // If this is a user provided hash, it may be poor in the right-hand bits.
