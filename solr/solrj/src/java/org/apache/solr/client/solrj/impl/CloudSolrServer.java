@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Hasher;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -49,7 +50,9 @@ public class CloudSolrServer extends SolrServer {
   private int zkClientTimeout = 10000;
   private String defaultCollection;
   private LBHttpSolrServer lbServer;
-  Random rand = new Random();
+  private Random rand = new Random();
+  // TODO
+  //private Hasher hasher;
 
   /**
    * @param zkHost The address of the zookeeper quorum containing the cloud state
@@ -62,10 +65,16 @@ public class CloudSolrServer extends SolrServer {
    * @param zkHost The address of the zookeeper quorum containing the cloud state
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
-    System.out.println("new cloud server");
     this.zkHost = zkHost;
     this.lbServer = lbServer;
   }
+  
+// TODO
+//  public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer, Hasher hasher) {
+//    this.zkHost = zkHost;
+//    this.lbServer = lbServer;
+//    this.hasher = hasher;
+//  }
 
   /** Sets the default collection for request */
   public void setDefaultCollection(String collection) {
@@ -123,7 +132,7 @@ public class CloudSolrServer extends SolrServer {
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
     connect();
 
-    // TODO: if you can hash here, you could favor the shard leader
+    // TODO: if you can hash here, you could favor the shard leader - more work needed though
     
     CloudState cloudState = zkStateReader.getCloudState();
 
@@ -142,7 +151,7 @@ public class CloudSolrServer extends SolrServer {
     }
     
     Set<String> liveNodes = cloudState.getLiveNodes();
-
+    
     // IDEA: have versions on various things... like a global cloudState version
     // or shardAddressVersion (which only changes when the shards change)
     // to allow caching.
