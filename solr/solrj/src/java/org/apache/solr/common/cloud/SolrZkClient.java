@@ -273,14 +273,20 @@ public class SolrZkClient {
     makePath(path, null, CreateMode.PERSISTENT);
   }
   
+  public void makePath(String path, boolean failOnExists) throws KeeperException,
+      InterruptedException {
+    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists);
+  }
+  
+  public void makePath(String path, File file, boolean failOnExists)
+      throws IOException, KeeperException, InterruptedException {
+    makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"),
+        CreateMode.PERSISTENT, null, failOnExists);
+  }
+  
   public void makePath(String path, File file) throws IOException,
       KeeperException, InterruptedException {
-    if (log.isInfoEnabled()) {
-      log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
-    }
-    
-    String data = FileUtils.readFileToString(file);
-    makePath(path, data.getBytes("UTF-8"));
+    makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"));
   }
   
   public void makePath(String path, CreateMode createMode) throws KeeperException,
@@ -333,19 +339,22 @@ public class SolrZkClient {
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher) throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, watcher, false);
+    makePath(path, data, createMode, watcher, true);
   }
   
+
   /**
+   * 
    * Creates the path in ZooKeeper, creating each node as necessary.
    * 
    * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
    * group, node exist, each will be created.
    * 
    * @param path
-   * @param data to set on the last zkNode
+   * @param data
    * @param createMode
    * @param watcher
+   * @param failOnExists
    * @throws KeeperException
    * @throws InterruptedException
    */

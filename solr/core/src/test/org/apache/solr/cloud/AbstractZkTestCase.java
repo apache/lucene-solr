@@ -101,7 +101,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       throws Exception {
 
     zkClient.makePath("/configs/conf1/" + name, getFile("solr"
-        + File.separator + "conf" + File.separator + name));
+        + File.separator + "conf" + File.separator + name), false);
   }
 
   @Override
@@ -133,7 +133,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   public static void makeSolrZkNode(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
-    zkClient.makePath("/solr");
+    zkClient.makePath("/solr", false);
     zkClient.close();
   }
   

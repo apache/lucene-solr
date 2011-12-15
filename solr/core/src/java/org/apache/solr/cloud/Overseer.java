@@ -151,9 +151,7 @@ public class Overseer implements NodeStateChangeListener {
         if (!nodeStateWatches.containsKey(nodeName)) {
           try {
             if (!zkClient.exists(path)) {
-              // we use the method that fails if it's already there rather than
-              // setting null data if it already exists...
-              zkClient.makePath(path, null, CreateMode.PERSISTENT, null, true);
+              zkClient.makePath(path);
             }
           } catch (KeeperException e) {
             if (e.code() != Code.NODEEXISTS) {
@@ -163,8 +161,8 @@ public class Overseer implements NodeStateChangeListener {
 
           NodeStateWatcher nsw = new NodeStateWatcher(zkClient, nodeName, path, this);
           nodeStateWatches.put(nodeName, nsw);
-          
           byte[] state = zkClient.getData(path, nsw, null);
+          
           nsw.processStateChange(state);
 
         } else {

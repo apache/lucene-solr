@@ -81,7 +81,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath);
 
-      zkClient.makePath("collections/collection1");
+      zkClient.makePath("collections/collection1", false);
       int zkServerPort = server.getPort();
       // this tests disconnect state
       server.shutdown();
