@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.HashPartitioner;
-import org.apache.solr.common.cloud.Hasher;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -85,7 +84,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   private String collection;
   private ZkController zkController;
-  private Hasher hasher = new Hasher();
   
   // these are setup at the start of each request processing
   // method in this update processor
@@ -142,7 +140,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: we are reading the leader from zk every time - we should cache
       // this and watch for changes?? Just pull it from ZkController cluster state probably?
 
-      String shardId = zkController.getCloudState().getShard(hash, collection); // get the right shard based on the hash...
+      String shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
 
       try {
         ZkNodeProps leaderProps = zkController.getZkStateReader().getLeaderProps(
@@ -179,6 +177,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     return shards;
+  }
+  
+  private String getShard(int hash, String collection, CloudState cloudState) {
+    // ranges should be part of the cloud state and eventually gotten from zk
+
+    // get the shard names
+    return cloudState.getShard(hash, collection);
   }
 
   @Override
@@ -644,10 +649,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // make the hash pluggable of course.
   // The hash also needs to be pluggable
   private int hash(AddUpdateCommand cmd) {
-    return hasher.hash(cmd);
+    BytesRef br = cmd.getIndexedId();
+    return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
   }
   
   private int hash(DeleteUpdateCommand cmd) {
-    return hasher.hash(cmd);
+    BytesRef br = cmd.getIndexedId();
+    return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
   }
 }
