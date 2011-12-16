@@ -246,7 +246,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
   
   // simple utility method for blasting tokenstreams with data to make sure they don't do anything crazy
-
+  // TODO: add a MockCharStream, and use it here too, to ensure that correctOffset etc is being done by tokenizers.
   public static void checkRandomData(Random random, Analyzer a, int iterations) throws IOException {
     checkRandomData(random, a, iterations, 20);
   }
@@ -254,12 +254,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength) throws IOException {
     for (int i = 0; i < iterations; i++) {
       String text;
-      switch(_TestUtil.nextInt(random, 0, 3)) {
+      switch(_TestUtil.nextInt(random, 0, 4)) {
         case 0: 
           text = _TestUtil.randomSimpleString(random);
           break;
         case 1:
           text = _TestUtil.randomRealisticUnicodeString(random, maxWordLength);
+          break;
+        case 2:
+          text = _TestUtil.randomHtmlishString(random, maxWordLength);
           break;
         default:
           text = _TestUtil.randomUnicodeString(random, maxWordLength);
