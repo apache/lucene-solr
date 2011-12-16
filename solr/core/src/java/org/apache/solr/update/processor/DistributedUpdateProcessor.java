@@ -58,7 +58,7 @@ import org.apache.zookeeper.KeeperException;
 // NOT mt-safe... create a new processor for each add thread
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String SEEN_LEADER = "leader";
-  public static final String COMMIT_END_POINT = "commit_end_points";
+  public static final String COMMIT_END_POINT = "commit_end_point";
   
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
@@ -90,6 +90,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private boolean isLeader = true;
   private boolean forwardToLeader = false;
   private List<String> shards;
+  private String shardId;
 
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
@@ -125,7 +126,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       collection = cloudDesc.getCollectionName();
     }
     
-    cmdDistrib = new SolrCmdDistributor(rsp); // TODO: we put the last result (which could be complicated due to 
+    cmdDistrib = new SolrCmdDistributor(zkController, collection, rsp); // TODO: we put the last result (which could be complicated due to 
                                               // multiple docs per req) in the rsp - this is whack
   }
 
@@ -140,7 +141,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: we are reading the leader from zk every time - we should cache
       // this and watch for changes?? Just pull it from ZkController cluster state probably?
 
-      String shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
+      shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
 
       try {
         ZkNodeProps leaderProps = zkController.getZkStateReader().getLeaderProps(
@@ -215,7 +216,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribAdd(cmd, shards, params, forwardToLeader);
+      cmdDistrib.distribAdd(cmd, shards, params, forwardToLeader, shardId);
     } else {
       // nocommit: At a minimum, local updates must be protected by synchronization
       // right now we count on versionAdd to do the local add
@@ -234,7 +235,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     if (shards != null) {
-      cmdDistrib.finish(shards, params, forwardToLeader);
+      cmdDistrib.finish(shards, params, forwardToLeader, shardId);
     }
     
     // TODO: keep track of errors?  needs to be done at a higher level though since
@@ -390,7 +391,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribDelete(cmd, shards, params, forwardToLeader);
+      cmdDistrib.distribDelete(cmd, shards, params, forwardToLeader, shardId);
     } else {
       // super.processDelete(cmd);
     }
@@ -407,7 +408,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     if (shards != null) {
-      cmdDistrib.finish(shards, params, forwardToLeader);
+      cmdDistrib.finish(shards, params, forwardToLeader, shardId);
     }
   }
 
@@ -575,7 +576,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (shards != null) {
           cmdDistrib.distribCommit(cmd, shards, params);
-          cmdDistrib.finish(shards, params, forwardToLeader);
+          cmdDistrib.finish(shards, params, forwardToLeader, shardId);
         }
       }
     }

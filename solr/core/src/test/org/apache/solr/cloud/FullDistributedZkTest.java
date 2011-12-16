@@ -926,25 +926,18 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     public void run() {
       int i = startI;
       int fails = 0;
-      boolean success = false;
       while (true && !stop) {
-        success = false;
         ++i;
-        while (!success) {
-          try {
-            indexr(id, i, i1, 50, tlong, 50, t1,
-                "to come to the aid of their country.");
-            success = true;
-          } catch (Exception e) {
-            fails++;
-            // on failure, we pause and repeat
-            try {
-              sleep(10);
-            } catch (InterruptedException e1) {
-
-            }
-          }
+        
+        try {
+          indexr(id, i, i1, 50, tlong, 50, t1,
+              "to come to the aid of their country.");
+        } catch (Exception e) {
+          System.err.println("REQUEST FAILED:");
+          e.printStackTrace();
+          fails++;
         }
+        
       }
       
       System.err.println("added docs:" + i + " with " + fails + " fails");
