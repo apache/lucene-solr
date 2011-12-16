@@ -775,8 +775,8 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       try {
         num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       } catch (SolrServerException e) {
-        if (e.getMessage().contains("Connection refused")) continue;
-        throw e;
+        System.err.println("error contacting client:" + e.getMessage());
+        continue;
       }
       System.out.println(" num:" + num + "\n");
       if (lastNum > -1 && lastNum != num && failMessage == null) {
