@@ -58,6 +58,7 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
 import org.junit.rules.MethodRule;
@@ -1006,8 +1007,18 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
+    return newDirectory(r, true);
+  }
+  
+  /**
+   * Returns a new Directory instance, using the specified random. You
+   * can specify maybeWrap as to whether the directory might be also
+   * wrapped by NRTCachingDirectory or FileSwitchDirectory
+   * See {@link #newDirectory()} for more information.
+   */
+  public static MockDirectoryWrapper newDirectory(Random r, boolean maybeWrap) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeWrap ? maybeNRTWrap(r, impl) : impl);
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
     return dir;
@@ -1019,7 +1030,7 @@ public abstract class LuceneTestCase extends Assert {
    * information.
    */
   public static MockDirectoryWrapper newDirectory(Directory d) throws IOException {
-    return newDirectory(random, d);
+    return newDirectory(random, d, true);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
@@ -1029,6 +1040,11 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
   public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) throws IOException {
+    return newFSDirectory(f, lf, true);
+  }
+
+  /** Returns a new FSDirectory instance over the given file, which must be a folder. */
+  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf, boolean maybeWrap) throws IOException {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
@@ -1044,7 +1060,8 @@ public abstract class LuceneTestCase extends Assert {
         clazz = CommandLineUtil.loadFSDirectoryClass(fsdirClass);
       }
       
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f));
+      Directory fsdir = newFSDirectoryImpl(clazz, f);
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, maybeWrap ? maybeNRTWrap(random, fsdir) : fsdir);
       if (lf != null) {
         dir.setLockFactory(lf);
       }
@@ -1061,15 +1078,23 @@ public abstract class LuceneTestCase extends Assert {
    * with contents copied from the provided directory. See 
    * {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r, Directory d, boolean maybeWrap) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file, newIOContext(r));
     }
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeWrap ? maybeNRTWrap(r, impl) : impl);
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
     return dir;
+  }
+  
+  private static Directory maybeNRTWrap(Random random, Directory directory) {
+    if (rarely(random)) {
+      return new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
+    } else {
+      return directory;
+    }
   }
   
   public static Field newField(String name, String value, FieldType type) {
