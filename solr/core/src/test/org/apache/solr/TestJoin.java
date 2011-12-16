@@ -18,6 +18,9 @@
 package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanQuery;
+
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -27,6 +30,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.search.QParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,6 +96,37 @@ public class TestJoin extends SolrTestCaseJ4 {
     assertJQ(req("q","{!join from=dept_s to=dept_id_s}title:MTS", "fl","id", "debugQuery","true")
         ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
+    
+    // expected outcome for a sub query matching dave joined against departments
+    final String davesDepartments = 
+      "/response=={'numFound':2,'start':0,'docs':[{'id':'10'},{'id':'13'}]}";
+
+    // straight forward query
+    assertJQ(req("q","{!join from=dept_s to=dept_id_s}name:dave", 
+                 "fl","id"),
+             davesDepartments);
+
+    // variable deref for sub-query parsing
+    assertJQ(req("q","{!join from=dept_s to=dept_id_s v=$qq}", 
+                 "qq","{!dismax}dave",
+                 "qf","name",
+                 "fl","id", 
+                 "debugQuery","true"),
+             davesDepartments);
+
+    // variable deref for sub-query parsing w/localparams
+    assertJQ(req("q","{!join from=dept_s to=dept_id_s v=$qq}", 
+                 "qq","{!dismax qf=name}dave",
+                 "fl","id", 
+                 "debugQuery","true"),
+             davesDepartments);
+
+    // defType local param to control sub-query parsing
+    assertJQ(req("q","{!join from=dept_s to=dept_id_s defType=dismax}dave", 
+                 "qf","name",
+                 "fl","id", 
+                 "debugQuery","true"),
+             davesDepartments);
 
   }
 
