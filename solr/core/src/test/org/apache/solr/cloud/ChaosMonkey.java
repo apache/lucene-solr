@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.mortbay.jetty.servlet.FilterHolder;
 
 /**
  * The monkey can stop random or specific jetties used with SolrCloud.
@@ -72,9 +73,16 @@ public class ChaosMonkey {
 
   private void stopJetty(JettySolrRunner jetty) throws Exception {
     // get a clean shutdown so that no dirs are left open...
-    ((SolrDispatchFilter)jetty.getDispatchFilter().getFilter()).destroy();
+    FilterHolder fh = jetty.getDispatchFilter();
+    if (fh != null) {
+      SolrDispatchFilter sdf = (SolrDispatchFilter) fh.getFilter();
+      if (sdf != null) {
+        sdf.destroy();
+      }
+    }
+
     jetty.stop();
-    stops .incrementAndGet();
+    stops.incrementAndGet();
   }
   
   public void stopShard(String slice) throws Exception {
