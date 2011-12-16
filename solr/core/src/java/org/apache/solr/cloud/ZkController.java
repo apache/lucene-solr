@@ -199,6 +199,8 @@ public final class ZkController {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "", e);
     }
+    
+    recoveryStrat.close();
   }
 
   /**
@@ -550,7 +552,7 @@ public final class ZkController {
       }
       
       if (doRecovery) {
-        recoveryStrat.recover(core, leaderUrl, iamleader, new OnFinish() {
+        recoveryStrat.recover(core, zkStateReader, shardUrl, new OnFinish() {
 
           @Override
           public void run() {

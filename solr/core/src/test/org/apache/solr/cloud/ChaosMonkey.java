@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.FullDistributedZkTest.CloudJettyRunner;
@@ -29,6 +30,13 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
+/**
+ * The monkey can stop random or specific jetties used with SolrCloud.
+ * 
+ * It can also run in a background thread and start and stop jetties
+ * randomly.
+ *
+ */
 public class ChaosMonkey {
 
   private Map<String,List<CloudJettyRunner>> shardToJetty;
@@ -37,7 +45,9 @@ public class ChaosMonkey {
   private String collection;
   private Random random;
   private volatile boolean stop = false;
-
+  private AtomicInteger stops = new AtomicInteger();
+  private AtomicInteger starts = new AtomicInteger();
+  
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
       Random random) {
@@ -64,6 +74,7 @@ public class ChaosMonkey {
     // get a clean shutdown so that no dirs are left open...
     ((SolrDispatchFilter)jetty.getDispatchFilter().getFilter()).destroy();
     jetty.stop();
+    stops .incrementAndGet();
   }
   
   public void stopShard(String slice) throws Exception {
@@ -104,6 +115,7 @@ public class ChaosMonkey {
     Slice theShards = zkStateReader.getCloudState().getSlices(collection)
         .get(slice);
     int numRunning = 0;
+    int numRecovering = 0;
     
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       boolean running = true;
@@ -121,12 +133,18 @@ public class ChaosMonkey {
         running = false;
       }
       
+      if (cloudJetty.jetty.isRunning()
+          && state.equals(ZkStateReader.RECOVERING)
+          && zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+        numRecovering++;
+      }
+      
       if (running) {
         numRunning++;
       }
     }
     
-    if (numRunning < 2) {
+    if (numRunning < 2 || (numRunning < 3 && numRecovering > 0)) {
       // we cannot kill anyone
       return null;
     }
@@ -135,11 +153,12 @@ public class ChaosMonkey {
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     int index = random.nextInt(jetties.size() - 1);
     JettySolrRunner jetty = jetties.get(index).jetty;
-    jetty.stop();
+    stopJetty(jetty);
     return jetty;
   }
   
-  // synchronously starts and stops shards randomly
+  // synchronously starts and stops shards randomly, unless there is only one
+  // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey() {
     stop = false;
     new Thread() {
@@ -156,6 +175,7 @@ public class ChaosMonkey {
                System.out.println("start jetty");
                JettySolrRunner jetty = deadPool.remove(random.nextInt(deadPool.size()));
                jetty.start();
+               starts.incrementAndGet();
                continue;
              }
             }
@@ -174,6 +194,8 @@ public class ChaosMonkey {
             e.printStackTrace();
           }
         }
+        
+        System.out.println("I stopped " + stops + " and I started " + starts);
       }
     }.start();
   }

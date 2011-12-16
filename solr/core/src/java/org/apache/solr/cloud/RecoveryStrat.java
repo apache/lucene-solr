@@ -25,8 +25,9 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
@@ -34,7 +35,9 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +47,8 @@ public class RecoveryStrat {
   private static Logger log = LoggerFactory.getLogger(RecoveryStrat.class);
   
   private volatile RecoveryListener recoveryListener;
+
+  private volatile boolean close = false;
   
 
   interface OnFinish {
@@ -57,11 +62,13 @@ public class RecoveryStrat {
     public void finishedRecovery();
   }
   
+  public void close() {
+    close  = true;
+  }
+  
   // TODO: we want to be pretty noisy if we don't properly recover?
-  // Also, if we cannot talk to the leader, we need to pause and see if there is
-  // a new leader or continue trying
-  public void recover(final SolrCore core, final String leaderUrl,
-      final boolean iamLeader, final OnFinish onFinish) {
+  public void recover(final SolrCore core, final ZkStateReader zkStateReader,
+      final String shardUrl, final OnFinish onFinish) {
     log.info("Start recovery process");
     if (recoveryListener != null) recoveryListener.startRecovery();
     core.getUpdateHandler().getUpdateLog().bufferUpdates();
@@ -72,41 +79,72 @@ public class RecoveryStrat {
       
       @Override
       public void run() {
-        try {
-          doRecovery(core, leaderUrl, iamLeader);
-          System.out.println("apply buffered updates");
-          Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog()
-              .applyBufferedUpdates();
-          if (future == null) {
-            // no replay needed\
-            log.info("No replay needed");
-          } else {
-            // wait for replay
-            future.get();
+        boolean succesfulRecovery = false;
+        int retries = 0;
+        while (!succesfulRecovery && !close) {
+          try {
+            CloudDescriptor cloudDesc = core.getCoreDescriptor()
+                .getCloudDescriptor();
+            String leaderUrl = zkStateReader.getLeaderUrl(
+                cloudDesc.getCollectionName(), cloudDesc.getShardId());
+            doRecovery(core, leaderUrl, leaderUrl.equals(shardUrl));
+            System.out.println("apply buffered updates");
+            Future<RecoveryInfo> future = core.getUpdateHandler()
+                .getUpdateLog().applyBufferedUpdates();
+            if (future == null) {
+              // no replay needed\
+              log.info("No replay needed");
+            } else {
+              // wait for replay
+              future.get();
+            }
+            System.out.println("replay done");
+            EmbeddedSolrServer server = new EmbeddedSolrServer(core);
+            server.commit();
+            
+            RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
+                true, null);
+            System.out.println("DOCS AFTER REPLAY:"
+                + searcher.get().search(new MatchAllDocsQuery(), 1).totalHits);
+            searcher.decref();
+            if (recoveryListener != null) recoveryListener.finishedRecovery();
+            onFinish.run();
+            
+            // TODO: what if the problem was in onFinish.run which sets the
+            // state?
+            succesfulRecovery = true;
+          } catch (SolrServerException e) {
+            log.warn("", e);
+          } catch (IOException e) {
+            log.warn("", e);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("", e);
+          } catch (ExecutionException e) {
+            log.error("", e);
+          } catch (KeeperException e) {
+            log.warn("", e);
           }
-          System.out.println("replay done");
-          EmbeddedSolrServer server = new EmbeddedSolrServer(core);
-          server.commit();
           
-          RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true, true,
-              null);
-          System.out.println("DOCS AFTER REPLAY:"
-              + searcher.get().search(new MatchAllDocsQuery(), 1).totalHits);
-          searcher.decref();
-          if (recoveryListener != null) recoveryListener.finishedRecovery();
-          onFinish.run();
-        } catch (SolrServerException e) {
-          log.error("", e);
-        } catch (IOException e) {
-          log.error("", e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.error("", e);
-        } catch (ExecutionException e) {
-          log.error("", e);
-        } 
+          if (!succesfulRecovery) {
+            // lets pause for a moment and we need to try again...
+            // TODO: we don't want to retry for some problems?
+            // Or do a fall off retry...
+            log.warn("Recovery failed - trying again...");
+            retries++;
+            if (retries > 10) {
+              // nocommit: for now, give up after 10 tries
+            }
+            
+            try {
+              Thread.sleep(5000);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+          }
+        }
         log.info("Finished recovery process");
-        // nocommit: if we get an exception, recovery failed...
+        System.out.println("recovery done");
       }
     };
     thread.start();
@@ -128,10 +166,14 @@ public class RecoveryStrat {
       // nocommit: require /update?
       
       CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderUrl);
-      server.commit(false, false);
+
+      UpdateRequest uReq = new UpdateRequest();
+      uReq.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+      // we do not need to distrib this commit
+      uReq.setParam(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
+      uReq.process(server);
       
       // use rep handler directly, so we can do this sync rather than async
-      
       SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
       if (handler instanceof LazyRequestHandlerWrapper) {
         handler = ((LazyRequestHandlerWrapper)handler).getWrappedHandler();
@@ -149,11 +191,16 @@ public class RecoveryStrat {
       
       replicationHandler.doFetch(solrParams);
       
+      // nocommit:
       RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true, true,
           null);
-      System.out.println("DOCS AFTER REPLICATE:"
-          + searcher.get().search(new MatchAllDocsQuery(), 1).totalHits);
-      searcher.decref();
+      SolrIndexSearcher is = searcher.get();
+      if (!core.isClosed()) {
+        System.out.println("DOCS AFTER REPLICATE:"
+            + is.search(new MatchAllDocsQuery(), 1).totalHits);
+        searcher.decref();
+      }
+      
       if (recoveryListener != null) recoveryListener.finishedReplication();
     }
   }

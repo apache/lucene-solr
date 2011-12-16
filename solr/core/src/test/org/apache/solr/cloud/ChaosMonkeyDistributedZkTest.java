@@ -19,21 +19,22 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
- *
+ * TODO: sometimes the shards are off by a doc or two, even with the
+ * retries on index failure...
  */
-@Ignore("until we have done more")
-public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
+public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
     
   }
   
-  public ChaosMonekyDistributedZkTest() {
+  public ChaosMonkeyDistributedZkTest() {
     super();
+    shardCount = 12;
+    sliceCount = 3;
   }
   
   @Override
@@ -61,11 +62,11 @@ public class ChaosMonekyDistributedZkTest extends FullDistributedZkTest {
     commit();
     
     // does not pass yet
-    //checkShardConsistency();
+    checkShardConsistency();
     
     System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     
-    printLayout();
+    //printLayout();
   }
   
   @Override
