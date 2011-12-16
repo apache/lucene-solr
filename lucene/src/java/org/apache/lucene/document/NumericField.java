@@ -193,6 +193,8 @@ public final class NumericField extends AbstractField {
    */
   public NumericField(String name, int precisionStep, Field.Store store, boolean index) {
     super(name, store, index ? Field.Index.ANALYZED_NO_NORMS : Field.Index.NO, Field.TermVector.NO);
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
     this.precisionStep = precisionStep;
     setIndexOptions(IndexOptions.DOCS_ONLY);
   }
