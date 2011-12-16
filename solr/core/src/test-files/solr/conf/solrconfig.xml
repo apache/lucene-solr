@@ -425,7 +425,6 @@
 			</arr>
  </requestHandler>
 
-
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 
   <requestHandler name="tvrh" class="org.apache.solr.handler.component.SearchHandler">
