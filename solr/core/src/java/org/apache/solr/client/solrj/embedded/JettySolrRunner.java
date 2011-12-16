@@ -174,10 +174,8 @@ public class JettySolrRunner {
   }
 
   public void stop() throws Exception {
-    if (server.isRunning()) {
-      server.stop();
-      server.join();
-    }
+    server.stop();
+    server.join();
   }
 
   /**
