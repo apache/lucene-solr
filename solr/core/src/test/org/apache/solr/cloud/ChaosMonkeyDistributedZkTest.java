@@ -58,7 +58,8 @@ public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
     indexThread.safeStop();
     
     // try and wait for any replications and what not to finish...
-    Thread.sleep(5000);
+    // TODO: I suppose we should poll zk here about state
+    Thread.sleep(8000);
     
     commit();
     

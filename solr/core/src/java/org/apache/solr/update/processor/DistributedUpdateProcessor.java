@@ -215,7 +215,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribAdd(cmd, shards, params);
+      cmdDistrib.distribAdd(cmd, shards, params, forwardToLeader);
     } else {
       // nocommit: At a minimum, local updates must be protected by synchronization
       // right now we count on versionAdd to do the local add
@@ -234,7 +234,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     if (shards != null) {
-      cmdDistrib.finish(shards, params);
+      cmdDistrib.finish(shards, params, forwardToLeader);
     }
     
     // TODO: keep track of errors?  needs to be done at a higher level though since
@@ -390,7 +390,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribDelete(cmd, shards, params);
+      cmdDistrib.distribDelete(cmd, shards, params, forwardToLeader);
     } else {
       // super.processDelete(cmd);
     }
@@ -407,7 +407,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     if (shards != null) {
-      cmdDistrib.finish(shards, params);
+      cmdDistrib.finish(shards, params, forwardToLeader);
     }
   }
 
@@ -575,7 +575,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (shards != null) {
           cmdDistrib.distribCommit(cmd, shards, params);
-          cmdDistrib.finish(shards, params);
+          cmdDistrib.finish(shards, params, forwardToLeader);
         }
       }
     }

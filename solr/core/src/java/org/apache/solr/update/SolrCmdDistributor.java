@@ -79,32 +79,32 @@ public class SolrCmdDistributor {
     this.rsp = rsp;
   }
   
-  public void finish(List<String> shards, ModifiableSolrParams params) {
+  public void finish(List<String> shards, ModifiableSolrParams params, boolean forwarding) {
 
     // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, shards, params);
-    flushDeletes(1, null, shards, params);
+    flushAdds(1, null, shards, params, forwarding);
+    flushDeletes(1, null, shards, params, forwarding);
 
-    checkResponses(true);
+    checkResponses(true, forwarding);
   }
   
-  public void distribDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params) throws IOException {
-    checkResponses(false);
+  public void distribDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params, boolean forwarding) throws IOException {
+    checkResponses(false, forwarding);
     
     if (cmd.isDeleteById()) {
-      doDelete(cmd, shards, params);
+      doDelete(cmd, shards, params, forwarding);
     } else {
       // TODO: query must be broadcast to all ??
-      doDelete(cmd, shards, params);
+      doDelete(cmd, shards, params, forwarding);
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<String> shards, ModifiableSolrParams params) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<String> shards, ModifiableSolrParams params, boolean forwarding) throws IOException {
     
-    checkResponses(false);
+    checkResponses(false, forwarding);
     
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, shards, params);
+    flushDeletes(1, null, shards, params, forwarding);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -125,7 +125,7 @@ public class SolrCmdDistributor {
     }
     alist.add(clone);
     
-    flushAdds(maxBufferedAddsPerServer, null, shards, params);
+    flushAdds(maxBufferedAddsPerServer, null, shards, params, forwarding);
   }
   
   public void distribCommit(CommitUpdateCommand cmd, List<String> shards, ModifiableSolrParams params)
@@ -135,13 +135,13 @@ public class SolrCmdDistributor {
     // can't sneak in ahead of adds or deletes we already sent.
     // We could do this on a per-server basis, but it's more complex
     // and this solution will lead to commits happening closer together.
-    checkResponses(true);
+    checkResponses(true, false);
     
     // piggyback on any outstanding adds or deletes if possible.
     // TODO: review this
-    flushAdds(1, cmd, shards, params);
+    flushAdds(1, cmd, shards, params, false);
     
-    flushDeletes(1, cmd, shards, params);
+    flushDeletes(1, cmd, shards, params, false);
     
     UpdateRequestExt ureq = new UpdateRequestExt();
     ureq.setParams(params);
@@ -153,20 +153,20 @@ public class SolrCmdDistributor {
     // then do that here.
     // nocommit
     if (/* cmd.waitFlush || */cmd.waitSearcher) {
-      checkResponses(true);
+      checkResponses(true, false);
     }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params) throws IOException {
+  private void doDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params, boolean forwarding) throws IOException {
     
-    flushAdds(1, null, shards, params);
+    flushAdds(1, null, shards, params, forwarding);
     
     if (dlist == null) {
       dlist = new ArrayList<DeleteUpdateCommand>(2);
     }
     dlist.add(clone(cmd));
     
-    flushDeletes(maxBufferedDeletesPerServer, null, shards, params);
+    flushDeletes(maxBufferedDeletesPerServer, null, shards, params, forwarding);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -176,7 +176,7 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls, ModifiableSolrParams params) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls, ModifiableSolrParams params, boolean forwarding) {
     // check for pending deletes
     if (alist == null || alist.size() < limit) return false;
     
@@ -194,7 +194,7 @@ public class SolrCmdDistributor {
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> shards, ModifiableSolrParams params) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> shards, ModifiableSolrParams params, boolean forwarding) {
     // check for pending deletes
     if (dlist == null || dlist.size() < limit) return false;
     
@@ -289,7 +289,7 @@ public class SolrCmdDistributor {
     }
   }
   
-  void checkResponses(boolean block) {
+  void checkResponses(boolean block, boolean forwarding) {
     
     int expectedResponses = pending == null ? 0 : pending.size();
     int nonConnectionErrors = 0;
@@ -352,17 +352,24 @@ public class SolrCmdDistributor {
             "interrupted waiting for shard update response", e);
       }
     }
-    if (failed > 0) {
-      System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + nonConnectionErrors);
-    }
+//    if (failed > 0) {
+//      System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + nonConnectionErrors + " forward:" + forwarding);
+//    }
     // TODO: this is a somewhat weak success guarantee - if the request was successful on every replica considered up
     // and that does not return a connect exception, it was successful.
     //should we optionally fail when there is only a single leader for a shard? (no replication)
     
     // TODO: now we should tell those that failed to try and recover?
+
     if (failed > 0 && nonConnectionErrors == 0) {
-      System.out.println("clear exception");
-      rsp.setException(null);
+      if (failed == expectedResponses && forwarding) {
+        // this is a pure forwarding request and it fully failed -
+        // don't reset the exception - TODO: most likely there is now a new
+        // leader - we really should retry the request...
+      } else {
+        // System.out.println("clear exception");
+        rsp.setException(null);
+      }
     }
   }
 }

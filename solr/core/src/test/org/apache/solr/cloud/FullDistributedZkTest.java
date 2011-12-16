@@ -770,7 +770,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     long num = -1;
     long lastNum = -1;
     String failMessage = null;
-    System.out.println("\n\ncheck const");
+    System.out.println("check const of " + shard);
     for (SolrServer client : solrClients) {
       try {
         num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
@@ -788,10 +788,18 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     if (failMessage != null) {
       fail(failMessage);
     }
+   
+  }
+  
+  protected void checkShardConsistency() throws SolrServerException {
+    Set<String> theShards = shardToClient.keySet();
+    for (String shard : theShards) {
+      checkShardConsistency(shard);
+    }
     
     // now check that the right # are on each shard
     long docs = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-    Set<String> theShards = shardToClient.keySet();
+    theShards = shardToClient.keySet();
     int cnt = 0;
     for (String s : theShards) {
       int times = shardToClient.get(s).size();
@@ -808,13 +816,6 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
       }
     }
     assertEquals(docs, cnt);
-  }
-  
-  protected void checkShardConsistency() throws SolrServerException {
-    Set<String> theShards = shardToClient.keySet();
-    for (String shard : theShards) {
-      checkShardConsistency(shard);
-    }
   }
 
   private SolrServer getClient(String nodeName) {

@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.net.BindException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +187,13 @@ public class ChaosMonkey {
              if (!deadPool.isEmpty()) {
                System.out.println("start jetty");
                JettySolrRunner jetty = deadPool.remove(random.nextInt(deadPool.size()));
-               jetty.start();
+               try {
+                 jetty.start();
+               } catch (BindException e) {
+                 jetty.stop();
+                 sleep(2000);
+                 jetty.start();
+               }
                starts.incrementAndGet();
                continue;
              }
