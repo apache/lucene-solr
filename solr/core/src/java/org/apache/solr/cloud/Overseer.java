@@ -32,11 +32,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.KeeperException.Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +43,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Overseer implements NodeStateChangeListener {
   
+  public static final String ASSIGNMENTS_NODE = "/node_assignments";
+  public static final String STATES_NODE = "/node_states";
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
   private final SolrZkClient zkClient;
@@ -57,23 +57,9 @@ public class Overseer implements NodeStateChangeListener {
     log.info("Constructing new Overseer");
     this.zkClient = zkClient;
     this.reader = reader;
-    createZkNodes(zkClient);
     createWatches();
   }
   
-  public static void createZkNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    //create assignments node if it does not exist
-    if (!zkClient.exists("/node_assignments")) {
-      try {
-        zkClient.makePath("/node_assignments", CreateMode.PERSISTENT);
-      } catch (KeeperException e) {
-        if (e.code() != KeeperException.Code.NODEEXISTS) {
-          throw e;
-        }
-      }
-    }
-  }
-
   public synchronized void createWatches()
       throws KeeperException, InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
@@ -148,7 +134,7 @@ public class Overseer implements NodeStateChangeListener {
   private void addNodeStateWatches(Set<String> nodeNames) throws InterruptedException, KeeperException {
     
     for (String nodeName : nodeNames) {
-      String path = "/node_states/" + nodeName;
+      final String path = STATES_NODE + "/" + nodeName;
       synchronized (nodeStateWatches) {
         if (!nodeStateWatches.containsKey(nodeName)) {
           try {
@@ -175,12 +161,14 @@ public class Overseer implements NodeStateChangeListener {
   /**
    * Try to assign core to the cluster
    * @throws KeeperException 
+   * @throws InterruptedException 
    */
-  private void updateState(String nodeName, CoreState coreState) throws KeeperException {
+  private void updateState(String nodeName, CoreState coreState) throws KeeperException, InterruptedException {
     String collection = coreState.getCollectionName();
     String coreName = coreState.getCoreName();
     
     synchronized (reader.getUpdateLock()) {
+      reader.updateCloudState(true); //get fresh copy of the state
       String shardId;
       CloudState state = reader.getCloudState();
       if (coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP) == null) {
@@ -221,7 +209,7 @@ public class Overseer implements NodeStateChangeListener {
   }
   
   @Override
-  public void coreCreated(String nodeName, Set<CoreState> states) throws KeeperException {
+  public void coreCreated(String nodeName, Set<CoreState> states) throws KeeperException, InterruptedException {
     log.debug("Cores created: " + nodeName + " states:" +states);
     for (CoreState state : states) {
       updateState(nodeName, state);
@@ -241,7 +229,6 @@ public class Overseer implements NodeStateChangeListener {
     ArrayList<CoreAssignment> assignments = new ArrayList<CoreAssignment>();
     for(CoreState coreState: states) {
       final String coreName = coreState.getCoreName();
-      final String collection = coreState.getCollectionName();
       HashMap<String, String> coreProperties = new HashMap<String, String>();
       Map<String, Slice> slices = cloudState.getSlices(coreState.getCollectionName());
       for(Entry<String, Slice> entry: slices.entrySet()) {
@@ -250,22 +237,13 @@ public class Overseer implements NodeStateChangeListener {
           coreProperties.put(ZkStateReader.SHARD_ID_PROP, entry.getKey());
         }
       }
-      CoreAssignment assignment = new CoreAssignment(coreName, collection, coreProperties);
+      CoreAssignment assignment = new CoreAssignment(coreName, coreProperties);
       assignments.add(assignment);
     }
     
     //serialize
     byte[] content = ZkStateReader.toJSON(assignments);
-    final String nodeName = "/node_assignments/" + node;
-    if (!zkClient.exists(nodeName)) {
-      try {
-        zkClient.makePath(nodeName);
-      } catch (KeeperException ke) {
-        if (ke.code() != Code.NODEEXISTS) {
-          throw ke;
-        }
-      }
-    }
+    final String nodeName = ASSIGNMENTS_NODE + "/" + node;
     zkClient.setData(nodeName, content);
   }
   
@@ -278,10 +256,31 @@ public class Overseer implements NodeStateChangeListener {
   }
 
   @Override
-  public void coreChanged(String nodeName, Set<CoreState> states) throws KeeperException  {
+  public void coreChanged(String nodeName, Set<CoreState> states) throws KeeperException, InterruptedException  {
     log.debug("Cores changed: " + nodeName + " states:" + states);
     for (CoreState state : states) {
       updateState(nodeName, state);
+    }
+  }
+  
+  public static void createClientNodes(SolrZkClient zkClient, String nodeName) throws KeeperException, InterruptedException {
+    createZkNode(zkClient, STATES_NODE + "/" + nodeName);
+    createZkNode(zkClient, ASSIGNMENTS_NODE + "/" + nodeName);
+  }
+  
+  private static void createZkNode(SolrZkClient zkClient, String nodeName) throws KeeperException, InterruptedException {
+    
+    if (log.isInfoEnabled()) {
+      log.info("creating node:" + nodeName);
+    }
+    
+    try {
+      if (!zkClient.exists(nodeName)) {
+        zkClient.makePath(nodeName, CreateMode.PERSISTENT, null);
+      }
+      
+    } catch (NodeExistsException e) {
+      // it's ok
     }
   }
 }

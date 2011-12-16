@@ -40,8 +40,8 @@ public class NodeStateWatcher implements Watcher {
   private static Logger log = LoggerFactory.getLogger(NodeStateWatcher.class);
 
   public static interface NodeStateChangeListener {
-    void coreCreated(String shardZkNodeName, Set<CoreState> cores) throws KeeperException;
-    void coreChanged(String nodeName, Set<CoreState> cores) throws KeeperException;
+    void coreCreated(String shardZkNodeName, Set<CoreState> cores) throws KeeperException, InterruptedException;
+    void coreChanged(String nodeName, Set<CoreState> cores) throws KeeperException, InterruptedException;
   }
 
   private final SolrZkClient zkClient;
@@ -120,6 +120,9 @@ public class NodeStateWatcher implements Watcher {
             listener.coreCreated(nodeName, Collections.unmodifiableSet(newCores));
           } catch (KeeperException e) {
             log.warn("Could not talk to ZK", e);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Could not talk to ZK", e);
           }
         }
 
@@ -127,6 +130,9 @@ public class NodeStateWatcher implements Watcher {
           try {
           listener.coreChanged(nodeName, Collections.unmodifiableSet(changedCores));
           } catch (KeeperException e) {
+            log.warn("Could not talk to ZK", e);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             log.warn("Could not talk to ZK", e);
           }
         }

@@ -36,7 +36,7 @@ public class CoreAssignment implements JSONWriter.Writable {
     this.properties = Collections.unmodifiableMap(props);
   }
   
-  public CoreAssignment(String coreName, String collectionName, Map<String,String> properties) {
+  public CoreAssignment(String coreName, Map<String,String> properties) {
     HashMap<String,String> props = new HashMap<String,String>();
     props.putAll(properties);
     props.put(CORE, coreName);
@@ -66,12 +66,16 @@ public class CoreAssignment implements JSONWriter.Writable {
   
   @Override
   public int hashCode() {
-    return getCoreName().hashCode();
+    return properties.hashCode();
   }
   
   @Override
-  public boolean equals(Object obj) {
-    return hashCode() == obj.hashCode();
+  public boolean equals(Object other) {
+    if(other instanceof CoreAssignment) {
+      CoreAssignment otherAssignment = (CoreAssignment) other;
+      return this.getProperties().equals(otherAssignment.getProperties());
+    }
+    return false;
   }
   
   @Override

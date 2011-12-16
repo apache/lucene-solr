@@ -17,13 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Overseer Elector.
@@ -31,7 +27,6 @@ import org.slf4j.LoggerFactory;
 public class OverseerElector extends LeaderElector {
   private final SolrZkClient client;
   private final ZkStateReader reader;
-  private static Logger log = LoggerFactory.getLogger(OverseerElector.class);
   
   public OverseerElector(SolrZkClient client, ZkStateReader stateReader) {
     super(client);
@@ -40,21 +35,8 @@ public class OverseerElector extends LeaderElector {
   }
   
   @Override
-  protected void runIamLeaderProcess(ElectionContext context) {
-    try {
-      new Overseer(client, reader);
-    } catch (KeeperException e) {
-      if (e.code() == KeeperException.Code.SESSIONEXPIRED
-          || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-        log.warn("Cannot run overseer leader process, Solr cannot talk to ZK");
-        return;
-      }
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.warn("Could not run leader process", e);
-    }
+  protected void runIamLeaderProcess(ElectionContext context) throws KeeperException, InterruptedException{
+    new Overseer(client, reader);
   }
   
 }

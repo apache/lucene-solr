@@ -130,7 +130,7 @@ public class LeaderElector {
   }
 
   protected void runIamLeaderProcess(final ElectionContext context) throws KeeperException,
-      InterruptedException, IOException {
+      InterruptedException {
     String currentLeaderZkPath = context.electionPath
         + LEADER_NODE;
     // TODO: leader election tests do not currently set the props
