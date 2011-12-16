@@ -231,6 +231,7 @@ public class SolrCmdDistributor {
     NamedList<Object> ursp;
     int rspCode;
     Exception exception;
+    String url;
   }
   
   void submit(UpdateRequestExt ureq, List<String> shards) {
@@ -258,7 +259,7 @@ public class SolrCmdDistributor {
           Request clonedRequest = new Request();
           clonedRequest.shards = sreq.shards;
           clonedRequest.ureq = sreq.ureq;
-          
+          clonedRequest.url = shard;
           try {
             // TODO: what about https?
             String url;
@@ -332,8 +333,7 @@ public class SolrCmdDistributor {
               rsp.setException(e);
             }
             
-            // TODO: we dont log which request url actually failed - we currently list them all
-            SolrException.logOnce(SolrCore.log, "shard update error ("
+            SolrException.logOnce(SolrCore.log, "shard update error " + sreq.url + " ("
                 + sreq.shards + ")", sreq.exception);
           }
           
