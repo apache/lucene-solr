@@ -769,6 +769,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     List<SolrServer> solrClients = shardToClient.get(shard);
     long num = -1;
     long lastNum = -1;
+    String failMessage = null;
     System.out.println("\n\ncheck const");
     for (SolrServer client : solrClients) {
       try {
@@ -777,11 +778,15 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         if (e.getMessage().contains("Connection refused")) continue;
         throw e;
       }
-      System.out.println("num:" + num + "\n\n");
-      if (lastNum > -1 && lastNum != num) {
-        fail("shard is not consistent, expected:" + lastNum + " and got:" + num);
+      System.out.println(" num:" + num + "\n");
+      if (lastNum > -1 && lastNum != num && failMessage == null) {
+        failMessage = "shard is not consistent, expected:" + lastNum + " and got:" + num;
       }
       lastNum = num;
+    }
+    
+    if (failMessage != null) {
+      fail(failMessage);
     }
     
     // now check that the right # are on each shard
@@ -919,6 +924,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     @Override
     public void run() {
       int i = startI;
+      int fails = 0;
       boolean success = false;
       while (true && !stop) {
         success = false;
@@ -929,6 +935,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
                 "to come to the aid of their country.");
             success = true;
           } catch (Exception e) {
+            fails++;
             // on failure, we pause and repeat
             try {
               sleep(10);
@@ -939,7 +946,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
         }
       }
       
-      System.err.println("added docs:" + i);
+      System.err.println("added docs:" + i + " with " + fails + " fails");
     }
     
     public void safeStop() {

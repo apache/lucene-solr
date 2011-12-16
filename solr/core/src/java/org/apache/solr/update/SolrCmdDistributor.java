@@ -292,7 +292,7 @@ public class SolrCmdDistributor {
   void checkResponses(boolean block) {
     
     int expectedResponses = pending == null ? 0 : pending.size();
-    int failedAfterConnect = 0;
+    int nonConnectionErrors = 0;
     int failed = 0;
     while (pending != null && pending.size() > 0) {
       try {
@@ -312,9 +312,13 @@ public class SolrCmdDistributor {
             // the problem is there are other exceptions thrown due to a machine going down mid connection... I've
             // seen Interrupted exceptions.
             
+            // nocommit:
             // we have to match against the msg...:(
-            if (!e.getMessage().contains("java.net.ConnectException: Connection refused")) failedAfterConnect++;
-            
+            if (!e.getMessage().contains(
+                "java.net.ConnectException: Connection refused")
+                || e.getMessage().contains(
+                    "java.net.SocketException: Connection reset")) nonConnectionErrors++;
+
             failed++;
             // use the first exception encountered
             // TODO: perhaps we should do more?
@@ -348,13 +352,16 @@ public class SolrCmdDistributor {
             "interrupted waiting for shard update response", e);
       }
     }
-//    if (failed > 0) {
-//      System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + failedAfterConnect);
-//    }
+    if (failed > 0) {
+      System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + nonConnectionErrors);
+    }
     // TODO: this is a somewhat weak success guarantee - if the request was successful on every replica considered up
     // and that does not return a connect exception, it was successful.
     //should we optionally fail when there is only a single leader for a shard? (no replication)
-    if (failed <= failedAfterConnect && failed != expectedResponses) {
+    
+    // TODO: now we should tell those that failed to try and recover?
+    if (failed > 0 && nonConnectionErrors == 0) {
+      System.out.println("clear exception");
       rsp.setException(null);
     }
   }

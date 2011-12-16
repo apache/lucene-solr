@@ -63,7 +63,7 @@ public class RecoveryStrat {
   }
   
   public void close() {
-    close  = true;
+    close = true;
   }
   
   // TODO: we want to be pretty noisy if we don't properly recover?
@@ -102,6 +102,7 @@ public class RecoveryStrat {
             EmbeddedSolrServer server = new EmbeddedSolrServer(core);
             server.commit();
             
+            // nocommit: remove this
             RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
                 true, null);
             System.out.println("DOCS AFTER REPLAY:"

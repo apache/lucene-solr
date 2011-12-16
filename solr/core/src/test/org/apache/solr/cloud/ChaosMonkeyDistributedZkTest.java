@@ -22,7 +22,7 @@ import org.junit.BeforeClass;
 
 /**
  * TODO: sometimes the shards are off by a doc or two, even with the
- * retries on index failure...
+ * retries on index failure...perhaps because of leader dying mid update?
  */
 public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
   
@@ -58,7 +58,7 @@ public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
     indexThread.safeStop();
     
     // try and wait for any replications and what not to finish...
-    Thread.sleep(4000);
+    Thread.sleep(5000);
     
     commit();
     
