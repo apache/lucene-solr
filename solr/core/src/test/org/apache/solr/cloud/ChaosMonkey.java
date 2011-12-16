@@ -71,7 +71,12 @@ public class ChaosMonkey {
     return jetty;
   }
 
-  private void stopJetty(JettySolrRunner jetty) throws Exception {
+  public void stopJetty(JettySolrRunner jetty) throws Exception {
+    stop(jetty);
+    stops.incrementAndGet();
+  }
+  
+  public static void stop(JettySolrRunner jetty) throws Exception {
     // get a clean shutdown so that no dirs are left open...
     FilterHolder fh = jetty.getDispatchFilter();
     if (fh != null) {
@@ -82,7 +87,6 @@ public class ChaosMonkey {
     }
 
     jetty.stop();
-    stops.incrementAndGet();
   }
   
   public void stopShard(String slice) throws Exception {

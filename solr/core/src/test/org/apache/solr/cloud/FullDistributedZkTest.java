@@ -968,4 +968,12 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     controlClient.commit();
     cloudClient.commit();
   }
+  
+  protected void destroyServers() throws Exception {
+    ChaosMonkey.stop(controlJetty);
+    for (JettySolrRunner jetty : jettys) ChaosMonkey.stop(jetty);
+    clients.clear();
+    jettys.clear();
+    Thread.sleep(10000);
+  }
 }
