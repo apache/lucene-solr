@@ -26,10 +26,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.codecs.PerDocProducer;
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.codecs.PerDocProducer;
-import org.apache.lucene.index.codecs.StoredFieldsReader;
-import org.apache.lucene.index.codecs.TermVectorsReader;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;

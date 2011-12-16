@@ -18,9 +18,9 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;

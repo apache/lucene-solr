@@ -19,8 +19,8 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.util.*;
 
 public class TestFlex extends LuceneTestCase {

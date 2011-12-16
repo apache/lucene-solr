@@ -20,8 +20,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.DocValuesField;
-import org.apache.lucene.index.codecs.DocValuesFormat;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 

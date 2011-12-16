@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.BlockTreeTermsReader;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -27,7 +29,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.codecs.Codec;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,9 +49,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.Codec;
 
-import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;

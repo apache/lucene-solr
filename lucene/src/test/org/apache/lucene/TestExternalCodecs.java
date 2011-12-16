@@ -21,10 +21,10 @@ import java.io.*;
 import java.util.*;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.codecs.*;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.codecs.*;
-import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;

@@ -25,18 +25,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40ords.Lucene40WithOrds;
-import org.apache.lucene.index.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
-import org.apache.lucene.index.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.index.codecs.mocksep.MockSepPostingsFormat;
-import org.apache.lucene.index.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.index.codecs.pulsing.Pulsing40PostingsFormat;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.codecs.lucene40ords.Lucene40WithOrds;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
+import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
+import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
+import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
+import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.util._TestUtil;
 
 /**

@@ -19,8 +19,8 @@ package org.apache.solr.core;
 
 import java.util.Map;
 
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
