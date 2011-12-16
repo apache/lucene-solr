@@ -26,21 +26,15 @@ import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
+import org.junit.Ignore;
 
-import org.apache.lucene.util.LuceneTestCase;
+public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
-public class HTMLStripCharFilterTest extends LuceneTestCase {
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &
   //
   public void test() throws IOException {
@@ -260,5 +254,24 @@ public class HTMLStripCharFilterTest extends LuceneTestCase {
     // test backtracking
     doTestOffsets("X < &zz >X &# < X > < &l > &g < X");
   }
+  
+  @Ignore("broken offsets: see LUCENE-2208")
+  public void testRandom() throws Exception {
+    Analyzer analyzer = new Analyzer() {
 
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new HTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
+      }
+    };
+    
+    int numRounds = RANDOM_MULTIPLIER * 10000;
+    checkRandomData(random, analyzer, numRounds);
+  }
 }

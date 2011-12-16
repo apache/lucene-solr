@@ -243,6 +243,31 @@ public class _TestUtil {
       }
     }
   }
+  
+  // TODO: make this more evil
+  public static String randomHtmlishString(Random random, int numElements) {
+    final int end = random.nextInt(numElements);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < end; i++) {
+      int val = random.nextInt(10);
+      switch(val) {
+        case 0: sb.append("<p>"); break;
+        case 1: sb.append("</p>"); break;
+        case 2: sb.append("<!--"); break;
+        case 3: sb.append("-->"); break;
+        case 4: sb.append("&#"); break;
+        case 5: sb.append(";"); break;
+        case 6: sb.append((char)_TestUtil.nextInt(random, '0', '9')); break;
+        default:
+          sb.append((char)_TestUtil.nextInt(random, 'a', 'z'));
+      }
+    }
+    return sb.toString();
+  }
 
   private static final int[] blockStarts = {
     0x0000, 0x0080, 0x0100, 0x0180, 0x0250, 0x02B0, 0x0300, 0x0370, 0x0400, 

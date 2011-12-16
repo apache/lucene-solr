@@ -84,14 +84,16 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther", "is", "here" },
         new int[] { 0, 13, 26, 29 },
-        new int[] { 12, 25, 28, 33 });
+        new int[] { 12, 25, 28, 33 },
+        INPUT.length());
     
     charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
     stream = new PatternTokenizer(charStream, Pattern.compile("Günther"), 0);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther" },
         new int[] { 0, 13 },
-        new int[] { 12, 25 });
+        new int[] { 12, 25 },
+        INPUT.length());
   }
   
   /** 
