@@ -17,8 +17,8 @@ package org.apache.lucene.queryparser.flexible.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.messages.Message;
-import org.apache.lucene.messages.NLSException;
+import org.apache.lucene.queryparser.flexible.messages.Message;
+import org.apache.lucene.queryparser.flexible.messages.NLSException;
 
 /**
  * Error class with NLS support

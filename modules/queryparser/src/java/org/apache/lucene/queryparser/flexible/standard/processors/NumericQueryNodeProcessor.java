@@ -21,7 +21,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.List;
 
-import org.apache.lucene.messages.MessageImpl;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;

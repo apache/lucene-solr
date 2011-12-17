@@ -19,7 +19,7 @@ package org.apache.lucene.queryparser.flexible.spans;
 
 import java.util.List;
 
-import org.apache.lucene.messages.MessageImpl;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;

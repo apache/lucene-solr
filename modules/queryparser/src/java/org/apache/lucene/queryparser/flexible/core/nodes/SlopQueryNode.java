@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
  * limitations under the License.
  */
 
-import org.apache.lucene.messages.MessageImpl;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;

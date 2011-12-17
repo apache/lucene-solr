@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-import org.apache.lucene.messages.NLS;
+import org.apache.lucene.queryparser.flexible.messages.NLS;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 

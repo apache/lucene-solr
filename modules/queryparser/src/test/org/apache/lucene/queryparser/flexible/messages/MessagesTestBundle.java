@@ -1,4 +1,4 @@
-package org.apache.lucene.messages;
+package org.apache.lucene.queryparser.flexible.messages;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

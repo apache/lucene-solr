@@ -2,8 +2,8 @@
 /* JavaCCOptions:KEEP_LINE_COL=null */
 package org.apache.lucene.queryparser.flexible.standard.parser;
  
- import org.apache.lucene.messages.Message;
- import org.apache.lucene.messages.MessageImpl;
+ import org.apache.lucene.queryparser.flexible.messages.Message;
+ import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
  import org.apache.lucene.queryparser.flexible.core.*;
  import org.apache.lucene.queryparser.flexible.core.messages.*;
 
@@ -193,4 +193,4 @@ public class ParseException extends QueryNodeParseException {
    }
 
 }
-/* JavaCC - OriginalChecksum=0f25f4245374bbf9920c9a82efecadd2 (do not edit this line) */
+/* JavaCC - OriginalChecksum=7601d49d11bc059457ae5850628ebc8a (do not edit this line) */
