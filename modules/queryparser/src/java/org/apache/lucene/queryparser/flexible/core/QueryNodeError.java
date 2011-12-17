@@ -23,8 +23,8 @@ import org.apache.lucene.queryparser.flexible.messages.NLSException;
 /**
  * Error class with NLS support
  * 
- * @see org.apache.lucene.messages.NLS
- * @see org.apache.lucene.messages.Message
+ * @see org.apache.lucene.queryparser.flexible.messages.NLS
+ * @see org.apache.lucene.queryparser.flexible.messages.Message
  */
 public class QueryNodeError extends Error implements NLSException {
   private Message message;
