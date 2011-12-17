@@ -37,14 +37,12 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.zookeeper.KeeperException;
 
 // TODO: we are not really using the buffering anymore due to DistribUpdateProc...
 // we might want to bring back a form of slots...
@@ -76,45 +74,70 @@ public class SolrCmdDistributor {
   private List<AddUpdateCommand> alist;
   private ArrayList<DeleteUpdateCommand> dlist;
 
-  private ZkController zkController;
-
-  private String collection;
-
-  
-  public SolrCmdDistributor(ZkController zkController, String collection, SolrQueryResponse rsp) {
-    //this.req = req;
-    this.rsp = rsp;
-    // TODO: kind of a hack to get the latest leader
-    this.zkController = zkController;
-    this.collection = collection;
-  }
-  
-  public void finish(List<String> shards, ModifiableSolrParams params, boolean forwarding, String shardId) {
-
-    // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, shards, params, forwarding, shardId);
-    flushDeletes(1, null, shards, params, forwarding, shardId);
-
-    checkResponses(true, forwarding, shardId);
-  }
-  
-  public void distribDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params, boolean forwarding, String shardId) throws IOException {
-    checkResponses(false, forwarding, shardId);
+  public static class CmdRequest {
+    public List<ShardInfo> shardInfos;
+    public ModifiableSolrParams params;
+    // we have to retry updates that are just being forwarded to the leader
+    public boolean forwarding;
     
-    if (cmd.isDeleteById()) {
-      doDelete(cmd, shards, params, forwarding, shardId);
-    } else {
-      // TODO: query must be broadcast to all ??
-      doDelete(cmd, shards, params, forwarding, shardId);
+    public CmdRequest(List<ShardInfo> shardInfos, ModifiableSolrParams params) {
+      this.shardInfos = shardInfos;
+      this.params = params;
+    }
+    
+    public CmdRequest(List<ShardInfo> shardInfos, ModifiableSolrParams params, boolean forwarding) {
+      this(shardInfos, params);
+      this.forwarding = forwarding;
+    }
+    
+    public void updateUrlsForRetry() {
+      for (ShardInfo shardInfo : shardInfos) {
+        if (shardInfo.retryUrl != null) {
+          shardInfo.url = shardInfo.retryUrl.getRetryUrl();
+        }
+      }
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<String> shards, ModifiableSolrParams params, boolean forwarding, String shardId) throws IOException {
+  public static class ShardInfo {
+    public String url;
+    public RetryUrl retryUrl;
+  }
+  
+  public static interface RetryUrl {
+    String getRetryUrl();
+  }
+  
+  public SolrCmdDistributor(SolrQueryResponse rsp) {
+    this.rsp = rsp;
+  }
+  
+  public void finish(CmdRequest cmdRequest) {
+
+    // piggyback on any outstanding adds or deletes if possible.
+    flushAdds(1, null, cmdRequest);
+    flushDeletes(1, null, cmdRequest);
+
+    checkResponses(true, cmdRequest);
+  }
+  
+  public void distribDelete(DeleteUpdateCommand cmd, CmdRequest cmdRequest) throws IOException {
+    checkResponses(false, cmdRequest);
     
-    checkResponses(false, forwarding, shardId);
+    if (cmd.isDeleteById()) {
+      doDelete(cmd, cmdRequest);
+    } else {
+      // TODO: query must be broadcast to all ??
+      doDelete(cmd, cmdRequest);
+    }
+  }
+  
+  public void distribAdd(AddUpdateCommand cmd, CmdRequest cmdRequest) throws IOException {
+    
+    checkResponses(false, cmdRequest);
     
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, shards, params, forwarding, shardId);
+    flushDeletes(1, null, cmdRequest);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -135,48 +158,48 @@ public class SolrCmdDistributor {
     }
     alist.add(clone);
     
-    flushAdds(maxBufferedAddsPerServer, null, shards, params, forwarding, shardId);
+    flushAdds(maxBufferedAddsPerServer, null, cmdRequest);
   }
   
-  public void distribCommit(CommitUpdateCommand cmd, List<String> shards, ModifiableSolrParams params)
+  public void distribCommit(CommitUpdateCommand cmd, CmdRequest cmdRequest)
       throws IOException {
     
     // Wait for all outstanding repsonses to make sure that a commit
     // can't sneak in ahead of adds or deletes we already sent.
     // We could do this on a per-server basis, but it's more complex
     // and this solution will lead to commits happening closer together.
-    checkResponses(true, false, null);
+    checkResponses(true, cmdRequest);
     
     // piggyback on any outstanding adds or deletes if possible.
     // TODO: review this
-    flushAdds(1, cmd, shards, params, false, null);
+    flushAdds(1, cmd, cmdRequest);
     
-    flushDeletes(1, cmd, shards, params, false, null);
+    flushDeletes(1, cmd, cmdRequest);
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(params);
+    ureq.setParams(cmdRequest.params);
 
     addCommit(ureq, cmd);
-    submit(ureq, shards);
+    submit(ureq, cmdRequest);
     
     // if the command wanted to block until everything was committed,
     // then do that here.
     // nocommit
     if (/* cmd.waitFlush || */cmd.waitSearcher) {
-      checkResponses(true, false, null);
+      checkResponses(true, cmdRequest);
     }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, List<String> shards, ModifiableSolrParams params, boolean forwarding, String shardId) throws IOException {
+  private void doDelete(DeleteUpdateCommand cmd, CmdRequest cmdRequest) throws IOException {
     
-    flushAdds(1, null, shards, params, forwarding, shardId);
+    flushAdds(1, null, cmdRequest);
     
     if (dlist == null) {
       dlist = new ArrayList<DeleteUpdateCommand>(2);
     }
     dlist.add(clone(cmd));
     
-    flushDeletes(maxBufferedDeletesPerServer, null, shards, params, forwarding, shardId);
+    flushDeletes(maxBufferedDeletesPerServer, null, cmdRequest);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -186,12 +209,12 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls, ModifiableSolrParams params, boolean forwarding, String shardId) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, CmdRequest cmdRequest) {
     // check for pending deletes
     if (alist == null || alist.size() < limit) return false;
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(params);
+    ureq.setParams(cmdRequest.params);
     
     addCommit(ureq, ccmd);
     
@@ -200,16 +223,16 @@ public class SolrCmdDistributor {
     }
     
     alist = null;
-    submit(ureq, urls);
+    submit(ureq, cmdRequest);
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> shards, ModifiableSolrParams params, boolean forwarding, String shardId) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, CmdRequest cmdRequest) {
     // check for pending deletes
     if (dlist == null || dlist.size() < limit) return false;
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(params);
+    ureq.setParams(cmdRequest.params);
 
     addCommit(ureq, ccmd);
     
@@ -222,7 +245,7 @@ public class SolrCmdDistributor {
     }
     
     dlist = null;
-    submit(ureq, shards);
+    submit(ureq, cmdRequest);
     return true;
   }
   
@@ -236,7 +259,7 @@ public class SolrCmdDistributor {
   
   static class Request {
     // TODO: we may need to look at deep cloning this?
-    List<String> shards;
+    CmdRequest cmdRequest;
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
     int rspCode;
@@ -245,9 +268,9 @@ public class SolrCmdDistributor {
     int retries = 0;
   }
   
-  void submit(UpdateRequestExt ureq, List<String> shards) {
+  void submit(UpdateRequestExt ureq, CmdRequest cmdRequest) {
     Request sreq = new Request();
-    sreq.shards = shards;
+    sreq.cmdRequest = cmdRequest;
     sreq.ureq = ureq;
     submit(sreq);
   }
@@ -258,7 +281,7 @@ public class SolrCmdDistributor {
       pending = new HashSet<Future<Request>>();
     }
 
-    for (final String shard : sreq.shards) {
+    for (final ShardInfo shardInfo : sreq.cmdRequest.shardInfos) {
       // TODO: when we break up shards, we might forward
       // to self again - makes things simple here, but we could
       // also have realized this before, done the req locally, and
@@ -268,16 +291,16 @@ public class SolrCmdDistributor {
         @Override
         public Request call() throws Exception {
           Request clonedRequest = new Request();
-          clonedRequest.shards = sreq.shards;
+          clonedRequest.cmdRequest = sreq.cmdRequest;
           clonedRequest.ureq = sreq.ureq;
-          clonedRequest.url = shard;
+          clonedRequest.url = shardInfo.url;
           try {
             // TODO: what about https?
             String url;
-            if (!shard.startsWith("http://")) {
-              url = "http://" + shard;
+            if (!shardInfo.url.startsWith("http://")) {
+              url = "http://" + shardInfo.url;
             } else {
-              url = shard;
+              url = shardInfo.url;
             }
 
             SolrServer server = new CommonsHttpSolrServer(url, client);
@@ -300,7 +323,7 @@ public class SolrCmdDistributor {
     }
   }
   
-  void checkResponses(boolean block, boolean forwarding, String shardId) {
+  void checkResponses(boolean block, CmdRequest cmdRequest) {
     
     int expectedResponses = pending == null ? 0 : pending.size();
     int nonConnectionErrors = 0;
@@ -336,7 +359,7 @@ public class SolrCmdDistributor {
             // TODO: perhaps we should do more?
             if (rsp.getException() == null) {
               
-              String newMsg = "shard update error (" + sreq.shards + "):"
+              String newMsg = "shard update error (" + sreq.cmdRequest.shardInfos + "):"
                   + e.getMessage();
               if (e instanceof SolrException) {
                 SolrException se = (SolrException) e;
@@ -349,13 +372,13 @@ public class SolrCmdDistributor {
               rsp.setException(e);
             }
             
-            if (forwarding) {
+            if (cmdRequest.forwarding) {
               // this shold be fine because forwarding requests are only to one shard
               failedFowardingRequest = sreq;
             }
             
             SolrException.logOnce(SolrCore.log, "shard update error " + sreq.url + " ("
-                + sreq.shards + ")", sreq.exception);
+                + sreq.cmdRequest.shardInfos + ")", sreq.exception);
           }
           
         } catch (ExecutionException e) {
@@ -379,10 +402,10 @@ public class SolrCmdDistributor {
     // TODO: now we should tell those that failed to try and recover?
 
     if (failed > 0 && nonConnectionErrors == 0) {
-      if (failed == expectedResponses && forwarding) {
+      if (failed == expectedResponses && cmdRequest.forwarding) {
         // this is a pure forwarding request (single url for the leader) and it fully failed -
         // don't reset the exception - TODO: most likely there is now a new
-        // leader - we really should retry the request...
+        // leader - first we should retry the request...
         
         // TODO: we really need to clean this up and apis that allow it...
         if (failedFowardingRequest != null) {
@@ -392,27 +415,20 @@ public class SolrCmdDistributor {
             // TODO Auto-generated catch block
             e1.printStackTrace();
           }
-          // we try again with the latest leader - nocommit: dont retry forever
-          try {
-            zkController.getZkStateReader().getLeaderUrl(collection, shardId);
-          } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-          } catch (KeeperException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            // eventually this will not throw an exception to get...
+
+          failedFowardingRequest.cmdRequest.updateUrlsForRetry();
+          failedFowardingRequest.retries++;
+
+          if (failedFowardingRequest.retries < 10) {
+            rsp.setException(null);
+            submit(failedFowardingRequest);
+            checkResponses(block, cmdRequest);
           }
-          submit(failedFowardingRequest);
-          checkResponses(block, forwarding, shardId);
         }
       } else {
         // System.out.println("clear exception");
         rsp.setException(null);
       }
-    } else {
-      // make sure exception is cleared in the retry case from above
-      rsp.setException(null);
     }
   }
 }

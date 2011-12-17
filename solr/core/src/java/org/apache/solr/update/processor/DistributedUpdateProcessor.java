@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.HashPartitioner;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -48,6 +47,9 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
+import org.apache.solr.update.SolrCmdDistributor.CmdRequest;
+import org.apache.solr.update.SolrCmdDistributor.RetryUrl;
+import org.apache.solr.update.SolrCmdDistributor.ShardInfo;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
@@ -79,7 +81,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final SchemaField idField;
   
   private final SolrCmdDistributor cmdDistrib;
-  private HashPartitioner hp;
+
   private boolean zkEnabled = false;
 
   private String collection;
@@ -89,7 +91,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // method in this update processor
   private boolean isLeader = true;
   private boolean forwardToLeader = false;
-  private List<String> shards;
+  private List<String> urls;
   private String shardId;
 
   
@@ -126,13 +128,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       collection = cloudDesc.getCollectionName();
     }
     
-    cmdDistrib = new SolrCmdDistributor(zkController, collection, rsp); // TODO: we put the last result (which could be complicated due to 
+    cmdDistrib = new SolrCmdDistributor(rsp); // TODO: we put the last result (which could be complicated due to 
                                               // multiple docs per req) in the rsp - this is whack
   }
 
   private List<String> setupRequest(int hash) {
     
-    List<String> shards = null;
+    List<String> urls = null;
 
     // if we are in zk mode...
     if (zkEnabled) {
@@ -155,15 +157,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         isLeader = nodeName.equals(leaderNodeName);
         
         if (req.getParams().getBool(SEEN_LEADER, false)) {
-          // we are coming from the leader, just go local - set no shardStr
+          // we are coming from the leader, just go local - set no urlstr
         } else if (isLeader) {
           // that means I want to forward onto my replicas...
           // so get the replicas...
-          shards = getReplicaUrls(req, collection, shardId, nodeName);
+          urls = getReplicaUrls(req, collection, shardId, nodeName);
         } else {
           // I need to forward onto the leader...
-          shards = new ArrayList<String>(1);
-          shards.add(leaderUrl);
+          urls = new ArrayList<String>(1);
+          urls.add(leaderUrl);
           forwardToLeader = true;
         }
         
@@ -177,7 +179,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    return shards;
+    return urls;
   }
   
   private String getShard(int hash, String collection, CloudState cloudState) {
@@ -194,7 +196,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     int hash = 0;
     if (zkEnabled) {
       hash = hash(cmd);
-      shards = setupRequest(hash);
+      urls = setupRequest(hash);
     } else {
       // even in non zk mode, tests simulate updates from a leader
       isLeader = !req.getParams().getBool(SEEN_LEADER, false);
@@ -211,12 +213,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     ModifiableSolrParams params = null;
-    if (shards != null) {
+    if (urls != null) {
       params = new ModifiableSolrParams(req.getParams());
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribAdd(cmd, shards, params, forwardToLeader, shardId);
+      cmdDistrib.distribAdd(cmd,  new CmdRequest(getShardInfos(urls), params, forwardToLeader));
     } else {
       // nocommit: At a minimum, local updates must be protected by synchronization
       // right now we count on versionAdd to do the local add
@@ -234,14 +236,47 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       addsResponse.add(scratch.toString(), cmd.getVersion());
     }
 
-    if (shards != null) {
-      cmdDistrib.finish(shards, params, forwardToLeader, shardId);
+    if (urls != null) {
+      CmdRequest cmdRequest = new CmdRequest(getShardInfos(urls), params);
+      cmdRequest.forwarding = forwardToLeader;
+      cmdDistrib.finish(cmdRequest);
     }
     
     // TODO: keep track of errors?  needs to be done at a higher level though since
     // an id may fail before it gets to this processor.
     // Given that, it may also make sense to move the version reporting out of this
     // processor too.
+  }
+
+  private List<ShardInfo> getShardInfos(List<String> urls) {
+    List<ShardInfo> shardInfos = new ArrayList<ShardInfo>(urls.size());
+    for (String url : urls) {
+      ShardInfo shardInfo = new ShardInfo();
+      shardInfo.url = url;
+      shardInfo.retryUrl = new RetryUrl() {
+        
+        @Override
+        public String getRetryUrl() {
+          // TODO: if we are now the leader, we forward through http...
+          ZkNodeProps leaderProps = null;
+          try {
+            leaderProps = zkController.getZkStateReader().getLeaderProps(
+                collection, shardId);
+          } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          } catch (KeeperException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+          
+          String leaderUrl = leaderProps.get(ZkStateReader.URL_PROP);
+          return leaderUrl;
+        }
+      };
+      shardInfos.add(shardInfo);
+    }
+    return shardInfos;
   }
 
   // must be synchronized by bucket
@@ -369,7 +404,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     int hash = 0;
     if (zkEnabled) {
       hash = hash(cmd);
-      shards = setupRequest(hash);
+      urls = setupRequest(hash);
     } else {
       // even in non zk mode, tests simulate updates from a leader
       isLeader = !req.getParams().getBool(SEEN_LEADER, false);
@@ -384,14 +419,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: do we need to add anything to the response?
       return;
     }
-
+    CmdRequest cmdRequest = null;
     ModifiableSolrParams params = null;
-    if (shards != null) {
+    if (urls != null) {
       params = new ModifiableSolrParams(req.getParams());
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribDelete(cmd, shards, params, forwardToLeader, shardId);
+      cmdRequest = new CmdRequest(getShardInfos(urls), params, forwardToLeader);
+      cmdDistrib.distribDelete(cmd, cmdRequest);
     } else {
       // super.processDelete(cmd);
     }
@@ -407,8 +443,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
     }
     
-    if (shards != null) {
-      cmdDistrib.finish(shards, params, forwardToLeader, shardId);
+    if (urls != null) {
+      cmdDistrib.finish(cmdRequest);
     }
   }
 
@@ -571,12 +607,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
             .getZkController().getNodeName();
         String shardZkNodeName = nodeName + "_" + req.getCore().getName();
-        shards = getReplicaUrls(req, req.getCore().getCoreDescriptor()
+        urls = getReplicaUrls(req, req.getCore().getCoreDescriptor()
             .getCloudDescriptor().getCollectionName(), shardZkNodeName);
 
-        if (shards != null) {
-          cmdDistrib.distribCommit(cmd, shards, params);
-          cmdDistrib.finish(shards, params, forwardToLeader, shardId);
+        if (urls != null) {
+          CmdRequest cmdRequest = new CmdRequest(getShardInfos(urls), params);
+          cmdDistrib.distribCommit(cmd, cmdRequest);
+          cmdDistrib.finish(cmdRequest);
         }
       }
     }
@@ -584,7 +621,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void finish() throws IOException {
-    if (next != null && shards == null) next.finish();
+    if (next != null && urls == null) next.finish();
   }
   
   private List<String> getReplicaUrls(SolrQueryRequest req, String collection,

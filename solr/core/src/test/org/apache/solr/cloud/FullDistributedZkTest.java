@@ -912,6 +912,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     return rsp;
   }
   
+  // TODO: also do some deletes
   class StopableIndexingThread extends Thread {
     private volatile boolean stop = false;
     private int startI;

@@ -48,6 +48,10 @@ public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
     
     StopableIndexingThread indexThread = new StopableIndexingThread(0);
     indexThread.start();
+    StopableIndexingThread indexThread2 = new StopableIndexingThread(0);
+    indexThread2.start();
+    StopableIndexingThread indexThread3 = new StopableIndexingThread(0);
+    indexThread3.start();
     
     chaosMonkey.startTheMonkey();
     
@@ -56,6 +60,8 @@ public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
     chaosMonkey.stopTheMonkey();
     
     indexThread.safeStop();
+    indexThread2.safeStop();
+    indexThread3.safeStop();
     
     // try and wait for any replications and what not to finish...
     // TODO: I suppose we should poll zk here about state
@@ -63,7 +69,7 @@ public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
     
     commit();
     
-    // does not pass yet
+    // does not always pass yet
     checkShardConsistency();
     
     System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");

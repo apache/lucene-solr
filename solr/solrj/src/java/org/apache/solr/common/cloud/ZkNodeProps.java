@@ -44,6 +44,16 @@ public class ZkNodeProps implements JSONWriter.Writable {
     propMap = new HashMap<String,String>();
   }
   
+  public ZkNodeProps(String... keyVals) {
+    if (keyVals.length % 2 != 0) {
+      throw new IllegalArgumentException("arguments should be key,value");
+    }
+    propMap = new HashMap<String,String>();
+    for (int i = 0; i < keyVals.length; i+=2) {
+      propMap.put(keyVals[i], keyVals[i+1]);
+    }
+  }
+  
   public Set<String> keySet() {
     return Collections.unmodifiableSet(propMap.keySet());
   }
