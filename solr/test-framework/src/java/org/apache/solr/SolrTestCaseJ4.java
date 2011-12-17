@@ -745,7 +745,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static final IRange ZERO_TWO = new IRange(0,2);
   public static final IRange ONE_ONE = new IRange(1,1);
 
-  public static class Doc implements Comparable{
+  public static class Doc implements Comparable {
     public Comparable id;
     public List<Fld> fields;
     public int order; // the order this document was added to the index
@@ -811,7 +811,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  class FldType {
+  protected class FldType {
     public String fname;
     public IRange numValues;
     public Vals vals;
