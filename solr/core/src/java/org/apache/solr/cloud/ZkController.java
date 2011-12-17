@@ -543,7 +543,7 @@ public final class ZkController {
         }
         
         // publish new props
-        publishAsActive(shardUrl, cloudDesc, shardZkNodeName, shardId);
+        publishAsActive(shardUrl, cloudDesc, shardZkNodeName);
       } else {
         CoreContainer cc = desc.getCoreContainer();
         // CoreContainer can be null for some tests...
@@ -567,7 +567,7 @@ public final class ZkController {
           @Override
           public void run() {
             // publish new props
-            publishAsActive(shardUrl, cloudDesc, shardZkNodeName, cloudDesc.getShardId());
+            publishAsActive(shardUrl, cloudDesc, shardZkNodeName);
             
           }});
       }
@@ -585,12 +585,12 @@ public final class ZkController {
 
 
   private void publishAsActive(String shardUrl,
-      final CloudDescriptor cloudDesc, String shardZkNodeName, String shardId) {
+      final CloudDescriptor cloudDesc, String shardZkNodeName) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.URL_PROP, shardUrl);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
-    finalProps.put(ZkStateReader.SHARD_ID_PROP, shardId);
+    finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
     publishState(cloudDesc, shardZkNodeName, finalProps);
   }
 
