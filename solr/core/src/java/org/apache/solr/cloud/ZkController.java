@@ -499,9 +499,12 @@ public final class ZkController {
             + shardUrl + "shardId:" + shardId);
     }
 
-    ZkNodeProps zkProps = new ZkNodeProps(props);
+    // we only put a subset of props into the leader node
+    ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP,
+        props.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.URL_PROP,
+        props.get(ZkStateReader.URL_PROP));
 
-    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, ZkStateReader.toJSON(zkProps));
+    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, ZkStateReader.toJSON(leaderProps));
     
     leaderElector.setup(context);
     leaderElector.joinElection(context);
@@ -509,37 +512,41 @@ public final class ZkController {
     // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId());
     
-    final boolean iamleader;
     SolrCore core = null;
     try {
       boolean doRecovery = true;
       if (leaderUrl.equals(shardUrl)) {
-        iamleader = true;
         doRecovery = false;
 
-        // recover from local transaction log and wait for it to complete before going active
-        // TODO: should this be moved to another thread?  To recoveryStrat?
-        // TODO: should this actually be done earlier, before (or as part of) leader election perhaps?
-        // TODO: ensure that a replica that is trying to recover waits until I'm active (or don't make me the
-        //       leader until my local replay is done.  But this replay is only needed on the leader - replicas
-        //       will do recovery anyway
+        // recover from local transaction log and wait for it to complete before
+        // going active
+        // TODO: should this be moved to another thread? To recoveryStrat?
+        // TODO: should this actually be done earlier, before (or as part of)
+        // leader election perhaps?
+        // TODO: ensure that a replica that is trying to recover waits until I'm
+        // active (or don't make me the
+        // leader until my local replay is done. But this replay is only needed
+        // on the leader - replicas
+        // will do recovery anyway
         CoreContainer cc = desc.getCoreContainer();
-        if (cc != null) {  // TODO: CoreContainer only null in tests?
-        core = cc.getCore(desc.getName());
-        if (!core.isReloaded()) {
-          Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
-          if (recoveryFuture != null) {
-            recoveryFuture.get();  // NOTE: this could potentially block for minutes or more!
-            // TODO: public as recovering in the mean time?
+        if (cc != null) { // TODO: CoreContainer only null in tests?
+          core = cc.getCore(desc.getName());
+          if (!core.isReloaded()) {
+            Future<UpdateLog.RecoveryInfo> recoveryFuture = core
+                .getUpdateHandler().getUpdateLog().recoverFromLog();
+            if (recoveryFuture != null) {
+              recoveryFuture.get(); // NOTE: this could potentially block for
+                                    // minutes or more!
+              // TODO: public as recovering in the mean time?
+            }
           }
-        }
         }
         
         // publish new props
         publishAsActive(shardUrl, cloudDesc, shardZkNodeName, shardId);
       } else {
-        iamleader = false;
         CoreContainer cc = desc.getCoreContainer();
+        // CoreContainer can be null for some tests...
         if (cc != null) {
           core = cc.getCore(desc.getName());
           
