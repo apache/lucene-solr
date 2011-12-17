@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -54,6 +53,10 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   private void init(String schema) throws Exception {
+    init("solrconfig-elevate.xml", schema);
+  }
+
+  private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
     createTempDir();
     File parent = new File(TEST_HOME(), "conf");
@@ -61,7 +64,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     File elevateDataFile = new File(dataDir, "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);
 
-    initCore("solrconfig-elevate.xml",schema);
+    initCore(config,schema);
     clearIndex();
     assertU(commit());
   }
@@ -99,6 +102,37 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       delete();
     }
   }
+
+  @Test
+  public void testTrieFieldType() throws Exception {
+    try {
+      init("schema.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "1", "text", "XXXX XXXX",           "str_s", "a" ));
+      assertU(adoc("id", "2", "text", "YYYY",      "str_s", "b" ));
+      assertU(adoc("id", "3", "text", "ZZZZ", "str_s", "c" ));
+
+      assertU(adoc("id", "4", "text", "XXXX XXXX",                 "str_s", "x" ));
+      assertU(adoc("id", "5", "text", "YYYY YYYY",         "str_s", "y" ));
+      assertU(adoc("id", "6", "text", "XXXX XXXX", "str_s", "z" ));
+      assertU(adoc("id", "7", "text", "AAAA", "str_s", "a" ));
+      assertU(adoc("id", "8", "text", "AAAA", "str_s", "a" ));
+      assertU(adoc("id", "9", "text", "AAAA AAAA", "str_s", "a" ));
+      assertU(commit());
+
+      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+              ,"//*[@numFound='3']"
+              ,"//result/doc[1]/int[@name='id'][.='7']"
+              ,"//result/doc[2]/int[@name='id'][.='8']"
+              ,"//result/doc[3]/int[@name='id'][.='9']"
+              );
+    } finally{
+      delete();
+    }
+  }
+
 
   @Test
   public void testInterface() throws Exception
@@ -156,6 +190,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
 
   }
+
+
 
   @Test
   public void testSorting() throws Exception
