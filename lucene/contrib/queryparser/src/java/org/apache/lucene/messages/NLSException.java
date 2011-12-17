@@ -17,21 +17,19 @@ package org.apache.lucene.messages;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-import java.util.Locale;
-
 /**
- * Message Interface for a lazy loading.
+ * Interface that exceptions should implement to support lazy loading of messages.
+ * 
  * For Native Language Support (NLS), system of software internationalization.
+ * 
+ * This Interface should be implemented by all exceptions that require
+ * translation
+ * @deprecated Will be moved to a private package inside flexible query parser (Lucene 4.0).
  */
-public interface Message extends Serializable {
-
-  public String getKey();
-
-  public Object[] getArguments();
-
-  public String getLocalizedMessage();
-
-  public String getLocalizedMessage(Locale locale);
-
+@Deprecated
+public interface NLSException {
+  /**
+   * @return a instance of a class that implements the Message interface
+   */
+  public Message getMessageObject();
 }

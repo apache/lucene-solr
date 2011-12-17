@@ -22,7 +22,9 @@ import java.util.Locale;
 /**
  * Default implementation of Message interface.
  * For Native Language Support (NLS), system of software internationalization.
+ * @deprecated Will be moved to a private package inside flexible query parser (Lucene 4.0).
  */
+@Deprecated
 public class MessageImpl implements Message {
 
   private static final long serialVersionUID = -3077643314630884523L;

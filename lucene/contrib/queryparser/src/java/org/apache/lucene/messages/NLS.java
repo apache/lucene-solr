@@ -42,7 +42,9 @@ import java.util.ResourceBundle;
  * usage reference
  * 
  * MessageBundle classes may subclass this type.
+ * @deprecated Will be moved to a private package inside flexible query parser (Lucene 4.0).
  */
+@Deprecated
 public class NLS {
 
   private static Map<String, Class<? extends NLS>> bundles = 
