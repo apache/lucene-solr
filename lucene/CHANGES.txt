@@ -698,6 +698,11 @@ Changes in backwards compatibility policy
   when that reader is closed.  SegmentReader has CoreClosedListeners that you
   can register to know when a shared reader core is closed.  
   (Uwe Schindler, Mike McCandless, Robert Muir)
+
+* LUCENE-3652: The package org.apache.lucene.messages was moved to
+  contrib/queryparser. If you have used those classes in your code
+  just add the lucene-queryparser.jar file to your classpath.
+  (Uwe Schindler)
   
 Security fixes
 
