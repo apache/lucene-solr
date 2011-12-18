@@ -266,7 +266,7 @@ public class NRTCachingDirectory extends Directory {
     }
   }
 
-  /** Close thius directory, which flushes any cached files
+  /** Close this directory, which flushes any cached files
    *  to the delegate and then closes the delegate. */
   @Override
   public void close() throws IOException {
