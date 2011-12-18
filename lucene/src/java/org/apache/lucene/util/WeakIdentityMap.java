@@ -69,12 +69,12 @@ public final class WeakIdentityMap<K,V> {
 
   public boolean containsKey(Object key) {
     reap();
-    return backingStore.containsKey(new IdentityWeakReference(key, queue));
+    return backingStore.containsKey(new IdentityWeakReference(key, null));
   }
 
   public V get(Object key) {
     reap();
-    return backingStore.get(new IdentityWeakReference(key, queue));
+    return backingStore.get(new IdentityWeakReference(key, null));
   }
 
   public V put(K key, V value) {
@@ -88,7 +88,7 @@ public final class WeakIdentityMap<K,V> {
 
   public V remove(Object key) {
     reap();
-    return backingStore.remove(new IdentityWeakReference(key, queue));
+    return backingStore.remove(new IdentityWeakReference(key, null));
   }
 
   public int size() {
