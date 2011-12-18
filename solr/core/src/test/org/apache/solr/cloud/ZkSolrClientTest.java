@@ -210,6 +210,10 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
         Thread.sleep(4000); // wait a bit more
       }
       
+      if (cnt.intValue() < 2) {
+        Thread.sleep(4000); // wait a bit more
+      }
+      
       assertEquals(2, cnt.intValue());
 
     } finally {

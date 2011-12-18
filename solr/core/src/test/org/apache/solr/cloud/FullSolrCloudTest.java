@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -58,7 +59,7 @@ import org.junit.BeforeClass;
  *
  * TODO: we should still test this works as a custom update chain as well as what we test now - the default update chain
  */
-public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
+public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 
   private static final String SHARD2 = "shard2";
 
@@ -157,7 +158,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     System.clearProperty("remove.version.field");
   }
   
-  public FullDistributedZkTest() {
+  public FullSolrCloudTest() {
     fixShardCount = true;
     
     shardCount = 6;
@@ -248,6 +249,16 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     }
     shards = sb.toString();
     return jettys;
+  }
+  
+  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride) throws Exception {
+
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride, false);
+    jetty.setShards(shardList);
+    jetty.setDataDir(dataDir);
+    jetty.start();
+
+    return jetty;
   }
 
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
@@ -916,7 +927,7 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
   class StopableIndexingThread extends Thread {
     private volatile boolean stop = false;
     private int startI;
-    
+    private List<Integer> deletes = new ArrayList<Integer>();  
     
     public StopableIndexingThread(int startI) {
       this.startI = startI;
@@ -926,9 +937,26 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
     @Override
     public void run() {
       int i = startI;
+      int numDeletes = 0;
       int fails = 0;
       while (true && !stop) {
         ++i;
+        
+        if (random.nextBoolean() && deletes.size() > 0) {
+          Integer delete = deletes.remove(0);
+          try {
+            controlClient.deleteById(Integer.toString(delete));
+            cloudClient.deleteById(Integer.toString(delete));
+            numDeletes++;
+          } catch (SolrServerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+
+        }
         
         try {
           indexr(id, i, i1, 50, tlong, 50, t1,
@@ -939,9 +967,13 @@ public class FullDistributedZkTest extends AbstractDistributedZkTestCase {
           fails++;
         }
         
+        if (random.nextBoolean()) {
+          deletes.add(i);
+        }
+        
       }
       
-      System.err.println("added docs:" + i + " with " + fails + " fails");
+      System.err.println("added docs:" + i + " with " + fails + " fails" + " deletes:" + numDeletes);
     }
     
     public void safeStop() {

@@ -61,20 +61,28 @@ public class JettySolrRunner {
 
   private String solrHome;
 
+  private boolean stopAtShutdown;
+
   public JettySolrRunner(String solrHome, String context, int port) {
-    this.init(solrHome, context, port);
+    this.init(solrHome, context, port, true);
   }
 
   public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename) {
-    this.init(solrHome, context, port);
+    this.init(solrHome, context, port, true);
+    this.solrConfigFilename = solrConfigFilename;
+  }
+  
+  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, boolean stopAtShutdown ) {
+    this.init(solrHome, context, port, stopAtShutdown);
     this.solrConfigFilename = solrConfigFilename;
   }
 
-  private void init(String solrHome, String context, int port) {
+  private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
     server = new Server(port);
     this.solrHome = solrHome;
-    server.setStopAtShutdown(true);
+    this.stopAtShutdown = stopAtShutdown;
+    server.setStopAtShutdown(stopAtShutdown);
     System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
       // SelectChannelConnector connector = new SelectChannelConnector();
@@ -144,7 +152,7 @@ public class JettySolrRunner {
   public void start(boolean waitForSolr) throws Exception {
     // if started before, make a new server
     if (startedBefore) {
-      init(solrHome, context, lastPort);
+      init(solrHome, context, lastPort, stopAtShutdown);
     } else {
       startedBefore = true;
     }

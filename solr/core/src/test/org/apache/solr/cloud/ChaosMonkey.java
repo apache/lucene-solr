@@ -25,11 +25,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.cloud.FullDistributedZkTest.CloudJettyRunner;
+import org.apache.solr.cloud.FullSolrCloudTest.CloudJettyRunner;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.zookeeper.KeeperException;
 import org.mortbay.jetty.servlet.FilterHolder;
 
 /**
@@ -76,6 +77,11 @@ public class ChaosMonkey {
     stop(jetty);
     stops.incrementAndGet();
   }
+
+  public void killJetty(JettySolrRunner jetty) throws Exception {
+    kill(jetty);
+    stops.incrementAndGet();
+  }
   
   public static void stop(JettySolrRunner jetty) throws Exception {
     // get a clean shutdown so that no dirs are left open...
@@ -87,6 +93,10 @@ public class ChaosMonkey {
       }
     }
 
+    jetty.stop();
+  }
+  
+  public static void kill(JettySolrRunner jetty) throws Exception {
     jetty.stop();
   }
   
@@ -123,12 +133,41 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner stopRandomShard(String slice) throws Exception {
+    JettySolrRunner jetty = getRandomSacraficialShard(slice);
+    if (jetty != null) {
+      stopJetty(jetty);
+    }
+    return jetty;
+  }
+  
+  
+  public JettySolrRunner killRandomShard() throws Exception {
+    // add all the shards to a list
+    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(collection);
+    
+    List<String> sliceKeyList = new ArrayList<String>(slices.size());
+    sliceKeyList.addAll(slices.keySet());
+    String sliceName = sliceKeyList.get(random.nextInt(sliceKeyList.size()));
+    
+    return stopRandomShard(sliceName);
+  }
+  
+  public JettySolrRunner killRandomShard(String slice) throws Exception {
+    JettySolrRunner jetty = getRandomSacraficialShard(slice);
+    if (jetty != null) {
+      killJetty(jetty);
+    }
+    return jetty;
+  }
+  
+  public JettySolrRunner getRandomSacraficialShard(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
     zkStateReader.updateCloudState(true);
     Slice theShards = zkStateReader.getCloudState().getSlices(collection)
         .get(slice);
     int numRunning = 0;
     int numRecovering = 0;
+    int numActive = 0;
     
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       boolean running = true;
@@ -152,21 +191,26 @@ public class ChaosMonkey {
         numRecovering++;
       }
       
+      if (cloudJetty.jetty.isRunning()
+          && state.equals(ZkStateReader.ACTIVE)
+          && zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+        numActive++;
+      }
+      
       if (running) {
         numRunning++;
       }
     }
     
-    if (numRunning < 2 || (numRunning < 3 && numRecovering > 0)) {
+    if (numActive < 2) {
       // we cannot kill anyone
       return null;
     }
     
-    // kill random shard
+    // get random shard
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     int index = random.nextInt(jetties.size() - 1);
     JettySolrRunner jetty = jetties.get(index).jetty;
-    stopJetty(jetty);
     return jetty;
   }
   
@@ -199,12 +243,18 @@ public class ChaosMonkey {
              }
             }
             
-            JettySolrRunner jetty = stopRandomShard();
+            JettySolrRunner jetty;
+            if (random.nextBoolean()) {
+              System.out.println("looking to stop");
+              jetty = stopRandomShard();
+            } else {
+              System.out.println("looking to kill");
+              jetty = killRandomShard();
+            }
             if (jetty == null) {
               System.out.println("we cannot kill");
             } else {
               deadPool.add(jetty);
-              System.out.println("we killed");
             }
           } catch (InterruptedException e) {
             //

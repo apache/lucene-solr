@@ -29,7 +29,7 @@ import org.junit.BeforeClass;
 /**
  * Super basic testing, no shard restarting or anything.
  */
-public class BasicFullDistributedZkTest extends FullDistributedZkTest {
+public class BasicSolrCloudTest extends FullSolrCloudTest {
   
   
   @BeforeClass
@@ -37,7 +37,7 @@ public class BasicFullDistributedZkTest extends FullDistributedZkTest {
     
   }
   
-  public BasicFullDistributedZkTest() {
+  public BasicSolrCloudTest() {
     super();
     shardCount = 4;
     sliceCount = 2;

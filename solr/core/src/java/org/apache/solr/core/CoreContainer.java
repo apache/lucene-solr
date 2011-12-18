@@ -457,7 +457,6 @@ public class CoreContainer
     try {
       if(!isShutDown){
         log.error("CoreContainer was not shutdown prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance=" + System.identityHashCode(this));
-        shutdown();
       }
     } finally {
       super.finalize();

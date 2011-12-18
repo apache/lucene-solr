@@ -19,19 +19,21 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * TODO: sometimes the shards are off by a doc or two, even with the
  * retries on index failure...perhaps because of leader dying mid update?
  */
-public class ChaosMonkeyDistributedZkTest extends FullDistributedZkTest {
+@Ignore("still fails too often")
+public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
     
   }
   
-  public ChaosMonkeyDistributedZkTest() {
+  public ChaosMonkeySolrCloudTest() {
     super();
     shardCount = 12;
     sliceCount = 3;

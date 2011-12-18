@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * TODO: Why do we see add fails but it still matches control? Because its successful
  * locally and gets picked up in distrib search...
  */
-public class RecoveryZkTest extends FullDistributedZkTest {
+public class RecoveryZkTest extends FullSolrCloudTest {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
