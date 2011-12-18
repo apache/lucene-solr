@@ -766,6 +766,12 @@ Bug fixes
   double precision and to compute age to be how long ago the searcher
   was replaced with a new searcher (Mike McCandless)
 
+Optimizations
+
+* LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by
+  using a WeakIdentityMap based on a ConcurrentHashMap.  (Uwe Schindler,
+  Gerrit Jansen van Vuuren)
+
 Documentation
 
 * LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
