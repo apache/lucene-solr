@@ -216,13 +216,19 @@ public class TopDocs {
     float maxScore = Float.MIN_VALUE;
     for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
       final TopDocs shard = shardHits[shardIDX];
+      // totalHits can be non-zero even if no hits were
+      // collected, when searchAfter was used:
+      totalHitCount += shard.totalHits;
       if (shard.scoreDocs != null && shard.scoreDocs.length > 0) {
-        totalHitCount += shard.totalHits;
         availHitCount += shard.scoreDocs.length;
         queue.add(new ShardRef(shardIDX));
         maxScore = Math.max(maxScore, shard.getMaxScore());
         //System.out.println("  maxScore now " + maxScore + " vs " + shard.getMaxScore());
       }
+    }
+
+    if (availHitCount == 0) {
+      maxScore = Float.NaN;
     }
 
     final ScoreDoc[] hits = new ScoreDoc[Math.min(topN, availHitCount)];
