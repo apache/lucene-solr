@@ -826,7 +826,12 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         }
       }
     }
-    assertEquals(docs, cnt);
+    SolrQuery q = new SolrQuery("*:*");
+    q.set("distrib", true);
+    long cloudClientDocs = cloudClient.query(q).getResults().getNumFound();
+    assertEquals(
+        "adding up the # of docs on each shard does not match the control - cloud client returns:"
+            + cloudClientDocs, docs, cnt);
   }
 
   private SolrServer getClient(String nodeName) {
@@ -948,12 +953,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             controlClient.deleteById(Integer.toString(delete));
             cloudClient.deleteById(Integer.toString(delete));
             numDeletes++;
-          } catch (SolrServerException e) {
-            // TODO Auto-generated catch block
+          } catch (Exception e) {
+            System.err.println("REQUEST FAILED:");
             e.printStackTrace();
-          } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            fails++;
           }
 
         }

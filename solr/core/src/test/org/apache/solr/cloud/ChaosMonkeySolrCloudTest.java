@@ -17,15 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * TODO: sometimes the shards are off by a doc or two, even with the
  * retries on index failure...perhaps because of leader dying mid update?
  */
-@Ignore("still fails too often")
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
@@ -48,12 +49,13 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     del("*:*");
     
-    StopableIndexingThread indexThread = new StopableIndexingThread(0);
-    indexThread.start();
-    StopableIndexingThread indexThread2 = new StopableIndexingThread(0);
-    indexThread2.start();
-    StopableIndexingThread indexThread3 = new StopableIndexingThread(0);
-    indexThread3.start();
+    List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
+    for (int i = 0; i < 3; i++) {
+      StopableIndexingThread indexThread = new StopableIndexingThread(0);
+      threads.add(indexThread);
+      indexThread.start();
+    }
+    
     
     chaosMonkey.startTheMonkey();
     
@@ -61,9 +63,10 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     chaosMonkey.stopTheMonkey();
     
-    indexThread.safeStop();
-    indexThread2.safeStop();
-    indexThread3.safeStop();
+    for (StopableIndexingThread indexThread : threads) {
+      indexThread.safeStop();
+    }
+    
     
     // try and wait for any replications and what not to finish...
     // TODO: I suppose we should poll zk here about state
