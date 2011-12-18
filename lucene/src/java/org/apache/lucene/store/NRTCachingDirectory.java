@@ -228,7 +228,7 @@ public class NRTCachingDirectory extends Directory {
     }
   }
 
-  public IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
+  public synchronized IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
     ensureOpen();
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
