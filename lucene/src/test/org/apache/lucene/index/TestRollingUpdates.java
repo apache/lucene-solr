@@ -42,10 +42,13 @@ public class TestRollingUpdates extends LuceneTestCase {
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    final int SIZE = atLeast(TEST_NIGHTLY ? 100 : 20);
+    final int SIZE = atLeast(20);
     int id = 0;
     IndexReader r = null;
     final int numUpdates = (int) (SIZE * (2+random.nextDouble()));
+    if (VERBOSE) {
+      System.out.println("TEST: numUpdates=" + numUpdates);
+    }
     for(int docIter=0;docIter<numUpdates;docIter++) {
       final Document doc = docs.nextDoc();
       final String myID = ""+id;
