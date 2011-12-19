@@ -20,7 +20,7 @@ package org.apache.lucene.search.grouping.term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.SentinelIntSet;
+import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;

@@ -22,7 +22,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.search.grouping.SentinelIntSet;
+import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;

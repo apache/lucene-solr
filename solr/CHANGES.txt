@@ -234,6 +234,9 @@ Optimizations
   DirectUpdateHandler2.numDocsPending stats attribute.
   (Alexey Serba, Mark Miller)
 
+* SOLR-2950: The QueryElevationComponent now avoids using the FieldCache and looking up
+  every document id (gsingers, yonik)
+
 Bug Fixes
 ----------------------
 
