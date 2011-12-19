@@ -176,6 +176,9 @@ public class TransactionLog {
     fis = fis != null ? fis : new ChannelFastInputStream(channel, 0);
     LogCodec codec = new LogCodec();
     Map header = (Map)codec.unmarshal(fis);
+
+    fis.readInt(); // skip size
+
     // needed to read other records
 
     synchronized (this) {
@@ -209,10 +212,19 @@ public class TransactionLog {
   }
 
   private void writeLogHeader(LogCodec codec) throws IOException {
+    long pos = fos.size();
+    assert pos == 0;
+
     Map header = new LinkedHashMap<String,Object>();
     header.put("SOLR_TLOG",1); // a magic string + version number
     header.put("strings",globalStringList);
     codec.marshal(header, fos);
+
+    endRecord(pos);
+  }
+
+  private void endRecord(long startRecordPosition) throws IOException {
+    fos.writeInt((int)(fos.size() - startRecordPosition));
   }
 
 
@@ -244,6 +256,7 @@ public class TransactionLog {
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
         // fos.flushBuffer();  // flush later
 
+        endRecord(pos);
 
         return pos;
       } catch (IOException e) {
@@ -269,6 +282,9 @@ public class TransactionLog {
         BytesRef br = cmd.getIndexedId();
         codec.writeByteArray(br.bytes, br.offset, br.length);
         // fos.flushBuffer();  // flush later
+
+        endRecord(pos);
+
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -291,6 +307,9 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(cmd.query);
         // fos.flushBuffer();  // flush later
+
+        endRecord(pos);
+
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -314,6 +333,9 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are the last in the file
         // fos.flushBuffer();  // flush later
+
+        endRecord(pos);
+
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -455,10 +477,17 @@ public class TransactionLog {
           if (fis.position() >= fos.size()) {
             return null;
           }
+          pos = fis.position();
         }
       }
 
-      return codec.readVal(fis);
+      Object o = codec.readVal(fis);
+
+      // skip over record size
+      int size = fis.readInt();
+      assert size == fis.position() - pos - 4;
+
+      return o;
     }
 
     public void close() {
