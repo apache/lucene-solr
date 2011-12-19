@@ -45,7 +45,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     final int SIZE = atLeast(20);
     int id = 0;
     IndexReader r = null;
-    final int numUpdates = (int) (SIZE * (2+random.nextDouble()));
+    final int numUpdates = (int) (SIZE * (2+(TEST_NIGHTLY ? 200*random.nextDouble() : 5*random.nextDouble())));
     if (VERBOSE) {
       System.out.println("TEST: numUpdates=" + numUpdates);
     }
