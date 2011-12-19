@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -115,7 +114,7 @@ public class TestWeakIdentityMap extends LuceneTestCase {
 
   public void testConcurrentHashMap() throws Exception {
     final int threadCount = atLeast(32), keyCount = atLeast(1024);
-    final ExecutorService exec = Executors.newFixedThreadPool(threadCount + 1);
+    final ExecutorService exec = Executors.newFixedThreadPool(threadCount);
     final WeakIdentityMap<Object,Integer> map =
       WeakIdentityMap.newConcurrentHashMap();
     // we keep strong references to the keys,
@@ -126,7 +125,6 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     }
     
     try {
-      final AtomicInteger running = new AtomicInteger(threadCount);
       for (int t = 0; t < threadCount; t++) {
         final Random rnd = new Random(random.nextLong());
         final int count = atLeast(rnd, 20000);
@@ -155,20 +153,9 @@ public class TestWeakIdentityMap extends LuceneTestCase {
                   fail("Should not get here.");
               }
             }
-            running.decrementAndGet();
           }
         });
       }
-      exec.execute(new Runnable() {
-        public void run() {
-          // check that GC does not cause problems in reap() method:
-          while (running.get() > 0) {
-            System.runFinalization();
-            System.gc();
-            map.isEmpty(); // simple access
-          }
-        }
-      });
     } finally {
       exec.shutdown();
       while (!exec.awaitTermination(1000L, TimeUnit.MILLISECONDS));
