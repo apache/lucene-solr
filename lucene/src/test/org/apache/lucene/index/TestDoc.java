@@ -114,8 +114,7 @@ public class TestDoc extends LuceneTestCase {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
       
-      // TODO: why does this test trigger NRTCachingDirectory's assert?
-      Directory directory = newFSDirectory(indexDir, null, false);
+      Directory directory = newFSDirectory(indexDir, null);
       IndexWriter writer = new IndexWriter(
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
@@ -143,14 +142,14 @@ public class TestDoc extends LuceneTestCase {
       directory.close();
       out.close();
       sw.close();
+
       String multiFileOutput = sw.getBuffer().toString();
       //System.out.println(multiFileOutput);
 
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
 
-      // TODO: why does this test trigger NRTCachingDirectory's assert?
-      directory = newFSDirectory(indexDir, null, false);
+      directory = newFSDirectory(indexDir, null);
       writer = new IndexWriter(
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).

@@ -167,7 +167,7 @@ public class NRTCachingDirectory extends Directory {
       System.out.println("nrtdir.deleteFile name=" + name);
     }
     if (cache.fileExists(name)) {
-      assert !delegate.fileExists(name);
+      assert !delegate.fileExists(name): "name=" + name;
       cache.deleteFile(name);
     } else {
       delegate.deleteFile(name);
@@ -196,8 +196,18 @@ public class NRTCachingDirectory extends Directory {
       if (VERBOSE) {
         System.out.println("  to cache");
       }
+      try {
+        delegate.deleteFile(name);
+      } catch (IOException ioe) {
+        // This is fine: file may not exist
+      }
       return cache.createOutput(name, context);
     } else {
+      try {
+        cache.deleteFile(name);
+      } catch (IOException ioe) {
+        // This is fine: file may not exist
+      }
       return delegate.createOutput(name, context);
     }
   }
@@ -247,6 +257,11 @@ public class NRTCachingDirectory extends Directory {
    *  to the delegate and then closes the delegate. */
   @Override
   public void close() throws IOException {
+    // NOTE: technically we shouldn't have to do this, ie,
+    // IndexWriter should have sync'd all files, but we do
+    // it for defensive reasons... or in case the app is
+    // doing something custom (creating outputs directly w/o
+    // using IndexWriter):
     for(String fileName : cache.listAll()) {
       unCache(fileName);
     }
@@ -262,29 +277,40 @@ public class NRTCachingDirectory extends Directory {
     return !name.equals(IndexFileNames.SEGMENTS_GEN) && (merge == null || merge.estimatedMergeBytes <= maxMergeSizeBytes) && cache.sizeInBytes() <= maxCachedBytes;
   }
 
-  private void unCache(String fileName) throws IOException {
-    final IndexOutput out;
-    IOContext context = IOContext.DEFAULT;
-    synchronized(this) {
-      if (!delegate.fileExists(fileName)) {
-        assert cache.fileExists(fileName);
-        out = delegate.createOutput(fileName, context);
-      } else {
-        out = null;
-      }
-    }
+  private final Object uncacheLock = new Object();
 
-    if (out != null) {
-      IndexInput in = null;
-      try {
+  private void unCache(String fileName) throws IOException {
+    // Only let one thread uncache at a time; this only
+    // happens during commit() or close():
+    IndexOutput out = null;
+    IndexInput in = null;
+    try {
+      synchronized(uncacheLock) {
+        if (VERBOSE) {
+          System.out.println("nrtdir.unCache name=" + fileName);
+        }
+        if (!cache.fileExists(fileName)) {
+          // Another thread beat us...
+          return;
+        }
+        IOContext context = IOContext.DEFAULT;
+        if (delegate.fileExists(fileName)) {
+          throw new IOException("cannot uncache file=\"" + fileName + "\": it was separately also created in the delegate directory");
+        }
+        out = delegate.createOutput(fileName, context);
+
         in = cache.openInput(fileName, context);
         in.copyBytes(out, in.length());
-      } finally {
-        IOUtils.close(in, out);
+
+        // Lock order: uncacheLock -> this
+        synchronized(this) {
+          // Must sync here because other sync methods have
+          // if (cache.fileExists(name)) { ... } else { ... }:
+          cache.deleteFile(fileName);
+        }
       }
-      synchronized(this) {
-        cache.deleteFile(fileName);
-      }
+    } finally {
+      IOUtils.close(in, out);
     }
   }
 }

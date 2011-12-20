@@ -220,9 +220,31 @@ public class MockDirectoryWrapper extends Directory {
       } else if (damage == 2) {
         action = "partially truncated";
         // Partially Truncate the file:
-        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        out.setLength(fileLength(name)/2);
+
+        // First, make temp file and copy only half this
+        // file over:
+        String tempFileName;
+        while (true) {
+          tempFileName = ""+randomState.nextInt();
+          if (!delegate.fileExists(tempFileName)) {
+            break;
+          }
+        }
+        final IndexOutput tempOut = delegate.createOutput(tempFileName, LuceneTestCase.newIOContext(randomState));
+        IndexInput in = delegate.openInput(name, LuceneTestCase.newIOContext(randomState));
+        tempOut.copyBytes(in, in.length()/2);
+        tempOut.close();
+        in.close();
+
+        // Delete original and copy bytes back:
+        deleteFile(name, true);
+        
+        final IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
+        in = delegate.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
+        out.copyBytes(in, in.length());
         out.close();
+        in.close();
+        deleteFile(tempFileName, true);
       } else if (damage == 3) {
         // The file survived intact:
         action = "didn't change";

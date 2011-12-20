@@ -1007,18 +1007,8 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
-    return newDirectory(r, true);
-  }
-  
-  /**
-   * Returns a new Directory instance, using the specified random. You
-   * can specify maybeWrap as to whether the directory might be also
-   * wrapped by NRTCachingDirectory or FileSwitchDirectory
-   * See {@link #newDirectory()} for more information.
-   */
-  public static MockDirectoryWrapper newDirectory(Random r, boolean maybeWrap) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeWrap ? maybeNRTWrap(r, impl) : impl);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
     return dir;
@@ -1030,7 +1020,7 @@ public abstract class LuceneTestCase extends Assert {
    * information.
    */
   public static MockDirectoryWrapper newDirectory(Directory d) throws IOException {
-    return newDirectory(random, d, true);
+    return newDirectory(random, d);
   }
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
@@ -1040,11 +1030,6 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
   public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) throws IOException {
-    return newFSDirectory(f, lf, true);
-  }
-
-  /** Returns a new FSDirectory instance over the given file, which must be a folder. */
-  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf, boolean maybeWrap) throws IOException {
     String fsdirClass = TEST_DIRECTORY;
     if (fsdirClass.equals("random")) {
       fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
@@ -1061,7 +1046,7 @@ public abstract class LuceneTestCase extends Assert {
       }
       
       Directory fsdir = newFSDirectoryImpl(clazz, f);
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, maybeWrap ? maybeNRTWrap(random, fsdir) : fsdir);
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, maybeNRTWrap(random, fsdir));
       if (lf != null) {
         dir.setLockFactory(lf);
       }
@@ -1078,12 +1063,12 @@ public abstract class LuceneTestCase extends Assert {
    * with contents copied from the provided directory. See 
    * {@link #newDirectory()} for more information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r, Directory d, boolean maybeWrap) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file, newIOContext(r));
     }
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeWrap ? maybeNRTWrap(r, impl) : impl);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
     return dir;

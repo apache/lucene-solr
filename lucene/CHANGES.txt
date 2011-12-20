@@ -766,6 +766,10 @@ Bug fixes
   double precision and to compute age to be how long ago the searcher
   was replaced with a new searcher (Mike McCandless)
 
+* LUCENE-3658: Corrected potential concurrency issues with
+  NRTCachingDir, fixed createOutput to overwrite any previous file,
+  and removed invalid asserts (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by
