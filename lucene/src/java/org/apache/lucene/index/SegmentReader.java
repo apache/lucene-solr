@@ -111,7 +111,7 @@ public final class SegmentReader extends IndexReader {
     assert si.hasDeletions();
 
     // ... but load our own deleted docs:
-    liveDocs = new BitVector(si.dir, si.getDelFileName(), new IOContext(IOContext.READ, true));
+    liveDocs = new BitVector(si.dir, si.getDelFileName(), context);
     numDocs = si.docCount - si.getDelCount();
     assert checkLiveCounts(false);
 
@@ -210,11 +210,7 @@ public final class SegmentReader extends IndexReader {
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
-    if (liveDocs != null) {
-      return liveDocs.count();
-    } else {
-      return maxDoc();
-    }
+    return numDocs;
   }
 
   @Override
@@ -371,7 +367,7 @@ public final class SegmentReader extends IndexReader {
   // share the underlying postings data) will map to the
   // same entry in the FieldCache.  See LUCENE-1579.
   @Override
-  public final Object getCoreCacheKey() {
+  public Object getCoreCacheKey() {
     return core;
   }
 
