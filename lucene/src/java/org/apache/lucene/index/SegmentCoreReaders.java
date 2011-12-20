@@ -18,15 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.SegmentReader.CoreClosedListener;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MapBackedSet;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -59,8 +59,8 @@ final class SegmentCoreReaders {
   CompoundFileReader cfsReader;
   CompoundFileReader storeCFSReader;
 
-  final Set<CoreClosedListener> coreClosedListeners = 
-      new MapBackedSet<CoreClosedListener>(new ConcurrentHashMap<CoreClosedListener, Boolean>());
+  private final Set<CoreClosedListener> coreClosedListeners = 
+      Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
 
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
     segment = si.name;
@@ -171,10 +171,24 @@ final class SegmentCoreReaders {
                     fieldsReaderOrig, cfsReader, storeCFSReader);
       tis = null;
       // Now, notify any ReaderFinished listeners:
+      notifyCoreClosedListeners();
+    }
+  }
+  
+  private final void notifyCoreClosedListeners() {
+    synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
         listener.onClose(owner);
       }
     }
+  }
+
+  void addCoreClosedListener(CoreClosedListener listener) {
+    coreClosedListeners.add(listener);
+  }
+  
+  void removeCoreClosedListener(CoreClosedListener listener) {
+    coreClosedListeners.remove(listener);
   }
 
   synchronized void openDocStores(SegmentInfo si) throws IOException {

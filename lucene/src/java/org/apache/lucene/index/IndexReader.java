@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
@@ -93,7 +95,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   private final Set<ReaderClosedListener> readerClosedListeners = 
-      new MapBackedSet<ReaderClosedListener>(new ConcurrentHashMap<ReaderClosedListener, Boolean>());
+      Collections.synchronizedSet(new LinkedHashSet<ReaderClosedListener>());
 
   /** Expert: adds a {@link ReaderClosedListener}.  The
    * provided listener will be invoked when this reader is closed.
@@ -113,8 +115,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   private final void notifyReaderClosedListeners() {
-    for(ReaderClosedListener listener : readerClosedListeners) {
-      listener.onClose(this);
+    synchronized(readerClosedListeners) {
+      for(ReaderClosedListener listener : readerClosedListeners) {
+        listener.onClose(this);
+      }
     }
   }
 
