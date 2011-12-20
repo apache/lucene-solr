@@ -113,7 +113,8 @@ public class TestWeakIdentityMap extends LuceneTestCase {
   }
 
   public void testConcurrentHashMap() throws Exception {
-    final int threadCount = atLeast(32), keyCount = atLeast(1024);
+    // don't make threadCount and keyCount random, otherwise easily OOMs or fails otherwise:
+    final int threadCount = 8, keyCount = 1024;
     final ExecutorService exec = Executors.newFixedThreadPool(threadCount);
     final WeakIdentityMap<Object,Integer> map =
       WeakIdentityMap.newConcurrentHashMap();
@@ -127,9 +128,9 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     try {
       for (int t = 0; t < threadCount; t++) {
         final Random rnd = new Random(random.nextLong());
-        final int count = atLeast(rnd, 20000);
         exec.execute(new Runnable() {
           public void run() {
+            final int count = atLeast(rnd, 10000);
             for (int i = 0; i < count; i++) {
               final int j = rnd.nextInt(keyCount);
               switch (rnd.nextInt(4)) {
