@@ -62,10 +62,10 @@ final class SegmentCoreReaders {
   
   private final SegmentReader owner;
   
-  StoredFieldsReader fieldsReaderOrig;
-  TermVectorsReader termVectorsReaderOrig;
-  CompoundFileDirectory cfsReader;
-  CompoundFileDirectory storeCFSReader;
+  final StoredFieldsReader fieldsReaderOrig;
+  final TermVectorsReader termVectorsReaderOrig;
+  final CompoundFileDirectory cfsReader;
+  final CompoundFileDirectory storeCFSReader;
 
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
@@ -88,6 +88,8 @@ final class SegmentCoreReaders {
       if (si.getUseCompoundFile()) {
         cfsReader = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
         dir0 = cfsReader;
+      } else {
+        cfsReader = null;
       }
       cfsDir = dir0;
       si.loadFieldInfos(cfsDir, false); // prevent opening the CFS to load fieldInfos
@@ -104,6 +106,38 @@ final class SegmentCoreReaders {
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       norms = codec.normsFormat().normsReader(cfsDir, si, fieldInfos, context, dir);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
+
+      final Directory storeDir;
+      if (si.getDocStoreOffset() != -1) {
+        if (si.getDocStoreIsCompoundFile()) {
+          storeCFSReader = new CompoundFileDirectory(dir,
+              IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
+              context, false);
+          storeDir = storeCFSReader;
+          assert storeDir != null;
+        } else {
+          storeCFSReader = null;
+          storeDir = dir;
+          assert storeDir != null;
+        }
+      } else if (si.getUseCompoundFile()) {
+        storeDir = cfsReader;
+        storeCFSReader = null;
+        assert storeDir != null;
+      } else {
+        storeDir = dir;
+        storeCFSReader = null;
+        assert storeDir != null;
+      }
+      
+      fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(storeDir, si, fieldInfos, context);
+ 
+      if (si.getHasVectors()) { // open term vector files only as needed
+        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(storeDir, si, fieldInfos, context);
+      } else {
+        termVectorsReaderOrig = null;
+      }
+
       success = true;
     } finally {
       if (!success) {
@@ -118,23 +152,24 @@ final class SegmentCoreReaders {
     this.owner = owner;
   }
   
-  synchronized TermVectorsReader getTermVectorsReaderOrig() {
+  TermVectorsReader getTermVectorsReaderOrig() {
     return termVectorsReaderOrig;
   }
   
-  synchronized StoredFieldsReader getFieldsReaderOrig() {
+  StoredFieldsReader getFieldsReaderOrig() {
     return fieldsReaderOrig;
   }
   
-  synchronized void incRef() {
+  void incRef() {
     ref.incrementAndGet();
   }
   
-  synchronized Directory getCFSReader() {
+  Directory getCFSReader() {
     return cfsReader;
   }
   
-  synchronized void decRef() throws IOException {
+  void decRef() throws IOException {
+    //System.out.println("core.decRef seg=" + owner.getSegmentInfo() + " rc=" + ref);
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
           fieldsReaderOrig, cfsReader, storeCFSReader, norms);
@@ -156,46 +191,6 @@ final class SegmentCoreReaders {
   
   void removeCoreClosedListener(CoreClosedListener listener) {
     coreClosedListeners.remove(listener);
-  }
-
-  synchronized void openDocStores(SegmentInfo si) throws IOException {
-    
-    assert si.name.equals(segment);
-    
-    if (fieldsReaderOrig == null) {
-      final Directory storeDir;
-      if (si.getDocStoreOffset() != -1) {
-        if (si.getDocStoreIsCompoundFile()) {
-          assert storeCFSReader == null;
-          storeCFSReader = new CompoundFileDirectory(dir,
-              IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
-              context, false);
-          storeDir = storeCFSReader;
-          assert storeDir != null;
-        } else {
-          storeDir = dir;
-          assert storeDir != null;
-        }
-      } else if (si.getUseCompoundFile()) {
-        // In some cases, we were originally opened when CFS
-        // was not used, but then we are asked to open doc
-        // stores after the segment has switched to CFS
-        if (cfsReader == null) {
-          cfsReader = new CompoundFileDirectory(dir,IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
-        }
-        storeDir = cfsReader;
-        assert storeDir != null;
-      } else {
-        storeDir = dir;
-        assert storeDir != null;
-      }
-      
-      fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(storeDir, si, fieldInfos, context);
- 
-      if (si.getHasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(storeDir, si, fieldInfos, context);
-      }
-    }
   }
 
   @Override

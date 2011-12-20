@@ -362,7 +362,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       final SegmentInfo info = it.next();
       if (info.getDelCount() == info.docCount) {
         it.remove();
-        segmentSet.remove(info);
+        final boolean didRemove = segmentSet.remove(info);
+        assert didRemove;
       }
     }
     assert segmentSet.size() == segments.size();
@@ -995,8 +996,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       }
     }
 
+    // the rest of the segments in list are duplicates, so don't remove from map, only list!
+    segments.subList(newSegIdx, segments.size()).clear();
+    
     // Either we found place to insert segment, or, we did
-    // not, but only because all segments we merged became
+    // not, but only because all segments we merged becamee
     // deleted while we are merging, in which case it should
     // be the case that the new segment is also all deleted,
     // we insert it at the beginning if it should not be dropped:
@@ -1004,9 +1008,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       segments.add(0, merge.info);
     }
 
-    // the rest of the segments in list are duplicates, so don't remove from map, only list!
-    segments.subList(newSegIdx, segments.size()).clear();
-    
     // update the Set
     if (!dropSegment) {
       segmentSet.add(merge.info);
@@ -1112,5 +1113,4 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       return -1;
     }
   }
-
 }

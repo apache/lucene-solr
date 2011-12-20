@@ -58,6 +58,10 @@ public class TestExternalCodecs extends LuceneTestCase {
   public void testPerFieldCodec() throws Exception {
     
     final int NUM_DOCS = atLeast(173);
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);
+    }
+
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
@@ -101,7 +105,14 @@ public class TestExternalCodecs extends LuceneTestCase {
       System.out.println("\nTEST: now delete 2nd doc");
     }
     w.deleteDocuments(new Term("id", "44"));
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now force merge");
+    }
     w.forceMerge(1);
+    if (VERBOSE) {
+      System.out.println("\nTEST: now open reader");
+    }
     r = IndexReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
@@ -112,6 +123,9 @@ public class TestExternalCodecs extends LuceneTestCase {
     assertEquals(0, s.search(new TermQuery(new Term("id", "77")), 1).totalHits);
     assertEquals(0, s.search(new TermQuery(new Term("id", "44")), 1).totalHits);
 
+    if (VERBOSE) {
+      System.out.println("\nTEST: now close NRT reader");
+    }
     r.close();
 
     w.close();

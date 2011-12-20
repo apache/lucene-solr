@@ -443,6 +443,9 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
+    if (VERBOSE) {
+      System.out.println("\nTEST: now addIndexes");
+    }
     writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux, newIOContext(random))));
     assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));

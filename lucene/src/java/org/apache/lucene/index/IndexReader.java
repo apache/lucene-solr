@@ -71,7 +71,7 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
 */
-public abstract class IndexReader implements Cloneable,Closeable {
+public abstract class IndexReader implements Closeable {
 
   /**
    * A custom listener that's invoked when the IndexReader
@@ -152,6 +152,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** Expert: returns the current refCount for this reader */
   public final int getRefCount() {
+    // NOTE: don't ensureOpen, so that callers can see
+    // refCount is 0 (reader is closed)
     return refCount.get();
   }
   
@@ -490,15 +492,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   protected IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
     return writer.getReader(applyAllDeletes);
-  }
-
-  /**
-   * Efficiently clones the IndexReader (sharing most
-   * internal state).
-   */
-  @Override
-  public synchronized Object clone() {
-    throw new UnsupportedOperationException("This reader does not implement clone()");
   }
 
   /** 

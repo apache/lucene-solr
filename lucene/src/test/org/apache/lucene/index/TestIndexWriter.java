@@ -1128,8 +1128,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer2.close();
 
     IndexReader r1 = IndexReader.open(dir2);
-    IndexReader r2 = (IndexReader) r1.clone();
-    writer.addIndexes(r1, r2);
+    writer.addIndexes(r1, r1);
     writer.close();
 
     IndexReader r3 = IndexReader.open(dir);
@@ -1137,7 +1136,6 @@ public class TestIndexWriter extends LuceneTestCase {
     r3.close();
 
     r1.close();
-    r2.close();
 
     dir2.close();
     dir.close();

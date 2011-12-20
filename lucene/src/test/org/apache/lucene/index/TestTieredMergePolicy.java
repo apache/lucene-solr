@@ -132,6 +132,10 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     assertEquals(numDocs, r.numDocs());
     r.close();
 
+    if (VERBOSE) {
+      System.out.println("\nTEST: delete doc");
+    }
+
     w.deleteDocuments(new Term("id", ""+(42+17)));
 
     r = w.getReader();

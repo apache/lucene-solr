@@ -197,8 +197,8 @@ public class TestDoc extends LuceneTestCase {
    private SegmentInfo merge(Directory dir, SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
       IOContext context = newIOContext(random);
-      SegmentReader r1 = SegmentReader.get(si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
-      SegmentReader r2 = SegmentReader.get(si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
+      SegmentReader r1 = new SegmentReader(si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
+      SegmentReader r2 = new SegmentReader(si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
       final Codec codec = Codec.getDefault();
       SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new FieldInfos(new FieldInfos.FieldNumberBiMap()), codec, context);
@@ -225,7 +225,7 @@ public class TestDoc extends LuceneTestCase {
 
    private void printSegment(PrintWriter out, SegmentInfo si)
    throws Exception {
-      SegmentReader reader = SegmentReader.get(si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+      SegmentReader reader = new SegmentReader(si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));
