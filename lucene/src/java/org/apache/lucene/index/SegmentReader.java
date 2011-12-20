@@ -595,12 +595,12 @@ public final class SegmentReader extends IndexReader implements Cloneable {
   /** Expert: adds a CoreClosedListener to this reader's shared core */
   public void addCoreClosedListener(CoreClosedListener listener) {
     ensureOpen();
-    core.coreClosedListeners.add(listener);
+    core.addCoreClosedListener(listener);
   }
   
   /** Expert: removes a CoreClosedListener from this reader's shared core */
   public void removeCoreClosedListener(CoreClosedListener listener) {
     ensureOpen();
-    core.coreClosedListeners.remove(listener);
+    core.removeCoreClosedListener(listener);
   }
 }

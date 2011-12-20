@@ -18,8 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
@@ -34,7 +35,6 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MapBackedSet;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -67,8 +67,8 @@ final class SegmentCoreReaders {
   CompoundFileDirectory cfsReader;
   CompoundFileDirectory storeCFSReader;
 
-  final Set<CoreClosedListener> coreClosedListeners = 
-      new MapBackedSet<CoreClosedListener>(new ConcurrentHashMap<CoreClosedListener, Boolean>());
+  private final Set<CoreClosedListener> coreClosedListeners = 
+      Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, IOContext context, int termsIndexDivisor) throws IOException {
     
@@ -138,12 +138,26 @@ final class SegmentCoreReaders {
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
           fieldsReaderOrig, cfsReader, storeCFSReader, norms);
+      notifyCoreClosedListeners();
+    }
+  }
+  
+  private final void notifyCoreClosedListeners() {
+    synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
         listener.onClose(owner);
       }
     }
   }
+
+  void addCoreClosedListener(CoreClosedListener listener) {
+    coreClosedListeners.add(listener);
+  }
   
+  void removeCoreClosedListener(CoreClosedListener listener) {
+    coreClosedListeners.remove(listener);
+  }
+
   synchronized void openDocStores(SegmentInfo si) throws IOException {
     
     assert si.name.equals(segment);
