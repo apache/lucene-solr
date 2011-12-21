@@ -33,7 +33,6 @@ import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.CloseableThreadLocal;
 
 /**
  * @lucene.experimental
@@ -43,21 +42,6 @@ public final class SegmentReader extends IndexReader {
   private final SegmentInfo si;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
   
-  private final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
-    @Override
-    protected StoredFieldsReader initialValue() {
-      return core.getFieldsReaderOrig().clone();
-    }
-  };
-  
-  private final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>() {
-    @Override
-    protected TermVectorsReader initialValue() {
-      final TermVectorsReader tvr = core.getTermVectorsReaderOrig();
-      return (tvr == null) ? null : tvr.clone();
-    }
-  };
-
   private final BitVector liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
@@ -167,16 +151,9 @@ public final class SegmentReader extends IndexReader {
     return true;
   }
 
-  /** @lucene.internal */
-  public StoredFieldsReader getFieldsReader() {
-    return fieldsReaderLocal.get();
-  }
-  
   @Override
   protected void doClose() throws IOException {
     //System.out.println("SR.close seg=" + si);
-    termVectorsLocal.close();
-    fieldsReaderLocal.close();
     if (core != null) {
       core.decRef();
     }
@@ -192,8 +169,14 @@ public final class SegmentReader extends IndexReader {
     return core.fieldInfos;
   }
 
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  /** @lucene.internal */
+  public StoredFieldsReader getFieldsReader() {
     ensureOpen();
+    return core.fieldsReaderLocal.get();
+  }
+  
+  @Override
+  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     if (docID < 0 || docID >= maxDoc()) {       
       throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
     }
@@ -287,13 +270,10 @@ public final class SegmentReader extends IndexReader {
     return core.norms.norms(field);
   }
 
-  /**
-   * Create a clone from the initial TermVectorsReader and store it in the ThreadLocal.
-   * @return TermVectorsReader
-   * @lucene.internal
-   */
+  /** @lucene.internal */
   public TermVectorsReader getTermVectorsReader() {
-    return termVectorsLocal.get();
+    ensureOpen();
+    return core.termVectorsLocal.get();
   }
 
   /** Return a term frequency vector for the specified document and field. The
@@ -304,7 +284,6 @@ public final class SegmentReader extends IndexReader {
    */
   @Override
   public Fields getTermVectors(int docID) throws IOException {
-    ensureOpen();
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null) {
       return null;

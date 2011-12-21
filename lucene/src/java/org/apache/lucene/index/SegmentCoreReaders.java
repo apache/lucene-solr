@@ -34,6 +34,7 @@ import org.apache.lucene.index.SegmentReader.CoreClosedListener;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
 /** Holds core readers that are shared (unchanged) when
@@ -67,6 +68,21 @@ final class SegmentCoreReaders {
   final CompoundFileDirectory cfsReader;
   final CompoundFileDirectory storeCFSReader;
 
+  final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
+    @Override
+    protected StoredFieldsReader initialValue() {
+      return fieldsReaderOrig.clone();
+    }
+  };
+  
+  final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>() {
+    @Override
+    protected TermVectorsReader initialValue() {
+      return (termVectorsReaderOrig == null) ?
+        null : termVectorsReaderOrig.clone();
+    }
+  };
+  
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
@@ -152,14 +168,6 @@ final class SegmentCoreReaders {
     this.owner = owner;
   }
   
-  TermVectorsReader getTermVectorsReaderOrig() {
-    return termVectorsReaderOrig;
-  }
-  
-  StoredFieldsReader getFieldsReaderOrig() {
-    return fieldsReaderOrig;
-  }
-  
   void incRef() {
     ref.incrementAndGet();
   }
@@ -167,8 +175,8 @@ final class SegmentCoreReaders {
   void decRef() throws IOException {
     //System.out.println("core.decRef seg=" + owner.getSegmentInfo() + " rc=" + ref);
     if (ref.decrementAndGet() == 0) {
-      IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
-          fieldsReaderOrig, cfsReader, storeCFSReader, norms);
+      IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, perDocProducer,
+        termVectorsReaderOrig, fieldsReaderOrig, cfsReader, storeCFSReader, norms);
       notifyCoreClosedListeners();
     }
   }
