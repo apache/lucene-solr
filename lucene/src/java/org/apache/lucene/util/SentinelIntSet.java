@@ -30,6 +30,11 @@ public class SentinelIntSet {
   public final int emptyVal;
   public int rehashCount;   // the count at which a rehash should be done
 
+  /**
+   *
+   * @param size  The minimum number of elements this set should be able to hold without re-hashing (i.e. the slots are guaranteed not to change)
+   * @param emptyVal The integer value to use for EMPTY
+   */
   public SentinelIntSet(int size, int emptyVal) {
     this.emptyVal = emptyVal;
     int tsize = Math.max(org.apache.lucene.util.BitUtil.nextHighestPowerOfTwo(size), 1);

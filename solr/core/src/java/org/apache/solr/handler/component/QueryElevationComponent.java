@@ -25,6 +25,7 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.automaton.Automaton;
@@ -518,18 +519,23 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
         ordSet.clear();
         Fields fields = context.reader.fields();
+        if (fields == null) return this;
         Terms terms = fields.terms(fieldname);
+        if (terms == null) return this;
         termsEnum = terms.iterator(termsEnum);
         BytesRef term = new BytesRef();
+        Bits liveDocs = context.reader.getLiveDocs();
 
         for (String id : elevations.ids) {
           term.copyChars(id);
           if (seen.contains(id) == false  && termsEnum.seekExact(term, false)) {
-            docsEnum = termsEnum.docs(null, docsEnum, false);
+            docsEnum = termsEnum.docs(liveDocs, docsEnum, false);
             if (docsEnum != null) {
               int docId = docsEnum.nextDoc();
+              if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
               termValues[ordSet.put(docId)] = BytesRef.deepCopyOf(term);
               seen.add(id);
+              assert docsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
             }
           }
         }
