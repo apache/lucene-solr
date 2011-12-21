@@ -42,8 +42,21 @@ public final class SegmentReader extends IndexReader {
 
   private final SegmentInfo si;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
-  private final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
-  private final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
+  
+  private final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
+    @Override
+    protected StoredFieldsReader initialValue() {
+      return core.getFieldsReaderOrig().clone();
+    }
+  };
+  
+  private final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>() {
+    @Override
+    protected TermVectorsReader initialValue() {
+      final TermVectorsReader tvr = core.getTermVectorsReaderOrig();
+      return (tvr == null) ? null : tvr.clone();
+    }
+  };
 
   private final BitVector liveDocs;
 
@@ -54,16 +67,6 @@ public final class SegmentReader extends IndexReader {
 
   private final SegmentCoreReaders core;
 
-  /**
-   * Sets the initial value 
-   */
-  private class FieldsReaderLocal extends CloseableThreadLocal<StoredFieldsReader> {
-    @Override
-    protected StoredFieldsReader initialValue() {
-      return core.getFieldsReaderOrig().clone();
-    }
-  }
-  
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -290,17 +293,7 @@ public final class SegmentReader extends IndexReader {
    * @lucene.internal
    */
   public TermVectorsReader getTermVectorsReader() {
-    TermVectorsReader tvReader = termVectorsLocal.get();
-    if (tvReader == null) {
-      TermVectorsReader orig = core.getTermVectorsReaderOrig();
-      if (orig == null) {
-        return null;
-      } else {
-        tvReader = orig.clone();
-      }
-      termVectorsLocal.set(tvReader);
-    }
-    return tvReader;
+    return termVectorsLocal.get();
   }
 
   /** Return a term frequency vector for the specified document and field. The
