@@ -57,9 +57,9 @@ public final class SegmentReader extends IndexReader {
    */
   public SegmentReader(SegmentInfo si, int termInfosIndexDivisor, IOContext context) throws IOException {
     this.si = si;
+    core = new SegmentCoreReaders(this, si.dir, si, context, termInfosIndexDivisor);
     boolean success = false;
     try {
-      core = new SegmentCoreReaders(this, si.dir, si, context, termInfosIndexDivisor);
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
         liveDocs = new BitVector(directory(), si.getDelFileName(), new IOContext(IOContext.READ, true));
@@ -77,7 +77,7 @@ public final class SegmentReader extends IndexReader {
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
       if (!success) {
-        doClose();
+        core.decRef();
       }
     }
   }
@@ -154,9 +154,7 @@ public final class SegmentReader extends IndexReader {
   @Override
   protected void doClose() throws IOException {
     //System.out.println("SR.close seg=" + si);
-    if (core != null) {
-      core.decRef();
-    }
+    core.decRef();
   }
 
   @Override
