@@ -164,10 +164,6 @@ final class SegmentCoreReaders {
     ref.incrementAndGet();
   }
   
-  Directory getCFSReader() {
-    return cfsReader;
-  }
-  
   void decRef() throws IOException {
     //System.out.println("core.decRef seg=" + owner.getSegmentInfo() + " rc=" + ref);
     if (ref.decrementAndGet() == 0) {

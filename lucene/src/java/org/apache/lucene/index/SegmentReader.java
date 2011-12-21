@@ -185,10 +185,6 @@ public final class SegmentReader extends IndexReader {
     return liveDocs != null;
   }
 
-  List<String> files() throws IOException {
-    return new ArrayList<String>(si.files());
-  }
-  
   FieldInfos fieldInfos() {
     return core.fieldInfos;
   }
@@ -307,10 +303,6 @@ public final class SegmentReader extends IndexReader {
     return tvReader;
   }
 
-  TermVectorsReader getTermVectorsReaderOrig() {
-    return core.getTermVectorsReaderOrig();
-  }
-  
   /** Return a term frequency vector for the specified document and field. The
    *  vector returned contains term numbers and frequencies for all terms in
    *  the specified field of this document, if the field had storeTermVector
