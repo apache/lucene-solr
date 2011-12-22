@@ -1294,4 +1294,38 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  static class UOEDirectory extends RAMDirectory {
+    boolean doFail = false;
+
+    @Override
+    public IndexInput openInput(String name) throws IOException {
+      if (doFail && name.startsWith("segments_")) {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("indexExists".equals(trace[i].getMethodName())) {
+            throw new UnsupportedOperationException("expected UOE");
+          }
+        }
+      }
+      return super.openInput(name);
+    }
+  }
+  
+  public void testExceptionOnCtor() throws Exception {
+    UOEDirectory uoe = new UOEDirectory();
+    Directory d = new MockDirectoryWrapper(random, uoe);
+    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    iw.addDocument(new Document());
+    iw.close();
+    uoe.doFail = true;
+    try {
+      new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+      fail("should have gotten a UOE");
+    } catch (UnsupportedOperationException expected) {
+      
+    }
+    uoe.doFail = false;
+    d.close();
+  }
 }

@@ -1099,26 +1099,26 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
 
-    OpenMode mode = conf.getOpenMode();
-    boolean create;
-    if (mode == OpenMode.CREATE) {
-      create = true;
-    } else if (mode == OpenMode.APPEND) {
-      create = false;
-    } else {
-      // CREATE_OR_APPEND - create only if an index does not exist
-      create = !IndexReader.indexExists(directory);
-    }
     
     boolean success = false;
-
-    // TODO: we should check whether this index is too old,
-    // and throw an IndexFormatTooOldExc up front, here,
-    // instead of later when merge, applyDeletes, getReader
-    // is attempted.  I think to do this we should store the
-    // oldest segment's version in segments_N.
-
     try {
+      OpenMode mode = conf.getOpenMode();
+      boolean create;
+      if (mode == OpenMode.CREATE) {
+        create = true;
+      } else if (mode == OpenMode.APPEND) {
+        create = false;
+      } else {
+        // CREATE_OR_APPEND - create only if an index does not exist
+        create = !IndexReader.indexExists(directory);
+      }
+
+      // TODO: we should check whether this index is too old,
+      // and throw an IndexFormatTooOldExc up front, here,
+      // instead of later when merge, applyDeletes, getReader
+      // is attempted.  I think to do this we should store the
+      // oldest segment's version in segments_N.
+
       if (create) {
         // Try to read first.  This is to allow create
         // against an index that's currently open for
