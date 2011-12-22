@@ -1,6 +1,7 @@
 package org.apache.zookeeper;
 
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 
 // nocommit - we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
@@ -20,21 +21,21 @@ public class SolrZooKeeper extends ZooKeeper {
    * @param ms the number of milliseconds to pause.
    */
   public void pauseCnxn(final long ms) {
-      new Thread() {
-          public void run() {
-              synchronized(cnxn) {
-                  try {
-                      try {
-                          cnxn.sendThread.testableCloseSocket();
-                      } catch (IOException e) {
-                          e.printStackTrace();
-                      }
-                      Thread.sleep(ms);
-                  } catch (InterruptedException e) {
-                  }
-              }
-          }
-      }.start();
+    new Thread() {
+      public void run() {
+        synchronized (cnxn) {
+          try {
+            try {
+              ((SocketChannel) cnxn.sendThread.sockKey.channel()).socket()
+                  .close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+            Thread.sleep(ms);
+          } catch (InterruptedException e) {}
+        }
+      }
+    }.start();
   }
-  
+
 }

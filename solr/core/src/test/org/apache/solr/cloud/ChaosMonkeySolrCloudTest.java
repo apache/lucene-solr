@@ -19,16 +19,21 @@ package org.apache.solr.cloud;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * TODO: sometimes the shards are off by a doc or two, even with the
  * retries on index failure...perhaps because of leader dying mid update?
  */
-@Ignore("test not ready to pass all the time")
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
@@ -49,15 +54,12 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    del("*:*");
-    
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     for (int i = 0; i < 3; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(0);
+      StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
       threads.add(indexThread);
       indexThread.start();
     }
-    
     
     chaosMonkey.startTheMonkey();
     
@@ -69,12 +71,30 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
       indexThread.safeStop();
     }
     
+    // wait for stop...
+    for (StopableIndexingThread indexThread : threads) {
+      indexThread.join();
+    }
+    
+    Thread.sleep(2000);
+       
+    for (StopableIndexingThread indexThread : threads) {
+      assertEquals(0, indexThread.getFails());
+    }
     
     // try and wait for any replications and what not to finish...
-    // TODO: I suppose we should poll zk here about state
-    Thread.sleep(8000);
+
+    Thread.sleep(3000);
+    
+    // wait until there are no recoveries...
+    waitForRecoveriesToFinish();
+    
+    Thread.sleep(1000);
     
     commit();
+    
+    //assertEquals(chaosMonkey.getStarts(), getNumberOfRecoveryAttempts() - shardCount - sliceCount);
+    
     
     // does not always pass yet
     checkShardConsistency();
@@ -87,6 +107,14 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
+  }
+  
+  // skip the randoms - they can deadlock...
+  protected void indexr(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    addFields(doc, "rnd_b", true);
+    indexDoc(doc);
   }
 
 }

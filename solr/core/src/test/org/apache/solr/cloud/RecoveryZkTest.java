@@ -30,8 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO: every now and then, this leaves a dir open for some odd reason
- * 
  * TODO: Why do we see add fails but it still matches control? Because its successful
  * locally and gets picked up in distrib search...
  */
@@ -65,10 +63,10 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     
     // start a couple indexing threads
     
-    StopableIndexingThread indexThread = new StopableIndexingThread(0);
+    StopableIndexingThread indexThread = new StopableIndexingThread(0, true);
     indexThread.start();
     
-    StopableIndexingThread indexThread2 = new StopableIndexingThread(10000);
+    StopableIndexingThread indexThread2 = new StopableIndexingThread(10000, true);
     
     indexThread2.start();
 
@@ -120,17 +118,18 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
     ureq.process(cloudClient);
   }
-  
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    indexDoc(doc);
-  }
+
   
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
   }
   
+  // skip the randoms - they can deadlock...
+  protected void indexr(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    addFields(doc, "rnd_b", true);
+    indexDoc(doc);
+  }
 }

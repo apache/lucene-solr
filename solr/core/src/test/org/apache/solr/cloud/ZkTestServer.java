@@ -33,7 +33,7 @@ import javax.management.JMException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.zookeeper.jmx.ManagedUtil;
-import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.ZKDatabase;
@@ -56,7 +56,7 @@ public class ZkTestServer {
 
   class ZKServerMain {
 
-    private ServerCnxnFactory cnxnFactory;
+    private NIOServerCnxn.Factory cnxnFactory;
     private ZooKeeperServer zooKeeperServer;
     
     protected void initializeAndRun(String[] args) throws ConfigException,
@@ -83,30 +83,26 @@ public class ZkTestServer {
      * @throws IOException
      */
     public void runFromConfig(ServerConfig config) throws IOException {
-        try {
-            // Note that this thread isn't going to be doing anything else,
-            // so rather than spawning another thread, we will just call
-            // run() in this thread.
-            // create a file logger url from the command line args
-            zooKeeperServer = new ZooKeeperServer();
+      try {
+        // Note that this thread isn't going to be doing anything else,
+        // so rather than spawning another thread, we will just call
+        // run() in this thread.
+        // create a file logger url from the command line args
+        zooKeeperServer = new ZooKeeperServer();
 
-            FileTxnSnapLog ftxn = new FileTxnSnapLog(new
-                   File(config.getDataLogDir()), new File(config.getDataDir()));
-            zooKeeperServer.setTxnLogFactory(ftxn);
-            zooKeeperServer.setTickTime(config.getTickTime());
-            zooKeeperServer.setMinSessionTimeout(config.getMinSessionTimeout());
-            zooKeeperServer.setMaxSessionTimeout(config.getMaxSessionTimeout());
-            cnxnFactory = ServerCnxnFactory.createFactory();
-            cnxnFactory.configure(config.getClientPortAddress(),
-                    config.getMaxClientCnxns());
-            cnxnFactory.startup(zooKeeperServer);
-            cnxnFactory.join();
-            if (zooKeeperServer.isRunning()) {
-                zkServer.shutdown();
-            }
-        } catch (InterruptedException e) {
-            // should warn, but generally this is ok
+        FileTxnSnapLog ftxn = new FileTxnSnapLog(new File(config
+            .getDataLogDir()), new File(config.getDataDir()));
+        zooKeeperServer.setTxnLogFactory(ftxn);
+        zooKeeperServer.setTickTime(config.getTickTime());
+        cnxnFactory = new NIOServerCnxn.Factory(config.getClientPortAddress(), config
+            .getMaxClientCnxns());
+        cnxnFactory.startup(zooKeeperServer);
+        cnxnFactory.join();
+        if (zooKeeperServer.isRunning()) {
+          zooKeeperServer.shutdown();
         }
+      } catch (InterruptedException e) {
+      }
     }
 
     /**

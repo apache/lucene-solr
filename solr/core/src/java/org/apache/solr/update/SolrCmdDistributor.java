@@ -33,16 +33,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.response.SolrQueryResponse;
 
 // TODO: we are not really using the buffering anymore due to DistribUpdateProc...
 // we might want to bring back a form of slots...
@@ -64,7 +61,7 @@ public class SolrCmdDistributor {
   Set<Future<Request>> pending;
   
   //private final SolrQueryRequest req;
-  private final SolrQueryResponse rsp;
+  //private final SolrQueryResponse rsp;
 
   //private final SchemaField idField;
   
@@ -74,70 +71,51 @@ public class SolrCmdDistributor {
   private List<AddUpdateCommand> alist;
   private ArrayList<DeleteUpdateCommand> dlist;
 
-  public static class CmdRequest {
-    public List<ShardInfo> shardInfos;
-    public ModifiableSolrParams params;
-    // we have to retry updates that are just being forwarded to the leader
-    public boolean forwarding;
-    
-    public CmdRequest(List<ShardInfo> shardInfos, ModifiableSolrParams params) {
-      this.shardInfos = shardInfos;
-      this.params = params;
-    }
-    
-    public CmdRequest(List<ShardInfo> shardInfos, ModifiableSolrParams params, boolean forwarding) {
-      this(shardInfos, params);
-      this.forwarding = forwarding;
-    }
-    
-    public void updateUrlsForRetry() {
-      for (ShardInfo shardInfo : shardInfos) {
-        if (shardInfo.retryUrl != null) {
-          shardInfo.url = shardInfo.retryUrl.getRetryUrl();
-        }
-      }
-    }
-  }
+  Response response = new Response();
   
   public static class ShardInfo {
     public String url;
     public RetryUrl retryUrl;
+    @Override
+    public String toString() {
+      return "ShardInfo [url=" + url + "]";
+    }
   }
   
   public static interface RetryUrl {
     String getRetryUrl();
   }
   
-  public SolrCmdDistributor(SolrQueryResponse rsp) {
-    this.rsp = rsp;
+  public SolrCmdDistributor() {
+    //this.rsp = rsp;
   }
   
-  public void finish(CmdRequest cmdRequest) {
+  public Response finish(List<String> urls, ModifiableSolrParams params) {
 
     // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, cmdRequest);
-    flushDeletes(1, null, cmdRequest);
+    flushAdds(1, null, urls, params);
+    flushDeletes(1, null, urls, params);
 
-    checkResponses(true, cmdRequest);
+    return checkResponses(true, urls);
   }
   
-  public void distribDelete(DeleteUpdateCommand cmd, CmdRequest cmdRequest) throws IOException {
-    checkResponses(false, cmdRequest);
+  public void distribDelete(DeleteUpdateCommand cmd, List<String> urls, ModifiableSolrParams params) throws IOException {
+    checkResponses(false, urls);
     
     if (cmd.isDeleteById()) {
-      doDelete(cmd, cmdRequest);
+      doDelete(cmd, urls, params);
     } else {
       // TODO: query must be broadcast to all ??
-      doDelete(cmd, cmdRequest);
+      doDelete(cmd, urls, params);
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, CmdRequest cmdRequest) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<String> urls, ModifiableSolrParams params) throws IOException {
     
-    checkResponses(false, cmdRequest);
+    checkResponses(false, urls);
     
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, cmdRequest);
+    flushDeletes(1, null, urls, params);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -158,48 +136,48 @@ public class SolrCmdDistributor {
     }
     alist.add(clone);
     
-    flushAdds(maxBufferedAddsPerServer, null, cmdRequest);
+    flushAdds(maxBufferedAddsPerServer, null, urls, params);
   }
   
-  public void distribCommit(CommitUpdateCommand cmd, CmdRequest cmdRequest)
+  public void distribCommit(CommitUpdateCommand cmd, List<String> urls, ModifiableSolrParams params)
       throws IOException {
     
     // Wait for all outstanding repsonses to make sure that a commit
     // can't sneak in ahead of adds or deletes we already sent.
     // We could do this on a per-server basis, but it's more complex
     // and this solution will lead to commits happening closer together.
-    checkResponses(true, cmdRequest);
+    checkResponses(true, urls);
     
     // piggyback on any outstanding adds or deletes if possible.
     // TODO: review this
-    flushAdds(1, cmd, cmdRequest);
+    flushAdds(1, cmd, urls, params);
     
-    flushDeletes(1, cmd, cmdRequest);
+    flushDeletes(1, cmd, urls, params);
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(cmdRequest.params);
+    ureq.setParams(params);
 
     addCommit(ureq, cmd);
-    submit(ureq, cmdRequest);
+    submit(ureq, urls);
     
     // if the command wanted to block until everything was committed,
     // then do that here.
     // nocommit
     if (/* cmd.waitFlush || */cmd.waitSearcher) {
-      checkResponses(true, cmdRequest);
+      checkResponses(true, urls);
     }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, CmdRequest cmdRequest) throws IOException {
+  private void doDelete(DeleteUpdateCommand cmd, List<String> urls, ModifiableSolrParams params) throws IOException {
     
-    flushAdds(1, null, cmdRequest);
+    flushAdds(1, null, urls, params);
     
     if (dlist == null) {
       dlist = new ArrayList<DeleteUpdateCommand>(2);
     }
     dlist.add(clone(cmd));
     
-    flushDeletes(maxBufferedDeletesPerServer, null, cmdRequest);
+    flushDeletes(maxBufferedDeletesPerServer, null, urls, params);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -209,12 +187,12 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, CmdRequest cmdRequest) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, List<String> urls, ModifiableSolrParams params) {
     // check for pending deletes
     if (alist == null || alist.size() < limit) return false;
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(cmdRequest.params);
+    ureq.setParams(params);
     
     addCommit(ureq, ccmd);
     
@@ -223,16 +201,16 @@ public class SolrCmdDistributor {
     }
     
     alist = null;
-    submit(ureq, cmdRequest);
+    submit(ureq, urls);
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, CmdRequest cmdRequest) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, List<String> urls, ModifiableSolrParams params) {
     // check for pending deletes
     if (dlist == null || dlist.size() < limit) return false;
     
     UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(cmdRequest.params);
+    ureq.setParams(params);
 
     addCommit(ureq, ccmd);
     
@@ -245,7 +223,7 @@ public class SolrCmdDistributor {
     }
     
     dlist = null;
-    submit(ureq, cmdRequest);
+    submit(ureq, urls);
     return true;
   }
   
@@ -257,9 +235,9 @@ public class SolrCmdDistributor {
     return c;
   }
   
-  static class Request {
+  public static class Request {
     // TODO: we may need to look at deep cloning this?
-    CmdRequest cmdRequest;
+    public List<String> urls;
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
     int rspCode;
@@ -268,20 +246,20 @@ public class SolrCmdDistributor {
     int retries = 0;
   }
   
-  void submit(UpdateRequestExt ureq, CmdRequest cmdRequest) {
+  void submit(UpdateRequestExt ureq, List<String> urls) {
     Request sreq = new Request();
-    sreq.cmdRequest = cmdRequest;
+    sreq.urls = urls;
     sreq.ureq = ureq;
     submit(sreq);
   }
   
-  void submit(final Request sreq) {
+ public void submit(final Request sreq) {
     if (completionService == null) {
       completionService = new ExecutorCompletionService<Request>(commExecutor);
       pending = new HashSet<Future<Request>>();
     }
 
-    for (final ShardInfo shardInfo : sreq.cmdRequest.shardInfos) {
+    for (final String url : sreq.urls) {
       // TODO: when we break up shards, we might forward
       // to self again - makes things simple here, but we could
       // also have realized this before, done the req locally, and
@@ -291,19 +269,24 @@ public class SolrCmdDistributor {
         @Override
         public Request call() throws Exception {
           Request clonedRequest = new Request();
-          clonedRequest.cmdRequest = sreq.cmdRequest;
+          clonedRequest.urls = sreq.urls;
           clonedRequest.ureq = sreq.ureq;
-          clonedRequest.url = shardInfo.url;
+          clonedRequest.url = url;
+          clonedRequest.retries = sreq.retries;
+          
           try {
             // TODO: what about https?
-            String url;
-            if (!shardInfo.url.startsWith("http://")) {
-              url = "http://" + shardInfo.url;
+            String fullUrl;
+            if (!url.startsWith("http://")) {
+              fullUrl = "http://" + url;
             } else {
-              url = shardInfo.url;
+              fullUrl = url;
             }
 
-            SolrServer server = new CommonsHttpSolrServer(url, client);
+            CommonsHttpSolrServer server = new CommonsHttpSolrServer(fullUrl, client);
+   
+            //server.setSoTimeout(1000);
+            //server.setConnectionTimeout(1000);
             clonedRequest.ursp = server.request(clonedRequest.ureq);
             
             // currently no way to get the request body.
@@ -323,17 +306,14 @@ public class SolrCmdDistributor {
     }
   }
   
-  void checkResponses(boolean block, CmdRequest cmdRequest) {
-    
-    int expectedResponses = pending == null ? 0 : pending.size();
-    int nonConnectionErrors = 0;
-    int failed = 0;
-    Request failedFowardingRequest = null;
+  Response checkResponses(boolean block, List<String> urls) {
+
+
     while (pending != null && pending.size() > 0) {
       try {
         Future<Request> future = block ? completionService.take()
             : completionService.poll();
-        if (future == null) return;
+        if (future == null) return null;
         pending.remove(future);
         
         try {
@@ -341,44 +321,13 @@ public class SolrCmdDistributor {
           if (sreq.rspCode != 0) {
             // error during request
             Exception e = sreq.exception;
-            
-            // if it failed due to connect, assume we simply have not yet
-            // learned it is down TODO: how about if we are cut off? Are we assuming too much?
-            // the problem is there are other exceptions thrown due to a machine going down mid connection... I've
-            // seen Interrupted exceptions.
-            
-            // nocommit:
-            // we have to match against the msg...:(
-            if (!e.getMessage().contains(
-                "java.net.ConnectException: Connection refused")
-                || e.getMessage().contains(
-                    "java.net.SocketException: Connection reset")) nonConnectionErrors++;
-
-            failed++;
-            // use the first exception encountered
-            // TODO: perhaps we should do more?
-            if (rsp.getException() == null) {
-              
-              String newMsg = "shard update error (" + sreq.cmdRequest.shardInfos + "):"
-                  + e.getMessage();
-              if (e instanceof SolrException) {
-                SolrException se = (SolrException) e;
-                e = new SolrException(ErrorCode.getErrorCode(se.code()),
-                    newMsg, se.getCause());
-              } else {
-                e = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                    newMsg, e);
-              }
-              rsp.setException(e);
-            }
-            
-            if (cmdRequest.forwarding) {
-              // this shold be fine because forwarding requests are only to one shard
-              failedFowardingRequest = sreq;
-            }
-            
+            Error error = new Error();
+            error.e = e;
+            error.url = sreq.url;
+            response.errors.add(error);
+            response.sreq = sreq;
             SolrException.logOnce(SolrCore.log, "shard update error " + sreq.url + " ("
-                + sreq.cmdRequest.shardInfos + ")", sreq.exception);
+                + sreq.urls + ")", sreq.exception);
           }
           
         } catch (ExecutionException e) {
@@ -392,43 +341,18 @@ public class SolrCmdDistributor {
             "interrupted waiting for shard update response", e);
       }
     }
-//    if (failed > 0) {
-//      System.out.println("expected:" + expectedResponses + " failed:" + failed + " failedAfterConnect:" + nonConnectionErrors + " forward:" + forwarding);
-//    }
-    // TODO: this is a somewhat weak success guarantee - if the request was successful on every replica considered up
-    // and that does not return a connect exception, it was successful.
-    //should we optionally fail when there is only a single leader for a shard? (no replication)
+
+    return response;
     
-    // TODO: now we should tell those that failed to try and recover?
-
-    if (failed > 0 && nonConnectionErrors == 0) {
-      if (failed == expectedResponses && cmdRequest.forwarding) {
-        // this is a pure forwarding request (single url for the leader) and it fully failed -
-        // don't reset the exception - TODO: most likely there is now a new
-        // leader - first we should retry the request...
-        
-        // TODO: we really need to clean this up and apis that allow it...
-        if (failedFowardingRequest != null) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-          }
-
-          failedFowardingRequest.cmdRequest.updateUrlsForRetry();
-          failedFowardingRequest.retries++;
-
-          if (failedFowardingRequest.retries < 10) {
-            rsp.setException(null);
-            submit(failedFowardingRequest);
-            checkResponses(block, cmdRequest);
-          }
-        }
-      } else {
-        // System.out.println("clear exception");
-        rsp.setException(null);
-      }
-    }
+  }
+  
+  public static class Response {
+    public Request sreq;
+    public List<Error> errors = new ArrayList<Error>();
+  }
+  
+  public static class Error {
+    public String url;
+    public Exception e;
   }
 }

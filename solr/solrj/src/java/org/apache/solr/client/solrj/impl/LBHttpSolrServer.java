@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URL;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -249,16 +250,21 @@ public class LBHttpSolrServer extends SolrServer {
         rsp.rsp = server.request(req.getRequest());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // Server is alive but the request was malformed or invalid
-        throw e;
+        System.out
+            .println("root: " + new SolrServerException(e).getRootCause());
+        if (e.code() == 404 || e.code() == 503
+            || e.getMessage().contains("java.net.SocketException")
+            || e.getMessage().contains("java.net.ConnectException")) {
+          ex = addZombie(server, e);
+        } else {
+          // Server is alive but the request was malformed or invalid
+          throw e;
+        }
+      } catch (SocketException e) {
+        ex = addZombie(server, e);
       } catch (SolrServerException e) {
         if (e.getRootCause() instanceof IOException) {
-          ex = e;
-          wrapper = new ServerWrapper(server);
-          wrapper.lastUsed = System.currentTimeMillis();
-          wrapper.standard = false;
-          zombieServers.put(wrapper.getKey(), wrapper);
-          startAliveCheckExecutor();
+          ex = addZombie(server, e);
         } else {
           throw e;
         }
@@ -296,6 +302,19 @@ public class LBHttpSolrServer extends SolrServer {
       throw new SolrServerException("No live SolrServers available to handle this request", ex);
     }
 
+  }
+
+  private Exception addZombie(CommonsHttpSolrServer server,
+      Exception e) {
+
+    ServerWrapper wrapper;
+
+    wrapper = new ServerWrapper(server);
+    wrapper.lastUsed = System.currentTimeMillis();
+    wrapper.standard = false;
+    zombieServers.put(wrapper.getKey(), wrapper);
+    startAliveCheckExecutor();
+    return e;
   }  
 
 

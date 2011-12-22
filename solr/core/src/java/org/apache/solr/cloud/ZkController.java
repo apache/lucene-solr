@@ -30,7 +30,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.cloud.RecoveryStrat.OnFinish;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
@@ -458,8 +457,7 @@ public final class ZkController {
    * @throws Exception 
    */
   public String register(String coreName, final CoreDescriptor desc) throws Exception {  
-    final String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
-        + "/" + coreName;
+    final String shardUrl = getShardUrl(coreName);
     
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     final String collection = cloudDesc.getCollectionName();
@@ -562,14 +560,7 @@ public final class ZkController {
       }
       
       if (doRecovery) {
-        recoveryStrat.recover(core, zkStateReader, shardUrl, new OnFinish() {
-
-          @Override
-          public void run() {
-            // publish new props
-            publishAsActive(shardUrl, cloudDesc, shardZkNodeName);
-            
-          }});
+        recoveryStrat.recover(core);
       }
     } finally {
       if (core != null) {
@@ -584,12 +575,29 @@ public final class ZkController {
   }
 
 
-  private void publishAsActive(String shardUrl,
+  public String getShardUrl(String coreName) {
+    final String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
+        + "/" + coreName;
+    return shardUrl;
+  }
+
+
+  void publishAsActive(String shardUrl,
       final CloudDescriptor cloudDesc, String shardZkNodeName) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.URL_PROP, shardUrl);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
+    finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
+    publishState(cloudDesc, shardZkNodeName, finalProps);
+  }
+  
+  void publishAsRecoverying(String shardUrl,
+      final CloudDescriptor cloudDesc, String shardZkNodeName) {
+    Map<String,String> finalProps = new HashMap<String,String>();
+    finalProps.put(ZkStateReader.URL_PROP, shardUrl);
+    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
     publishState(cloudDesc, shardZkNodeName, finalProps);
   }

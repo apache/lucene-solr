@@ -35,6 +35,8 @@ import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.log.Logger;
 
+import com.sun.net.httpserver.Filter;
+
 /**
  * Run solr using jetty
  * 
@@ -116,6 +118,8 @@ public class JettySolrRunner {
         System.setProperty("hostPort", Integer.toString(lastPort));
         if (solrConfigFilename != null) System.setProperty("solrconfig",
             solrConfigFilename);
+//        SolrDispatchFilter filter = new SolrDispatchFilter();
+//        FilterHolder fh = new FilterHolder(filter);
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*",
             Handler.REQUEST);
         if (solrConfigFilename != null) System.clearProperty("solrconfig");
@@ -152,10 +156,13 @@ public class JettySolrRunner {
   public void start(boolean waitForSolr) throws Exception {
     // if started before, make a new server
     if (startedBefore) {
+
       init(solrHome, context, lastPort, stopAtShutdown);
     } else {
       startedBefore = true;
     }
+    
+    System.out.println("starting up on port " + lastPort);
     
     if( dataDir != null) {
       System.setProperty("solr.data.dir", dataDir);
@@ -182,7 +189,9 @@ public class JettySolrRunner {
   }
 
   public void stop() throws Exception {
-    server.stop();
+    if (!server.isStopped() && !server.isStopping()) {
+      server.stop();
+    }
     server.join();
   }
 

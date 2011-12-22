@@ -89,6 +89,58 @@ public class CoreAdminRequest extends SolrRequest
       return params;
     }
   }
+  
+  public static class PrepRecovery extends CoreAdminRequest {
+    protected String nodeName;
+
+
+    public PrepRecovery() {
+      action = CoreAdminAction.PREPRECOVERY;
+    }
+    
+    public void setNodeName(String nodeName) { this.nodeName = nodeName; }
+
+    public String getNodeName() { return nodeName; }
+
+
+    @Override
+    public SolrParams getParams() {
+      if( action == null ) {
+        throw new RuntimeException( "no action specified!" );
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set( CoreAdminParams.ACTION, action.toString() );
+ 
+      params.set( CoreAdminParams.CORE, core );
+      
+      if (nodeName != null) {
+        params.set( "nodeName", nodeName);
+      }
+
+      return params;
+    }
+  }
+  
+  public static class RequestRecovery extends CoreAdminRequest {
+
+    public RequestRecovery() {
+      action = CoreAdminAction.REQUESTRECOVERY;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      if( action == null ) {
+        throw new RuntimeException( "no action specified!" );
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set( CoreAdminParams.ACTION, action.toString() );
+ 
+      params.set( CoreAdminParams.CORE, core );
+
+      return params;
+    }
+  }
+  
     //a persist core request
   public static class Persist extends CoreAdminRequest {
     protected String fileName = null;

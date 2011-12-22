@@ -22,11 +22,15 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.RecoveryStrat;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.*;
@@ -38,7 +42,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
@@ -161,6 +167,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
           break;
         }
 
+        case PREPRECOVERY: {
+          this.handlePrepRecoveryAction(req, rsp);
+          break;
+        }
+        
+        case REQUESTRECOVERY: {
+          this.handleRequestRecoveryAction(req, rsp);
+          break;
+        }
+        
         default: {
           doPersist = this.handleCustomAction(req, rsp);
           break;
@@ -553,6 +569,96 @@ public class CoreAdminHandler extends RequestHandlerBase {
     coreContainer.swap(cname, other);
     return doPersist;
 
+  }
+  
+  protected void handleRequestRecoveryAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException {
+    final SolrParams params = req.getParams();
+    
+    String cname = params.get(CoreAdminParams.CORE);
+    if (cname == null) {
+      cname = "";
+    }
+    
+    SolrCore core = coreContainer.getCore(cname);
+    try {
+      RecoveryStrat recoveryStrat = new RecoveryStrat();
+      recoveryStrat.recover(core);
+    } finally {
+      // no recoveryStrat close for now
+      core.close();
+    }
+  }
+  
+  protected void handlePrepRecoveryAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    final SolrParams params = req.getParams();
+
+    String cname = params.get(CoreAdminParams.CORE);
+    if (cname == null) {
+      cname = "";
+    }
+
+    String nodeName = params.get("nodeName");
+
+    SolrCore core = coreContainer.getCore(cname);
+    try {
+      String state;
+      while (true) {
+        // wait until we are sure the recovering node is ready
+        // to accept updates
+        CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
+            .getCloudDescriptor();
+        ZkNodeProps nodeProps = coreContainer
+            .getZkController()
+            .getCloudState()
+            .getSlice(cloudDescriptor.getCollectionName(),
+                cloudDescriptor.getShardId()).getShards().get(nodeName);
+        state = nodeProps.get(ZkStateReader.STATE_PROP);
+        if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)) {
+          // nocommit: this should time out
+          break;
+        }
+      }
+      
+      if (core != null) {
+        // small safety net for any updates that started with state that
+        // kept it from sending the update to be buffered -
+        // pause for a while to let any outstanding updates finish
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+        
+        UpdateRequestProcessorChain processorChain = core
+            .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
+                params, log));
+        System.out.println("prep commit");
+        ModifiableSolrParams reqParams = new ModifiableSolrParams(
+            req.getParams());
+        reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
+        
+        SolrQueryRequest sqr = new LocalSolrQueryRequest(core, reqParams);
+        UpdateRequestProcessor processor = processorChain.createProcessor(sqr,
+            new SolrQueryResponse());
+        CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+        
+        processor.processCommit(cuc);
+        processor.finish();
+        
+        RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
+        System.out.println("approx docs to replicate:"
+            + searcherRef.get().getIndexReader().numDocs());
+        searcherRef.decref();
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find core:  "
+            + core);
+      }
+    } finally {
+      if (core != null) {
+        core.close();
+      }
+    }
   }
 
   protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {

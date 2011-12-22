@@ -74,13 +74,20 @@ public class ChaosMonkey {
   }
 
   public void stopJetty(JettySolrRunner jetty) throws Exception {
+    if (jetty.isRunning()) {
+      stops.incrementAndGet();
+    }
+    
     stop(jetty);
-    stops.incrementAndGet();
   }
 
   public void killJetty(JettySolrRunner jetty) throws Exception {
+    if (jetty.isRunning()) {
+      stops.incrementAndGet();
+    }
+    
     kill(jetty);
-    stops.incrementAndGet();
+
   }
   
   public static void stop(JettySolrRunner jetty) throws Exception {
@@ -238,6 +245,7 @@ public class ChaosMonkey {
                  sleep(2000);
                  jetty.start();
                }
+               System.out.println("started on port:" + jetty.getLocalPort());
                starts.incrementAndGet();
                continue;
              }
@@ -245,11 +253,15 @@ public class ChaosMonkey {
             
             JettySolrRunner jetty;
             if (random.nextBoolean()) {
-              System.out.println("looking to stop");
               jetty = stopRandomShard();
+              if (jetty != null) {
+                System.out.println("looking to stop " + jetty.getLocalPort());
+              }
             } else {
-              System.out.println("looking to kill");
               jetty = killRandomShard();
+              if (jetty != null) {
+                System.out.println("looking to kill " + jetty.getLocalPort());
+              }
             }
             if (jetty == null) {
               System.out.println("we cannot kill");
@@ -271,6 +283,10 @@ public class ChaosMonkey {
   
   public void stopTheMonkey() {
     stop = true;
+  }
+
+  public int getStarts() {
+    return starts.get();
   }
 
 }

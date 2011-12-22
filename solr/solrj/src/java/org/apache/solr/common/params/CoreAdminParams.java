@@ -86,7 +86,9 @@ public interface CoreAdminParams
     RENAME,
     @Deprecated
     ALIAS,
-    MERGEINDEXES;
+    MERGEINDEXES,
+    PREPRECOVERY, 
+    REQUESTRECOVERY;
     
     public static CoreAdminAction get( String p )
     {

@@ -23,7 +23,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.zookeeper.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
