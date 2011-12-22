@@ -447,41 +447,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   /* Advanced configuration of retry logic in loading
      segments_N file */
-  private static int defaultGenFileRetryCount = 10;
-  private static int defaultGenFileRetryPauseMsec = 50;
   private static int defaultGenLookaheadCount = 10;
-
-  /**
-   * Advanced: set how many times to try loading the
-   * segments.gen file contents to determine current segment
-   * generation.  This file is only referenced when the
-   * primary method (listing the directory) fails.
-   */
-  public static void setDefaultGenFileRetryCount(int count) {
-    defaultGenFileRetryCount = count;
-  }
-
-  /**
-   * @see #setDefaultGenFileRetryCount
-   */
-  public static int getDefaultGenFileRetryCount() {
-    return defaultGenFileRetryCount;
-  }
-
-  /**
-   * Advanced: set how many milliseconds to pause in between
-   * attempts to load the segments.gen file.
-   */
-  public static void setDefaultGenFileRetryPauseMsec(int msec) {
-    defaultGenFileRetryPauseMsec = msec;
-  }
-
-  /**
-   * @see #setDefaultGenFileRetryPauseMsec
-   */
-  public static int getDefaultGenFileRetryPauseMsec() {
-    return defaultGenFileRetryPauseMsec;
-  }
 
   /**
    * Advanced: set how many times to try incrementing the
@@ -489,12 +455,16 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * the primary (listing directory) and secondary (opening
    * segments.gen file) methods fail to find the segments
    * file.
+   *
+   * @lucene.experimental
    */
   public static void setDefaultGenLookaheadCount(int count) {
     defaultGenLookaheadCount = count;
   }
   /**
    * @see #setDefaultGenLookaheadCount
+   *
+   * @lucene.experimental
    */
   public static int getDefaultGenLookahedCount() {
     return defaultGenLookaheadCount;
@@ -599,52 +569,40 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           // a stale cache (NFS) we have a better chance of
           // getting the right generation.
           long genB = -1;
-          for(int i=0;i<defaultGenFileRetryCount;i++) {
-            IndexInput genInput = null;
-            try {
-              genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
-            } catch (FileNotFoundException e) {
-              if (infoStream != null) {
-                message("segments.gen open: FileNotFoundException " + e);
-              }
-              break;
-            } catch (IOException e) {
-              if (infoStream != null) {
-                message("segments.gen open: IOException " + e);
-              }
+          IndexInput genInput = null;
+          try {
+            genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
+          } catch (FileNotFoundException e) {
+            if (infoStream != null) {
+              message("segments.gen open: FileNotFoundException " + e);
             }
+          } catch (IOException e) {
+            if (infoStream != null) {
+              message("segments.gen open: IOException " + e);
+            }
+          }
   
-            if (genInput != null) {
-              try {
-                int version = genInput.readInt();
-                if (version == FORMAT_SEGMENTS_GEN_CURRENT) {
-                  long gen0 = genInput.readLong();
-                  long gen1 = genInput.readLong();
-                  if (infoStream != null) {
-                    message("fallback check: " + gen0 + "; " + gen1);
-                  }
-                  if (gen0 == gen1) {
-                    // The file is consistent.
-                    genB = gen0;
-                    break;
-                  }
-                } else {
-                  /* TODO: Investigate this! 
-                  throw new IndexFormatTooNewException(genInput, version, FORMAT_SEGMENTS_GEN_CURRENT, FORMAT_SEGMENTS_GEN_CURRENT);
-                  */
-                }
-              } catch (IOException err2) {
-                // rethrow any format exception
-                if (err2 instanceof CorruptIndexException) throw err2;
-                // else will retry
-              } finally {
-                genInput.close();
-              }
-            }
+          if (genInput != null) {
             try {
-              Thread.sleep(defaultGenFileRetryPauseMsec);
-            } catch (InterruptedException ie) {
-              throw new ThreadInterruptedException(ie);
+              int version = genInput.readInt();
+              if (version == FORMAT_SEGMENTS_GEN_CURRENT) {
+                long gen0 = genInput.readLong();
+                long gen1 = genInput.readLong();
+                if (infoStream != null) {
+                  message("fallback check: " + gen0 + "; " + gen1);
+                }
+                if (gen0 == gen1) {
+                  // The file is consistent.
+                  genB = gen0;
+                }
+              } else {
+                throw new IndexFormatTooNewException(genInput, version, FORMAT_SEGMENTS_GEN_CURRENT, FORMAT_SEGMENTS_GEN_CURRENT);
+              }
+            } catch (IOException err2) {
+              // rethrow any format exception
+              if (err2 instanceof CorruptIndexException) throw err2;
+            } finally {
+              genInput.close();
             }
           }
 
@@ -881,12 +839,19 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         genOutput.writeLong(generation);
       } finally {
         genOutput.close();
+        dir.sync(Collections.singleton(IndexFileNames.SEGMENTS_GEN));
       }
     } catch (ThreadInterruptedException t) {
       throw t;
     } catch (Throwable t) {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
+      try {
+        dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
+      } catch (Throwable t2) {
+        // Ignore; this file is only used in a retry
+        // fallback on init.
+      }
     }
   }
 

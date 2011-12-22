@@ -770,6 +770,9 @@ Bug fixes
   NRTCachingDir, fixed createOutput to overwrite any previous file,
   and removed invalid asserts (Robert Muir, Mike McCandless)
 
+* LUCENE-3605: don't sleep in a retry loop when trying to locate the
+  segments_N file (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by

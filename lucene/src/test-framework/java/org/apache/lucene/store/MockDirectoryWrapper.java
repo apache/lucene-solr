@@ -550,7 +550,6 @@ public class MockDirectoryWrapper extends Directory {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
         }
-        unSyncedFiles.remove("segments.gen"); // otherwise we add minutes to the tests: LUCENE-3605
         crash(); // corrumpt any unsynced-files
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
