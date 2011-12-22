@@ -862,22 +862,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (!writeLock.obtain(conf.getWriteLockTimeout())) // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
 
-    OpenMode mode = conf.getOpenMode();
-    boolean create;
-    if (mode == OpenMode.CREATE) {
-      create = true;
-    } else if (mode == OpenMode.APPEND) {
-      create = false;
-    } else {
-      // CREATE_OR_APPEND - create only if an index does not exist
-      create = !IndexReader.indexExists(directory);
-    }
     boolean success = false;
-
-    // If index is too old, reading the segments will throw
-    // IndexFormatTooOldException.
-    segmentInfos = new SegmentInfos();
     try {
+      OpenMode mode = conf.getOpenMode();
+      boolean create;
+      if (mode == OpenMode.CREATE) {
+        create = true;
+      } else if (mode == OpenMode.APPEND) {
+        create = false;
+      } else {
+        // CREATE_OR_APPEND - create only if an index does not exist
+        create = !IndexReader.indexExists(directory);
+      }
+
+      // If index is too old, reading the segments will throw
+      // IndexFormatTooOldException.
+      segmentInfos = new SegmentInfos();
+
       if (create) {
         // Try to read first.  This is to allow create
         // against an index that's currently open for
