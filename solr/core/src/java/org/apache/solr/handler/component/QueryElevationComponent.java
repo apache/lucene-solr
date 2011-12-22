@@ -20,16 +20,12 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
@@ -40,7 +36,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.EditorialMarkerFactory;
+import org.apache.solr.response.transform.ElevatedMarkerFactory;
+import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -78,6 +75,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   static final String FIELD_TYPE = "queryFieldType";
   static final String CONFIG_FILE = "config-file";
   static final String EXCLUDE = "exclude";
+  public static final String BOOSTED = "BOOSTED";
+  public static final String EXCLUDED = "EXCLUDED";
 
   // Runtime param -- should be in common?
 
@@ -97,15 +96,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   class ElevationObj {
     final String text;
     final String analyzed;
-    final BooleanClause[] exclude;
+    final TermQuery [] exclude;//just keep the term query, b/c we will not always explicitly exclude the item based on markExcludes query time param
     final BooleanQuery include;
     final Map<BytesRef, Integer> priority;
     final Set<String> ids;
+    final Set<String> excludeIds;
 
     ElevationObj(String qstr, List<String> elevate, List<String> exclude) throws IOException {
       this.text = qstr;
       this.analyzed = getAnalyzedQuery(this.text);
       this.ids = new HashSet<String>();
+      this.excludeIds = new HashSet<String>();
 
       this.include = new BooleanQuery();
       this.include.setBoost(0);
@@ -122,10 +123,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       if (exclude == null || exclude.isEmpty()) {
         this.exclude = null;
       } else {
-        this.exclude = new BooleanClause[exclude.size()];
+        this.exclude = new TermQuery[exclude.size()];
         for (int i = 0; i < exclude.size(); i++) {
-          TermQuery tq = new TermQuery(new Term(idField, idSchemaFT.readableToIndexed(exclude.get(i))));
-          this.exclude[i] = new BooleanClause(tq, BooleanClause.Occur.MUST_NOT);
+          String id = idSchemaFT.readableToIndexed(exclude.get(i));
+          excludeIds.add(id);
+          this.exclude[i] = new TermQuery(new Term(idField, id));
         }
       }
     }
@@ -155,12 +157,18 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     idSchemaFT = sf.getType();
     idField = sf.getName();
     //register the EditorialMarkerFactory
-    EditorialMarkerFactory factory = new EditorialMarkerFactory();
+    String excludeName = initArgs.get(QueryElevationParams.EXCLUDE_MARKER_FIELD_NAME, "excluded");
+    if (excludeName == null || excludeName.equals("") == true){
+      excludeName = "excluded";
+    }
+    ExcludedMarkerFactory excludedMarkerFactory = new ExcludedMarkerFactory();
+    core.addTransformerFactory(excludeName, excludedMarkerFactory);
+    ElevatedMarkerFactory elevatedMarkerFactory = new ElevatedMarkerFactory();
     String markerName = initArgs.get(QueryElevationParams.EDITORIAL_MARKER_FIELD_NAME, "elevated");
     if (markerName == null || markerName.equals("") == true) {
       markerName = "elevated";
     }
-    core.addTransformerFactory(markerName, factory);
+    core.addTransformerFactory(markerName, elevatedMarkerFactory);
     forceElevation = initArgs.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
     try {
       synchronized (elevationCache) {
@@ -333,7 +341,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     boolean exclusive = params.getBool(QueryElevationParams.EXCLUSIVE, false);
     // A runtime parameter can alter the config value for forceElevation
     boolean force = params.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
-
+    boolean markExcludes = params.getBool(QueryElevationParams.MARK_EXCLUDES, false);
     Query query = rb.getQuery();
     String qstr = rb.getQueryString();
     if (query == null || qstr == null) {
@@ -351,7 +359,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     if (booster != null) {
-      rb.req.getContext().put("BOOSTED", booster.ids);
+      rb.req.getContext().put(BOOSTED, booster.ids);
 
       // Change the query to insert forced documents
       if (exclusive == true) {
@@ -362,8 +370,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         newq.add(query, BooleanClause.Occur.SHOULD);
         newq.add(booster.include, BooleanClause.Occur.SHOULD);
         if (booster.exclude != null) {
-          for (BooleanClause bq : booster.exclude) {
-            newq.add(bq);
+          if (markExcludes == false) {
+            for (TermQuery tq : booster.exclude) {
+              newq.add(new BooleanClause(tq, BooleanClause.Occur.MUST_NOT));
+            }
+          } else {
+            //we are only going to mark items as excluded, not actually exclude them.  This works
+            //with the EditorialMarkerFactory
+            rb.req.getContext().put(EXCLUDED, booster.excludeIds);
+            for (TermQuery tq : booster.exclude) {
+              newq.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
+            }
           }
         }
         rb.setQuery(newq);

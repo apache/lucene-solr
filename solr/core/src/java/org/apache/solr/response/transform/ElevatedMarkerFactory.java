@@ -28,10 +28,10 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
 /**
- *
+ * Used to mark whether a document has been elevated or not
  * @since solr 4.0
  */
-public class EditorialMarkerFactory extends TransformerFactory
+public class ElevatedMarkerFactory extends TransformerFactory
 {
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
@@ -41,45 +41,16 @@ public class EditorialMarkerFactory extends TransformerFactory
   }
 }
 
-class MarkTransformer extends TransformerWithContext
+class MarkTransformer extends BaseEditorialTransformer
 {
-  final String name;
-  final String idFieldName;
-  final FieldType ft;
 
-  public MarkTransformer( String name, String idFieldName, FieldType ft)
-  {
-    this.name = name;
-    this.idFieldName = idFieldName;
-    this.ft = ft;
+  MarkTransformer(String name, String idFieldName, FieldType ft) {
+    super(name, idFieldName, ft);
   }
 
   @Override
-  public String getName()
-  {
-    return name;
-  }
-
-  @Override
-  public void transform(SolrDocument doc, int docid) {
-    Set<?> ids = (Set<?>)context.req.getContext().get("BOOSTED");
-    if(ids!=null) {
-      String key;
-      Object field = doc.get(idFieldName);
-      if (field instanceof NumericField){
-        key = ((Field)field).stringValue();
-        key = ft.readableToIndexed(key);
-      } else if (field instanceof Field){
-        key = ((Field)field).stringValue();
-      } else {
-        key = field.toString();
-      }
-
-      doc.setField(name, ids.contains(key));
-    } else {
-      //if we have no ids, that means we weren't boosting, but the user still asked for the field to be added, so just mark everything as false
-      doc.setField(name, Boolean.FALSE);
-    }
+  protected Set<String> getIdSet() {
+    return (Set<String>) context.req.getContext().get("BOOSTED");
   }
 }
 

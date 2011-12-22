@@ -157,7 +157,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       req.close();
 
       // Make sure the boosts loaded properly
-      assertEquals(4, map.size());
+      assertEquals(5, map.size());
       assertEquals(1, map.get("XXXX").priority.size());
       assertEquals(2, map.get("YYYY").priority.size());
       assertEquals(3, map.get("ZZZZ").priority.size());
@@ -174,7 +174,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp.init(args);
       comp.inform(core);
       map = comp.getElevationMap(reader, core);
-      assertEquals(4, map.size());
+      assertEquals(5, map.size());
       assertEquals(null, map.get("XXXX"));
       assertEquals(null, map.get("YYYY"));
       assertEquals(null, map.get("ZZZZ"));
@@ -232,6 +232,52 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
           "not(//result/doc[1]/bool[@name='[elev]'][.='false'])" // even though we asked for elev, there is no Transformer registered w/ that, so we shouldn't get a result
       );
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testMarkExcludes() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "XXXX XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
+
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
+      assertU(commit());
+
+      assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
+          QueryElevationParams.MARK_EXCLUDES, "true",
+          CommonParams.FL, "id, score, [excluded]")
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='5']"
+          , "//result/doc[2]/str[@name='id'][.='6']"
+          , "//result/doc[3]/str[@name='id'][.='1']"
+          , "//result/doc[4]/str[@name='id'][.='4']",
+          "//result/doc[1]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[2]/bool[@name='[excluded]'][.='true']",
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[4]/bool[@name='[excluded]'][.='false']"
+      );
+      //ask for excluded as a field, but don't actually request the MARK_EXCLUDES
+      //thus, number 6 should not be returned, b/c it is excluded
+      assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
+          QueryElevationParams.MARK_EXCLUDES, "false",
+          CommonParams.FL, "id, score, [excluded]")
+          , "//*[@numFound='3']"
+          , "//result/doc[1]/str[@name='id'][.='5']"
+          , "//result/doc[2]/str[@name='id'][.='1']"
+          , "//result/doc[3]/str[@name='id'][.='4']",
+          "//result/doc[1]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[2]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']"
+      );
+
     } finally {
       delete();
     }

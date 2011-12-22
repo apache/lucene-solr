@@ -37,6 +37,10 @@
   <doc id="7" />
  </query>
 
+ <query text="XXXX XXXX">
+  <doc id="5" />
+  <doc id="6" exclude="true" />
+ </query>
 
 
 </elevate>
