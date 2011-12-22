@@ -53,7 +53,7 @@ final class SegmentCoreReaders {
 
   private final SegmentReader owner;
 
-  TermInfosReader tis;
+  volatile TermInfosReader tis;
   FieldsReader fieldsReaderOrig;
   TermVectorsReader termVectorsReaderOrig;
   CompoundFileReader cfsReader;
@@ -127,7 +127,8 @@ final class SegmentCoreReaders {
     return cfsReader;
   }
 
-  synchronized TermInfosReader getTermsReader() {
+  TermInfosReader getTermsReader() {
+    final TermInfosReader tis = this.tis;
     if (tis != null) {
       return tis;
     } else {
@@ -135,7 +136,7 @@ final class SegmentCoreReaders {
     }
   }      
 
-  synchronized boolean termsIndexIsLoaded() {
+  boolean termsIndexIsLoaded() {
     return tis != null;
   }      
 
