@@ -23,9 +23,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore("almost ready to not ignore this...")
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass

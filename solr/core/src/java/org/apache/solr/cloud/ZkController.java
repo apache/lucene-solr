@@ -40,6 +40,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -90,7 +91,7 @@ public final class ZkController {
 
   private String hostName;
 
-  private OverseerElector overseerElector;
+  private LeaderElector overseerElector;
 
   private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
 
@@ -334,8 +335,8 @@ public final class ZkController {
 
       processAssignmentsUpdate(assignments);
       
-      overseerElector = new OverseerElector(zkClient, zkStateReader);
-      ElectionContext context = new OverseerElectionContext(getNodeName());
+      overseerElector = new LeaderElector(zkClient);
+      ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
       overseerElector.setup(context);
       overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();
@@ -494,15 +495,14 @@ public final class ZkController {
 
     if (log.isInfoEnabled()) {
         log.info("Register shard - core:" + coreName + " address:"
-            + shardUrl + "shardId:" + shardId);
+            + shardUrl + " shardId:" + shardId);
     }
 
     // we only put a subset of props into the leader node
-    ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP,
-        props.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.URL_PROP,
+    ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.URL_PROP,
         props.get(ZkStateReader.URL_PROP));
 
-    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, ZkStateReader.toJSON(leaderProps));
+    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, leaderProps, zkClient);
     
     leaderElector.setup(context);
     leaderElector.joinElection(context);
@@ -670,21 +670,9 @@ public final class ZkController {
         // makes collections zkNode if it doesn't exist
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE, CreateMode.PERSISTENT, null);
       }
-    } catch (KeeperException e) {
+    } catch (NodeExistsException e) {
       // its okay if another beats us creating the node
-      if (e.code() != KeeperException.Code.NODEEXISTS) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      }
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
     }
-    
   }
 
   public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {

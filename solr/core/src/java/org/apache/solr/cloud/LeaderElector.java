@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -51,16 +52,14 @@ import org.slf4j.LoggerFactory;
  * 
  * TODO: now we could just reuse the lock package code for leader election
  */
-public class LeaderElector {
+public  class LeaderElector {
   private static Logger log = LoggerFactory.getLogger(LeaderElector.class);
-  
-  private static final String LEADER_NODE = "/leader";
   
   private static final String ELECTION_NODE = "/election";
   
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?n_(\\d+)");
   
-  private SolrZkClient zkClient;
+  protected SolrZkClient zkClient;
   
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
@@ -131,11 +130,7 @@ public class LeaderElector {
 
   protected void runIamLeaderProcess(final ElectionContext context) throws KeeperException,
       InterruptedException {
-    String currentLeaderZkPath = context.electionPath
-        + LEADER_NODE;
-    // TODO: leader election tests do not currently set the props
-    
-    zkClient.makePath(currentLeaderZkPath + "/" + context.id, context.leaderProps == null ? null : context.leaderProps, CreateMode.EPHEMERAL);
+    context.runLeaderProcess();
   }
   
   /**
@@ -225,8 +220,6 @@ public class LeaderElector {
       throws InterruptedException, KeeperException {
     String electZKPath = context.electionPath
         + LeaderElector.ELECTION_NODE;
-    String currentLeaderZkPath = context.electionPath
-        + LeaderElector.LEADER_NODE;
     
     try {
       
@@ -237,27 +230,8 @@ public class LeaderElector {
         zkClient.makePath(electZKPath, CreateMode.PERSISTENT, null);
         
       }
-    } catch (KeeperException e) {
+    } catch (NodeExistsException e) {
       // its okay if another beats us creating the node
-      if (e.code() != KeeperException.Code.NODEEXISTS) {
-        throw e;
-      }
-    }
-    
-    try {
-      
-      // current leader node
-      if (!zkClient.exists(currentLeaderZkPath)) {
-        
-        // make new current leader node
-        zkClient.makePath(currentLeaderZkPath, CreateMode.PERSISTENT, null);
-        
-      }
-    } catch (KeeperException e) {
-      // its okay if another beats us creating the node
-      if (e.code() != KeeperException.Code.NODEEXISTS) {
-        throw e;
-      }
     }
   }
   

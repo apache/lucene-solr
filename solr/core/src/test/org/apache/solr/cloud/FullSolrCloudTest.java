@@ -23,16 +23,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,10 +63,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   private static final String SHARD2 = "shard2";
 
   protected static final String DEFAULT_COLLECTION = "collection1";
-  
-  static ThreadPoolExecutor JETTY_EXECUTOR = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
-  ExecutorCompletionService completionService = new ExecutorCompletionService<JettySolrRunner>(JETTY_EXECUTOR);
-  Set<Future<JettySolrRunner>> pending = new HashSet<Future<JettySolrRunner>>();
 
   String t1="a_t";
   String i1="a_si";
@@ -260,7 +250,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     shards = sb.toString();
     
-    waitForRecoveriesToFinish();
+    // TODO: do we sometimes fail without this?
+    //waitForRecoveriesToFinish();
     
     return jettys;
   }
@@ -342,18 +333,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         }
       }
     }
-  }
-  
-  protected int getNumberOfRecoveryAttempts() {
-    int cnt = 0;
-    for (JettySolrRunner jetty : jettys) {
-      RecoveryStrat recoveryStrat = ((SolrDispatchFilter) jetty.getDispatchFilter().getFilter()).getCores()
-          .getZkController().getRecoveryStrat();
-      cnt += recoveryStrat.getRecoveryAttempts().get();
-    }
-    
-    
-    return cnt;
   }
   
   @Override
