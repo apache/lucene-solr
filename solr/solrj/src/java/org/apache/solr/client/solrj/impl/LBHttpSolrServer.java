@@ -250,16 +250,18 @@ public class LBHttpSolrServer extends SolrServer {
         rsp.rsp = server.request(req.getRequest());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        System.out
-            .println("root: " + new SolrServerException(e).getRootCause());
-        if (e.code() == 404 || e.code() == 503
-            || e.getMessage().contains("java.net.SocketException")
-            || e.getMessage().contains("java.net.ConnectException")) {
-          ex = addZombie(server, e);
-        } else {
+        // nocommit: we would like to try with another server on connection problems - but
+        // we don't want to ignore true failures due to forwarding with distrib...
+//        System.out
+//            .println("root: " + new SolrServerException(e).getRootCause());
+//        if (e.code() == 404 || e.code() == 503
+//            || e.getMessage().contains("java.net.SocketException")
+//            || e.getMessage().contains("java.net.ConnectException")) {
+//          ex = addZombie(server, e);
+//        } else {
           // Server is alive but the request was malformed or invalid
           throw e;
-        }
+//        }
       } catch (SocketException e) {
         ex = addZombie(server, e);
       } catch (SolrServerException e) {

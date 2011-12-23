@@ -25,11 +25,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-/**
- * TODO: sometimes the shards are off by a doc or two, even with the
- * retries on index failure...perhaps because of leader dying mid update?
- */
-@Ignore
+@Ignore("almost ready to not ignore this...")
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
@@ -39,7 +35,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   public ChaosMonkeySolrCloudTest() {
     super();
-    shardCount = 12;
+    shardCount = 16;
     sliceCount = 3;
   }
   
@@ -59,7 +55,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     chaosMonkey.startTheMonkey();
     
-    Thread.sleep(12000);
+    Thread.sleep(18000);
     
     chaosMonkey.stopTheMonkey();
     
@@ -71,8 +67,6 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     for (StopableIndexingThread indexThread : threads) {
       indexThread.join();
     }
-    
-    Thread.sleep(2000);
        
     for (StopableIndexingThread indexThread : threads) {
       assertEquals(0, indexThread.getFails());
@@ -96,12 +90,14 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     checkShardConsistency();
     
     System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
-    
-    //printLayout();
+
   }
   
   @Override
   public void tearDown() throws Exception {
+    
+    //printLayout();
+
     super.tearDown();
   }
   

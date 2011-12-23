@@ -30,6 +30,9 @@ import org.apache.solr.core.SolrCore;
  */
 public abstract class SolrCoreState {
   
+  // need a per core lock over reloads...
+  private Object recoveryLock = new Object();
+  
   /**
    * Force the creation of a new IndexWriter using the settings from the given
    * SolrCore.
@@ -78,5 +81,10 @@ public abstract class SolrCoreState {
 
   public interface IndexWriterCloser {
     public void closeWriter(IndexWriter writer) throws IOException;
+  }
+
+
+  public Object getRecoveryLock() {
+    return recoveryLock;
   }
 }

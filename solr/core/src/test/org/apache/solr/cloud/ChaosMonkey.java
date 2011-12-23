@@ -105,6 +105,14 @@ public class ChaosMonkey {
   
   public static void kill(JettySolrRunner jetty) throws Exception {
     jetty.stop();
+    
+    FilterHolder fh = jetty.getDispatchFilter();
+    if (fh != null) {
+      SolrDispatchFilter sdf = (SolrDispatchFilter) fh.getFilter();
+      if (sdf != null) {
+        sdf.destroy();
+      }
+    }
   }
   
   public void stopShard(String slice) throws Exception {
@@ -156,7 +164,7 @@ public class ChaosMonkey {
     sliceKeyList.addAll(slices.keySet());
     String sliceName = sliceKeyList.get(random.nextInt(sliceKeyList.size()));
     
-    return stopRandomShard(sliceName);
+    return killRandomShard(sliceName);
   }
   
   public JettySolrRunner killRandomShard(String slice) throws Exception {
@@ -218,6 +226,8 @@ public class ChaosMonkey {
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     int index = random.nextInt(jetties.size() - 1);
     JettySolrRunner jetty = jetties.get(index).jetty;
+    System.out.println("sac shard "+ jetty.getLocalPort());
+    
     return jetty;
   }
   
@@ -254,14 +264,8 @@ public class ChaosMonkey {
             JettySolrRunner jetty;
             if (random.nextBoolean()) {
               jetty = stopRandomShard();
-              if (jetty != null) {
-                System.out.println("looking to stop " + jetty.getLocalPort());
-              }
             } else {
               jetty = killRandomShard();
-              if (jetty != null) {
-                System.out.println("looking to kill " + jetty.getLocalPort());
-              }
             }
             if (jetty == null) {
               System.out.println("we cannot kill");

@@ -770,6 +770,11 @@ public class FSUpdateLog extends UpdateLog {
               default:
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
             }
+            
+            // nocommit: do we want to at least log it?
+            if (rsp.getException() != null) {
+              throw rsp.getException();
+            }
           } catch (IOException ex) {
             recoveryInfo.errors++;
             log.warn("IOException reading log", ex);

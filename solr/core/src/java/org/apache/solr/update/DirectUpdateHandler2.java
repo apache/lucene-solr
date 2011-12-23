@@ -55,7 +55,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
 public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser {
-  protected SolrCoreState solrCoreState;
+  protected final SolrCoreState solrCoreState;
   protected final Lock commitLock = new ReentrantLock();
 
   // stats

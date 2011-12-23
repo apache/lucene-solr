@@ -182,4 +182,8 @@ public class CloudSolrServer extends SolrServer {
       }
     }
   }
+
+  public LBHttpSolrServer getLbServer() {
+    return lbServer;
+  }
 }

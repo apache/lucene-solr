@@ -141,7 +141,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       //printLayout(zkServer.getZkAddress());
       
       // wait a sec for new leader to register
-      Thread.sleep(1000);
+      Thread.sleep(2000);
       
       leader = getLeader();
       int newLeaderPort = getLeaderPort(leader);
@@ -225,7 +225,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     if (VERBOSE) {
       printLayout(zkServer.getZkHost());
     }
-    zkClient.close();
+    if (zkClient != null) {
+      zkClient.close();
+    }
     
     for (CoreContainer cc : containerMap.values()) {
       if (!cc.isShutDown()) {

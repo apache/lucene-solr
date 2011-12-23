@@ -17,10 +17,12 @@ package org.apache.solr.common.cloud;
  * the License.
  */
 
-import org.apache.noggit.JSONWriter;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import java.io.IOException;
-import java.util.*;
+import org.apache.noggit.JSONWriter;
 
 public class CoreState implements JSONWriter.Writable {
   private static String COLLECTION="collection";

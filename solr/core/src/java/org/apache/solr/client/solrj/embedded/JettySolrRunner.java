@@ -156,13 +156,11 @@ public class JettySolrRunner {
   public void start(boolean waitForSolr) throws Exception {
     // if started before, make a new server
     if (startedBefore) {
-
+      waitOnSolr = false;
       init(solrHome, context, lastPort, stopAtShutdown);
     } else {
       startedBefore = true;
     }
-    
-    System.out.println("starting up on port " + lastPort);
     
     if( dataDir != null) {
       System.setProperty("solr.data.dir", dataDir);

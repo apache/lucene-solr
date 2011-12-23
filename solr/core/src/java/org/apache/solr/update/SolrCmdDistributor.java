@@ -70,8 +70,6 @@ public class SolrCmdDistributor {
   
   private List<AddUpdateCommand> alist;
   private ArrayList<DeleteUpdateCommand> dlist;
-
-  Response response = new Response();
   
   public static class ShardInfo {
     public String url;
@@ -241,9 +239,8 @@ public class SolrCmdDistributor {
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
     int rspCode;
-    Exception exception;
+    public Exception exception;
     String url;
-    int retries = 0;
   }
   
   void submit(UpdateRequestExt ureq, List<String> urls) {
@@ -271,8 +268,10 @@ public class SolrCmdDistributor {
           Request clonedRequest = new Request();
           clonedRequest.urls = sreq.urls;
           clonedRequest.ureq = sreq.ureq;
+          
+          // TODO: yeah, this is a little odd...
           clonedRequest.url = url;
-          clonedRequest.retries = sreq.retries;
+
           
           try {
             // TODO: what about https?
@@ -306,8 +305,9 @@ public class SolrCmdDistributor {
     }
   }
   
+  // TODO: need to consider those that call this with block=false now...
   Response checkResponses(boolean block, List<String> urls) {
-
+    Response response = new Response();
 
     while (pending != null && pending.size() > 0) {
       try {

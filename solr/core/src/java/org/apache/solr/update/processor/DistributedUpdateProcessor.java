@@ -29,7 +29,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -264,24 +263,44 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     Response response;
     do {
       retry = false;
+      // TODO: realtime timeout strat
+      int timeout = 200;
       response = cmdDistrib.finish(urls, params);
       // nocommit - we may need to tell about more than one error...
       if (response.errors.size() > 0) { 
         if (urls.size() == 1 && forwardToLeader) {
           // we should retry a failed forward...
           retry = true;
-          retries++;
-          if (retries > 10) {
+
+          if (retries++ > 15) {
+            timeout = timeout * 2;
             // nocommit
-            log.error("we totally failed");
+            log.error("we totally failed: set exception to:" + response.errors.get(0).e);
             retry = false;
-            rsp.setException(response.errors.get(0).e);
+            
+            Exception e = response.errors.get(0).e;
+            String newMsg = "shard update error (" + response.sreq.urls + "):"
+                + e.getMessage();
+            if (e instanceof SolrException) {
+              SolrException se = (SolrException) e;
+              e = new SolrException(ErrorCode.getErrorCode(se.code()),
+                  newMsg, se.getCause());
+            } else {
+              e = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                  newMsg, e);
+            }
+            
+            rsp.setException(e);
           } else {
             try {
               response.sreq.urls = Collections.singletonList(zkController
                   .getZkStateReader().getLeaderUrl(collection, shardId));
+              response.sreq.exception = null;
+              
               System.out.println("FORWARD FAILED:" + urls + " retry with "
                   + response.sreq.urls);
+              response.errors.get(0).e.printStackTrace();
+              urls = response.sreq.urls;
             } catch (InterruptedException e2) {
               Thread.currentThread().interrupt();
               throw new SolrException(ErrorCode.SERVER_ERROR, e2);
@@ -291,7 +310,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             cmdDistrib.submit(response.sreq);
             
             try {
-              Thread.sleep(100);
+              Thread.sleep(timeout);
             } catch (InterruptedException e1) {
               Thread.currentThread().interrupt();
               throw new SolrException(ErrorCode.SERVER_ERROR, "");
@@ -299,7 +318,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         }
       } else {
-        // System.out.println("success:" + urls);
         rsp.setException(null);
       }
     } while(retry);
@@ -664,10 +682,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      System.out.println("end point:" + params.getBool(COMMIT_END_POINT, false));
-      System.out.println("commit params:" + params);  
       if (!params.getBool(COMMIT_END_POINT, false)) {
-        System.out.println("distrib commit");
         params.set(COMMIT_END_POINT, true);
 
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()

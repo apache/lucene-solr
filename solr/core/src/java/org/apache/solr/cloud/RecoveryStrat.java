@@ -21,9 +21,6 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,7 +38,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.update.UpdateLog.State;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +56,6 @@ public class RecoveryStrat {
   private final AtomicInteger recoveryAttempts = new AtomicInteger();
   private final AtomicInteger recoverySuccesses = new AtomicInteger();
   
-  private static final Lock RECOVERY_LOCK = new ReentrantLock();
   
   // for now, just for tests
   public interface RecoveryListener {
@@ -98,8 +93,8 @@ public class RecoveryStrat {
       
       @Override
       public void run() {
-        RECOVERY_LOCK.lock();
-        try {
+        synchronized (core.getUpdateHandler().getSolrCoreState().getRecoveryLock()) {
+          
           UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
           // TODO: consider any races issues here - if we failed though, an
           // assert
@@ -183,8 +178,6 @@ public class RecoveryStrat {
           }
           log.info("Finished recovery process");
           System.out.println("recovery done: " + succesfulRecovery);
-        } finally {
-          RECOVERY_LOCK.unlock();
         }
       }
       

@@ -207,6 +207,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         try {
           CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
           server.setDefaultCollection(DEFAULT_COLLECTION);
+          server.getLbServer().getHttpClient().getParams().setConnectionManagerTimeout(5000);
+          server.getLbServer().getHttpClient().getParams().setSoTimeout(5000);
           cloudClient = server;
         } catch (MalformedURLException e) {
           throw new RuntimeException(e);
@@ -1020,9 +1022,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   // TODO: also do some deletes
   class StopableIndexingThread extends Thread {
     private volatile boolean stop = false;
-    private int startI;
-    private List<Integer> deletes = new ArrayList<Integer>();
-    private int fails;
+    private final int startI;
+    private final List<Integer> deletes = new ArrayList<Integer>();
+    private final AtomicInteger fails = new AtomicInteger();
     private boolean doDeletes;  
     
     public StopableIndexingThread(int startI, boolean doDeletes) {
@@ -1040,7 +1042,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       while (true && !stop) {
         ++i;
         
-        
         if (doDeletes && random.nextBoolean() && deletes.size() > 0) {
           Integer delete = deletes.remove(0);
           try {
@@ -1050,9 +1051,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           } catch (Exception e) {
             System.err.println("REQUEST FAILED:");
             e.printStackTrace();
-            fails++;
+            fails.incrementAndGet();
           }
-
         }
         
         try {
@@ -1062,7 +1062,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         } catch (Exception e) {
           System.err.println("REQUEST FAILED:");
           e.printStackTrace();
-          fails++;
+          fails.incrementAndGet();
         }
         
         if (doDeletes && random.nextBoolean()) {
@@ -1079,7 +1079,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
 
     public int getFails() {
-      return fails;
+      return fails.get();
     }
     
   };
