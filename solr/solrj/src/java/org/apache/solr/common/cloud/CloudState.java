@@ -31,12 +31,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.HashPartitioner.Range;
 import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-// quasi immutable :(
 public class CloudState implements JSONWriter.Writable {
-	protected static Logger log = LoggerFactory.getLogger(CloudState.class);
 	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
   
@@ -63,25 +59,6 @@ public class CloudState implements JSONWriter.Writable {
 				&& collectionStates.get(collection).containsKey(slice))
 			return collectionStates.get(collection).get(slice);
 		return null;
-	}
-
-	// TODO: this method must die - this object should be immutable!!
-	public void addSlice(String collection, Slice slice) {
-		if (!collectionStates.containsKey(collection)) {
-			log.info("New collection");
-			collectionStates.put(collection, new HashMap<String,Slice>());
-		}
-		if (!collectionStates.get(collection).containsKey(slice.getName())) {
-			collectionStates.get(collection).put(slice.getName(), slice);
-		} else {
-			Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
-			
-			Slice existingSlice = collectionStates.get(collection).get(slice.getName());
-			shards.putAll(existingSlice.getShards());
-			shards.putAll(slice.getShards());
-			Slice updatedSlice = new Slice(slice.getName(), shards);
-			collectionStates.get(collection).put(slice.getName(), updatedSlice);
-		}
 	}
 
 	public Map<String, Slice> getSlices(String collection) {
@@ -177,10 +154,10 @@ public class CloudState implements JSONWriter.Writable {
 
     for(String collectionName: stateMap.keySet()){
       Map<String, Object> collection = (Map<String, Object>)stateMap.get(collectionName);
-      HashMap<String, Slice> slices = new HashMap<String,Slice>();
+      Map<String, Slice> slices = new LinkedHashMap<String,Slice>();
       for(String sliceName: collection.keySet()) {
         Map<String, Map<String, String>> sliceMap = (Map<String, Map<String, String>>)collection.get(sliceName);
-        HashMap<String, ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
+        Map<String, ZkNodeProps> shards = new LinkedHashMap<String,ZkNodeProps>();
         for(String shardName: sliceMap.keySet()) {
           shards.put(shardName, new ZkNodeProps(sliceMap.get(shardName)));
         }

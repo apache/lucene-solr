@@ -40,8 +40,7 @@ public class NodeStateWatcher implements Watcher {
   private static Logger log = LoggerFactory.getLogger(NodeStateWatcher.class);
 
   public static interface NodeStateChangeListener {
-    void coreCreated(String shardZkNodeName, Set<CoreState> cores) throws KeeperException, InterruptedException;
-    void coreChanged(String nodeName, Set<CoreState> cores) throws KeeperException, InterruptedException;
+    void coreChanged(String nodeName, Set<CoreState> changedCores, Set<CoreState> allCores) throws KeeperException, InterruptedException;
   }
 
   private final SolrZkClient zkClient;
@@ -57,11 +56,12 @@ public class NodeStateWatcher implements Watcher {
   }
 
   public NodeStateWatcher(SolrZkClient zkClient, String nodeName, String path,
-      NodeStateChangeListener listener) {
+      NodeStateChangeListener listener) throws KeeperException, InterruptedException {
     this.nodeName = nodeName;
     this.zkClient = zkClient;
     this.path = path;
     this.listener = listener;
+    processStateChange();
   }
 
   public void close() {
@@ -73,8 +73,7 @@ public class NodeStateWatcher implements Watcher {
     if (stop)
       return;
     try {
-      byte[] data = zkClient.getData(path, this, null);
-      processStateChange(data);
+      processStateChange();
     } catch (KeeperException e) {
       // nocommit: stop working on any keeper error
       log.warn("Could not talk to ZK", e);
@@ -86,13 +85,15 @@ public class NodeStateWatcher implements Watcher {
     }
   }
 
-  void processStateChange(byte[] data) {
+  private void processStateChange() throws KeeperException, InterruptedException {
+    byte[] data = zkClient.getData(path, this, null);
+
     if (data != null) {
         CoreState[] states = CoreState.load(data);
         List<CoreState> stateList = Arrays.asList(states);
-        HashSet<CoreState> newCores = new HashSet<CoreState>();
-        newCores.addAll(stateList);
-        newCores.removeAll(currentState);
+        HashSet<CoreState> modifiedCores = new HashSet<CoreState>();
+        modifiedCores.addAll(stateList);
+        modifiedCores.removeAll(currentState);
 
         HashSet<CoreState> newState = new HashSet<CoreState>();
         newState.addAll(stateList);
@@ -102,22 +103,20 @@ public class NodeStateWatcher implements Watcher {
           lookup.put(state.getCoreName(), state);
         }
 
-        HashSet<CoreState> changedCores = new HashSet<CoreState>();
-
         //check for status change
         for(CoreState state: currentState) {
           if(lookup.containsKey(state.getCoreName())) {
             if(!state.getProperties().equals(lookup.get(state.getCoreName()).getProperties())) {
-              changedCores.add(lookup.get(state.getCoreName()));
+              modifiedCores.add(lookup.get(state.getCoreName()));
             }
           }
         }
         
         currentState = Collections.unmodifiableSet(newState);
 
-        if (newCores.size() > 0) {
+        if (modifiedCores.size() > 0) {
           try {
-            listener.coreCreated(nodeName, Collections.unmodifiableSet(newCores));
+            listener.coreChanged(nodeName, Collections.unmodifiableSet(modifiedCores), currentState);
           } catch (KeeperException e) {
             log.warn("Could not talk to ZK", e);
           } catch (InterruptedException e) {
@@ -126,16 +125,6 @@ public class NodeStateWatcher implements Watcher {
           }
         }
 
-        if (changedCores.size() > 0) {
-          try {
-          listener.coreChanged(nodeName, Collections.unmodifiableSet(changedCores));
-          } catch (KeeperException e) {
-            log.warn("Could not talk to ZK", e);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Could not talk to ZK", e);
-          }
-        }
     } else {
       // ignore null state
     }

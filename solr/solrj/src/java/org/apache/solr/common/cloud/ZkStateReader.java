@@ -46,14 +46,16 @@ import org.slf4j.LoggerFactory;
 public class ZkStateReader {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
   
-  public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String URL_PROP = "url";
   public static final String NODE_NAME_PROP = "node_name";
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
+  public static final String CORE_PROP = "core";
   public static final String SHARD_ID_PROP = "shard_id";
   public static final String NUM_SHARDS_PROP = "numShards";
+  public static final String LEADER_PROP = "leader";
   
+  public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   
@@ -65,6 +67,8 @@ public class ZkStateReader {
   private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
+
+  public static final String SHARD_LEADERS_ZKNODE = "leaders";
   
   //
   // convenience methods... should these go somewhere else?
@@ -377,32 +381,27 @@ public class ZkStateReader {
   
   public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException, KeeperException {
     int tries = 30;
-    ZkNodeProps props;
-    while (true) {
-      if (!zkClient
-          .exists("/collections/" + collection + "/leader_elect/" + shard + "/leader")) {
-        if (tries-- == 0) {
-          throw new RuntimeException("No registered leader was found");
+    while (tries-- > 0) {
+      if (cloudState != null) {
+        Slice slice = cloudState.getSlice(collection, shard);
+        if (slice != null) {
+          for (ZkNodeProps nodeProps : slice.getShards().values()) {
+            if (nodeProps.containsKey(ZkStateReader.LEADER_PROP)) {
+              return nodeProps;
+            }
+          }
         }
-        Thread.sleep(1000);
-        continue;
       }
-      String leaderPath = "/collections/" + collection + "/leader_elect/" + shard + "/leader";
-      List<String> leaderChildren = zkClient.getChildren(
-          leaderPath, null);
-      if (leaderChildren.size() > 0) {
-        String leader = leaderChildren.get(0);
-        byte[] data = zkClient.getData(leaderPath + "/" + leader, null, null);
-        props = ZkNodeProps.load(data);
-        break;
-      } else {
-        if (tries-- == 0) {
-          throw new RuntimeException("No registered leader was found");
-        }
-        Thread.sleep(1000);
-      }
+      Thread.sleep(200);
+      updateCloudState(true);
     }
-    return props;
+    throw new RuntimeException("No registered leader was found, collection:" + collection + " slice:" + shard);
+  }
+
+  public static String getShardLeadersPath(String collection, String shardId) {
+    return COLLECTIONS_ZKNODE + "/" + collection + "/"
+        + SHARD_LEADERS_ZKNODE + (shardId != null ? ("/" + shardId)
+        : "");
   }
   
 }

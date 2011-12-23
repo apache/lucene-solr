@@ -74,12 +74,16 @@ public class CoreState implements JSONWriter.Writable {
   
   @Override
   public int hashCode() {
-    return getCoreName().hashCode();
+    return properties.hashCode();
   }
   
   @Override
-  public boolean equals(Object obj) {
-    return hashCode() == obj.hashCode();
+  public boolean equals(Object other) {
+    if(other instanceof CoreState) {
+      CoreState otherState = (CoreState) other;
+      return this.getProperties().equals(otherState.getProperties());
+    }
+    return false;
   }
   
   @Override

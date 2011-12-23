@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -32,9 +31,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.SolrConfig;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,6 +63,8 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   private Map<String,Set<Integer>> shardPorts = new HashMap<String,Set<Integer>>();
   
   private SolrZkClient zkClient;
+
+  private ZkStateReader reader;
   
   @BeforeClass
   public static void beforeClass() throws Exception {}
@@ -94,6 +97,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     
     zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
+    
+    reader = new ZkStateReader(zkClient); 
+
     log.info("####SETUP_END " + getName());
     
   }
@@ -122,7 +128,6 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   public void testSimpleSliceLeaderElection() throws Exception {
 
     //printLayout(zkServer.getZkAddress());
-    
     for (int i = 0; i < 4; i++) {
       // who is the leader?
       String leader = getLeader();
@@ -140,8 +145,14 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       
       //printLayout(zkServer.getZkAddress());
       
-      // wait a sec for new leader to register
-      Thread.sleep(2000);
+      // poll until leader change is visible
+      for (int j = 0; j < 30; j++) {
+        String currentLeader = getLeader();
+        if(!leader.equals(currentLeader)) {
+          break;
+        }
+        Thread.sleep(100);
+      }
       
       leader = getLeader();
       int newLeaderPort = getLeaderPort(leader);
@@ -165,10 +176,12 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     int leaderPort = getLeaderPort(leader);
     containerMap.get(leaderPort).getZkController().getZkClient().getSolrZooKeeper().pauseCnxn(2000);
     
-    Thread.sleep(4000);
-    
-    // first leader should not be leader anymore
-    assertNotSame(leaderPort, getLeaderPort(getLeader()));
+    for (int i = 0; i < 30; i++) { // wait till leader is changed
+      if (leaderPort != getLeaderPort(getLeader())) {
+        break;
+      }
+      Thread.sleep(100);
+    }
     
     if (VERBOSE) System.out.println("kill everyone");
     // kill everyone but the first leader that should have reconnected by now
@@ -177,33 +190,36 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
         entry.getValue().shutdown();
       }
     }
-    
-    Thread.sleep(1000);
-    
+
+    for (int i = 0; i < 30; i++) { // wait till leader is changed
+      if (leaderPort == getLeaderPort(getLeader())) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+
     // the original leader should be leader again now - everyone else is down
     assertEquals(leaderPort, getLeaderPort(getLeader()));
     //printLayout(zkServer.getZkAddress());
     //Thread.sleep(100000);
   }
   
-  private String getLeader() throws Exception {
+  private String getLeader() throws InterruptedException {
     String leader = null;
     int tries = 30;
-    while (true) {
-      List<String> leaderChildren = zkClient.getChildren(
-          "/collections/collection1/leader_elect/shard1/leader", null);
-      if (leaderChildren.size() > 0) {
-        assertEquals("There should only be one leader", 1,
-            leaderChildren.size());
-        leader = leaderChildren.get(0);
-        break;
-      } else {
-        if (tries-- == 0) {
-          printLayout(zkServer.getZkAddress());
-          fail("No registered leader was found");
+    while (tries-- > 0) {
+      ZkNodeProps props;
+      try {
+        reader.updateCloudState(true);
+        props = reader.getLeaderProps("collection1", "shard1");
+        leader = props.get(ZkStateReader.NODE_NAME_PROP);
+        if (leader != null) {
+          break;
         }
-        Thread.sleep(1000);
+      } catch (KeeperException e) {
+        // ignore
       }
+      Thread.sleep(100);
     }
     return leader;
   }

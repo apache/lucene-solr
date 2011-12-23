@@ -1,5 +1,11 @@
 package org.apache.solr.cloud;
 
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,32 +26,54 @@ package org.apache.solr.cloud;
 public abstract class ElectionContext {
   
   final String electionPath;
-  final byte[] leaderProps;
+  final ZkNodeProps leaderProps;
   final String id;
+  final String leaderPath;
   
   public ElectionContext(final String shardZkNodeName,
-      final String electionPath, final byte[] leaderProps) {
+      final String electionPath, final String leaderPath, final ZkNodeProps leaderProps) {
     this.id = shardZkNodeName;
     this.electionPath = electionPath;
+    this.leaderPath = leaderPath;
     this.leaderProps = leaderProps;
   }
   
+  abstract void runLeaderProcess() throws KeeperException, InterruptedException;
 }
 
 final class ShardLeaderElectionContext extends ElectionContext {
   
-  public ShardLeaderElectionContext(final String shardid,
-      final String collection, final String shardZkNodeName, final byte[] props) {
-    super(shardZkNodeName, "/collections/" + collection + "/leader_elect/"
-        + shardid, props);
+  private final SolrZkClient zkClient;
+  public ShardLeaderElectionContext(final String shardId,
+      final String collection, final String shardZkNodeName, ZkNodeProps props, SolrZkClient zkClient) {
+    super(shardZkNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
+        + shardId, ZkStateReader.getShardLeadersPath(collection, shardId),
+        props);
+    this.zkClient = zkClient;
   }
-  
+
+  @Override
+  void runLeaderProcess() throws KeeperException, InterruptedException {
+    String currentLeaderZkPath = leaderPath;
+    zkClient.makePath(currentLeaderZkPath, leaderProps == null ? null
+        : ZkStateReader.toJSON(leaderProps), CreateMode.EPHEMERAL);
+  }
 }
 
 final class OverseerElectionContext extends ElectionContext {
   
-  public OverseerElectionContext(final String zkNodeName) {
-    super(zkNodeName, "/overseer_elect", null);
+  private final SolrZkClient zkClient;
+  private final ZkStateReader stateReader;
+
+  public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, ZkStateReader stateReader) {
+    super(zkNodeName, "/overseer_elect", null, null);
+    this.zkClient = zkClient;
+    this.stateReader = stateReader;
+  }
+
+  @Override
+  void runLeaderProcess() throws KeeperException, InterruptedException {
+    new Overseer(zkClient, stateReader);
   }
   
 }
