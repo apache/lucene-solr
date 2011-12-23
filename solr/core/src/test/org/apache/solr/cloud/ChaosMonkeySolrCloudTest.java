@@ -19,21 +19,17 @@ package org.apache.solr.cloud;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * TODO: sometimes the shards are off by a doc or two, even with the
  * retries on index failure...perhaps because of leader dying mid update?
  */
+@Ignore
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
