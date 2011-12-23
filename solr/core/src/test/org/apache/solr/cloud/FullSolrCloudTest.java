@@ -250,9 +250,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     shards = sb.toString();
     
-    // TODO: do we sometimes fail without this?
-    //waitForRecoveriesToFinish();
-    
     return jettys;
   }
   

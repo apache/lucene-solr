@@ -42,6 +42,7 @@ import org.mortbay.jetty.servlet.FilterHolder;
  */
 public class ChaosMonkey {
 
+  private static final boolean DONTKILLLEADER = true;
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
@@ -199,8 +200,10 @@ public class ChaosMonkey {
       if (props == null) {
         throw new RuntimeException("shard name " + cloudJetty.shardName + " not found in " + theShards.getShards().keySet());
       }
+      
       String state = props.get(ZkStateReader.STATE_PROP);
       String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
+      
       
       if (!cloudJetty.jetty.isRunning()
           || !state.equals(ZkStateReader.ACTIVE)
@@ -235,6 +238,15 @@ public class ChaosMonkey {
     int index = random.nextInt(jetties.size() - 1);
     JettySolrRunner jetty = jetties.get(index).jetty;
     System.out.println("sac shard "+ jetty.getLocalPort());
+    
+    
+    ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
+    
+    if (DONTKILLLEADER && leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)) {
+      // we don't kill leaders...
+      System.out.println("dont kill the leader");
+      return null;
+    }
     
     return jetty;
   }

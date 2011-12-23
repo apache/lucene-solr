@@ -648,7 +648,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         
         RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
         System.out.println("approx docs to replicate:"
-            + searcherRef.get().getIndexReader().numDocs());
+            + searcherRef.get().getIndexReader().numDocs() + " to " + nodeName);
         searcherRef.decref();
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find core:  "
