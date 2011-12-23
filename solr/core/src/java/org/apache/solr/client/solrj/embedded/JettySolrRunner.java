@@ -145,6 +145,10 @@ public class JettySolrRunner {
   public boolean isRunning() {
     return server.isRunning();
   }
+  
+  public boolean isStopped() {
+    return server.isStopped();
+  }
 
   // ------------------------------------------------------------------------------------------------
   // ------------------------------------------------------------------------------------------------

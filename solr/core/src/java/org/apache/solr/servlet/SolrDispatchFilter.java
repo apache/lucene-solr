@@ -62,7 +62,7 @@ public class SolrDispatchFilter implements Filter
 {
   final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
 
-  protected CoreContainer cores;
+  protected volatile CoreContainer cores;
 
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
@@ -145,7 +145,13 @@ public class SolrDispatchFilter implements Filter
       ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
       return;
     }
-
+    
+    if (this.cores == null) {
+      ((HttpServletResponse)response).sendError( 403, "Server is shutting down" );
+      return;
+    }
+    CoreContainer cores = this.cores;
+    
     if( request instanceof HttpServletRequest) {
       HttpServletRequest req = (HttpServletRequest)request;
       HttpServletResponse resp = (HttpServletResponse)response;

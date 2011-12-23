@@ -101,6 +101,10 @@ public class ChaosMonkey {
     }
 
     jetty.stop();
+    
+    if (!jetty.isStopped()) {
+      throw new RuntimeException("could not stop jetty");
+    }
   }
   
   public static void kill(JettySolrRunner jetty) throws Exception {
@@ -112,6 +116,10 @@ public class ChaosMonkey {
       if (sdf != null) {
         sdf.destroy();
       }
+    }
+    
+    if (!jetty.isStopped()) {
+      throw new RuntimeException("could not kill jetty");
     }
   }
   
@@ -248,12 +256,21 @@ public class ChaosMonkey {
              if (!deadPool.isEmpty()) {
                System.out.println("start jetty");
                JettySolrRunner jetty = deadPool.remove(random.nextInt(deadPool.size()));
+               if (jetty.isRunning()) {
+                 
+               }
                try {
                  jetty.start();
                } catch (BindException e) {
                  jetty.stop();
                  sleep(2000);
-                 jetty.start();
+                 try {
+                   jetty.start();
+                 } catch (BindException e2) {
+                   jetty.stop();
+                   sleep(5000);
+                   jetty.start();
+                 }
                }
                System.out.println("started on port:" + jetty.getLocalPort());
                starts.incrementAndGet();
