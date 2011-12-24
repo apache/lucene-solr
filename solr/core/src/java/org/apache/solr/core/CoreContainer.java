@@ -423,7 +423,7 @@ public class CoreContainer
     return properties;
   }
   
-  private boolean isShutDown = false;
+  private volatile boolean isShutDown = false;
   
   public boolean isShutDown() {
     return isShutDown;
