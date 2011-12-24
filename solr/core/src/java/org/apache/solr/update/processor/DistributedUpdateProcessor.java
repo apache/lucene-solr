@@ -260,6 +260,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean retry = false;
     int retries = 0;
 
+    // TODO: if not a forward and replication req is not specified, we could
+    // send in a background thread
+    
     Response response;
     do {
       retry = false;
