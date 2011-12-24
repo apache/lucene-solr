@@ -49,7 +49,7 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    del("*:*");
+    waitForRecoveriesToFinish();
     
     // add a doc, update it, and delete it
     
