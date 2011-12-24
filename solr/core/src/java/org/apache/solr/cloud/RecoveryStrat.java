@@ -96,12 +96,9 @@ public class RecoveryStrat {
         synchronized (core.getUpdateHandler().getSolrCoreState().getRecoveryLock()) {
           
           UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-          // TODO: consider any races issues here - if we failed though, an
-          // assert
-          // exception is thrown if we are already buffering...
-          if (ulog.getState() != UpdateLog.State.BUFFERING) {
-            ulog.bufferUpdates();
-          }
+          // TODO: consider any races issues here
+          // was checking state first, but there is a race..
+          ulog.bufferUpdates();  
           
           boolean succesfulRecovery = false;
           int retries = 0;
