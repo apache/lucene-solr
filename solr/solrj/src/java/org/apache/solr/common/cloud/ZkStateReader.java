@@ -379,6 +379,8 @@ public class ZkStateReader {
     return props.get(ZkStateReader.URL_PROP);
   }
   
+  // TODO: we probably should also catch this while building the cloud state and offer a getLeader off each
+  // slice that does not have search...
   public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException, KeeperException {
     int tries = 30;
     while (tries-- > 0) {
