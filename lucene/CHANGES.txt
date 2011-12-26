@@ -396,6 +396,10 @@ New features
   and FuzzyQuery with finite-state methods. Adds RegexpQuery.
   (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
 
+* LUCENE-3662: Add support for levenshtein distance with transpositions
+  to LevenshteinAutomata, FuzzyTermsEnum, and DirectSpellChecker.
+  (Jean-Philippe Barrette-LaPierre, Robert Muir)
+
 * LUCENE-2321: Cutover to a more RAM efficient packed-ints based
   representation for the in-memory terms dict index.  (Mike
   McCandless)

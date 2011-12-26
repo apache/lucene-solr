@@ -214,4 +214,54 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+  
+  // simple test that transpositions work, we suggest five for fvie with ed=1
+  public void testTransposition() throws Exception {
+    DirectSpellChecker spellChecker = new DirectSpellChecker();
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      writer.addDocument(doc);
+    }
+
+    IndexReader ir = writer.getReader();
+
+    SuggestWord[] similar = spellChecker.suggestSimilar(new Term(
+        "numbers", "fvie"), 1, ir,
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    assertEquals(1, similar.length);
+    assertEquals("five", similar[0].string);
+    ir.close();
+    writer.close();
+    dir.close();
+  }
+  
+  // simple test that transpositions work, we suggest seventeen for seevntene with ed=2
+  public void testTransposition2() throws Exception {
+    DirectSpellChecker spellChecker = new DirectSpellChecker();
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
+      writer.addDocument(doc);
+    }
+
+    IndexReader ir = writer.getReader();
+
+    SuggestWord[] similar = spellChecker.suggestSimilar(new Term(
+        "numbers", "seevntene"), 2, ir,
+        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    assertEquals(1, similar.length);
+    assertEquals("seventeen", similar[0].string);
+    ir.close();
+    writer.close();
+    dir.close();
+  }
 }

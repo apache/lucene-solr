@@ -23,8 +23,9 @@ package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.automaton.LevenshteinAutomata.ParametricDescription;
 
-/** Parametric description for generating a Levenshtein automaton of degree 1 */
-class Lev1ParametricDescription extends ParametricDescription {
+/** Parametric description for generating a Levenshtein automaton of degree 1, 
+    with transpositions as primitive edits */
+class Lev1TParametricDescription extends ParametricDescription {
   
   @Override
   int transition(int absState, int position, int vector) {
@@ -49,14 +50,14 @@ class Lev1ParametricDescription extends ParametricDescription {
         state = unpack(toStates1, loc, 2)-1;
       }
     } else if (position == w-2) {
-      if (state < 5) {
-        final int loc = vector * 5 + state;
+      if (state < 6) {
+        final int loc = vector * 6 + state;
         offset += unpack(offsetIncrs2, loc, 2);
         state = unpack(toStates2, loc, 3)-1;
       }
     } else {
-      if (state < 5) {
-        final int loc = vector * 5 + state;
+      if (state < 6) {
+        final int loc = vector * 6 + state;
         offset += unpack(offsetIncrs3, loc, 2);
         state = unpack(toStates3, loc, 3)-1;
       }
@@ -87,20 +88,20 @@ class Lev1ParametricDescription extends ParametricDescription {
     0x38L
   };
     
-  // 4 vectors; 5 states per vector; array length = 20
+  // 4 vectors; 6 states per vector; array length = 24
   private final static long[] toStates2 = new long[] /*3 bits per value */ {
-    0x69a292450428003L
+    0x3453491482140003L,0x6dL
   };
   private final static long[] offsetIncrs2 = new long[] /*2 bits per value */ {
-    0x5555588000L
+    0x555555a20000L
   };
     
-  // 8 vectors; 5 states per vector; array length = 40
+  // 8 vectors; 6 states per vector; array length = 48
   private final static long[] toStates3 = new long[] /*3 bits per value */ {
-    0x1690a82152018003L,0xb1a2d346448a49L
+    0x21520854900c0003L,0x5b4d19a24534916dL,0xda34L
   };
   private final static long[] offsetIncrs3 = new long[] /*2 bits per value */ {
-    0x555555b8220f0000L,0x5555L
+    0x5555ae0a20fc0000L,0x55555555L
   };
   
   // state map
@@ -108,10 +109,11 @@ class Lev1ParametricDescription extends ParametricDescription {
   //   1 -> [(0, 1)]
   //   2 -> [(0, 1), (1, 1)]
   //   3 -> [(0, 1), (2, 1)]
-  //   4 -> [(0, 1), (1, 1), (2, 1)]
+  //   4 -> [t(0, 1), (0, 1), (1, 1), (2, 1)]
+  //   5 -> [(0, 1), (1, 1), (2, 1)]
   
   
-  public Lev1ParametricDescription(int w) {
-    super(w, 1, new int[] {0,1,0,-1,-1});
+  public Lev1TParametricDescription(int w) {
+    super(w, 1, new int[] {0,1,0,-1,-1,-1});
   }
 }

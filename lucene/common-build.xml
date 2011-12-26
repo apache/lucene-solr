@@ -194,7 +194,7 @@
   
   <property name="hg.exe" value="hg" />
   <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman" />
-  <property name="moman.rev" value="115" />
+  <property name="moman.rev" value="120" />
   <property name="python.exe" value="python" />
 
   <property name="gpg.exe" value="gpg" />

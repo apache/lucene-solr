@@ -80,6 +80,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private final int termText[];
   private final int realPrefixLength;
   
+  private final boolean transpositions;
+  
   /**
    * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
    * length <code>prefixLength</code> with <code>term</code> and which have a fuzzy similarity &gt;
@@ -98,7 +100,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @throws IOException
    */
   public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
-      final float minSimilarity, final int prefixLength) throws IOException {
+      final float minSimilarity, final int prefixLength, boolean transpositions) throws IOException {
     if (minSimilarity >= 1.0f && minSimilarity != (int)minSimilarity)
       throw new IllegalArgumentException("fractional edit distances are not allowed");
     if (minSimilarity < 0.0f)
@@ -130,6 +132,11 @@ public final class FuzzyTermsEnum extends TermsEnum {
       maxEdits = initialMaxDistance(this.minSimilarity, termLength);
       raw = false;
     }
+    if (transpositions && maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
+      throw new UnsupportedOperationException("with transpositions enabled, distances > " 
+        + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + " are not supported ");
+    }
+    this.transpositions = transpositions;
     this.scale_factor = 1.0f / (1.0f - this.minSimilarity);
 
     this.maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
@@ -162,7 +169,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
-        new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength));
+        new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength), transpositions);
 
       for (int i = runAutomata.size(); i <= maxDistance; i++) {
         Automaton a = builder.toAutomaton(i);

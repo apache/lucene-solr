@@ -20,16 +20,22 @@ package org.apache.lucene.search.spell;
 import org.apache.lucene.util.IntsRef;
 
 /**
- *  Levenshtein implemented in a consistent way as Lucene's FuzzyTermsEnum.
+ *  Damerau-Levenshtein (optimal string alignment) implemented in a consistent 
+ *  way as Lucene's FuzzyTermsEnum with the transpositions option enabled.
  *  
- *  Note also that this metric differs in subtle ways from {@link LevensteinDistance}:
+ *  Notes:
  *  <ul>
- *    <li> This metric treats full unicode codepoints as characters, but
- *         LevenshteinDistance calculates based on UTF-16 code units.
+ *    <li> This metric treats full unicode codepoints as characters
  *    <li> This metric scales raw edit distances into a floating point score
- *         differently than LevenshteinDistance: the scaling is based upon the
- *         shortest of the two terms instead of the longest.
+ *         based upon the shortest of the two terms
+ *    <li> Transpositions of two adjacent codepoints are treated as primitive 
+ *         edits.
+ *    <li> Edits are applied in parallel: for example, "ab" and "bca" have 
+ *         distance 3.
  *  </ul>
+ *  
+ *  NOTE: this class is not particularly efficient. It is only intended
+ *  for merging results from multiple DirectSpellCheckers.
  */
 public final class LuceneLevenshteinDistance implements StringDistance {
 
@@ -38,27 +44,23 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     IntsRef targetPoints;
     IntsRef otherPoints;
     int n;
-    int p[]; //'previous' cost array, horizontally
-    int d[]; // cost array, horizontally
-    int _d[]; //placeholder to assist in swapping p and d
-    
+    int d[][]; // cost array
+
     // cheaper to do this up front once
     targetPoints = toIntsRef(target);
     otherPoints = toIntsRef(other);
     n = targetPoints.length;
-    p = new int[n+1]; 
-    d = new int[n+1]; 
-    
     final int m = otherPoints.length;
+    d = new int[n+1][m+1];
+    
     if (n == 0 || m == 0) {
       if (n == m) {
-        return 1;
-      }
-      else {
         return 0;
       }
+      else {
+        return Math.max(n, m);
+      }
     } 
-
 
     // indexes into strings s and t
     int i; // iterates through s
@@ -68,29 +70,29 @@ public final class LuceneLevenshteinDistance implements StringDistance {
 
     int cost; // cost
 
-    for (i = 0; i <= n; i++) {
-      p[i] = i;
+    for (i = 0; i<=n; i++) {
+      d[i][0] = i;
+    }
+    
+    for (j = 0; j<=m; j++) {
+      d[0][j] = j;
     }
 
-    for (j = 1; j <= m; j++) {
-      t_j = otherPoints.ints[j - 1];
-      d[0] = j;
+    for (j = 1; j<=m; j++) {
+      t_j = otherPoints.ints[j-1];
 
-      for (i=1; i <= n; i++) {
-        cost = targetPoints.ints[i - 1] == t_j ? 0 : 1;
+      for (i=1; i<=n; i++) {
+        cost = targetPoints.ints[i-1]==t_j ? 0 : 1;
         // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
-        d[i] = Math.min(Math.min(d[i - 1] + 1, p[i] + 1),  p[i - 1] + cost);
+        d[i][j] = Math.min(Math.min(d[i-1][j]+1, d[i][j-1]+1), d[i-1][j-1]+cost);
+        // transposition
+        if (i > 1 && j > 1 && targetPoints.ints[i-1] == otherPoints.ints[j-2] && targetPoints.ints[i-2] == otherPoints.ints[j-1]) {
+          d[i][j] = Math.min(d[i][j], d[i-2][j-2] + cost);
+        }
       }
-
-      // copy current distance counts to 'previous row' distance counts
-      _d = p;
-       p = d;
-       d = _d;
     }
-
-    // our last action in the above loop was to switch d and p, so p now
-    // actually has the most recent cost counts
-    return 1.0f - ((float) p[n] / Math.min(m, n));
+    
+    return 1.0f - ((float) d[n][m] / Math.min(m, n));
   }
   
   private static IntsRef toIntsRef(String s) {

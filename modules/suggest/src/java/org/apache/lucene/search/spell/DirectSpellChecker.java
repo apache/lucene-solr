@@ -56,20 +56,11 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * @lucene.experimental
  */
 public class DirectSpellChecker {
-  /** The default StringDistance, Levenshtein distance implemented internally
+  /** The default StringDistance, Damerau-Levenshtein distance implemented internally
    *  via {@link LevenshteinAutomata}.
    *  <p>
-   *  Note: this is the fastest distance metric, because Levenshtein is used
+   *  Note: this is the fastest distance metric, because Damerau-Levenshtein is used
    *  to draw candidates from the term dictionary: this just re-uses the scoring.
-   *  <p>
-   *  Note also that this metric differs in subtle ways from {@link LevensteinDistance}:
-   *  <ul>
-   *    <li> This metric treats full unicode codepoints as characters, but
-   *         LevenshteinDistance calculates based on UTF-16 code units.
-   *    <li> This metric scales raw edit distances into a floating point score
-   *         differently than LevenshteinDistance: the scaling is based upon the
-   *         shortest of the two terms instead of the longest.
-   *  </ul>
    */
   public static final StringDistance INTERNAL_LEVENSHTEIN = new LuceneLevenshteinDistance();
 
@@ -277,8 +268,8 @@ public class DirectSpellChecker {
    * Set the string distance metric.
    * The default is {@link #INTERNAL_LEVENSHTEIN}
    * <p>
-   * Note: because this spellchecker draws its candidates from the
-   * term dictionary using Levenshtein, it works best with an edit-distance-like
+   * Note: because this spellchecker draws its candidates from the term
+   * dictionary using Damerau-Levenshtein, it works best with an edit-distance-like
    * string metric. If you use a different metric than the default,
    * you might want to consider increasing {@link #setMaxInspections(int)}
    * to draw more candidates for your metric to rank.
@@ -401,7 +392,7 @@ public class DirectSpellChecker {
     if (terms == null) {
       return Collections.emptyList();
     }
-    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, atts, term, editDistance, Math.max(minPrefix, editDistance-1));
+    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, atts, term, editDistance, Math.max(minPrefix, editDistance-1), true);
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     
     BytesRef queryTerm = new BytesRef(term.text());

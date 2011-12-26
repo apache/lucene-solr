@@ -211,7 +211,7 @@ public class FuzzyLikeThisQuery extends Query
                   AttributeSource atts = new AttributeSource();
                   MaxNonCompetitiveBoostAttribute maxBoostAtt =
                     atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-                  FuzzyTermsEnum fe = new FuzzyTermsEnum(MultiFields.getTerms(reader, startTerm.field()), atts, startTerm, f.minSimilarity, f.prefixLength);
+                  FuzzyTermsEnum fe = new FuzzyTermsEnum(MultiFields.getTerms(reader, startTerm.field()), atts, startTerm, f.minSimilarity, f.prefixLength, false);
                   //store the df so all variants use same idf
                   int df = reader.docFreq(startTerm);
                   int numVariants=0;
