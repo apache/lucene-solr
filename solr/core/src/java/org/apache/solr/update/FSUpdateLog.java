@@ -565,13 +565,18 @@ public class FSUpdateLog extends UpdateLog {
 
   @Override
   public void bufferUpdates() {
-    assert state == State.ACTIVE;
+    // recovery trips this assert under some race - even when
+    // it checks the state first
+    // assert state == State.ACTIVE;
+    
     recoveryInfo = new RecoveryInfo();
 
     // block all updates to eliminate race conditions
     // reading state and acting on it in the update processor
     versionInfo.blockUpdates();
     try {
+      if (state != State.ACTIVE) return;
+      
       if (log.isInfoEnabled()) {
         log.info("Starting to buffer updates. " + this);
       }
