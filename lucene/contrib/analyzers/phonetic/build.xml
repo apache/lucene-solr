@@ -36,9 +36,4 @@
   />
 
   <import file="../../contrib-build.xml"/>
-
-  <path id="classpath">
-    <pathelement path="${analyzers-common.jar}"/>
-    <path refid="base.classpath"/>
-  </path>
 </project>
