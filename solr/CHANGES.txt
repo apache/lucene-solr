@@ -416,6 +416,8 @@ New Features
 * SOLR-2919: Added support for localized range queries when the analysis chain uses 
   CollationKeyFilter or ICUCollationKeyFilter.  (Michael Sokolov, rmuir)
 
+* SOLR-2982: Added BeiderMorseFilterFactory for Beider-Morse (BMPM) phonetic encoder. Upgrades
+  commons-codec to version 1.6  (Brooke Schreier Ganz, rmuir)
 
 Bug Fixes
 ----------------------

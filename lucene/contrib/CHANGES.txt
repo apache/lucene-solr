@@ -99,6 +99,9 @@ New Features
 * LUCENE-3596: DirectoryTaxonomyWriter extensions can override createIndexWriterConfig() 
   and modify how its internal index writer is opened. (Doron Cohen)
 
+* SOLR-2982: Added phonetic encoders to contrib/analyzers/phonetic:
+  Metaphone, Soundex, Caverphone, Beider-Morse, etc.  (Robert Muir)
+
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
