@@ -30,7 +30,9 @@ $Id$
 
 ================== Release 3.6.0 ==================
 
-(No Changes)
+* SOLR-2346: Add a chance to set content encoding explicitly via content type of stream.
+  This is convenient when Tika's auto detector cannot detect encoding, especially
+  the text file is too short to detect encoding. (koji)
 
 ================== Release 3.5.0 ==================
 

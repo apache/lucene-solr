@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -158,6 +159,12 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, stream.getSourceInfo());
         metadata.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(stream.getSize()));
         metadata.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, stream.getContentType());
+        // HtmlParser and TXTParser regard Metadata.CONTENT_ENCODING in metadata
+        String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+        if(charset != null){
+          metadata.add(Metadata.CONTENT_ENCODING, charset);
+        }
+
         String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
         boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
         SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, schema);
