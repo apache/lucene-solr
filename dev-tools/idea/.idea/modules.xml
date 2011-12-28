@@ -5,6 +5,7 @@
       <module filepath="$PROJECT_DIR$/parent.iml" />
       <module filepath="$PROJECT_DIR$/lucene/lucene.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/common/common.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/phonetic/phonetic.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/smartcn/smartcn.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/stempel/stempel.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/benchmark/benchmark.iml" />

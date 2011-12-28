@@ -5,6 +5,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/common/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/phonetic/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/smartcn/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/stempel/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/benchmark/build.xml" />
