@@ -56,7 +56,7 @@ public final class BeiderMorseFilter extends TokenFilter {
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
   /** 
-   * Calls {@link #BeiderMorseFilter(TokenStream, PhoneticEngine, LanguageSet) 
+   * Calls {@link #BeiderMorseFilter(TokenStream, PhoneticEngine, Languages.LanguageSet) 
    *        BeiderMorseFilter(input, engine, null)}
    */
   public BeiderMorseFilter(TokenStream input, PhoneticEngine engine) {
