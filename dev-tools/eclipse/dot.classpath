@@ -87,7 +87,7 @@
 	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/sandbox/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8_1_1.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.5.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.6.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
@@ -98,7 +98,6 @@
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
 	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1209632.jar"/>
-	<classpathentry kind="lib" path="solr/lib/commons-codec-1.5.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-httpclient-3.1.jar"/>
