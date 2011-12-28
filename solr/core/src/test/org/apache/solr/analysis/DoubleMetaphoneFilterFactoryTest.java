@@ -32,7 +32,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
     TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
-    assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
+    assertEquals(org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter.class, filteredStream.getClass());
     assertTokenStreamContents(filteredStream, new String[] { "international", "ANTR" });
   }
 
@@ -46,7 +46,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
     TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
-    assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
+    assertEquals(org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter.class, filteredStream.getClass());
     assertTokenStreamContents(filteredStream, new String[] { "ANTRNXNL" });
   }
   
@@ -60,7 +60,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
 
     TokenStream filteredStream = factory.create(inputStream);
     CharTermAttribute termAtt = filteredStream.addAttribute(CharTermAttribute.class);
-    assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
+    assertEquals(org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter.class, filteredStream.getClass());
     
     filteredStream.reset();
     assertTrue(filteredStream.incrementToken());

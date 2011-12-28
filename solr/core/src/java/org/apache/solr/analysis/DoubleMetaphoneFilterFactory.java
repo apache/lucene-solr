@@ -18,10 +18,11 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link DoubleMetaphoneFilter}.
+ * Factory for {@link org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter}.
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_dblmtphn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -52,7 +53,7 @@ public class DoubleMetaphoneFilterFactory extends BaseTokenFilterFactory
     }
   }
 
-  public DoubleMetaphoneFilter create(TokenStream input) {
-    return new DoubleMetaphoneFilter(input, maxCodeLength, inject);
+  public TokenFilter create(TokenStream input) {
+    return new org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter(input, maxCodeLength, inject);
   }
 }

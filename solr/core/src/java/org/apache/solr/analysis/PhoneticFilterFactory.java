@@ -31,11 +31,12 @@ import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.SolrException;
 
 /**
- * Factory for {@link PhoneticFilter}.
+ * Factory for {@link org.apache.lucene.analysis.phonetic.PhoneticFilter}.
  * 
  * Create tokens based on phonetic encoders
  * 
@@ -55,7 +56,7 @@ import org.apache.solr.common.SolrException;
  * &lt;/fieldType&gt;</pre>
  * 
  * @version $Id$
- * @see PhoneticFilter
+ * @see org.apache.lucene.analysis.phonetic.PhoneticFilter
  */
 public class PhoneticFilterFactory extends BaseTokenFilterFactory 
 {
@@ -138,7 +139,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     return clazz;
   }
 
-  public PhoneticFilter create(TokenStream input) {
-    return new PhoneticFilter(input,encoder,name,inject);
+  public TokenFilter create(TokenStream input) {
+    return new org.apache.lucene.analysis.phonetic.PhoneticFilter(input,encoder,inject);
   }
 }

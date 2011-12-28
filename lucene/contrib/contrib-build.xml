@@ -129,6 +129,17 @@
     <property name="analyzers-common.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-phonetic.jar" value="${common.dir}/build/contrib/analyzers/phonetic/lucene-phonetic-${version}.jar"/>
+  <target name="check-analyzers-phonetic-uptodate" unless="analyzers-phonetic.uptodate">
+    <contrib-uptodate name="analyzers/phonetic" jarfile="${analyzers-phonetic.jar}" property="analyzers-phonetic.uptodate"/>
+  </target>
+  <target name="jar-analyzers-phonetic" unless="analyzers-phonetic.uptodate" depends="check-analyzers-phonetic-uptodate">
+    <ant dir="${common.dir}/contrib/analyzers/phonetic" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-phonetic.uptodate" value="true"/>
+  </target>
+
   <property name="facet.jar" value="${common.dir}/build/contrib/facet/lucene-facet-${version}.jar"/>
   <target name="check-facet-uptodate" unless="facet.uptodate">
     <contrib-uptodate name="facet" jarfile="${facet.jar}" property="facet.uptodate"/>

@@ -78,6 +78,7 @@
 
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
+  	<pathelement path="${analyzers-phonetic.jar}"/>
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
   	<pathelement path="${misc.jar}"/>
@@ -164,7 +165,7 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-analyzers-common, jar-spellchecker, jar-highlighter,
+  	      depends="jar-lucene-core, jar-analyzers-common, jar-analyzers-phonetic, jar-spellchecker, jar-highlighter,
   	               jar-memory, jar-misc, jar-spatial, jar-grouping, jar-queries"/>
 
   <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
@@ -172,6 +173,7 @@
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${lucene-core.jar}" />
       <fileset file="${analyzers-common.jar}" />
+      <fileset file="${analyzers-phonetic.jar}" />
       <fileset file="${spellchecker.jar}" />
       <fileset file="${grouping.jar}" />
       <fileset file="${queries.jar}" />

@@ -6,6 +6,8 @@
 	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/phonetic/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/phonetic/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/test"/>
@@ -83,6 +85,7 @@
 	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
+	<classpathentry kind="lib" path="lucene/contrib/analyzers/phonetic/lib/commons-codec-1.6.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-collections-3.1.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-compress-1.2.jar"/>
@@ -92,7 +95,6 @@
 	<classpathentry kind="lib" path="lucene/contrib/icu/lib/icu4j-4_8_1_1.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1099557.jar"/>
-	<classpathentry kind="lib" path="solr/lib/commons-codec-1.5.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-httpclient-3.1.jar"/>
