@@ -150,8 +150,8 @@ public class RecoveryStrat {
               Thread.currentThread().interrupt();
               log.error("Recovery was interrupted", e);
               retries = MAX_RETRIES;
-            } catch (Exception e) {
-              log.error("Error while trying to recover", e);
+            } catch (Throwable t) {
+              log.error("Error while trying to recover", t);
             }
             
             if (!succesfulRecovery) {
