@@ -69,7 +69,6 @@ public class BeiderMorseFilterFactory extends BaseTokenFilterFactory {
     }
   }
 
-  @Override
   public TokenStream create(TokenStream input) {
     return new BeiderMorseFilter(input, engine, languageSet);
   }
