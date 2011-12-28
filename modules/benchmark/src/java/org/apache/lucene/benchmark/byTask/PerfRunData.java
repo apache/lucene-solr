@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -28,6 +29,7 @@ import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
+import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
 import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -94,6 +96,7 @@ public class PerfRunData implements Closeable {
   private Config config;
   private long startTimeMillis;
 
+  private final HashMap<String, Object> perfObjects = new HashMap<String, Object>();
   
   // constructor
   public PerfRunData (Config config) throws Exception {
@@ -129,6 +132,15 @@ public class PerfRunData implements Closeable {
     IOUtils.close(indexWriter, indexReader, directory, 
                   taxonomyWriter, taxonomyReader, taxonomyDir, 
                   docMaker, facetSource);
+    
+    // close all perf objects that are closeable.
+    ArrayList<Closeable> perfObjectsToClose = new ArrayList<Closeable>();
+    for (Object obj : perfObjects.values()) {
+      if (obj instanceof Closeable) {
+        perfObjectsToClose.add((Closeable) obj);
+      }
+    }
+    IOUtils.close(perfObjectsToClose);
   }
 
   // clean old stuff, reopen 
@@ -171,6 +183,20 @@ public class PerfRunData implements Closeable {
     } 
 
     return new RAMDirectory();
+  }
+  
+  /** Returns an object that was previously set by {@link #setPerfObject(String, Object)}. */
+  public synchronized Object getPerfObject(String key) {
+    return perfObjects.get(key);
+  }
+  
+  /**
+   * Sets an object that is required by {@link PerfTask}s, keyed by the given
+   * {@code key}. If the object implements {@link Closeable}, it will be closed
+   * by {@link #close()}.
+   */
+  public synchronized void setPerfObject(String key, Object obj) {
+    perfObjects.put(key, obj);
   }
   
   public long setStartTimeMillis() {

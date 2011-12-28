@@ -17,13 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,11 +29,14 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
@@ -48,11 +44,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @Before
   @Override
-  public void setUp() throws Exception{
+  public void setUp() throws Exception {
     super.setUp();
   }
 
   private void init(String schema) throws Exception {
+    init("solrconfig-elevate.xml", schema);
+  }
+
+  private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
     createTempDir();
     File parent = new File(TEST_HOME(), "conf");
@@ -60,7 +60,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     File elevateDataFile = new File(dataDir, "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);
 
-    initCore("solrconfig-elevate.xml",schema);
+
+    initCore(config,schema);
     clearIndex();
     assertU(commit());
   }
@@ -73,6 +74,39 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public void testFieldType() throws Exception {
     try {
       init("schema11.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "1", "text", "XXXX XXXX", "str_s", "a"));
+      assertU(adoc("id", "2", "text", "YYYY", "str_s", "b"));
+      assertU(adoc("id", "3", "text", "ZZZZ", "str_s", "c"));
+
+      assertU(adoc("id", "4", "text", "XXXX XXXX", "str_s", "x"));
+      assertU(adoc("id", "5", "text", "YYYY YYYY", "str_s", "y"));
+      assertU(adoc("id", "6", "text", "XXXX XXXX", "str_s", "z"));
+      assertU(adoc("id", "7", "text", "AAAA", "str_s", "a"));
+      assertU(adoc("id", "8", "text", "AAAA", "str_s", "a"));
+      assertU(adoc("id", "9", "text", "AAAA AAAA", "str_s", "a"));
+      assertU(commit());
+
+      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
+          CommonParams.FL, "id, score, [elevated]")
+          , "//*[@numFound='3']"
+          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[2]/float[@name='id'][.='8.0']"
+          , "//result/doc[3]/float[@name='id'][.='9.0']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='false']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testTrieFieldType() throws Exception {
+    try {
+      init("schema.xml");
       clearIndex();
       assertU(commit());
       assertU(adoc("id", "1", "text", "XXXX XXXX",           "str_s", "a" ));
@@ -90,9 +124,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
               ,"//*[@numFound='3']"
-              ,"//result/doc[1]/float[@name='id'][.='7.0']"
-              ,"//result/doc[2]/float[@name='id'][.='8.0']"
-              ,"//result/doc[3]/float[@name='id'][.='9.0']",
+              ,"//result/doc[1]/int[@name='id'][.='7']"
+              ,"//result/doc[2]/int[@name='id'][.='8']"
+              ,"//result/doc[3]/int[@name='id'][.='9']",
               "//result/doc[1]/bool[@name='[elevated]'][.='true']",
               "//result/doc[2]/bool[@name='[elevated]'][.='false']",
               "//result/doc[3]/bool[@name='[elevated]'][.='false']"
@@ -102,56 +136,56 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
+
   @Test
-  public void testInterface() throws Exception
-  {
+  public void testInterface() throws Exception {
     try {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
       NamedList<String> args = new NamedList<String>();
-      args.add( QueryElevationComponent.FIELD_TYPE, "string" );
-      args.add( QueryElevationComponent.CONFIG_FILE, "elevate.xml" );
+      args.add(QueryElevationComponent.FIELD_TYPE, "string");
+      args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
       QueryElevationComponent comp = new QueryElevationComponent();
-      comp.init( args );
-      comp.inform( core );
+      comp.init(args);
+      comp.inform(core);
 
       SolrQueryRequest req = req();
       IndexReader reader = req.getSearcher().getIndexReader();
-      Map<String, ElevationObj> map = comp.getElevationMap( reader, core );
+      Map<String, ElevationObj> map = comp.getElevationMap(reader, core);
       req.close();
 
       // Make sure the boosts loaded properly
-      assertEquals( 4, map.size() );
-      assertEquals( 1, map.get( "XXXX" ).priority.size() );
-      assertEquals( 2, map.get( "YYYY" ).priority.size() );
-      assertEquals( 3, map.get( "ZZZZ" ).priority.size() );
-      assertEquals( null, map.get( "xxxx" ) );
-      assertEquals( null, map.get( "yyyy" ) );
-      assertEquals( null, map.get( "zzzz" ) );
+      assertEquals(5, map.size());
+      assertEquals(1, map.get("XXXX").priority.size());
+      assertEquals(2, map.get("YYYY").priority.size());
+      assertEquals(3, map.get("ZZZZ").priority.size());
+      assertEquals(null, map.get("xxxx"));
+      assertEquals(null, map.get("yyyy"));
+      assertEquals(null, map.get("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<String>();
-      args.add( QueryElevationComponent.FIELD_TYPE, "lowerfilt" );
-      args.add( QueryElevationComponent.CONFIG_FILE, "elevate.xml" );
+      args.add(QueryElevationComponent.FIELD_TYPE, "lowerfilt");
+      args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
       comp = new QueryElevationComponent();
-      comp.init( args );
-      comp.inform( core );
-      map = comp.getElevationMap( reader, core );
-      assertEquals( 4, map.size() );
-      assertEquals( null, map.get( "XXXX" ) );
-      assertEquals( null, map.get( "YYYY" ) );
-      assertEquals( null, map.get( "ZZZZ" ) );
-      assertEquals( 1, map.get( "xxxx" ).priority.size() );
-      assertEquals( 2, map.get( "yyyy" ).priority.size() );
-      assertEquals( 3, map.get( "zzzz" ).priority.size() );
+      comp.init(args);
+      comp.inform(core);
+      map = comp.getElevationMap(reader, core);
+      assertEquals(5, map.size());
+      assertEquals(null, map.get("XXXX"));
+      assertEquals(null, map.get("YYYY"));
+      assertEquals(null, map.get("ZZZZ"));
+      assertEquals(1, map.get("xxxx").priority.size());
+      assertEquals(2, map.get("yyyy").priority.size());
+      assertEquals(3, map.get("zzzz").priority.size());
 
-      assertEquals( "xxxx", comp.getAnalyzedQuery( "XXXX" ) );
-      assertEquals( "xxxxyyyy", comp.getAnalyzedQuery( "XXXX YYYY" ) );
+      assertEquals("xxxx", comp.getAnalyzedQuery("XXXX"));
+      assertEquals("xxxxyyyy", comp.getAnalyzedQuery("XXXX YYYY"));
 
-      assertQ("Make sure QEC handles null queries", req("qt","/elevate", "q.alt","*:*", "defType","dismax"),
+      assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
           "//*[@numFound='0']");
     } finally {
       delete();
@@ -163,157 +197,202 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public void testMarker() throws Exception {
     try {
       init("schema12.xml");
-      assertU(adoc("id", "1", "title", "XXXX XXXX",           "str_s1", "a" ));
-      assertU(adoc("id", "2", "title", "YYYY",      "str_s1", "b" ));
-      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c" ));
+      assertU(adoc("id", "1", "title", "XXXX XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
 
-      assertU(adoc("id", "4", "title", "XXXX XXXX",                 "str_s1", "x" ));
-      assertU(adoc("id", "5", "title", "YYYY YYYY",         "str_s1", "y" ));
-      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z" ));
-      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a" ));
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
       assertU(commit());
 
       assertQ("", req(CommonParams.Q, "XXXX", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
-              ,"//*[@numFound='3']"
-              ,"//result/doc[1]/str[@name='id'][.='1']"
-              ,"//result/doc[2]/str[@name='id'][.='4']"
-              ,"//result/doc[3]/str[@name='id'][.='6']",
-              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
-              "//result/doc[2]/bool[@name='[elevated]'][.='false']",
-              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
-              );
+          , "//*[@numFound='3']"
+          , "//result/doc[1]/str[@name='id'][.='1']"
+          , "//result/doc[2]/str[@name='id'][.='4']"
+          , "//result/doc[3]/str[@name='id'][.='6']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='false']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
 
       assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
               ,"//*[@numFound='1']"
               ,"//result/doc[1]/str[@name='id'][.='7']",
-              "//result/doc[1]/bool[@name='[elevated]'][.='false']"
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']"
               );
 
       assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elev]")
-              ,"//*[@numFound='1']"
-              ,"//result/doc[1]/str[@name='id'][.='7']",
-              "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
-              "not(//result/doc[1]/bool[@name='[elev]'][.='false'])" // even though we asked for elev, there is no Transformer registered w/ that, so we shouldn't get a result
-              );
+          , "//*[@numFound='1']"
+          , "//result/doc[1]/str[@name='id'][.='7']",
+          "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
+          "not(//result/doc[1]/bool[@name='[elev]'][.='false'])" // even though we asked for elev, there is no Transformer registered w/ that, so we shouldn't get a result
+      );
     } finally {
       delete();
     }
   }
 
   @Test
-  public void testSorting() throws Exception
-  {
+  public void testMarkExcludes() throws Exception {
     try {
       init("schema12.xml");
-      assertU(adoc("id", "a", "title", "ipod",           "str_s1", "a" ));
-      assertU(adoc("id", "b", "title", "ipod ipod",      "str_s1", "b" ));
-      assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s1", "c" ));
+      assertU(adoc("id", "1", "title", "XXXX XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
 
-      assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "x" ));
-      assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "y" ));
-      assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "z" ));
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
+      assertU(commit());
+
+      assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
+          QueryElevationParams.MARK_EXCLUDES, "true",
+          CommonParams.FL, "id, score, [excluded]")
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='5']"
+          , "//result/doc[2]/str[@name='id'][.='6']"
+          , "//result/doc[3]/str[@name='id'][.='1']"
+          , "//result/doc[4]/str[@name='id'][.='4']",
+          "//result/doc[1]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[2]/bool[@name='[excluded]'][.='true']",
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[4]/bool[@name='[excluded]'][.='false']"
+      );
+      //ask for excluded as a field, but don't actually request the MARK_EXCLUDES
+      //thus, number 6 should not be returned, b/c it is excluded
+      assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
+          QueryElevationParams.MARK_EXCLUDES, "false",
+          CommonParams.FL, "id, score, [excluded]")
+          , "//*[@numFound='3']"
+          , "//result/doc[1]/str[@name='id'][.='5']"
+          , "//result/doc[2]/str[@name='id'][.='1']"
+          , "//result/doc[3]/str[@name='id'][.='4']",
+          "//result/doc[1]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[2]/bool[@name='[excluded]'][.='false']",
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']"
+      );
+
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testSorting() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "a", "title", "ipod", "str_s1", "a"));
+      assertU(adoc("id", "b", "title", "ipod ipod", "str_s1", "b"));
+      assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s1", "c"));
+
+      assertU(adoc("id", "x", "title", "boosted", "str_s1", "x"));
+      assertU(adoc("id", "y", "title", "boosted boosted", "str_s1", "y"));
+      assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "z"));
       assertU(commit());
 
       String query = "title:ipod";
 
-      Map<String,String> args = new HashMap<String, String>();
-      args.put( CommonParams.Q, query );
-      args.put( CommonParams.QT, "/elevate" );
-      args.put( CommonParams.FL, "id,score" );
-      args.put( "indent", "true" );
+      Map<String, String> args = new HashMap<String, String>();
+      args.put(CommonParams.Q, query);
+      args.put(CommonParams.QT, "/elevate");
+      args.put(CommonParams.FL, "id,score");
+      args.put("indent", "true");
       //args.put( CommonParams.FL, "id,title,score" );
-      SolrQueryRequest req = new LocalSolrQueryRequest( h.getCore(), new MapSolrParams( args) );
+      SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
       IndexReader reader = req.getSearcher().getIndexReader();
-      QueryElevationComponent booster = (QueryElevationComponent)req.getCore().getSearchComponent( "elevate" );
+      QueryElevationComponent booster = (QueryElevationComponent) req.getCore().getSearchComponent("elevate");
 
       assertQ("Make sure standard sort works as expected", req
-              ,"//*[@numFound='3']"
-              ,"//result/doc[1]/str[@name='id'][.='a']"
-              ,"//result/doc[2]/str[@name='id'][.='b']"
-              ,"//result/doc[3]/str[@name='id'][.='c']"
-              );
+          , "//*[@numFound='3']"
+          , "//result/doc[1]/str[@name='id'][.='a']"
+          , "//result/doc[2]/str[@name='id'][.='b']"
+          , "//result/doc[3]/str[@name='id'][.='c']"
+      );
 
       // Explicitly set what gets boosted
       booster.elevationCache.clear();
-      booster.setTopQueryResults( reader, query, new String[] { "x", "y", "z" }, null );
+      booster.setTopQueryResults(reader, query, new String[]{"x", "y", "z"}, null);
 
 
       assertQ("All six should make it", req
-              ,"//*[@numFound='6']"
-              ,"//result/doc[1]/str[@name='id'][.='x']"
-              ,"//result/doc[2]/str[@name='id'][.='y']"
-              ,"//result/doc[3]/str[@name='id'][.='z']"
-              ,"//result/doc[4]/str[@name='id'][.='a']"
-              ,"//result/doc[5]/str[@name='id'][.='b']"
-              ,"//result/doc[6]/str[@name='id'][.='c']"
-              );
+          , "//*[@numFound='6']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='y']"
+          , "//result/doc[3]/str[@name='id'][.='z']"
+          , "//result/doc[4]/str[@name='id'][.='a']"
+          , "//result/doc[5]/str[@name='id'][.='b']"
+          , "//result/doc[6]/str[@name='id'][.='c']"
+      );
 
       booster.elevationCache.clear();
 
       // now switch the order:
-      booster.setTopQueryResults( reader, query, new String[] { "a", "x" }, null );
+      booster.setTopQueryResults(reader, query, new String[]{"a", "x"}, null);
       assertQ("All four should make it", req
-              ,"//*[@numFound='4']"
-              ,"//result/doc[1]/str[@name='id'][.='a']"
-              ,"//result/doc[2]/str[@name='id'][.='x']"
-              ,"//result/doc[3]/str[@name='id'][.='b']"
-              ,"//result/doc[4]/str[@name='id'][.='c']"
-              );
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='a']"
+          , "//result/doc[2]/str[@name='id'][.='x']"
+          , "//result/doc[3]/str[@name='id'][.='b']"
+          , "//result/doc[4]/str[@name='id'][.='c']"
+      );
 
       // Test reverse sort
-      args.put( CommonParams.SORT, "score asc" );
+      args.put(CommonParams.SORT, "score asc");
       assertQ("All four should make it", req
-          ,"//*[@numFound='4']"
-          ,"//result/doc[4]/str[@name='id'][.='a']"
-          ,"//result/doc[3]/str[@name='id'][.='x']"
-          ,"//result/doc[2]/str[@name='id'][.='b']"
-          ,"//result/doc[1]/str[@name='id'][.='c']"
-          );
+          , "//*[@numFound='4']"
+          , "//result/doc[4]/str[@name='id'][.='a']"
+          , "//result/doc[3]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='b']"
+          , "//result/doc[1]/str[@name='id'][.='c']"
+      );
 
       // Try normal sort by 'id'
       // default 'forceBoost' should be false
-      assertEquals( false, booster.forceElevation );
-      args.put( CommonParams.SORT, "str_s1 asc" );
-      assertQ( null, req
-          ,"//*[@numFound='4']"
-          ,"//result/doc[1]/str[@name='id'][.='a']"
-          ,"//result/doc[2]/str[@name='id'][.='b']"
-          ,"//result/doc[3]/str[@name='id'][.='c']"
-          ,"//result/doc[4]/str[@name='id'][.='x']"
-          );
+      assertEquals(false, booster.forceElevation);
+      args.put(CommonParams.SORT, "str_s1 asc");
+      assertQ(null, req
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='a']"
+          , "//result/doc[2]/str[@name='id'][.='b']"
+          , "//result/doc[3]/str[@name='id'][.='c']"
+          , "//result/doc[4]/str[@name='id'][.='x']"
+      );
 
       booster.forceElevation = true;
-      assertQ( null, req
-          ,"//*[@numFound='4']"
-          ,"//result/doc[1]/str[@name='id'][.='a']"
-          ,"//result/doc[2]/str[@name='id'][.='x']"
-          ,"//result/doc[3]/str[@name='id'][.='b']"
-          ,"//result/doc[4]/str[@name='id'][.='c']"
-          );
+      assertQ(null, req
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='a']"
+          , "//result/doc[2]/str[@name='id'][.='x']"
+          , "//result/doc[3]/str[@name='id'][.='b']"
+          , "//result/doc[4]/str[@name='id'][.='c']"
+      );
 
       //Test exclusive (not to be confused with exclusion)
       args.put(QueryElevationParams.EXCLUSIVE, "true");
-      booster.setTopQueryResults( reader, query, new String[] { "x", "a" },  new String[] {} );
-      assertQ( null, req
-          ,"//*[@numFound='2']"
-          ,"//result/doc[1]/str[@name='id'][.='x']"
-          ,"//result/doc[2]/str[@name='id'][.='a']"
-          );
+      booster.setTopQueryResults(reader, query, new String[]{"x", "a"}, new String[]{});
+      assertQ(null, req
+          , "//*[@numFound='2']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='a']"
+      );
 
       // Test exclusion
       booster.elevationCache.clear();
-      args.remove( CommonParams.SORT );
-      args.remove( QueryElevationParams.EXCLUSIVE);
-      booster.setTopQueryResults( reader, query, new String[] { "x" },  new String[] { "a" } );
-      assertQ( null, req
-          ,"//*[@numFound='3']"
-          ,"//result/doc[1]/str[@name='id'][.='x']"
-          ,"//result/doc[2]/str[@name='id'][.='b']"
-          ,"//result/doc[3]/str[@name='id'][.='c']"
-          );
+      args.remove(CommonParams.SORT);
+      args.remove(QueryElevationParams.EXCLUSIVE);
+      booster.setTopQueryResults(reader, query, new String[]{"x"}, new String[]{"a"});
+      assertQ(null, req
+          , "//*[@numFound='3']"
+          , "//result/doc[1]/str[@name='id'][.='x']"
+          , "//result/doc[2]/str[@name='id'][.='b']"
+          , "//result/doc[3]/str[@name='id'][.='c']"
+      );
 
 
       req.close();
@@ -321,57 +400,55 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       delete();
     }
   }
-  
+
   // write a test file to boost some docs
-  private void writeFile( File file, String query, String ... ids ) throws Exception
-  {
-    PrintWriter out = new PrintWriter( new FileOutputStream( file ) ); 
-    out.println( "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" );
-    out.println( "<elevate>" );
-    out.println( "<query text=\""+query+"\">" );
-    for( String id : ids ) {
-      out.println( " <doc id=\""+id+"\"/>" );
+  private void writeFile(File file, String query, String... ids) throws Exception {
+    PrintWriter out = new PrintWriter(new FileOutputStream(file));
+    out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+    out.println("<elevate>");
+    out.println("<query text=\"" + query + "\">");
+    for (String id : ids) {
+      out.println(" <doc id=\"" + id + "\"/>");
     }
-    out.println( "</query>" );
-    out.println( "</elevate>" );
+    out.println("</query>");
+    out.println("</elevate>");
     out.flush();
     out.close();
-    
-    log.info( "OUT:"+file.getAbsolutePath() );
+
+    log.info("OUT:" + file.getAbsolutePath());
   }
 
   @Test
-  public void testElevationReloading() throws Exception
-  {
+  public void testElevationReloading() throws Exception {
     try {
       init("schema12.xml");
       String testfile = "data-elevation.xml";
-      File f = new File( h.getCore().getDataDir(), testfile );
-      writeFile( f, "aaa", "A" );
+      File f = new File(h.getCore().getDataDir(), testfile);
+      writeFile(f, "aaa", "A");
 
-      QueryElevationComponent comp = (QueryElevationComponent)h.getCore().getSearchComponent("elevate");
+      QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<String>();
-      args.add( QueryElevationComponent.CONFIG_FILE, testfile );
-      comp.init( args );
-      comp.inform( h.getCore() );
+      args.add(QueryElevationComponent.CONFIG_FILE, testfile);
+      comp.init(args);
+      comp.inform(h.getCore());
 
       SolrQueryRequest req = req();
       IndexReader reader = req.getSearcher().getIndexReader();
       Map<String, ElevationObj> map = comp.getElevationMap(reader, h.getCore());
-      assertTrue( map.get( "aaa" ).priority.containsKey( new BytesRef("A") ) );
-      assertNull( map.get( "bbb" ) );
+      assertTrue(map.get("aaa").priority.containsKey(new BytesRef("A")));
+      assertNull(map.get("bbb"));
       req.close();
 
       // now change the file
-      writeFile( f, "bbb", "B" );
+      writeFile(f, "bbb", "B");
       assertU(adoc("id", "10000")); // will get same reader if no index change
       assertU(commit());
 
       req = req();
       reader = req.getSearcher().getIndexReader();
       map = comp.getElevationMap(reader, h.getCore());
-      assertNull( map.get( "aaa" ) );
-      assertTrue( map.get( "bbb" ).priority.containsKey( new BytesRef("B") ) );
+      assertNull(map.get("aaa"));
+      assertTrue(map.get("bbb").priority.containsKey(new BytesRef("B")));
       req.close();
     } finally {
       delete();

@@ -17,6 +17,44 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.*;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.QueryElevationParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.ElevatedMarkerFactory;
+import org.apache.solr.response.transform.ExcludedMarkerFactory;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.VersionedFile;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,60 +63,21 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
-import org.apache.solr.common.params.QueryElevationParams;
-import org.apache.solr.response.transform.EditorialMarkerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.solr.cloud.ZkController;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.VersionedFile;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.request.SolrQueryRequest;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-
 /**
  * A component to elevate some documents to the top of the result set.
- * 
  *
  * @since solr 1.3
  */
-public class QueryElevationComponent extends SearchComponent implements SolrCoreAware
-{
+public class QueryElevationComponent extends SearchComponent implements SolrCoreAware {
   private static Logger log = LoggerFactory.getLogger(QueryElevationComponent.class);
-  
+
   // Constants used in solrconfig.xml
   static final String FIELD_TYPE = "queryFieldType";
   static final String CONFIG_FILE = "config-file";
   static final String EXCLUDE = "exclude";
-  
+  public static final String BOOSTED = "BOOSTED";
+  public static final String EXCLUDED = "EXCLUDED";
+
   // Runtime param -- should be in common?
 
   private SolrParams initArgs = null;
@@ -91,238 +90,235 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   // When the configuration is loaded from the data directory.
   // The key is null if loaded from the config directory, and
   // is never re-loaded.
-  final Map<IndexReader,Map<String, ElevationObj>> elevationCache =
-    new WeakHashMap<IndexReader, Map<String,ElevationObj>>();
+  final Map<IndexReader, Map<String, ElevationObj>> elevationCache =
+      new WeakHashMap<IndexReader, Map<String, ElevationObj>>();
 
   class ElevationObj {
     final String text;
     final String analyzed;
-    final BooleanClause[] exclude;
+    final TermQuery [] exclude;//just keep the term query, b/c we will not always explicitly exclude the item based on markExcludes query time param
     final BooleanQuery include;
-    final Map<BytesRef,Integer> priority;
+    final Map<BytesRef, Integer> priority;
     final Set<String> ids;
-    
-    // use singletons so hashCode/equals on Sort will just work
-    final FieldComparatorSource comparatorSource;
+    final Set<String> excludeIds;
 
-    ElevationObj( String qstr, List<String> elevate, List<String> exclude ) throws IOException
-    {
+    ElevationObj(String qstr, List<String> elevate, List<String> exclude) throws IOException {
       this.text = qstr;
-      this.analyzed = getAnalyzedQuery( this.text );
+      this.analyzed = getAnalyzedQuery(this.text);
       this.ids = new HashSet<String>();
-      
+      this.excludeIds = new HashSet<String>();
+
       this.include = new BooleanQuery();
-      this.include.setBoost( 0 );
+      this.include.setBoost(0);
       this.priority = new HashMap<BytesRef, Integer>();
-      int max = elevate.size()+5;
-      for( String id : elevate ) {
+      int max = elevate.size() + 5;
+      for (String id : elevate) {
         id = idSchemaFT.readableToIndexed(id);
         ids.add(id);
-        TermQuery tq = new TermQuery( new Term( idField, id ) );
-        include.add( tq, BooleanClause.Occur.SHOULD );
-        this.priority.put( new BytesRef(id), max-- );
-      }
-      
-      if( exclude == null || exclude.isEmpty() ) {
-        this.exclude = null;
-      }
-      else {
-        this.exclude = new BooleanClause[exclude.size()];
-        for( int i=0; i<exclude.size(); i++ ) {
-          TermQuery tq = new TermQuery( new Term( idField, idSchemaFT.readableToIndexed(exclude.get(i)) ) );
-          this.exclude[i] = new BooleanClause( tq, BooleanClause.Occur.MUST_NOT );
-        }
+        TermQuery tq = new TermQuery(new Term(idField, id));
+        include.add(tq, BooleanClause.Occur.SHOULD);
+        this.priority.put(new BytesRef(id), max--);
       }
 
-      this.comparatorSource = new ElevationComparatorSource(priority);
+      if (exclude == null || exclude.isEmpty()) {
+        this.exclude = null;
+      } else {
+        this.exclude = new TermQuery[exclude.size()];
+        for (int i = 0; i < exclude.size(); i++) {
+          String id = idSchemaFT.readableToIndexed(exclude.get(i));
+          excludeIds.add(id);
+          this.exclude[i] = new TermQuery(new Term(idField, id));
+        }
+      }
     }
   }
-  
+
   @Override
-  public void init( NamedList args )
-  {
-    this.initArgs = SolrParams.toSolrParams( args );
+  public void init(NamedList args) {
+    this.initArgs = SolrParams.toSolrParams(args);
   }
-  
-  public void inform(SolrCore core)
-  {
-    String a = initArgs.get( FIELD_TYPE );
-    if( a != null ) {
-      FieldType ft = core.getSchema().getFieldTypes().get( a );
-      if( ft == null ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown FieldType: '"+a+"' used in QueryElevationComponent" );
+
+  public void inform(SolrCore core) {
+    String a = initArgs.get(FIELD_TYPE);
+    if (a != null) {
+      FieldType ft = core.getSchema().getFieldTypes().get(a);
+      if (ft == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unknown FieldType: '" + a + "' used in QueryElevationComponent");
       }
       analyzer = ft.getQueryAnalyzer();
     }
 
     SchemaField sf = core.getSchema().getUniqueKeyField();
-    if( sf == null || sf.getType().isTokenized() == true) {
+    if( sf == null) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using a non-tokenized field" );
+          "QueryElevationComponent requires the schema to have a uniqueKeyField." );
     }
     idSchemaFT = sf.getType();
     idField = sf.getName();
     //register the EditorialMarkerFactory
-    EditorialMarkerFactory factory = new EditorialMarkerFactory();
+    String excludeName = initArgs.get(QueryElevationParams.EXCLUDE_MARKER_FIELD_NAME, "excluded");
+    if (excludeName == null || excludeName.equals("") == true){
+      excludeName = "excluded";
+    }
+    ExcludedMarkerFactory excludedMarkerFactory = new ExcludedMarkerFactory();
+    core.addTransformerFactory(excludeName, excludedMarkerFactory);
+    ElevatedMarkerFactory elevatedMarkerFactory = new ElevatedMarkerFactory();
     String markerName = initArgs.get(QueryElevationParams.EDITORIAL_MARKER_FIELD_NAME, "elevated");
-    if (markerName == null || markerName.equals("") == true){
+    if (markerName == null || markerName.equals("") == true) {
       markerName = "elevated";
     }
-    core.addTransformerFactory(markerName, factory);
-    forceElevation = initArgs.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
+    core.addTransformerFactory(markerName, elevatedMarkerFactory);
+    forceElevation = initArgs.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
     try {
-      synchronized( elevationCache ) {
+      synchronized (elevationCache) {
         elevationCache.clear();
-        String f = initArgs.get( CONFIG_FILE );
-        if( f == null ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "QueryElevationComponent must specify argument: '"+CONFIG_FILE
-              +"' -- path to elevate.xml" );
+        String f = initArgs.get(CONFIG_FILE);
+        if (f == null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "QueryElevationComponent must specify argument: '" + CONFIG_FILE
+                  + "' -- path to elevate.xml");
         }
         boolean exists = false;
 
         // check if using ZooKeeper
         ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
-        if(zkController != null) {
+        if (zkController != null) {
           // TODO : shouldn't have to keep reading the config name when it has been read before
           exists = zkController.configFileExists(zkController.readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);
         } else {
-          File fC = new File( core.getResourceLoader().getConfigDir(), f );
-          File fD = new File( core.getDataDir(), f );
-          if( fC.exists() == fD.exists() ) {
-            throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-                "QueryElevationComponent missing config file: '"+f + "\n"
-                +"either: "+fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both." );
+          File fC = new File(core.getResourceLoader().getConfigDir(), f);
+          File fD = new File(core.getDataDir(), f);
+          if (fC.exists() == fD.exists()) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "QueryElevationComponent missing config file: '" + f + "\n"
+                    + "either: " + fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both.");
           }
-          if( fC.exists() ) {
+          if (fC.exists()) {
             exists = true;
-            log.info( "Loading QueryElevation from: "+ fC.getAbsolutePath() );
-            Config cfg = new Config( core.getResourceLoader(), f );
-            elevationCache.put(null, loadElevationMap( cfg ));
-          } 
+            log.info("Loading QueryElevation from: " + fC.getAbsolutePath());
+            Config cfg = new Config(core.getResourceLoader(), f);
+            elevationCache.put(null, loadElevationMap(cfg));
+          }
         }
         //in other words, we think this is in the data dir, not the conf dir
-        if (!exists){
+        if (!exists) {
           // preload the first data
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
             searchHolder = core.getNewestSearcher(false);
             IndexReader reader = searchHolder.get().getIndexReader();
-            getElevationMap( reader, core );
+            getElevationMap(reader, core);
           } finally {
             if (searchHolder != null) searchHolder.decref();
           }
         }
       }
-    }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error initializing QueryElevationComponent.", ex, false );
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error initializing QueryElevationComponent.", ex, false);
     }
   }
+
   //get the elevation map from the data dir
-  Map<String, ElevationObj> getElevationMap( IndexReader reader, SolrCore core ) throws Exception
-  {
-    synchronized( elevationCache ) {
-      Map<String, ElevationObj> map = elevationCache.get( null );
+  Map<String, ElevationObj> getElevationMap(IndexReader reader, SolrCore core) throws Exception {
+    synchronized (elevationCache) {
+      Map<String, ElevationObj> map = elevationCache.get(null);
       if (map != null) return map;
 
-      map = elevationCache.get( reader );
-      if( map == null ) {
-        String f = initArgs.get( CONFIG_FILE );
-        if( f == null ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-                  "QueryElevationComponent must specify argument: "+CONFIG_FILE );
+      map = elevationCache.get(reader);
+      if (map == null) {
+        String f = initArgs.get(CONFIG_FILE);
+        if (f == null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "QueryElevationComponent must specify argument: " + CONFIG_FILE);
         }
-        log.info( "Loading QueryElevation from data dir: "+f );
+        log.info("Loading QueryElevation from data dir: " + f);
 
-        InputStream is = VersionedFile.getLatestFile( core.getDataDir(), f );
-        Config cfg = new Config( core.getResourceLoader(), f, new InputSource(is), null );
-        map = loadElevationMap( cfg );
-        elevationCache.put( reader, map );
+        InputStream is = VersionedFile.getLatestFile(core.getDataDir(), f);
+        Config cfg = new Config(core.getResourceLoader(), f, new InputSource(is), null);
+        map = loadElevationMap(cfg);
+        elevationCache.put(reader, map);
       }
       return map;
     }
   }
+
   //load up the elevation map
-  private Map<String, ElevationObj> loadElevationMap( Config cfg ) throws IOException
-  {
+  private Map<String, ElevationObj> loadElevationMap(Config cfg) throws IOException {
     XPath xpath = XPathFactory.newInstance().newXPath();
     Map<String, ElevationObj> map = new HashMap<String, ElevationObj>();
-    NodeList nodes = (NodeList)cfg.evaluate( "elevate/query", XPathConstants.NODESET );
-    for (int i=0; i<nodes.getLength(); i++) {
-      Node node = nodes.item( i );
-      String qstr = DOMUtil.getAttr( node, "text", "missing query 'text'" );
-      
+    NodeList nodes = (NodeList) cfg.evaluate("elevate/query", XPathConstants.NODESET);
+    for (int i = 0; i < nodes.getLength(); i++) {
+      Node node = nodes.item(i);
+      String qstr = DOMUtil.getAttr(node, "text", "missing query 'text'");
+
       NodeList children = null;
       try {
-        children = (NodeList)xpath.evaluate("doc", node, XPathConstants.NODESET);
-      } 
-      catch (XPathExpressionException e) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-            "query requires '<doc .../>' child" );
+        children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);
+      } catch (XPathExpressionException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "query requires '<doc .../>' child");
       }
 
       ArrayList<String> include = new ArrayList<String>();
       ArrayList<String> exclude = new ArrayList<String>();
-      for (int j=0; j<children.getLength(); j++) {
+      for (int j = 0; j < children.getLength(); j++) {
         Node child = children.item(j);
-        String id = DOMUtil.getAttr( child, "id", "missing 'id'" );
-        String e = DOMUtil.getAttr( child, EXCLUDE, null );
-        if( e != null ) {
-          if( Boolean.valueOf( e ) ) {
-            exclude.add( id );
+        String id = DOMUtil.getAttr(child, "id", "missing 'id'");
+        String e = DOMUtil.getAttr(child, EXCLUDE, null);
+        if (e != null) {
+          if (Boolean.valueOf(e)) {
+            exclude.add(id);
             continue;
           }
         }
-        include.add( id );
+        include.add(id);
       }
-      
-      ElevationObj elev = new ElevationObj( qstr, include, exclude );
-      if( map.containsKey( elev.analyzed ) ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-            "Boosting query defined twice for query: '"+elev.text+"' ("+elev.analyzed+"')" );
+
+      ElevationObj elev = new ElevationObj(qstr, include, exclude);
+      if (map.containsKey(elev.analyzed)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Boosting query defined twice for query: '" + elev.text + "' (" + elev.analyzed + "')");
       }
-      map.put( elev.analyzed, elev );
+      map.put(elev.analyzed, elev);
     }
     return map;
   }
-  
+
   /**
    * Helpful for testing without loading config.xml
-   * @throws IOException 
+   *
+   * @throws IOException
    */
-  void setTopQueryResults( IndexReader reader, String query, String[] ids, String[] ex ) throws IOException
-  {
-    if( ids == null ) {
+  void setTopQueryResults(IndexReader reader, String query, String[] ids, String[] ex) throws IOException {
+    if (ids == null) {
       ids = new String[0];
     }
-    if( ex == null ) {
+    if (ex == null) {
       ex = new String[0];
     }
-    
-    Map<String,ElevationObj> elev = elevationCache.get( reader );
-    if( elev == null ) {
+
+    Map<String, ElevationObj> elev = elevationCache.get(reader);
+    if (elev == null) {
       elev = new HashMap<String, ElevationObj>();
-      elevationCache.put( reader, elev );
+      elevationCache.put(reader, elev);
     }
-    ElevationObj obj = new ElevationObj( query, Arrays.asList(ids), Arrays.asList(ex) );
-    elev.put( obj.analyzed, obj );
+    ElevationObj obj = new ElevationObj(query, Arrays.asList(ids), Arrays.asList(ex));
+    elev.put(obj.analyzed, obj);
   }
-  
-  String getAnalyzedQuery( String query ) throws IOException
-  {
-    if( analyzer == null ) {
+
+  String getAnalyzedQuery(String query) throws IOException {
+    if (analyzer == null) {
       return query;
     }
     StringBuilder norm = new StringBuilder();
     TokenStream tokens = analyzer.tokenStream("", new StringReader(query));
     tokens.reset();
-    
+
     CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
-    while( tokens.incrementToken() ) {
-      norm.append( termAtt.buffer(), 0, termAtt.length() );
+    while (tokens.incrementToken()) {
+      norm.append(termAtt.buffer(), 0, termAtt.length());
     }
     tokens.end();
     tokens.close();
@@ -332,24 +328,23 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   //---------------------------------------------------------------------------------
   // SearchComponent
   //---------------------------------------------------------------------------------
-  
+
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException
-  {
+  public void prepare(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
     // A runtime param can skip 
-    if( !params.getBool( QueryElevationParams.ENABLE, true ) ) {
+    if (!params.getBool(QueryElevationParams.ENABLE, true)) {
       return;
     }
 
     boolean exclusive = params.getBool(QueryElevationParams.EXCLUSIVE, false);
     // A runtime parameter can alter the config value for forceElevation
-    boolean force = params.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
-    
+    boolean force = params.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
+    boolean markExcludes = params.getBool(QueryElevationParams.MARK_EXCLUDES, false);
     Query query = rb.getQuery();
     String qstr = rb.getQueryString();
-    if( query == null || qstr == null) {
+    if (query == null || qstr == null) {
       return;
     }
 
@@ -357,81 +352,89 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     IndexReader reader = req.getSearcher().getIndexReader();
     ElevationObj booster = null;
     try {
-      booster = getElevationMap( reader, req.getCore() ).get( qstr );
+      booster = getElevationMap(reader, req.getCore()).get(qstr);
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error loading elevation", ex);
     }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error loading elevation", ex );      
-    }
-    
-    if( booster != null ) {
-      rb.req.getContext().put("BOOSTED", booster.ids);
-      
+
+    if (booster != null) {
+      rb.req.getContext().put(BOOSTED, booster.ids);
+
       // Change the query to insert forced documents
-      if (exclusive == true){
+      if (exclusive == true) {
         //we only want these results
         rb.setQuery(booster.include);
       } else {
-        BooleanQuery newq = new BooleanQuery( true );
-        newq.add( query, BooleanClause.Occur.SHOULD );
-        newq.add( booster.include, BooleanClause.Occur.SHOULD );
-        if( booster.exclude != null ) {
-          for( BooleanClause bq : booster.exclude ) {
-            newq.add( bq );
+        BooleanQuery newq = new BooleanQuery(true);
+        newq.add(query, BooleanClause.Occur.SHOULD);
+        newq.add(booster.include, BooleanClause.Occur.SHOULD);
+        if (booster.exclude != null) {
+          if (markExcludes == false) {
+            for (TermQuery tq : booster.exclude) {
+              newq.add(new BooleanClause(tq, BooleanClause.Occur.MUST_NOT));
+            }
+          } else {
+            //we are only going to mark items as excluded, not actually exclude them.  This works
+            //with the EditorialMarkerFactory
+            rb.req.getContext().put(EXCLUDED, booster.excludeIds);
+            for (TermQuery tq : booster.exclude) {
+              newq.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
+            }
           }
         }
-        rb.setQuery( newq );
+        rb.setQuery(newq);
       }
 
-      
+      ElevationComparatorSource comparator = new ElevationComparatorSource(booster);
       // if the sort is 'score desc' use a custom sorting method to 
       // insert documents in their proper place 
       SortSpec sortSpec = rb.getSortSpec();
-      if( sortSpec.getSort() == null ) {
-        sortSpec.setSort( new Sort( 
-            new SortField(idField, booster.comparatorSource, false ),
-            new SortField(null, SortField.Type.SCORE, false)));
-      }
-      else {
+      if (sortSpec.getSort() == null) {
+        sortSpec.setSort(new Sort(new SortField[]{
+            new SortField(idField, comparator, false),
+            new SortField(null, SortField.Type.SCORE, false)
+        }));
+      } else {
         // Check if the sort is based on score
         boolean modify = false;
         SortField[] current = sortSpec.getSort().getSort();
-        ArrayList<SortField> sorts = new ArrayList<SortField>( current.length + 1 );
+        ArrayList<SortField> sorts = new ArrayList<SortField>(current.length + 1);
         // Perhaps force it to always sort by score
-        if( force && current[0].getType() != SortField.Type.SCORE ) {
-          sorts.add( new SortField(idField, booster.comparatorSource, false ) );
+        if (force && current[0].getType() != SortField.Type.SCORE) {
+          sorts.add(new SortField(idField, comparator, false));
           modify = true;
         }
-        for( SortField sf : current ) {
-          if( sf.getType() == SortField.Type.SCORE ) {
-            sorts.add( new SortField(idField, booster.comparatorSource, sf.getReverse() ) );
+        for (SortField sf : current) {
+          if (sf.getType() == SortField.Type.SCORE) {
+            sorts.add(new SortField(idField, comparator, sf.getReverse()));
             modify = true;
           }
-          sorts.add( sf );
+          sorts.add(sf);
         }
-        if( modify ) {
-          sortSpec.setSort( new Sort( sorts.toArray( new SortField[sorts.size()] ) ) );
+        if (modify) {
+          sortSpec.setSort(new Sort(sorts.toArray(new SortField[sorts.size()])));
         }
       }
     }
-    
+
     // Add debugging information
-    if( rb.isDebug() ) {
+    if (rb.isDebug()) {
       List<String> match = null;
-      if( booster != null ) {
+      if (booster != null) {
         // Extract the elevated terms into a list
         match = new ArrayList<String>(booster.priority.size());
-        for( Object o : booster.include.clauses() ) {
-          TermQuery tq = (TermQuery)((BooleanClause)o).getQuery();
-          match.add( tq.getTerm().text() );
+        for (Object o : booster.include.clauses()) {
+          TermQuery tq = (TermQuery) ((BooleanClause) o).getQuery();
+          match.add(tq.getTerm().text());
         }
       }
-      
+
       SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
-      dbg.add( "q", qstr );
-      dbg.add( "match", match );
+      dbg.add("q", qstr);
+      dbg.add("match", match);
       if (rb.isDebugQuery()) {
-        rb.addDebugInfo("queryBoosting", dbg );
+        rb.addDebugInfo("queryBoosting", dbg);
       }
     }
   }
@@ -440,7 +443,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   public void process(ResponseBuilder rb) throws IOException {
     // Do nothing -- the real work is modifying the input query
   }
-    
+
   //---------------------------------------------------------------------------------
   // SolrInfoMBean
   //---------------------------------------------------------------------------------
@@ -468,31 +471,33 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   @Override
   public URL[] getDocs() {
     try {
-      return new URL[] {
-        new URL("http://wiki.apache.org/solr/QueryElevationComponent")
+      return new URL[]{
+          new URL("http://wiki.apache.org/solr/QueryElevationComponent")
       };
-    } 
-    catch (MalformedURLException e) {
-      throw new RuntimeException( e );
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
     }
   }
-}
+  class ElevationComparatorSource extends FieldComparatorSource {
+  private QueryElevationComponent.ElevationObj elevations;
+  private SentinelIntSet ordSet; //the key half of the map
+  private BytesRef[] termValues;//the value half of the map
 
-class ElevationComparatorSource extends FieldComparatorSource {
-  private final Map<BytesRef,Integer> priority;
-
-  public ElevationComparatorSource( final Map<BytesRef,Integer> boosts) {
-    this.priority = boosts;
+  public ElevationComparatorSource(final QueryElevationComponent.ElevationObj elevations) throws IOException {
+    this.elevations = elevations;
+    int size = elevations.ids.size();
+    ordSet = new SentinelIntSet(size, -1);
+    termValues = new BytesRef[ordSet.keys.length];
   }
 
   @Override
   public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
     return new FieldComparator<Integer>() {
-      
-      FieldCache.DocTermsIndex idIndex;
       private final int[] values = new int[numHits];
-      int bottomVal;
-      private final BytesRef tempBR = new BytesRef();
+      private int bottomVal;
+      private TermsEnum termsEnum;
+      private DocsEnum docsEnum;
+      Set<String> seen = new HashSet<String>(elevations.ids.size());
 
       @Override
       public int compare(int slot1, int slot2) {
@@ -505,9 +510,15 @@ class ElevationComparatorSource extends FieldComparatorSource {
       }
 
       private int docVal(int doc) throws IOException {
-        BytesRef id = idIndex.getTerm(doc, tempBR);
-        Integer prio = priority.get(id);
-        return prio == null ? 0 : prio.intValue();
+        if (ordSet.size() > 0) {
+          int slot = ordSet.find(doc);
+          if (slot >= 0) {
+            BytesRef id = termValues[slot];
+            Integer prio = elevations.priority.get(id);
+            return prio == null ? 0 : prio.intValue();
+          }
+        }
+        return 0;
       }
 
       @Override
@@ -522,7 +533,29 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
       @Override
       public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-        idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, fieldname);
+        //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
+        ordSet.clear();
+        Fields fields = context.reader.fields();
+        if (fields == null) return this;
+        Terms terms = fields.terms(fieldname);
+        if (terms == null) return this;
+        termsEnum = terms.iterator(termsEnum);
+        BytesRef term = new BytesRef();
+        Bits liveDocs = context.reader.getLiveDocs();
+
+        for (String id : elevations.ids) {
+          term.copyChars(id);
+          if (seen.contains(id) == false  && termsEnum.seekExact(term, false)) {
+            docsEnum = termsEnum.docs(liveDocs, docsEnum, false);
+            if (docsEnum != null) {
+              int docId = docsEnum.nextDoc();
+              if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
+              termValues[ordSet.put(docId)] = BytesRef.deepCopyOf(term);
+              seen.add(id);
+              assert docsEnum.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
+            }
+          }
+        }
         return this;
       }
 
@@ -533,3 +566,6 @@ class ElevationComparatorSource extends FieldComparatorSource {
     };
   }
 }
+}
+
+

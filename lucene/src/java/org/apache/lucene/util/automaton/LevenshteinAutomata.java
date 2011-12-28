@@ -47,8 +47,9 @@ public class LevenshteinAutomata {
   
   /**
    * Create a new LevenshteinAutomata for some input String.
+   * Optionally count transpositions as a primitive edit.
    */
-  public LevenshteinAutomata(String input) {
+  public LevenshteinAutomata(String input, boolean withTranspositions) {
     this.input = input;
     int length = Character.codePointCount(input, 0, input.length());
     word = new int[length];
@@ -88,8 +89,8 @@ public class LevenshteinAutomata {
 
     descriptions = new ParametricDescription[] {
         null, /* for n=0, we do not need to go through the trouble */
-        new Lev1ParametricDescription(word.length),
-        new Lev2ParametricDescription(word.length),
+        withTranspositions ? new Lev1TParametricDescription(word.length) : new Lev1ParametricDescription(word.length),
+        withTranspositions ? new Lev2TParametricDescription(word.length) : new Lev2ParametricDescription(word.length),
     };
   }
   

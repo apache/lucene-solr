@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.search.NRTManager;        // javadocs
 import org.apache.lucene.index.IndexReader;        // javadocs
@@ -101,9 +100,11 @@ import org.apache.lucene.util.IOUtils;
 
 public class SearcherLifetimeManager implements Closeable {
 
+  static final double NANOS_PER_SEC = 1000000000.0;
+
   private static class SearcherTracker implements Comparable<SearcherTracker>, Closeable {
     public final IndexSearcher searcher;
-    public final long recordTimeSec;
+    public final double recordTimeSec;
     public final long version;
 
     public SearcherTracker(IndexSearcher searcher) {
@@ -112,7 +113,7 @@ public class SearcherLifetimeManager implements Closeable {
       searcher.getIndexReader().incRef();
       // Use nanoTime not currentTimeMillis since it [in
       // theory] reduces risk from clock shift
-      recordTimeSec = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+      recordTimeSec = System.nanoTime() / NANOS_PER_SEC;
     }
 
     // Newer searchers are sort before older ones:
@@ -170,6 +171,7 @@ public class SearcherLifetimeManager implements Closeable {
     final long version = searcher.getIndexReader().getVersion();
     SearcherTracker tracker = searchers.get(version);
     if (tracker == null) {
+      //System.out.println("RECORD version=" + version + " ms=" + System.currentTimeMillis());
       tracker = new SearcherTracker(searcher);
       if (searchers.putIfAbsent(version, tracker) != null) {
         // Another thread beat us -- must decRef to undo
@@ -217,29 +219,28 @@ public class SearcherLifetimeManager implements Closeable {
   /** See {@link #prune}. */
   public interface Pruner {
     /** Return true if this searcher should be removed. 
-     *  @param ageSec how long ago this searcher was
-     *         recorded vs the most recently recorded
-     *         searcher
+     *  @param ageSec how much time has passed since this
+     *         searcher was the current (live) searcher
      *  @param searcher Searcher
      **/
-    public boolean doPrune(int ageSec, IndexSearcher searcher);
+    public boolean doPrune(double ageSec, IndexSearcher searcher);
   }
 
   /** Simple pruner that drops any searcher older by
    *  more than the specified seconds, than the newest
    *  searcher. */
   public final static class PruneByAge implements Pruner {
-    private final int maxAgeSec;
+    private final double maxAgeSec;
 
-    public PruneByAge(int maxAgeSec) {
-      if (maxAgeSec < 1) {
+    public PruneByAge(double maxAgeSec) {
+      if (maxAgeSec < 0) {
         throw new IllegalArgumentException("maxAgeSec must be > 0 (got " + maxAgeSec + ")");
       }
       this.maxAgeSec = maxAgeSec;
     }
 
     @Override
-    public boolean doPrune(int ageSec, IndexSearcher searcher) {
+    public boolean doPrune(double ageSec, IndexSearcher searcher) {
       return ageSec > maxAgeSec;
     }
   }
@@ -261,14 +262,25 @@ public class SearcherLifetimeManager implements Closeable {
       trackers.add(tracker);
     }
     Collections.sort(trackers);
-    final long newestSec = trackers.isEmpty() ? 0L : trackers.get(0).recordTimeSec;
+    double lastRecordTimeSec = 0.0;
+    final double now = System.nanoTime()/NANOS_PER_SEC;
     for (SearcherTracker tracker: trackers) {
-      final int ageSec = (int) (newestSec - tracker.recordTimeSec);
-      assert ageSec >= 0;
+      final double ageSec;
+      if (lastRecordTimeSec == 0.0) {
+        ageSec = 0.0;
+      } else {
+        ageSec = now - lastRecordTimeSec;
+      }
+      // First tracker is always age 0.0 sec, since it's
+      // still "live"; second tracker's age (= seconds since
+      // it was "live") is now minus first tracker's
+      // recordTime, etc:
       if (pruner.doPrune(ageSec, tracker.searcher)) {
+        //System.out.println("PRUNE version=" + tracker.version + " age=" + ageSec + " ms=" + System.currentTimeMillis());
         searchers.remove(tracker.version);
         tracker.close();
       }
+      lastRecordTimeSec = tracker.recordTimeSec;
     }
   }
 

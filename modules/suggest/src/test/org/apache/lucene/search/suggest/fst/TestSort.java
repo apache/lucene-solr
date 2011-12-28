@@ -100,8 +100,8 @@ public class TestSort extends LuceneTestCase {
   private void assertFilesIdentical(File golden, File sorted) throws IOException {
     assertEquals(golden.length(), sorted.length());
 
-    byte [] buf1 = new byte [64 * 1024 * 1024];
-    byte [] buf2 = new byte [64 * 1024 * 1024];
+    byte [] buf1 = new byte [64 * 1024];
+    byte [] buf2 = new byte [64 * 1024];
     int len;
     DataInputStream is1 = new DataInputStream(new FileInputStream(golden));
     DataInputStream is2 = new DataInputStream(new FileInputStream(sorted));

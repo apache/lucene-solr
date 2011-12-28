@@ -35,8 +35,10 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
     try {
       initCore( "solrconfig.xml", schema );
     } catch (SolrException e) {
-      // short circut out if we found what we expected
+      // short circuit out if we found what we expected
       if (-1 != e.getMessage().indexOf(errString)) return;
+      // Test the cause too in case the expected error is wrapped
+      if (-1 != e.getCause().getMessage().indexOf(errString)) return;
 
       // otherwise, rethrow it, possibly completley unrelated
       throw new SolrException
@@ -44,6 +46,7 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
          "Unexpected error, expected error matching: " + errString, e);
     } finally {
       SolrConfig.severeErrors.clear();
+      deleteCore();
     }
     fail("Did not encounter any exception from: " + schema);
   }
@@ -74,5 +77,11 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testSevereErrorsForUnexpectedAnalyzer() throws Exception {
     doTest("bad-schema-nontext-analyzer.xml", "StrField (bad_type)");
+  }
+
+  @Test
+  public void testBadExternalFileField() throws Exception {
+    doTest("bad-schema-external-filefield.xml",
+        "Only float and pfloat");
   }
 }

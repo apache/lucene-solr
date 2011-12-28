@@ -17,42 +17,47 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
+import java.util.List;
+
 public class MockSolrEntityProcessor extends SolrEntityProcessor {
-  
-  private final String[][][] docsData;
-  private final int rows;
+
+  private final List<SolrTestCaseJ4.Doc> docsData;
+//  private final int rows;
   private int queryCount = 0;
-  
-  public MockSolrEntityProcessor(String[][][] docsData) {
+
+  private int rows;
+
+  public MockSolrEntityProcessor(List<SolrTestCaseJ4.Doc> docsData) {
     this(docsData, ROWS_DEFAULT);
   }
-  
-  public MockSolrEntityProcessor(String[][][] docsData, int rows) {
+
+  public MockSolrEntityProcessor(List<SolrTestCaseJ4.Doc> docsData, int rows) {
     this.docsData = docsData;
     this.rows = rows;
   }
-  
+
   @Override
   protected SolrDocumentList doQuery(int start) {
     queryCount++;
     return getDocs(start, rows);
   }
-  
+
   private SolrDocumentList getDocs(int start, int rows) {
     SolrDocumentList docs = new SolrDocumentList();
-    docs.setNumFound(docsData.length);
+    docs.setNumFound(docsData.size());
     docs.setStart(start);
-    
+
     int endIndex = start + rows;
-    int end = docsData.length < endIndex ? docsData.length : endIndex;
+    int end = docsData.size() < endIndex ? docsData.size() : endIndex;
     for (int i = start; i < end; i++) {
       SolrDocument doc = new SolrDocument();
-      for (String[] fields : docsData[i]) {
-        doc.addField(fields[0], fields[1]);
-      }
+      SolrTestCaseJ4.Doc testDoc = docsData.get(i);
+      doc.addField("id", testDoc.id);
+      doc.addField("description", testDoc.getValues("description"));
       docs.add(doc);
     }
     return docs;

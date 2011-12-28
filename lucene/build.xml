@@ -478,10 +478,14 @@
   <macrodef name="createLevAutomaton">
   	<attribute name="n"/>
   	<sequential>
-  		<exec dir="src/java/org/apache/lucene/util/automaton"
+ 	<exec dir="src/java/org/apache/lucene/util/automaton"
   			executable="${python.exe}" failonerror="true">
-  	  	<arg line="createLevAutomata.py @{n}"/>
+  	  	<arg line="createLevAutomata.py @{n} True"/>
   	</exec>
+ 	<exec dir="src/java/org/apache/lucene/util/automaton"
+  			executable="${python.exe}" failonerror="true">
+  	  	<arg line="createLevAutomata.py @{n} False"/>
+        </exec>
   	</sequential>
   </macrodef>
 

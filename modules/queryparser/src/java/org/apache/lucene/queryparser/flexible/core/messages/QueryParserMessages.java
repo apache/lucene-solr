@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.flexible.core.messages;
  * limitations under the License.
  */
 
-import org.apache.lucene.messages.NLS;
+import org.apache.lucene.queryparser.flexible.messages.NLS;
 
 /**
  * Flexible Query Parser message bundle class

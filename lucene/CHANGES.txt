@@ -396,6 +396,10 @@ New features
   and FuzzyQuery with finite-state methods. Adds RegexpQuery.
   (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
 
+* LUCENE-3662: Add support for levenshtein distance with transpositions
+  to LevenshteinAutomata, FuzzyTermsEnum, and DirectSpellChecker.
+  (Jean-Philippe Barrette-LaPierre, Robert Muir)
+
 * LUCENE-2321: Cutover to a more RAM efficient packed-ints based
   representation for the in-memory terms dict index.  (Mike
   McCandless)
@@ -698,6 +702,11 @@ Changes in backwards compatibility policy
   when that reader is closed.  SegmentReader has CoreClosedListeners that you
   can register to know when a shared reader core is closed.  
   (Uwe Schindler, Mike McCandless, Robert Muir)
+
+* LUCENE-3652: The package org.apache.lucene.messages was moved to
+  contrib/queryparser. If you have used those classes in your code
+  just add the lucene-queryparser.jar file to your classpath.
+  (Uwe Schindler)
   
 Security fixes
 
@@ -754,6 +763,25 @@ Bug fixes
 * LUCENE-3642: Fixed bugs in CharTokenizer, n-gram filters, and smart chinese 
   where they would create invalid offsets in some situations, leading to problems
   in highlighting. (Max Beutel via Robert Muir)
+
+* LUCENE-3639: TopDocs.merge was incorrectly setting TopDocs.maxScore to
+  Float.MIN_VALUE when it should be Float.NaN, when there were 0
+  hits.  Improved age calculation in SearcherLifetimeManager, to have
+  double precision and to compute age to be how long ago the searcher
+  was replaced with a new searcher (Mike McCandless)
+
+* LUCENE-3658: Corrected potential concurrency issues with
+  NRTCachingDir, fixed createOutput to overwrite any previous file,
+  and removed invalid asserts (Robert Muir, Mike McCandless)
+
+* LUCENE-3605: don't sleep in a retry loop when trying to locate the
+  segments_N file (Robert Muir, Mike McCandless)
+
+Optimizations
+
+* LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by
+  using a WeakIdentityMap based on a ConcurrentHashMap.  (Uwe Schindler,
+  Gerrit Jansen van Vuuren)
 
 Documentation
 

@@ -33,6 +33,10 @@ import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CheckIndex;
@@ -50,10 +54,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -242,6 +242,31 @@ public class _TestUtil {
         chars[i++] = (char) nextInt(random, 0xe000, 0xffff);
       }
     }
+  }
+  
+  // TODO: make this more evil
+  public static String randomHtmlishString(Random random, int numElements) {
+    final int end = random.nextInt(numElements);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < end; i++) {
+      int val = random.nextInt(10);
+      switch(val) {
+        case 0: sb.append("<p>"); break;
+        case 1: sb.append("</p>"); break;
+        case 2: sb.append("<!--"); break;
+        case 3: sb.append("-->"); break;
+        case 4: sb.append("&#"); break;
+        case 5: sb.append(";"); break;
+        case 6: sb.append((char)_TestUtil.nextInt(random, '0', '9')); break;
+        default:
+          sb.append((char)_TestUtil.nextInt(random, 'a', 'z'));
+      }
+    }
+    return sb.toString();
   }
 
   private static final int[] blockStarts = {

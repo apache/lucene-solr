@@ -141,7 +141,6 @@ public abstract class Analyzer {
    * access to the source ({@link Tokenizer}) and the outer end (sink), an
    * instance of {@link TokenFilter} which also serves as the
    * {@link TokenStream} returned by
-   * {@link Analyzer#tokenStream(String, Reader)} and
    * {@link Analyzer#tokenStream(String, Reader)}.
    */
   public static class TokenStreamComponents {

@@ -22,11 +22,11 @@ import java.util.Comparator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.PostingsConsumer;
+import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermStats;
-import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;

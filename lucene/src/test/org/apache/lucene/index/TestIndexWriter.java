@@ -35,6 +35,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,8 +44,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -1128,8 +1128,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer2.close();
 
     IndexReader r1 = IndexReader.open(dir2);
-    IndexReader r2 = (IndexReader) r1.clone();
-    writer.addIndexes(r1, r2);
+    writer.addIndexes(r1, r1);
     writer.close();
 
     IndexReader r3 = IndexReader.open(dir);
@@ -1137,7 +1136,6 @@ public class TestIndexWriter extends LuceneTestCase {
     r3.close();
 
     r1.close();
-    r2.close();
 
     dir2.close();
     dir.close();

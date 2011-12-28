@@ -21,7 +21,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
-import org.apache.lucene.search.grouping.SentinelIntSet;
+import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;

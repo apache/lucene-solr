@@ -17,7 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.codecs.Codec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;

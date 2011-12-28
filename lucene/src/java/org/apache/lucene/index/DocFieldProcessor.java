@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
-import org.apache.lucene.index.codecs.DocValuesFormat;
-import org.apache.lucene.index.codecs.FieldInfosWriter;
-import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;

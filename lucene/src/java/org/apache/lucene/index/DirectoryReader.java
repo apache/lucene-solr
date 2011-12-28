@@ -62,7 +62,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
           IOException prior = null;
           boolean success = false;
           try {
-            readers[i] = SegmentReader.get(sis.info(i), termInfosIndexDivisor, IOContext.READ);
+            readers[i] = new SegmentReader(sis.info(i), termInfosIndexDivisor, IOContext.READ);
             success = true;
           } catch(IOException ex) {
             prior = ex;
@@ -94,7 +94,8 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       try {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
-        final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, IOContext.READ);
+        final IndexWriter.ReadersAndLiveDocs rld = writer.readerPool.get(info, true);
+        final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
         if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
           readers.add(reader);
           infosUpto++;
@@ -116,7 +117,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
 
   /** This constructor is only used for {@link #doOpenIfChanged()} */
   static DirectoryReader open(Directory directory, IndexWriter writer, SegmentInfos infos, SegmentReader[] oldReaders,
-    boolean doClone, int termInfosIndexDivisor) throws IOException {
+    int termInfosIndexDivisor) throws IOException {
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
     final Map<String,Integer> segmentReaders = new HashMap<String,Integer>();
@@ -151,24 +152,21 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
         SegmentReader newReader;
         if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
 
-          // We should never see a totally new segment during cloning
-          assert !doClone;
-
           // this is a new reader; in case we hit an exception we can close it safely
-          newReader = SegmentReader.get(infos.info(i), termInfosIndexDivisor, IOContext.READ);
+          newReader = new SegmentReader(infos.info(i), termInfosIndexDivisor, IOContext.READ);
           readerShared[i] = false;
           newReaders[i] = newReader;
         } else {
-          newReader = newReaders[i].reopenSegment(infos.info(i), doClone);
-          if (newReader == null) {
-            // this reader will be shared between the old and the new one,
-            // so we must incRef it
+          if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()) {
+            // No change; this reader will be shared between
+            // the old and the new one, so we must incRef
+            // it:
             readerShared[i] = true;
             newReaders[i].incRef();
           } else {
             readerShared[i] = false;
-            // Steal ref returned to us by reopenSegment:
-            newReaders[i] = newReader;
+            // Steal the ref returned by SegmentReader ctor:
+            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i], IOContext.READ);
           }
         }
         success = true;
@@ -221,16 +219,6 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     }
     buffer.append(')');
     return buffer.toString();
-  }
-
-  @Override
-  public final synchronized Object clone() {
-    try {
-      DirectoryReader newReader = doOpenIfChanged((SegmentInfos) segmentInfos.clone(), true, writer);
-      return newReader;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
   }
 
   @Override
@@ -302,13 +290,13 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         final SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-        return doOpenIfChanged(infos, false, null);
+        return doOpenIfChanged(infos, null);
       }
     }.run(commit);
   }
 
-  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, boolean doClone, IndexWriter writer) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, writer, infos, subReaders, doClone, termInfosIndexDivisor);
+  private synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, writer, infos, subReaders, termInfosIndexDivisor);
   }
 
   /** Version number when this IndexReader was opened. */

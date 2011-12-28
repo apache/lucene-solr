@@ -18,7 +18,7 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
  */
 
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.messages.MessageImpl;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;

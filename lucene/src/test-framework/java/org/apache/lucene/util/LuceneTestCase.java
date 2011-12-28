@@ -33,16 +33,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.appending.AppendingCodec;
+import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.preflexrw.PreFlexRWCodec;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PostingsFormat;
-import org.apache.lucene.index.codecs.appending.AppendingCodec;
-import org.apache.lucene.index.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -58,6 +58,7 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
 import org.junit.rules.MethodRule;
@@ -1007,7 +1008,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
     return dir;
@@ -1044,7 +1045,8 @@ public abstract class LuceneTestCase extends Assert {
         clazz = CommandLineUtil.loadFSDirectoryClass(fsdirClass);
       }
       
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f));
+      Directory fsdir = newFSDirectoryImpl(clazz, f);
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, maybeNRTWrap(random, fsdir));
       if (lf != null) {
         dir.setLockFactory(lf);
       }
@@ -1066,10 +1068,18 @@ public abstract class LuceneTestCase extends Assert {
     for (String file : d.listAll()) {
      d.copy(impl, file, file, newIOContext(r));
     }
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
     return dir;
+  }
+  
+  private static Directory maybeNRTWrap(Random random, Directory directory) {
+    if (rarely(random)) {
+      return new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
+    } else {
+      return directory;
+    }
   }
   
   public static Field newField(String name, String value, FieldType type) {

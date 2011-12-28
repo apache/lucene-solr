@@ -26,7 +26,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
-abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implements Cloneable {
+abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
   protected final R[] subReaders;
   protected final int[] starts;       // 1st docno for each segment
   private final ReaderContext topLevelContext;
@@ -62,9 +62,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader implem
 
   @Override
   protected abstract IndexReader doOpenIfChanged() throws CorruptIndexException, IOException;
-  
-  @Override
-  public abstract Object clone();
   
   @Override
   public Bits getLiveDocs() {

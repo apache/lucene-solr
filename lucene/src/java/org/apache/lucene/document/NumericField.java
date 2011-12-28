@@ -234,6 +234,8 @@ public final class NumericField extends Field {
    */
   public NumericField(String name, int precisionStep, FieldType type) {
     super(name, type);
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
     this.precisionStep = precisionStep;
   }
   

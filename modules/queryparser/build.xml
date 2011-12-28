@@ -90,8 +90,8 @@
                              match="package org.apache.lucene.queryparser.flexible.standard.parser;"
                              replace="package org.apache.lucene.queryparser.flexible.standard.parser;${line.separator}
 ${line.separator}
-import org.apache.lucene.messages.Message;${line.separator}
-import org.apache.lucene.messages.MessageImpl;${line.separator}
+import org.apache.lucene.queryparser.flexible.messages.Message;${line.separator}
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;${line.separator}
 import org.apache.lucene.queryparser.flexible.core.*;${line.separator}
 import org.apache.lucene.queryparser.flexible.core.messages.*;"
                              flags="g"

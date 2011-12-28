@@ -41,7 +41,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(random, dir, testDoc);
-    reader = SegmentReader.get(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
+    reader = new SegmentReader(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
   }
   
   @Override
@@ -71,50 +71,6 @@ public class TestSegmentReader extends LuceneTestCase {
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }
-  }
-  
-  public void testDelete() throws IOException {
-    Document docToDelete = new Document();
-    DocHelper.setupDoc(docToDelete);
-    SegmentInfo info = DocHelper.writeDoc(random, dir, docToDelete);
-    SegmentReader deleteReader = SegmentReader.getRW(info, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
-    assertNotNull(deleteReader);
-    assertEquals(1, deleteReader.numDocs());
-    final Object combKey = deleteReader.getCombinedCoreAndDeletesKey();
-    final Object coreKey = deleteReader.getCoreCacheKey();
-    assertNotNull(combKey);
-    assertNotNull(coreKey);
-    assertNotSame(combKey, coreKey);
-
-    SegmentReader clone1 = (SegmentReader) deleteReader.clone();
-    assertSame(coreKey, clone1.getCoreCacheKey());    
-    assertSame(combKey, clone1.getCombinedCoreAndDeletesKey());
-
-    deleteReader.deleteDocument(0);
-    final Object newCombKey = deleteReader.getCombinedCoreAndDeletesKey();
-    assertNotNull(newCombKey);
-    assertNotSame(combKey, newCombKey);
-    assertSame(coreKey, deleteReader.getCoreCacheKey());
-    assertFalse(deleteReader.getLiveDocs().get(0));
-    assertTrue(deleteReader.hasDeletions());
-    assertTrue(deleteReader.numDocs() == 0);
-    
-    SegmentReader clone2 = (SegmentReader) deleteReader.clone();
-    assertSame(coreKey, clone2.getCoreCacheKey());    
-    assertSame(newCombKey, clone2.getCombinedCoreAndDeletesKey());
-    assertFalse(clone2.getLiveDocs().get(0));
-    assertTrue(clone2.hasDeletions());
-    assertEquals(0, clone2.numDocs());
-    clone2.close();
-    
-    assertSame(coreKey, clone1.getCoreCacheKey());    
-    assertSame(combKey, clone1.getCombinedCoreAndDeletesKey());
-    assertNull(clone1.getLiveDocs());
-    assertFalse(clone1.hasDeletions());
-    assertEquals(1, clone2.numDocs());
-    clone1.close();
-
-    deleteReader.close();
   }
   
   public void testGetFieldNameVariations() {

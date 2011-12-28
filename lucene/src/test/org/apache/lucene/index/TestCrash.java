@@ -30,7 +30,7 @@ import org.apache.lucene.document.TextField;
 public class TestCrash extends LuceneTestCase {
 
   private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
-    return initIndex(random, newDirectory(), initialCommit);
+    return initIndex(random, newDirectory(random), initialCommit);
   }
 
   private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit) throws IOException {

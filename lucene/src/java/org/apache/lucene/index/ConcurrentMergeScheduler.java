@@ -349,7 +349,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       try {
         synchronized(this) {
           if (verbose()) {
-            message("  consider merge " + merge.segString(dir));
+            message("  consider merge " + writer.segString(merge.segments));
           }
 
           // OK to spawn a new merge thread to handle this
@@ -457,7 +457,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
             tWriter.mergeInit(merge);
             updateMergeThreads();
             if (verbose()) {
-              message("  merge thread: do another merge " + merge.segString(dir));
+              message("  merge thread: do another merge " + tWriter.segString(merge.segments));
             }
           } else {
             break;
@@ -492,9 +492,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     @Override
     public String toString() {
       MergePolicy.OneMerge merge = getRunningMerge();
-      if (merge == null)
+      if (merge == null) {
         merge = startMerge;
-      return "merge thread: " + merge.segString(dir);
+      }
+      try {
+        return "merge thread: " + tWriter.segString(merge.segments);
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
     }
   }
 

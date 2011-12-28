@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.codecs.Codec;  // for javadocs
+import org.apache.lucene.codecs.Codec;
 
 // TODO: put all files under codec and remove all the static extensions here
 

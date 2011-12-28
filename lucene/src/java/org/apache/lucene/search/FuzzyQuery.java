@@ -141,7 +141,10 @@ public class FuzzyQuery extends MultiTermQuery {
     if (!termLongEnough) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(null), term.bytes());
     }
-    return new FuzzyTermsEnum(terms, atts, getTerm(), minimumSimilarity, prefixLength);
+    // TODO: should we expose the transpositions option to this query?
+    // maybe move the old/slowish stuff (lev without transpositions, n > 2, etc) all to contrib,
+    // deprecate it, and just have a faster/simpler/better one in core?
+    return new FuzzyTermsEnum(terms, atts, getTerm(), minimumSimilarity, prefixLength, false);
   }
   
   /**

@@ -34,7 +34,9 @@ import java.io.IOException;
  * <li>It's OK to have some documents without a keyField in the file (defVal is used as the default)</li>
  * <li>It's OK for a keyField value to point to multiple documents (no uniqueness requirement)</li>
  * </ul>
- * <code>valType</code> is a reference to another fieldType to define the value type of this field (must currently be FloatField (float))
+ * <code>valType</code> is a reference to another fieldType to define the value type of this field
+ * (must currently be TrieFloatField or FloatField (valType="pfloat|float|tfloat") if used).
+ * This parameter has never been implemented. As of Solr 3.6/4.0 it is optional and can be omitted.
  *
  * The format of the external file is simply newline separated keyFieldValue=floatValue.
  * <br/>Example:
@@ -60,18 +62,21 @@ public class ExternalFileField extends FieldType {
   private float defVal;
 
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
-    String ftypeS = getArg("valType", args);
-    if (ftypeS!=null) {
+    // valType has never been used for anything except to throw an error, so make it optional since the
+    // code (see getValueSource) gives you a FileFloatSource.
+    String ftypeS = args.remove("valType");
+    if (ftypeS != null) {
       ftype = schema.getFieldTypes().get(ftypeS);
-      if (ftype==null || !(ftype instanceof FloatField)) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Only float (FloatField) is currently supported as external field type.  got " + ftypeS);
+      if (ftype != null && !(ftype instanceof FloatField) && !(ftype instanceof TrieFloatField)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Only float and pfloat (Trie|Float)Field are currently supported as external field type.  Got " + ftypeS);
       }
-    }   
+    }
     keyFieldName = args.remove("keyField");
     String defValS = args.remove("defVal");
-    defVal = defValS==null ? 0 : Float.parseFloat(defValS);
+    defVal = defValS == null ? 0 : Float.parseFloat(defValS);
     this.schema = schema;
   }
 

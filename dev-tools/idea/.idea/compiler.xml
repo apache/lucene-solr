@@ -36,7 +36,7 @@
       <entry name="?*.xsl" />
       <entry name="?*.vm" />
       <entry name="?*.zip" />
-      <entry name="org.apache.lucene.index.codecs*" />
+      <entry name="org.apache.lucene.codecs*" />
       <entry name="README*" />
       <entry name="[a-zA-Z][a-zA-Z]" />
       <entry name="[a-zA-Z][a-zA-Z]-[a-zA-Z][a-zA-Z]" />

@@ -2,7 +2,7 @@ package org.apache.lucene.util;
 
 import java.util.Set;
 
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.codecs.Codec;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

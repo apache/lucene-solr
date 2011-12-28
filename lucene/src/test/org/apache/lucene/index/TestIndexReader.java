@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,7 +38,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -713,36 +713,6 @@ public class TestIndexReader extends LuceneTestCase {
         seen.add(fileName);
       }
     }
-
-    dir.close();
-  }
-
-  // LUCENE-1579: Ensure that on a cloned reader, segments
-  // reuse the doc values arrays in FieldCache
-  public void testFieldCacheReuseAfterClone() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    Document doc = new Document();
-    doc.add(newField("number", "17", StringField.TYPE_UNSTORED));
-    writer.addDocument(doc);
-    writer.close();
-
-    // Open reader
-    IndexReader r = getOnlySegmentReader(IndexReader.open(dir));
-    final int[] ints = FieldCache.DEFAULT.getInts(r, "number", false);
-    assertEquals(1, ints.length);
-    assertEquals(17, ints[0]);
-
-    // Clone reader
-    IndexReader r2 = (IndexReader) r.clone();
-    r.close();
-    assertTrue(r2 != r);
-    final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number", false);
-    r2.close();
-
-    assertEquals(1, ints2.length);
-    assertEquals(17, ints2[0]);
-    assertTrue(ints == ints2);
 
     dir.close();
   }

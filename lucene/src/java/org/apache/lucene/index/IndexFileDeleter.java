@@ -450,8 +450,10 @@ final class IndexFileDeleter {
   public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
     assert locked();
 
+    assert Thread.holdsLock(writer);
+
     if (infoStream.isEnabled("IFD")) {
-      infoStream.message("IFD", "now checkpoint \"" + segmentInfos.toString(directory) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
+      infoStream.message("IFD", "now checkpoint \"" + writer.segString(segmentInfos) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
     // Try again now to delete any previously un-deletable

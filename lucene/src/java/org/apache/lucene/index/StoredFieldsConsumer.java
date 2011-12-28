@@ -19,8 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.StoredFieldsWriter;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;

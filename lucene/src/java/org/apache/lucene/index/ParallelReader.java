@@ -205,16 +205,6 @@ public class ParallelReader extends IndexReader {
     return fields;
   }
   
-  @Override
-  public synchronized Object clone() {
-    // doReopen calls ensureOpen
-    try {
-      return doReopen(true);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-  
   /**
    * Tries to reopen the subreaders.
    * <br>
@@ -236,11 +226,6 @@ public class ParallelReader extends IndexReader {
    */
   @Override
   protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    // doReopen calls ensureOpen
-    return doReopen(false);
-  }
-    
-  private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean reopened = false;
@@ -251,16 +236,11 @@ public class ParallelReader extends IndexReader {
     try {
       for (final IndexReader oldReader : readers) {
         IndexReader newReader = null;
-        if (doClone) {
-          newReader = (IndexReader) oldReader.clone();
+        newReader = IndexReader.openIfChanged(oldReader);
+        if (newReader != null) {
           reopened = true;
         } else {
-          newReader = IndexReader.openIfChanged(oldReader);
-          if (newReader != null) {
-            reopened = true;
-          } else {
-            newReader = oldReader;
-          }
+          newReader = oldReader;
         }
         newReaders.add(newReader);
       }

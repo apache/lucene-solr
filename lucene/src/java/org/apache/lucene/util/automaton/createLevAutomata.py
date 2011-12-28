@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Note, this file is known to work with rev 115 of the moman
+# Note, this file is known to work with rev 120 of the moman
 # repository (http://bitbucket.org/jpbarrette/moman/overview)
 #
 # See also: http://sites.google.com/site/rrettesite/moman
@@ -95,9 +95,9 @@ def charVarNumber(charVar):
 
 def main():
 
-  if len(sys.argv) != 2:
+  if len(sys.argv) != 3:
     print
-    print 'Usage: python -u %s N' % sys.argv[0]
+    print 'Usage: python -u %s N <True/False>' % sys.argv[0]
     print
     print 'NOTE: the resulting .java file is created in the current working dir!'
     print
@@ -105,7 +105,9 @@ def main():
 
   n = int(sys.argv[1])
 
-  tables = genTransitions(n)
+  transpose = (sys.argv[2] == "True")
+
+  tables = genTransitions(n, transpose)
 
   stateMap = {}
 
@@ -142,8 +144,13 @@ def main():
   w('')
   w('import org.apache.lucene.util.automaton.LevenshteinAutomata.ParametricDescription;')
   w('')
-  w('/** Parametric description for generating a Levenshtein automaton of degree %s */' % n)
-  className = 'Lev%dParametricDescription' % n
+  if transpose:
+    w('/** Parametric description for generating a Levenshtein automaton of degree %s, ' % n)
+    w('    with transpositions as primitive edits */')
+    className = 'Lev%dTParametricDescription' % n
+  else:
+    w('/** Parametric description for generating a Levenshtein automaton of degree %s */' % n)
+    className = 'Lev%dParametricDescription' % n
 
   w('class %s extends ParametricDescription {' % className)
 
@@ -201,9 +208,6 @@ def main():
       byAction = {}
       for s, (toS, offset) in l:
         state = str(s)
-        if state == '[]':
-          # don't waste code on the null state
-          continue
         
         toState = str(toS)
         if state not in stateMap:
@@ -213,7 +217,7 @@ def main():
 
         byFromState[stateMap[state]] = (1+stateMap[toState], offset)
 
-        fromStateDesc = ', '.join([str(x) for x in eval(s)])
+        fromStateDesc = s[1:len(s)-1]
         toStateDesc = ', '.join([str(x) for x in toS])   
 
         tup = (stateMap[toState], toStateDesc, offset)
@@ -222,10 +226,10 @@ def main():
         byAction[tup].append((fromStateDesc, stateMap[state]))
 
       if numCasesPerVector is None:
-        numCasesPerVector = len(l)-1
+        numCasesPerVector = len(l)
       else:
         # we require this to be uniform... empirically it seems to be!
-        assert numCasesPerVector == len(l)-1
+        assert numCasesPerVector == len(l)
 
       if MODE == 'array':
 
@@ -320,7 +324,10 @@ def main():
   minErrors = []
   for i in xrange(len(stateMap2)-1):
     w('//   %s -> %s' % (i, stateMap2[i]))
-    v = eval(stateMap2[i])
+    # we replace t-notation as its not relevant here
+    st = stateMap2[i].replace('t', '')
+    
+    v = eval(st)
     minError = min([-i+e for i, e in v])
     c = len(v)
     sum += c

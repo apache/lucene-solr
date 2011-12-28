@@ -61,19 +61,6 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
 
   @Override
   protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    return doReopen(false);
-  }
-  
-  @Override
-  public synchronized Object clone() {
-    try {
-      return doReopen(true);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  private IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean changed = false;
@@ -82,17 +69,12 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
     boolean success = false;
     try {
       for (int i = 0; i < subReaders.length; i++) {
-        if (doClone) {
-          newSubReaders[i] = (IndexReader) subReaders[i].clone();
+        final IndexReader newSubReader = IndexReader.openIfChanged(subReaders[i]);
+        if (newSubReader != null) {
+          newSubReaders[i] = newSubReader;
           changed = true;
         } else {
-          final IndexReader newSubReader = IndexReader.openIfChanged(subReaders[i]);
-          if (newSubReader != null) {
-            newSubReaders[i] = newSubReader;
-            changed = true;
-          } else {
-            newSubReaders[i] = subReaders[i];
-          }
+          newSubReaders[i] = subReaders[i];
         }
       }
       success = true;

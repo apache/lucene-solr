@@ -30,3 +30,4 @@ java -Djetty.port=9575 -DzkRun -DzkHost=localhost:9983,localhost:10574,localhost
 cd ../example4
 java -Djetty.port=9576 -DzkHost=localhost:9983,localhost:10574,localhost:10575 -DnumShards=2 -DSTOP.PORT=6576 -DSTOP.KEY=key -jar start.jar 1>example4.log 2>&1 &
 
+#try new ports, port in use...

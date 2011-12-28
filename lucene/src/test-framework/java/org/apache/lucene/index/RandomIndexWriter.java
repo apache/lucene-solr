@@ -24,10 +24,10 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;

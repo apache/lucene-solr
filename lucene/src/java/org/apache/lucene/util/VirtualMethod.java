@@ -20,7 +20,6 @@ package org.apache.lucene.util;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.WeakHashMap;
 import java.util.Set;
 
 /**
@@ -64,8 +63,7 @@ public final class VirtualMethod<C> {
   private final Class<C> baseClass;
   private final String method;
   private final Class<?>[] parameters;
-  private final WeakHashMap<Class<? extends C>, Integer> cache =
-    new WeakHashMap<Class<? extends C>, Integer>();
+  private final WeakIdentityMap<Class<? extends C>, Integer> cache = WeakIdentityMap.newConcurrentHashMap();
 
   /**
    * Creates a new instance for the given {@code baseClass} and method declaration.
@@ -93,9 +91,10 @@ public final class VirtualMethod<C> {
    * in the inheritance path between {@code baseClass} and the given subclass {@code subclazz}.
    * @return 0 iff not overridden, else the distance to the base class
    */
-  public synchronized int getImplementationDistance(final Class<? extends C> subclazz) {
+  public int getImplementationDistance(final Class<? extends C> subclazz) {
     Integer distance = cache.get(subclazz);
     if (distance == null) {
+      // we have the slight chance that another thread may do the same, but who cares?
       cache.put(subclazz, distance = Integer.valueOf(reflectImplementationDistance(subclazz)));
     }
     return distance.intValue();

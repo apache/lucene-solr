@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.lucene.index.codecs.NormsFormat;
-import org.apache.lucene.index.codecs.NormsWriter;
+import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.NormsWriter;
 import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store

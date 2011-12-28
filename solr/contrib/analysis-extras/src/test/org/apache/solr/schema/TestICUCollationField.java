@@ -22,7 +22,7 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.codecs.Codec;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 

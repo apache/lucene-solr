@@ -18,10 +18,10 @@ package org.apache.lucene.index;
  */
 import java.util.Comparator;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
-import org.apache.lucene.index.codecs.DocValuesConsumer; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /**

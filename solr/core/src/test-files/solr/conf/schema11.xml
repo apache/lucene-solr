@@ -267,6 +267,24 @@
 valued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
+     <!-- These should pass right through and insure that we can declare external field types -->
+    <fieldType name="pfloat" class="solr.FloatField" omitNorms="true"/>
+    <fieldType name="eff_float" keyField="id" defVal="0"
+               stored="false" indexed="true"
+               class="solr.ExternalFileField" valType="float"/>
+
+    <fieldType name="eff_tfloat" keyField="id" defVal="0"
+               stored="false" indexed="true"
+               class="solr.ExternalFileField" valType="tfloat"/>
+
+    <fieldType name="eff_pfloat" keyField="id" defVal="0"
+               stored="false" indexed="true"
+               class="solr.ExternalFileField" valType="pfloat"/>
+
+    <!-- Be sure that the valType can be optional Since valType has done nothing up until now, this is preferred -->
+    <fieldType name="eff_none" keyField="id" defVal="0"
+               stored="false" indexed="true"
+               class="solr.ExternalFileField"/>
 
  </types>
 

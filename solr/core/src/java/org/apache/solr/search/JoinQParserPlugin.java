@@ -57,7 +57,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         String fromIndex = getParam("fromIndex");
         String toField = getParam("to");
         String v = localParams.get("v");
-        QParser fromQueryParser = subQuery(v, "lucene");
+        QParser fromQueryParser = subQuery(v, null);
         Query fromQuery = fromQueryParser.getQuery();
         JoinQuery jq = new JoinQuery(fromField, toField, fromIndex, fromQuery);
         return jq;
