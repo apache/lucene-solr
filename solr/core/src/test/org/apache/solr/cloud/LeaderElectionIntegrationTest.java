@@ -67,7 +67,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   private ZkStateReader reader;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {}
+  public static void beforeClass() throws Exception {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
+  }
   
   @Override
   public void setUp() throws Exception {
@@ -268,6 +270,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws InterruptedException {
+    System.clearProperty("solrcloud.skip.autorecovery");
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
   }

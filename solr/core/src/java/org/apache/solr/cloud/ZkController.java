@@ -96,6 +96,8 @@ public final class ZkController {
   private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
 
   private RecoveryStrat recoveryStrat = new RecoveryStrat();
+  
+  private static boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first
@@ -559,7 +561,7 @@ public final class ZkController {
         
       }
       
-      if (doRecovery) {
+      if (doRecovery && !SKIP_AUTO_RECOVERY) {
         recoveryStrat.recover(core);
       }
     } finally {
