@@ -234,7 +234,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     
-    if (returnVersions && rsp != null) {
+    // TODO: what to do when no idField?
+    if (returnVersions && rsp != null && idField != null) {
       if (addsResponse == null) {
         addsResponse = new NamedList<String>();
         rsp.add("adds",addsResponse);
