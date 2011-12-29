@@ -317,37 +317,6 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       return newCloudState;
   }
   
-  /**
-   * Publish assignments for node
-   * 
-   * @param node
-   * @param cloudState
-   * @param states
-   * @throws KeeperException
-   */
-  private void publishNodeAssignments(final String node, final CloudState cloudState,
-      final Set<CoreState> states) throws KeeperException, InterruptedException {
-    ArrayList<CoreAssignment> assignments = new ArrayList<CoreAssignment>();
-    for(CoreState coreState: states) {
-      final String coreName = coreState.getCoreName();
-      HashMap<String, String> coreProperties = new HashMap<String, String>();
-      Map<String, Slice> slices = cloudState.getSlices(coreState.getCollectionName());
-      for(Entry<String, Slice> entry: slices.entrySet()) {
-        ZkNodeProps myProps = entry.getValue().getShards().get(coreName);
-        if(myProps!=null) {
-          coreProperties.put(ZkStateReader.SHARD_ID_PROP, entry.getKey());
-        }
-      }
-      CoreAssignment assignment = new CoreAssignment(coreName, coreProperties);
-      assignments.add(assignment);
-    }
-    
-    //serialize
-    byte[] content = ZkStateReader.toJSON(assignments);
-    final String nodeName = ASSIGNMENTS_NODE + "/" + node;
-    zkClient.setData(nodeName, content);
-  }
-  
   private Set<String> complement(Collection<String> next,
       Collection<String> prev) {
     Set<String> downCollections = new HashSet<String>();
@@ -357,7 +326,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
   }
 
   @Override
-  public void coreChanged(final String nodeName, final Set<CoreState> states, final Set<CoreState> currentStates) throws KeeperException, InterruptedException  {
+  public void coreChanged(final String nodeName, final Set<CoreState> states) throws KeeperException, InterruptedException  {
     log.debug("Cores changed: " + nodeName + " states:" + states);
     synchronized(reader.getUpdateLock()) {
       reader.updateCloudState(true);
@@ -369,7 +338,6 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       try {
         zkClient.setData(ZkStateReader.CLUSTER_STATE,
             ZkStateReader.toJSON(cloudState));
-        publishNodeAssignments(nodeName, cloudState, currentStates);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -379,19 +347,14 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
   }
   
   public static void createClientNodes(SolrZkClient zkClient, String nodeName) throws KeeperException, InterruptedException {
-    createZkNode(zkClient, STATES_NODE + "/" + nodeName);
-    createZkNode(zkClient, ASSIGNMENTS_NODE + "/" + nodeName);
-  }
-
-  private static void createZkNode(SolrZkClient zkClient, String nodeName) throws KeeperException, InterruptedException {
-    
+    final String node = STATES_NODE + "/" + nodeName;
     if (log.isInfoEnabled()) {
-      log.info("creating node:" + nodeName);
+      log.info("creating node:" + node);
     }
     
     try {
-      if (!zkClient.exists(nodeName)) {
-        zkClient.makePath(nodeName, CreateMode.PERSISTENT, null);
+      if (!zkClient.exists(node)) {
+        zkClient.makePath(node, CreateMode.PERSISTENT, null);
       }
       
     } catch (NodeExistsException e) {

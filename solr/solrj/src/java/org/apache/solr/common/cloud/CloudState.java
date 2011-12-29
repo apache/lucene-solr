@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.noggit.JSONWriter;
@@ -77,6 +78,19 @@ public class CloudState implements JSONWriter.Writable {
 
 	public Set<String> getLiveNodes() {
 		return Collections.unmodifiableSet(liveNodes);
+	}
+
+	public String getShardId(String coreName) {
+	  for (Entry<String, Map<String, Slice>> states: collectionStates.entrySet()){
+	    for(Entry<String, Slice> slices: states.getValue().entrySet()) {
+	      for(Entry<String, ZkNodeProps> shards: slices.getValue().getShards().entrySet()){
+	        if(coreName.equals(shards.getValue().get(ZkStateReader.CORE_PROP))) {
+	          return slices.getKey();
+	        }
+	      }
+	    }
+	  }
+	  return null;
 	}
 
 	public boolean liveNodesContain(String name) {

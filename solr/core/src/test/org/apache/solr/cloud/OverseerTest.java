@@ -135,9 +135,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
     String zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
-    final int nodeCount = 10; //how many simulated nodes
-    final int coreCount = 66; //how many cores to register
-
+    final int nodeCount = random.nextInt(50)+50;   //how many simulated nodes (num of threads)
+    final int coreCount = random.nextInt(100)+100;  //how many cores to register
+    final int sliceCount = random.nextInt(20)+1;  //how many slices
+    
     ZkTestServer server = new ZkTestServer(zkDir);
 
     SolrZkClient zkClient = null;
@@ -152,7 +153,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       reader = new ZkStateReader(zkClient);
       
-      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "3");
+      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, Integer.valueOf(sliceCount).toString());
 
       for (int i = 0; i < nodeCount; i++) {
       
@@ -183,18 +184,18 @@ public class OverseerTest extends SolrTestCaseJ4 {
         Runnable coreStarter = new Runnable() {
           @Override
           public void run() {
-            // TODO Auto-generated method stub
-            CloudDescriptor collection1Desc = new CloudDescriptor();
+            final CloudDescriptor collection1Desc = new CloudDescriptor();
             collection1Desc.setCollectionName("collection1");
 
             final String coreName = "core" + slot;
             
-            CoreDescriptor desc = new CoreDescriptor(null, coreName, "");
+            final CoreDescriptor desc = new CoreDescriptor(null, coreName, "");
             desc.setCloudDescriptor(collection1Desc);
             try {
               ids[slot] = controllers[slot % nodeCount].register(coreName, desc);
-            } catch (Exception e) {
-              fail("register threw exception:" + e);
+            } catch (Throwable e) {
+              e.printStackTrace();
+              fail("register threw exception:" + e.getClass());
             }
           }
         };
@@ -224,7 +225,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
 
       // make sure all cores have been returned a id
-      for (int i = 0; i < 40; i++) {
+      for (int i = 0; i < 80; i++) {
         int assignedCount = 0;
         for (int j = 0; j < coreCount; j++) {
           if (ids[j] != null) {
@@ -238,7 +239,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       
       final HashMap<String, AtomicInteger> counters = new HashMap<String,AtomicInteger>();
-      for (int i = 1; i < 4; i++) {
+      for (int i = 1; i < sliceCount+1; i++) {
         counters.put("shard" + i, new AtomicInteger());
       }
       
@@ -250,13 +251,20 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       for (String counter: counters.keySet()) {
         int count = counters.get(counter).intValue();
-        int expectedCount = coreCount / 3;
-        if (count != expectedCount) {
-          fail("unevenly assigned shard ids, " + counter + " had " + count
-              + ", expected " + expectedCount + " (+-1)");
+        int expectedCount = coreCount / sliceCount;
+        int min = expectedCount - 1;
+        int max = expectedCount + 1;
+        if (count < min || count > max) {
+          fail("Unevenly assigned shard ids, " + counter + " had " + count
+              + ", expected: " + min + "-" + max);
         }
       }
       
+      //make sure leaders are in cloud state
+      for (int i = 0; i < sliceCount; i++) {
+        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1)));
+      }
+
     } finally {
       if (DEBUG) {
         if (controllers[0] != null) {
@@ -426,7 +434,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      controllerClient.makePath("/live_nodes");
+      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
       
       reader = new ZkStateReader(controllerClient);
       reader.createClusterStateWatchersAndUpdate();

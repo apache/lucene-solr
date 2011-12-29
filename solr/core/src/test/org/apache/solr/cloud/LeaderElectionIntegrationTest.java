@@ -221,7 +221,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       } catch (KeeperException e) {
         // ignore
       }
-      Thread.sleep(100);
+      Thread.sleep(200);
     }
     return leader;
   }

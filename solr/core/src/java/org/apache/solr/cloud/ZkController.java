@@ -41,8 +41,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,8 +90,6 @@ public final class ZkController {
   private String hostName;
 
   private LeaderElector overseerElector;
-
-  private Map<String, CoreAssignment> assignments = new HashMap<String, CoreAssignment>();
 
   private RecoveryStrat recoveryStrat = new RecoveryStrat();
   
@@ -307,36 +303,7 @@ public final class ZkController {
       Overseer.createClientNodes(zkClient, getNodeName());
       createEphemeralLiveNode();
       setUpCollectionsNode();
-      
-      byte[] assignments = zkClient.getData(getAssignmentsNode(), new Watcher(){
 
-        @Override
-        public void process(WatchedEvent event) {
-          //read latest assignments
-          try {
-            byte[] assignments = zkClient.getData(getAssignmentsNode(), this, null);
-            try {
-              processAssignmentsUpdate(assignments);
-            } catch (IOException e) {
-              log.error("Assignment data was malformed", e);
-              return;
-            }
-          } catch (KeeperException e) {
-            log.warn("Could not read node assignments.", e);
-            return;
-          } catch (InterruptedException e) {
-            // Restore the interrupted status
-            Thread.currentThread().interrupt();
-            log.warn("Could not read node assignments.", e);
-            return;
-          }
-          
-        }
-        
-      }, null);
-
-      processAssignmentsUpdate(assignments);
-      
       overseerElector = new LeaderElector(zkClient);
       ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
       overseerElector.setup(context);
@@ -359,14 +326,6 @@ public final class ZkController {
           "", e);
     }
 
-  }
-
-  private String getAssignmentsNode() {
-    return Overseer.ASSIGNMENTS_NODE + "/" + getNodeName();
-  }
-
-  private String getStatesNode() {
-    return Overseer.STATES_NODE + "/" + getNodeName();
   }
 
   private void createEphemeralLiveNode() throws KeeperException,
@@ -606,24 +565,16 @@ public final class ZkController {
 
 
   private boolean getShardId(final CoreDescriptor desc,
-      CloudState state, String shardZkNodeName) {
+      final CloudState state, final String shardZkNodeName) {
 
-    CloudDescriptor cloudDesc = desc.getCloudDescriptor();
+    final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     
-    Map<String,Slice> slices = state.getSlices(cloudDesc.getCollectionName());
-    if (slices != null) {
-      Map<String,String> nodes = new HashMap<String,String>();
+    final String shardId = state.getShardId(shardZkNodeName);
 
-      for (Slice s : slices.values()) {
-        for (String node : s.getShards().keySet()) {
-          nodes.put(node, s.getName());
-        }
-      }
-      if (nodes.containsKey(shardZkNodeName)) {
+    if(shardId!=null) {
         // TODO: we where already registered - go into recovery mode
-        cloudDesc.setShardId(nodes.get(shardZkNodeName));
+        cloudDesc.setShardId(shardId);
         return false;
-      }
     }
     return true;
   }
@@ -790,11 +741,9 @@ public final class ZkController {
     final String nodePath = "/node_states/" + getNodeName();
 
     try {
-      log.info("publishing node state:" + coreStates.values());
       zkClient.setData(
           nodePath,
           ZkStateReader.toJSON(coreStates.values()));
-
     } catch (KeeperException e) {
       throw new ZooKeeperException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -810,49 +759,20 @@ public final class ZkController {
 
   private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor) throws InterruptedException {
     final String shardZkNodeName = getNodeName() + "_" + coreName;
-    int retryCount = 40;
+    int retryCount = 120;
     while (retryCount-->0) {
-      synchronized (assignments) {
-        CoreAssignment assignment = assignments.get(shardZkNodeName);
-        if (assignment != null
-            && assignment.getProperties().get(ZkStateReader.SHARD_ID_PROP) != null) {
-          return assignment.getProperties().get(ZkStateReader.SHARD_ID_PROP);
-        }
-        
-        try {
-          assignments.wait(500);
-        } catch (InterruptedException e) {
-          // TODO Auto-generated catch block
-        }
+      final String shardId = zkStateReader.getCloudState().getShardId(shardZkNodeName);
+      if(shardId!=null) {
+        return shardId;
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
     throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get shard_id for core: " + coreName);
   }
-
-  /**
-   * Atomic assignments update
-   * @throws IOException 
-   */
-  private void processAssignmentsUpdate(byte[] assignments) throws IOException {
-
-    if (assignments == null) {
-      return;
-    }
-
-    HashMap<String, CoreAssignment> newAssignments = new HashMap<String, CoreAssignment>();
-    CoreAssignment[] assignments2 = CoreAssignment.load(assignments);
-    
-    for (CoreAssignment assignment : assignments2) {
-      newAssignments.put(assignment.getCoreName(), assignment);
-    }
-
-    // nocommit: is this right? It locks on the ref'd object, not the field.
-    synchronized (this.assignments) {
-      this.assignments.notifyAll();
-      this.assignments = newAssignments;
-    }
-  }
-
 
   public RecoveryStrat getRecoveryStrat() {
     return recoveryStrat;

@@ -177,9 +177,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           forwardToLeader = true;
         }
         
-      } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "",
-            e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",

@@ -40,6 +40,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,11 +164,8 @@ public class ZkStateReader {
       if (!zkClient.exists(CLUSTER_STATE)) {
         try {
           zkClient.create(CLUSTER_STATE, null, CreateMode.PERSISTENT);
-        } catch (KeeperException e) {
+        } catch (NodeExistsException e) {
           // if someone beats us to creating this ignore it
-          if (e.code() != KeeperException.Code.NODEEXISTS) {
-            throw e;
-          }
         }
       }
     }
@@ -381,11 +379,12 @@ public class ZkStateReader {
   
   // TODO: we probably should also catch this while building the cloud state and offer a getLeader off each
   // slice that does not have search...
-  public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException, KeeperException {
-    int tries = 30;
+  public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
+    int tries = 120;
     while (tries-- > 0) {
       if (cloudState != null) {
-        Slice slice = cloudState.getSlice(collection, shard);
+        final CloudState currentState = cloudState;
+        final Slice slice = currentState.getSlice(collection, shard);
         if (slice != null) {
           for (ZkNodeProps nodeProps : slice.getShards().values()) {
             if (nodeProps.containsKey(ZkStateReader.LEADER_PROP)) {
@@ -394,8 +393,7 @@ public class ZkStateReader {
           }
         }
       }
-      Thread.sleep(200);
-      updateCloudState(true);
+      Thread.sleep(500);
     }
     throw new RuntimeException("No registered leader was found, collection:" + collection + " slice:" + shard);
   }
