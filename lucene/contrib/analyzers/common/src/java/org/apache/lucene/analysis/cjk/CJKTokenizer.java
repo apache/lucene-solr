@@ -44,7 +44,9 @@ import org.apache.lucene.util.AttributeSource;
  * please search  <a
  * href="http://www.google.com/search?q=word+chinese+segment">google</a>
  *
+ * @deprecated Use StandardTokenizer, CJKWidthFilter, CJKBigramFilter, and LowerCaseFilter instead.
  */
+@Deprecated
 public final class CJKTokenizer extends Tokenizer {
     //~ Static fields/initializers ---------------------------------------------
     /** Word token type */

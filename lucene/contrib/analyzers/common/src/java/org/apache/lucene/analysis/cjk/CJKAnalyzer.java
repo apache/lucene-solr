@@ -21,18 +21,21 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.Set;
 
-
 /**
- * An {@link Analyzer} that tokenizes text with {@link CJKTokenizer} and
- * filters with {@link StopFilter}
- *
+ * An {@link Analyzer} that tokenizes text with {@link StandardTokenizer},
+ * normalizes content with {@link CJKWidthFilter}, folds case with
+ * {@link LowerCaseFilter}, forms bigrams of CJK with {@link CJKBigramFilter},
+ * and filters stopwords with {@link StopFilter}
  */
 public final class CJKAnalyzer extends StopwordAnalyzerBase {
   //~ Static fields/initializers ---------------------------------------------
@@ -107,7 +110,16 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new CJKTokenizer(reader);
-    return new TokenStreamComponents(source, new StopFilter(matchVersion, source, stopwords));
+    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+      // run the widthfilter first before bigramming, it sometimes combines characters.
+      TokenStream result = new CJKWidthFilter(source);
+      result = new LowerCaseFilter(matchVersion, result);
+      result = new CJKBigramFilter(result);
+      return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
+    } else {
+      final Tokenizer source = new CJKTokenizer(reader);
+      return new TokenStreamComponents(source, new StopFilter(matchVersion, source, stopwords));
+    }
   }
 }
