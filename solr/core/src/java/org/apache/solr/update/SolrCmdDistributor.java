@@ -71,23 +71,6 @@ public class SolrCmdDistributor {
   private List<AddUpdateCommand> alist;
   private ArrayList<DeleteUpdateCommand> dlist;
   
-  public static class ShardInfo {
-    public String url;
-    public RetryUrl retryUrl;
-    @Override
-    public String toString() {
-      return "ShardInfo [url=" + url + "]";
-    }
-  }
-  
-  public static interface RetryUrl {
-    String getRetryUrl();
-  }
-  
-  public SolrCmdDistributor() {
-    //this.rsp = rsp;
-  }
-  
   public Response finish(List<String> urls, ModifiableSolrParams params) {
 
     // piggyback on any outstanding adds or deletes if possible.

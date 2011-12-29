@@ -350,7 +350,7 @@ public class CoreContainer
     }
 
     NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
-    boolean defaultCoreFound = false;
+
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
       try {

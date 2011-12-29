@@ -112,7 +112,7 @@ public class TestDistributedUpdate extends SolrTestCaseJ4 {
       String shardList, String solrConfigOverride) throws Exception {
     System.setProperty("solr.data.dir", dataDir);
     
-    JettySolrRunner jetty = new JettySolrRunner(TEST_HOME(), "/solr", 0, solrConfigOverride);
+    JettySolrRunner jetty = new JettySolrRunner(TEST_HOME(), "/solr", 0, solrConfigOverride, null);
     if (shardList != null) {
       System.setProperty("shard", shardList);
     }

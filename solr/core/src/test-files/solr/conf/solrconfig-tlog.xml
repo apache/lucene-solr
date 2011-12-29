@@ -20,6 +20,8 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
+  <dataDir>${solr.data.dir:}</dataDir>
+
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
 

@@ -35,8 +35,6 @@ import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.log.Logger;
 
-import com.sun.net.httpserver.Filter;
-
 /**
  * Run solr using jetty
  * 
@@ -50,6 +48,7 @@ public class JettySolrRunner {
   String context;
 
   private String solrConfigFilename;
+  private String schemaFilename;
 
   private boolean waitOnSolr = false;
 
@@ -69,14 +68,17 @@ public class JettySolrRunner {
     this.init(solrHome, context, port, true);
   }
 
-  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename) {
+  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, String schemaFileName) {
     this.init(solrHome, context, port, true);
     this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
   }
   
-  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, boolean stopAtShutdown ) {
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown) {
     this.init(solrHome, context, port, stopAtShutdown);
     this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
   }
 
   private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
@@ -118,12 +120,14 @@ public class JettySolrRunner {
         System.setProperty("hostPort", Integer.toString(lastPort));
         if (solrConfigFilename != null) System.setProperty("solrconfig",
             solrConfigFilename);
+        if (schemaFilename != null) System.setProperty("schema", 
+            schemaFilename);
 //        SolrDispatchFilter filter = new SolrDispatchFilter();
 //        FilterHolder fh = new FilterHolder(filter);
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*",
             Handler.REQUEST);
         if (solrConfigFilename != null) System.clearProperty("solrconfig");
-        
+        if (schemaFilename != null) System.clearProperty("schema");
         System.clearProperty("solr.solr.home");
         
       }
@@ -238,12 +242,10 @@ public class JettySolrRunner {
 
   public void setShards(String shardList) {
      this.shards = shardList;
-    
   }
 
   public void setDataDir(String dataDir) {
     this.dataDir = dataDir;
-    
   }
 }
 

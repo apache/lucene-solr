@@ -48,7 +48,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
-    jetty = new JettySolrRunner(solrHome, context, 0, configFile );
+    jetty = new JettySolrRunner(solrHome, context, 0, configFile, null);
 
     jetty.start();
     port = jetty.getLocalPort();

@@ -227,7 +227,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + this.jettyIntCntr.incrementAndGet(), null, "solrconfig.xml");
+      JettySolrRunner j = createJetty(testDir, testDir + "/jetty" + this.jettyIntCntr.incrementAndGet(), null, "solrconfig.xml", null);
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);
@@ -255,7 +255,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   public JettySolrRunner createJetty(String dataDir, String shardList, String solrConfigOverride) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride, false);
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride, null, false);
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     jetty.start();

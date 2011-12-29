@@ -175,14 +175,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, testDir + "/control/data");
+    controlJetty = createJetty(testDir, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/shard" + i + "/data");
+      JettySolrRunner j = createJetty(testDir,
+          testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
+          getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
       String shardStr = "localhost:" + j.getLocalPort() + context;
@@ -230,16 +233,16 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
   
   public JettySolrRunner createJetty(File baseDir, String dataDir) throws Exception {
-    return createJetty(baseDir, dataDir, null, null);
+    return createJetty(baseDir, dataDir, null, null, null);
   }
 
   public JettySolrRunner createJetty(File baseDir, String dataDir, String shardId) throws Exception {
-    return createJetty(baseDir, dataDir, shardId, null);
+    return createJetty(baseDir, dataDir, shardId, null, null);
   }
   
-  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride) throws Exception {
+  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride);
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride, schemaOverride);
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     jetty.start();
