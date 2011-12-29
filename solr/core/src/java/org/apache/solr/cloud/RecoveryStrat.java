@@ -108,15 +108,11 @@ public class RecoveryStrat {
             recoveryAttempts.incrementAndGet();
             try {
               
-              ZkCoreNodeProps leaderprops = new ZkCoreNodeProps(zkStateReader.getLeaderProps(
-                  cloudDesc.getCollectionName(), cloudDesc.getShardId()));
-              String leaderBaseUrl = leaderprops.getBaseUrl();
-              String leaderUrl = leaderprops.getCoreUrl();
-              System.out.println("leaderUrl:" + leaderBaseUrl);
+              ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
+                  cloudDesc.getCollectionName(), cloudDesc.getShardId());
 
               
-              replicate(core, shardZkNodeName, leaderBaseUrl, leaderUrl,
-                  leaderBaseUrl.equals(baseUrl));
+              replicate(core, shardZkNodeName, leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName()));
               
               // nocommit: remove this
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
@@ -145,7 +141,7 @@ public class RecoveryStrat {
               
               System.out.println("url: " + baseUrl + " docs after replicate: "
                   + afterReplicateDocs + " docs after replay:"
-                  + afterReplayDocs + " leader:" + leaderBaseUrl);
+                  + afterReplayDocs + " leader:" + leaderprops);
               // TODO: what if the problem was in onFinish.run which sets the
               // state?
               succesfulRecovery = true;
@@ -199,23 +195,27 @@ public class RecoveryStrat {
     thread.start();
   }
   
-  private void replicate(SolrCore core, String shardZkNodeName, String baseUrl, String leaderUrl, boolean iamleader)
+  private void replicate(SolrCore core, String shardZkNodeName, ZkNodeProps leaderprops, String baseUrl)
       throws SolrServerException, IOException {
     System.out.println("replicate");
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get (eventually)
     // or full index replication
    
+    String leaderBaseUrl = leaderprops.get(ZkStateReader.BASE_URL_PROP);
+    ZkCoreNodeProps leaderCNodeProps = new ZkCoreNodeProps(leaderprops);
+    String leaderUrl = leaderCNodeProps.getCoreUrl();
+    String leaderCoreName = leaderCNodeProps.getCoreName();
+    
     // if we are the leader, either we are trying to recover faster
     // then our ephemeral timed out or we are the only node
-    if (!iamleader) {
+    if (!leaderBaseUrl.equals(baseUrl)) {
       
-      CommonsHttpSolrServer server = new CommonsHttpSolrServer(baseUrl);
+      CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderBaseUrl);
       System.out.println("send prep cmd");
       PrepRecovery prepCmd = new PrepRecovery();
       prepCmd.setAction(CoreAdminAction.PREPRECOVERY);
-      // nocommit: the replica core name may not matcher the leader core name!
-      prepCmd.setCoreName(core.getName());
+      prepCmd.setCoreName(leaderCoreName);
       prepCmd.setNodeName(shardZkNodeName);
       
       server.request(prepCmd);

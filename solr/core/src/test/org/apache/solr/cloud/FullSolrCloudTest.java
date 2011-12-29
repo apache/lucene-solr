@@ -57,6 +57,8 @@ import org.junit.BeforeClass;
 /**
  *
  * TODO: we should still test this works as a custom update chain as well as what we test now - the default update chain
+ * 
+ * nocommit: clean up output
  */
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 
@@ -425,8 +427,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    del("*:*");
-    
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     
@@ -441,9 +441,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     assertDocCounts(VERBOSE);
     checkQueries();
     
-    // TODO: this is failing because the counts per shard don't add up to the control - distrib total
-    // counts do match, so the same doc (same id) must be on different shards.
-    // our hash is not stable yet in distrib update proc
     assertDocCounts(VERBOSE);
 
     query("q", "*:*", "sort", "n_tl1 desc");
@@ -477,7 +474,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     SolrServer client = getClient(nodeName);
     
-    System.out.println("what happens here?");
     index_specific(client, "id", docId + 1, t1, "what happens here?");
     
     // expire a session...
@@ -504,7 +500,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     params.add("q", t1 + ":originalcontent");
     QueryResponse results = clients.get(0).query(params);
     assertEquals(1, results.getResults().getNumFound());
-    System.out.println("results:" + results);
     
     // update doc
     indexr("id", docId, t1, "updatedcontent");

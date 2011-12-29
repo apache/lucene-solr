@@ -26,17 +26,7 @@ public class ZkCoreNodeProps {
   
   // may return null
   public String getCoreUrl() {
-    StringBuilder sb = new StringBuilder();
-    String baseUrl = nodeProps.get(ZkStateReader.BASE_URL_PROP);
-    if (baseUrl == null) return null;
-    String coreName = nodeProps.get(ZkStateReader.CORE_PROP);
-    if (coreName == null) return null;
-    sb.append(baseUrl);
-    if (!baseUrl.endsWith("/")) sb.append("/");
-    sb.append(coreName == null ? "" : coreName);
-    if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
-    
-    return sb.toString();
+    return getCoreUrl(nodeProps.get(ZkStateReader.BASE_URL_PROP), nodeProps.get(ZkStateReader.CORE_PROP));
   }
   
   public String getNodeName() {
@@ -50,4 +40,22 @@ public class ZkCoreNodeProps {
   public String getBaseUrl() {
     return nodeProps.get(ZkStateReader.BASE_URL_PROP);
   }
+  
+  public String getCoreName() {
+    return nodeProps.get(ZkStateReader.CORE_PROP);
+  }
+  
+  public static String getCoreUrl(String baseUrl, String coreName) {
+    StringBuilder sb = new StringBuilder();
+    if (baseUrl == null) return null;
+    if (coreName == null) return null;
+    sb.append(baseUrl);
+    if (!baseUrl.endsWith("/")) sb.append("/");
+    sb.append(coreName == null ? "" : coreName);
+    if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
+    
+    return sb.toString();
+  }
+
+
 }
