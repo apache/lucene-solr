@@ -1,3 +1,4 @@
+package org.apache.solr.analysis;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,26 +17,20 @@
  * limitations under the License.
  */
 
-
-package org.apache.solr.analysis;
-
-import org.apache.lucene.analysis.cjk.CJKTokenizer;
 import java.io.Reader;
+import java.io.StringReader;
 
-/** 
- * Factory for {@link CJKTokenizer}. 
- * <pre class="prettyprint" >
- * &lt;fieldType name="text_cjk" class="solr.TextField" positionIncrementGap="100"&gt;
- *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
- *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre>
- * @deprecated
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+
+/**
+ * Simple tests to ensure the CJKWidthFilterFactory is working
  */
-@Deprecated
-public class CJKTokenizerFactory extends BaseTokenizerFactory {
-  public CJKTokenizer create(Reader in) {
-    return new CJKTokenizer(in);
+public class TestCJKWidthFilterFactory extends BaseTokenTestCase {
+  public void test() throws Exception {
+    Reader reader = new StringReader("Ｔｅｓｔ １２３４");
+    CJKWidthFilterFactory factory = new CJKWidthFilterFactory();
+    TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+    assertTokenStreamContents(stream, new String[] { "Test", "1234" });
   }
 }
-

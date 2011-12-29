@@ -1,3 +1,4 @@
+package org.apache.solr.analysis;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,26 +17,26 @@
  * limitations under the License.
  */
 
-
-package org.apache.solr.analysis;
-
-import org.apache.lucene.analysis.cjk.CJKTokenizer;
-import java.io.Reader;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.cjk.CJKWidthFilter;
 
 /** 
- * Factory for {@link CJKTokenizer}. 
+ * Factory for {@link CJKWidthFilter}.
  * <pre class="prettyprint" >
- * &lt;fieldType name="text_cjk" class="solr.TextField" positionIncrementGap="100"&gt;
+ * &lt;fieldType name="text_cjk" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.CJKWidthFilterFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *     &lt;filter class="solr.CJKBigramFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @deprecated
  */
-@Deprecated
-public class CJKTokenizerFactory extends BaseTokenizerFactory {
-  public CJKTokenizer create(Reader in) {
-    return new CJKTokenizer(in);
+
+public class CJKWidthFilterFactory extends BaseTokenFilterFactory {
+  
+  @Override
+  public TokenStream create(TokenStream input) {
+    return new CJKWidthFilter(input);
   }
 }
-
