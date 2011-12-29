@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -153,13 +154,13 @@ public class CloudSolrServer extends SolrServer {
     List<String> urlList = new ArrayList<String>();
     for (Slice slice : slices.values()) {
       for (ZkNodeProps nodeProps : slice.getShards().values()) {
-        String node = nodeProps.get(ZkStateReader.NODE_NAME_PROP);
-        if (!liveNodes.contains(nodeProps
-            .get(ZkStateReader.NODE_NAME_PROP))
-            && nodeProps.get(ZkStateReader.STATE_PROP).equals(
+        ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+        String node = coreNodeProps.getNodeName();
+        if (!liveNodes.contains(coreNodeProps.getNodeName())
+            && coreNodeProps.getState().equals(
                 ZkStateReader.ACTIVE)) continue;
         if (nodes.put(node, nodeProps) == null) {
-          String url = nodeProps.get(ZkStateReader.URL_PROP);
+          String url = coreNodeProps.getCoreUrl();
           urlList.add(url);
         }
       }

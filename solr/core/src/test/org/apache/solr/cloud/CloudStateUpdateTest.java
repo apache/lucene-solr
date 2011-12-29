@@ -186,9 +186,9 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
 
     assertNotNull(zkProps);
 
-    assertEquals(host + ":1661_solr", zkProps.get("node_name"));
+    assertEquals(host + ":1661_solr", zkProps.get(ZkStateReader.NODE_NAME_PROP));
 
-    assertEquals("http://" + host + ":1661/solr/testcore", zkProps.get("url"));
+    assertEquals("http://" + host + ":1661/solr", zkProps.get(ZkStateReader.BASE_URL_PROP));
 
     Set<String> liveNodes = cloudState2.getLiveNodes();
     assertNotNull(liveNodes);

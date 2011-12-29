@@ -353,8 +353,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       HashMap<String, String> coreProps = new HashMap<String,String>();
-      coreProps.put(ZkStateReader.URL_PROP, "http://127.0.0.1/solr");
+      coreProps.put(ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr");
       coreProps.put(ZkStateReader.NODE_NAME_PROP, "node1");
+      coreProps.put(ZkStateReader.CORE_PROP, "core1");
       coreProps.put(ZkStateReader.ROLES_PROP, "");
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
       CoreState state = new CoreState("core1", "collection1", coreProps);
@@ -369,13 +370,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
       }
       //publish node state (recovering)
-      
       zkClient.setData(nodePath, ZkStateReader.toJSON(new CoreState[]{state}));
 
       //wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
       
-      assertEquals("Illegal state", ZkStateReader.RECOVERING, reader.getCloudState().getSlice("collection1", "shard1").getShards().get("core1").get(ZkStateReader.STATE_PROP));
+      assertEquals(reader.getCloudState().toString(), ZkStateReader.RECOVERING,
+          reader.getCloudState().getSlice("collection1", "shard1").getShards()
+              .get("node1_core1").get(ZkStateReader.STATE_PROP));
 
       //publish node state (active)
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
@@ -408,7 +410,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     int maxIterations = 100;
     String coreState = null;
     while(maxIterations-->0) {
-      coreState = reader.getCloudState().getSlice("collection1", "shard1").getShards().get("core1").get(ZkStateReader.STATE_PROP);
+      coreState = reader.getCloudState().getSlice("collection1", "shard1").getShards().get("node1_core1").get(ZkStateReader.STATE_PROP);
       if(coreState.equals(expectedState)) {
         return;
       }
@@ -448,6 +450,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       HashMap<String,String> coreProps = new HashMap<String,String>();
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
+      coreProps.put(ZkStateReader.NODE_NAME_PROP, "node1");
       CoreState state = new CoreState("core1", "collection1", coreProps);
       
       final String statePath = Overseer.STATES_NODE + "/node1";
@@ -456,7 +459,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       // wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
-
+      
       verifyStatus(reader, ZkStateReader.RECOVERING);
 
       // publish node state (active)

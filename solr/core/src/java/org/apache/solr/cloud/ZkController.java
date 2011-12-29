@@ -419,7 +419,7 @@ public final class ZkController {
    * @throws Exception 
    */
   public String register(String coreName, final CoreDescriptor desc) throws Exception {  
-    final String shardUrl = getShardUrl(coreName);
+    final String baseUrl = getBaseUrl();
     
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     final String collection = cloudDesc.getCollectionName();
@@ -434,7 +434,8 @@ public final class ZkController {
     String shardId = cloudDesc.getShardId();
 
     Map<String,String> props = new HashMap<String,String>();
-    props.put(ZkStateReader.URL_PROP, shardUrl);
+    props.put(ZkStateReader.BASE_URL_PROP, baseUrl);
+    props.put(ZkStateReader.CORE_PROP, coreName);
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
     props.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
@@ -443,7 +444,7 @@ public final class ZkController {
     }
 
     if (shardId == null && getShardId(desc, state, shardZkNodeName)) {
-      publishState(cloudDesc, shardZkNodeName, props); //need to publish state to get overseer assigned id
+      publishState(cloudDesc, shardZkNodeName, coreName, props); //need to publish state to get overseer assigned id
       shardId = doGetShardIdProcess(coreName, cloudDesc);
       cloudDesc.setShardId(shardId);
       props.put(ZkStateReader.SHARD_ID_PROP, shardId);
@@ -451,17 +452,17 @@ public final class ZkController {
       // shard id was picked up in getShardId
       props.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
       shardId = cloudDesc.getShardId();
-      publishState(cloudDesc, shardZkNodeName, props);
+      publishState(cloudDesc, shardZkNodeName, coreName, props);
     }
 
     if (log.isInfoEnabled()) {
         log.info("Register shard - core:" + coreName + " address:"
-            + shardUrl + " shardId:" + shardId);
+            + baseUrl + " shardId:" + shardId);
     }
 
     // we only put a subset of props into the leader node
-    ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.URL_PROP,
-        props.get(ZkStateReader.URL_PROP));
+    ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+        props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_PROP, props.get(ZkStateReader.CORE_PROP));
 
     ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, leaderProps, zkClient);
     
@@ -474,7 +475,7 @@ public final class ZkController {
     SolrCore core = null;
     try {
       boolean doRecovery = true;
-      if (leaderUrl.equals(shardUrl)) {
+      if (leaderUrl.equals(baseUrl)) {
         doRecovery = false;
 
         // recover from local transaction log and wait for it to complete before
@@ -502,7 +503,7 @@ public final class ZkController {
         }
         
         // publish new props
-        publishAsActive(shardUrl, cloudDesc, shardZkNodeName);
+        publishAsActive(baseUrl, cloudDesc, shardZkNodeName, coreName);
       } else {
         CoreContainer cc = desc.getCoreContainer();
         // CoreContainer can be null for some tests...
@@ -536,31 +537,32 @@ public final class ZkController {
   }
 
 
-  public String getShardUrl(String coreName) {
-    final String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
-        + "/" + coreName;
-    return shardUrl;
+  public String getBaseUrl() {
+    final String baseUrl = localHostName + ":" + localHostPort + "/" + localHostContext;
+    return baseUrl;
   }
 
 
   void publishAsActive(String shardUrl,
-      final CloudDescriptor cloudDesc, String shardZkNodeName) {
+      final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
     Map<String,String> finalProps = new HashMap<String,String>();
-    finalProps.put(ZkStateReader.URL_PROP, shardUrl);
+    finalProps.put(ZkStateReader.BASE_URL_PROP, shardUrl);
+    finalProps.put(ZkStateReader.CORE_PROP, coreName);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
-    publishState(cloudDesc, shardZkNodeName, finalProps);
+    publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
   }
   
-  void publishAsRecoverying(String shardUrl,
-      final CloudDescriptor cloudDesc, String shardZkNodeName) {
+  void publishAsRecoverying(String baseUrl,
+      final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
     Map<String,String> finalProps = new HashMap<String,String>();
-    finalProps.put(ZkStateReader.URL_PROP, shardUrl);
+    finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
+    finalProps.put(ZkStateReader.CORE_PROP, coreName);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
-    publishState(cloudDesc, shardZkNodeName, finalProps);
+    publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
   }
 
 
@@ -733,9 +735,9 @@ public final class ZkController {
   }
 
   
-  private void publishState(CloudDescriptor cloudDesc, String shardZkNodeName,
+  private void publishState(CloudDescriptor cloudDesc, String shardZkNodeName, String coreName,
       Map<String,String> props) {
-    CoreState coreState = new CoreState(shardZkNodeName,
+    CoreState coreState = new CoreState(coreName,
         cloudDesc.getCollectionName(), props);
     coreStates.put(shardZkNodeName, coreState);
     final String nodePath = "/node_states/" + getNodeName();

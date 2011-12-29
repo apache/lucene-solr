@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +30,14 @@ import java.util.Set;
 import org.apache.solr.cloud.NodeStateWatcher.NodeStateChangeListener;
 import org.apache.solr.cloud.ShardLeaderWatcher.ShardLeaderListener;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.CoreState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
@@ -191,7 +197,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       ShardLeaderWatcher watcher = watches.remove(shardId);
       if (watcher != null) {
         watcher.close();
-        announceLeader(collection, shardId, new ZkNodeProps());  //removes loeader for shard
+        announceLeader(collection, shardId, new ZkCoreNodeProps(new ZkNodeProps()));  //removes loeader for shard
       }
     }
     
@@ -289,7 +295,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
    */
   private CloudState updateState(CloudState state, String nodeName, CoreState coreState) throws KeeperException, InterruptedException {
     String collection = coreState.getCollectionName();
-    String coreName = coreState.getCoreName();
+    String zkCoreNodeName = coreState.getCoreNodeName();
     
       String shardId;
       if (coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP) == null) {
@@ -310,7 +316,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       } else {
         shardProps = state.getSlice(collection, shardId).getShardsCopy();
       }
-      shardProps.put(coreName, zkProps);
+      shardProps.put(zkCoreNodeName, zkProps);
 
       slice = new Slice(shardId, shardProps);
       CloudState newCloudState = updateSlice(state, collection, slice);
@@ -420,8 +426,9 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
         newShardProps.putAll(shard.getValue().getProperties());
         
         String wasLeader = newShardProps.remove(ZkStateReader.LEADER_PROP);  //clean any previously existed flag
-       
-        if(leaderUrl!=null && leaderUrl.equals(newShardProps.get(ZkStateReader.URL_PROP))) {
+
+        ZkCoreNodeProps zkCoreNodeProps = new ZkCoreNodeProps(new ZkNodeProps(newShardProps));
+        if(leaderUrl!=null && leaderUrl.equals(zkCoreNodeProps.getCoreUrl())) {
           newShardProps.put(ZkStateReader.LEADER_PROP,"true");
           if (wasLeader == null) {
             updated = true;
@@ -444,13 +451,13 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
   }
 
   @Override
-  public void announceLeader(String collection, String shardId, ZkNodeProps props) {
+  public void announceLeader(String collection, String shardId, ZkCoreNodeProps props) {
     synchronized (reader.getUpdateLock()) {
       try {
         reader.updateCloudState(true); // get fresh copy of the state
       final CloudState state = reader.getCloudState();
       CloudState newState = setShardLeader(state, collection, shardId,
-          props.get(ZkStateReader.URL_PROP));
+          props.getCoreUrl());
         if (state != newState) { // if same instance was returned no need to
                                  // update state
           log.info("Announcing new leader: coll: " + collection + " shard: " + shardId + " props:" + props);

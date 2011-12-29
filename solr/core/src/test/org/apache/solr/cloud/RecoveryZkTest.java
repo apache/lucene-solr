@@ -22,7 +22,9 @@ import java.io.IOException;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.FullSolrCloudTest.StopableIndexingThread;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,6 +39,8 @@ public class RecoveryZkTest extends FullSolrCloudTest {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
+  private StopableIndexingThread indexThread;
+  private StopableIndexingThread indexThread2;
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
 
@@ -63,10 +67,10 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     
     // start a couple indexing threads
     
-    StopableIndexingThread indexThread = new StopableIndexingThread(0, true);
+    indexThread = new StopableIndexingThread(0, true);
     indexThread.start();
     
-    StopableIndexingThread indexThread2 = new StopableIndexingThread(10000, true);
+    indexThread2 = new StopableIndexingThread(10000, true);
     
     indexThread2.start();
 
@@ -75,6 +79,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     
     // bring shard replica down
     System.out.println("bring shard down");
+    System.out.println(shardToJetty);
     JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1);
 
     
@@ -122,6 +127,15 @@ public class RecoveryZkTest extends FullSolrCloudTest {
   
   @Override
   public void tearDown() throws Exception {
+    // make sure threads have been stopped...
+    indexThread.safeStop();
+    indexThread2.safeStop();
+    
+    indexThread.join();
+    indexThread2.join();
+    
+    printLayout();
+    
     super.tearDown();
   }
   

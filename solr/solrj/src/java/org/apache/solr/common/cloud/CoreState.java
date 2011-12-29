@@ -25,8 +25,6 @@ import java.util.Map;
 import org.apache.noggit.JSONWriter;
 
 public class CoreState implements JSONWriter.Writable {
-  private static String COLLECTION="collection";
-  private static String CORE="core";
 
   private final Map<String, String> properties;
 
@@ -37,17 +35,21 @@ public class CoreState implements JSONWriter.Writable {
   public CoreState(String coreName, String collectionName, Map<String,String> properties) {
     HashMap<String,String> props = new HashMap<String,String>();
     props.putAll(properties);
-    props.put(COLLECTION, collectionName);
-    props.put(CORE, coreName);
+    props.put(ZkStateReader.COLLECTION_PROP, collectionName);
+    props.put(ZkStateReader.CORE_PROP, coreName);
     this.properties = Collections.unmodifiableMap(props);
   }
 
   public String getCoreName() {
-    return properties.get(CORE);
+    return properties.get(ZkStateReader.CORE_PROP);
+  }
+  
+  public String getCoreNodeName() {
+    return properties.get(ZkStateReader.NODE_NAME_PROP) + "_" + getCoreName();
   }
 
   public String getCollectionName() {
-    return properties.get(COLLECTION);
+    return properties.get(ZkStateReader.COLLECTION_PROP);
   }
 
   public Map<String,String> getProperties() {

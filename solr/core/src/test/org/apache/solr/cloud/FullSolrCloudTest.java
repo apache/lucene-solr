@@ -282,13 +282,13 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         throw new RuntimeException("No slices found for collection " + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
       }
       
+      // we find ou state by simply matching ports...
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
-          String shardNameEnd = new URI(
-              ((CommonsHttpSolrServer) client).getBaseURL()).getPort()
-              + "_solr_";
-          if (shard.getKey().endsWith(shardNameEnd)) {
+          int port = new URI(((CommonsHttpSolrServer) client).getBaseURL()).getPort();
+
+          if (shard.getKey().contains(":" + port + "_")) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.client = client;
             csc.shardName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
@@ -313,8 +313,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
-          String shardName = jetty.getLocalPort() + "_solr_";
-          if (shard.getKey().endsWith(shardName)) {
+          int port = jetty.getLocalPort();
+
+          if (shard.getKey().contains(":" + port + "_")) {
             jettyToInfo.put(jetty, shard.getValue());
             List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
             if (list == null) {
@@ -1087,5 +1088,20 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     clients.clear();
     jettys.clear();
     Thread.sleep(10000);
+  }
+  
+  protected SolrServer createNewSolrServer(int port) {
+    try {
+      // setup the server...
+      String url = "http://localhost:" + port + context + "/" + DEFAULT_COLLECTION;
+      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
+      s.setConnectionTimeout(100); // 1/10th sec
+      s.setDefaultMaxConnectionsPerHost(100);
+      s.setMaxTotalConnections(100);
+      return s;
+    }
+    catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
   }
 }

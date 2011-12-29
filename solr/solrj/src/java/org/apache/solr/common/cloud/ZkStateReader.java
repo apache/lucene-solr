@@ -47,11 +47,12 @@ import org.slf4j.LoggerFactory;
 public class ZkStateReader {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
   
-  public static final String URL_PROP = "url";
+  public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   public static final String CORE_PROP = "core";
+  public static final String COLLECTION_PROP = "collection";
   public static final String SHARD_ID_PROP = "shard_id";
   public static final String NUM_SHARDS_PROP = "numShards";
   public static final String LEADER_PROP = "leader";
@@ -70,6 +71,8 @@ public class ZkStateReader {
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
+
+
   
   //
   // convenience methods... should these go somewhere else?
@@ -372,9 +375,9 @@ public class ZkStateReader {
   // and if we find out we cannot talk to zk anymore, we should probably realize we are not
   // a leader anymore - we shouldn't accept updates at all??
   public String getLeaderUrl(String collection, String shard) throws InterruptedException, KeeperException {
-    ZkNodeProps props = getLeaderProps(collection,shard);
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,shard));
     
-    return props.get(ZkStateReader.URL_PROP);
+    return props.getCoreUrl();
   }
   
   // TODO: we probably should also catch this while building the cloud state and offer a getLeader off each

@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -78,13 +80,13 @@ public class RecoveryStrat {
     final ZkController zkController = core.getCoreDescriptor()
         .getCoreContainer().getZkController();
     final ZkStateReader zkStateReader = zkController.getZkStateReader();
-    final String shardUrl = zkController.getShardUrl(core.getName());
+    final String baseUrl = zkController.getBaseUrl();
     final String shardZkNodeName = zkController.getNodeName() + "_"
         + core.getName();
     final CloudDescriptor cloudDesc = core.getCoreDescriptor()
         .getCloudDescriptor();
     
-    zkController.publishAsRecoverying(shardUrl, cloudDesc, shardZkNodeName);
+    zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName, core.getName());
     
     Thread thread = new Thread() {
       {
@@ -106,13 +108,15 @@ public class RecoveryStrat {
             recoveryAttempts.incrementAndGet();
             try {
               
-              String leaderUrl = zkStateReader.getLeaderUrl(
-                  cloudDesc.getCollectionName(), cloudDesc.getShardId());
-              System.out.println("leaderUrl:" + leaderUrl);
-              System.out.println("shardUrl:" + shardUrl);
+              ZkCoreNodeProps leaderprops = new ZkCoreNodeProps(zkStateReader.getLeaderProps(
+                  cloudDesc.getCollectionName(), cloudDesc.getShardId()));
+              String leaderBaseUrl = leaderprops.getBaseUrl();
+              String leaderUrl = leaderprops.getCoreUrl();
+              System.out.println("leaderUrl:" + leaderBaseUrl);
+
               
-              replicate(core, shardZkNodeName, leaderUrl,
-                  leaderUrl.equals(shardUrl));
+              replicate(core, shardZkNodeName, leaderBaseUrl, leaderUrl,
+                  leaderBaseUrl.equals(baseUrl));
               
               // nocommit:
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
@@ -137,11 +141,11 @@ public class RecoveryStrat {
               if (recoveryListener != null) recoveryListener.finishedRecovery();
               
               zkController
-                  .publishAsActive(shardUrl, cloudDesc, shardZkNodeName);
+                  .publishAsActive(baseUrl, cloudDesc, shardZkNodeName, core.getName());
               
-              System.out.println("url: " + shardUrl + " docs after replicate: "
+              System.out.println("url: " + baseUrl + " docs after replicate: "
                   + afterReplicateDocs + " docs after replay:"
-                  + afterReplayDocs + " leader:" + leaderUrl);
+                  + afterReplayDocs + " leader:" + leaderBaseUrl);
               // TODO: what if the problem was in onFinish.run which sets the
               // state?
               succesfulRecovery = true;
@@ -195,7 +199,7 @@ public class RecoveryStrat {
     thread.start();
   }
   
-  private void replicate(SolrCore core, String shardZkNodeName, String leaderUrl, boolean iamleader)
+  private void replicate(SolrCore core, String shardZkNodeName, String baseUrl, String leaderUrl, boolean iamleader)
       throws SolrServerException, IOException {
     System.out.println("replicate");
     // start buffer updates to tran log
@@ -206,7 +210,7 @@ public class RecoveryStrat {
     // then our ephemeral timed out or we are the only node
     if (!iamleader) {
       
-      CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderUrl);
+      CommonsHttpSolrServer server = new CommonsHttpSolrServer(baseUrl);
       System.out.println("send prep cmd");
       PrepRecovery prepCmd = new PrepRecovery();
       prepCmd.setAction(CoreAdminAction.PREPRECOVERY);

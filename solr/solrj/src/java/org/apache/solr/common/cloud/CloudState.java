@@ -80,11 +80,11 @@ public class CloudState implements JSONWriter.Writable {
 		return Collections.unmodifiableSet(liveNodes);
 	}
 
-	public String getShardId(String coreName) {
+	public String getShardId(String coreNodeName) {
 	  for (Entry<String, Map<String, Slice>> states: collectionStates.entrySet()){
 	    for(Entry<String, Slice> slices: states.getValue().entrySet()) {
 	      for(Entry<String, ZkNodeProps> shards: slices.getValue().getShards().entrySet()){
-	        if(coreName.equals(shards.getValue().get(ZkStateReader.CORE_PROP))) {
+	        if(coreNodeName.equals(shards.getKey())) {
 	          return slices.getKey();
 	        }
 	      }

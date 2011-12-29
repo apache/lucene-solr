@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -150,15 +151,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
 
       try {
-        ZkNodeProps leaderProps = zkController.getZkStateReader().getLeaderProps(
-            collection, shardId);
+        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
+            collection, shardId));
         
-        String leaderUrl = leaderProps.get(ZkStateReader.URL_PROP);
+        String leaderUrl = leaderProps.getCoreUrl();
         if (leaderUrl == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Cound could not leader url in:" + leaderUrl);
         }
         
-        String leaderNodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
+        String leaderNodeName = leaderProps.getNodeName();
         
         String nodeName = zkController.getNodeName();
         
@@ -725,9 +726,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     List<String> urls = new ArrayList<String>(shardMap.size());
 
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
-      String nodeName = entry.getValue().get(ZkStateReader.NODE_NAME_PROP);
+      ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
+      String nodeName = nodeProps.getNodeName();
       if (cloudState.liveNodesContain(nodeName) && !nodeName.equals(thisNodeName)) {
-        String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
+        String replicaUrl = nodeProps.getCoreUrl();
         urls.add(replicaUrl);
       }
     }
@@ -752,9 +754,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       Map<String,ZkNodeProps> shardMap = replicas.getShards();
       
       for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
-        if (cloudState.liveNodesContain(entry.getValue().get(
-            ZkStateReader.NODE_NAME_PROP)) && !entry.getKey().equals(shardZkNodeName)) {
-          String replicaUrl = entry.getValue().get(ZkStateReader.URL_PROP);
+        ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
+        if (cloudState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(shardZkNodeName)) {
+          String replicaUrl = nodeProps.getCoreUrl();
           urls.add(replicaUrl);
         }
       }

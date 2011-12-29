@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
@@ -83,7 +84,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       super("Thread-" + nodeNumber);
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       this.nodeNumber = nodeNumber;
-      props = new ZkNodeProps(ZkStateReader.URL_PROP, Integer.toString(nodeNumber));
+      props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, Integer.toString(nodeNumber), ZkStateReader.CORE_PROP, "");
     }
     
     @Override
@@ -124,11 +125,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws Exception {
     LeaderElector elector = new LeaderElector(zkClient);
-    ZkNodeProps props = new ZkNodeProps(ZkStateReader.URL_PROP,"http://127.0.0.1/solr");
+    ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr/", ZkStateReader.CORE_PROP, "");
     ElectionContext context = new ShardLeaderElectionContext("shard2", "collection1", "dummynode1", props, zkClient);
     elector.setup(context);
     elector.joinElection(context);
-    assertEquals("http://127.0.0.1/solr", getLeaderUrl("collection1", "shard2"));
+    assertEquals("http://127.0.0.1/solr/", getLeaderUrl("collection1", "shard2"));
   }
   
   private String getLeaderUrl(String collection, String slice) throws KeeperException, InterruptedException {
@@ -136,8 +137,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     while (iterCount-- > 0)
       try {
       byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
-      ZkNodeProps leaderProps = ZkNodeProps.load(data);
-      return leaderProps.get(ZkStateReader.URL_PROP);
+      ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
+      return leaderProps.getCoreUrl();
     } catch (NoNodeException e) {
       Thread.sleep(100);
     }
@@ -173,7 +174,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       Thread.sleep(100);
     }
     
-    int leaderThread = Integer.parseInt(getLeaderUrl("collection1", "shard1"));
+    int leaderThread = getLeaderThread();
     
     // whoever the leader is, should be the n_0 seq
     assertEquals(0, threads.get(leaderThread).seq);
@@ -184,7 +185,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ((ClientThread) seqToThread.get(1)).close();
     ((ClientThread) seqToThread.get(3)).close();
     
-    leaderThread = Integer.parseInt(getLeaderUrl("collection1", "shard1"));
+    leaderThread = getLeaderThread();
     
     // whoever the leader is, should be the n_2 seq
     assertEquals(2, threads.get(leaderThread).seq);
@@ -196,7 +197,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ((ClientThread) seqToThread.get(7)).close();
     ((ClientThread) seqToThread.get(8)).close();
     
-    leaderThread = Integer.parseInt(getLeaderUrl("collection1", "shard1"));
+    leaderThread = getLeaderThread();
     
     // whoever the leader is, should be the n_9 seq
     assertEquals(9, threads.get(leaderThread).seq);
@@ -211,6 +212,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     }
     
     //printLayout(server.getZkAddress());
+  }
+
+  private int getLeaderThread() throws KeeperException, InterruptedException {
+    return Integer.parseInt(getLeaderUrl("collection1", "shard1").replaceAll("/", ""));
   }
   
   @Test

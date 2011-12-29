@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class ShardLeaderWatcher implements Watcher {
   private static Logger logger = LoggerFactory.getLogger(ShardLeaderWatcher.class); 
   static interface ShardLeaderListener {
-    void announceLeader(String collection, String shardId, ZkNodeProps props);
+    void announceLeader(String collection, String shardId, ZkCoreNodeProps props);
   }
   
   private final String shard;
@@ -58,7 +59,7 @@ public class ShardLeaderWatcher implements Watcher {
     try {
       byte[] data = zkClient.getData(path, this, null);
       if (data != null) {
-        final ZkNodeProps leaderProps = ZkNodeProps.load(data);
+        final ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         listener.announceLeader(collection, shard, leaderProps);
       }
     } catch (KeeperException ke) {

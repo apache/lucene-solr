@@ -91,7 +91,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   @Override
   public void tearDown() throws Exception {
     
-    //printLayout();
+    printLayout();
 
     super.tearDown();
   }

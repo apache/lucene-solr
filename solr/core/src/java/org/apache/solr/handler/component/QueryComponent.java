@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.*;
@@ -289,16 +290,16 @@ public class QueryComponent extends SearchComponent
             StringBuilder sliceShardsStr = new StringBuilder();
             boolean first = true;
             for (ZkNodeProps nodeProps : sliceShards.values()) {
-              if (!liveNodes.contains(nodeProps
-                  .get(ZkStateReader.NODE_NAME_PROP))
-                  && !nodeProps.get(ZkStateReader.STATE_PROP).equals(
+              ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+              if (!liveNodes.contains(coreNodeProps.getNodeName())
+                  && !coreNodeProps.getState().equals(
                       ZkStateReader.RECOVERING)) continue;
               if (first) {
                 first = false;
               } else {
                 sliceShardsStr.append('|');
               }
-              String url = nodeProps.get(ZkStateReader.URL_PROP);
+              String url = coreNodeProps.getCoreUrl();
               if (url.startsWith("http://"))
                 url = url.substring(7);
               sliceShardsStr.append(url);
