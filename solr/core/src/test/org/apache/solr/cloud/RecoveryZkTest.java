@@ -63,8 +63,6 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    del("*:*");
-    
     // start a couple indexing threads
     
     indexThread = new StopableIndexingThread(0, true);
@@ -79,7 +77,6 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     
     // bring shard replica down
     System.out.println("bring shard down");
-    System.out.println(shardToJetty);
     JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1);
 
     
@@ -133,8 +130,6 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     
     indexThread.join();
     indexThread2.join();
-    
-    printLayout();
     
     super.tearDown();
   }
