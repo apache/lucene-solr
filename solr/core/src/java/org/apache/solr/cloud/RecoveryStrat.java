@@ -118,7 +118,7 @@ public class RecoveryStrat {
               replicate(core, shardZkNodeName, leaderBaseUrl, leaderUrl,
                   leaderBaseUrl.equals(baseUrl));
               
-              // nocommit:
+              // nocommit: remove this
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
                   true, null);
               SolrIndexSearcher is = searcher.get();
@@ -165,7 +165,7 @@ public class RecoveryStrat {
               log.error("Recovery failed - trying again...");
               retries++;
               if (retries >= MAX_RETRIES) {
-                // nocommit: for now, give up after 10 tries
+                // TODO: for now, give up after 10 tries - should we do more?
                 close = true;
               }
               
