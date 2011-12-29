@@ -1,5 +1,22 @@
 package org.apache.lucene.analysis.cjk;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
@@ -52,7 +69,7 @@ public final class CJKWidthFilter extends TokenFilter {
           text[i] -= 0xFEE0;
         } else if (ch >= 0xFF65 && ch <= 0xFF9F) {
           // Halfwidth Katakana variants
-          if ((ch == 0xFF9E || ch == 0xFF9F) && i > 0 && combine(text, i, length, ch)) {
+          if ((ch == 0xFF9E || ch == 0xFF9F) && i > 0 && combine(text, i, ch)) {
             length = StemmerUtil.delete(text, i--, length);
           } else {
             text[i] = KANA_NORM[ch - 0xFF65];
@@ -82,7 +99,7 @@ public final class CJKWidthFilter extends TokenFilter {
   };
   
   /** returns true if we successfully combined the voice mark */
-  private static boolean combine(char text[], int pos, int length, char ch) {
+  private static boolean combine(char text[], int pos, char ch) {
     final char prev = text[pos-1];
     if (prev >= 0x30A6 && prev <= 0x30FD) {
       text[pos-1] += (ch == 0xFF9F)
