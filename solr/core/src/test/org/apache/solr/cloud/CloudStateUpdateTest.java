@@ -67,10 +67,12 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
   @AfterClass
   public static void afterClass() throws InterruptedException {
+    System.clearProperty("solrcloud.skip.autorecovery");
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
   }
