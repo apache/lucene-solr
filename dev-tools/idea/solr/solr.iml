@@ -29,5 +29,6 @@
     <orderEntry type="module" module-name="spellchecker" />
     <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="lucene" />
+    <orderEntry type="module" module-name="phonetic" />
   </component>
 </module>
