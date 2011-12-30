@@ -39,7 +39,6 @@ import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -151,6 +150,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
 
       try {
+        // TODO: if we find out we cannot talk to zk anymore, we should probably realize we are not
+        // a leader anymore - we shouldn't accept updates at all??
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
             collection, shardId));
         
@@ -166,7 +167,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         isLeader = nodeName.equals(leaderNodeName);
         
         if (req.getParams().getBool(SEEN_LEADER, false)) {
-          // we are coming from the leader, just go local - set no urlstr
+          // we are coming from the leader, just go local - add no urls
         } else if (isLeader) {
           // that means I want to forward onto my replicas...
           // so get the replicas...
@@ -299,6 +300,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   .getZkStateReader().getLeaderUrl(collection, shardId));
               response.sreq.exception = null;
               
+              // nocommit
               System.out.println("FORWARD FAILED:" + urls + " retry with "
                   + response.sreq.urls);
               response.errors.get(0).e.printStackTrace();
@@ -349,14 +351,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           server.request(recoverRequestCmd);
           System.out.println("send recover request worked");
         } catch (MalformedURLException e) {
-          // nocommit
-          e.printStackTrace();
+          log.error("", e);
         } catch (SolrServerException e) {
-          // nocommit
-          e.printStackTrace();
+          log.error("", e);
         } catch (IOException e) {
-          // nocommit
-          e.printStackTrace();
+          log.error("", e);
         }
       }
     }
@@ -706,7 +705,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void finish() throws IOException {
     if (next != null && urls == null) next.finish();
   }
-  
+  // nocommit: TODO: make map of url to props as well - order to recover code needs core name
   private List<String> getReplicaUrls(SolrQueryRequest req, String collection,
       String shardId, String thisNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
