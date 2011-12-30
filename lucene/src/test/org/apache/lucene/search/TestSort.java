@@ -73,7 +73,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    NUM_STRINGS = atLeast(6000);
+    NUM_STRINGS = atLeast(500);
   }
   // document data:
   // the tracer field is used to determine which document was hit
@@ -154,8 +154,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(
         indexStore,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setMaxBufferedDocs(4).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(97))
     );
     for (int i=0; i<NUM_STRINGS; i++) {

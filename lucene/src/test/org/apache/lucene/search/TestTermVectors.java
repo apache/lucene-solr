@@ -30,6 +30,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,13 +39,12 @@ import java.util.Map;
 import java.util.SortedSet;
 
 public class TestTermVectors extends LuceneTestCase {
-  private IndexSearcher searcher;
-  private IndexReader reader;
-  private Directory directory;
+  private static IndexSearcher searcher;
+  private static IndexReader reader;
+  private static Directory directory;
 
-  @Override
-  public void setUp() throws Exception {                  
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {                  
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
     //writer.setUseCompoundFile(true);
@@ -74,12 +75,14 @@ public class TestTermVectors extends LuceneTestCase {
     searcher = newSearcher(reader);
   }
   
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
-    super.tearDown();
+    reader = null;
+    directory = null;
+    searcher = null;
   }
 
   public void test() {
@@ -383,7 +386,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
     IndexReader reader = writer.getReader();
     writer.close();
-    searcher = newSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     Query query = new TermQuery(new Term("field", "hundred"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -419,7 +422,7 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    searcher = newSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     Query query = new TermQuery(new Term("field", "one"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

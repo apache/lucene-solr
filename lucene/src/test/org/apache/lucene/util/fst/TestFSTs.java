@@ -1443,7 +1443,7 @@ public class TestFSTs extends LuceneTestCase {
       Field idField = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
       doc.add(idField);
       
-      final int NUM_IDS = (int) (1000*RANDOM_MULTIPLIER*(1.0+random.nextDouble()));
+      final int NUM_IDS = atLeast(200);
       //final int NUM_IDS = (int) (377 * (1.0+random.nextDouble()));
       if (VERBOSE) {
         System.out.println("TEST: NUM_IDS=" + NUM_IDS);
