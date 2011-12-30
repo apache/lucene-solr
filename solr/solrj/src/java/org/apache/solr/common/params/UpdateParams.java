@@ -36,13 +36,16 @@ public interface UpdateParams
   
   /** Commit everything after the command completes */
   public static String COMMIT = "commit";
-  
+
   /** Commit within a certain time period (in ms) */
   public static String COMMIT_WITHIN = "commitWithin";
 
   /** Optimize the index and commit everything after the command completes */
   public static String OPTIMIZE = "optimize";
-  
+
+  /** @expert calls IndexWriter.prepareCommit */
+  public static String PREPARE_COMMIT = "prepareCommit";
+
   /** Rollback update commands */
   public static String ROLLBACK = "rollback";
 

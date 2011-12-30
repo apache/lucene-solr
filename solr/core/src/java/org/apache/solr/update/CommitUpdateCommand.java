@@ -27,6 +27,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean waitSearcher=true;
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
+  public boolean prepareCommit = false;
 
   /**
    * During optimize, optimize down to <= this many segments.  Must be >= 1
@@ -41,10 +42,11 @@ public class CommitUpdateCommand extends UpdateCommand {
   }
   @Override
   public String toString() {
-    return "commit(optimize="+optimize
+    return prepareCommit ? "prepareCommit" :
+        ("commit(optimize="+optimize
             +",waitSearcher="+waitSearcher
             +",expungeDeletes="+expungeDeletes
             +",softCommit="+softCommit
-            +')';
+            +')');
   }
 }

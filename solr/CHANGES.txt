@@ -197,6 +197,9 @@ New Features
 
 * SOLR-2481: Add support for commitWithin in DataImportHandler (Sami Siren via yonik)
 
+* SOLR-2992: Add support for IndexWriter.prepareCommit() via prepareCommit=true
+  on update URLs. (yonik)
+
 
 Optimizations
 ----------------------

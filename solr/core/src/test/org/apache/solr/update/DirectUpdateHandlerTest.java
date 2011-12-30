@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -265,6 +266,47 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(r.maxDoc(), r.numDocs());  // no deletions
     assertEquals(4,r.maxDoc());             // no dups
     assertFalse(r.getTopReaderContext().isAtomic);  //still more than 1 segment
+    sr.close();
+  }
+  
+  @Test
+  public void testPrepareCommit() throws Exception {
+    SolrQueryRequest sr = req();
+    IndexReader r = sr.getSearcher().getTopReaderContext().reader;
+    Directory d = r.directory();
+    
+    assertU(adoc("id", "1"));
+
+    int nFiles = d.listAll().length;
+
+    updateJ("", params("prepareCommit","true"));
+
+    assertTrue( d.listAll().length > nFiles);  // make sure new index files were actually written
+    
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    updateJ("", params("rollback","true"));
+    assertU(commit());
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    assertU(adoc("id","1"));
+    updateJ("", params("prepareCommit","true"));
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    assertU(commit());
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==1"
+    );
+
     sr.close();
   }
   
