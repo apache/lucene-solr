@@ -250,9 +250,7 @@ public class LBHttpSolrServer extends SolrServer {
         rsp.rsp = server.request(req.getRequest());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        System.err.println("CloudClient Error");
-        e.printStackTrace();
-        // nocommit: we would like to try with another server on connection problems
+        // we retry on 404 - you can see this on solr shutdown
         if (e.code() == 404) {
           ex = addZombie(server, e);
         } else {
@@ -260,7 +258,8 @@ public class LBHttpSolrServer extends SolrServer {
           throw e;
         }
        
-       // TODO: consider - currently does cause a problem with distrib updates
+       // TODO: consider using below above - currently does cause a problem with distrib updates:
+       // seems to match up against a failed forward to leader exception as well...
        // || e.code() == 503
        //     || e.getMessage().contains("java.net.SocketException")
        //     || e.getMessage().contains("java.net.ConnectException")

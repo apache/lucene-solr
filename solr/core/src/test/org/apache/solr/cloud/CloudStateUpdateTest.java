@@ -36,9 +36,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * TODO: look at hostPort used below
- */
 public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
