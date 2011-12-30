@@ -159,7 +159,8 @@ public final class ZkController {
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
                   // nocommit: non reloaded cores will try and
-                  // recover - reloaded cores will not
+                  // recover - reloaded cores will not - but in the case
+                  // of reconnect like this, *everyone* should re register
                   register(descriptor.getName(), descriptor);
                 }
               }
