@@ -37,19 +37,20 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class TestFieldCache extends LuceneTestCase {
-  protected IndexReader reader;
-  private int NUM_DOCS;
-  private int NUM_ORDS;
-  private String[] unicodeStrings;
-  private BytesRef[][] multiValued;
-  private Directory directory;
+  private static IndexReader reader;
+  private static int NUM_DOCS;
+  private static int NUM_ORDS;
+  private static String[] unicodeStrings;
+  private static BytesRef[][] multiValued;
+  private static Directory directory;
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    NUM_DOCS = atLeast(1000);
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    NUM_DOCS = atLeast(500);
     NUM_ORDS = atLeast(2);
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
@@ -101,11 +102,14 @@ public class TestFieldCache extends LuceneTestCase {
     writer.close();
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
+    unicodeStrings = null;
+    multiValued = null;
   }
   
   public void testInfoStream() throws Exception {
@@ -296,7 +300,7 @@ public class TestFieldCache extends LuceneTestCase {
     dir.close();
   }
 
-  private String generateString(int i) {
+  private static String generateString(int i) {
     String s = null;
     if (i > 0 && random.nextInt(3) == 1) {
       // reuse past string -- try to find one that's not null

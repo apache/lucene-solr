@@ -686,7 +686,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private final static int THREAD_STOP_GRACE_MSEC = 50;
+  private final static int THREAD_STOP_GRACE_MSEC = 10;
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
 
@@ -898,10 +898,10 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 15));
       } else {
         // reasonable value
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 8, 1000));
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 16, 1000));
       }
     }
     if (r.nextBoolean()) {
@@ -914,15 +914,21 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (r.nextBoolean()) {
-      c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 1, 20)));
+      if (rarely(r)) {
+        // crazy value
+        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 5, 20)));
+      } else {
+        // reasonable value
+        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 1, 4)));
+      }
     }
 
-    if (r.nextBoolean()) {
-      c.setMergePolicy(newTieredMergePolicy());
-    } else if (r.nextBoolean()) {
-      c.setMergePolicy(newLogMergePolicy());
-    } else {
+    if (rarely(r)) {
       c.setMergePolicy(new MockRandomMergePolicy(r));
+    } else if (r.nextBoolean()) {
+      c.setMergePolicy(newTieredMergePolicy());
+    } else {
+      c.setMergePolicy(newLogMergePolicy());
     }
 
     c.setReaderPooling(r.nextBoolean());
@@ -943,9 +949,9 @@ public abstract class LuceneTestCase extends Assert {
     logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (rarely(r)) {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 4));
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 9));
     } else {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 5, 50));
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 10, 50));
     }
     return logmp;
   }
@@ -953,16 +959,24 @@ public abstract class LuceneTestCase extends Assert {
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
     TieredMergePolicy tmp = new TieredMergePolicy();
     if (rarely(r)) {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 4));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 4));
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 9));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 9));
     } else {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 5, 50));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 5, 50));
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 10, 50));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 10, 50));
     }
-    tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+    if (rarely(r)) {
+      tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+    } else {
+      tmp.setMaxMergedSegmentMB(r.nextDouble() * 100);
+    }
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
-    tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+    if (rarely(r)) {
+      tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+    } else {
+      tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 10, 50));
+    }
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
     tmp.setReclaimDeletesWeight(r.nextDouble()*4);
@@ -1216,7 +1230,7 @@ public abstract class LuceneTestCase extends Assert {
    * with one that returns null for getSequentialSubReaders.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
-    if (random.nextBoolean()) {
+    if (usually()) {
       if (maybeWrap && rarely()) {
         r = new SlowMultiReaderWrapper(r);
       }

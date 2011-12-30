@@ -36,6 +36,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
@@ -43,6 +45,22 @@ import org.xml.sax.SAXException;
  *
  */
 public class TestArbitraryIndexDir extends AbstractSolrTestCase{
+
+  // TODO: fix this test to not require FSDirectory
+  static String savedFactory;
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+  }
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
+  }
 
   @Override
   public void setUp() throws Exception {

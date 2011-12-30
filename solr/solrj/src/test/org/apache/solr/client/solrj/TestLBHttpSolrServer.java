@@ -30,6 +30,8 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +50,22 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
   HttpClient httpClient;
 
+  // TODO: fix this test to not require FSDirectory
+  static String savedFactory;
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+  }
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
+  }
+  
   @Override
   public void setUp() throws Exception {
     super.setUp();

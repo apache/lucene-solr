@@ -280,7 +280,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
   }
   
   public void testUnicode() throws Exception {
-    int numIterations = 100 * RANDOM_MULTIPLIER;
+    int numIterations = atLeast(3);
     
     SolrServer server = getSolrServer();
     
@@ -302,7 +302,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
           }
         }
 
-        int numDocs = _TestUtil.nextInt(random, 1, 100);
+        int numDocs = _TestUtil.nextInt(random, 1, 10*RANDOM_MULTIPLIER);
         
         // Empty the database...
         server.deleteByQuery("*:*");// delete everything!

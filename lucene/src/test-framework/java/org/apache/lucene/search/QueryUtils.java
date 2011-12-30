@@ -105,7 +105,7 @@ public class QueryUtils {
   public static void check(Random random, Query q1, IndexSearcher s) {
     check(random, q1, s, true);
   }
-  private static void check(Random random, Query q1, IndexSearcher s, boolean wrap) {
+  public static void check(Random random, Query q1, IndexSearcher s, boolean wrap) {
     try {
       check(q1);
       if (s!=null) {

@@ -21,5 +21,6 @@
      DO NOT ADD THINGS TO THIS CONFIG! -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
 </config>

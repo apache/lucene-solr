@@ -945,7 +945,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // note: tiny rambuffer used, as with a 1MB buffer the test is too slow (flush @ 128,999)
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-                                    .setRAMBufferSizeMB(0.2f).setMaxBufferedDocs(1000).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
+                                    .setRAMBufferSizeMB(0.1f).setMaxBufferedDocs(1000).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
     int count = 0;
     while(true) {
       Document doc = new Document();
@@ -1020,6 +1020,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   // Make sure buffered (pushed) deletes don't use up so
   // much RAM that it forces long tail of tiny segments:
+  @Nightly
   public void testApplyDeletesOnFlush() throws Exception {
     Directory dir = newDirectory();
     // Cannot use RandomIndexWriter because we don't want to

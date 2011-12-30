@@ -47,6 +47,7 @@ import org.apache.lucene.util._TestUtil;
  * 
  * @lucene.experimental
  */
+@LuceneTestCase.Nightly
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.

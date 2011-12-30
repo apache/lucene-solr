@@ -24,7 +24,7 @@
        If replication is in use, this should match the replication configuration. -->
   <dataDir>${solr.data.dir:}</dataDir>
 
-
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->
     <useCompoundFile>false</useCompoundFile>

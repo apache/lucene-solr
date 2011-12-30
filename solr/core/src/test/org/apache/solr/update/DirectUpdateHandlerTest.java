@@ -27,6 +27,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,9 +38,22 @@ import org.junit.Test;
  */
 public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
+  // TODO: fix this test to not require FSDirectory
+  static String savedFactory;
   @BeforeClass
   public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig.xml", "schema12.xml");
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
   }
 
   @Override

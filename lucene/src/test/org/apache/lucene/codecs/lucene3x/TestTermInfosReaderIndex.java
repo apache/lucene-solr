@@ -55,32 +55,43 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestTermInfosReaderIndex extends LuceneTestCase {
   
-  private static final int NUMBER_OF_DOCUMENTS = 1000;
-  private static final int NUMBER_OF_FIELDS = 100;
-  private TermInfosReaderIndex index;
-  private Directory directory;
-  private SegmentTermEnum termEnum;
-  private int indexDivisor;
-  private int termIndexInterval;
-  private IndexReader reader;
-  private List<Term> sampleTerms;
+  private static int NUMBER_OF_DOCUMENTS;
+  private static int NUMBER_OF_FIELDS;
+  private static TermInfosReaderIndex index;
+  private static Directory directory;
+  private static SegmentTermEnum termEnum;
+  private static int indexDivisor;
+  private static int termIndexInterval;
+  private static IndexReader reader;
+  private static List<Term> sampleTerms;
   
   /** we will manually instantiate preflex-rw here */
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass() throws Exception {
     LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
+    
+    termIndexInterval = config.getTermIndexInterval();
     indexDivisor = _TestUtil.nextInt(random, 1, 10);
+    NUMBER_OF_DOCUMENTS = atLeast(100);
+    NUMBER_OF_FIELDS = atLeast(Math.max(10, 3*termIndexInterval*indexDivisor/NUMBER_OF_DOCUMENTS));
+    
     directory = newDirectory();
-    termIndexInterval = populate(directory);
+
+    config.setCodec(new PreFlexRWCodec());
+    // turn off compound file, this test will open some index files directly.
+    LogMergePolicy mp = newLogMergePolicy();
+    mp.setUseCompoundFile(false);
+    config.setMergePolicy(mp);
+
+    
+    populate(directory, config);
 
     IndexReader r0 = IndexReader.open(directory);
     SegmentReader r = (SegmentReader) r0.getSequentialSubReaders()[0];
@@ -102,15 +113,18 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     
     reader = IndexReader.open(directory);
     sampleTerms = sample(reader,1000);
-    
   }
   
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     termEnum.close();
     reader.close();
     directory.close();
-    super.tearDown();
+    termEnum = null;
+    reader = null;
+    directory = null;
+    index = null;
+    sampleTerms = null;
   }
   
   public void testSeekEnum() throws CorruptIndexException, IOException {
@@ -141,7 +155,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     }
   }
 
-  private List<Term> sample(IndexReader reader, int size) throws IOException {
+  private static List<Term> sample(IndexReader reader, int size) throws IOException {
     List<Term> sample = new ArrayList<Term>();
     Random random = new Random();
     FieldsEnum fieldsEnum = MultiFields.getFields(reader).iterator();
@@ -166,22 +180,13 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   private Term findTermThatWouldBeAtIndex(SegmentTermEnum termEnum, int index) throws IOException {
     int termPosition = index * termIndexInterval * indexDivisor;
     for (int i = 0; i < termPosition; i++) {
-      if (!termEnum.next()) {
-        fail("Should not have run out of terms.");
-      }
+      // TODO: this test just uses random terms, so this is always possible
+      assumeTrue("ran out of terms.", termEnum.next());
     }
     return termEnum.term();
   }
 
-  private int populate(Directory directory) throws CorruptIndexException, LockObtainFailedException, IOException {
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
-    config.setCodec(new PreFlexRWCodec());
-    // turn off compound file, this test will open some index files directly.
-    LogMergePolicy mp = newLogMergePolicy();
-    mp.setUseCompoundFile(false);
-    config.setMergePolicy(mp);
-
+  private static void populate(Directory directory, IndexWriterConfig config) throws CorruptIndexException, LockObtainFailedException, IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, config);
     for (int i = 0; i < NUMBER_OF_DOCUMENTS; i++) {
       Document document = new Document();
@@ -192,10 +197,9 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     }
     writer.forceMerge(1);
     writer.close();
-    return config.getTermIndexInterval();
   }
   
-  private String getText() {
+  private static String getText() {
     return Long.toString(random.nextLong(),Character.MAX_RADIX);
   }
 }

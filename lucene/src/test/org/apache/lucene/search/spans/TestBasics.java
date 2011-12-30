@@ -111,7 +111,7 @@ public class TestBasics extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, simplePayloadAnalyzer)
-                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
+                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();

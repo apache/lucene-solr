@@ -77,7 +77,7 @@ public class TestStressNRT extends LuceneTestCase {
     final boolean tombstones = random.nextBoolean();
 
     // query variables
-    final AtomicLong operations = new AtomicLong(atLeast(50000));  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(atLeast(10000));  // number of query operations to perform in total
 
     final int nReadThreads = _TestUtil.nextInt(random, 1, TEST_NIGHTLY ? 10 : 5);
     initModel(ndocs);

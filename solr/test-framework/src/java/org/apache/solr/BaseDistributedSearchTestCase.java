@@ -81,7 +81,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   // to stress with higher thread counts and requests, make sure the junit
   // xml formatter is not being used (all output will be buffered before
   // transformation to xml and cause an OOM exception).
-  protected int stress = 2;
+  protected int stress = TEST_NIGHTLY ? 2 : 0;
   protected boolean verifyStress = true;
   protected int nThreads = 3;
 

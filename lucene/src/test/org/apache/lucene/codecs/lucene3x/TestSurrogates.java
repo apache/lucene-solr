@@ -302,7 +302,7 @@ public class TestSurrogates extends LuceneTestCase {
 
     for(int f=0;f<numField;f++) {
       String field = "f" + f;
-      final int numTerms = atLeast(1000);
+      final int numTerms = atLeast(200);
 
       final Set<String> uniqueTerms = new HashSet<String>();
 

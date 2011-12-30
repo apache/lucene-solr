@@ -773,7 +773,7 @@ public class TestCompoundFile extends LuceneTestCase
   public void testManySubFiles() throws IOException {
 
     final Directory d = newFSDirectory(_TestUtil.getTempDir("CFSManySubFiles"));
-    final int FILE_COUNT = 10000;
+    final int FILE_COUNT = atLeast(500);
 
     for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
       IndexOutput out = d.createOutput("file." + fileIdx, newIOContext(random));

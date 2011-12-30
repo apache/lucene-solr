@@ -15,6 +15,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -26,6 +27,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 
 
@@ -349,5 +351,102 @@ public class TestIndexWriterMerging extends LuceneTestCase
       iw.addDocument(document);
     iw.close();
     dir.close();
+  }
+  
+  public void testNoWaitClose() throws Throwable {
+    Directory directory = newDirectory();
+
+    final Document doc = new Document();
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setTokenized(false);
+
+    Field idField = newField("id", "", customType);
+    doc.add(idField);
+
+    for(int pass=0;pass<2;pass++) {
+      if (VERBOSE) {
+        System.out.println("TEST: pass=" + pass);
+      }
+
+      IndexWriterConfig conf =  newIndexWriterConfig(
+              TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              setOpenMode(OpenMode.CREATE).
+              setMaxBufferedDocs(2).
+              setMergePolicy(newLogMergePolicy());
+      if (pass == 2) {
+        conf.setMergeScheduler(new SerialMergeScheduler());
+      }
+
+      IndexWriter writer = new IndexWriter(directory, conf);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
+
+      for(int iter=0;iter<10;iter++) {
+        if (VERBOSE) {
+          System.out.println("TEST: iter=" + iter);
+        }
+        for(int j=0;j<199;j++) {
+          idField.setValue(Integer.toString(iter*201+j));
+          writer.addDocument(doc);
+        }
+
+        int delID = iter*199;
+        for(int j=0;j<20;j++) {
+          writer.deleteDocuments(new Term("id", Integer.toString(delID)));
+          delID += 5;
+        }
+
+        // Force a bunch of merge threads to kick off so we
+        // stress out aborting them on close:
+        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+
+        final IndexWriter finalWriter = writer;
+        final ArrayList<Throwable> failure = new ArrayList<Throwable>();
+        Thread t1 = new Thread() {
+            @Override
+            public void run() {
+              boolean done = false;
+              while(!done) {
+                for(int i=0;i<100;i++) {
+                  try {
+                    finalWriter.addDocument(doc);
+                  } catch (AlreadyClosedException e) {
+                    done = true;
+                    break;
+                  } catch (NullPointerException e) {
+                    done = true;
+                    break;
+                  } catch (Throwable e) {
+                    e.printStackTrace(System.out);
+                    failure.add(e);
+                    done = true;
+                    break;
+                  }
+                }
+                Thread.yield();
+              }
+
+            }
+          };
+
+        if (failure.size() > 0) {
+          throw failure.get(0);
+        }
+
+        t1.start();
+
+        writer.close(false);
+        t1.join();
+
+        // Make sure reader can read
+        IndexReader reader = IndexReader.open(directory);
+        reader.close();
+
+        // Reopen
+        writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+      }
+      writer.close();
+    }
+
+    directory.close();
   }
 }

@@ -24,6 +24,7 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <queryParser name="foo" class="FooQParserPlugin"/>
   <!-- override the default "lucene" qparser -->
   <queryParser name="lucene" class="org.apache.solr.search.FooQParserPlugin"/>
