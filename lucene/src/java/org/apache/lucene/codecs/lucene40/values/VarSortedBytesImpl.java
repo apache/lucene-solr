@@ -57,8 +57,8 @@ final class VarSortedBytesImpl {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Counter bytesUsed, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+        Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam);
       this.comp = comp;
       size = 0;
     }
@@ -123,7 +123,7 @@ final class VarSortedBytesImpl {
       // total bytes of data
       idxOut.writeLong(maxBytes);
       PackedInts.Writer offsetWriter = PackedInts.getWriter(idxOut, count+1,
-          PackedInts.bitsRequired(maxBytes));
+          bitsRequired(maxBytes));
       // first dump bytes data, recording index & write offset as
       // we go
       final BytesRef spare = new BytesRef();
