@@ -194,8 +194,6 @@ public class SolrCmdDistributor {
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
     if (cmd == null) return;
-    //System.out.println("piggy back commit on");
-    // nocommit
     ureq.setAction(cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
@@ -222,12 +220,9 @@ public class SolrCmdDistributor {
         if (params != null) combinedParams.add(params);
         if (ureq.getParams() == null) ureq.setParams(new ModifiableSolrParams());
         ureq.getParams().add(combinedParams);
-        //System.out.println("ureq is:" + ureq);
       }
       
       adds.remove(url.getUrl());
-      //System.out.println("flush adds to " + url + " " + alist.size());
-      //System.out.println("commit " + ureq.getAction());
       
       submit(ureq, url);
     }
@@ -278,7 +273,6 @@ public class SolrCmdDistributor {
   }
   
   public static class Request {
-    // TODO: we may need to look at deep cloning this?
     public Url url;
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
@@ -302,7 +296,7 @@ public class SolrCmdDistributor {
       pending = new HashSet<Future<Request>>();
     }
     final String url = sreq.url.getUrl();
-    //System.out.println("submit url:" + url);
+
     Callable<Request> task = new Callable<Request>() {
       @Override
       public Request call() throws Exception {
@@ -359,11 +353,11 @@ public class SolrCmdDistributor {
             
             // if there is a retry url, we want to retry...
             // TODO: but we really should only retry on connection errors...
-            if (sreq.retries < 10 && sreq.url.checkRetry()) {
+            if (sreq.retries < 5 && sreq.url.checkRetry()) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
-              Thread.sleep(1000);
+              Thread.sleep(500);
               submit(sreq);
               checkResponses(block);
             } else {
