@@ -23,7 +23,7 @@ package org.apache.solr.common.params;
  *
  * @since solr 1.2
  */
-public interface UpdateParams 
+public interface UpdateParams
 {
   
   /** wait for the search to warm up */
@@ -43,7 +43,7 @@ public interface UpdateParams
   /** Optimize the index and commit everything after the command completes */
   public static String OPTIMIZE = "optimize";
 
-  /** @expert calls IndexWriter.prepareCommit */
+  /** expert: calls IndexWriter.prepareCommit */
   public static String PREPARE_COMMIT = "prepareCommit";
 
   /** Rollback update commands */
