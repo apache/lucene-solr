@@ -836,9 +836,8 @@ public class FSUpdateLog extends UpdateLog {
     }
   }
 
-  // nocommit: i made this not static for my test that doesn't reinit statics after restart...
-   ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-      1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+  ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0,
+      Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
 
 }
 
