@@ -614,7 +614,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         vinfo.unlockForUpdate();
       }
     }
-    // nocommit: we should consider this? commit everyone in the current collection
+    // TODO: we should consider this? commit everyone in the current collection
 
     if (zkEnabled) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
