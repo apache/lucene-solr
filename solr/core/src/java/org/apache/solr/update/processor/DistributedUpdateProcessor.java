@@ -625,7 +625,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (zkEnabled) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      System.out.println("distrib commit?");
       if (!params.getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);
 
@@ -634,7 +633,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String shardZkNodeName = nodeName + "_" + req.getCore().getName();
         urls = getReplicaUrls(req, req.getCore().getCoreDescriptor()
             .getCloudDescriptor().getCollectionName(), shardZkNodeName);
-        System.out.println("send commit to:" + urls);
+
         if (urls != null) {
           cmdDistrib.distribCommit(cmd, urls, params);
           finish();

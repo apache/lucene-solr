@@ -58,6 +58,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
+    System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("hostPort", "0000");
     
@@ -120,7 +121,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.clearProperty("zkHost");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
-
+    System.clearProperty("solrcloud.skip.autorecovery");
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
   }
