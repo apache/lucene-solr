@@ -17,6 +17,8 @@
 
 package org.apache.solr.update;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -271,16 +273,23 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testPrepareCommit() throws Exception {
+    assertU(adoc("id", "999"));
+    assertU(optimize());     // make sure there's just one segment
+    assertU(commit());       // commit a second time to make sure index files aren't still referenced by the old searcher
+
     SolrQueryRequest sr = req();
     IndexReader r = sr.getSearcher().getTopReaderContext().reader;
     Directory d = r.directory();
-    
+
+    log.info("FILES before addDoc="+ Arrays.asList(d.listAll()));
     assertU(adoc("id", "1"));
 
     int nFiles = d.listAll().length;
+    log.info("FILES before prepareCommit="+ Arrays.asList(d.listAll()));
 
-    updateJ("", params("prepareCommit","true"));
+    updateJ("", params("prepareCommit", "true"));
 
+    log.info("FILES after prepareCommit="+Arrays.asList(d.listAll()));
     assertTrue( d.listAll().length > nFiles);  // make sure new index files were actually written
     
     assertJQ(req("q", "id:1")
