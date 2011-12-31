@@ -260,7 +260,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     cmdDistrib.finish(urls);
     Response response = cmdDistrib.getResponse();
     // nocommit - we may need to tell about more than one error...
-    if (response.errors.size() > 0) {
+    
+    // if its a forward, any fail is a problem - 
+    // otherwise we assume things are fine if we got it locally
+    // until we start allowing min replication param
+    if (forwardToLeader && response.errors.size() > 0) {
       // nocommit: set first error...?
       rsp.setException(response.errors.get(0).e);
     } else {

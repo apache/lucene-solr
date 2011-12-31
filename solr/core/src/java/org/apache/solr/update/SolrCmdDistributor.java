@@ -342,8 +342,7 @@ public class SolrCmdDistributor {
     pending.add(completionService.submit(task));
     
   }
-  
-  // TODO: need to consider those that call this with block=false now...
+
   void checkResponses(boolean block) {
 
     while (pending != null && pending.size() > 0) {
@@ -360,7 +359,7 @@ public class SolrCmdDistributor {
             
             // if there is a retry url, we want to retry...
             // TODO: but we really should only retry on connection errors...
-            if (sreq.retries < 5 && sreq.url.checkRetry()) {
+            if (sreq.retries < 10 && sreq.url.checkRetry()) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
@@ -368,6 +367,7 @@ public class SolrCmdDistributor {
               submit(sreq);
               checkResponses(block);
             } else {
+              System.out.println("legit error:" + sreq.retries);
               Exception e = sreq.exception;
               Error error = new Error();
               error.e = e;
