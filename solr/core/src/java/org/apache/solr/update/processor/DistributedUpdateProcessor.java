@@ -54,8 +54,8 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.SolrCmdDistributor.Response;
-import org.apache.solr.update.SolrCmdDistributor.Url;
-import org.apache.solr.update.SolrCmdDistributor.StdUrl;
+import org.apache.solr.update.SolrCmdDistributor.Node;
+import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
@@ -97,7 +97,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // method in this update processor
   private boolean isLeader = true;
   private boolean forwardToLeader = false;
-  private List<Url> urls;
+  private List<Node> urls;
   private String shardId;
 
   
@@ -137,9 +137,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     cmdDistrib = new SolrCmdDistributor();
   }
 
-  private List<Url> setupRequest(int hash) {
+  private List<Node> setupRequest(int hash) {
     
-    List<Url> urls = null;
+    List<Node> urls = null;
 
     // if we are in zk mode...
     if (zkEnabled) {
@@ -156,11 +156,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
             collection, shardId));
         
-        String leaderUrl = leaderProps.getCoreUrl();
-        if (leaderUrl == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Cound could not leader url in:" + leaderUrl);
-        }
-        
         String leaderNodeName = leaderProps.getNodeName();
         
         String nodeName = zkController.getNodeName();
@@ -172,11 +167,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         } else if (isLeader) {
           // that means I want to forward onto my replicas...
           // so get the replicas...
-          urls = getReplicaUrls(req, collection, shardId, nodeName);
+          urls = getReplicaNodes(req, collection, shardId, nodeName);
         } else {
           // I need to forward onto the leader...
-          urls = new ArrayList<Url>(1);
-          urls.add(new RetryUrl(leaderUrl, zkController.getZkStateReader(), collection, shardId));
+          urls = new ArrayList<Node>(1);
+          urls.add(new RetryNode(leaderProps, zkController.getZkStateReader(), collection, shardId));
           forwardToLeader = true;
         }
         
@@ -278,21 +273,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       for (SolrCmdDistributor.Error error : response.errors) {
         
         // nocommit:
-        System.out.println("try and tell " + error.url + " to recover");
+        System.out.println("try and tell " + error.node.getUrl() + " to recover");
         // TODO: we should force their state to recovering ??
         
         // TODO: do retries??
         // TODO: what if its is already recovering? Right now they line up - should they?
         CommonsHttpSolrServer server;
         try {
-          server = new CommonsHttpSolrServer(error.url);
+          server = new CommonsHttpSolrServer(error.node.getBaseUrl());
           
           System.out.println("send recover cmd");
           RequestRecovery recoverRequestCmd = new RequestRecovery();
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-          // nocommit: the replica core name may not matcher the leader core
-          // name!
-          recoverRequestCmd.setCoreName(req.getCore().getName());
+          recoverRequestCmd.setCoreName(error.node.getCoreName());
           
           server.request(recoverRequestCmd);
           System.out.println("send recover request worked");
@@ -649,8 +642,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     if (next != null && urls == null) next.finish();
   }
-  // nocommit: TODO: make map of url to props as well - order to recover code needs core name
-  private List<Url> getReplicaUrls(SolrQueryRequest req, String collection,
+ 
+  private List<Node> getReplicaNodes(SolrQueryRequest req, String collection,
       String shardId, String thisNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
@@ -666,26 +659,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
-    List<Url> urls = new ArrayList<Url>(shardMap.size());
+    List<Node> nodes = new ArrayList<Node>(shardMap.size());
 
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       String nodeName = nodeProps.getNodeName();
       if (cloudState.liveNodesContain(nodeName) && !nodeName.equals(thisNodeName)) {
-        String replicaUrl = nodeProps.getCoreUrl();
-        urls.add(new StdUrl(replicaUrl));
+        nodes.add(new StdNode(nodeProps));
       }
     }
-    if (urls.size() == 0) {
+    if (nodes.size() == 0) {
       return null;
     }
-    return urls;
+    return nodes;
   }
   
-  private List<Url> getReplicaUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
+  private List<Node> getReplicaUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
-    List<Url> urls = new ArrayList<Url>();
+    List<Node> urls = new ArrayList<Node>();
     Map<String,Slice> slices = cloudState.getSlices(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
@@ -699,8 +691,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
         if (cloudState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(shardZkNodeName)) {
-          String replicaUrl = nodeProps.getCoreUrl();
-          urls.add(new StdUrl(replicaUrl));
+          urls.add(new StdNode(nodeProps));
         }
       }
     }
@@ -723,22 +714,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
   }
   
-  public static class RetryUrl extends Url {
-    String url;
+  public static class RetryNode extends StdNode {
+    
     private ZkStateReader zkStateReader;
     private String collection;
     private String shardId;
     
-    public RetryUrl(String url, ZkStateReader zkStateReader, String collection, String shardId) {
-      this.url = url;
+    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
+      super(nodeProps);
       this.zkStateReader = zkStateReader;
       this.collection = collection;
       this.shardId = shardId;
-    }
-    
-    @Override
-    public String getUrl() {
-      return url;
     }
     
     @Override

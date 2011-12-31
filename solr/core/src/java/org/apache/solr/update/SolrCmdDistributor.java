@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -80,7 +81,7 @@ public class SolrCmdDistributor {
     ModifiableSolrParams params;
   }
   
-  public void finish(List<Url> urls) {
+  public void finish(List<Node> urls) {
 
     // piggyback on any outstanding adds or deletes if possible.
     flushAdds(1, null, null, urls);
@@ -89,7 +90,7 @@ public class SolrCmdDistributor {
     checkResponses(true);
   }
   
-  public void distribDelete(DeleteUpdateCommand cmd, List<Url> urls, ModifiableSolrParams params) throws IOException {
+  public void distribDelete(DeleteUpdateCommand cmd, List<Node> urls, ModifiableSolrParams params) throws IOException {
     checkResponses(false);
     
     if (cmd.isDeleteById()) {
@@ -100,7 +101,7 @@ public class SolrCmdDistributor {
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<Url> urls, ModifiableSolrParams params) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<Node> urls, ModifiableSolrParams params) throws IOException {
     
     checkResponses(false);
     
@@ -121,7 +122,7 @@ public class SolrCmdDistributor {
     // nocommit: review as far as SOLR-2685
     // clone.indexedId = cmd.indexedId;
     // clone.doc = cmd.doc;
-    for (Url url : urls) {
+    for (Node url : urls) {
       List<AddRequest> alist = adds.get(url.getUrl());
       if (alist == null) {
         alist = new ArrayList<AddRequest>(2);
@@ -134,7 +135,7 @@ public class SolrCmdDistributor {
     flushAdds(maxBufferedAddsPerServer, null, null, urls);
   }
   
-  public void distribCommit(CommitUpdateCommand cmd, List<Url> urls, ModifiableSolrParams params)
+  public void distribCommit(CommitUpdateCommand cmd, List<Node> urls, ModifiableSolrParams params)
       throws IOException {
     
     // Wait for all outstanding repsonses to make sure that a commit
@@ -157,7 +158,7 @@ public class SolrCmdDistributor {
       
       addCommit(ureq, cmd);
       
-      for (Url url : urls) {
+      for (Node url : urls) {
         submit(ureq, url);
       }
     }
@@ -170,7 +171,7 @@ public class SolrCmdDistributor {
     }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, List<Url> urls,
+  private void doDelete(DeleteUpdateCommand cmd, List<Node> urls,
       ModifiableSolrParams params) throws IOException {
     
     flushAdds(1, null, null, urls);
@@ -179,7 +180,7 @@ public class SolrCmdDistributor {
     DeleteRequest deleteRequest = new DeleteRequest();
     deleteRequest.cmd = clonedCmd;
     deleteRequest.params = params;
-    for (Url url : urls) {
+    for (Node url : urls) {
       List<DeleteRequest> dlist = deletes.get(url.getUrl());
       
       if (dlist == null) {
@@ -198,10 +199,10 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams params, List<Url> urls) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams params, List<Node> urls) {
     // check for pending deletes
     UpdateRequestExt ureq = null;
-    for (Url url : urls) {
+    for (Node url : urls) {
       List<AddRequest> alist = adds.get(url.getUrl());
       if (alist == null || alist.size() < limit) return false;
       if (ureq == null) {
@@ -229,11 +230,11 @@ public class SolrCmdDistributor {
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams params, List<Url> urls) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams params, List<Node> urls) {
     // check for pending deletes
     //System.out.println("flush deletes to " + urls);
     UpdateRequestExt ureq = null;
-    for (Url url : urls) {
+    for (Node url : urls) {
       List<DeleteRequest> dlist = deletes.get(url.getUrl());
       if (dlist == null || dlist.size() < limit) return false;
       if (ureq == null) {
@@ -273,19 +274,17 @@ public class SolrCmdDistributor {
   }
   
   public static class Request {
-    public Url url;
+    public Node node;
     UpdateRequestExt ureq;
     NamedList<Object> ursp;
     int rspCode;
     public Exception exception;
-    String errorUrl;
     int retries;
   }
   
-  void submit(UpdateRequestExt ureq, Url url) {
+  void submit(UpdateRequestExt ureq, Node node) {
     Request sreq = new Request();
-    sreq.errorUrl = url.getUrl();
-    sreq.url = url;
+    sreq.node = node;
     sreq.ureq = ureq;
     submit(sreq);
   }
@@ -295,17 +294,14 @@ public class SolrCmdDistributor {
       completionService = new ExecutorCompletionService<Request>(commExecutor);
       pending = new HashSet<Future<Request>>();
     }
-    final String url = sreq.url.getUrl();
+    final String url = sreq.node.getUrl();
 
     Callable<Request> task = new Callable<Request>() {
       @Override
       public Request call() throws Exception {
         Request clonedRequest = new Request();
-        clonedRequest.url = sreq.url;
+        clonedRequest.node = sreq.node;
         clonedRequest.ureq = sreq.ureq;
-        
-        // TODO: yeah, this is a little odd...
-        clonedRequest.errorUrl = url;
         
         try {
           String fullUrl;
@@ -353,7 +349,7 @@ public class SolrCmdDistributor {
             
             // if there is a retry url, we want to retry...
             // TODO: but we really should only retry on connection errors...
-            if (sreq.retries < 5 && sreq.url.checkRetry()) {
+            if (sreq.retries < 5 && sreq.node.checkRetry()) {
               sreq.retries++;
               sreq.rspCode = 0;
               sreq.exception = null;
@@ -361,15 +357,14 @@ public class SolrCmdDistributor {
               submit(sreq);
               checkResponses(block);
             } else {
-              System.out.println("legit error:" + sreq.retries);
               Exception e = sreq.exception;
               Error error = new Error();
               error.e = e;
-              error.url = sreq.errorUrl;
+              error.node = sreq.node;
               response.errors.add(error);
               response.sreq = sreq;
               SolrException.logOnce(SolrCore.log, "shard update error "
-                  + sreq.url + " (" + sreq.url + ")", sreq.exception);
+                  + sreq.node + " (" + sreq.node + ")", sreq.exception);
             }
           }
           
@@ -392,7 +387,7 @@ public class SolrCmdDistributor {
   }
   
   public static class Error {
-    public String url;
+    public Node node;
     public Exception e;
   }
 
@@ -400,16 +395,22 @@ public class SolrCmdDistributor {
     return response;
   }
   
-  public static abstract class Url {
+  public static abstract class Node {
     public abstract String getUrl();
     public abstract boolean checkRetry();
+    public abstract String getCoreName();
+    public abstract String getBaseUrl();
   }
 
-  public static class StdUrl extends Url {
-    String url;
-    
-    public StdUrl(String url) {
-      this.url = url;
+  public static class StdNode extends Node {
+    protected String url;
+    protected String baseUrl;
+    protected String coreName;
+
+    public StdNode(ZkCoreNodeProps nodeProps) {
+      this.url = nodeProps.getCoreUrl();
+      this.baseUrl = nodeProps.getBaseUrl();
+      this.coreName = nodeProps.getCoreName();
     }
     
     @Override
@@ -425,6 +426,16 @@ public class SolrCmdDistributor {
     @Override
     public boolean checkRetry() {
       return false;
+    }
+
+    @Override
+    public String getBaseUrl() {
+      return baseUrl;
+    }
+
+    @Override
+    public String getCoreName() {
+      return coreName;
     }
   }
 }
