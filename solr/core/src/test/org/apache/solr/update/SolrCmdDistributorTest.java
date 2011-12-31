@@ -18,6 +18,7 @@ package org.apache.solr.update;
  */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -28,6 +29,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.SolrCmdDistributor.Response;
+import org.apache.solr.update.SolrCmdDistributor.Url;
+import org.apache.solr.update.SolrCmdDistributor.StdUrl;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
@@ -74,14 +77,16 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   @Override
   public void doTest() throws Exception {
-    del("*:*");
+    //del("*:*");
     
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor();
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    List<String> urls = new ArrayList<String>();
+    List<Url> urls = new ArrayList<Url>();
 
-    urls.add(((CommonsHttpSolrServer) controlClient).getBaseURL());
+    urls.add(new StdUrl(((CommonsHttpSolrServer) controlClient).getBaseURL()));
+    
+    // add one doc to controlClient
     
     AddUpdateCommand cmd = new AddUpdateCommand(null);
     cmd.solrDoc = getSolrDoc("id", 1);
@@ -89,7 +94,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
     cmdDistrib.distribCommit(ccmd, urls, params);
-    Response response = cmdDistrib.finish(urls, params);
+    cmdDistrib.finish(urls);
+    Response response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
     
@@ -98,7 +104,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     assertEquals(1, numFound);
     
     CommonsHttpSolrServer client2 = (CommonsHttpSolrServer) clients.get(0);
-    urls.add(client2.getBaseURL());
+    urls.add(new StdUrl(client2.getBaseURL()));
+    
+    // add another 3 docs to both control and client1
     
     cmd.solrDoc = getSolrDoc("id", 2);
     cmdDistrib.distribAdd(cmd, urls, params);
@@ -108,18 +116,26 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
     cmdDistrib.distribAdd(cmd2, urls, params);
     
+    AddUpdateCommand cmd3 = new AddUpdateCommand(null);
+    cmd3.solrDoc = getSolrDoc("id", 4);
+    
+    cmdDistrib.distribAdd(cmd3, Collections.singletonList(urls.get(0)), params);
+    
     cmdDistrib.distribCommit(ccmd, urls, params);
-    response = cmdDistrib.finish(urls, params);
+    cmdDistrib.finish(urls);
+    response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
     
     SolrDocumentList results = controlClient.query(new SolrQuery("*:*")).getResults();
     numFound = results.getNumFound();
-    assertEquals(results.toString(), 3, numFound);
+    assertEquals(results.toString(), 4, numFound);
     
     numFound = client2.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
-    assertEquals(2, numFound);
+    assertEquals(3, numFound);
+    
+    // now delete doc 2 which is on both control and client1
     
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
     dcmd.id = "2";
@@ -127,17 +143,18 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     cmdDistrib.distribDelete(dcmd, urls, params);
     
     cmdDistrib.distribCommit(ccmd, urls, params);
-    response = cmdDistrib.finish(urls, params);
+    cmdDistrib.finish(urls);
+    response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
     
     results = controlClient.query(new SolrQuery("*:*")).getResults();
     numFound = results.getNumFound();
-    assertEquals(results.toString(), 2, numFound);
+    assertEquals(results.toString(), 3, numFound);
     
     numFound = client2.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
-    assertEquals(results.toString(), 1, numFound);
+    assertEquals(results.toString(), 2, numFound);
   }
   
   protected void addFields(SolrInputDocument doc, Object... fields) {
