@@ -222,12 +222,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set(SEEN_LEADER, true);
       }
       cmdDistrib.distribAdd(cmd, urls, params);
-    } else {
-      // nocommit: At a minimum, local updates must be protected by synchronization
-      // right now we count on versionAdd to do the local add
-      //super.processAdd(cmd);
     }
-    
     
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
@@ -449,12 +444,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set(SEEN_LEADER, true);
       }
       cmdDistrib.distribDelete(cmd, urls, params);
-    } else {
-      // super.processDelete(cmd);
     }
 
     // cmd.getIndexId == null when delete by query
-    if (returnVersions && rsp != null && cmd.getIndexedId() != null) {
+    // TODO: what to do when no idField?
+    if (returnVersions && rsp != null && cmd.getIndexedId() != null && idField != null) {
       if (deleteResponse == null) {
         deleteResponse = new NamedList<String>();
         rsp.add("deletes",deleteResponse);
