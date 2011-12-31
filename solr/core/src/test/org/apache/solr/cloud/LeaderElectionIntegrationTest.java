@@ -258,7 +258,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     System.clearProperty("zkHost");
     System.clearProperty("hostPort");
     System.clearProperty("shard");
-    System.clearProperty("CLOUD_UPDATE_DELAY");
+    System.clearProperty("solrcloud.update.delay");
     SolrConfig.severeErrors.clear();
   }
   

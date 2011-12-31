@@ -51,8 +51,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   public BasicDistributedZkTest() {
     fixShardCount = true;
-    
-    System.setProperty("CLOUD_UPDATE_DELAY", "0");
   }
   
   @Override
@@ -273,7 +271,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     if (solrj != null) {
       solrj.close();
     }
-    System.clearProperty("CLOUD_UPDATE_DELAY");
     System.clearProperty("zkHost");
   }
 }

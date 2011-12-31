@@ -66,7 +66,7 @@ public class ZkStateReader {
   
   private volatile CloudState cloudState;
 
-  private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
+  private static final long SOLRCLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("solrcloud.update.delay", "5000"));
 
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
@@ -333,7 +333,7 @@ public class ZkStateReader {
             ZkStateReader.this.cloudState = cloudState;
           }
         }
-      }, CLOUD_UPDATE_DELAY, TimeUnit.MILLISECONDS);
+      }, SOLRCLOUD_UPDATE_DELAY, TimeUnit.MILLISECONDS);
     }
     
   }

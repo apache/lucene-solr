@@ -131,7 +131,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   
   @Test
   public void testCoreRegistration() throws Exception {
-    System.setProperty("CLOUD_UPDATE_DELAY", "1");
+    System.setProperty("solrcloud.update.delay", "1");
     
    
     Map<String,String> props2 = new HashMap<String,String>();
@@ -243,7 +243,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.clearProperty("zkClientTimeout");
     System.clearProperty("zkHost");
     System.clearProperty("hostPort");
-    System.clearProperty("CLOUD_UPDATE_DELAY");
+    System.clearProperty("solrcloud.update.delay");
     SolrConfig.severeErrors.clear();
   }
   

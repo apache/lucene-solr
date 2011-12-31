@@ -38,7 +38,7 @@ public class BasicZkTest extends AbstractZkTestCase {
   
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("CLOUD_UPDATE_DELAY", "1");
+
   }
   
   @Test
@@ -155,6 +155,6 @@ public class BasicZkTest extends AbstractZkTestCase {
   
   @AfterClass
   public static void afterClass() {
-    System.clearProperty("CLOUD_UPDATE_DELAY");
+
   }
 }

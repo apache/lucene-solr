@@ -144,7 +144,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
-    System.setProperty("CLOUD_UPDATE_DELAY", "0");
+    System.setProperty("solrcloud.update.delay", "0");
     System.setProperty("enable.update.log", "true");
     System.setProperty("remove.version.field", "true");
   }
@@ -152,7 +152,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @AfterClass
   public static void afterClass() {
     System.clearProperty("solr.directoryFactory");
-    System.clearProperty("CLOUD_UPDATE_DELAY");
+    System.clearProperty("solrcloud.update.delay");
     System.clearProperty("enable.update.log");
     System.clearProperty("remove.version.field");
   }
