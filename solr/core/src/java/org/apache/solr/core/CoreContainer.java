@@ -633,7 +633,7 @@ public class CoreContainer
 
     SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
 
-    if (zkController == null) {
+    if (zkController == null && core.getUpdateHandler().getUpdateLog() != null) {
       // always kick off recovery if we are in standalone mode.
       core.getUpdateHandler().getUpdateLog().recoverFromLog();
     }

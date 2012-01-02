@@ -492,7 +492,8 @@ public final class ZkController {
         CoreContainer cc = desc.getCoreContainer();
         if (cc != null) { // TODO: CoreContainer only null in tests?
           core = cc.getCore(desc.getName());
-          if (!core.isReloaded()) {
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          if (!core.isReloaded() && ulog != null) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core
                 .getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {

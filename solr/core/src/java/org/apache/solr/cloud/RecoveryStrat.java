@@ -100,6 +100,8 @@ public class RecoveryStrat {
         synchronized (core.getUpdateHandler().getSolrCoreState().getRecoveryLock()) {
           
           UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          if (ulog == null) return;
+
           // TODO: consider any races issues here
           // was checking state first, but there is a race..
           ulog.bufferUpdates();  

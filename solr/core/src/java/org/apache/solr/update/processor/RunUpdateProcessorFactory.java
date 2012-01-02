@@ -98,7 +98,7 @@ class RunUpdateProcessor extends UpdateRequestProcessor
 
   @Override
   public void finish() throws IOException {
-    if (changesSinceCommit) {
+    if (changesSinceCommit && updateHandler.getUpdateLog() != null) {
       updateHandler.getUpdateLog().finish(null);
     }
     super.finish();

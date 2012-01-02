@@ -30,6 +30,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.rmi.registry.LocateRegistry;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,7 +63,8 @@ public class TransactionLog {
   FileChannel channel;
   OutputStream os;
   FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
-
+  int numRecords;
+  
   volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
@@ -121,17 +123,6 @@ public class TransactionLog {
 
   }
 
-  public long writeData(Object o) {
-    LogCodec codec = new LogCodec();
-    try {
-      long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-      codec.init(fos);
-      codec.writeVal(o);
-      return pos;
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
 
   TransactionLog(File tlogFile, Collection<String> globalStrings) {
     this(tlogFile, globalStrings, false);
@@ -169,6 +160,49 @@ public class TransactionLog {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
+
+  /** Returns the number of records in the log (currently includes the header and an optional commit).
+   * Note: currently returns 0 for reopened existing log files.
+   */
+  public int numRecords() {
+    synchronized (this) {
+      return this.numRecords;
+    }
+  }
+
+  public boolean endsWithCommit() throws IOException {
+    long size;
+    synchronized (this) {
+      fos.flush();
+      size = fos.size();
+    }
+
+    
+    // the end of the file should have the end message (added during a commit) plus a 4 byte size
+    byte[] buf = new byte[ END_MESSAGE.length() ];
+    long pos = size - END_MESSAGE.length() - 4;
+    if (pos < 0) return false;
+    ChannelFastInputStream is = new ChannelFastInputStream(channel, pos);
+    is.read(buf);
+    for (int i=0; i<buf.length; i++) {
+      if (buf[i] != END_MESSAGE.charAt(i)) return false;
+    }
+    return true;
+  }
+  
+
+  public long writeData(Object o) {
+    LogCodec codec = new LogCodec();
+    try {
+      long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+      codec.init(fos);
+      codec.writeVal(o);
+      return pos;
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
 
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
@@ -224,6 +258,7 @@ public class TransactionLog {
 
   private void endRecord(long startRecordPosition) throws IOException {
     fos.writeInt((int)(fos.size() - startRecordPosition));
+    numRecords++;
   }
 
 
@@ -253,10 +288,9 @@ public class TransactionLog {
         codec.writeInt(UpdateLog.ADD);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeSolrInputDocument(cmd.getSolrInputDocument());
-        // fos.flushBuffer();  // flush later
 
         endRecord(pos);
-
+        // fos.flushBuffer();  // flush later
         return pos;
       } catch (IOException e) {
         // TODO: reset our file pointer back to "pos", the start of this record.
@@ -280,9 +314,9 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         BytesRef br = cmd.getIndexedId();
         codec.writeByteArray(br.bytes, br.offset, br.length);
-        // fos.flushBuffer();  // flush later
 
         endRecord(pos);
+        // fos.flushBuffer();  // flush later
 
         return pos;
       } catch (IOException e) {
@@ -305,9 +339,9 @@ public class TransactionLog {
         codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeStr(cmd.query);
-        // fos.flushBuffer();  // flush later
 
         endRecord(pos);
+        // fos.flushBuffer();  // flush later
 
         return pos;
       } catch (IOException e) {
@@ -330,10 +364,11 @@ public class TransactionLog {
         codec.writeTag(JavaBinCodec.ARR, 3);
         codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
         codec.writeLong(cmd.getVersion());
-        codec.writeStr(END_MESSAGE);  // ensure these bytes are the last in the file
-        // fos.flushBuffer();  // flush later
+        codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 
         endRecord(pos);
+        
+        fos.flush();  // flush since this will be the last record in a log file
 
         return pos;
       } catch (IOException e) {
@@ -436,6 +471,10 @@ public class TransactionLog {
     return new LogReader(startingPos);
   }
 
+  /** Returns a single threaded reverse reader */
+  public ReverseReader getReverseReader() throws IOException {
+    return new ReverseReader();
+  }
 
 
   public class LogReader {
@@ -502,12 +541,83 @@ public class TransactionLog {
 
   }
 
+  public class ReverseReader {
+    ChannelFastInputStream fis;
+    private LogCodec codec = new LogCodec();
+    int nextLength;  // length of the next record (the next one closer to the start of the log file)
+    long prevPos;    // where we started reading from last time (so prevPos - nextLength == start of next record)
+
+    public ReverseReader() throws IOException {
+      incref();
+
+      long sz;
+      synchronized (TransactionLog.this) {
+        fos.flushBuffer();
+        sz = fos.size();
+      }
+
+      fis = new ChannelFastInputStream(channel, 0);
+      if (sz >=4) {
+        readHeader(fis);
+        prevPos = sz - 4;
+        fis.seek(prevPos);
+        nextLength = fis.readInt();
+      }
+    }
+
+
+    /** Returns the next object from the log, or null if none available.
+     *
+     * @return The log record, or null if EOF
+     * @throws IOException
+     */
+    public Object next() throws IOException {
+      if (prevPos <= 0) return null;
+
+      int thisLength = nextLength;
+
+      long recordStart = prevPos - thisLength;  // back up to the beginning of the next record
+      prevPos = recordStart - 4;  // back up 4 more to read the length of the next record
+
+      if (prevPos <= 0) return null;  // this record is the header
+
+      // TODO: nocommit: seek based on underlying buffer size of 8192
+      fis.seek(prevPos);
+      nextLength = fis.readInt();     // this is the length of the *next* record (i.e. closer to the beginning)
+
+      // TODO: optionally skip document data
+      Object o = codec.readVal(fis);
+
+      assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data
+
+      return o;
+    }
+
+    /* returns the position in the log file of the last record returned by next() */
+    public long position() {
+      return prevPos + 4;  // skip the length
+    }
+
+    public void close() {
+      decref();
+    }
+
+    @Override
+    public String toString() {
+      synchronized (TransactionLog.this) {
+        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+      }
+    }
+
+
+  }
+
 }
 
 
 
 class ChannelFastInputStream extends FastInputStream {
-  FileChannel ch;
+  private FileChannel ch;
   private long chPosition;
 
   public ChannelFastInputStream(FileChannel ch, long chPosition) {
@@ -525,6 +635,17 @@ class ChannelFastInputStream extends FastInputStream {
       chPosition += ret;
     }
     return ret;
+  }
+
+  public void seek(long position) {
+    if (position >= readFromStream && position <= readFromStream + end) {
+      // seek within buffer
+      pos = (int)(position - readFromStream);
+    } else {
+      readFromStream = position;
+      chPosition = position;
+      end = pos = 0;
+    }
   }
 
   @Override

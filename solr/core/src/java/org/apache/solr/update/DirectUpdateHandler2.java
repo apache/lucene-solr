@@ -115,7 +115,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
     
     this.ulog = updateHandler.getUpdateLog();
-    this.ulog.init(this, core);
+    if (this.ulog != null) {
+      this.ulog.init(this, core);
+    }
   }
 
   private void deleteAll() throws IOException {
@@ -175,7 +177,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       // This ordering ensures that if we log it, it's definitely been added to the the index.
       // This also ensures that if a commit sneaks in-between, that we know everything in a particular
       // log version was definitely committed.
-      ulog.add(cmd);
+      if (ulog != null) ulog.add(cmd);
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
         commitTracker.addedDocument( cmd.commitWithin );
@@ -209,7 +211,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     writer.deleteDocuments(deleteTerm);
     // SolrCore.verbose("deleteDocuments",deleteTerm,"DONE");
 
-    ulog.delete(cmd);
+    if (ulog != null) ulog.delete(cmd);
 
     if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
       if (commitTracker.getTimeUpperBound() > 0) {
@@ -245,7 +247,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         solrCoreState.getIndexWriter(core).deleteDocuments(q);
       }
 
-      ulog.deleteByQuery(cmd);
+      if (ulog != null) ulog.deleteByQuery(cmd);
 
       madeIt = true;
       
@@ -347,7 +349,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       if (!cmd.softCommit) {
         synchronized (this) { // sync is currently needed to prevent preCommit from being called between preSoft and postSoft... see postSoft comments.
-          ulog.preCommit(cmd);
+          if (ulog != null) ulog.preCommit(cmd);
         }
 
         // SolrCore.verbose("writer.commit() start writer=",writer);
@@ -368,18 +370,18 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.softCommit) {
         // ulog.preSoftCommit();
         synchronized (this) {
-          ulog.preSoftCommit(cmd);
+          if (ulog != null) ulog.preSoftCommit(cmd);
           core.getSearcher(true, false, waitSearcher, true);
-          ulog.postSoftCommit(cmd);
+          if (ulog != null) ulog.postSoftCommit(cmd);
         }
         // ulog.postSoftCommit();
       } else {
         synchronized (this) {
-          ulog.preSoftCommit(cmd);
+          if (ulog != null) ulog.preSoftCommit(cmd);
           core.getSearcher(true, false, waitSearcher);
-          ulog.postSoftCommit(cmd);
+          if (ulog != null) ulog.postSoftCommit(cmd);
         }
-        ulog.postCommit(cmd); // postCommit currently means new searcher has
+        if (ulog != null) ulog.postCommit(cmd); // postCommit currently means new searcher has
                               // also been opened
       }
 
@@ -519,7 +521,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // Closing the log currently deletes the log file.
       // If this changes, we should record this as a "commit".
-      ulog.close();
+      if (ulog != null) ulog.close();
     } finally {
       commitLock.unlock();
     }

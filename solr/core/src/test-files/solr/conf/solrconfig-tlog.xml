@@ -38,7 +38,7 @@
   </requestHandler>
 
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog class="solr.FSUpdateLog">
+    <updateLog>
       <!-- <str name="dir">/tmp/solr/</str> -->
     </updateLog>
   </updateHandler>

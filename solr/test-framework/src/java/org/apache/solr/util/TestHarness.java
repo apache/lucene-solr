@@ -217,7 +217,7 @@ public class TestHarness {
       container.register(coreName, core, false);
 
       // TODO: we should be exercising the *same* core container initialization code, not equivalent code!
-      if (container.getZkController() == null) {
+      if (container.getZkController() == null && core.getUpdateHandler().getUpdateLog() != null) {
         // always kick off recovery if we are in standalone mode.
         core.getUpdateHandler().getUpdateLog().recoverFromLog();
       }

@@ -23,10 +23,10 @@ import java.io.*;
  *  Internal Solr use only, subject to change.
  */
 public class FastInputStream extends InputStream implements DataInput {
-  private final InputStream in;
-  private final byte[] buf;
-  private int pos;
-  private int end;
+  protected final InputStream in;
+  protected final byte[] buf;
+  protected int pos;
+  protected int end;
   protected long readFromStream; // number of bytes read from the underlying inputstream
 
   public FastInputStream(InputStream in) {

@@ -111,7 +111,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     this.updateHandler = req.getCore().getUpdateHandler();
     this.ulog = updateHandler.getUpdateLog();
-    this.vinfo = ulog.getVersionInfo();
+    this.vinfo = ulog == null ? null : ulog.getVersionInfo();
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
     returnVersions = versionsStored;
 
@@ -597,7 +597,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     try {
 
-      if (ulog.getState() == UpdateLog.State.ACTIVE || (cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
+      if (ulog == null || ulog.getState() == UpdateLog.State.ACTIVE || (cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
         super.processCommit(cmd);
       } else {
         log.info("Ignoring commit while not ACTIVE - state: " + ulog.getState() + " replay:" + (cmd.getFlags() & UpdateCommand.REPLAY));

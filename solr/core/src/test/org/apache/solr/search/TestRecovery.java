@@ -22,7 +22,7 @@ import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.FSUpdateLog;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.junit.BeforeClass;
@@ -53,7 +53,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      FSUpdateLog.testing_logReplayHook = new Runnable() {
+      UpdateLog.testing_logReplayHook = new Runnable() {
         @Override
         public void run() {
           try {
@@ -64,7 +64,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
         }
       };
 
-      FSUpdateLog.testing_logReplayFinishHook = new Runnable() {
+      UpdateLog.testing_logReplayFinishHook = new Runnable() {
         @Override
         public void run() {
           logReplayFinish.release();
@@ -130,8 +130,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
 
     } finally {
-      FSUpdateLog.testing_logReplayHook = null;
-      FSUpdateLog.testing_logReplayFinishHook = null;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
     }
 
   }
@@ -143,7 +143,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    FSUpdateLog.testing_logReplayHook = new Runnable() {
+    UpdateLog.testing_logReplayHook = new Runnable() {
       @Override
       public void run() {
         try {
@@ -154,7 +154,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       }
     };
 
-    FSUpdateLog.testing_logReplayFinishHook = new Runnable() {
+    UpdateLog.testing_logReplayFinishHook = new Runnable() {
       @Override
       public void run() {
         logReplayFinish.release();
@@ -268,8 +268,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
-      FSUpdateLog.testing_logReplayHook = null;
-      FSUpdateLog.testing_logReplayFinishHook = null;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
       req().close();
     }
 

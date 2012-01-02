@@ -88,12 +88,11 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   private void initLog() {
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
     if (ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
-      ulog = core.createInitInstance(ulogPluginInfo, UpdateLog.class, "update log", "solr.NullUpdateLog");
-    } else {
-      ulog = new NullUpdateLog();
-      ulog.init(null);
+      ulog = new UpdateLog();
+      ulog.init(ulogPluginInfo);
+      // ulog = core.createInitInstance(ulogPluginInfo, UpdateLog.class, "update log", "solr.NullUpdateLog");
+      ulog.init(this, core);
     }
-    ulog.init(this, core);
   }
 
 
