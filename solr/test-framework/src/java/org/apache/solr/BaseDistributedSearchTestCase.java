@@ -586,7 +586,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     String cmp;
     if (System.getProperty("remove.version.field") != null) {
-      // nocommit: we don't care if one has a version and the other doesnt -
+      // we don't care if one has a version and the other doesnt -
       // control vs distrib
       for (SolrDocument doc : a.getResults()) {
         doc.removeFields("_version_");

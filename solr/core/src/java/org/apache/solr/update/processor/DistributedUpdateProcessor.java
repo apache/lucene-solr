@@ -267,8 +267,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (!forwardToLeader) {
       for (SolrCmdDistributor.Error error : response.errors) {
         
-        // nocommit:
-        System.out.println("try and tell " + error.node.getUrl() + " to recover");
         // TODO: we should force their state to recovering ??
         
         // TODO: do retries??
@@ -277,13 +275,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           server = new CommonsHttpSolrServer(error.node.getBaseUrl());
           
-          System.out.println("send recover cmd");
           RequestRecovery recoverRequestCmd = new RequestRecovery();
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
           recoverRequestCmd.setCoreName(error.node.getCoreName());
           
           server.request(recoverRequestCmd);
-          System.out.println("send recover request worked");
         } catch (MalformedURLException e) {
           log.error("", e);
         } catch (SolrServerException e) {

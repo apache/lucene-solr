@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
@@ -37,10 +36,8 @@ import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,52 +108,21 @@ public class RecoveryStrat {
           while (!succesfulRecovery && !close) {
             recoveryAttempts.incrementAndGet();
             try {
-              
               ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
                   cloudDesc.getCollectionName(), cloudDesc.getShardId());
-
               
               replicate(core, shardZkNodeName, leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName()));
               
-              // nocommit: remove this
-              int afterReplicateDocs = 0;
-              RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
-                  true, null);
-              try {
-                SolrIndexSearcher is = searcher.get();
-                if (!core.isClosed()) {
-                  afterReplicateDocs = is.search(new MatchAllDocsQuery(), 1).totalHits;
-                }
-              } finally {
-                searcher.decref();
-              }
-              
-              System.out.println("apply buffered updates");
               replay(core);
               replayed = true;
-              System.out.println("replay done");
-              
-              // nocommit: remove this
-              int afterReplayDocs = 0;
-              try {
-                searcher = core.getSearcher(true, true, null);
-                afterReplayDocs = searcher.get().search(
-                    new MatchAllDocsQuery(), 1).totalHits;
-              } finally {
-                searcher.decref();
-              }
               
               zkController
                   .publishAsActive(baseUrl, cloudDesc, shardZkNodeName, core.getName());
               
-              System.out.println("url: " + baseUrl + " docs after replicate: "
-                  + afterReplicateDocs + " docs after replay:"
-                  + afterReplayDocs + " leader:" + leaderprops);
-              // TODO: what if the problem was in onFinish.run which sets the
-              // state?
+              if (recoveryListener != null) recoveryListener.finishedRecovery();
+
               succesfulRecovery = true;
               recoverySuccesses.incrementAndGet();
-              if (recoveryListener != null) recoveryListener.finishedRecovery();
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               log.error("Recovery was interrupted", e);
