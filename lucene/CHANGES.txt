@@ -649,6 +649,10 @@ Optimizations
 * LUCENE-3643: FilteredQuery and IndexSearcher.search(Query, Filter,...)
   now optimize the special case query instanceof MatchAllDocsQuery to
   execute as ConstantScoreQuery.  (Uwe Schindler)
+
+* LUCENE-3509: Added fasterButMoreRam option for docvalues. This option controls whether the space for packed ints
+  should be rounded up for better performance. This option only applies for docvalues types bytes fixed sorted
+  and bytes var sorted. (Simon Willnauer, Martijn van Groningen)
   
 Bug fixes
 

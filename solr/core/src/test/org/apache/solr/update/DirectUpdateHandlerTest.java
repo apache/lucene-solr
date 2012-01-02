@@ -17,16 +17,20 @@
 
 package org.apache.solr.update;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,9 +41,22 @@ import org.junit.Test;
  */
 public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
+  // TODO: fix this test to not require FSDirectory
+  static String savedFactory;
   @BeforeClass
   public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig.xml", "schema12.xml");
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
   }
 
   @Override
@@ -251,6 +268,54 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(r.maxDoc(), r.numDocs());  // no deletions
     assertEquals(4,r.maxDoc());             // no dups
     assertFalse(r.getTopReaderContext().isAtomic);  //still more than 1 segment
+    sr.close();
+  }
+  
+  @Test
+  public void testPrepareCommit() throws Exception {
+    assertU(adoc("id", "999"));
+    assertU(optimize());     // make sure there's just one segment
+    assertU(commit());       // commit a second time to make sure index files aren't still referenced by the old searcher
+
+    SolrQueryRequest sr = req();
+    IndexReader r = sr.getSearcher().getTopReaderContext().reader;
+    Directory d = r.directory();
+
+    log.info("FILES before addDoc="+ Arrays.asList(d.listAll()));
+    assertU(adoc("id", "1"));
+
+    int nFiles = d.listAll().length;
+    log.info("FILES before prepareCommit="+ Arrays.asList(d.listAll()));
+
+    updateJ("", params("prepareCommit", "true"));
+
+    log.info("FILES after prepareCommit="+Arrays.asList(d.listAll()));
+    assertTrue( d.listAll().length > nFiles);  // make sure new index files were actually written
+    
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    updateJ("", params("rollback","true"));
+    assertU(commit());
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    assertU(adoc("id","1"));
+    updateJ("", params("prepareCommit","true"));
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==0"
+    );
+
+    assertU(commit());
+
+    assertJQ(req("q", "id:1")
+        , "/response/numFound==1"
+    );
+
     sr.close();
   }
   

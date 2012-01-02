@@ -175,11 +175,14 @@ public abstract class Writer extends DocValuesConsumer {
    *          the {@link Directory} to create the files from.
    * @param bytesUsed
    *          a byte-usage tracking reference
+   * @param fasterButMoreRam Whether the space used for packed ints should be rounded up for higher lookup performance.
+   *                         Currently this parameter only applies for types {@link Type#BYTES_VAR_SORTED}
+   *                         and {@link Type#BYTES_FIXED_SORTED}.
    * @return a new {@link Writer} instance for the given {@link Type}
    * @throws IOException
    */
   public static Writer create(Type type, String id, Directory directory,
-      Comparator<BytesRef> comp, Counter bytesUsed, IOContext context) throws IOException {
+      Comparator<BytesRef> comp, Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }
@@ -196,22 +199,22 @@ public abstract class Writer extends DocValuesConsumer {
       return Floats.getWriter(directory, id, bytesUsed, context, type);
     case BYTES_FIXED_STRAIGHT:
       return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, true, comp,
-          bytesUsed, context);
+          bytesUsed, context, fasterButMoreRam);
     case BYTES_FIXED_DEREF:
       return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, true, comp,
-          bytesUsed, context);
+          bytesUsed, context, fasterButMoreRam);
     case BYTES_FIXED_SORTED:
       return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, true, comp,
-          bytesUsed, context);
+          bytesUsed, context, fasterButMoreRam);
     case BYTES_VAR_STRAIGHT:
       return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, false, comp,
-          bytesUsed, context);
+          bytesUsed, context, fasterButMoreRam);
     case BYTES_VAR_DEREF:
       return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, false, comp,
-          bytesUsed, context);
+          bytesUsed, context, fasterButMoreRam);
     case BYTES_VAR_SORTED:
       return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, false, comp,
-          bytesUsed, context);
+          bytesUsed, context, fasterButMoreRam);
     default:
       throw new IllegalArgumentException("Unknown Values: " + type);
     }

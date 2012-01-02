@@ -93,7 +93,7 @@ public final class ZkController {
 
   private RecoveryStrat recoveryStrat = new RecoveryStrat();
   
-  private static boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
+  private boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first

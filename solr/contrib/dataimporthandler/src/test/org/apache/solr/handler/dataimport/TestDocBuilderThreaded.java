@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,9 +32,22 @@ import org.junit.Test;
  */
 public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
 
+  //TODO: fix this test to not require FSDirectory.
+  static String savedFactory;
   @BeforeClass
   public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "solr.MockFSDirectoryFactory");
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
   }
 
   @Before

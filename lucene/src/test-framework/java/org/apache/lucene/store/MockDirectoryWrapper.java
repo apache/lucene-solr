@@ -156,7 +156,10 @@ public class MockDirectoryWrapper extends Directory {
     if (crashed)
       throw new IOException("cannot sync after crash");
     unSyncedFiles.removeAll(names);
-    delegate.sync(names);
+    if (LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
+      // don't wear out our hardware so much in tests.
+      delegate.sync(names);
+    }
   }
   
   @Override

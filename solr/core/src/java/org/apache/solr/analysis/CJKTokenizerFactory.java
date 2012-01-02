@@ -30,8 +30,9 @@ import java.io.Reader;
  *     &lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
+ * @deprecated
  */
+@Deprecated
 public class CJKTokenizerFactory extends BaseTokenizerFactory {
   public CJKTokenizer create(Reader in) {
     return new CJKTokenizer(in);

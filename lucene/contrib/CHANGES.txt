@@ -102,6 +102,12 @@ New Features
 * SOLR-2982: Added phonetic encoders to contrib/analyzers/phonetic:
   Metaphone, Soundex, Caverphone, Beider-Morse, etc.  (Robert Muir)
 
+* LUCENE-2906: Added CJKBigramFilter that forms bigrams from StandardTokenizer or
+  ICUTokenizer CJK tokens, and CJKWidthFilter that normalizes halfwidth/fullwidth. 
+  This filter supports unicode supplementary characters and you can toggle whether 
+  bigrams are formed for each of Han/Hiragana/Katakana/Hangul independently. Deprecates
+  CJKTokenizer.  (Tom Burton-West, Robert Muir)
+
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 

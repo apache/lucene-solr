@@ -27,6 +27,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean waitSearcher=true;
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
+  public boolean prepareCommit = false;
 
   /**
    * During optimize, optimize down to <= this many segments.  Must be >= 1

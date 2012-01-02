@@ -66,11 +66,11 @@ public class TestShardSearching extends ShardSearchingTestBase {
   public void testSimple() throws Exception {
     final int numNodes = _TestUtil.nextInt(random, 1, 10);
 
-    final double runTimeSec = atLeast(5) * RANDOM_MULTIPLIER;
+    final double runTimeSec = atLeast(3);
 
     final int minDocsToMakeTerms = _TestUtil.nextInt(random, 5, 20);
 
-    final int maxSearcherAgeSeconds = _TestUtil.nextInt(random, 1, 4);
+    final int maxSearcherAgeSeconds = _TestUtil.nextInt(random, 1, 3);
 
     if (VERBOSE) {
       System.out.println("TEST: numNodes=" + numNodes + " runTimeSec=" + runTimeSec + " maxSearcherAgeSeconds=" + maxSearcherAgeSeconds);

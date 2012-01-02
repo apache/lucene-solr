@@ -59,6 +59,7 @@
     path="../a-jar-that-does-not-exist.jar" />
   -->
 
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <!--
     Used to specify an alternate directory to hold all index data other

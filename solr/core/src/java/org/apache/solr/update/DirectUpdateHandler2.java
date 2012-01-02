@@ -291,8 +291,32 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     return rc;
   }
 
+  public void prepareCommit(CommitUpdateCommand cmd) throws IOException {
+
+    boolean error=true;
+
+    try {
+      log.info("start "+cmd);
+      IndexWriter writer = solrCoreState.getIndexWriter(core);
+
+      writer.prepareCommit();
+
+      log.info("end_prepareCommit");
+
+      error=false;
+    }
+    finally {
+      if (error) numErrors.incrementAndGet();
+    }
+  }
+
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
+    if (cmd.prepareCommit) {
+      prepareCommit(cmd);
+      return;
+    }
+
     IndexWriter writer = solrCoreState.getIndexWriter(core);
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
@@ -379,7 +403,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       addCommands.set(0);
       deleteByIdCommands.set(0);
       deleteByQueryCommands.set(0);
-      numErrors.set(error ? 1 : 0);
+      if (error) numErrors.incrementAndGet();
     }
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
@@ -450,7 +474,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           deleteByIdCommandsCumulative.get() - deleteByIdCommands.getAndSet( 0 ) );
       deleteByQueryCommandsCumulative.set(
           deleteByQueryCommandsCumulative.get() - deleteByQueryCommands.getAndSet( 0 ) );
-      numErrors.set(error ? 1 : 0);
+      if (error) numErrors.incrementAndGet();
     }
   }
 

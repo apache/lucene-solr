@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -34,10 +35,23 @@ import org.junit.BeforeClass;
  */
 public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
 
+  //TODO: fix this test to not require FSDirectory.
+  static String savedFactory;
   @BeforeClass
   public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "solr.MockFSDirectoryFactory");
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
     ignoreException("Unexpected close tag");
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
   }
   
   @Before @Override

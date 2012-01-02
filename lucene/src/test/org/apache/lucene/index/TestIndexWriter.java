@@ -416,7 +416,8 @@ public class TestIndexWriter extends LuceneTestCase {
     public void testDiverseDocs() throws IOException {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setRAMBufferSizeMB(0.5));
-      for(int i=0;i<3;i++) {
+      int n = atLeast(1);
+      for(int i=0;i<n;i++) {
         // First, docs where every term is unique (heavy on
         // Posting instances)
         for(int j=0;j<100;j++) {
@@ -455,7 +456,7 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexReader reader = IndexReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
-      assertEquals(300, hits.length);
+      assertEquals(n*100, hits.length);
       reader.close();
 
       dir.close();
@@ -736,104 +737,6 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     dir.close();
   }
-
-  public void testNoWaitClose() throws Throwable {
-    Directory directory = newDirectory();
-
-    final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-
-    Field idField = newField("id", "", customType);
-    doc.add(idField);
-
-    for(int pass=0;pass<2;pass++) {
-      if (VERBOSE) {
-        System.out.println("TEST: pass=" + pass);
-      }
-
-      IndexWriterConfig conf =  newIndexWriterConfig(
-              TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-              setOpenMode(OpenMode.CREATE).
-              setMaxBufferedDocs(2).
-              setMergePolicy(newLogMergePolicy());
-      if (pass == 2) {
-        conf.setMergeScheduler(new SerialMergeScheduler());
-      }
-
-      IndexWriter writer = new IndexWriter(directory, conf);
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
-
-      for(int iter=0;iter<10;iter++) {
-        if (VERBOSE) {
-          System.out.println("TEST: iter=" + iter);
-        }
-        for(int j=0;j<199;j++) {
-          idField.setValue(Integer.toString(iter*201+j));
-          writer.addDocument(doc);
-        }
-
-        int delID = iter*199;
-        for(int j=0;j<20;j++) {
-          writer.deleteDocuments(new Term("id", Integer.toString(delID)));
-          delID += 5;
-        }
-
-        // Force a bunch of merge threads to kick off so we
-        // stress out aborting them on close:
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
-
-        final IndexWriter finalWriter = writer;
-        final ArrayList<Throwable> failure = new ArrayList<Throwable>();
-        Thread t1 = new Thread() {
-            @Override
-            public void run() {
-              boolean done = false;
-              while(!done) {
-                for(int i=0;i<100;i++) {
-                  try {
-                    finalWriter.addDocument(doc);
-                  } catch (AlreadyClosedException e) {
-                    done = true;
-                    break;
-                  } catch (NullPointerException e) {
-                    done = true;
-                    break;
-                  } catch (Throwable e) {
-                    e.printStackTrace(System.out);
-                    failure.add(e);
-                    done = true;
-                    break;
-                  }
-                }
-                Thread.yield();
-              }
-
-            }
-          };
-
-        if (failure.size() > 0) {
-          throw failure.get(0);
-        }
-
-        t1.start();
-
-        writer.close(false);
-        t1.join();
-
-        // Make sure reader can read
-        IndexReader reader = IndexReader.open(directory);
-        reader.close();
-
-        // Reopen
-        writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      }
-      writer.close();
-    }
-
-    directory.close();
-  }
-
 
   // LUCENE-1084: test unlimited field length
   public void testUnlimitedMaxFieldLength() throws IOException {
@@ -1613,102 +1516,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  public void testRandomStoredFields() throws IOException {
-    Directory dir = newDirectory();
-    Random rand = random;
-    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
-    //w.w.setUseCompoundFile(false);
-    final int docCount = atLeast(200);
-    final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
-
-    final List<Integer> fieldIDs = new ArrayList<Integer>();
-
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-    Field idField = newField("id", "", customType);
-
-    for(int i=0;i<fieldCount;i++) {
-      fieldIDs.add(i);
-    }
-
-    final Map<String,Document> docs = new HashMap<String,Document>();
-
-    if (VERBOSE) {
-      System.out.println("TEST: build index docCount=" + docCount);
-    }
-
-    FieldType customType2 = new FieldType();
-    customType2.setStored(true);
-    for(int i=0;i<docCount;i++) {
-      Document doc = new Document();
-      doc.add(idField);
-      final String id = ""+i;
-      idField.setValue(id);
-      docs.put(id, doc);
-      if (VERBOSE) {
-        System.out.println("TEST: add doc id=" + id);
-      }
-
-      for(int field: fieldIDs) {
-        final String s;
-        if (rand.nextInt(4) != 3) {
-          s = _TestUtil.randomUnicodeString(rand, 1000);
-          doc.add(newField("f"+field, s, customType2));
-        } else {
-          s = null;
-        }
-      }
-      w.addDocument(doc);
-      if (rand.nextInt(50) == 17) {
-        // mixup binding of field name -> Number every so often
-        Collections.shuffle(fieldIDs);
-      }
-      if (rand.nextInt(5) == 3 && i > 0) {
-        final String delID = ""+rand.nextInt(i);
-        if (VERBOSE) {
-          System.out.println("TEST: delete doc id=" + delID);
-        }
-        w.deleteDocuments(new Term("id", delID));
-        docs.remove(delID);
-      }
-    }
-
-    if (VERBOSE) {
-      System.out.println("TEST: " + docs.size() + " docs in index; now load fields");
-    }
-    if (docs.size() > 0) {
-      String[] idsList = docs.keySet().toArray(new String[docs.size()]);
-
-      for(int x=0;x<2;x++) {
-        IndexReader r = w.getReader();
-        IndexSearcher s = newSearcher(r);
-
-        if (VERBOSE) {
-          System.out.println("TEST: cycle x=" + x + " r=" + r);
-        }
-
-        int num = atLeast(1000);
-        for(int iter=0;iter<num;iter++) {
-          String testID = idsList[rand.nextInt(idsList.length)];
-          if (VERBOSE) {
-            System.out.println("TEST: test id=" + testID);
-          }
-          TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
-          assertEquals(1, hits.totalHits);
-          Document doc = r.document(hits.scoreDocs[0].doc);
-          Document docExp = docs.get(testID);
-          for(int i=0;i<fieldCount;i++) {
-            assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
-          }
-        }
-        r.close();
-        w.forceMerge(1);
-      }
-    }
-    w.close();
-    dir.close();
-  }
-
   public void testNoUnwantedTVFiles() throws Exception {
 
     Directory dir = newDirectory();
@@ -1952,7 +1759,7 @@ public class TestIndexWriter extends LuceneTestCase {
     RandomIndexWriter w1 = new RandomIndexWriter(random, d);
     w1.deleteAll();
     try {
-      new RandomIndexWriter(random, d);
+      new RandomIndexWriter(random, d, newIndexWriterConfig(TEST_VERSION_CURRENT, null).setWriteLockTimeout(100));
       fail("should not be able to create another writer");
     } catch (LockObtainFailedException lofe) {
       // expected

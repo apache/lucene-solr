@@ -143,8 +143,6 @@ public class RecoveryStrat {
               } finally {
                 searcher.decref();
               }
-
-              if (recoveryListener != null) recoveryListener.finishedRecovery();
               
               zkController
                   .publishAsActive(baseUrl, cloudDesc, shardZkNodeName, core.getName());
@@ -156,6 +154,7 @@ public class RecoveryStrat {
               // state?
               succesfulRecovery = true;
               recoverySuccesses.incrementAndGet();
+              if (recoveryListener != null) recoveryListener.finishedRecovery();
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               log.error("Recovery was interrupted", e);

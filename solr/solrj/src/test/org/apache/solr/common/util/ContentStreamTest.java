@@ -71,6 +71,8 @@ public class ContentStreamTest extends LuceneTestCase
     InputStream in = null;
     try {
       URLConnection conn = url.openConnection();
+      conn.setConnectTimeout(1000);
+      conn.setReadTimeout(1000);
       in = conn.getInputStream();
       contentType = conn.getContentType();
       content = IOUtils.toByteArray(in);

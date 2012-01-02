@@ -35,6 +35,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
@@ -59,6 +60,8 @@ import org.junit.BeforeClass;
  *
  * @since 1.4
  */
+@LuceneTestCase.Nightly
+// TODO: can this test be sped up? it used to not be so slow...
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
@@ -74,8 +77,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // index from previous test method
   static int nDocs = 500;
 
+  // TODO: fix this test to not require FSDirectory.. doesnt even work with MockFSDirectory... wtf?
+  static String savedFactory;
   @BeforeClass
   public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -105,6 +112,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
   }
 
   private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {

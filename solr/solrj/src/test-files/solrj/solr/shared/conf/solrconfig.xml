@@ -23,7 +23,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <dataDir>${solr.solr.home}/data/${l10n}-${version}</dataDir>
-
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <updateHandler class="solr.DirectUpdateHandler2" />
 

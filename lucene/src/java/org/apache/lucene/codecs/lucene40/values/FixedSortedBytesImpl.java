@@ -56,8 +56,8 @@ class FixedSortedBytesImpl {
     private final Comparator<BytesRef> comp;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Counter bytesUsed, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+        Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam);
       this.comp = comp;
     }
 

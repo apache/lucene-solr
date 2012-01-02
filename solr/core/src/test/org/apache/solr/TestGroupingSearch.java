@@ -537,8 +537,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
      assertJQ(req("q","id:"+doc.id), "/response/numFound==1");
     **/
 
-    int indexIter=50 * RANDOM_MULTIPLIER;  // make >0 to enable test
-    int queryIter=100 * RANDOM_MULTIPLIER;
+    int indexIter=atLeast(10);  // make >0 to enable test
+    int queryIter=atLeast(50);
 
     while (--indexIter >= 0) {
 

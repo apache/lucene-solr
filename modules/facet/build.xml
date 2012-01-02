@@ -73,23 +73,5 @@
   <target name="compile-core" depends="jar-analyzers-common,common.compile-core,compile-examples" description="Compiles facet classes" />
 
   <target name="jar-core" depends="common.jar-core,jar-examples" />
-
-  <target name="javadocs" depends="compile-core">
-	<sequential>
-      <mkdir dir="${javadoc.dir}/contrib-${name}"/>
-      <copy todir="${javadoc.dir}/contrib-${name}" file="docs/userguide.html" />
-      <!-- javadoc core classes -->
-      <invoke-javadoc
-        destdir="${javadoc.dir}/contrib-${name}"
-        title="${Name} ${version} contrib-${name} API">
-        <sources>
-          <link href=""/>
-          <packageset dir="${src.dir}"/>
-          <packageset dir="${examples.dir}"/>
-        </sources>
-      </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}/contrib-${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
-    </sequential>
-  </target>
     
 </project>

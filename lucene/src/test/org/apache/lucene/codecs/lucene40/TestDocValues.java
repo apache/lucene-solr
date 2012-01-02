@@ -63,7 +63,8 @@ public class TestDocValues extends LuceneTestCase {
 
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Bytes.getWriter(dir, "test", mode, fixedSize, COMP, trackBytes, newIOContext(random));
+    Writer w = Bytes.getWriter(dir, "test", mode, fixedSize, COMP, trackBytes, newIOContext(random),
+        random.nextBoolean());
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
     final int fixedLength = 1 + atLeast(50);

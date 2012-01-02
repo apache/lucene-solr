@@ -150,14 +150,10 @@
 
   <target name="junit-backwards-parallel" unless="tests.sequential">
     <parallel threadsPerProcessor="${tests.threadspercpu}">
-     <backwards-test-macro threadNum="1" threadTotal="8"/>
-     <backwards-test-macro threadNum="2" threadTotal="8"/>
-     <backwards-test-macro threadNum="3" threadTotal="8"/>
-     <backwards-test-macro threadNum="4" threadTotal="8"/>
-     <backwards-test-macro threadNum="5" threadTotal="8"/>
-     <backwards-test-macro threadNum="6" threadTotal="8"/>
-     <backwards-test-macro threadNum="7" threadTotal="8"/>
-     <backwards-test-macro threadNum="8" threadTotal="8"/>
+     <backwards-test-macro threadNum="1" threadTotal="4"/>
+     <backwards-test-macro threadNum="2" threadTotal="4"/>
+     <backwards-test-macro threadNum="3" threadTotal="4"/>
+     <backwards-test-macro threadNum="4" threadTotal="4"/>
     </parallel>
   </target>
 

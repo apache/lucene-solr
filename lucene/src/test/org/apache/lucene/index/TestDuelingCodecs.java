@@ -92,7 +92,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     RandomIndexWriter leftWriter = new RandomIndexWriter(new Random(seed), leftDir, leftConfig);
     RandomIndexWriter rightWriter = new RandomIndexWriter(new Random(seed), rightDir, rightConfig);
     
-    int numdocs = atLeast(500);
+    int numdocs = atLeast(100);
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
@@ -134,7 +134,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
    */
   public void testEquals() throws Exception {
     assertReaderStatistics(leftReader, rightReader);
-    assertFields(MultiFields.getFields(leftReader), MultiFields.getFields(rightReader));
+    assertFields(MultiFields.getFields(leftReader), MultiFields.getFields(rightReader), true);
     assertNorms(leftReader, rightReader);
     assertStoredFields(leftReader, rightReader);
     assertTermVectors(leftReader, rightReader);
@@ -160,7 +160,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /** 
    * Fields api equivalency 
    */
-  public void assertFields(Fields leftFields, Fields rightFields) throws Exception {
+  public void assertFields(Fields leftFields, Fields rightFields, boolean deep) throws Exception {
     // Fields could be null if there are no postings,
     // but then it must be null for both
     if (leftFields == null || rightFields == null) {
@@ -176,7 +176,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     String field;
     while ((field = leftEnum.next()) != null) {
       assertEquals(info, field, rightEnum.next());
-      assertTerms(leftEnum.terms(), rightEnum.terms());
+      assertTerms(leftEnum.terms(), rightEnum.terms(), deep);
     }
     assertNull(rightEnum.next());
   }
@@ -197,7 +197,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /** 
    * Terms api equivalency 
    */
-  public void assertTerms(Terms leftTerms, Terms rightTerms) throws Exception {
+  public void assertTerms(Terms leftTerms, Terms rightTerms, boolean deep) throws Exception {
     if (leftTerms == null || rightTerms == null) {
       assertNull(info, leftTerms);
       assertNull(info, rightTerms);
@@ -210,15 +210,17 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertTermsEnum(leftTermsEnum, rightTermsEnum, true);
     // TODO: test seeking too
     
-    int numIntersections = atLeast(3);
-    for (int i = 0; i < numIntersections; i++) {
-      String re = AutomatonTestUtil.randomRegexp(random);
-      CompiledAutomaton automaton = new CompiledAutomaton(new RegExp(re, RegExp.NONE).toAutomaton());
-      if (automaton.type == CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
-        // TODO: test start term too
-        TermsEnum leftIntersection = leftTerms.intersect(automaton, null);
-        TermsEnum rightIntersection = rightTerms.intersect(automaton, null);
-        assertTermsEnum(leftIntersection, rightIntersection, rarely());
+    if (deep) {
+      int numIntersections = atLeast(3);
+      for (int i = 0; i < numIntersections; i++) {
+        String re = AutomatonTestUtil.randomRegexp(random);
+        CompiledAutomaton automaton = new CompiledAutomaton(new RegExp(re, RegExp.NONE).toAutomaton());
+        if (automaton.type == CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+          // TODO: test start term too
+          TermsEnum leftIntersection = leftTerms.intersect(automaton, null);
+          TermsEnum rightIntersection = rightTerms.intersect(automaton, null);
+          assertTermsEnum(leftIntersection, rightIntersection, rarely());
+        }
       }
     }
   }
@@ -511,7 +513,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     for (int i = 0; i < leftReader.maxDoc(); i++) {
       Fields leftFields = leftReader.getTermVectors(i);
       Fields rightFields = rightReader.getTermVectors(i);
-      assertFields(leftFields, rightFields);
+      assertFields(leftFields, rightFields, rarely());
     }
   }
   

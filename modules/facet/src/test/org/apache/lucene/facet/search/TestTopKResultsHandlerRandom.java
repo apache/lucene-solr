@@ -132,4 +132,9 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
     }
   }
 
+  @Override
+  protected int numDocsToIndex() {
+    return TEST_NIGHTLY ? 20000 : 1000;
+  }
+
 }

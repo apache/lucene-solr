@@ -936,7 +936,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       addDoc(w);
     w.close();
 
-    int iter = TEST_NIGHTLY ? 200 : 20;
+    int iter = TEST_NIGHTLY ? 200 : 10;
     for(int i=0;i<iter;i++) {
       if (VERBOSE) {
         System.out.println("TEST: iter " + i);
@@ -1233,7 +1233,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     FailOnTermVectors[] failures = new FailOnTermVectors[] {
         new FailOnTermVectors(FailOnTermVectors.AFTER_INIT_STAGE),
         new FailOnTermVectors(FailOnTermVectors.INIT_STAGE), };
-    int num = atLeast(3);
+    int num = atLeast(1);
     for (int j = 0; j < num; j++) {
       for (FailOnTermVectors failure : failures) {
         MockDirectoryWrapper dir = newDirectory();

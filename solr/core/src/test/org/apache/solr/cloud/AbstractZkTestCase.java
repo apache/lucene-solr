@@ -117,11 +117,12 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void azt_afterClass() throws Exception {
-    zkServer.shutdown();
     System.clearProperty("zkHost");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
     System.clearProperty("solrcloud.skip.autorecovery");
+    zkServer.shutdown();
+
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
   }

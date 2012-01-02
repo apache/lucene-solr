@@ -80,7 +80,7 @@ public class TestSort extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    NUM_STRINGS = atLeast(6000);
+    NUM_STRINGS = atLeast(500);
   }
 
   // document data:
@@ -204,8 +204,7 @@ public class TestSort extends LuceneTestCase {
     dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(
         indexStore,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
-            setMaxBufferedDocs(4).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(97))
     );
     FieldType onlyStored = new FieldType();

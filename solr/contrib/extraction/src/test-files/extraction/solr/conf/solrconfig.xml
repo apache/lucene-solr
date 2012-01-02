@@ -30,6 +30,7 @@
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->
   <dataDir>${solr.data.dir:}</dataDir>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default

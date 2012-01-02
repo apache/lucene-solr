@@ -97,16 +97,21 @@ public class RequestHandlerUtils
     
     boolean optimize = params.getBool( UpdateParams.OPTIMIZE, false );
     boolean commit   = params.getBool( UpdateParams.COMMIT,   false );
-    
-    if( optimize || commit || force ) {
+    boolean prepareCommit = params.getBool( UpdateParams.PREPARE_COMMIT,   false );
+
+
+    if( optimize || commit || prepareCommit || force ) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
       cmd.softCommit = params.getBool( UpdateParams.SOFT_COMMIT, cmd.softCommit );
       cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);      
       cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
+      cmd.prepareCommit = prepareCommit;
       processor.processCommit( cmd );
       return true;
     }
+    
+    
     return false;
   }
 

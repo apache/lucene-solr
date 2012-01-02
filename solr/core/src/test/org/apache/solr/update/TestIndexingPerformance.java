@@ -22,6 +22,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.StrUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +37,22 @@ import java.util.Arrays;
  * $ ant test -Dtestcase=TestIndexingPerformance -Dargs="-server -Diter=100000"; grep throughput build/test-results/*TestIndexingPerformance.xml
  */
 public class TestIndexingPerformance extends AbstractSolrTestCase {
+  
+  // TODO: fix this test to not require FSDirectory
+  static String savedFactory;
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    savedFactory = System.getProperty("solr.DirectoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+  }
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
+  }
 
   public static final Logger log 
     = LoggerFactory.getLogger(TestIndexingPerformance.class);
