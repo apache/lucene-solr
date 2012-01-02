@@ -190,7 +190,7 @@ public class ZkTestServer {
             setClientPort(ZkTestServer.this.clientPort);
             this.dataDir = zkDir;
             this.dataLogDir = zkDir;
-            this.tickTime = 1500;
+            this.tickTime = 3000;
           }
           
           public void setClientPort(int clientPort) {
