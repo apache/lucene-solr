@@ -169,9 +169,7 @@ public class RecoveryStrat {
                 try {
                   replay(core);
                 } catch (Exception e) {
-                  // nocommit
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
+                  log.warn("", e);
                 }
               }
             }
