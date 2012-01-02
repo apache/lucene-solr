@@ -302,6 +302,7 @@ public class SolrCmdDistributor {
         Request clonedRequest = new Request();
         clonedRequest.node = sreq.node;
         clonedRequest.ureq = sreq.ureq;
+        clonedRequest.retries = sreq.retries;
         
         try {
           String fullUrl;
