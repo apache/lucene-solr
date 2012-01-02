@@ -160,7 +160,6 @@ public class RecoveryStrat {
             }
           }
           log.info("Finished recovery process");
-          System.out.println("recovery done: " + succesfulRecovery);
         }
       }
       
@@ -183,7 +182,6 @@ public class RecoveryStrat {
   
   private void replicate(SolrCore core, String shardZkNodeName, ZkNodeProps leaderprops, String baseUrl)
       throws SolrServerException, IOException {
-    System.out.println("replicate");
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get (eventually)
     // or full index replication
@@ -198,7 +196,6 @@ public class RecoveryStrat {
     if (!leaderBaseUrl.equals(baseUrl)) {
       
       CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderBaseUrl);
-      System.out.println("send prep cmd");
       PrepRecovery prepCmd = new PrepRecovery();
       prepCmd.setAction(CoreAdminAction.PREPRECOVERY);
       prepCmd.setCoreName(leaderCoreName);
@@ -222,9 +219,6 @@ public class RecoveryStrat {
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
       
       replicationHandler.doFetch(solrParams);
-      
-      
-      System.out.println("recover from: " + leaderUrl + " ");
       
       if (recoveryListener != null) recoveryListener.finishedReplication();
     }
