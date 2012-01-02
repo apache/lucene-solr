@@ -165,8 +165,8 @@ public class SolrCmdDistributor {
     
     // if the command wanted to block until everything was committed,
     // then do that here.
-    // nocommit
-    if (/* cmd.waitFlush || */cmd.waitSearcher) {
+
+    if (cmd.waitSearcher) {
       checkResponses(true);
     }
   }
