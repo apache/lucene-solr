@@ -250,8 +250,8 @@ public class LBHttpSolrServer extends SolrServer {
         rsp.rsp = server.request(req.getRequest());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // we retry on 404 - you can see this on solr shutdown
-        if (e.code() == 404) {
+        // we retry on 404 or 403 - you can see this on solr shutdown
+        if (e.code() == 404 || e.code() == 403) {
           ex = addZombie(server, e);
         } else {
           // Server is alive but the request was likely malformed or invalid
