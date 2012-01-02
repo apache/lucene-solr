@@ -275,44 +275,13 @@ public class RealTimeGetComponent extends SearchComponent
     int nVersions = params.getInt("getVersions", -1);
     if (nVersions == -1) return;
 
-    // if 3 other shards ask us for the last N, how do we cache that?
-    // we should also not include docs we're adding in the sync phase.
-    // The right place to cache this is in the UpdateLog presumably (that or in the versions class)
-    // We not only need to cache, but make sure that log files that are referenced in the last N
-    // are not deleted until we are done with them.
-
-    // Simple 10 second cache of log files?  That wouldn't serve the purpose of being able to do
-    // this at startup too.
-
-
-
-    // a node that is "active" should go to mode "sync" when it sees the leader go down (or the overseer should force that).
-    // it should then ask all it's peers that are also in mode "sync" or "active" (since it may still see some stale state)
-    // for their last N versions.  It will examine it's own last N and see if there are any updates that it missed.
-    // It will then ask for those specific updates and apply them.  After this is complete, state should go back to "active"
-    // If any updates fail, state should go to "recover" (TODO: what about if there's only one node up?)
-
-    // APIs...
-    // UpdateLog.getLatest100()
-
-    // Shouldn't need to change the *mode* of the UpdateLog like we do for recovery.  We can log updates even if they are replays from other nodes.
-    // Where should the code live that compares our list with the list from everyone else?
-
-
-    // 1) always keep the last few logs open?
-    // 2) append the number of records last?   (could even append the list to the end of the log file)
-    //
-    // On startup
-    //  - if there is another node up, we can request the last stuff it saw.  if we are ahead of that, everything is good
-    //
-
-
-    // doSync()...
-    // - ask *all* peer replicas
 
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
+    if (ulog == null) return;
 
-
+    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
+    
+    rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
   }
 
 

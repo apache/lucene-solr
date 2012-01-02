@@ -105,7 +105,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private volatile UpdateHandler uhandler;    // a core reload can change this reference!
 
 
-  static class LogPtr {
+  public static class LogPtr {
     final long pointer;
     final long version;
 
@@ -547,7 +547,18 @@ public class UpdateLog implements PluginInfoInitialized {
     Deque<TransactionLog> logList;
     List<List<LogPtr>> updates;
 
-
+    public List<Long> getVersions(int n) {
+      List<Long> ret = new ArrayList(n);
+      
+      for (List<LogPtr> singleList : updates) {
+        for (LogPtr ptr : singleList) {
+          ret.add(ptr.version);
+          if (--n <= 0) return ret;
+        }
+      }
+      
+      return ret;
+    }
 
     private void update() {
       int numUpdates = 0;
@@ -556,11 +567,13 @@ public class UpdateLog implements PluginInfoInitialized {
       for (TransactionLog oldLog : logList) {
         List<LogPtr> updatesForLog = new ArrayList<LogPtr>();
 
+        TransactionLog.ReverseReader reader = null;
         try {
-          TransactionLog.ReverseReader reader = oldLog.getReverseReader();
+          reader = oldLog.getReverseReader();
 
           while (numUpdates < numRecordsToKeep) {
             Object o = reader.next();
+            if (o==null) break;
             try {
 
               // should currently be a List<Oper,Ver,Doc/Id>
@@ -587,14 +600,16 @@ public class UpdateLog implements PluginInfoInitialized {
               log.warn("Unexpected log entry or corrupt log.  Entry=" + o, cl);
               // would be caused by a corrupt transaction log
             } catch (Exception ex) {
-              log.warn("Exception replaying log", ex);
-              // something wrong with the request?
+              log.warn("Exception reverse reading log", ex);
+              break;
             }
           }
 
         } catch (IOException e) {
           // failure to read a log record isn't fatal
           log.error("Exception reading versions from log",e);
+        } finally {
+          if (reader != null) reader.close();
         }
 
         updates.add(updatesForLog);
