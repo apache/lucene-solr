@@ -261,9 +261,6 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
     Set<String> downNodes = complement(oldLiveNodes, liveNodes);
     for(String node: downNodes) {
       NodeStateWatcher watcher = nodeStateWatches.remove(node);
-      if (watcher != null) {
-        watcher.close();
-      }
     }
   }
   

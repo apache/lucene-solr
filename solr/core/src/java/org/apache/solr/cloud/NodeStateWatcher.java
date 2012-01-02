@@ -45,7 +45,6 @@ public class NodeStateWatcher implements Watcher {
   }
 
   private final SolrZkClient zkClient;
-  private boolean stop = false;
   private final String path;
   private volatile Set<CoreState> currentState = new HashSet<CoreState>();
   private final NodeStateChangeListener listener;
@@ -65,20 +64,12 @@ public class NodeStateWatcher implements Watcher {
     processStateChange();
   }
 
-  public void close() {
-    stop = true;
-  }
-
   @Override
   public void process(WatchedEvent event) {
-    if (stop)
-      return;
     try {
       processStateChange();
     } catch (KeeperException e) {
-      // nocommit: stop working on any keeper error
-      log.warn("Could not talk to ZK", e);
-//      stop = true;
+      log.warn("Error processing state change", e);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
