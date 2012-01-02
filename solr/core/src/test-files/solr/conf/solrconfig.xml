@@ -142,7 +142,7 @@
     </listener>
     -->
     
-    <updateLog enable="${enable.update.log:false}" class="solr.FSUpdateLog">
+    <updateLog enable="${enable.update.log:false}">
   	  <str name="dir">${solr.data.dir:}</str>
     </updateLog> 
 
