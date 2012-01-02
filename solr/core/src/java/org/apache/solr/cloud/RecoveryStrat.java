@@ -88,6 +88,8 @@ public class RecoveryStrat {
     
     zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName, core.getName());
     
+    // TODO: we should really track if a recovery is already attempting and if it is, interrupt it
+    // and start again...
     Thread thread = new Thread() {
       {
         setDaemon(true);
