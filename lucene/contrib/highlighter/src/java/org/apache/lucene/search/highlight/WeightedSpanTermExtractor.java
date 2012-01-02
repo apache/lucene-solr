@@ -90,7 +90,7 @@ public class WeightedSpanTermExtractor {
    *          Map to place created WeightedSpanTerms in
    * @throws IOException
    */
-  private void extract(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
+  protected void extract(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
     if (query instanceof BooleanQuery) {
       BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
 
@@ -206,6 +206,12 @@ public class WeightedSpanTermExtractor {
         extractWeightedSpanTerms(terms, sp);
       }
     }
+    extractUnknownQuery(query, terms);
+  }
+
+  protected void extractUnknownQuery(Query query,
+      Map<String, WeightedSpanTerm> terms) throws IOException {
+    // for sub-classing to extract custom queries
   }
 
   /**
@@ -217,7 +223,7 @@ public class WeightedSpanTermExtractor {
    *          SpanQuery to extract Terms from
    * @throws IOException
    */
-  private void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, SpanQuery spanQuery) throws IOException {
+  protected void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, SpanQuery spanQuery) throws IOException {
     Set<String> fieldNames;
 
     if (fieldName == null) {
@@ -305,7 +311,7 @@ public class WeightedSpanTermExtractor {
    *          Query to extract Terms from
    * @throws IOException
    */
-  private void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query) throws IOException {
+  protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<Term>();
     query.extractTerms(nonWeightedTerms);
 
@@ -321,13 +327,13 @@ public class WeightedSpanTermExtractor {
   /**
    * Necessary to implement matches for queries against <code>defaultField</code>
    */
-  private boolean fieldNameComparator(String fieldNameToCheck) {
+  protected boolean fieldNameComparator(String fieldNameToCheck) {
     boolean rv = fieldName == null || fieldName.equals(fieldNameToCheck)
       || (defaultField != null && defaultField.equals(fieldNameToCheck));
     return rv;
   }
 
-  private AtomicReaderContext getLeafContextForField(String field) throws IOException {
+  protected AtomicReaderContext getLeafContextForField(String field) throws IOException {
     if(wrapToCaching && !cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
       tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
       cachedTokenStream = true;
@@ -449,7 +455,7 @@ public class WeightedSpanTermExtractor {
     return terms;
   }
   
-  private void collectSpanQueryFields(SpanQuery spanQuery, Set<String> fieldNames) {
+  protected void collectSpanQueryFields(SpanQuery spanQuery, Set<String> fieldNames) {
     if (spanQuery instanceof FieldMaskingSpanQuery) {
       collectSpanQueryFields(((FieldMaskingSpanQuery)spanQuery).getMaskedQuery(), fieldNames);
     } else if (spanQuery instanceof SpanFirstQuery) {
@@ -469,7 +475,7 @@ public class WeightedSpanTermExtractor {
     }
   }
   
-  private boolean mustRewriteQuery(SpanQuery spanQuery) {
+  protected boolean mustRewriteQuery(SpanQuery spanQuery) {
     if (!expandMultiTermQuery) {
       return false; // Will throw UnsupportedOperationException in case of a SpanRegexQuery.
     } else if (spanQuery instanceof FieldMaskingSpanQuery) {
@@ -504,7 +510,8 @@ public class WeightedSpanTermExtractor {
    * This class makes sure that if both position sensitive and insensitive
    * versions of the same term are added, the position insensitive one wins.
    */
-  static private class PositionCheckingMap<K> extends HashMap<K,WeightedSpanTerm> {
+  @SuppressWarnings("serial")
+  protected static class PositionCheckingMap<K> extends HashMap<K,WeightedSpanTerm> {
 
     @Override
     public void putAll(Map<? extends K,? extends WeightedSpanTerm> m) {

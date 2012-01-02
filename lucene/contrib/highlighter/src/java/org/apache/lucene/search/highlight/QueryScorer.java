@@ -207,8 +207,7 @@ public class QueryScorer implements Scorer {
   }
   
   private TokenStream initExtractor(TokenStream tokenStream) throws IOException {
-    WeightedSpanTermExtractor qse = defaultField == null ? new WeightedSpanTermExtractor()
-        : new WeightedSpanTermExtractor(defaultField);
+    WeightedSpanTermExtractor qse = newTermExtractor(defaultField);
     qse.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
     qse.setExpandMultiTermQuery(expandMultiTermQuery);
     qse.setWrapIfNotCachingTokenFilter(wrapToCaching);
@@ -224,6 +223,11 @@ public class QueryScorer implements Scorer {
     }
     
     return null;
+  }
+  
+  protected WeightedSpanTermExtractor newTermExtractor(String defaultField) {
+    return defaultField == null ? new WeightedSpanTermExtractor()
+    : new WeightedSpanTermExtractor(defaultField);
   }
 
   /*
