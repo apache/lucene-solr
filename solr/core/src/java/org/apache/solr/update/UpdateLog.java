@@ -73,7 +73,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   private TransactionLog tlog;
   private TransactionLog prevTlog;
-  private Deque<TransactionLog> logs = new LinkedList<TransactionLog>();  // list of recent logs
+  private Deque<TransactionLog> logs = new LinkedList<TransactionLog>();  // list of recent logs, newest first
   private int numOldRecords;  // number of records in the recent logs
 
   private Map<BytesRef,LogPtr> map = new HashMap<BytesRef, LogPtr>();
@@ -166,14 +166,14 @@ public class UpdateLog implements PluginInfoInitialized {
     }
 
     while (logs.size() > 0) {
-      TransactionLog log = logs.peekFirst();
+      TransactionLog log = logs.peekLast();
       int nrec = log.numRecords();
       // remove oldest log if we don't need it to keep at least numRecordsToKeep, or if
       // we already have the limit of 10 log files.
       if (currRecords - nrec >= numRecordsToKeep || logs.size() >= 10) {
         currRecords -= nrec;
         numOldRecords -= nrec;
-        logs.removeFirst().decref();  // dereference so it will be deleted when no longer in use
+        logs.removeLast().decref();  // dereference so it will be deleted when no longer in use
         continue;
       }
 
@@ -181,7 +181,7 @@ public class UpdateLog implements PluginInfoInitialized {
     }
 
     oldLog.incref();  // prevent this from being deleted
-    logs.addLast(oldLog);
+    logs.addFirst(oldLog);
   }
 
 
@@ -542,9 +542,9 @@ public class UpdateLog implements PluginInfoInitialized {
   }
 
 
-
+  // TODO: nocommit: decrement the references of the transaction logs at some point
   public class RecentUpdates {
-    Deque<TransactionLog> logList;
+    Deque<TransactionLog> logList;    // newest first
     List<List<LogPtr>> updates;
 
     public List<Long> getVersions(int n) {
@@ -625,6 +625,14 @@ public class UpdateLog implements PluginInfoInitialized {
       logList = new LinkedList<TransactionLog>(logs);
       for (TransactionLog log : logList) {
         log.incref();
+      }
+      if (prevTlog != null) {
+        prevTlog.incref();
+        logList.addFirst(prevTlog);
+      }
+      if (tlog != null) {
+        tlog.incref();
+        logList.addFirst(tlog);
       }
     }
 

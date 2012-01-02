@@ -185,7 +185,16 @@ public class TestRecovery extends SolrTestCaseJ4 {
       updateJ(jsonAdd(sdoc("id","2", "_version_","102")), params(SEEN_LEADER,SEEN_LEADER_VAL));
       updateJ(jsonAdd(sdoc("id","3", "_version_","103")), params(SEEN_LEADER,SEEN_LEADER_VAL));
       deleteAndGetVersion("1", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-201"));
+
+      assertJQ(req("qt","/get", "getVersions","4")
+          ,"=={'versions':[-201,103,102,101]}"
+      );
+
       assertU(commit());
+
+      assertJQ(req("qt","/get", "getVersions","4")
+          ,"=={'versions':[-201,103,102,101]}"
+      );
 
       // updates should be buffered, so we should not see any results yet.
       assertJQ(req("q", "*:*")
@@ -209,6 +218,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
+
+
+      assertJQ(req("qt","/get", "getVersions","4")
+          ,"=={'versions':[-201,103,102,101]}"
+      );
+
 
       assertJQ(req("q", "*:*")
           , "/response/numFound==2"
@@ -235,6 +250,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // currently buffered id:8 (even if it doesn't currently support versioning)
       updateJ("{\"delete\": { \"query\":\"id:2 OR id:8\" }}", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-300"));
 
+      assertJQ(req("qt","/get", "getVersions","10")
+          ,"=={'versions':[-300,108,105,106,-94,104,3,-201,103,102]}"  // the "3" appears because versions aren't checked while buffering
+      );
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
