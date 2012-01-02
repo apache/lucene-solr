@@ -483,8 +483,7 @@ public class SnapPuller {
       solrCore.getUpdateHandler().newIndexWriter();
       // update our commit point to the right dir
       solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-      
-      replicationHandler.refreshCommitpoint();
+
     } finally {
       req.close();
     }

@@ -201,6 +201,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     }
 
     // the original leader should be leader again now - everyone else is down
+    // TODO: I saw this fail once...expected:<7000> but was:<7004>
     assertEquals(leaderPort, getLeaderPort(getLeader()));
     //printLayout(zkServer.getZkAddress());
     //Thread.sleep(100000);

@@ -136,6 +136,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         // in a catastrophic failure, but will result in the client getting an empty file list for
         // the CMD_GET_FILE_LIST command.
         //
+        System.out.println("sending commit point:" + commitPoint.getVersion());
         core.getDeletionPolicy().setReserveDuration(commitPoint.getVersion(), reserveCommitDuration);
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
@@ -758,12 +759,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
 
-  void refreshCommitpoint() {
-    IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
-      indexCommitPoint = commitPoint;
-    }
-  }
+//  void refreshCommitpoint() {
+//    IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
+//    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
+//      indexCommitPoint = commitPoint;
+//    }
+//  }
 
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {

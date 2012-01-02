@@ -101,7 +101,7 @@ public class RecoveryStrat {
           // TODO: consider any races issues here
           // was checking state first, but there is a race..
           ulog.bufferUpdates();  
-          
+          boolean replayed = false;
           boolean succesfulRecovery = false;
           int retries = 0;
           while (!succesfulRecovery && !close) {
@@ -115,25 +115,33 @@ public class RecoveryStrat {
               replicate(core, shardZkNodeName, leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName()));
               
               // nocommit: remove this
+              int afterReplicateDocs = 0;
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true,
                   true, null);
-              SolrIndexSearcher is = searcher.get();
-              int afterReplicateDocs = 0;
-              if (!core.isClosed()) {
-                afterReplicateDocs = is.search(new MatchAllDocsQuery(), 1).totalHits;
+              try {
+                SolrIndexSearcher is = searcher.get();
+                if (!core.isClosed()) {
+                  afterReplicateDocs = is.search(new MatchAllDocsQuery(), 1).totalHits;
+                }
+              } finally {
                 searcher.decref();
               }
               
               System.out.println("apply buffered updates");
               replay(core);
+              replayed = true;
               System.out.println("replay done");
               
               // nocommit: remove this
-              searcher = core.getSearcher(true, true, null);
-              int afterReplayDocs = searcher.get().search(
-                  new MatchAllDocsQuery(), 1).totalHits;
-              searcher.decref();
-              
+              int afterReplayDocs = 0;
+              try {
+                searcher = core.getSearcher(true, true, null);
+                afterReplayDocs = searcher.get().search(
+                    new MatchAllDocsQuery(), 1).totalHits;
+              } finally {
+                searcher.decref();
+              }
+
               if (recoveryListener != null) recoveryListener.finishedRecovery();
               
               zkController
@@ -152,6 +160,17 @@ public class RecoveryStrat {
               retries = MAX_RETRIES;
             } catch (Throwable t) {
               log.error("Error while trying to recover", t);
+            } finally {
+              if (!replayed) {
+                // TODO: try and bust out replay - better if we can drop buffer...
+                try {
+                  replay(core);
+                } catch (Exception e) {
+                  // nocommit
+                  // TODO Auto-generated catch block
+                  e.printStackTrace();
+                }
+              }
             }
             
             if (!succesfulRecovery) {
