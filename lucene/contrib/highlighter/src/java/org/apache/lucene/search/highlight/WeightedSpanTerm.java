@@ -89,16 +89,7 @@ public class WeightedSpanTerm extends WeightedTerm{
   public List<PositionSpan> getPositionSpans() {
     return positionSpans;
   }
+
 }
 
 
-// Utility class to store a Span
-class PositionSpan {
-  int start;
-  int end;
-
-  public PositionSpan(int start, int end) {
-    this.start = start;
-    this.end = end;
-  }
-}
