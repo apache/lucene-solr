@@ -225,7 +225,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
 
       // make sure all cores have been returned a id
-      for (int i = 0; i < 80; i++) {
+      for (int i = 0; i < 100; i++) {
         int assignedCount = 0;
         for (int j = 0; j < coreCount; j++) {
           if (ids[j] != null) {
