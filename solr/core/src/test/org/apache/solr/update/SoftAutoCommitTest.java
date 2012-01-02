@@ -200,7 +200,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
         manCommit + " !< " + postAdd529, 
         manCommit < postAdd529);
     
-    Long hard529 = monitor.hard.poll(hardCommitWaitMillis, MILLISECONDS);
+    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
 
     monitor.assertSaneOffers();
