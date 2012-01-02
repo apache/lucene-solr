@@ -574,6 +574,8 @@ public class TransactionLog {
     public Object next() throws IOException {
       if (prevPos <= 0) return null;
 
+      long endOfThisRecord = prevPos;
+
       int thisLength = nextLength;
 
       long recordStart = prevPos - thisLength;  // back up to the beginning of the next record
@@ -581,7 +583,19 @@ public class TransactionLog {
 
       if (prevPos <= 0) return null;  // this record is the header
 
-      // TODO: nocommit: seek based on underlying buffer size of 8192
+      long bufferPos = fis.getBufferPos();
+      if (prevPos >= bufferPos) {
+        // nothing to do... we're within the current buffer
+      } else {
+        // Position buffer so that this record is at the end.
+        // For small records, this will cause subsequent calls to next() to be within the buffer.
+        long seekPos =  endOfThisRecord - 8192;
+        seekPos = Math.min(seekPos, prevPos); // seek to the start of the record if it's larger then the block size.
+        seekPos = Math.max(seekPos, 0);
+        fis.seek(seekPos);
+        fis.peek();  // cause buffer to be filled
+      }
+
       fis.seek(prevPos);
       nextLength = fis.readInt();     // this is the length of the *next* record (i.e. closer to the beginning)
 
@@ -646,6 +660,11 @@ class ChannelFastInputStream extends FastInputStream {
       chPosition = position;
       end = pos = 0;
     }
+  }
+
+  /** where is the start of the buffer relative to the while file */
+  public long getBufferPos() {
+    return readFromStream - end;
   }
 
   @Override
