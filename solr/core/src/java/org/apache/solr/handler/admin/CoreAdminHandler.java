@@ -625,7 +625,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         // kept it from sending the update to be buffered -
         // pause for a while to let any outstanding updates finish
         try {
-          Thread.sleep(1000);
+          Thread.sleep(1500);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -633,7 +633,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         UpdateRequestProcessorChain processorChain = core
             .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
                 params, log));
-        System.out.println("prep commit");
+
         ModifiableSolrParams reqParams = new ModifiableSolrParams(
             req.getParams());
         reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
@@ -645,13 +645,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
         
         processor.processCommit(cuc);
         processor.finish();
-        
-        RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
-        System.out.println("approx docs to replicate:"
-            + searcherRef.get().getIndexReader().numDocs() + " to " + nodeName
-            + " commit point:"
-            + core.getDeletionPolicy().getLatestCommit().getVersion());
-        searcherRef.decref();
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find core:  "
             + core);

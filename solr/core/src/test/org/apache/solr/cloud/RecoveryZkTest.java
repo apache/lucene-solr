@@ -111,14 +111,15 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     //query("q", "*:*", "distrib", true, "sort", "id desc");
   }
   
-  protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
+  protected void indexDoc(SolrInputDocument doc) throws IOException,
+      SolrServerException {
     controlClient.add(doc);
-
-    // nocommit: look into why cloudClient.addDoc returns NPE
-    UpdateRequest ureq = new UpdateRequest();
-    ureq.add(doc);
-    //ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
-    ureq.process(cloudClient);
+    
+    // UpdateRequest ureq = new UpdateRequest();
+    // ureq.add(doc);
+    // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    // ureq.process(cloudClient);
+    cloudClient.add(doc);
   }
 
   
