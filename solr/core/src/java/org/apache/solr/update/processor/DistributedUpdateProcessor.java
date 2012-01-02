@@ -704,6 +704,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
   }
   
+  // RetryNodes are used in the case of 'forward to leader' where we want
+  // to try the latest leader on a fail in the case the leader just went down.
   public static class RetryNode extends StdNode {
     
     private ZkStateReader zkStateReader;
