@@ -25,39 +25,39 @@ import java.io.LineNumberReader;
 import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
 
 public class ConnectionCostsBuilder {
-	
-	public ConnectionCostsBuilder() {
-		
-	}
-	
-	public static ConnectionCosts build(String filename) throws IOException {
-		FileInputStream inputStream = new FileInputStream(filename);
-		InputStreamReader streamReader = new InputStreamReader(inputStream);
-		LineNumberReader lineReader = new LineNumberReader(streamReader);
-
-		String line = lineReader.readLine();
-		String[] dimensions = line.split("\\s+");
-		
-		assert dimensions.length == 3;
-
-		int forwardSize = Integer.parseInt(dimensions[0]);
-		int backwardSize = Integer.parseInt(dimensions[1]);
-		
-		assert forwardSize > 0 && backwardSize > 0;
-		
-		ConnectionCosts costs = new ConnectionCosts(forwardSize, backwardSize);
-		
-		while ((line = lineReader.readLine()) != null) {
-			String[] fields = line.split("\\s+");
-
-			assert fields.length == 3;
-			
-			int forwardId = Integer.parseInt(fields[0]);
-			int backwardId = Integer.parseInt(fields[1]);
-			int cost = Integer.parseInt(fields[2]);
-
-			costs.add(forwardId, backwardId, cost);
-		}
-		return costs;
-	}
+  
+  public ConnectionCostsBuilder() {
+    
+  }
+  
+  public static ConnectionCosts build(String filename) throws IOException {
+    FileInputStream inputStream = new FileInputStream(filename);
+    InputStreamReader streamReader = new InputStreamReader(inputStream);
+    LineNumberReader lineReader = new LineNumberReader(streamReader);
+    
+    String line = lineReader.readLine();
+    String[] dimensions = line.split("\\s+");
+    
+    assert dimensions.length == 3;
+    
+    int forwardSize = Integer.parseInt(dimensions[0]);
+    int backwardSize = Integer.parseInt(dimensions[1]);
+    
+    assert forwardSize > 0 && backwardSize > 0;
+    
+    ConnectionCosts costs = new ConnectionCosts(forwardSize, backwardSize);
+    
+    while ((line = lineReader.readLine()) != null) {
+      String[] fields = line.split("\\s+");
+      
+      assert fields.length == 3;
+      
+      int forwardId = Integer.parseInt(fields[0]);
+      int backwardId = Integer.parseInt(fields[1]);
+      int cost = Integer.parseInt(fields[2]);
+      
+      costs.add(forwardId, backwardId, cost);
+    }
+    return costs;
+  }
 }

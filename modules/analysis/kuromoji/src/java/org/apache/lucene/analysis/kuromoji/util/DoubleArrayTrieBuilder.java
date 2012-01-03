@@ -24,25 +24,25 @@ import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 import org.apache.lucene.analysis.kuromoji.trie.Trie;
 
 public class DoubleArrayTrieBuilder {
-
-	
-	public DoubleArrayTrieBuilder() {
-		
-	}
-
-	public static DoubleArrayTrie build(Set<Entry<Integer, String>> entries) {
-		Trie tempTrie = buildTrie(entries);
-		DoubleArrayTrie daTrie = new DoubleArrayTrie();
-		daTrie.build(tempTrie);
-		return daTrie;
-	}
-	
-	public static Trie buildTrie(Set<Entry<Integer, String>> entries) {
-		Trie trie = new Trie();
-		for (Entry<Integer, String> entry : entries) {
-			String surfaceForm = entry.getValue();
-			trie.add(surfaceForm);
-		}
-		return trie;
-	}
+  
+  
+  public DoubleArrayTrieBuilder() {
+    
+  }
+  
+  public static DoubleArrayTrie build(Set<Entry<Integer, String>> entries) {
+    Trie tempTrie = buildTrie(entries);
+    DoubleArrayTrie daTrie = new DoubleArrayTrie();
+    daTrie.build(tempTrie);
+    return daTrie;
+  }
+  
+  public static Trie buildTrie(Set<Entry<Integer, String>> entries) {
+    Trie trie = new Trie();
+    for (Entry<Integer, String> entry : entries) {
+      String surfaceForm = entry.getValue();
+      trie.add(surfaceForm);
+    }
+    return trie;
+  }
 }

@@ -28,53 +28,53 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 public class ConnectionCosts implements Serializable{
-
-	private static final long serialVersionUID = -7704592689635266457L;
-
-	public static final String FILENAME = "cc.dat";
-		
-	private short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
-	
-	public ConnectionCosts() {
-		
-	}
-	
-	public ConnectionCosts(int forwardSize, int backwardSize) {
-		this.costs = new short[backwardSize][forwardSize]; 
-	}
-
-	public void add(int forwardId, int backwardId, int cost) {
-		this.costs[backwardId][forwardId] = (short)cost;
-	}
-	
-	public int get(int forwardId, int backwardId) {
-		// FIXME: There seems to be something wrong with the double array trie in some rare
-		// cases causing and IndexOutOfBoundsException.  Use a guard as a temporary work-around
-		// and return a high cost to advise Mr. Viterbi strongly to not use this transition
-		if (backwardId < costs.length && forwardId < costs[backwardId].length ) {
-	    	return costs[backwardId][forwardId];
-	    } else {
-	    	return 50000;
-	    }
-	}
-
-	public void write(String directoryname) throws IOException {
-		String filename = directoryname + File.separator + FILENAME;
-		ObjectOutputStream outputStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));
-		outputStream.writeObject(this);
-		outputStream.close();
-	}
-
-	public static ConnectionCosts getInstance() throws IOException, ClassNotFoundException {
-		InputStream is = ConnectionCosts.class.getClassLoader().getResourceAsStream(FILENAME);
-		return read(is);
-	}
-	
-	public static ConnectionCosts read(InputStream is) throws IOException, ClassNotFoundException {
-		ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is));
-		ConnectionCosts instance = (ConnectionCosts) ois.readObject();
-		ois.close();
-		return instance;
-	}
-
+  
+  private static final long serialVersionUID = -7704592689635266457L;
+  
+  public static final String FILENAME = "cc.dat";
+  
+  private short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
+  
+  public ConnectionCosts() {
+    
+  }
+  
+  public ConnectionCosts(int forwardSize, int backwardSize) {
+    this.costs = new short[backwardSize][forwardSize]; 
+  }
+  
+  public void add(int forwardId, int backwardId, int cost) {
+    this.costs[backwardId][forwardId] = (short)cost;
+  }
+  
+  public int get(int forwardId, int backwardId) {
+    // FIXME: There seems to be something wrong with the double array trie in some rare
+    // cases causing and IndexOutOfBoundsException.  Use a guard as a temporary work-around
+    // and return a high cost to advise Mr. Viterbi strongly to not use this transition
+    if (backwardId < costs.length && forwardId < costs[backwardId].length ) {
+      return costs[backwardId][forwardId];
+    } else {
+      return 50000;
+    }
+  }
+  
+  public void write(String directoryname) throws IOException {
+    String filename = directoryname + File.separator + FILENAME;
+    ObjectOutputStream outputStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));
+    outputStream.writeObject(this);
+    outputStream.close();
+  }
+  
+  public static ConnectionCosts getInstance() throws IOException, ClassNotFoundException {
+    InputStream is = ConnectionCosts.class.getClassLoader().getResourceAsStream(FILENAME);
+    return read(is);
+  }
+  
+  public static ConnectionCosts read(InputStream is) throws IOException, ClassNotFoundException {
+    ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is));
+    ConnectionCosts instance = (ConnectionCosts) ois.readObject();
+    ois.close();
+    return instance;
+  }
+  
 }

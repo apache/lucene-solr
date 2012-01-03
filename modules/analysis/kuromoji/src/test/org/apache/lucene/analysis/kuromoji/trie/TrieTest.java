@@ -23,50 +23,50 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class TrieTest extends LuceneTestCase {
-	
-	@Test
-	public void testGetRoot() {
-		Trie trie = new Trie();
-		Node rootNode = trie.getRoot();
-		assertNotNull(rootNode);
-	}
-	
-	@Test
-	public void testAdd() {
-		Trie trie = new Trie();
-		trie.add("aa");
-		trie.add("ab");
-		trie.add("bb");
-		
-		Node rootNode = trie.getRoot();
-		assertEquals(2, rootNode.getChildren().length);
-		assertEquals(2, rootNode.getChildren()[0].getChildren().length);
-		assertEquals(1, rootNode.getChildren()[1].getChildren().length);
-	}
-	
-	@Test
-	public void testGetChildren() {
-		Trie trie = new Trie();
-		trie.add("aa");
-		trie.add("ab");
-		trie.add("bb");
-		
-		Node rootNode = trie.getRoot();
-		assertEquals(2, rootNode.getChildren().length);
-		assertEquals(2, rootNode.getChildren()[0].getChildren().length);
-		assertEquals(1, rootNode.getChildren()[1].getChildren().length);
-	}
-	
-	@Test
-	public void testSinglePath() {
-		Trie trie = new Trie();
-		assertTrue(trie.getRoot().hasSinglePath());
-		trie.add("abcdef");
-		assertTrue(trie.getRoot().hasSinglePath());
-		trie.add("abdfg");
-		Node rootNode = trie.getRoot();
-		assertEquals(2, rootNode.getChildren()[0].getChildren()[0].getChildren().length);
-		assertTrue(rootNode.getChildren()[0].getChildren()[0].getChildren()[0].hasSinglePath());
-		assertTrue(rootNode.getChildren()[0].getChildren()[0].getChildren()[1].hasSinglePath());
-	}
+  
+  @Test
+  public void testGetRoot() {
+    Trie trie = new Trie();
+    Node rootNode = trie.getRoot();
+    assertNotNull(rootNode);
+  }
+  
+  @Test
+  public void testAdd() {
+    Trie trie = new Trie();
+    trie.add("aa");
+    trie.add("ab");
+    trie.add("bb");
+    
+    Node rootNode = trie.getRoot();
+    assertEquals(2, rootNode.getChildren().length);
+    assertEquals(2, rootNode.getChildren()[0].getChildren().length);
+    assertEquals(1, rootNode.getChildren()[1].getChildren().length);
+  }
+  
+  @Test
+  public void testGetChildren() {
+    Trie trie = new Trie();
+    trie.add("aa");
+    trie.add("ab");
+    trie.add("bb");
+    
+    Node rootNode = trie.getRoot();
+    assertEquals(2, rootNode.getChildren().length);
+    assertEquals(2, rootNode.getChildren()[0].getChildren().length);
+    assertEquals(1, rootNode.getChildren()[1].getChildren().length);
+  }
+  
+  @Test
+  public void testSinglePath() {
+    Trie trie = new Trie();
+    assertTrue(trie.getRoot().hasSinglePath());
+    trie.add("abcdef");
+    assertTrue(trie.getRoot().hasSinglePath());
+    trie.add("abdfg");
+    Node rootNode = trie.getRoot();
+    assertEquals(2, rootNode.getChildren()[0].getChildren()[0].getChildren().length);
+    assertTrue(rootNode.getChildren()[0].getChildren()[0].getChildren()[0].hasSinglePath());
+    assertTrue(rootNode.getChildren()[0].getChildren()[0].getChildren()[1].hasSinglePath());
+  }
 }

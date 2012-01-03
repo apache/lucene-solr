@@ -25,53 +25,53 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class UserDictionaryTest extends LuceneTestCase {
-
-	@Test
-	public void testLookup() throws IOException {
-	 
-		UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
-		int[][] dictionaryEntryResult = dictionary.lookup("関西国際空港に行った");
-		// Length should be three 関西, 国際, 空港
-		assertEquals(3, dictionaryEntryResult.length);
-
-		// Test positions
-		assertEquals(0, dictionaryEntryResult[0][1]); // index of 関西
-		assertEquals(2, dictionaryEntryResult[1][1]); // index of 国際
-		assertEquals(4, dictionaryEntryResult[2][1]); // index of 空港
-
-		// Test lengths
-		assertEquals(2, dictionaryEntryResult[0][2]); // length of 関西
-		assertEquals(2, dictionaryEntryResult[1][2]); // length of 国際
-		assertEquals(2, dictionaryEntryResult[2][2]); // length of 空港
-
-		int[][] dictionaryEntryResult2 = dictionary.lookup("関西国際空港と関西国際空港に行った");
-		// Length should be six 
-		assertEquals(6, dictionaryEntryResult2.length);
-	}
-
-	@Test
-	public void testReadings() throws IOException {
+  
+  @Test
+  public void testLookup() throws IOException {
+    
     UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
-		int wordIdNihon = 100000000; // wordId of 日本 in 日本経済新聞
-		assertEquals("ニホン", dictionary.getReading(wordIdNihon));
-
-		int wordIdAsashoryu = 100000006; // wordId for 朝青龍
-		assertEquals("アサショウリュウ", dictionary.getReading(wordIdAsashoryu));
-		
-		int wordIdNotExist = 1;
-		assertNull(dictionary.getReading(wordIdNotExist));
-	}
-	
-	@Test
-	public void testPartOfSpeech() throws IOException {
+    int[][] dictionaryEntryResult = dictionary.lookup("関西国際空港に行った");
+    // Length should be three 関西, 国際, 空港
+    assertEquals(3, dictionaryEntryResult.length);
+    
+    // Test positions
+    assertEquals(0, dictionaryEntryResult[0][1]); // index of 関西
+    assertEquals(2, dictionaryEntryResult[1][1]); // index of 国際
+    assertEquals(4, dictionaryEntryResult[2][1]); // index of 空港
+    
+    // Test lengths
+    assertEquals(2, dictionaryEntryResult[0][2]); // length of 関西
+    assertEquals(2, dictionaryEntryResult[1][2]); // length of 国際
+    assertEquals(2, dictionaryEntryResult[2][2]); // length of 空港
+    
+    int[][] dictionaryEntryResult2 = dictionary.lookup("関西国際空港と関西国際空港に行った");
+    // Length should be six 
+    assertEquals(6, dictionaryEntryResult2.length);
+  }
+  
+  @Test
+  public void testReadings() throws IOException {
     UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
-		int wordIdKeizai = 100000001; // wordId of 経済 in 日本経済新聞
-		assertEquals("カスタム名詞", dictionary.getPartOfSpeech(wordIdKeizai));
-	}
-	
-	@Test
-	public void testRead() throws IOException {
+    int wordIdNihon = 100000000; // wordId of 日本 in 日本経済新聞
+    assertEquals("ニホン", dictionary.getReading(wordIdNihon));
+    
+    int wordIdAsashoryu = 100000006; // wordId for 朝青龍
+    assertEquals("アサショウリュウ", dictionary.getReading(wordIdAsashoryu));
+    
+    int wordIdNotExist = 1;
+    assertNull(dictionary.getReading(wordIdNotExist));
+  }
+  
+  @Test
+  public void testPartOfSpeech() throws IOException {
     UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
-		assertNotNull(dictionary);		
-	}
+    int wordIdKeizai = 100000001; // wordId of 経済 in 日本経済新聞
+    assertEquals("カスタム名詞", dictionary.getPartOfSpeech(wordIdKeizai));
+  }
+  
+  @Test
+  public void testRead() throws IOException {
+    UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
+    assertNotNull(dictionary);		
+  }
 }

@@ -18,105 +18,105 @@ package org.apache.lucene.analysis.kuromoji.viterbi;
  */
 
 public class ViterbiNode {
-	public enum Type {
-		KNOWN,
-		UNKNOWN,
-		USER
-	}
-
-	private final int wordId;
-	
-	private final String surfaceForm;
-	
-	private final int leftId;
-	
-	private final int rightId;
-	
-	/** word cost for this node */
-	private final int wordCost;
-	
-	/** minimum path cost found thus far */
-	private int pathCost;
-		
-	private ViterbiNode leftNode;
-
-	private final Type type;
-	
-	private final int startIndex;
-	
-	public ViterbiNode(int wordId, String surfaceForm, int leftId, int rightId, int wordCost, int startIndex, Type type) {
-		this.wordId = wordId;
-		this.surfaceForm = surfaceForm;
-		this.leftId = leftId;
-		this.rightId = rightId;
-		this.wordCost = wordCost;
-		this.startIndex = startIndex;
-		this.type = type;
-	}
-	
-
-	/**
-	 * @return the wordId
-	 */
-	public int getWordId() {
-		return wordId;
-	}
-
-	/**
-	 * @return the surfaceForm
-	 */
-	public String getSurfaceForm() {
-		return surfaceForm;
-	}
-
-	/**
-	 * @return the leftId
-	 */
-	public int getLeftId() {
-		return leftId;
-	}
-
-	/**
-	 * @return the rightId
-	 */
-	public int getRightId() {
-		return rightId;
-	}
-
-	/**
-	 * @return the cost
-	 */
-	public int getWordCost() {
-		return wordCost;
-	}
-
-	/**
-	 * @return the cost
-	 */
-	public int getPathCost() {
-		return pathCost;
-	}
-
-	/**
-	 * param cost minimum path cost found this far
-	 */
-	public void setPathCost(int pathCost) {
-		this.pathCost = pathCost;
-	}
-	
-	public void setLeftNode(ViterbiNode node) {
-		leftNode = node;
-	}
-
-	public ViterbiNode getLeftNode() {
-		return leftNode;
-	}
-
-	public int getStartIndex() {
-		return startIndex;
-	}
-
-	public Type getType() {
-		return type;
-	}
+  public enum Type {
+    KNOWN,
+    UNKNOWN,
+    USER
+  }
+  
+  private final int wordId;
+  
+  private final String surfaceForm;
+  
+  private final int leftId;
+  
+  private final int rightId;
+  
+  /** word cost for this node */
+  private final int wordCost;
+  
+  /** minimum path cost found thus far */
+  private int pathCost;
+  
+  private ViterbiNode leftNode;
+  
+  private final Type type;
+  
+  private final int startIndex;
+  
+  public ViterbiNode(int wordId, String surfaceForm, int leftId, int rightId, int wordCost, int startIndex, Type type) {
+    this.wordId = wordId;
+    this.surfaceForm = surfaceForm;
+    this.leftId = leftId;
+    this.rightId = rightId;
+    this.wordCost = wordCost;
+    this.startIndex = startIndex;
+    this.type = type;
+  }
+  
+  
+  /**
+   * @return the wordId
+   */
+  public int getWordId() {
+    return wordId;
+  }
+  
+  /**
+   * @return the surfaceForm
+   */
+  public String getSurfaceForm() {
+    return surfaceForm;
+  }
+  
+  /**
+   * @return the leftId
+   */
+  public int getLeftId() {
+    return leftId;
+  }
+  
+  /**
+   * @return the rightId
+   */
+  public int getRightId() {
+    return rightId;
+  }
+  
+  /**
+   * @return the cost
+   */
+  public int getWordCost() {
+    return wordCost;
+  }
+  
+  /**
+   * @return the cost
+   */
+  public int getPathCost() {
+    return pathCost;
+  }
+  
+  /**
+   * param cost minimum path cost found this far
+   */
+  public void setPathCost(int pathCost) {
+    this.pathCost = pathCost;
+  }
+  
+  public void setLeftNode(ViterbiNode node) {
+    leftNode = node;
+  }
+  
+  public ViterbiNode getLeftNode() {
+    return leftNode;
+  }
+  
+  public int getStartIndex() {
+    return startIndex;
+  }
+  
+  public Type getType() {
+    return type;
+  }
 }

@@ -26,88 +26,88 @@ import java.io.LineNumberReader;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 
 public class UnknownDictionaryBuilder {
-	private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*";
-	
-	private String encoding = "euc-jp";
-	
-	public UnknownDictionaryBuilder() {
-		
-	}
-
-	public UnknownDictionaryBuilder(String encoding) {
-		this.encoding = encoding;
-	}
-	
-	public UnknownDictionary build(String dirname) throws IOException {
-		UnknownDictionary unkDictionary = null;
-		unkDictionary = readDictionaryFile(dirname + File.separator + "unk.def");  //Should be only one file
-		readCharacterDefinition(dirname + File.separator + "char.def", unkDictionary);
-		return unkDictionary;
-	}
-	
-	public UnknownDictionary readDictionaryFile(String filename)
-		throws IOException {
-		return readDictionaryFile(filename, encoding);
-	}
-
-	public UnknownDictionary readDictionaryFile(String filename, String encoding)
-		throws IOException {
-		UnknownDictionary dictionary = new UnknownDictionary(5 * 1024 * 1024);
-		
-		FileInputStream inputStream = new FileInputStream(filename);
-		InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
-		LineNumberReader lineReader = new LineNumberReader(streamReader);
-		
-		dictionary.put(CSVUtil.parse(NGRAM_DICTIONARY_ENTRY));
-
-		String line = null;
-		while ((line = lineReader.readLine()) != null) {
-			dictionary.put(CSVUtil.parse(line)); // Probably we don't need to validate entry
-		}
-
-		return dictionary;
-	}
-	
-	public void readCharacterDefinition(String filename, UnknownDictionary dictionary) throws IOException {
-		FileInputStream inputStream = new FileInputStream(filename);
-		InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
-		LineNumberReader lineReader = new LineNumberReader(streamReader);
-
-		String line = null;
-		
-		while ((line = lineReader.readLine()) != null) {
-			line = line.replaceAll("^\\s", "");
-			line = line.replaceAll("\\s*#.*", "");
-			line = line.replaceAll("\\s+", " ");
-			
-			// Skip empty line or comment line
-			if(line.length() == 0) {
-				continue;
-			}
-			
-			if(line.startsWith("0x")) {	// Category mapping
-				String[] values = line.split(" ", 2);	// Split only first space
-				
-				if(!values[0].contains("..")) {
-					int cp = Integer.decode(values[0]).intValue();
-					dictionary.putCharacterCategory(cp, values[1]);					
-				} else {
-					String[] codePoints = values[0].split("\\.\\.");
-					int cpFrom = Integer.decode(codePoints[0]).intValue();
-					int cpTo = Integer.decode(codePoints[1]).intValue();
-					
-					for(int i = cpFrom; i <= cpTo; i++){
-						dictionary.putCharacterCategory(i, values[1]);					
-					}
-				}
-			} else {	// Invoke definition
-				String[] values = line.split(" "); // Consecutive space is merged above
-				String characterClassName = values[0];
-				int invoke = Integer.parseInt(values[1]);
-				int group = Integer.parseInt(values[2]);
-				int length = Integer.parseInt(values[3]);
-				dictionary.putInvokeDefinition(characterClassName, invoke, group, length);
-			}
-		}
-	}
+  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*";
+  
+  private String encoding = "euc-jp";
+  
+  public UnknownDictionaryBuilder() {
+    
+  }
+  
+  public UnknownDictionaryBuilder(String encoding) {
+    this.encoding = encoding;
+  }
+  
+  public UnknownDictionary build(String dirname) throws IOException {
+    UnknownDictionary unkDictionary = null;
+    unkDictionary = readDictionaryFile(dirname + File.separator + "unk.def");  //Should be only one file
+    readCharacterDefinition(dirname + File.separator + "char.def", unkDictionary);
+    return unkDictionary;
+  }
+  
+  public UnknownDictionary readDictionaryFile(String filename)
+      throws IOException {
+    return readDictionaryFile(filename, encoding);
+  }
+  
+  public UnknownDictionary readDictionaryFile(String filename, String encoding)
+      throws IOException {
+    UnknownDictionary dictionary = new UnknownDictionary(5 * 1024 * 1024);
+    
+    FileInputStream inputStream = new FileInputStream(filename);
+    InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
+    LineNumberReader lineReader = new LineNumberReader(streamReader);
+    
+    dictionary.put(CSVUtil.parse(NGRAM_DICTIONARY_ENTRY));
+    
+    String line = null;
+    while ((line = lineReader.readLine()) != null) {
+      dictionary.put(CSVUtil.parse(line)); // Probably we don't need to validate entry
+    }
+    
+    return dictionary;
+  }
+  
+  public void readCharacterDefinition(String filename, UnknownDictionary dictionary) throws IOException {
+    FileInputStream inputStream = new FileInputStream(filename);
+    InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
+    LineNumberReader lineReader = new LineNumberReader(streamReader);
+    
+    String line = null;
+    
+    while ((line = lineReader.readLine()) != null) {
+      line = line.replaceAll("^\\s", "");
+      line = line.replaceAll("\\s*#.*", "");
+      line = line.replaceAll("\\s+", " ");
+      
+      // Skip empty line or comment line
+      if(line.length() == 0) {
+        continue;
+      }
+      
+      if(line.startsWith("0x")) {	// Category mapping
+        String[] values = line.split(" ", 2);	// Split only first space
+        
+        if(!values[0].contains("..")) {
+          int cp = Integer.decode(values[0]).intValue();
+          dictionary.putCharacterCategory(cp, values[1]);					
+        } else {
+          String[] codePoints = values[0].split("\\.\\.");
+          int cpFrom = Integer.decode(codePoints[0]).intValue();
+          int cpTo = Integer.decode(codePoints[1]).intValue();
+          
+          for(int i = cpFrom; i <= cpTo; i++){
+            dictionary.putCharacterCategory(i, values[1]);					
+          }
+        }
+      } else {	// Invoke definition
+        String[] values = line.split(" "); // Consecutive space is merged above
+        String characterClassName = values[0];
+        int invoke = Integer.parseInt(values[1]);
+        int group = Integer.parseInt(values[2]);
+        int length = Integer.parseInt(values[3]);
+        dictionary.putInvokeDefinition(characterClassName, invoke, group, length);
+      }
+    }
+  }
 }

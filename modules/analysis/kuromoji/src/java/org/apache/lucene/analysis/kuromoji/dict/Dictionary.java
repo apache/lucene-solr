@@ -18,63 +18,63 @@ package org.apache.lucene.analysis.kuromoji.dict;
  */
 
 public interface Dictionary {
-
-	public static final String INTERNAL_SEPARATOR = "\u0000";
-
-	/**
-	 * Get left id of specified word
-	 * @param wordId
-	 * @return	left id
-	 */
-	public int getLeftId(int wordId);
-	
-	/**
-	 * Get right id of specified word
-	 * @param wordId
-	 * @return	left id
-	 */
-	public int getRightId(int wordId);
-	
-	/**
-	 * Get word cost of specified word
-	 * @param wordId
-	 * @return	left id
-	 */
-	public int getWordCost(int wordId);
-
-	/**
-	 * Get all features of tokens
-	 * @param wordId word ID of token
-	 * @return All features of the token
-	 */
-	public String getAllFeatures(int wordId);
-
-	/**
-	 * Get all features as array
-	 * @param wordId word ID of token
-	 * @return Array containing all features of the token
-	 */
-	public String[] getAllFeaturesArray(int wordId);
-
-	/**
-	 * Get Part-Of-Speech of tokens
-	 * @param wordId word ID of token
-	 * @return Part-Of-Speech of the token
-	 */
-	public String getPartOfSpeech(int wordId);
-
-	/**
-	 * Get reading of tokens
-	 * @param wordId word ID of token
-	 * @return Reading of the token
-	 */
-	public String getReading(int wordId);
-	
-	/**
-	 * Get feature(s) of tokens
-	 * @param wordId word ID token
-	 * @param fields array of index. If this is empty, return all features.
-	 * @return Features of the token
-	 */
-	public String getFeature(int wordId, int... fields);
+  
+  public static final String INTERNAL_SEPARATOR = "\u0000";
+  
+  /**
+   * Get left id of specified word
+   * @param wordId
+   * @return	left id
+   */
+  public int getLeftId(int wordId);
+  
+  /**
+   * Get right id of specified word
+   * @param wordId
+   * @return	left id
+   */
+  public int getRightId(int wordId);
+  
+  /**
+   * Get word cost of specified word
+   * @param wordId
+   * @return	left id
+   */
+  public int getWordCost(int wordId);
+  
+  /**
+   * Get all features of tokens
+   * @param wordId word ID of token
+   * @return All features of the token
+   */
+  public String getAllFeatures(int wordId);
+  
+  /**
+   * Get all features as array
+   * @param wordId word ID of token
+   * @return Array containing all features of the token
+   */
+  public String[] getAllFeaturesArray(int wordId);
+  
+  /**
+   * Get Part-Of-Speech of tokens
+   * @param wordId word ID of token
+   * @return Part-Of-Speech of the token
+   */
+  public String getPartOfSpeech(int wordId);
+  
+  /**
+   * Get reading of tokens
+   * @param wordId word ID of token
+   * @return Reading of the token
+   */
+  public String getReading(int wordId);
+  
+  /**
+   * Get feature(s) of tokens
+   * @param wordId word ID token
+   * @param fields array of index. If this is empty, return all features.
+   * @return Features of the token
+   */
+  public String getFeature(int wordId, int... fields);
 }
