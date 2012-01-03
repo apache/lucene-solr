@@ -17,29 +17,26 @@ package org.apache.lucene.analysis.kuromoji.trie;
  * limitations under the License.
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 import org.apache.lucene.analysis.kuromoji.trie.Trie;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class DoubleArrayTrieTest {
+public class DoubleArrayTrieTest extends LuceneTestCase {
 
 	@Test
-	public void buildTest() {		
+	public void testBuild() {		
 		Trie trie = getTrie();
 		DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
 		doubleArrayTrie.build(trie);
 	}
 
 	@Test
-	public void writeTest() throws IOException {
+	public void testWrite() throws IOException {
 		Trie trie = getTrie();
 		
 		DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
@@ -52,6 +49,7 @@ public class DoubleArrayTrieTest {
 			
 		}
 		
+		// nocommit: lets use TEMPDIR here
 		String tmpDir = System.getProperty("java.io.tmpdir");
 		File dir = new File(tmpDir + File.separator + "datmp");
 		dir.mkdir();
@@ -64,16 +62,15 @@ public class DoubleArrayTrieTest {
 		assertTrue(dir.length() > 0);
 		
 	}
-	
-	
 
 	@Test
-	public void lookupTest() throws IOException {
+	public void testLookup() throws IOException {
 		Trie trie = getTrie();
 		
 		DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
 		doubleArrayTrie.build(trie);
 
+    // nocommit: lets use TEMPDIR here
 		String tmpDir = System.getProperty("java.io.tmpdir");
 		File dir = new File(tmpDir + File.separator + "datmp");
 		dir.mkdir();

@@ -17,15 +17,12 @@ package org.apache.lucene.analysis.kuromoji.trie;
  * limitations under the License.
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import org.apache.lucene.analysis.kuromoji.trie.Trie;
 import org.apache.lucene.analysis.kuromoji.trie.Trie.Node;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TrieTest {
+public class TrieTest extends LuceneTestCase {
 	
 	@Test
 	public void testGetRoot() {

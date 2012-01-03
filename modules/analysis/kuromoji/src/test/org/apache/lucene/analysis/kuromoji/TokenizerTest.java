@@ -77,28 +77,42 @@ public class TokenizerTest extends LuceneTestCase {
 		assertEquals(tokens.get(5).getReading(), "。");
 	}
 	
+	public void testBocchan() throws Exception {
+	  doTestBocchan(1);
+	}
+	
 	@Test @Nightly
-	public void testBocchan() throws IOException, InterruptedException {
-		LineNumberReader reader = new LineNumberReader(new InputStreamReader(
-				this.getClass().getResourceAsStream("bocchan.utf-8")));
-		
-		String line = reader.readLine();
-		reader.close();
+	public void testBocchanBig() throws Exception {
+		doTestBocchan(100);
+	}
+	
+	private void doTestBocchan(int numIterations) throws Exception {
+	  LineNumberReader reader = new LineNumberReader(new InputStreamReader(
+        this.getClass().getResourceAsStream("bocchan.utf-8")));
+    
+    String line = reader.readLine();
+    reader.close();
 
-		System.out.println("Test for Bocchan without pre-splitting sentences");
-		long totalStart = System.currentTimeMillis();
-		for (int i = 0; i < 100; i++){
-			tokenizer.tokenize(line);
-		}
-		System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
-		System.out.println("Test for Bocchan with pre-splitting sentences");
-		String[] sentences = line.split("、|。");
-		totalStart = System.currentTimeMillis();
-		for (int i = 0; i < 100; i++) {
-			for (String sentence: sentences) {
-				tokenizer.tokenize(sentence);				
-			}
-		}
-		System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
+    if (VERBOSE) {
+      System.out.println("Test for Bocchan without pre-splitting sentences");
+    }
+    long totalStart = System.currentTimeMillis();
+    for (int i = 0; i < numIterations; i++){
+      tokenizer.tokenize(line);
+    }
+    if (VERBOSE) {
+      System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
+      System.out.println("Test for Bocchan with pre-splitting sentences");
+    }
+    String[] sentences = line.split("、|。");
+    totalStart = System.currentTimeMillis();
+    for (int i = 0; i < numIterations; i++) {
+      for (String sentence: sentences) {
+        tokenizer.tokenize(sentence);       
+      }
+    }
+    if (VERBOSE) {
+      System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
+    }
 	}
 }

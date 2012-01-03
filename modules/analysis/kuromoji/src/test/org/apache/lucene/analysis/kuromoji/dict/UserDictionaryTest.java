@@ -21,11 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.kuromoji.TokenizerTest;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
-import org.junit.BeforeClass;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
-public class UserDictionaryTest {
+public class UserDictionaryTest extends LuceneTestCase {
 
 	@Test
 	public void testLookup() throws IOException {

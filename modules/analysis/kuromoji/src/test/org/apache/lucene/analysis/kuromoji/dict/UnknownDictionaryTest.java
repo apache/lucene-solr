@@ -25,15 +25,10 @@ import java.io.InputStreamReader;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class UnknownDictionaryTest extends LuceneTestCase {
 	public static final String FILENAME = "unk-tokeninfo-dict.obj";
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
 
 	@Test
 	public void testPutCharacterCategory() {
