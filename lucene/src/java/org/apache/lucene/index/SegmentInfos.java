@@ -841,8 +841,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         genOutput.close();
         dir.sync(Collections.singleton(IndexFileNames.SEGMENTS_GEN));
       }
-    } catch (ThreadInterruptedException t) {
-      throw t;
     } catch (Throwable t) {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
@@ -851,6 +849,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       } catch (Throwable t2) {
         // Ignore; this file is only used in a retry
         // fallback on init.
+      }
+      if (t instanceof ThreadInterruptedException) {
+        throw (ThreadInterruptedException) t;
       }
     }
   }
