@@ -119,9 +119,7 @@ public class SolrCmdDistributor {
     AddRequest addRequest = new AddRequest();
     addRequest.cmd = clone;
     addRequest.params = params;
-    // nocommit: review as far as SOLR-2685
-    // clone.indexedId = cmd.indexedId;
-    // clone.doc = cmd.doc;
+
     for (Node url : urls) {
       List<AddRequest> alist = adds.get(url.getUrl());
       if (alist == null) {
