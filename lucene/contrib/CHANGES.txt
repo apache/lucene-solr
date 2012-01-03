@@ -108,6 +108,9 @@ New Features
   bigrams are formed for each of Han/Hiragana/Katakana/Hangul independently. Deprecates
   CJKTokenizer.  (Tom Burton-West, Robert Muir)
 
+* LUCENE-3634: IndexReader's static main method was moved to a new
+  tool, CompoundFileExtractor, in contrib/misc.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 

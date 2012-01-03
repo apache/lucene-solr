@@ -310,17 +310,4 @@ public final class UTF32ToUTF8 {
     utf8StateCount++;
     return s;
   }
-
-  public static void main(String[] args) {
-    final int startCode = Integer.parseInt(args[0]);
-    final int endCode = Integer.parseInt(args[1]);
-
-    Automaton a = new Automaton();
-    State start = a.getInitialState();
-    State end = new State();
-    end.setAccept(true);
-    
-    UTF32ToUTF8 converter = new UTF32ToUTF8();
-    converter.convertOneEdge(start, end, startCode, endCode);
-  }
 }

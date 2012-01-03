@@ -745,6 +745,10 @@ New Features
 * LUCENE-3586: CheckIndex and IndexUpgrader allow you to specify the
   specific FSDirectory implementation to use (with the new -dir-impl
   command-line option).  (Luca Cavanna via Mike McCandless)
+
+* LUCENE-3634: IndexReader's static main method was moved to a new
+  tool, CompoundFileExtractor, in contrib/misc.  (Robert Muir, Mike
+  McCandless)
   
 Bug fixes
 

@@ -26,8 +26,6 @@ import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.Collection;
 
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -44,11 +42,6 @@ import org.apache.lucene.util._TestUtil;
 
 /** JUnit adaptation of an older test case DocTest. */
 public class TestDoc extends LuceneTestCase {
-
-    /** Main for running test case by itself. */
-    public static void main(String args[]) {
-        TestRunner.run (new TestSuite(TestDoc.class));
-    }
 
     private File workDir;
     private File indexDir;

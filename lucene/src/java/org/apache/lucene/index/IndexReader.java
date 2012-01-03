@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,10 +31,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
@@ -942,101 +938,6 @@ public abstract class IndexReader implements Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
-  /**
-   * Prints the filename and size of each file within a given compound file.
-   * Add the -extract flag to extract files to the current working directory.
-   * In order to make the extracted version of the index work, you have to copy
-   * the segments file from the compound index into the directory where the extracted files are stored.
-   * @param args Usage: org.apache.lucene.index.IndexReader [-extract] &lt;cfsfile&gt;
-   */
-  public static void main(String [] args) {
-    String filename = null;
-    boolean extract = false;
-    String dirImpl = null;
-
-    int j = 0;
-    while(j < args.length) {
-      String arg = args[j];
-      if ("-extract".equals(arg)) {
-        extract = true;
-      } else if ("-dir-impl".equals(arg)) {
-        if (j == args.length - 1) {
-          System.out.println("ERROR: missing value for -dir-impl option");
-          System.exit(1);
-        }
-        j++;
-        dirImpl = args[j];
-      } else if (filename == null) {
-        filename = arg;
-      }
-      j++;
-    }
-
-    if (filename == null) {
-      System.out.println("Usage: org.apache.lucene.index.IndexReader [-extract] [-dir-impl X] <cfsfile>");
-      return;
-    }
-
-    Directory dir = null;
-    CompoundFileDirectory cfr = null;
-    IOContext context = IOContext.READ;
-
-    try {
-      File file = new File(filename);
-      String dirname = file.getAbsoluteFile().getParent();
-      filename = file.getName();
-      if (dirImpl == null) {
-        dir = FSDirectory.open(new File(dirname));
-      } else {
-        dir = CommandLineUtil.newFSDirectory(dirImpl, new File(dirname));
-      }
-      
-      cfr = new CompoundFileDirectory(dir, filename, IOContext.DEFAULT, false);
-
-      String [] files = cfr.listAll();
-      ArrayUtil.mergeSort(files);   // sort the array of filename so that the output is more readable
-
-      for (int i = 0; i < files.length; ++i) {
-        long len = cfr.fileLength(files[i]);
-
-        if (extract) {
-          System.out.println("extract " + files[i] + " with " + len + " bytes to local directory...");
-          IndexInput ii = cfr.openInput(files[i], context);
-
-          FileOutputStream f = new FileOutputStream(files[i]);
-
-          // read and write with a small buffer, which is more effective than reading byte by byte
-          byte[] buffer = new byte[1024];
-          int chunk = buffer.length;
-          while(len > 0) {
-            final int bufLen = (int) Math.min(chunk, len);
-            ii.readBytes(buffer, 0, bufLen);
-            f.write(buffer, 0, bufLen);
-            len -= bufLen;
-          }
-
-          f.close();
-          ii.close();
-        }
-        else
-          System.out.println(files[i] + ": " + len + " bytes");
-      }
-    } catch (IOException ioe) {
-      ioe.printStackTrace();
-    }
-    finally {
-      try {
-        if (dir != null)
-          dir.close();
-        if (cfr != null)
-          cfr.close();
-      }
-      catch (IOException ioe) {
-        ioe.printStackTrace();
-      }
-    }
-  }
-
   /** Returns all commit points that exist in the Directory.
    *  Normally, because the default is {@link
    *  KeepOnlyLastCommitDeletionPolicy}, there would be only
