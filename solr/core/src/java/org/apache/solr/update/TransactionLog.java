@@ -558,7 +558,7 @@ public class TransactionLog {
 
       fis = new ChannelFastInputStream(channel, 0);
       if (sz >=4) {
-        readHeader(fis);
+        // readHeader(fis);  // should not be needed
         prevPos = sz - 4;
         fis.seek(prevPos);
         nextLength = fis.readInt();
@@ -589,7 +589,7 @@ public class TransactionLog {
       } else {
         // Position buffer so that this record is at the end.
         // For small records, this will cause subsequent calls to next() to be within the buffer.
-        long seekPos =  endOfThisRecord - 8192;
+        long seekPos =  endOfThisRecord - fis.getBufferSize();
         seekPos = Math.min(seekPos, prevPos); // seek to the start of the record if it's larger then the block size.
         seekPos = Math.max(seekPos, 0);
         fis.seek(seekPos);
@@ -602,6 +602,9 @@ public class TransactionLog {
       // TODO: optionally skip document data
       Object o = codec.readVal(fis);
 
+      if (fis.position() != prevPos + 4 + thisLength) {
+        System.out.println("set breakpoint here");
+      }
       assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data
 
       return o;
@@ -632,22 +635,18 @@ public class TransactionLog {
 
 class ChannelFastInputStream extends FastInputStream {
   private FileChannel ch;
-  private long chPosition;
 
   public ChannelFastInputStream(FileChannel ch, long chPosition) {
+    // super(null, new byte[10],0,0);    // a small buffer size for testing purposes     // nocommit!!! this currently causes failures!
     super(null);
     this.ch = ch;
-    this.chPosition = chPosition;
-    super.readFromStream = chPosition;  // make sure position() method returns the correct value
+    super.readFromStream = chPosition;
   }
 
   @Override
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
     ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
-    int ret = ch.read(bb, chPosition);
-    if (ret >= 0) {
-      chPosition += ret;
-    }
+    int ret = ch.read(bb, readFromStream);
     return ret;
   }
 
@@ -657,7 +656,6 @@ class ChannelFastInputStream extends FastInputStream {
       pos = (int)(position - readFromStream);
     } else {
       readFromStream = position;
-      chPosition = position;
       end = pos = 0;
     }
   }
@@ -665,6 +663,10 @@ class ChannelFastInputStream extends FastInputStream {
   /** where is the start of the buffer relative to the while file */
   public long getBufferPos() {
     return readFromStream - end;
+  }
+
+  public int getBufferSize() {
+    return buf.length;
   }
 
   @Override

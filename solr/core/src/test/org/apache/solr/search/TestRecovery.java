@@ -29,8 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -75,10 +74,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      assertU(adoc("id","1"));
-      assertJQ(req("q","id:1")
-          ,"/response/numFound==0"
-      );
+      Deque<Long> versions = new ArrayDeque<Long>();
+      versions.addFirst( addAndGetVersion(sdoc("id","1") , null) );
+      versions.addFirst( addAndGetVersion(sdoc("id", "11"), null));
+
+      assertJQ(req("q","*:*"),"/response/numFound==0");
+
+      assertJQ(req("qt","/get", "getVersions",""+versions.size()) ,"/versions==" + versions);
 
       h.close();
       createCore();
@@ -87,24 +89,31 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // verify that previous close didn't do a commit
       // recovery should be blocked by our hook
-      assertJQ(req("q","id:1") ,"/response/numFound==0");
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+
+      // make sure we can still access versions after a restart
+      assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
 
       // unblock recovery
       logReplay.release(1000);
 
+      // make sure we can still access versions during recovery
+      assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
+
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
 
-      assertJQ(req("q", "id:1")
-          , "/response/numFound==1"
-      );
+      assertJQ(req("q","*:*") ,"/response/numFound==2");
+
+      // make sure we can still access versions after recovery
+      assertJQ(req("qt","/get", "getVersions",""+versions.size()) ,"/versions==" + versions);
 
       assertU(adoc("id","2"));
       assertU(adoc("id","3"));
       assertU(delI("2"));
       assertU(adoc("id","4"));
 
-      assertJQ(req("q","*:*") ,"/response/numFound==1");
+      assertJQ(req("q","*:*") ,"/response/numFound==2");
 
       h.close();
       createCore();
@@ -113,7 +122,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
-      assertJQ(req("q","*:*") ,"/response/numFound==3");
+      assertJQ(req("q","*:*") ,"/response/numFound==4");
       assertJQ(req("q","id:2") ,"/response/numFound==0");
 
       // no updates, so insure that recovery does not run
@@ -123,7 +132,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // Solr should kick this off now
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
-      assertJQ(req("q","*:*") ,"/response/numFound==3");
+      assertJQ(req("q","*:*") ,"/response/numFound==4");
       Thread.sleep(100);
       assertEquals(permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
 
