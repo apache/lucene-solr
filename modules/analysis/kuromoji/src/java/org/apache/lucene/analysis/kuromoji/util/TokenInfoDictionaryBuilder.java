@@ -35,8 +35,6 @@ import org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder.DictionaryForm
 
 
 /**
- * @author Masaru Hasegawa
- * @author Christian Moen
  */
 public class TokenInfoDictionaryBuilder {
   

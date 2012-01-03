@@ -1,0 +1,2 @@
+* LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
+  (Christian Moen, Masaru Hasegawa via Robert Muir)
