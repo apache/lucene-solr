@@ -480,7 +480,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // expire a session...
     CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
-    chaosMonkey.expireSession(cloudJetty);
+    chaosMonkey.expireSession(cloudJetty.jetty);
     
     indexr("id", docId + 1, t1, "slip this doc in");
     
@@ -814,6 +814,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
 
   protected void checkShardConsistency(String shard) throws Exception {
+    checkShardConsistency(shard, false);
+  }
+  
+  protected void checkShardConsistency(String shard, boolean verbose) throws Exception {
     
     List<SolrServer> solrClients = shardToClient.get(shard);
     if (solrClients == null) {
@@ -822,21 +826,22 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     long num = -1;
     long lastNum = -1;
     String failMessage = null;
-    if (VERBOSE) System.out.println("check const of " + shard);
+    if (verbose) System.out.println("check const of " + shard);
     int cnt = 0;
     for (SolrServer client : solrClients) {
+      ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
+      if (verbose) System.out.println("client" + cnt++);
+      if (verbose) System.out.println("PROPS:" + props);
+      
       try {
         num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       } catch (SolrServerException e) {
-        if (VERBOSE) System.err.println("error contacting client:" + e.getMessage());
+        if (verbose) System.out.println("error contacting client: " + e.getMessage() + "\n");
         continue;
       }
-      ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
-      if (VERBOSE) System.out.println("client" + cnt++);
-      if (VERBOSE) System.out.println("PROPS:" + props);
-      
+   
       boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
-      if (VERBOSE) System.out.println(" num:" + num + "\n" + (recovering ? "recovering" : ""));
+      if (verbose) System.out.println(" num:" + num + "\n" + (recovering ? "recovering" : ""));
       
       if (!recovering) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
@@ -854,14 +859,18 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   protected void checkShardConsistency() throws Exception {
+    checkShardConsistency(false);
+  }
+  
+  protected void checkShardConsistency(boolean verbose) throws Exception {
     long docs = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-    if (VERBOSE) System.out.println("Control Docs:" + docs);
+    if (verbose) System.out.println("Control Docs:" + docs);
     
     updateMappingsFromZk(jettys, clients);
     
     Set<String> theShards = shardToClient.keySet();
     for (String shard : theShards) {
-      checkShardConsistency(shard);
+      checkShardConsistency(shard, verbose);
     }
     
     // now check that the right # are on each shard
@@ -873,7 +882,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         try {
           SolrServer client = shardToClient.get(s).get(i);
           ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
-          if (VERBOSE) System.out.println("PROPS:" + props);
           boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
           if (!recovering) {
             cnt += client.query(new SolrQuery("*:*")).getResults()
@@ -1078,7 +1086,13 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected void destroyServers() throws Exception {
     ChaosMonkey.stop(controlJetty);
-    for (JettySolrRunner jetty : jettys) ChaosMonkey.stop(jetty);
+    for (JettySolrRunner jetty : jettys) {
+      try {
+        ChaosMonkey.stop(jetty);
+      } catch (Exception e) {
+        log.error("", e);
+      }
+    }
     clients.clear();
     jettys.clear();
     Thread.sleep(10000);

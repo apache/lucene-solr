@@ -51,6 +51,7 @@ public class ChaosMonkey {
   private volatile boolean stop = false;
   private AtomicInteger stops = new AtomicInteger();
   private AtomicInteger starts = new AtomicInteger();
+  private AtomicInteger expires = new AtomicInteger();
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -62,10 +63,22 @@ public class ChaosMonkey {
     this.random = random;
   }
   
-  public void expireSession(CloudJettyRunner cloudJetty) {
-    SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) cloudJetty.jetty.getDispatchFilter().getFilter();
+  public void expireSession(JettySolrRunner jetty) {
+    SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty.getDispatchFilter().getFilter();
     long sessionId = solrDispatchFilter.getCores().getZkController().getZkClient().getSolrZooKeeper().getSessionId();
     zkServer.expire(sessionId);
+  }
+  
+  public void expireRandomSession() throws KeeperException, InterruptedException {
+    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(collection);
+    List<String> sliceKeyList = new ArrayList<String>(slices.size());
+    sliceKeyList.addAll(slices.keySet());
+    String sliceName = sliceKeyList.get(random.nextInt(sliceKeyList.size()));
+    
+    JettySolrRunner jetty = getRandomSacraficialShard(sliceName, DONTKILLLEADER);
+    if (jetty != null) {
+      expireSession(jetty);
+    }
   }
   
   public JettySolrRunner stopShard(String slice, int index) throws Exception {
@@ -100,8 +113,10 @@ public class ChaosMonkey {
         sdf.destroy();
       }
     }
-
-    jetty.stop();
+   
+    if (!jetty.isStopped()) {
+      jetty.stop();
+    }
     
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not stop jetty");
@@ -109,7 +124,9 @@ public class ChaosMonkey {
   }
   
   public static void kill(JettySolrRunner jetty) throws Exception {
-    jetty.stop();
+    if (!jetty.isStopped()) {
+      jetty.stop();
+    }
     
     FilterHolder fh = jetty.getDispatchFilter();
     if (fh != null) {
@@ -157,7 +174,7 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner stopRandomShard(String slice) throws Exception {
-    JettySolrRunner jetty = getRandomSacraficialShard(slice);
+    JettySolrRunner jetty = getRandomSacraficialShard(slice, DONTKILLLEADER);
     if (jetty != null) {
       stopJetty(jetty);
     }
@@ -177,14 +194,14 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner killRandomShard(String slice) throws Exception {
-    JettySolrRunner jetty = getRandomSacraficialShard(slice);
+    JettySolrRunner jetty = getRandomSacraficialShard(slice, DONTKILLLEADER);
     if (jetty != null) {
       killJetty(jetty);
     }
     return jetty;
   }
   
-  public JettySolrRunner getRandomSacraficialShard(String slice) throws KeeperException, InterruptedException {
+  public JettySolrRunner getRandomSacraficialShard(String slice, boolean dontkillleader) throws KeeperException, InterruptedException {
     // get latest cloud state
     zkStateReader.updateCloudState(true);
     Slice theShards = zkStateReader.getCloudState().getSlices(collection)
@@ -237,12 +254,10 @@ public class ChaosMonkey {
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     int index = random.nextInt(jetties.size() - 1);
     JettySolrRunner jetty = jetties.get(index).jetty;
-    System.out.println("sac shard "+ jetty.getLocalPort());
-    
     
     ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
     
-    if (DONTKILLLEADER && leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)) {
+    if (dontkillleader && leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)) {
       // we don't kill leaders...
       System.out.println("dont kill the leader");
       return null;
@@ -290,16 +305,23 @@ public class ChaosMonkey {
              }
             }
             
-            JettySolrRunner jetty;
-            if (random.nextBoolean()) {
-              jetty = stopRandomShard();
+            int rnd = random.nextInt(10);
+            // nocommit: we dont randomly expire yet
+            if (false && rnd < 2) {
+              expireRandomSession();
+              expires.incrementAndGet();
             } else {
-              jetty = killRandomShard();
-            }
-            if (jetty == null) {
-              System.out.println("we cannot kill");
-            } else {
-              deadPool.add(jetty);
+              JettySolrRunner jetty;
+              if (random.nextBoolean()) {
+                jetty = stopRandomShard();
+              } else {
+                jetty = killRandomShard();
+              }
+              if (jetty == null) {
+                System.out.println("we cannot kill");
+              } else {
+                deadPool.add(jetty);
+              }
             }
           } catch (InterruptedException e) {
             //
@@ -309,7 +331,8 @@ public class ChaosMonkey {
           }
         }
         
-        System.out.println("I stopped " + stops + " and I started " + starts);
+        System.out.println("I stopped " + stops + " and I started " + starts
+            + ". I also expired " + expires.get());
       }
     }.start();
   }

@@ -83,9 +83,9 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     
     // does not always pass yet
-    checkShardConsistency();
+    checkShardConsistency(true);
     
-    System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }
   
   @Override

@@ -229,7 +229,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     for (JettySolrRunner jetty : jettys) jetty.stop();
     clients.clear();
     jettys.clear();
-    Thread.sleep(10000);
+    Thread.sleep(5000);
   }
   
   public JettySolrRunner createJetty(File baseDir, String dataDir) throws Exception {

@@ -158,10 +158,10 @@ public final class ZkController {
                   .getCurrentDescriptors();
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
-                  // nocommit: non reloaded cores will try and
-                  // recover - reloaded cores will not - but in the case
-                  // of reconnect like this, *everyone* should re register
-                  register(descriptor.getName(), descriptor);
+                  // nocommit: we need to think carefully about what happens when it was
+                  // a leader that was expired - as well as what to do about leaders/overseers
+                  // with connection loss
+                  register(descriptor.getName(), descriptor, true);
                 }
               }
 
@@ -420,6 +420,20 @@ public final class ZkController {
    * @throws Exception 
    */
   public String register(String coreName, final CoreDescriptor desc) throws Exception {  
+    return register(coreName, desc, false);
+  }
+  
+
+  /**
+   * Register shard with ZooKeeper.
+   * 
+   * @param coreName
+   * @param desc
+   * @param recoverReloadedCores
+   * @return
+   * @throws Exception
+   */
+  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores) throws Exception {  
     final String baseUrl = getBaseUrl();
     
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
@@ -512,7 +526,7 @@ public final class ZkController {
         if (cc != null) {
           core = cc.getCore(desc.getName());
           
-          if (core.isReloaded()) {
+          if (core.isReloaded() && !recoverReloadedCores) {
             doRecovery = false;
           }
           
