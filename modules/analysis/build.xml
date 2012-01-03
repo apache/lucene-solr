@@ -23,9 +23,10 @@
     Additional Analyzers
       - common:	Additional Analyzers
       - icu: Analyzers that use functionality from ICU
+      - kuromoji:       Japanese Morphological Analyzer
+      - morfologik:	Morfologik Stemmer
       - smartcn:	Smart Analyzer for Simplified Chinese Text
       - stempel:	Algorithmic Stemmer for Polish
-      - morfologik:	Morfologik Stemmer
   </description>
 
   <target name="common">
@@ -34,6 +35,14 @@
 
   <target name="icu">
     <ant dir="icu" />
+  </target>
+
+  <target name="kuromoji">
+    <ant dir="kuromoji" />
+  </target>
+
+  <target name="morfologik">
+    <ant dir="morfologik" />
   </target>
 
   <target name="phonetic">
@@ -48,52 +57,53 @@
     <ant dir="stempel" />
   </target>
 
-  <target name="morfologik">
-    <ant dir="morfologik" />
-  </target>
-
   <target name="default" depends="compile"/>
-  <target name="compile" depends="common,icu,phonetic,smartcn,stempel,morfologik" />
+  <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel" />
 
   <target name="clean">
     <ant dir="common" target="clean" />
     <ant dir="icu" target="clean" />
+    <ant dir="kuromoji" target="clean"/>
+    <ant dir="morfologik" target="clean" />
     <ant dir="phonetic" target="clean" />
     <ant dir="smartcn" target="clean" />
     <ant dir="stempel" target="clean" />
-    <ant dir="morfologik" target="clean" />
   </target>
   <target name="validate">
     <ant dir="common" target="validate" />
     <ant dir="icu" target="validate" />
+    <ant dir="kuromoji" target="validate" />
+    <ant dir="morfologik" target="validate" />
     <ant dir="phonetic" target="validate" />
     <ant dir="smartcn" target="validate" />
     <ant dir="stempel" target="validate" />
-    <ant dir="morfologik" target="validate" />
   </target>
   <target name="compile-core">
     <ant dir="common" target="compile-core" />
     <ant dir="icu" target="compile-core" />
+    <ant dir="kuromoji" target="compile-core" />
+    <ant dir="morfologik" target="compile-core" />
     <ant dir="phonetic" target="compile-core" />
     <ant dir="smartcn" target="compile-core" />
     <ant dir="stempel" target="compile-core" />
-    <ant dir="morfologik" target="compile-core" />
   </target>
   <target name="compile-test">
     <ant dir="common" target="compile-test" />
     <ant dir="icu" target="compile-test" />
+    <ant dir="kuromoji" target="compile-test" />
+    <ant dir="morfologik" target="compile-test" />
     <ant dir="phonetic" target="compile-test" />
     <ant dir="smartcn" target="compile-test" />
     <ant dir="stempel" target="compile-test" />
-    <ant dir="morfologik" target="compile-test" />
   </target>
   <target name="test">
     <ant dir="common" target="test" />
     <ant dir="icu" target="test" />
+    <ant dir="kuromoji" target="test" />
+    <ant dir="morfologik" target="test" />
     <ant dir="phonetic" target="test" />
     <ant dir="smartcn" target="test" />
     <ant dir="stempel" target="test" />
-    <ant dir="morfologik" target="test" />
   </target>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
@@ -101,28 +111,31 @@
   <target name="dist-maven" depends="default,javadocs">
     <ant dir="common" target="dist-maven" />
     <ant dir="icu" target="dist-maven" />
+    <ant dir="kuromoji" target="dist-maven" />
+    <ant dir="morfologik" target="dist-maven" />
     <ant dir="phonetic" target="dist-maven" />
     <ant dir="smartcn" target="dist-maven" />
     <ant dir="stempel" target="dist-maven" />
-    <ant dir="morfologik" target="dist-maven" />
   </target>  	
 
   <target name="javadocs">
     <ant dir="common" target="javadocs" />
     <ant dir="icu" target="javadocs" />
+    <ant dir="kuromoji" target="javadocs" />
+    <ant dir="morfologik" target="javadocs" />
     <ant dir="phonetic" target="javadocs" />
     <ant dir="smartcn" target="javadocs" />
     <ant dir="stempel" target="javadocs" />
-    <ant dir="morfologik" target="javadocs" />
   </target>  	
 
   <target name="javadocs-index.html">
     <ant dir="common" target="javadocs-index.html" />
     <ant dir="icu" target="javadocs-index.html" />
+    <ant dir="kuromoji" target="javadocs-index.html" />
+    <ant dir="morfologik" target="javadocs-index.html" />
     <ant dir="phonetic" target="javadocs-index.html" />
     <ant dir="smartcn" target="javadocs-index.html" />
     <ant dir="stempel" target="javadocs-index.html" />
-    <ant dir="morfologik" target="javadocs-index.html" />
   </target>
 	
 </project>
