@@ -50,11 +50,17 @@
      <untar src="${build.dir}/${ipadic.version}.tar" dest="${build.dir}"/>
   </target>
 
-  <target name="build-dict" depends="compile-core, download-dict">
+  <path id="tools.dependencies">
+    <fileset dir="../icu/lib" includes="icu4j-*.jar"/>
+  </path>
+
+  <target name="build-dict" depends="compile-tools, download-dict">
     <java fork="true" failonerror="true" maxmemory="512m" classname="org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder">
       <classpath>
         <pathelement path="${classpath}"/>
         <pathelement path="${build.dir}/classes/java"/>
+        <pathelement path="${build.dir}/classes/tools"/>
+        <path refid="tools.dependencies"/>
       </classpath>
       <arg value="${dict.format}"/>
       <arg value="${dict.src.dir}"/>
@@ -62,5 +68,17 @@
       <arg value="${dict.encoding}"/>
       <arg value="${dict.normalize}"/>
     </java>
+  </target>
+
+    <target name="compile-tools" depends="compile-core, common.compile-tools">
+    <compile
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath>
+        <pathelement path="${classpath}"/>
+        <pathelement path="${build.dir}/classes/java"/>
+        <path refid="tools.dependencies"/>
+      </classpath>
+    </compile>
   </target>
 </project>

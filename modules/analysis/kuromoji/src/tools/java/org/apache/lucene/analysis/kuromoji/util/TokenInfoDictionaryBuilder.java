@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -32,6 +31,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 import org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder.DictionaryFormat;
+
+import com.ibm.icu.text.Normalizer2;
 
 
 /**
@@ -46,6 +47,7 @@ public class TokenInfoDictionaryBuilder {
   private String encoding = "euc-jp";
   
   private boolean normalizeEntries = false;
+  private Normalizer2 normalizer;
   
   private DictionaryFormat format = DictionaryFormat.IPADIC;
   
@@ -57,6 +59,7 @@ public class TokenInfoDictionaryBuilder {
     this.encoding = encoding;
     this.dictionaryEntries = new TreeMap<Integer, String>();		
     this.normalizeEntries = normalizeEntries;
+    this.normalizer = normalizeEntries ? Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE) : null;
   }
   
   public TokenInfoDictionary build(String dirname) throws IOException {
@@ -100,12 +103,12 @@ public class TokenInfoDictionaryBuilder {
         
         // NFKC normalize dictionary entry
         if (normalizeEntries) {
-          if (entry[0].equals(Normalizer.normalize(entry[0], Normalizer.Form.NFKC))){
+          if (normalizer.isNormalized(entry[0])){
             continue;
           }
           String[] normalizedEntry = new String[entry.length];
           for (int i = 0; i < entry.length; i++) {
-            normalizedEntry[i] = Normalizer.normalize(entry[i], Normalizer.Form.NFKC);
+            normalizedEntry[i] = normalizer.normalize(entry[i]);
           }
           
           next = dictionary.put(formatEntry(normalizedEntry));
