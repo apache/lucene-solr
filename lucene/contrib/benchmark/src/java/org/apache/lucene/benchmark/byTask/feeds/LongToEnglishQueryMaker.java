@@ -17,26 +17,31 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.English;
 import org.apache.lucene.util.Version;
+import com.ibm.icu.text.RuleBasedNumberFormat;
 
 public class LongToEnglishQueryMaker implements QueryMaker {
   long counter = Long.MIN_VALUE + 10;
   protected QueryParser parser;
+
+  // TODO: we could take param to specify locale...
+  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ENGLISH,
+                                                                       RuleBasedNumberFormat.SPELLOUT);
 
   public Query makeQuery(int size) throws Exception {
     throw new UnsupportedOperationException();
   }
 
   public synchronized Query makeQuery() throws Exception {
-
-    return parser.parse("" + English.longToEnglish(getNextCounter()) + "");
+    return parser.parse("" + rnbf.format(getNextCounter()) + "");
   }
 
   private synchronized long getNextCounter() {
