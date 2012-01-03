@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-public class KuromojiTokenizer extends Tokenizer {
+public final class KuromojiTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
@@ -62,9 +62,10 @@ public class KuromojiTokenizer extends Tokenizer {
     String surfaceForm = token.getSurfaceForm();
     int position = token.getPosition();
     int length = surfaceForm.length();
-    
-    termAtt.setEmpty().append(str, position, length);
-    offsetAtt.setOffset(correctOffset(position), correctOffset(position + length));
+    int end = position + length;
+    clearAttributes();
+    termAtt.setEmpty().append(str, position, end);
+    offsetAtt.setOffset(correctOffset(position), correctOffset(end));
     typeAtt.setType(token.getPartOfSpeech());
     tokenIndex++;
     return true;
