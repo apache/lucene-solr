@@ -95,11 +95,12 @@ public class FastInputStream extends InputStream implements DataInput {
 
   @Override
   public int read(byte b[], int off, int len) throws IOException {
-    int r=0;  // number of bytes read
+    int r=0;  // number of bytes we have read
+
     // first read from our buffer;
     if (end-pos > 0) {
       r = Math.min(end-pos, len);
-      System.arraycopy(buf, pos, b, off, r);      
+      System.arraycopy(buf, pos, b, off, r);
       pos += r;
     }
 
@@ -108,15 +109,19 @@ public class FastInputStream extends InputStream implements DataInput {
     // amount left to read is >= buffer size
     if (len-r >= buf.length) {
       int ret = readWrappedStream(b, off+r, len-r);
-      if (ret > 0) readFromStream += end;
-      if (ret==-1) return r==0 ? -1 : r;
-      r += ret;
-      return r;
+      if (ret >= 0) {
+        readFromStream += ret;
+        r += ret;
+        return r;
+      } else {
+        // negative return code
+        return r > 0 ? r : -1;
+      }
     }
 
     refill();
 
-    // first read from our buffer;
+    // read rest from our buffer
     if (end-pos > 0) {
       int toRead = Math.min(end-pos, len-r);
       System.arraycopy(buf, pos, b, off+r, toRead);
@@ -124,7 +129,7 @@ public class FastInputStream extends InputStream implements DataInput {
       r += toRead;
       return r;
     }
-    
+
     return r > 0 ? r : -1;
   }
 

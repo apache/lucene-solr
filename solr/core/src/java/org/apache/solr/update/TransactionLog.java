@@ -356,6 +356,7 @@ public class TransactionLog {
     synchronized (this) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        log.error("COMMIT STARTING AT " + pos);   // nocommit
         if (pos == 0) {
           writeLogHeader(codec);
           pos = fos.size();
@@ -366,9 +367,12 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 
+        log.error("COMMIT STARTING AT " + pos + " ENDING AT " +fos.size());
+
         endRecord(pos);
         
         fos.flush();  // flush since this will be the last record in a log file
+        log.error("COMMIT END BACK POINTER RECORD AT" +fos.size());
 
         return pos;
       } catch (IOException e) {
@@ -602,9 +606,6 @@ public class TransactionLog {
       // TODO: optionally skip document data
       Object o = codec.readVal(fis);
 
-      if (fis.position() != prevPos + 4 + thisLength) {
-        System.out.println("set breakpoint here");
-      }
       assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data
 
       return o;
@@ -637,7 +638,7 @@ class ChannelFastInputStream extends FastInputStream {
   private FileChannel ch;
 
   public ChannelFastInputStream(FileChannel ch, long chPosition) {
-    // super(null, new byte[10],0,0);    // a small buffer size for testing purposes     // nocommit!!! this currently causes failures!
+    // super(null, new byte[10],0,0);    // a small buffer size for testing purposes
     super(null);
     this.ch = ch;
     super.readFromStream = chPosition;
@@ -650,17 +651,20 @@ class ChannelFastInputStream extends FastInputStream {
     return ret;
   }
 
-  public void seek(long position) {
-    if (position >= readFromStream && position <= readFromStream + end) {
+  public void seek(long position) throws IOException {
+    if (position <= readFromStream && position >= getBufferPos()) {
       // seek within buffer
-      pos = (int)(position - readFromStream);
+      pos = (int)(position - getBufferPos());
     } else {
+      // long currSize = ch.size();   // not needed - underlying read should handle (unless read never done)
+      // if (position > currSize) throw new EOFException("Read past EOF: seeking to " + position + " on file of size " + currSize + " file=" + ch);
       readFromStream = position;
       end = pos = 0;
     }
+    assert position() == position;
   }
 
-  /** where is the start of the buffer relative to the while file */
+  /** where is the start of the buffer relative to the whole file */
   public long getBufferPos() {
     return readFromStream - end;
   }
@@ -672,6 +676,11 @@ class ChannelFastInputStream extends FastInputStream {
   @Override
   public void close() throws IOException {
     ch.close();
+  }
+  
+  @Override
+  public String toString() {
+    return "readFromStream="+readFromStream +" pos="+pos +" end="+end + " bufferPos="+getBufferPos() + " position="+position() ;
   }
 }
 
