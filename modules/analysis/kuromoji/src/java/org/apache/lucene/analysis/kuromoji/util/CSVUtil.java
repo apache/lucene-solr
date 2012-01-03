@@ -88,7 +88,6 @@ public class CSVUtil {
   /**
    * Quote and escape input value for CSV
    * @param original
-   * @return
    */
   public static String quoteEscape(String original) {
     String result = original.replaceAll("\"", ESCAPED_QUOTE);

@@ -86,7 +86,7 @@ public class UnknownDictionary extends TokenInfoDictionary {
    * Put mapping from unicode code point to character class.
    * 
    * @param codePoint code point
-   * @param class character class name
+   * @param characterClassName character class name
    */
   public void putCharacterCategory(int codePoint, String characterClassName) {
     characterDefinition.putCharacterCategory(codePoint, characterClassName);
@@ -105,7 +105,6 @@ public class UnknownDictionary extends TokenInfoDictionary {
    * Write dictionary in file
    * Dictionary format is:
    * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
-   * @param filename
    * @throws IOException
    */
   public void write(String directoryname) throws IOException {

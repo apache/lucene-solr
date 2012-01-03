@@ -54,8 +54,6 @@ public class TokenInfoDictionary implements Dictionary{
   
   /**
    * put the entry in map
-   * @param wordId
-   * @param entry
    * @return current position of buffer, which will be wordId of next entry
    */
   public int put(String[] entry) {
@@ -183,7 +181,6 @@ public class TokenInfoDictionary implements Dictionary{
    * Write dictionary in file
    * Dictionary format is:
    * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
-   * @param filename
    * @throws IOException
    */
   public void write(String directoryname) throws IOException {

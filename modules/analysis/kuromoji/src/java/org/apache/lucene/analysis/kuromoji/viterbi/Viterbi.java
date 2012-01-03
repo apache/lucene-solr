@@ -64,12 +64,6 @@ public class Viterbi {
   
   /**
    * Constructor
-   * @param trie
-   * @param targetMap
-   * @param dictionary
-   * @param unkDictionary
-   * @param costs
-   * @param userDictionary
    */
   public Viterbi(DoubleArrayTrie trie,
       TokenInfoDictionary dictionary,
@@ -202,7 +196,6 @@ public class Viterbi {
   /**
    * Build lattice from input text
    * @param text
-   * @return
    */
   public ViterbiNode[][][] build(String text) {
     int textLength = text.length();

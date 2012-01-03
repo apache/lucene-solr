@@ -58,7 +58,6 @@ public class DoubleArrayTrie {
   
   /**
    * Write to file
-   * @param filename filename
    * @throws IOException
    */
   public void write(String directoryname) throws IOException  {
@@ -106,8 +105,6 @@ public class DoubleArrayTrie {
   
   /**
    * Load Stored data
-   * @param is
-   * @return
    * @throws IOException
    */
   public static DoubleArrayTrie read(InputStream is) throws IOException {

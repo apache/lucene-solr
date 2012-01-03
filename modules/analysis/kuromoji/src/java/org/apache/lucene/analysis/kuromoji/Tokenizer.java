@@ -50,12 +50,6 @@ public class Tokenizer {
   
   /**
    * Constructor
-   * @param dictionary
-   * @param costs
-   * @param trie
-   * @param unkDictionary
-   * @param userDictionary
-   * @param mode
    */
   protected Tokenizer(UserDictionary userDictionary, Mode mode, boolean split) {
     

@@ -75,7 +75,7 @@ public final class CharacterDefinition implements Serializable {
        * 
        * @param codePoint
        *            code point
-       * @param class character class name
+       * @param characterClassName character class name
        */
       public void putCharacterCategory(int codePoint, String characterClassName) {
         characterClassName = characterClassName.split(" ")[0]; // use first
