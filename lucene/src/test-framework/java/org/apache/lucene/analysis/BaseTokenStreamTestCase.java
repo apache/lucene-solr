@@ -249,7 +249,46 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   // TODO: add a MockCharStream, and use it here too, to ensure that correctOffset etc is being done by tokenizers.
   public static void checkRandomData(Random random, Analyzer a, int iterations) throws IOException {
     checkRandomData(random, a, iterations, 20);
+    // now test with multiple threads
+    int numThreads = _TestUtil.nextInt(random, 4, 8);
+    Thread threads[] = new Thread[numThreads];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations);
+    }
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].start();
+    }
+    for (int i = 0; i < threads.length; i++) {
+      try {
+        threads[i].join();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
+  
+  static class AnalysisThread extends Thread {
+    final int iterations;
+    final Random random;
+    final Analyzer a;
+    
+    AnalysisThread(Random random, Analyzer a, int iterations) {
+      this.random = random;
+      this.a = a;
+      this.iterations = iterations;
+    }
+    
+    @Override
+    public void run() {
+      try {
+        // see the part in checkRandomData where it replays the same text again
+        // to verify reproducability/reuse: hopefully this would catch thread hazards.
+        checkRandomData(random, a, iterations, 20);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
 
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength) throws IOException {
     for (int i = 0; i < iterations; i++) {
