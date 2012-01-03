@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -33,7 +32,7 @@ public class KuromojiTokenizer extends Tokenizer {
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
   
-  private String str;
+  private final StringBuilder str = new StringBuilder();
   
   private List<Token> tokens;
   
@@ -44,13 +43,13 @@ public class KuromojiTokenizer extends Tokenizer {
     this.tokenizer = tokenizer;
     // nocommit: this won't really work for large docs.
     // what kind of context does kuromoji need? just sentence maybe?
-    str = IOUtils.toString(input);
+    fillBuffer(str, input);
     init();
   }
   
   private void init() {
     tokenIndex = 0;
-    tokens = tokenizer.tokenize(str);
+    tokens = tokenizer.tokenize(str.toString());
   }
   
   @Override
@@ -80,8 +79,16 @@ public class KuromojiTokenizer extends Tokenizer {
   @Override
   public void reset(Reader input) throws IOException{
     super.reset(input);
-    str = IOUtils.toString(input);
+    fillBuffer(str, input);
     init();
   }
   
+  final char[] buffer = new char[8192];
+  private void fillBuffer(StringBuilder sb, Reader input) throws IOException {
+    int len;
+    sb.setLength(0);
+    while ((len = input.read(buffer)) > 0) {
+      sb.append(buffer, 0, len);
+    }
+  }
 }
