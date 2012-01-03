@@ -63,7 +63,6 @@ public class CloudSolrServer extends SolrServer {
    * @param zkHost The address of the zookeeper quorum containing the cloud state
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
-    System.out.println("new cloud server");
     this.zkHost = zkHost;
     this.lbServer = lbServer;
   }

@@ -58,7 +58,6 @@ import org.junit.BeforeClass;
  *
  * TODO: we should still test this works as a custom update chain as well as what we test now - the default update chain
  * 
- * nocommit: clean up output
  */
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 
@@ -431,7 +430,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     
     // make sure we are in a steady state...
-    waitForRecoveriesToFinish();
+    waitForRecoveriesToFinish(VERBOSE);
     
     commit();
     
@@ -546,15 +545,13 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     assertDocCounts(VERBOSE);
   }
 
-  protected void waitForRecoveriesToFinish() throws KeeperException,
+  protected void waitForRecoveriesToFinish(boolean verbose) throws KeeperException,
       InterruptedException {
     boolean cont = true;
     int cnt = 0;
     
-    System.out.println("WAIT FOR RECOVERY");
-    
     while (cont) {
-      System.out.println("-");
+      if (VERBOSE) System.out.println("-");
       boolean sawLiveRecovering = false;
       zkStateReader.updateCloudState(true);
       CloudState cloudState = zkStateReader.getCloudState();
@@ -562,7 +559,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Map<String,ZkNodeProps> shards = entry.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
-          System.out.println("rstate:"
+          if (VERBOSE) System.out.println("rstate:"
               + shard.getValue().get(ZkStateReader.STATE_PROP)
               + " live:"
               + cloudState.liveNodesContain(shard.getValue().get(
@@ -577,9 +574,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
       if (!sawLiveRecovering || cnt == 90) {
         if (!sawLiveRecovering) {
-          System.out.println("no one is recoverying");
+          if (VERBOSE) System.out.println("no one is recoverying");
         } else {
-          System.out.println("gave up waiting for recovery to finish..");
+          if (VERBOSE) System.out.println("gave up waiting for recovery to finish..");
         }
         cont = false;
       } else {
@@ -587,7 +584,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
       cnt++;
     }
-    System.out.println("DONE WAIT FOR RECOVERY");
   }
 
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
@@ -826,21 +822,21 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     long num = -1;
     long lastNum = -1;
     String failMessage = null;
-    System.out.println("check const of " + shard);
+    if (VERBOSE) System.out.println("check const of " + shard);
     int cnt = 0;
     for (SolrServer client : solrClients) {
       try {
         num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       } catch (SolrServerException e) {
-        System.err.println("error contacting client:" + e.getMessage());
+        if (VERBOSE) System.err.println("error contacting client:" + e.getMessage());
         continue;
       }
       ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
-      System.out.println("client" + cnt++);
-      System.out.println("PROPS:" + props);
+      if (VERBOSE) System.out.println("client" + cnt++);
+      if (VERBOSE) System.out.println("PROPS:" + props);
       
       boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
-      System.out.println(" num:" + num + "\n" + (recovering ? "recovering" : ""));
+      if (VERBOSE) System.out.println(" num:" + num + "\n" + (recovering ? "recovering" : ""));
       
       if (!recovering) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
@@ -859,7 +855,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected void checkShardConsistency() throws Exception {
     long docs = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-    System.out.println("Control Docs:" + docs);
+    if (VERBOSE) System.out.println("Control Docs:" + docs);
     
     updateMappingsFromZk(jettys, clients);
     
@@ -877,7 +873,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         try {
           SolrServer client = shardToClient.get(s).get(i);
           ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
-          System.out.println("PROPS:" + props);
+          if (VERBOSE) System.out.println("PROPS:" + props);
           boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
           if (!recovering) {
             cnt += client.query(new SolrQuery("*:*")).getResults()

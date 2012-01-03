@@ -136,7 +136,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         // in a catastrophic failure, but will result in the client getting an empty file list for
         // the CMD_GET_FILE_LIST command.
         //
-        System.out.println("sending commit point:" + commitPoint.getVersion());
         core.getDeletionPolicy().setReserveDuration(commitPoint.getVersion(), reserveCommitDuration);
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
