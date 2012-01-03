@@ -255,7 +255,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // otherwise we assume things are fine if we got it locally
     // until we start allowing min replication param
     if (forwardToLeader && response.errors.size() > 0) {
-      // nocommit: set first error...?
       rsp.setException(response.errors.get(0).e);
     } else {
       rsp.setException(null);
