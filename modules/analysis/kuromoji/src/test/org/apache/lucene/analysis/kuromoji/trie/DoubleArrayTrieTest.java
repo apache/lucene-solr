@@ -24,10 +24,11 @@ import java.io.IOException;
 import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 import org.apache.lucene.analysis.kuromoji.trie.Trie;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 public class DoubleArrayTrieTest extends LuceneTestCase {
-  
+
   @Test
   public void testBuild() {		
     Trie trie = getTrie();
@@ -49,15 +50,9 @@ public class DoubleArrayTrieTest extends LuceneTestCase {
       
     }
     
-    // nocommit: lets use TEMPDIR here
-    String tmpDir = System.getProperty("java.io.tmpdir");
-    File dir = new File(tmpDir + File.separator + "datmp");
-    dir.mkdir();
+    File dir = _TestUtil.getTempDir("testWrite");
+    dir.mkdirs();
     doubleArrayTrie.write(dir.getCanonicalPath());
-    dir.deleteOnExit();
-    for(File file : dir.listFiles()) {
-      file.deleteOnExit();
-    }
     
     assertTrue(dir.length() > 0);
     
@@ -70,15 +65,9 @@ public class DoubleArrayTrieTest extends LuceneTestCase {
     DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
     doubleArrayTrie.build(trie);
     
-    // nocommit: lets use TEMPDIR here
-    String tmpDir = System.getProperty("java.io.tmpdir");
-    File dir = new File(tmpDir + File.separator + "datmp");
-    dir.mkdir();
+    File dir = _TestUtil.getTempDir("testLookup");
+    dir.mkdirs();
     doubleArrayTrie.write(dir.getCanonicalPath());
-    dir.deleteOnExit();
-    for(File file : dir.listFiles()) {
-      file.deleteOnExit();
-    }
     
     doubleArrayTrie = DoubleArrayTrie.read(new FileInputStream(dir.getCanonicalPath() + File.separator + DoubleArrayTrie.FILENAME));
     
