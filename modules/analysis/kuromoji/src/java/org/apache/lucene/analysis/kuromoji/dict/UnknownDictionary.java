@@ -121,10 +121,9 @@ public class UnknownDictionary extends TokenInfoDictionary {
   
   public static UnknownDictionary getInstance() throws IOException, ClassNotFoundException {
     UnknownDictionary dictionary = new UnknownDictionary();
-    ClassLoader loader = dictionary.getClass().getClassLoader();
-    dictionary.loadDictionary(loader.getResourceAsStream(FILENAME));
-    dictionary.loadTargetMap(loader.getResourceAsStream(TARGETMAP_FILENAME));
-    dictionary.loadCharDef(loader.getResourceAsStream(CHARDEF_FILENAME));
+    dictionary.loadDictionary(UnknownDictionary.class.getResourceAsStream(FILENAME));
+    dictionary.loadTargetMap(UnknownDictionary.class.getResourceAsStream(TARGETMAP_FILENAME));
+    dictionary.loadCharDef(UnknownDictionary.class.getResourceAsStream(CHARDEF_FILENAME));
     return dictionary;
   }
   

@@ -219,9 +219,8 @@ public class TokenInfoDictionary implements Dictionary{
    */
   public static TokenInfoDictionary getInstance() throws IOException, ClassNotFoundException {
     TokenInfoDictionary dictionary = new TokenInfoDictionary();
-    ClassLoader loader = dictionary.getClass().getClassLoader();
-    dictionary.loadDictionary(loader.getResourceAsStream(FILENAME));
-    dictionary.loadTargetMap(loader.getResourceAsStream(TARGETMAP_FILENAME));
+    dictionary.loadDictionary(TokenInfoDictionary.class.getResourceAsStream(FILENAME));
+    dictionary.loadTargetMap(TokenInfoDictionary.class.getResourceAsStream(TARGETMAP_FILENAME));
     return dictionary;
   }
   

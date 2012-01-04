@@ -99,7 +99,7 @@ public class DoubleArrayTrie {
   }
   
   public static DoubleArrayTrie getInstance() throws IOException {
-    InputStream is = DoubleArrayTrie.class.getClassLoader().getResourceAsStream(FILENAME);
+    InputStream is = DoubleArrayTrie.class.getResourceAsStream(FILENAME);
     return read(is);
   }
   

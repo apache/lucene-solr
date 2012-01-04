@@ -54,7 +54,7 @@ public class DoubleArrayTrieTest extends LuceneTestCase {
     dir.mkdirs();
     doubleArrayTrie.write(dir.getCanonicalPath());
     
-    assertTrue(dir.length() > 0);
+    assertTrue(new File(dir, "dat.dat").exists());
     
   }
   

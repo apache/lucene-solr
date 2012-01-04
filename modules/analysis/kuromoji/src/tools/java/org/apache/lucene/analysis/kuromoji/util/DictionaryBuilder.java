@@ -45,7 +45,7 @@ public class DictionaryBuilder {
     
     System.out.print("  building double array trie...");
     DoubleArrayTrie trie = DoubleArrayTrieBuilder.build(tokenInfoBuilder.entrySet());
-    trie.write(outputDirname);
+    trie.write(outputDirname+File.separatorChar+DoubleArrayTrie.class.getPackage().getName().replace('.',File.separatorChar));
     System.out.println("  done");
     
     System.out.print("  processing target map...");
@@ -56,7 +56,7 @@ public class DictionaryBuilder {
       assert doubleArrayId > 0;
       tokenInfoDictionary.addMapping(doubleArrayId, tokenInfoId);
     }		
-    tokenInfoDictionary.write(outputDirname);
+    tokenInfoDictionary.write(outputDirname+File.separatorChar+TokenInfoDictionary.class.getPackage().getName().replace('.',File.separatorChar));
     trie = null;
     tokenInfoBuilder = null;
     
@@ -66,13 +66,13 @@ public class DictionaryBuilder {
     System.out.print("building unknown word dict...");
     UnknownDictionaryBuilder unkBuilder = new UnknownDictionaryBuilder(encoding);
     UnknownDictionary unkDictionary = unkBuilder.build(inputDirname);
-    unkDictionary.write(outputDirname);
+    unkDictionary.write(outputDirname+File.separatorChar+UnknownDictionary.class.getPackage().getName().replace('.',File.separatorChar));
     System.out.println("done");
     
     System.out.print("building connection costs...");
     ConnectionCosts connectionCosts
-    = ConnectionCostsBuilder.build(inputDirname + File.separator + "matrix.def");
-    connectionCosts.write(outputDirname);
+      = ConnectionCostsBuilder.build(inputDirname + File.separator + "matrix.def");
+    connectionCosts.write(outputDirname+File.separatorChar+ConnectionCosts.class.getPackage().getName().replace('.',File.separatorChar));
     System.out.println("done");
   }
   

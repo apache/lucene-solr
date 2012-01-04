@@ -66,7 +66,7 @@ public class ConnectionCosts implements Serializable{
   }
   
   public static ConnectionCosts getInstance() throws IOException, ClassNotFoundException {
-    InputStream is = ConnectionCosts.class.getClassLoader().getResourceAsStream(FILENAME);
+    InputStream is = ConnectionCosts.class.getResourceAsStream(FILENAME);
     return read(is);
   }
   

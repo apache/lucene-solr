@@ -29,26 +29,14 @@ public final class Dictionaries {
   
   private static DoubleArrayTrie trie;
   
-  private static boolean initialized = false;
-  
   static {
-    load();
-  }
-  
-  private static synchronized void load() {
-    
-    if (Dictionaries.initialized) {
-      return;
-    }
-    
     try {
       Dictionaries.dictionary = TokenInfoDictionary.getInstance();
       Dictionaries.unknownDictionary = UnknownDictionary.getInstance();
       Dictionaries.costs = ConnectionCosts.getInstance();
       Dictionaries.trie = DoubleArrayTrie.getInstance();
-      Dictionaries.initialized = true;
     } catch (Exception ex) {
-      throw new RuntimeException("Could not load dictionaries!  Ouch, ouch, ouch...", ex);
+      throw new RuntimeException("Could not load dictionaries!", ex);
     }
   }
   
