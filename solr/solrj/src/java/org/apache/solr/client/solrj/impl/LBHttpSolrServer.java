@@ -283,9 +283,16 @@ public class LBHttpSolrServer extends SolrServer {
         zombieServers.remove(wrapper.getKey());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // Server is alive but the request was malformed or invalid
-        zombieServers.remove(wrapper.getKey());
-        throw e;
+        // we retry on 404 or 403 - you can see this on solr shutdown
+        if (e.code() == 404 || e.code() == 403) {
+          ex = e;
+          // already a zombie, no need to re-add
+        } else {
+          // Server is alive but the request was malformed or invalid
+          zombieServers.remove(wrapper.getKey());
+          throw e;
+        }
+
       } catch (SolrServerException e) {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
