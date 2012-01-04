@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
+import org.apache.lucene.analysis.kuromoji.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 
@@ -44,8 +45,10 @@ public class SimpleBench {
     TokenStream ts = a.tokenStream("foo", new StringReader(s));
     ts.reset();
     ts.addAttribute(CharTermAttribute.class);
+    PartOfSpeechAttribute pos = ts.addAttribute(PartOfSpeechAttribute.class);
     while (ts.incrementToken()) {
       // nothing
+      pos.getPartOfSpeech(); // force a metadata decode
     }
     ts.end();
     ts.close();
