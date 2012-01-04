@@ -23,22 +23,31 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.CodecUtil;
+
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
 
-public class TokenInfoDictionary implements Dictionary{
+public class TokenInfoDictionary implements Dictionary {
   
   public static final String FILENAME = "tid.dat";
-  
   public static final String TARGETMAP_FILENAME = "tid_map.dat";
+  
+  public static final String TARGETMAP_HEADER = "kuromoji_dict_map";
+  public static final String DICT_HEADER = "kuromoji_dict";
+  public static final int VERSION = 1;
   
   protected ByteBuffer buffer;
   
@@ -194,21 +203,54 @@ public class TokenInfoDictionary implements Dictionary{
   }
   
   protected void writeTargetMap(String filename) throws IOException {
-    ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));		
-    oos.writeObject(targetMap);
-    oos.close();
+    OutputStream os = new FileOutputStream(filename);
+    try {
+      os = new BufferedOutputStream(os);
+      final DataOutput out = new OutputStreamDataOutput(os);
+      CodecUtil.writeHeader(out, TARGETMAP_HEADER, VERSION);
+      out.writeVInt(targetMap.length);
+      int nulls = 0;
+      for (int[] a : targetMap) {
+        if (a == null) {
+          // run-length encoding for all nulls:
+          if (nulls == 0) {
+            out.writeVInt(0);
+          }
+          nulls++;
+        } else {
+          if (nulls > 0) {
+            out.writeVInt(nulls);
+            nulls = 0;
+          }
+          assert a.length > 0;
+          out.writeVInt(a.length);
+          for (int i = 0; i < a.length; i++) {
+            out.writeVInt(a[i]);
+          }
+        }
+      }
+      // write the pending RLE count:
+      if (nulls > 0) {
+        out.writeVInt(nulls);
+      }
+    } finally {
+      os.close();
+    }
   }
   
   protected void writeDictionary(String filename) throws IOException {
-    FileOutputStream fos = new FileOutputStream(filename);
-    DataOutputStream dos = new DataOutputStream(fos);
-    dos.writeInt(buffer.position());
-    WritableByteChannel channel = Channels.newChannel(fos);
-    // Write Buffer
-    buffer.flip();  // set position to 0, set limit to current position
-    channel.write(buffer);
-    
-    fos.close();
+    final FileOutputStream os = new FileOutputStream(filename);
+    try {
+      final DataOutput out = new OutputStreamDataOutput(os);
+      CodecUtil.writeHeader(out, DICT_HEADER, VERSION);
+      out.writeVInt(buffer.position());
+      final WritableByteChannel channel = Channels.newChannel(os);
+      // Write Buffer
+      buffer.flip();  // set position to 0, set limit to current position
+      channel.write(buffer);
+    } finally {
+      os.close();
+    }
   }
   
   /**
@@ -225,21 +267,45 @@ public class TokenInfoDictionary implements Dictionary{
   }
   
   protected void loadTargetMap(InputStream is) throws IOException, ClassNotFoundException {
-    ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is));
-    targetMap = (int[][]) ois.readObject();
-    is.close();
+    is = new BufferedInputStream(is);
+    try {
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, TARGETMAP_HEADER, VERSION, VERSION);
+      targetMap = new int[in.readVInt()][];
+      for (int j = 0; j < targetMap.length;) {
+        final int len = in.readVInt();
+        if (len == 0) {
+          // decode RLE: number of nulls
+          j += in.readVInt();
+        } else {
+          final int[] a = new int[len];
+          for (int i = 0; i < len; i++) {
+            a[i] = in.readVInt();
+          }
+          targetMap[j] = a;
+          j++;
+        }
+      }
+    } finally {
+      is.close();
+    }
   }
   
   protected void loadDictionary(InputStream is) throws IOException {
-    DataInputStream dis = new DataInputStream(is);
-    int size = dis.readInt();
-    
-    ByteBuffer tmpBuffer = ByteBuffer.allocateDirect(size);
-    
-    ReadableByteChannel channel = Channels.newChannel(is);
-    channel.read(tmpBuffer);
-    is.close();
-    buffer = tmpBuffer.asReadOnlyBuffer();
+    try {
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, DICT_HEADER, VERSION, VERSION);
+      final int size = in.readVInt();
+      final ByteBuffer tmpBuffer = ByteBuffer.allocateDirect(size);
+      final ReadableByteChannel channel = Channels.newChannel(is);
+      final int read = channel.read(tmpBuffer);
+      if (read != size) {
+        throw new EOFException("Cannot read whole dictionary");
+      }
+      buffer = tmpBuffer.asReadOnlyBuffer();
+    } finally {
+      is.close();
+    }
   }
   
 }

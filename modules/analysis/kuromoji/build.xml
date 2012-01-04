@@ -57,7 +57,7 @@
   <target name="build-dict" depends="compile-tools, download-dict">
     <java fork="true" failonerror="true" maxmemory="512m" classname="org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder">
       <classpath>
-        <pathelement path="${classpath}"/>
+        <path refid="classpath"/>
         <pathelement path="${build.dir}/classes/java"/>
         <pathelement path="${build.dir}/classes/tools"/>
         <path refid="tools.dependencies"/>
@@ -78,7 +78,7 @@
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">
       <classpath>
-        <pathelement path="${classpath}"/>
+        <path refid="classpath"/>
         <pathelement path="${build.dir}/classes/java"/>
         <path refid="tools.dependencies"/>
       </classpath>
