@@ -176,7 +176,12 @@ public class TokenInfoDictionary implements Dictionary{
     return getFeature(wordId, 0, 1, 2, 3);
   }
   
-  
+  @Override
+  public String getBasicForm(int wordId) {
+    String form = getFeature(wordId, 6);
+    return "*".equals(form) ? null : form;
+  }
+
   /**
    * Write dictionary in file
    * Dictionary format is:

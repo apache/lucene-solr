@@ -122,6 +122,11 @@ public class UserDictionary implements Dictionary {
   }
   
   @Override
+  public String getBasicForm(int wordId) {
+    return null; // TODO: add support?
+  }
+  
+  @Override
   public String[] getAllFeaturesArray(int wordId) {
     String allFeatures = featureEntries.get(wordId);
     if(allFeatures == null) {

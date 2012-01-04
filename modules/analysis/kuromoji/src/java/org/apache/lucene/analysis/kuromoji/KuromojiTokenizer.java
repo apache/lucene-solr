@@ -65,6 +65,7 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
     termAtt.copyBuffer(buffer, sentenceStart + position, length);
     int startOffset = offset + sentenceStart + position;
     offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset+length));
+    // nocommit: this is currently very very expensive and should be lazy!
     typeAtt.setType(token.getPartOfSpeech());
     tokenIndex++;
     return true;

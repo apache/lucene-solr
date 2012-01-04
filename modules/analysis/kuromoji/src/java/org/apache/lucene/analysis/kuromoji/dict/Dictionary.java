@@ -71,6 +71,13 @@ public interface Dictionary {
   public String getReading(int wordId);
   
   /**
+   * Get base form of word
+   * @param wordId word ID of token
+   * @return Base form (only different for inflected words, otherwise null)
+   */
+  public String getBasicForm(int wordId);
+  
+  /**
    * Get feature(s) of tokens
    * @param wordId word ID token
    * @param fields array of index. If this is empty, return all features.

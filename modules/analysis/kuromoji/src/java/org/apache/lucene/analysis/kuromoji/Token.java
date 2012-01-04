@@ -76,6 +76,13 @@ public class Token {
   }
   
   /**
+   * @return basic form or null if token is not inflected
+   */
+  public String getBasicForm() {
+    return dictionary.getBasicForm(wordId);
+  }
+  
+  /**
    * Returns true if this token is known word
    * @return true if this token is in standard dictionary. false if not.
    */
