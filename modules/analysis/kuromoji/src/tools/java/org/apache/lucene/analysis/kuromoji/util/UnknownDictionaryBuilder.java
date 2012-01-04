@@ -22,6 +22,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 
@@ -55,7 +58,11 @@ public class UnknownDictionaryBuilder {
     UnknownDictionary dictionary = new UnknownDictionary(5 * 1024 * 1024);
     
     FileInputStream inputStream = new FileInputStream(filename);
-    InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
+    Charset cs = Charset.forName(encoding);
+    CharsetDecoder decoder = cs.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT);
+    InputStreamReader streamReader = new InputStreamReader(inputStream, decoder);
     LineNumberReader lineReader = new LineNumberReader(streamReader);
     
     dictionary.put(CSVUtil.parse(NGRAM_DICTIONARY_ENTRY));

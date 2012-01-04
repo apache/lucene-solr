@@ -21,6 +21,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 
 import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
 
@@ -32,7 +35,11 @@ public class ConnectionCostsBuilder {
   
   public static ConnectionCosts build(String filename) throws IOException {
     FileInputStream inputStream = new FileInputStream(filename);
-    InputStreamReader streamReader = new InputStreamReader(inputStream);
+    Charset cs = Charset.forName("US-ASCII");
+    CharsetDecoder decoder = cs.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT);
+    InputStreamReader streamReader = new InputStreamReader(inputStream, decoder);
     LineNumberReader lineReader = new LineNumberReader(streamReader);
     
     String line = lineReader.readLine();

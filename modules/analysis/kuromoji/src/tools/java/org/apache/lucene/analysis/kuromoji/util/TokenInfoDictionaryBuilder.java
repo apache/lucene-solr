@@ -23,6 +23,9 @@ import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -81,7 +84,11 @@ public class TokenInfoDictionaryBuilder {
     
     for (File file : csvFiles){
       FileInputStream inputStream = new FileInputStream(file);
-      InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
+      Charset cs = Charset.forName(encoding);
+      CharsetDecoder decoder = cs.newDecoder()
+          .onMalformedInput(CodingErrorAction.REPORT)
+          .onUnmappableCharacter(CodingErrorAction.REPORT);
+      InputStreamReader streamReader = new InputStreamReader(inputStream, decoder);
       BufferedReader reader = new BufferedReader(streamReader);
       
       String line = null;
