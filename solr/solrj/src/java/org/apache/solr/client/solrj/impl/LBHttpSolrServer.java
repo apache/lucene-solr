@@ -250,8 +250,8 @@ public class LBHttpSolrServer extends SolrServer {
         rsp.rsp = server.request(req.getRequest());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // we retry on 404 or 403 - you can see this on solr shutdown
-        if (e.code() == 404 || e.code() == 403) {
+        // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+        if (e.code() == 404 || e.code() == 403 || e.code() == 503) {
           ex = addZombie(server, e);
         } else {
           // Server is alive but the request was likely malformed or invalid
@@ -260,7 +260,6 @@ public class LBHttpSolrServer extends SolrServer {
        
        // TODO: consider using below above - currently does cause a problem with distrib updates:
        // seems to match up against a failed forward to leader exception as well...
-       // || e.code() == 503
        //     || e.getMessage().contains("java.net.SocketException")
        //     || e.getMessage().contains("java.net.ConnectException")
       } catch (SocketException e) {
@@ -283,8 +282,8 @@ public class LBHttpSolrServer extends SolrServer {
         zombieServers.remove(wrapper.getKey());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // we retry on 404 or 403 - you can see this on solr shutdown
-        if (e.code() == 404 || e.code() == 403) {
+        // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+        if (e.code() == 404 || e.code() == 403 || e.code() == 503) {
           ex = e;
           // already a zombie, no need to re-add
         } else {
