@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.text.BreakIterator;
 import java.util.List;
@@ -39,7 +38,7 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
   private int tokenIndex = 0;
   private int sentenceStart = 0;
   
-  public KuromojiTokenizer(org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer, Reader input) throws IOException {
+  public KuromojiTokenizer(org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer, Reader input) {
     super(input, (BreakIterator) proto.clone());
     this.tokenizer = tokenizer;
   }

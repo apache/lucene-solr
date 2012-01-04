@@ -17,7 +17,6 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Locale;
 import java.util.Map;
@@ -49,10 +48,6 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory{
   
   @Override
   public Tokenizer create(Reader input) {
-    try {
-      return new KuromojiTokenizer(tokenizer, input);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+    return new KuromojiTokenizer(tokenizer, input);
   }
 }

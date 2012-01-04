@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -32,13 +31,7 @@ public class KuromojiAnalyzer extends Analyzer {
   
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer tokenizer;
-    try {
-      tokenizer = new KuromojiTokenizer(this.tokenizer, reader);
-      return new TokenStreamComponents(tokenizer, tokenizer);
-    } catch (IOException e) {
-      // nocommit
-      throw new RuntimeException(e);
-    }
+    Tokenizer tokenizer = new KuromojiTokenizer(this.tokenizer, reader);
+    return new TokenStreamComponents(tokenizer, tokenizer);
   }
 }
