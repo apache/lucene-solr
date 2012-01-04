@@ -28,71 +28,71 @@ public final class CharacterDefinition implements Serializable {
   private final EnumMap<CharacterClass, int[]> invokeDefinitionMap =
       new EnumMap<CharacterClass, int[]>(CharacterClass.class); // invoke, group, length
       
-      public enum CharacterClass {
-        NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, KANJINUMERIC;
-        
-        public int getId() {
-          return ordinal();
-        }
-      }
+  public enum CharacterClass {
+    NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, KANJINUMERIC;
+    
+    public int getId() {
+      return ordinal();
+    }
+  }
       
-      /**
-       * Constructor
-       */
-      public CharacterDefinition() {
-        for (int i = 0; i < characterCategoryMap.length; i++) {
-          characterCategoryMap[i] = CharacterClass.DEFAULT;
-        }
-      }
-      
-      public int lookup(char c) {
-        return characterCategoryMap[c].getId();
-      }
-      
-      public CharacterClass getCharacterClass(char c) {
-        return characterCategoryMap[c];
-      }
-      
-      public boolean isInvoke(char c) {
-        CharacterClass characterClass = characterCategoryMap[c];
-        int[] invokeDefinition = invokeDefinitionMap.get(characterClass);
-        return invokeDefinition[0] == 1;
-      }
-      
-      public boolean isGroup(char c) {
-        CharacterClass characterClass = characterCategoryMap[c];
-        int[] invokeDefinition = invokeDefinitionMap.get(characterClass);
-        return invokeDefinition[1] == 1;
-      }
-      
-      public boolean isKanji(char c) {
-        return characterCategoryMap[c] == CharacterClass.KANJI ||
-            characterCategoryMap[c] == CharacterClass.KANJINUMERIC;
-      }
-      
-      /**
-       * Put mapping from unicode code point to character class.
-       * 
-       * @param codePoint
-       *            code point
-       * @param characterClassName character class name
-       */
-      public void putCharacterCategory(int codePoint, String characterClassName) {
-        characterClassName = characterClassName.split(" ")[0]; // use first
-        // category
-        // class
-        
-        // Override Nakaguro
-        if (codePoint == 0x30FB) {
-          characterClassName = "SYMBOL";
-        }
-        characterCategoryMap[codePoint] = CharacterClass.valueOf(characterClassName);
-      }
-      
-      public void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
-        CharacterClass characterClass = CharacterClass
-            .valueOf(characterClassName);
-        int[] values = { invoke, group, length };
-        invokeDefinitionMap.put(characterClass, values);
-      }
+  /**
+   * Constructor
+   */
+  public CharacterDefinition() {
+    for (int i = 0; i < characterCategoryMap.length; i++) {
+      characterCategoryMap[i] = CharacterClass.DEFAULT;
+    }
+  }
+  
+  public int lookup(char c) {
+    return characterCategoryMap[c].getId();
+  }
+  
+  public CharacterClass getCharacterClass(char c) {
+    return characterCategoryMap[c];
+  }
+  
+  public boolean isInvoke(char c) {
+    CharacterClass characterClass = characterCategoryMap[c];
+    int[] invokeDefinition = invokeDefinitionMap.get(characterClass);
+    return invokeDefinition[0] == 1;
+  }
+  
+  public boolean isGroup(char c) {
+    CharacterClass characterClass = characterCategoryMap[c];
+    int[] invokeDefinition = invokeDefinitionMap.get(characterClass);
+    return invokeDefinition[1] == 1;
+  }
+  
+  public boolean isKanji(char c) {
+    return characterCategoryMap[c] == CharacterClass.KANJI ||
+        characterCategoryMap[c] == CharacterClass.KANJINUMERIC;
+  }
+  
+  /**
+   * Put mapping from unicode code point to character class.
+   * 
+   * @param codePoint
+   *            code point
+   * @param characterClassName character class name
+   */
+  public void putCharacterCategory(int codePoint, String characterClassName) {
+    characterClassName = characterClassName.split(" ")[0]; // use first
+    // category
+    // class
+    
+    // Override Nakaguro
+    if (codePoint == 0x30FB) {
+      characterClassName = "SYMBOL";
+    }
+    characterCategoryMap[codePoint] = CharacterClass.valueOf(characterClassName);
+  }
+  
+  public void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
+    CharacterClass characterClass = CharacterClass
+        .valueOf(characterClassName);
+    int[] values = { invoke, group, length };
+    invokeDefinitionMap.put(characterClass, values);
+  }
 }
