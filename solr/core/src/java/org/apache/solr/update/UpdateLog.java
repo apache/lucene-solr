@@ -74,6 +74,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private TransactionLog tlog;
   private TransactionLog prevTlog;
   private Deque<TransactionLog> logs = new LinkedList<TransactionLog>();  // list of recent logs, newest first
+  private TransactionLog newestLogOnStartup;
   private int numOldRecords;  // number of records in the recent logs
 
   private Map<BytesRef,LogPtr> map = new HashMap<BytesRef, LogPtr>();
@@ -145,11 +146,13 @@ public class UpdateLog implements PluginInfoInitialized {
     tlogFiles = getLogList(tlogDir);
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
+    TransactionLog oldLog = null;
     for (String oldLogName : tlogFiles) {
       // TODO: what about an uncompleted tlog file?
-      TransactionLog oldLog = new TransactionLog( new File(tlogDir, oldLogName), null, true );
+      oldLog = new TransactionLog( new File(tlogDir, oldLogName), null, true );
       addOldLog(oldLog);
     }
+    newestLogOnStartup = oldLog;
 
     versionInfo = new VersionInfo(uhandler, 256);
   }
@@ -495,19 +498,24 @@ public class UpdateLog implements PluginInfoInitialized {
 
   public Future<RecoveryInfo> recoverFromLog() {
     recoveryInfo = new RecoveryInfo();
-    if (tlogFiles.length == 0) return null;
-    TransactionLog oldTlog = null;
+    if (newestLogOnStartup == null) return null;
 
-    oldTlog = new TransactionLog( new File(tlogDir, tlogFiles[tlogFiles.length-1]), null, true );
+    if (!newestLogOnStartup.try_incref()) return null;   // log file was already closed
+
+    // now that we've incremented the reference, the log shouldn't go away.
     try {
-      if (oldTlog.endsWithCommit()) return null;
+      if (newestLogOnStartup.endsWithCommit()) {
+        newestLogOnStartup.decref();
+        return null;
+      }
     } catch (IOException e) {
-      log.error("Error inspecting tlog " + oldTlog);
+      log.error("Error inspecting tlog " + newestLogOnStartup);
+      newestLogOnStartup.decref();
       return null;
     }
 
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
-    LogReplayer replayer = new LogReplayer(oldTlog, false);
+    LogReplayer replayer = new LogReplayer(newestLogOnStartup, false);
 
     versionInfo.blockUpdates();
     try {

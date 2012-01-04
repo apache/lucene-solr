@@ -68,7 +68,9 @@ public class FastInputStream extends InputStream implements DataInput {
   public int readUnsignedByte() throws IOException {
     if (pos >= end) {
       refill();
-      if (pos >= end) throw new EOFException();
+      if (pos >= end) {
+        throw new EOFException();
+      }
     }
     return buf[pos++] & 0xff;
   }

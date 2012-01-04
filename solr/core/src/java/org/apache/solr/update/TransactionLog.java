@@ -144,7 +144,10 @@ public class TransactionLog {
       if (openExisting) {
         if (start > 0) {
           readHeader(null);
+          raf.seek(start);
+          assert channel.position() == start;
           fos.setWritten(start);    // reflect that we aren't starting at the beginning
+          assert fos.size() == channel.size();
         } else {
           addGlobalStrings(globalStrings);
         }
@@ -356,7 +359,7 @@ public class TransactionLog {
     synchronized (this) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        log.error("COMMIT STARTING AT " + pos);   // nocommit
+
         if (pos == 0) {
           writeLogHeader(codec);
           pos = fos.size();
@@ -367,12 +370,10 @@ public class TransactionLog {
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 
-        log.error("COMMIT STARTING AT " + pos + " ENDING AT " +fos.size());
-
         endRecord(pos);
         
-        fos.flush();  // flush since this will be the last record in a log file
-        log.error("COMMIT END BACK POINTER RECORD AT" +fos.size());
+        fos.flush();  // flush since this will be the last record in a log fill
+        assert fos.size() == channel.size();
 
         return pos;
       } catch (IOException e) {
@@ -416,6 +417,10 @@ public class TransactionLog {
     }
   }
 
+  public boolean try_incref() {
+    return refcount.incrementAndGet() > 1;
+  }
+
   public void decref() {
     if (refcount.decrementAndGet() == 0) {
       close();
@@ -451,7 +456,7 @@ public class TransactionLog {
   private void close() {
     try {
       if (debug) {
-        log.debug("Closing " + this);
+        log.debug("Closing tlog" + this);
       }
 
       fos.flush();
@@ -558,6 +563,7 @@ public class TransactionLog {
       synchronized (TransactionLog.this) {
         fos.flushBuffer();
         sz = fos.size();
+        assert sz == channel.size();
       }
 
       fis = new ChannelFastInputStream(channel, 0);
