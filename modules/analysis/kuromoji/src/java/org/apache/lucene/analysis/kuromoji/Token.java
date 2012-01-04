@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.kuromoji;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
 
+// TODO: somehow this thing needs to keep state, so that once it decodes metadata
+// it never does it again.
 public class Token {
   private final Dictionary dictionary;
   
@@ -45,21 +47,6 @@ public class Token {
   public String getSurfaceForm() {
     return surfaceForm;
   }
-  
-  /**
-   * @return all features
-   */
-  public String getAllFeatures() {
-    return dictionary.getAllFeatures(wordId);
-  }
-  
-  /**
-   * @return all features as array
-   */
-  public String[] getAllFeaturesArray() {
-    return dictionary.getAllFeaturesArray(wordId);
-  }
-  
   
   /**
    * @return reading. null if token doesn't have reading.

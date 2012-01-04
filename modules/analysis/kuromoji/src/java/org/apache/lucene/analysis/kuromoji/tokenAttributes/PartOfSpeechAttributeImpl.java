@@ -21,13 +21,11 @@ import org.apache.lucene.analysis.kuromoji.Token;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-// TODO: we need to cache lazy state of POS/basicForm/reading/etc here (and implement all those attributes)
-// so that we don't do the (currently expensive) decoding of the metadata multiple times.
-public class KuromojiAttributeImpl extends AttributeImpl implements BasicFormAttribute, Cloneable {
+public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSpeechAttribute, Cloneable {
   private Token token;
   
-  public String getBasicForm() {
-    return token == null ? null : token.getBasicForm();
+  public String getPartOfSpeech() {
+    return token == null ? null : token.getPartOfSpeech();
   }
   
   public void setToken(Token token) {
@@ -41,12 +39,13 @@ public class KuromojiAttributeImpl extends AttributeImpl implements BasicFormAtt
 
   @Override
   public void copyTo(AttributeImpl target) {
-    BasicFormAttribute t = (BasicFormAttribute) target;
+    PartOfSpeechAttribute t = (PartOfSpeechAttribute) target;
     t.setToken(token);
   }
   
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    reflector.reflect(BasicFormAttribute.class, "basicForm", getBasicForm());
+    String partOfSpeech = getPartOfSpeech();
+    reflector.reflect(PartOfSpeechAttribute.class, "partOfSpeech", partOfSpeech);
   }
 }

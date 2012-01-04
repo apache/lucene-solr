@@ -22,16 +22,18 @@ import java.text.BreakIterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.analysis.kuromoji.tokenAttributes.BasicFormAttribute;
+import org.apache.lucene.analysis.kuromoji.tokenAttributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.SegmentingTokenizerBase;
 
 public final class KuromojiTokenizer extends SegmentingTokenizerBase {
   private static final BreakIterator proto = BreakIterator.getSentenceInstance(Locale.JAPAN);
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final BasicFormAttribute basicFormAtt = addAttribute(BasicFormAttribute.class);
+  private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
   private final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
   
   private List<Token> tokens; 
@@ -65,8 +67,8 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
     termAtt.copyBuffer(buffer, sentenceStart + position, length);
     int startOffset = offset + sentenceStart + position;
     offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset+length));
-    // nocommit: this is currently very very expensive and should be lazy!
-    typeAtt.setType(token.getPartOfSpeech());
+    basicFormAtt.setToken(token);
+    posAtt.setToken(token);
     tokenIndex++;
     return true;
   }
