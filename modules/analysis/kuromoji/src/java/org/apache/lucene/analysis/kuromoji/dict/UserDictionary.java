@@ -159,7 +159,8 @@ public class UserDictionary implements Dictionary {
   
   public static UserDictionary read(InputStream is) throws IOException {
     UserDictionary dictionary = new UserDictionary();
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+    // nocommit: require Readers not InputStreams (or InputStream/filename + charset)
+    BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
     String line = null;
     int wordId = CUSTOM_DICTIONARY_WORD_ID_OFFSET;
     while ((line = reader.readLine()) != null) {
