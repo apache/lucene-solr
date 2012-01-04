@@ -45,7 +45,7 @@ public class ConnectionCostsBuilder {
     String line = lineReader.readLine();
     String[] dimensions = line.split("\\s+");
     
-    assert dimensions.length == 3;
+    assert dimensions.length == 2;
     
     int forwardSize = Integer.parseInt(dimensions[0]);
     int backwardSize = Integer.parseInt(dimensions[1]);
