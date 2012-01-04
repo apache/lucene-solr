@@ -44,6 +44,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ZkTestServer {
+  public static final int TICK_TIME = 3000;
+
   private static Logger log = LoggerFactory.getLogger(ZkTestServer.class);
   
   protected final ZKServerMain zkServer = new ZKServerMain();
@@ -53,6 +55,8 @@ public class ZkTestServer {
   private int clientPort;
 
   private Thread zooThread;
+  
+  private int theTickTime = TICK_TIME;
 
   class ZKServerMain {
 
@@ -190,7 +194,7 @@ public class ZkTestServer {
             setClientPort(ZkTestServer.this.clientPort);
             this.dataDir = zkDir;
             this.dataLogDir = zkDir;
-            this.tickTime = 3000;
+            this.tickTime = theTickTime;
           }
           
           public void setClientPort(int clientPort) {
@@ -335,5 +339,13 @@ public class ZkTestServer {
       alist.add(new HostPort(host, port));
     }
     return alist;
+  }
+
+  public int getTheTickTime() {
+    return theTickTime;
+  }
+
+  public void setTheTickTime(int theTickTime) {
+    this.theTickTime = theTickTime;
   }
 }

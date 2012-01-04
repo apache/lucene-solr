@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -57,12 +58,16 @@ public  class LeaderElector {
   
   private static final String ELECTION_NODE = "/election";
   
-  private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?n_(\\d+)");
+  private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
+  private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?)-n_\\d+");
+  
+  private ZkCmdExecutor cmdExecutor;
   
   protected SolrZkClient zkClient;
   
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
+    cmdExecutor = new ZkCmdExecutor(zkClient);
   }
   
   /**
@@ -81,8 +86,16 @@ public  class LeaderElector {
   private void checkIfIamLeader(final int seq, final ElectionContext context) throws KeeperException,
       InterruptedException, IOException {
     // get all other numbers...
-    String holdElectionPath = context.electionPath + ELECTION_NODE;
-    List<String> seqs = zkClient.getChildren(holdElectionPath, null);
+    final String holdElectionPath = context.electionPath + ELECTION_NODE;
+    List<String> seqs = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+      
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+         return zkClient.getChildren(holdElectionPath, null);
+      }
+    });
+    
+    
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
@@ -151,6 +164,18 @@ public  class LeaderElector {
     return seq;
   }
   
+  private long getSessionId(String nStringSequence) {
+    long id = 0;
+    Matcher m = SESSION_ID.matcher(nStringSequence);
+    if (m.matches()) {
+      id = Long.parseLong(m.group(1));
+    } else {
+      throw new IllegalStateException("Could not find regex match in:"
+          + nStringSequence);
+    }
+    return id;
+  }
+  
   /**
    * Returns int list given list of form n_0000000001, n_0000000003, etc.
    * 
@@ -182,15 +207,38 @@ public  class LeaderElector {
   public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
+    long id = zkClient.getSolrZooKeeper().getSessionId();
     String leaderSeqPath = null;
     boolean cont = true;
     int tries = 0;
     while (cont) {
       try {
-        
-        leaderSeqPath = zkClient.create(shardsElectZkPath + "/n_", null,
+        leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
             CreateMode.EPHEMERAL_SEQUENTIAL);
         cont = false;
+      } catch (ConnectionLossException e) {
+        // we don't know if we made our node or not...
+        List<String> entries = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+          
+          @Override
+          public Object execute() throws KeeperException, InterruptedException {
+             return zkClient.getChildren(shardsElectZkPath, null);
+          }
+        });
+        
+        boolean foundId = false;
+        for (String entry : entries) {
+          long nodeId = getSessionId(entry);
+          if (id == nodeId) {
+            // we did create our node...
+            foundId  = true;
+            break;
+          }
+        }
+        if (!foundId) {
+          throw e;
+        }
+
       } catch (KeeperException.NoNodeException e) {
         // we must have failed in creating the election node - someone else must
         // be working on it, lets try again
@@ -224,7 +272,7 @@ public  class LeaderElector {
     try {
       
       // leader election node
-      if (!zkClient.exists(electZKPath)) {
+      if (!zkClient.exists(electZKPath)) { // on connection loss we throw out an exception
         
         // make new leader election node
         zkClient.makePath(electZKPath, CreateMode.PERSISTENT, null);

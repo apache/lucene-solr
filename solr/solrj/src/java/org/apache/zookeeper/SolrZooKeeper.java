@@ -28,8 +28,8 @@ public class SolrZooKeeper extends ZooKeeper {
             try {
               ((SocketChannel) cnxn.sendThread.sockKey.channel()).socket()
                   .close();
-            } catch (IOException e) {
-              e.printStackTrace();
+            } catch (Exception e) {
+
             }
             Thread.sleep(ms);
           } catch (InterruptedException e) {}

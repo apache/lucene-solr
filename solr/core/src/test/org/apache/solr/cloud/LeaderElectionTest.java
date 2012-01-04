@@ -41,11 +41,13 @@ import org.junit.Test;
 
 public class LeaderElectionTest extends SolrTestCaseJ4 {
   
-  static final int TIMEOUT = 10000;
+  static final int TIMEOUT = 30000;
   private ZkTestServer server;
   private SolrZkClient zkClient;
   
   private Map<Integer,Thread> seqToThread;
+  
+  private volatile boolean stopStress = false;
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -65,6 +67,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         + "zookeeper/server1/data";
     
     server = new ZkTestServer(zkDir);
+    server.setTheTickTime(1000);
     server.run();
     AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
@@ -75,7 +78,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   class ClientThread extends Thread {
     SolrZkClient zkClient;
     private int nodeNumber;
-    private int seq = -1;
+    private volatile int seq = -1;
     private volatile boolean stop;
     private volatile boolean electionDone = false;
     private final ZkNodeProps props;
@@ -100,6 +103,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
           seq = elector.joinElection(context);
           electionDone = true;
           seqToThread.put(seq, this);
+        } catch (InterruptedException e) {
+          return;
         } catch (Throwable e) {
           e.printStackTrace();
         }
@@ -108,7 +113,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         try {
           Thread.sleep(100);
         } catch (InterruptedException e) {
-          // nothing
+          return;
         }
       }
       
@@ -119,6 +124,14 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         zkClient.close();
       }
       this.stop = true;
+    }
+
+    public int getSeq() {
+      return seq;
+    }
+
+    public int getNodeNumber() {
+      return nodeNumber;
     }
   }
 
@@ -205,6 +218,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     // cleanup any threads still running
     for (ClientThread thread : threads) {
       thread.close();
+      thread.interrupt();
     }
     
     for (Thread thread : threads) {
@@ -229,16 +243,19 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     Thread scheduleThread = new Thread() {
       @Override
       public void run() {
-        for (int i = 0; i < 20; i++) {
-          int launchIn = random.nextInt(2000);
-          ClientThread thread;
+        
+        for (int i = 0; i < 300; i++) {
+          int launchIn = random.nextInt(6000);
+          ClientThread thread = null;
           try {
             thread = new ClientThread(i);
           } catch (Exception e) {
-            throw new RuntimeException(e);
+            //
           }
-          threads.add(thread);
-          scheduler.schedule(thread, launchIn, TimeUnit.MILLISECONDS);
+          if (thread != null) {
+            threads.add(thread);
+            scheduler.schedule(thread, launchIn, TimeUnit.MILLISECONDS);
+          }
         }
       }
     };
@@ -249,7 +266,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       @Override
       public void run() {
         
-        for (int i = 0; i < 1000; i++) {
+        while (!stopStress) {
           try {
             int j;
             try {
@@ -259,10 +276,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             }
             try {
               threads.get(j).close();
+            } catch (InterruptedException e) {
+              throw e;
             } catch (Exception e) {
               
             }
-            threads.remove(j);
+
             Thread.sleep(10);
             
           } catch (Exception e) {
@@ -272,14 +291,62 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     };
     
+    Thread connLossThread = new Thread() {
+      @Override
+      public void run() {
+        
+        while (!stopStress) {
+          try {
+            int j;
+            try {
+              j = random.nextInt(threads.size());
+            } catch(IllegalArgumentException e) {
+              continue;
+            }
+            try {
+              threads.get(j).zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+            Thread.sleep(10);
+            
+          } catch (Exception e) {
+
+          }
+        }
+      }
+    };
+    
+    connLossThread.start();
     killThread.start();
     
+    Thread.sleep(10000);
+    
+    scheduleThread.interrupt();
+    connLossThread.interrupt();
+    killThread.interrupt();
+    
+    stopStress = true;
+    
     scheduleThread.join();
+    connLossThread.join();
     killThread.join();
     
     Thread.sleep(1000);
     
     scheduler.shutdownNow();
+    
+
+    //printLayout(server.getZkAddress());
+    
+    
+    System.out.println("leader thread:" + getLeaderThread());
+    int seq = threads.get(getLeaderThread()).getSeq();
+    System.out.println("Seq:" + seq);
+    System.out.println("Node:" + threads.get(getLeaderThread()).getNodeNumber());
+    
+    assertFalse("seq is -1 and we may have a zombie leader", seq == -1);
+   
     
     // cleanup any threads still running
     for (ClientThread thread : threads) {
@@ -290,12 +357,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       thread.join();
     }
 
-    //printLayout(server.getZkAddress());
     
   }
   
   @Override
   public void tearDown() throws Exception {
+    printLayout(server.getZkAddress());
     zkClient.close();
     server.shutdown();
     SolrConfig.severeErrors.clear();

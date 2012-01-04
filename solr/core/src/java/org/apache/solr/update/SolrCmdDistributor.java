@@ -363,7 +363,7 @@ public class SolrCmdDistributor {
               response.errors.add(error);
               response.sreq = sreq;
               SolrException.logOnce(SolrCore.log, "shard update error "
-                  + sreq.node + " (" + sreq.node + ")", sreq.exception);
+                  + sreq.node, sreq.exception);
             }
           }
           
@@ -419,7 +419,7 @@ public class SolrCmdDistributor {
     
     @Override
     public String toString() {
-      return url;
+      return this.getClass().getSimpleName() + ": " + url;
     }
 
     @Override

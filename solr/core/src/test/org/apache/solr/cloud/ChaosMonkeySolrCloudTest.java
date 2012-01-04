@@ -22,13 +22,21 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    
+    // we expect this time of exception as shards go up and down...
+    ignoreException("shard update error ");
+    ignoreException("Connection refused");
+  }
+  
+  @AfterClass
+  public static void afterSuperClass() throws Exception {
+    resetExceptionIgnores();
   }
   
   public ChaosMonkeySolrCloudTest() {
@@ -53,7 +61,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     chaosMonkey.startTheMonkey();
     
-    Thread.sleep(16000);
+    Thread.sleep(48000);
     
     chaosMonkey.stopTheMonkey();
     
@@ -82,8 +90,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     //assertEquals(chaosMonkey.getStarts(), getNumberOfRecoveryAttempts() - shardCount - sliceCount);
     
     
-    // does not always pass yet
-    checkShardConsistency(true);
+    checkShardConsistency(false);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }

@@ -42,7 +42,6 @@ import org.apache.zookeeper.SolrZooKeeper;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;

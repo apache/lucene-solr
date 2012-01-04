@@ -34,6 +34,7 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.log.Logger;
+import org.mortbay.thread.QueuedThreadPool;
 
 /**
  * Run solr using jetty
@@ -94,8 +95,22 @@ public class JettySolrRunner {
       SocketConnector connector = new SocketConnector();
       connector.setPort(port);
       connector.setReuseAddress(true);
+      QueuedThreadPool threadPool = (QueuedThreadPool) connector.getThreadPool();
+      if (threadPool != null) {
+        threadPool.setMaxStopTimeMs(100);
+      }
       server.setConnectors(new Connector[] { connector });
       server.setSessionIdManager(new HashSessionIdManager(new Random()));
+    } else {
+      for (Connector connector : server.getConnectors()) {
+        if (connector instanceof SocketConnector) {
+          QueuedThreadPool threadPool = (QueuedThreadPool) ((SocketConnector) connector)
+              .getThreadPool();
+          if (threadPool != null) {
+            threadPool.setMaxStopTimeMs(100);
+          }
+        }
+      }
     }
 
     // Initialize the servlets
