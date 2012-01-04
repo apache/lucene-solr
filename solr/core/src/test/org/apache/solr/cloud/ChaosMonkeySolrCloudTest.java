@@ -41,8 +41,8 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   public ChaosMonkeySolrCloudTest() {
     super();
-    shardCount = 12;
-    sliceCount = 3;
+    shardCount = atLeast(9);
+    sliceCount = atLeast(3);
   }
   
   @Override
@@ -53,7 +53,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     handle.put("timestamp", SKIPVAL);
     
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < atLeast(2); i++) {
       StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
       threads.add(indexThread);
       indexThread.start();
@@ -61,7 +61,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     chaosMonkey.startTheMonkey();
     
-    Thread.sleep(48000);
+    Thread.sleep(atLeast(12000));
     
     chaosMonkey.stopTheMonkey();
     
@@ -80,7 +80,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     // try and wait for any replications and what not to finish...
 
-    Thread.sleep(2000);
+    Thread.sleep(1000);
     
     // wait until there are no recoveries...
     waitForRecoveriesToFinish(VERBOSE);

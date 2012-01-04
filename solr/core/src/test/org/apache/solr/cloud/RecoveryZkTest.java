@@ -28,10 +28,6 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * TODO: Why do we see add fails but it still matches control? Because its successful
- * locally and gets picked up in distrib search...
- */
 public class RecoveryZkTest extends FullSolrCloudTest {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
@@ -70,7 +66,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     indexThread2.start();
 
     // give some time to index...
-    Thread.sleep(4000);   
+    Thread.sleep(atLeast(2000));   
     
     // bring shard replica down
     System.out.println("bring shard down");
@@ -78,7 +74,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
 
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
-    Thread.sleep(4000);
+    Thread.sleep(atLeast(2000));
     
     // bring shard replica up
     replica.start();
@@ -92,8 +88,6 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     indexThread.join();
     indexThread2.join();
     
-    
-    System.out.println("commit");
     commit();
 
     // test that leader and replica have same doc count

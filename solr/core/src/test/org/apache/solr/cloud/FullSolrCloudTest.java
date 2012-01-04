@@ -1095,7 +1095,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     clients.clear();
     jettys.clear();
-    Thread.sleep(10000);
   }
   
   protected SolrServer createNewSolrServer(int port) {
