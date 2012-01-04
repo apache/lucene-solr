@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -76,6 +77,7 @@ public class TokenInfoDictionaryBuilder {
     for (File file : new File(dirname).listFiles(filter)) {
       csvFiles.add(file);
     }
+    Collections.sort(csvFiles);
     return buildDictionary(csvFiles);
   }
   
