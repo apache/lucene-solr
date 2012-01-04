@@ -60,7 +60,6 @@ import org.junit.BeforeClass;
  *
  * @since 1.4
  */
-@LuceneTestCase.Nightly
 // TODO: can this test be sped up? it used to not be so slow...
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
