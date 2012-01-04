@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 
-// nocommit: same dictionary is yielding different output depending on os/jvm?
 public class DictionaryBuilder {
   
   public enum DictionaryFormat { IPADIC, UNIDIC };
