@@ -62,6 +62,9 @@
         <pathelement path="${build.dir}/classes/tools"/>
         <path refid="tools.dependencies"/>
       </classpath>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+      </assertions>
       <arg value="${dict.format}"/>
       <arg value="${dict.src.dir}"/>
       <arg value="${dict.target.dir}"/>
