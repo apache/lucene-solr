@@ -248,6 +248,7 @@ public class TokenInfoDictionary implements Dictionary {
       // Write Buffer
       buffer.flip();  // set position to 0, set limit to current position
       channel.write(buffer);
+      assert buffer.remaining() == 0L;
     } finally {
       os.close();
     }
