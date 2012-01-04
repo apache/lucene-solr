@@ -53,7 +53,8 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     handle.put("timestamp", SKIPVAL);
     
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
-    for (int i = 0; i < atLeast(2); i++) {
+    int threadCount = atLeast(2);
+    for (int i = 0; i < threadCount; i++) {
       StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
       threads.add(indexThread);
       indexThread.start();
