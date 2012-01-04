@@ -168,7 +168,7 @@ public class Tokenizer {
     
     private Mode mode = Mode.NORMAL;
     
-    private boolean split = true;
+    private boolean split = false;
     
     private UserDictionary userDictionary = null;
     

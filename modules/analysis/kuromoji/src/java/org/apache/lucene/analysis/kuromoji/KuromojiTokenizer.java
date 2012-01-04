@@ -19,77 +19,55 @@ package org.apache.lucene.analysis.kuromoji;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.text.BreakIterator;
 import java.util.List;
+import java.util.Locale;
 
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.util.SegmentingTokenizerBase;
 
-public final class KuromojiTokenizer extends Tokenizer {
+public final class KuromojiTokenizer extends SegmentingTokenizerBase {
+  private static final BreakIterator proto = BreakIterator.getSentenceInstance(Locale.JAPAN);
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
   
-  private final StringBuilder str = new StringBuilder();
-  
-  private List<Token> tokens;
-  
+  private List<Token> tokens; 
   private int tokenIndex = 0;
+  private int sentenceStart = 0;
   
   public KuromojiTokenizer(org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer, Reader input) throws IOException {
-    super(input);
+    super(input, (BreakIterator) proto.clone());
     this.tokenizer = tokenizer;
-    // nocommit: this won't really work for large docs.
-    // what kind of context does kuromoji need? just sentence maybe?
-    fillBuffer(str, input);
-    init();
-  }
-  
-  private void init() {
-    tokenIndex = 0;
-    tokens = tokenizer.tokenize(str.toString());
   }
   
   @Override
-  public boolean incrementToken() {
-    if(tokenIndex == tokens.size()) {
+  protected void setNextSentence(int sentenceStart, int sentenceEnd) {
+    this.sentenceStart = sentenceStart;
+    // TODO: allow the tokenizer, at least maybe doTokenize to take char[] or charsequence or characteriterator?
+    tokens = tokenizer.tokenize(new String(buffer, sentenceStart, sentenceEnd-sentenceStart));
+    tokenIndex = 0;
+  }
+
+  @Override
+  protected boolean incrementWord() {
+    if (tokenIndex == tokens.size()) {
       return false;
     }
-    
     Token token = tokens.get(tokenIndex);
+    // TODO: we don't really need the surface form except for its length? (its in the buffer already)
     String surfaceForm = token.getSurfaceForm();
     int position = token.getPosition();
     int length = surfaceForm.length();
-    int end = position + length;
     clearAttributes();
-    termAtt.setEmpty().append(str, position, end);
-    offsetAtt.setOffset(correctOffset(position), correctOffset(end));
+    termAtt.copyBuffer(buffer, sentenceStart + position, length);
+    int startOffset = offset + sentenceStart + position;
+    offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset+length));
     typeAtt.setType(token.getPartOfSpeech());
     tokenIndex++;
     return true;
-  }
-  
-  @Override
-  public void end() {
-    final int ofs = correctOffset(str.length());
-    offsetAtt.setOffset(ofs, ofs);
-  }
-  
-  @Override
-  public void reset(Reader input) throws IOException{
-    super.reset(input);
-    fillBuffer(str, input);
-    init();
-  }
-  
-  final char[] buffer = new char[8192];
-  private void fillBuffer(StringBuilder sb, Reader input) throws IOException {
-    int len;
-    sb.setLength(0);
-    while ((len = input.read(buffer)) > 0) {
-      sb.append(buffer, 0, len);
-    }
   }
 }
