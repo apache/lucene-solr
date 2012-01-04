@@ -63,10 +63,10 @@ public class Token {
   }
   
   /**
-   * @return basic form or null if token is not inflected
+   * @return base form or null if token is not inflected
    */
-  public String getBasicForm() {
-    return dictionary.getBasicForm(wordId);
+  public String getBaseForm() {
+    return dictionary.getBaseForm(wordId);
   }
   
   /**

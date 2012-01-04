@@ -177,7 +177,7 @@ public class TokenInfoDictionary implements Dictionary{
   }
   
   @Override
-  public String getBasicForm(int wordId) {
+  public String getBaseForm(int wordId) {
     String form = getFeature(wordId, 6);
     return "*".equals(form) ? null : form;
   }

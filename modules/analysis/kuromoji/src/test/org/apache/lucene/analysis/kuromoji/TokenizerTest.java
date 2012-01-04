@@ -80,15 +80,15 @@ public class TokenizerTest extends LuceneTestCase {
   public void testBasicForms() {
     List<Token> tokens = tokenizer.tokenize("それはまだ実験段階にあります。");
     assertEquals(9, tokens.size());
-    assertNull(tokens.get(0).getBasicForm());
-    assertNull(tokens.get(1).getBasicForm());
-    assertNull(tokens.get(2).getBasicForm());
-    assertNull(tokens.get(3).getBasicForm());
-    assertNull(tokens.get(4).getBasicForm());
-    assertNull(tokens.get(5).getBasicForm());
-    assertEquals(tokens.get(6).getBasicForm(), "ある");
-    assertNull(tokens.get(7).getBasicForm());
-    assertNull(tokens.get(8).getBasicForm());
+    assertNull(tokens.get(0).getBaseForm());
+    assertNull(tokens.get(1).getBaseForm());
+    assertNull(tokens.get(2).getBaseForm());
+    assertNull(tokens.get(3).getBaseForm());
+    assertNull(tokens.get(4).getBaseForm());
+    assertNull(tokens.get(5).getBaseForm());
+    assertEquals(tokens.get(6).getBaseForm(), "ある");
+    assertNull(tokens.get(7).getBaseForm());
+    assertNull(tokens.get(8).getBaseForm());
   }
   
   public void testBocchan() throws Exception {

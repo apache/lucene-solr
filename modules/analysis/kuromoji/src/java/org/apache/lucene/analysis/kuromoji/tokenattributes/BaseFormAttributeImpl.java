@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.kuromoji.tokenAttributes;
+package org.apache.lucene.analysis.kuromoji.tokenattributes;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,11 +21,11 @@ import org.apache.lucene.analysis.kuromoji.Token;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-public class BasicFormAttributeImpl extends AttributeImpl implements BasicFormAttribute, Cloneable {
+public class BaseFormAttributeImpl extends AttributeImpl implements BaseFormAttribute, Cloneable {
   private Token token;
   
-  public String getBasicForm() {
-    return token == null ? null : token.getBasicForm();
+  public String getBaseForm() {
+    return token == null ? null : token.getBaseForm();
   }
   
   public void setToken(Token token) {
@@ -39,12 +39,12 @@ public class BasicFormAttributeImpl extends AttributeImpl implements BasicFormAt
 
   @Override
   public void copyTo(AttributeImpl target) {
-    BasicFormAttribute t = (BasicFormAttribute) target;
+    BaseFormAttribute t = (BaseFormAttribute) target;
     t.setToken(token);
   }
   
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    reflector.reflect(BasicFormAttribute.class, "basicForm", getBasicForm());
+    reflector.reflect(BaseFormAttribute.class, "baseForm", getBaseForm());
   }
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.kuromoji.tokenAttributes;
+package org.apache.lucene.analysis.kuromoji.tokenattributes;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

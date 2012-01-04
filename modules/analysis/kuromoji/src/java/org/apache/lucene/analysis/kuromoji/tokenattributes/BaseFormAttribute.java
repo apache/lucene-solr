@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.kuromoji.tokenAttributes;
+package org.apache.lucene.analysis.kuromoji.tokenattributes;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,12 +21,12 @@ import org.apache.lucene.analysis.kuromoji.Token;
 import org.apache.lucene.util.Attribute;
 
 /**
- * Attribute for {@link Token#getBasicForm()}.
+ * Attribute for {@link Token#getBaseForm()}.
  * <p>
  * Note: depending on part of speech, this value may not be applicable,
  * and will be null.
  */
-public interface BasicFormAttribute extends Attribute {
-  public String getBasicForm();
+public interface BaseFormAttribute extends Attribute {
+  public String getBaseForm();
   public void setToken(Token token);
 }

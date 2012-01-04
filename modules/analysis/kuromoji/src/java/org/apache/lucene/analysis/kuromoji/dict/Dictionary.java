@@ -75,7 +75,7 @@ public interface Dictionary {
    * @param wordId word ID of token
    * @return Base form (only different for inflected words, otherwise null)
    */
-  public String getBasicForm(int wordId);
+  public String getBaseForm(int wordId);
   
   /**
    * Get feature(s) of tokens

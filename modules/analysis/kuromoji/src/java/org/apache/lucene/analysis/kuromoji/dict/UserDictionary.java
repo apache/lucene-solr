@@ -122,7 +122,7 @@ public class UserDictionary implements Dictionary {
   }
   
   @Override
-  public String getBasicForm(int wordId) {
+  public String getBaseForm(int wordId) {
     return null; // TODO: add support?
   }
   
