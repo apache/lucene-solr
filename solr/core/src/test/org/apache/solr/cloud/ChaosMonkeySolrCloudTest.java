@@ -41,8 +41,8 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   public ChaosMonkeySolrCloudTest() {
     super();
-    shardCount = atLeast(9);
-    sliceCount = atLeast(3);
+    shardCount = atLeast(6);
+    sliceCount = atLeast(2);
   }
   
   @Override
@@ -62,7 +62,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     chaosMonkey.startTheMonkey();
     
-    Thread.sleep(atLeast(12000));
+    Thread.sleep(atLeast(8000));
     
     chaosMonkey.stopTheMonkey();
     
@@ -81,16 +81,14 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     
     // try and wait for any replications and what not to finish...
 
+    // give a momement to make sure any recoveries have started
     Thread.sleep(1000);
     
     // wait until there are no recoveries...
     waitForRecoveriesToFinish(VERBOSE);
     
     commit();
-    
-    //assertEquals(chaosMonkey.getStarts(), getNumberOfRecoveryAttempts() - shardCount - sliceCount);
-    
-    
+
     checkShardConsistency(false);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
