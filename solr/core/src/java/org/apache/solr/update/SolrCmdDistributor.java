@@ -346,8 +346,7 @@ public class SolrCmdDistributor {
           if (sreq.rspCode != 0) {
             // error during request
             
-            // if there is a retry url, we want to retry...
-            // TODO: but we really should only retry on connection errors...
+            // if there is a retry impl that returns true, we want to retry...
             if (sreq.retries < 5 && sreq.node.checkRetry()) {
               sreq.retries++;
               sreq.rspCode = 0;

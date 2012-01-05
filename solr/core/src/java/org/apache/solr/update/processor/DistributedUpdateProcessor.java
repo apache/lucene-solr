@@ -280,11 +280,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           
           server.request(recoverRequestCmd);
         } catch (MalformedURLException e) {
-          log.error("", e);
+          log.warn("Problem trying to tell a replica to recover", e);
         } catch (SolrServerException e) {
-          log.error("", e);
+          log.warn("Problem trying to tell a replica to recover", e);
         } catch (IOException e) {
-          log.error("", e);
+          log.warn("Problem trying to tell a replica to recover", e);
         }
       }
     }
@@ -733,10 +733,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         Thread.currentThread().interrupt();
         return false;
       }
-      
-      this.url = leaderProps.getCoreUrl();
-
-      return true;
+      String newUrl = leaderProps.getCoreUrl();
+      if (!this.url.equals(newUrl)) {
+        this.url = newUrl;
+        return true;
+      }
+      return false;
     }
   }
   
