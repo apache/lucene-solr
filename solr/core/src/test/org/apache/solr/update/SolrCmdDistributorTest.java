@@ -100,7 +100,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
     cmdDistrib.distribCommit(ccmd, nodes, params);
-    cmdDistrib.finish(nodes);
+    cmdDistrib.finish();
     Response response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
@@ -109,12 +109,12 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         .getNumFound();
     assertEquals(1, numFound);
     
-    CommonsHttpSolrServer client2 = (CommonsHttpSolrServer) clients.get(0);
+    CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients.get(0);
     nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        client2.getBaseURL(), ZkStateReader.CORE_PROP, "");
+        client.getBaseURL(), ZkStateReader.CORE_PROP, "");
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
-    // add another 3 docs to both control and client1
+    // add another 2 docs to control and 3 to client
     
     cmd.solrDoc = getSolrDoc("id", 2);
     cmdDistrib.distribAdd(cmd, nodes, params);
@@ -127,19 +127,19 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     AddUpdateCommand cmd3 = new AddUpdateCommand(null);
     cmd3.solrDoc = getSolrDoc("id", 4);
     
-    cmdDistrib.distribAdd(cmd3, Collections.singletonList(nodes.get(0)), params);
+    cmdDistrib.distribAdd(cmd3, Collections.singletonList(nodes.get(1)), params);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);
-    cmdDistrib.finish(nodes);
+    cmdDistrib.finish();
     response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
     
     SolrDocumentList results = controlClient.query(new SolrQuery("*:*")).getResults();
     numFound = results.getNumFound();
-    assertEquals(results.toString(), 4, numFound);
+    assertEquals(results.toString(), 3, numFound);
     
-    numFound = client2.query(new SolrQuery("*:*")).getResults()
+    numFound = client.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     assertEquals(3, numFound);
     
@@ -151,16 +151,16 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     cmdDistrib.distribDelete(dcmd, nodes, params);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);
-    cmdDistrib.finish(nodes);
+    cmdDistrib.finish();
     response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
     
     results = controlClient.query(new SolrQuery("*:*")).getResults();
     numFound = results.getNumFound();
-    assertEquals(results.toString(), 3, numFound);
+    assertEquals(results.toString(), 2, numFound);
     
-    numFound = client2.query(new SolrQuery("*:*")).getResults()
+    numFound = client.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     assertEquals(results.toString(), 2, numFound);
   }

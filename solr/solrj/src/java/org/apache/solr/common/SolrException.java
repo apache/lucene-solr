@@ -17,6 +17,7 @@
 
 package org.apache.solr.common;
 
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.slf4j.Logger;
 
 import java.io.CharArrayWriter;
@@ -102,6 +103,10 @@ public class SolrException extends RuntimeException {
 
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
+    // nocommit
+    if (e instanceof ConnectionLossException || e.getCause() != null && e.getCause() instanceof ConnectionLossException) {
+      e.printStackTrace();
+    }
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
@@ -116,6 +121,10 @@ public class SolrException extends RuntimeException {
   }
 
   public static void log(Logger log, String msg, Throwable e) {
+  // nocommit
+    if (e instanceof ConnectionLossException || getRootCause(e) != null && getRootCause(e) instanceof ConnectionLossException) {
+      e.printStackTrace();
+    }
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
@@ -169,11 +178,23 @@ public class SolrException extends RuntimeException {
     for (String regex : ignorePatterns) {
       Pattern pattern = Pattern.compile(regex);
       Matcher matcher = pattern.matcher(m);
+      
       if (matcher.find()) return "Ignoring exception matching " + regex;
     }
 
     return null;
   }
-
+  
+  public static Throwable getRootCause(Throwable t) {
+    while (true) {
+      Throwable cause = t.getCause();
+      if (cause!=null) {
+        t = cause;
+      } else {
+        break;
+      }
+    }
+    return t;
+  }
 
 }

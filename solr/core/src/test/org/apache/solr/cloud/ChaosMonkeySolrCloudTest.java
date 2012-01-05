@@ -22,20 +22,46 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    // we expect this time of exception as shards go up and down...
-    ignoreException("shard update error ");
-    ignoreException("Connection refused");
+    
   }
   
   @AfterClass
   public static void afterSuperClass() throws Exception {
+    
+  }
+  
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    // we expect this time of exception as shards go up and down...
+    ignoreException("shard update error ");
+    ignoreException("Connection refused");
+    ignoreException("interrupted waiting for shard update response");
+    ignoreException("org\\.mortbay\\.jetty\\.EofException");
+    ignoreException("java\\.lang\\.InterruptedException");
+    ignoreException("java\\.nio\\.channels\\.ClosedByInterruptException");
+    
+    
+    // sometimes we cannot get the same port
+    ignoreException("java\\.net\\.BindException: Address already in use");
+    
+    System.setProperty("numShards", Integer.toString(sliceCount));
+  }
+  
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     resetExceptionIgnores();
   }
   
@@ -82,21 +108,17 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     // try and wait for any replications and what not to finish...
 
     // give a moment to make sure any recoveries have started
-    Thread.sleep(1000);
+    Thread.sleep(4000);
     
     // wait until there are no recoveries...
     waitForRecoveriesToFinish(VERBOSE);
     
+    
     commit();
 
-    checkShardConsistency(false);
+    checkShardConsistency(true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
   }
   
   // skip the randoms - they can deadlock...

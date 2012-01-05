@@ -68,8 +68,8 @@ public class SolrCmdDistributor {
 
   private Response response = new Response();
   
-  private final Map<String,List<AddRequest>> adds = new HashMap<String,List<AddRequest>>();
-  private final Map<String,List<DeleteRequest>> deletes = new HashMap<String,List<DeleteRequest>>();
+  private final Map<Node,List<AddRequest>> adds = new HashMap<Node,List<AddRequest>>();
+  private final Map<Node,List<DeleteRequest>> deletes = new HashMap<Node,List<DeleteRequest>>();
   
   class AddRequest {
     AddUpdateCommand cmd;
@@ -81,11 +81,11 @@ public class SolrCmdDistributor {
     ModifiableSolrParams params;
   }
   
-  public void finish(List<Node> urls) {
+  public void finish() {
 
     // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, null, urls);
-    flushDeletes(1, null, null, urls);
+    flushAdds(1, null, null);
+    flushDeletes(1, null, null);
 
     checkResponses(true);
   }
@@ -101,12 +101,11 @@ public class SolrCmdDistributor {
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<Node> urls, ModifiableSolrParams params) throws IOException {
-    
+  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams commitParams) throws IOException {
     checkResponses(false);
     
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, null, urls);
+    flushDeletes(1, null, null);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -118,77 +117,67 @@ public class SolrCmdDistributor {
     clone.setVersion(cmd.getVersion());
     AddRequest addRequest = new AddRequest();
     addRequest.cmd = clone;
-    addRequest.params = params;
+    addRequest.params = commitParams;
 
-    for (Node url : urls) {
-      List<AddRequest> alist = adds.get(url.getUrl());
+    for (Node node : nodes) {
+      List<AddRequest> alist = adds.get(node);
       if (alist == null) {
         alist = new ArrayList<AddRequest>(2);
-        adds.put(url.getUrl(), alist);
+        adds.put(node, alist);
       }
       alist.add(addRequest);
-     // System.out.println("buffer add to " + url);
     }
     
-    flushAdds(maxBufferedAddsPerServer, null, null, urls);
+    flushAdds(maxBufferedAddsPerServer, null, null);
   }
   
-  public void distribCommit(CommitUpdateCommand cmd, List<Node> urls, ModifiableSolrParams params)
-      throws IOException {
-    
-    // Wait for all outstanding repsonses to make sure that a commit
+  public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
+      ModifiableSolrParams params) throws IOException {
+    // Wait for all outstanding responses to make sure that a commit
     // can't sneak in ahead of adds or deletes we already sent.
     // We could do this on a per-server basis, but it's more complex
     // and this solution will lead to commits happening closer together.
     checkResponses(true);
-
-    // piggyback on any outstanding adds or deletes if possible.
-    boolean piggied = false;
-    if (!flushAdds(1, cmd, params, urls)) {
-      if (flushDeletes(1, cmd, params, urls)) piggied = true;
-    } else {
-      piggied = true;
-    }
     
-    if (!piggied) {
-      UpdateRequestExt ureq = new UpdateRequestExt();
-      ureq.setParams(params);
-      
-      addCommit(ureq, cmd);
-      
-      for (Node url : urls) {
-        submit(ureq, url);
-      }
+    // currently, we dont try to piggy back on outstanding adds or deletes
+    
+    UpdateRequestExt ureq = new UpdateRequestExt();
+    ureq.setParams(params);
+    
+    addCommit(ureq, cmd);
+    
+    for (Node node : nodes) {
+      submit(ureq, node);
     }
     
     // if the command wanted to block until everything was committed,
     // then do that here.
-
+    
     if (cmd.waitSearcher) {
       checkResponses(true);
     }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, List<Node> urls,
+  private void doDelete(DeleteUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) throws IOException {
     
-    flushAdds(1, null, null, urls);
+    flushAdds(1, null, null);
     
     DeleteUpdateCommand clonedCmd = clone(cmd);
     DeleteRequest deleteRequest = new DeleteRequest();
     deleteRequest.cmd = clonedCmd;
     deleteRequest.params = params;
-    for (Node url : urls) {
-      List<DeleteRequest> dlist = deletes.get(url.getUrl());
+    for (Node node : nodes) {
+      List<DeleteRequest> dlist = deletes.get(node);
       
       if (dlist == null) {
         dlist = new ArrayList<DeleteRequest>(2);
-        deletes.put(url.getUrl(), dlist);
+        deletes.put(node, dlist);
       }
       dlist.add(deleteRequest);
     }
     
-    flushDeletes(maxBufferedDeletesPerServer, null, null, urls);
+    flushDeletes(maxBufferedDeletesPerServer, null, null);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -197,69 +186,82 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams params, List<Node> urls) {
+  boolean flushAdds(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams commitParams) {
     // check for pending deletes
-    UpdateRequestExt ureq = null;
-    for (Node url : urls) {
-      List<AddRequest> alist = adds.get(url.getUrl());
+  
+    Set<Node> removeNodes = new HashSet<Node>();
+    Set<Node> nodes = adds.keySet();
+ 
+    for (Node node : nodes) {
+      List<AddRequest> alist = adds.get(node);
       if (alist == null || alist.size() < limit) return false;
-      if (ureq == null) {
-        ureq = new UpdateRequestExt();
-        
-        addCommit(ureq, ccmd);
-        
-        ModifiableSolrParams combinedParams = new ModifiableSolrParams();
-        
-        for (AddRequest aReq : alist) {
-          AddUpdateCommand cmd = aReq.cmd;
-          combinedParams.add(aReq.params);
-          ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-        }
-        
-        if (params != null) combinedParams.add(params);
-        if (ureq.getParams() == null) ureq.setParams(new ModifiableSolrParams());
-        ureq.getParams().add(combinedParams);
+  
+      UpdateRequestExt ureq = new UpdateRequestExt();
+      
+      addCommit(ureq, ccmd);
+      
+      ModifiableSolrParams combinedParams = new ModifiableSolrParams();
+      
+      for (AddRequest aReq : alist) {
+        AddUpdateCommand cmd = aReq.cmd;
+        combinedParams.add(aReq.params);
+       
+        ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
       }
       
-      adds.remove(url.getUrl());
+      if (commitParams != null) combinedParams.add(commitParams);
+      if (ureq.getParams() == null) ureq.setParams(new ModifiableSolrParams());
+      ureq.getParams().add(combinedParams);
+
+      removeNodes.add(node);
       
-      submit(ureq, url);
+      submit(ureq, node);
     }
+    
+    for (Node node : removeNodes) {
+      adds.remove(node);
+    }
+    
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams params, List<Node> urls) {
+  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams commitParams) {
     // check for pending deletes
-    //System.out.println("flush deletes to " + urls);
-    UpdateRequestExt ureq = null;
-    for (Node url : urls) {
-      List<DeleteRequest> dlist = deletes.get(url.getUrl());
-      if (dlist == null || dlist.size() < limit) return false;
-      if (ureq == null) {
-        ureq = new UpdateRequestExt();
  
-        addCommit(ureq, ccmd);
-        
-        ModifiableSolrParams combinedParams = new ModifiableSolrParams();
-        
-        for (DeleteRequest dReq : dlist) {
-          DeleteUpdateCommand cmd = dReq.cmd;
-          combinedParams.add(dReq.params);
-          if (cmd.isDeleteById()) {
-            ureq.deleteById(cmd.getId(), cmd.getVersion());
-          } else {
-            ureq.deleteByQuery(cmd.query);
-          }
+    Set<Node> removeNodes = new HashSet<Node>();
+    Set<Node> nodes = deletes.keySet();
+    for (Node node : nodes) {
+      List<DeleteRequest> dlist = deletes.get(node);
+      if (dlist == null || dlist.size() < limit) return false;
+      UpdateRequestExt ureq = new UpdateRequestExt();
+      
+      addCommit(ureq, ccmd);
+      
+      ModifiableSolrParams combinedParams = new ModifiableSolrParams();
+      
+      for (DeleteRequest dReq : dlist) {
+        DeleteUpdateCommand cmd = dReq.cmd;
+        combinedParams.add(dReq.params);
+        if (cmd.isDeleteById()) {
+          ureq.deleteById(cmd.getId(), cmd.getVersion());
+        } else {
+          ureq.deleteByQuery(cmd.query);
         }
-
-        if (params != null) combinedParams.add(params);
-        if (ureq.getParams() == null) ureq.setParams(new ModifiableSolrParams());
+        
+        if (commitParams != null) combinedParams.add(commitParams);
+        if (ureq.getParams() == null) ureq
+            .setParams(new ModifiableSolrParams());
         ureq.getParams().add(combinedParams);
       }
       
-      deletes.remove(url.getUrl());
-      submit(ureq, url);
+      removeNodes.add(node);
+      submit(ureq, node);
     }
+    
+    for (Node node : removeNodes) {
+      deletes.remove(node);
+    }
+    
     return true;
   }
   
@@ -309,7 +311,7 @@ public class SolrCmdDistributor {
           } else {
             fullUrl = url;
           }
-          
+  
           CommonsHttpSolrServer server = new CommonsHttpSolrServer(fullUrl,
               client);
           
@@ -346,7 +348,8 @@ public class SolrCmdDistributor {
           if (sreq.rspCode != 0) {
             // error during request
             
-            // if there is a retry impl that returns true, we want to retry...
+            // if there is a retry url, we want to retry...
+            // TODO: but we really should only retry on connection errors...
             if (sreq.retries < 5 && sreq.node.checkRetry()) {
               sreq.retries++;
               sreq.rspCode = 0;
@@ -434,6 +437,34 @@ public class SolrCmdDistributor {
     @Override
     public String getCoreName() {
       return coreName;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((baseUrl == null) ? 0 : baseUrl.hashCode());
+      result = prime * result + ((coreName == null) ? 0 : coreName.hashCode());
+      result = prime * result + ((url == null) ? 0 : url.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      StdNode other = (StdNode) obj;
+      if (baseUrl == null) {
+        if (other.baseUrl != null) return false;
+      } else if (!baseUrl.equals(other.baseUrl)) return false;
+      if (coreName == null) {
+        if (other.coreName != null) return false;
+      } else if (!coreName.equals(other.coreName)) return false;
+      if (url == null) {
+        if (other.url != null) return false;
+      } else if (!url.equals(other.url)) return false;
+      return true;
     }
   }
 }

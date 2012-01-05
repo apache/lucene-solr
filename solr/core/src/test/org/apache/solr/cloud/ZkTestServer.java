@@ -245,13 +245,8 @@ public class ZkTestServer {
 
   @SuppressWarnings("deprecation")
   public void shutdown() throws IOException {
-    SolrTestCaseJ4.ignoreException("java.nio.channels.ClosedChannelException");
     // TODO: this can log an exception while trying to unregister a JMX MBean
-    try {
-      zkServer.shutdown();
-    } finally {
-      SolrTestCaseJ4.resetExceptionIgnores();
-    }
+    zkServer.shutdown();
   }
  
   

@@ -601,6 +601,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String nodeName = params.get("nodeName");
 
     SolrCore core = coreContainer.getCore(cname);
+    if (core == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
+    }
     try {
       String state;
       while (true) {

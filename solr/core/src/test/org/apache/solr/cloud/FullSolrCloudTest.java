@@ -50,6 +50,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -458,13 +459,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // index a bad doc...
     try {
-      ignoreException("Document is missing mandatory uniqueKey field: id");
       indexr(t1,"a doc with no id");
       fail("this should fail");
     } catch (SolrException e) {
       // expected
-    } finally {
-      resetExceptionIgnores();
     }
     
     // TODO: bring this to it's own method?
@@ -817,7 +815,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     checkShardConsistency(shard, false);
   }
   
-  protected void checkShardConsistency(String shard, boolean verbose) throws Exception {
+  protected String checkShardConsistency(String shard, boolean verbose) throws Exception {
     
     List<SolrServer> solrClients = shardToClient.get(shard);
     if (solrClients == null) {
@@ -851,10 +849,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         lastNum = num;
       }
     }
-    
-    if (failMessage != null) {
-      fail(failMessage);
-    }
+
+    return failMessage;
    
   }
   
@@ -869,8 +865,13 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     updateMappingsFromZk(jettys, clients);
     
     Set<String> theShards = shardToClient.keySet();
+    String failMessage = null;
     for (String shard : theShards) {
-      checkShardConsistency(shard, verbose);
+      failMessage = checkShardConsistency(shard, verbose);
+    }   
+    
+    if (failMessage != null) {
+      fail(failMessage);
     }
     
     // now check that the right # are on each shard
@@ -1064,6 +1065,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   };
   
   @Override
+  @After
   public void tearDown() throws Exception {
     if (VERBOSE) {
       super.printLayout();

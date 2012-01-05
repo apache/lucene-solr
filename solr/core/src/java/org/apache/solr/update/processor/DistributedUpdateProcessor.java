@@ -97,8 +97,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // method in this update processor
   private boolean isLeader = true;
   private boolean forwardToLeader = false;
-  private List<Node> urls;
-  private String shardId;
+  private List<Node> nodes;
 
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
@@ -138,8 +137,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private List<Node> setupRequest(int hash) {
-    
-    List<Node> urls = null;
+    List<Node> nodes = null;
 
     // if we are in zk mode...
     if (zkEnabled) {
@@ -147,8 +145,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: if there is no leader, wait and look again
       // TODO: we are reading the leader from zk every time - we should cache
       // this and watch for changes?? Just pull it from ZkController cluster state probably?
-
-      shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
+      String shardId = getShard(hash, collection, zkController.getCloudState()); // get the right shard based on the hash...
 
       try {
         // TODO: if we find out we cannot talk to zk anymore, we should probably realize we are not
@@ -164,14 +161,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         
         if (req.getParams().getBool(SEEN_LEADER, false)) {
           // we are coming from the leader, just go local - add no urls
+          forwardToLeader = false;
         } else if (isLeader) {
           // that means I want to forward onto my replicas...
           // so get the replicas...
-          urls = getReplicaNodes(req, collection, shardId, nodeName);
+          forwardToLeader = false;
+          nodes = getReplicaNodes(req, collection, shardId, nodeName);
         } else {
           // I need to forward onto the leader...
-          urls = new ArrayList<Node>(1);
-          urls.add(new RetryNode(leaderProps, zkController.getZkStateReader(), collection, shardId));
+          nodes = new ArrayList<Node>(1);
+          nodes.add(new RetryNode(leaderProps, zkController.getZkStateReader(), collection, shardId));
           forwardToLeader = true;
         }
         
@@ -182,7 +181,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    return urls;
+    return nodes;
   }
   
   private String getShard(int hash, String collection, CloudState cloudState) {
@@ -195,11 +194,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     // TODO: check for id field?
-    
     int hash = 0;
     if (zkEnabled) {
       hash = hash(cmd);
-      urls = setupRequest(hash);
+      nodes = setupRequest(hash);
     } else {
       // even in non zk mode, tests simulate updates from a leader
       isLeader = !req.getParams().getBool(SEEN_LEADER, false);
@@ -216,12 +214,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     ModifiableSolrParams params = null;
-    if (urls != null) {
+    if (nodes != null) {
       params = new ModifiableSolrParams(req.getParams());
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribAdd(cmd, urls, params);
+      cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
     // TODO: what to do when no idField?
@@ -247,46 +245,49 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
-    cmdDistrib.finish(urls);
+    cmdDistrib.finish();
     Response response = cmdDistrib.getResponse();
     // nocommit - we may need to tell about more than one error...
     
     // if its a forward, any fail is a problem - 
     // otherwise we assume things are fine if we got it locally
     // until we start allowing min replication param
-    if (forwardToLeader && response.errors.size() > 0) {
-      rsp.setException(response.errors.get(0).e);
-    } else {
-      rsp.setException(null);
+    if (response.errors.size() > 0) {
+      // for now we don't error - we assume if it was added locally, we
+      // succeeded - nocommit: forwards should error
+      //rsp.setException(response.errors.get(0).e);
     }
    
     
     // if it is not a forward request, for each fail, try to tell them to
-    // recover
-    if (!forwardToLeader) {
-      for (SolrCmdDistributor.Error error : response.errors) {
-        
-        // TODO: we should force their state to recovering ??
-        
-        // TODO: do retries??
-        // TODO: what if its is already recovering? Right now they line up - should they?
-        CommonsHttpSolrServer server;
-        try {
-          server = new CommonsHttpSolrServer(error.node.getBaseUrl());
-          
-          RequestRecovery recoverRequestCmd = new RequestRecovery();
-          recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-          recoverRequestCmd.setCoreName(error.node.getCoreName());
-          
-          server.request(recoverRequestCmd);
-        } catch (MalformedURLException e) {
-          log.warn("Problem trying to tell a replica to recover", e);
-        } catch (SolrServerException e) {
-          log.warn("Problem trying to tell a replica to recover", e);
-        } catch (IOException e) {
-          log.warn("Problem trying to tell a replica to recover", e);
-        }
+    // recover nocommit: we would really like to only do this on connection problems
+
+    for (SolrCmdDistributor.Error error : response.errors) {
+      if (error.node instanceof RetryNode) {
+        continue;
       }
+      // TODO: we should force their state to recovering ??
+      
+      // TODO: do retries??
+      // TODO: what if its is already recovering? Right now they line up -
+      // should they?
+      CommonsHttpSolrServer server;
+      try {
+        server = new CommonsHttpSolrServer(error.node.getBaseUrl());
+        
+        RequestRecovery recoverRequestCmd = new RequestRecovery();
+        recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+        recoverRequestCmd.setCoreName(error.node.getCoreName());
+        
+        server.request(recoverRequestCmd);
+      } catch (MalformedURLException e) {
+        log.warn("Problem trying to tell a replica to recover", e);
+      } catch (SolrServerException e) {
+        log.warn("Problem trying to tell a replica to recover", e);
+      } catch (IOException e) {
+        log.warn("", e);
+      }
+      
     }
   }
 
@@ -416,7 +417,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     int hash = 0;
     if (zkEnabled) {
       hash = hash(cmd);
-      urls = setupRequest(hash);
+      nodes = setupRequest(hash);
     } else {
       // even in non zk mode, tests simulate updates from a leader
       isLeader = !req.getParams().getBool(SEEN_LEADER, false);
@@ -433,12 +434,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     ModifiableSolrParams params = null;
-    if (urls != null) {
+    if (nodes != null) {
       params = new ModifiableSolrParams(req.getParams());
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
-      cmdDistrib.distribDelete(cmd, urls, params);
+      cmdDistrib.distribDelete(cmd, nodes, params);
     }
 
     // cmd.getIndexId == null when delete by query
@@ -613,11 +614,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
             .getZkController().getNodeName();
         String shardZkNodeName = nodeName + "_" + req.getCore().getName();
-        urls = getReplicaUrls(req, req.getCore().getCoreDescriptor()
+        List<Node> nodes = getReplicaUrls(req, req.getCore().getCoreDescriptor()
             .getCloudDescriptor().getCollectionName(), shardZkNodeName);
 
-        if (urls != null) {
-          cmdDistrib.distribCommit(cmd, urls, params);
+        if (nodes != null) {
+          cmdDistrib.distribCommit(cmd, nodes, params);
           finish();
         }
       }
@@ -626,17 +627,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void finish() throws IOException {
-    if (urls != null) {
-      doFinish();
-    }
-    if (next != null && urls == null) next.finish();
+    doFinish();
+    
+    if (next != null && nodes == null) next.finish();
   }
  
   private List<Node> getReplicaNodes(SolrQueryRequest req, String collection,
       String shardId, String thisNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
-   
+
     Map<String,Slice> slices = cloudState.getSlices(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + cloudState);
@@ -658,6 +658,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
     if (nodes.size() == 0) {
+      // no replicas - go local
       return null;
     }
     return nodes;
@@ -733,12 +734,33 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         Thread.currentThread().interrupt();
         return false;
       }
-      String newUrl = leaderProps.getCoreUrl();
-      if (!this.url.equals(newUrl)) {
-        this.url = newUrl;
-        return true;
-      }
-      return false;
+      
+      this.url = leaderProps.getCoreUrl();
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = super.hashCode();
+      result = prime * result
+          + ((collection == null) ? 0 : collection.hashCode());
+      result = prime * result + ((shardId == null) ? 0 : shardId.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (!super.equals(obj)) return false;
+      if (getClass() != obj.getClass()) return false;
+      RetryNode other = (RetryNode) obj;
+      if (url == null) {
+        if (other.url != null) return false;
+      } else if (!url.equals(other.url)) return false;
+
+      return true;
     }
   }
   

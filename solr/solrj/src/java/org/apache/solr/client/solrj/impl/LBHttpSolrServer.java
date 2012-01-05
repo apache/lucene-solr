@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
@@ -251,6 +252,7 @@ public class LBHttpSolrServer extends SolrServer {
         return rsp; // SUCCESS
       } catch (SolrException e) {
         // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+        System.err.println("code:" + e.code());
         if (e.code() == 404 || e.code() == 403 || e.code() == 503) {
           ex = addZombie(server, e);
         } else {
@@ -265,7 +267,8 @@ public class LBHttpSolrServer extends SolrServer {
       } catch (SocketException e) {
         ex = addZombie(server, e);
       } catch (SolrServerException e) {
-        if (e.getRootCause() instanceof IOException) {
+        Throwable rootCause = e.getRootCause();
+        if (rootCause instanceof IOException || rootCause instanceof ConnectException) {
           ex = addZombie(server, e);
         } else {
           throw e;

@@ -97,7 +97,7 @@ public class JettySolrRunner {
       connector.setReuseAddress(true);
       QueuedThreadPool threadPool = (QueuedThreadPool) connector.getThreadPool();
       if (threadPool != null) {
-        threadPool.setMaxStopTimeMs(100);
+        threadPool.setMaxStopTimeMs(1000);
       }
       server.setConnectors(new Connector[] { connector });
       server.setSessionIdManager(new HashSessionIdManager(new Random()));

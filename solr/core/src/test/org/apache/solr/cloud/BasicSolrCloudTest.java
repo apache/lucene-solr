@@ -17,9 +17,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.net.MalformedURLException;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -63,7 +67,6 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     params.add("q", t1 + ":originalcontent");
     QueryResponse results = clients.get(0).query(params);
     assertEquals(1, results.getResults().getNumFound());
-    System.out.println("results:" + results);
     
     // update doc
     indexr("id", docId, t1, "updatedcontent");
@@ -73,7 +76,6 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     assertDocCounts(VERBOSE);
     
     results = clients.get(0).query(params);
-    System.out.println("results1:" + results.getResults());
     assertEquals(0, results.getResults().getNumFound());
     
     params.set("q", t1 + ":updatedcontent");
@@ -87,8 +89,6 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
     commit();
     
-    System.out.println("results2:" + results.getResults());
-    
     results = clients.get(0).query(params);
     assertEquals(0, results.getResults().getNumFound());
     
@@ -97,11 +97,9 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
     SolrInputDocument doc1 = new SolrInputDocument();
 
-    System.out.println("add doc1:" + doc1);
     addFields(doc1, "id", docId++);
     uReq.add(doc1);
     SolrInputDocument doc2 = new SolrInputDocument();
-    System.out.println("add doc2:" + doc2);
     addFields(doc2, "id", docId++);
     uReq.add(doc2);
     
@@ -112,16 +110,12 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
     checkShardConsistency();
     
-    System.out.println("controldocs: " + query(controlClient).getResults().getNumFound());
-    System.out.println("clouddocs: " + query(cloudClient).getResults().getNumFound());
-    
     assertDocCounts(VERBOSE);
     
     results = query(cloudClient);
     assertEquals(2, results.getResults().getNumFound());
     
     // two deletes
-    System.out.println("delete:" + Long.toString(docId-1));
     uReq = new UpdateRequest();
     uReq.deleteById(Long.toString(docId-1));
     uReq.deleteById(Long.toString(docId-2)).process(cloudClient);
@@ -143,18 +137,15 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     doc1 = new SolrInputDocument();
 
     addFields(doc1, "id", docId++);
-    System.out.println("added doc:" + docId);
     uReq.add(doc1);
     doc2 = new SolrInputDocument();
     addFields(doc2, "id", docId++);
-    System.out.println("added doc:" + docId);
     uReq.add(doc2);
  
     uReq.process(cloudClient);
     uReq.process(controlClient);
     
     uReq = new UpdateRequest();
-    System.out.println("delete doc:" + (docId - 2));
     uReq.deleteById(Long.toString(docId - 2)).process(cloudClient);
     controlClient.deleteById(Long.toString(docId - 2));
     
@@ -169,6 +160,22 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
     results = query(cloudClient);
     assertEquals(2, results.getResults().getNumFound());
+    
+    testIndexingWithSuss();
+  }
+
+  private void testIndexingWithSuss() throws MalformedURLException, Exception {
+    StreamingUpdateSolrServer suss = new StreamingUpdateSolrServer(
+        ((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);
+    
+    for (int i=100; i<150; i++) {
+      index_specific(suss, id, i);      
+    }
+    suss.blockUntilFinished();
+    
+    commit();
+    
+    checkShardConsistency(false);
   }
 
   private QueryResponse query(SolrServer server) throws SolrServerException {
