@@ -22,6 +22,7 @@
         <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="ICU library" level="project" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" module-name="facet" />
     <orderEntry type="module" module-name="highlighter" />
