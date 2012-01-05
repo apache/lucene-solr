@@ -75,7 +75,7 @@ class ConnectionManager implements Watcher {
       clientConnected.countDown();
     } else if (state == KeeperState.Expired) {
       connected = false;
-      log.info("Attempting to reconnect to ZooKeeper...");
+      log.info("Attempting to reconnect to recover relationship with ZooKeeper...");
 
       try {
         connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {

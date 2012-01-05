@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.net.BindException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.mortbay.jetty.servlet.FilterHolder;
 
 /**
@@ -48,8 +46,6 @@ import org.mortbay.jetty.servlet.FilterHolder;
 public class ChaosMonkey {
 
   private static final boolean DONTKILLLEADER = true;
-  protected static final boolean EXPIRE_SESSIONS = false;
-  protected static final boolean CAUSE_CONNECTION_LOSS = false;
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
   private ZkTestServer zkServer;
@@ -63,6 +59,8 @@ public class ChaosMonkey {
   private AtomicInteger connloss = new AtomicInteger();
   
   private Map<String,List<SolrServer>> shardToClient;
+  private boolean expireSessions;
+  private boolean causeConnectionLoss;
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -73,12 +71,20 @@ public class ChaosMonkey {
     this.zkStateReader = zkStateReader;
     this.collection = collection;
     this.random = random;
+    
+    expireSessions = random.nextBoolean();
+    causeConnectionLoss = random.nextBoolean();
   }
   
   public void expireSession(JettySolrRunner jetty) {
     SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty.getDispatchFilter().getFilter();
-    long sessionId = solrDispatchFilter.getCores().getZkController().getZkClient().getSolrZooKeeper().getSessionId();
-    zkServer.expire(sessionId);
+    if (solrDispatchFilter != null) {
+      CoreContainer cores = solrDispatchFilter.getCores();
+      if (cores != null) {
+        long sessionId = cores.getZkController().getZkClient().getSolrZooKeeper().getSessionId();
+        zkServer.expire(sessionId);
+      }
+    }
   }
   
   public void expireRandomSession() throws KeeperException, InterruptedException {
@@ -87,6 +93,7 @@ public class ChaosMonkey {
     JettySolrRunner jetty = getRandomJetty(sliceName, DONTKILLLEADER);
     if (jetty != null) {
       expireSession(jetty);
+      expires.incrementAndGet();
     }
   }
   
@@ -112,22 +119,22 @@ public class ChaosMonkey {
         
         // nocommit: two ways to try to force connectionloss...
         // must be at least double tick time...
-        // zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2);
+        zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2);
         
         // open a new zk with same id and close it - should cause connection loss
-        ZooKeeper zoo2;
-        try {
-          zoo2 = new ZooKeeper(zkController.getZkServerAddress(), zkClient.getSolrZooKeeper().getSessionTimeout(),
-          null,
-          zkClient.getSolrZooKeeper().getSessionId(), null);
-          zoo2.close();
-        } catch (IOException e1) {
-          // TODO Auto-generated catch block
-          e1.printStackTrace();
-        } catch (InterruptedException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
+//        ZooKeeper zoo2;
+//        try {
+//          zoo2 = new ZooKeeper(zkController.getZkServerAddress(), zkClient.getSolrZooKeeper().getSessionTimeout(),
+//          null,
+//          zkClient.getSolrZooKeeper().getSessionId(), null);
+//          zoo2.close();
+//        } catch (IOException e1) {
+//          // TODO Auto-generated catch block
+//          e1.printStackTrace();
+//        } catch (InterruptedException e) {
+//          // TODO Auto-generated catch block
+//          e.printStackTrace();
+//        }
 
       }
     }
@@ -320,17 +327,12 @@ public class ChaosMonkey {
   public SolrServer getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
     zkStateReader.updateCloudState(true);
-    Slice theShards = zkStateReader.getCloudState().getSlices(collection)
-        .get(slice);
-    
+
     // get random shard
     List<SolrServer> clients = shardToClient.get(slice);
     int index = random.nextInt(clients.size() - 1);
     SolrServer client = clients.get(index);
-    
-    ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
 
-    
     return client;
   }
   
@@ -364,7 +366,12 @@ public class ChaosMonkey {
                  } catch (BindException e2) {
                    jetty.stop();
                    sleep(5000);
-                   jetty.start();
+                   try {
+                     jetty.start();
+                   } catch (BindException e3) {
+                     // we coud not get the port
+                     continue;
+                   }
                  }
                }
                //System.out.println("started on port:" + jetty.getLocalPort());
@@ -375,12 +382,11 @@ public class ChaosMonkey {
             
             int rnd = random.nextInt(10);
             // nocommit: we dont randomly expire yet
-            if (EXPIRE_SESSIONS && rnd < 4) {
+            if (expireSessions && rnd < 8) {
               expireRandomSession();
-              expires.incrementAndGet();
             } 
             
-            if (CAUSE_CONNECTION_LOSS && rnd < 10) {
+            if (causeConnectionLoss && rnd < 10) {
               randomConnectionLoss();
               randomConnectionLoss();
             }

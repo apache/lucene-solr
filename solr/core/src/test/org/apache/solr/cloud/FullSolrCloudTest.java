@@ -838,10 +838,16 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         continue;
       }
    
+      boolean live = false;
+      String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
+      if (zkStateReader.getCloudState().liveNodesContain(nodeName)) {
+        live = true;
+      }
+      if (verbose) System.out.println(" live:" + live);
       boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
       if (verbose) System.out.println(" num:" + num + "\n" + (recovering ? "recovering" : ""));
       
-      if (!recovering) {
+      if (!recovering && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
           failMessage = "shard is not consistent, expected:" + lastNum
               + " and got:" + num;
