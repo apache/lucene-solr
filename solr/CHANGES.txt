@@ -217,12 +217,6 @@ Optimizations
 * SOLR-1904: When facet.enum.cache.minDf > 0 and the base doc set is a
   SortedIntSet, convert to HashDocSet for better performance. (yonik)
 
-* SOLR-1843: A new "rootName" attribute is now available when
-  configuring <jmx/> in solrconfig.xml.  If this attribute is set,
-  Solr will use it as the root name for all MBeans Solr exposes via
-  JMX.  The default root name is "solr" followed by the core name.
-  (Constantijn Visinescu, hossman)
-
 * SOLR-2092: Speed up single-valued and multi-valued "fc" faceting. Typical
   improvement is 5%, but can be much greater (up to 10x faster) when facet.offset
   is very large (deep paging). (yonik)
@@ -421,6 +415,12 @@ New Features
 
 * SOLR-2982: Added BeiderMorseFilterFactory for Beider-Morse (BMPM) phonetic encoder. Upgrades
   commons-codec to version 1.6  (Brooke Schreier Ganz, rmuir)
+
+* SOLR-1843: A new "rootName" attribute is now available when
+  configuring <jmx/> in solrconfig.xml.  If this attribute is set,
+  Solr will use it as the root name for all MBeans Solr exposes via
+  JMX.  The default root name is "solr" followed by the core name.
+  (Constantijn Visinescu, hossman)
 
 Bug Fixes
 ----------------------
