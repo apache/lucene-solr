@@ -42,6 +42,12 @@ New Features
 * SOLR-2982: Added BeiderMorseFilterFactory for Beider-Morse (BMPM) phonetic encoder. Upgrades
   commons-codec to version 1.6  (Brooke Schreier Ganz, rmuir)
 
+* SOLR-1843: A new "rootName" attribute is now available when
+  configuring <jmx/> in solrconfig.xml.  If this attribute is set,
+  Solr will use it as the root name for all MBeans Solr exposes via
+  JMX.  The default root name is "solr" followed by the core name.
+  (Constantijn Visinescu, hossman)
+
 Bug Fixes
 ----------------------
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
