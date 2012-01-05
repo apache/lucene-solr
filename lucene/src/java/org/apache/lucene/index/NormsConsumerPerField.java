@@ -60,16 +60,8 @@ public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implem
   }
   
   void flush(int docCount) throws IOException {
-    DocValuesConsumer consumer = this.consumer;
-    if (consumer == null && fieldInfo.isIndexed) {
-       consumer = getConsumer();
-      spare.bytes[0] = 0x00;
-      value.setBytes(spare, Type.BYTES_FIXED_STRAIGHT);
-      consumer.add(docCount-1, value);
-    } 
-    if (consumer != null) {
-      consumer.finish(docCount);
-    }
+    assert initialized();
+    consumer.finish(docCount);
   }
   
   private DocValuesConsumer getConsumer() throws IOException {
@@ -79,6 +71,9 @@ public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implem
     return consumer;
   }
   
+  boolean initialized() {
+    return consumer != null;
+  }
 
   @Override
   void abort() {

@@ -66,14 +66,14 @@ final class NormsConsumer extends InvertedDocEndConsumer {
       if (state.fieldInfos.hasNorms()) {
         for (FieldInfo fi : state.fieldInfos) {
           final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
+          // we must check the final value of omitNorms for the fieldinfo, it could have 
+          // changed for this field since the first time we added it.
           if (!fi.omitNorms) {
-            if (toWrite != null) {
+            if (toWrite != null && toWrite.initialized()) {
               anythingFlushed = true;
               toWrite.flush(state.numDocs);
             } else if (fi.isIndexed) {
               anythingFlushed = true;
-              // we must check the final value of omitNorms for the fieldinfo, it could have 
-              // changed for this field since the first time we added it.
               final DocValuesConsumer valuesConsumer = newConsumer(new PerDocWriteState(state), fi);
               final DocValuesField value = new DocValuesField("");
               value.setBytes(new BytesRef(new byte[] {0x00}), Type.BYTES_FIXED_STRAIGHT);
