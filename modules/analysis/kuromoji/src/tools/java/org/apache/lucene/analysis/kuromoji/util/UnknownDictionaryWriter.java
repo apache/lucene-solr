@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
+import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 
 public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
@@ -48,8 +49,8 @@ public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
    * @throws IOException
    */
   public void write(String baseDir) throws IOException {
-    writeDictionary(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + UnknownDictionary.DICT_FILENAME_SUFFIX);
-    writeTargetMap(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + UnknownDictionary.TARGETMAP_FILENAME_SUFFIX);
+    writeDictionary(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.DICT_FILENAME_SUFFIX);
+    writeTargetMap(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
     characterDefinition.write(baseDir);
   }
 }

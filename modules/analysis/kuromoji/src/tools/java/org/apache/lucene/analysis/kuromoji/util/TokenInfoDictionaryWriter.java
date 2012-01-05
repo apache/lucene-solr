@@ -31,6 +31,7 @@ import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
 
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
+import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 
 public class TokenInfoDictionaryWriter {
@@ -107,8 +108,8 @@ public class TokenInfoDictionaryWriter {
    * @throws IOException
    */
   public void write(String baseDir) throws IOException {
-    writeDictionary(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + TokenInfoDictionary.DICT_FILENAME_SUFFIX);
-    writeTargetMap(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + TokenInfoDictionary.TARGETMAP_FILENAME_SUFFIX);
+    writeDictionary(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.DICT_FILENAME_SUFFIX);
+    writeTargetMap(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
   }
   
   protected void writeTargetMap(String filename) throws IOException {
@@ -116,7 +117,7 @@ public class TokenInfoDictionaryWriter {
     try {
       os = new BufferedOutputStream(os);
       final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, TokenInfoDictionary.TARGETMAP_HEADER, TokenInfoDictionary.VERSION);
+      CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(targetMap.length);
       int nulls = 0;
       for (int[] a : targetMap) {
@@ -151,7 +152,7 @@ public class TokenInfoDictionaryWriter {
     final FileOutputStream os = new FileOutputStream(filename);
     try {
       final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, TokenInfoDictionary.DICT_HEADER, TokenInfoDictionary.VERSION);
+      CodecUtil.writeHeader(out, BinaryDictionary.DICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(buffer.position());
       final WritableByteChannel channel = Channels.newChannel(os);
       // Write Buffer
