@@ -22,22 +22,14 @@ import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 public final class Dictionaries {
   
   private static TokenInfoDictionary dictionary;
-  
   private static UnknownDictionary unknownDictionary;
-  
   private static ConnectionCosts costs;
-  
   private static DoubleArrayTrie trie;
-  
   static {
-    Dictionaries.dictionary = TokenInfoDictionary.getInstance();
-    Dictionaries.unknownDictionary = UnknownDictionary.getInstance();
-    try {
-      Dictionaries.costs = ConnectionCosts.getInstance();
-      Dictionaries.trie = DoubleArrayTrie.getInstance();
-    } catch (Exception ex) {
-      throw new RuntimeException("Could not load dictionaries!", ex);
-    }
+    dictionary = TokenInfoDictionary.getInstance();
+    unknownDictionary = UnknownDictionary.getInstance();
+    costs = ConnectionCosts.getInstance();
+    trie = DoubleArrayTrie.getInstance();
   }
   
   private Dictionaries() {} // no instance!
