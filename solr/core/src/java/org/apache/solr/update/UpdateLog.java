@@ -156,7 +156,14 @@ public class UpdateLog implements PluginInfoInitialized {
 
     versionInfo = new VersionInfo(uhandler, 256);
   }
+  
+  public File getLogDir() {
+    return tlogDir;
+  }
 
+  /* Takes over ownership of the log, keeping it until no longer needed
+     and then decrementing it's reference and dropping it.
+   */
   private void addOldLog(TransactionLog oldLog) {
     if (oldLog == null) return;
 
@@ -183,7 +190,9 @@ public class UpdateLog implements PluginInfoInitialized {
       break;
     }
 
-    oldLog.incref();  // prevent this from being deleted
+    // shouldn't need to incref... we are taking ownership, but becoming
+    // an additional user.
+    // oldLog.incref();
     logs.addFirst(oldLog);
   }
 
@@ -344,7 +353,8 @@ public class UpdateLog implements PluginInfoInitialized {
         // if we made it through the commit, write a commit command to the log
         // TODO: check that this works to cap a tlog we were using to buffer so we don't replay on startup.
         prevTlog.writeCommit(cmd);
-        prevTlog.decref();
+        // the old log list will decref when no longer needed
+        // prevTlog.decref();
         prevTlog = null;
       }
     }
@@ -623,6 +633,12 @@ public class UpdateLog implements PluginInfoInitialized {
         updates.add(updatesForLog);
       }
 
+    }
+    
+    public void close() {
+      for (TransactionLog log : logList) {
+        log.decref();
+      }
     }
   }
 

@@ -282,6 +282,8 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
     
     rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
+    
+    recentUpdates.close();  // cache this somehow?
   }
 
 
