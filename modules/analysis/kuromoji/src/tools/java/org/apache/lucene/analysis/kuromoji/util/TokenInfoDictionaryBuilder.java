@@ -33,7 +33,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 import org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder.DictionaryFormat;
 
 import com.ibm.icu.text.Normalizer2;
@@ -66,7 +65,7 @@ public class TokenInfoDictionaryBuilder {
     this.normalizer = normalizeEntries ? Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE) : null;
   }
   
-  public TokenInfoDictionary build(String dirname) throws IOException {
+  public TokenInfoDictionaryWriter build(String dirname) throws IOException {
     FilenameFilter filter = new FilenameFilter() {
       @Override
       public boolean accept(File dir, String name) {
@@ -81,8 +80,8 @@ public class TokenInfoDictionaryBuilder {
     return buildDictionary(csvFiles);
   }
   
-  public TokenInfoDictionary buildDictionary(List<File> csvFiles) throws IOException {
-    TokenInfoDictionary dictionary = new TokenInfoDictionary(10 * 1024 * 1024);
+  public TokenInfoDictionaryWriter buildDictionary(List<File> csvFiles) throws IOException {
+    TokenInfoDictionaryWriter dictionary = new TokenInfoDictionaryWriter(10 * 1024 * 1024);
     
     for (File file : csvFiles){
       FileInputStream inputStream = new FileInputStream(file);

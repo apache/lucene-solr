@@ -26,8 +26,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 
-import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
-
 public class UnknownDictionaryBuilder {
   private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*";
   
@@ -41,21 +39,20 @@ public class UnknownDictionaryBuilder {
     this.encoding = encoding;
   }
   
-  public UnknownDictionary build(String dirname) throws IOException {
-    UnknownDictionary unkDictionary = null;
-    unkDictionary = readDictionaryFile(dirname + File.separator + "unk.def");  //Should be only one file
+  public UnknownDictionaryWriter build(String dirname) throws IOException {
+    UnknownDictionaryWriter unkDictionary = readDictionaryFile(dirname + File.separator + "unk.def");  //Should be only one file
     readCharacterDefinition(dirname + File.separator + "char.def", unkDictionary);
     return unkDictionary;
   }
   
-  public UnknownDictionary readDictionaryFile(String filename)
+  public UnknownDictionaryWriter readDictionaryFile(String filename)
       throws IOException {
     return readDictionaryFile(filename, encoding);
   }
   
-  public UnknownDictionary readDictionaryFile(String filename, String encoding)
+  public UnknownDictionaryWriter readDictionaryFile(String filename, String encoding)
       throws IOException {
-    UnknownDictionary dictionary = new UnknownDictionary(5 * 1024 * 1024);
+    UnknownDictionaryWriter dictionary = new UnknownDictionaryWriter(5 * 1024 * 1024);
     
     FileInputStream inputStream = new FileInputStream(filename);
     Charset cs = Charset.forName(encoding);
@@ -75,7 +72,7 @@ public class UnknownDictionaryBuilder {
     return dictionary;
   }
   
-  public void readCharacterDefinition(String filename, UnknownDictionary dictionary) throws IOException {
+  public void readCharacterDefinition(String filename, UnknownDictionaryWriter dictionary) throws IOException {
     FileInputStream inputStream = new FileInputStream(filename);
     InputStreamReader streamReader = new InputStreamReader(inputStream, encoding);
     LineNumberReader lineReader = new LineNumberReader(streamReader);

@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 public class UnknownDictionary extends TokenInfoDictionary {
@@ -27,31 +26,6 @@ public class UnknownDictionary extends TokenInfoDictionary {
   public static final String TARGETMAP_FILENAME = "unk_map.dat";
   
   private CharacterDefinition characterDefinition;
-  
-  /**
-   * Constructor
-   */
-  public UnknownDictionary() {
-  }
-  
-  public UnknownDictionary(int size) {
-    super(size);
-    characterDefinition = new CharacterDefinition();    	
-  }
-  
-  @Override
-  public int put(String[] entry) {
-    // Get wordId of current entry
-    int wordId = buffer.position();
-    
-    // Put entry
-    int result = super.put(entry);
-    
-    // Put entry in targetMap
-    int characterId = CharacterDefinition.lookupCharacterClass(entry[0]);
-    addMapping(characterId, wordId);
-    return result;
-  }
   
   public int lookup(String text) {
     if(!characterDefinition.isGroup(text.charAt(0))) {
@@ -72,35 +46,8 @@ public class UnknownDictionary extends TokenInfoDictionary {
     return length;
   }
   
-  /**
-   * Put mapping from unicode code point to character class.
-   * 
-   * @param codePoint code point
-   * @param characterClassName character class name
-   */
-  public void putCharacterCategory(int codePoint, String characterClassName) {
-    characterDefinition.putCharacterCategory(codePoint, characterClassName);
-  }
-  
-  public void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
-    characterDefinition.putInvokeDefinition(characterClassName, invoke, group, length);
-  }
-  
-  
   public CharacterDefinition getCharacterDefinition() {
     return characterDefinition;
-  }
-  
-  /**
-   * Write dictionary in file
-   * Dictionary format is:
-   * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
-   * @throws IOException
-   */
-  public void write(String directoryname) throws IOException {
-    writeDictionary(directoryname + File.separator + FILENAME);
-    writeTargetMap(directoryname + File.separator + TARGETMAP_FILENAME);
-    characterDefinition.write(directoryname);
   }
   
   public static UnknownDictionary getInstance() throws IOException, ClassNotFoundException {

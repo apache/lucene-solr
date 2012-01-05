@@ -54,34 +54,68 @@
     <fileset dir="../icu/lib" includes="icu4j-*.jar"/>
   </path>
 
+  <path id="tools.classpath">
+    <path refid="classpath"/>
+    <path refid="tools.dependencies"/>
+    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/tools"/>
+  </path>
+
+  <path id="tools.test.classpath">
+    <path refid="tools.classpath"/>
+    <path refid="test.base.classpath"/>
+    <pathelement location="${build.dir}/classes/tools-test"/>
+  </path>
+
   <target name="build-dict" depends="compile-tools, download-dict">
-    <java fork="true" failonerror="true" maxmemory="512m" classname="org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder">
-      <classpath>
-        <path refid="classpath"/>
-        <pathelement path="${build.dir}/classes/java"/>
-        <pathelement path="${build.dir}/classes/tools"/>
-        <path refid="tools.dependencies"/>
-      </classpath>
-      <assertions>
-        <enable package="org.apache.lucene"/>
-      </assertions>
-      <arg value="${dict.format}"/>
-      <arg value="${dict.src.dir}"/>
-      <arg value="${dict.target.dir}"/>
-      <arg value="${dict.encoding}"/>
-      <arg value="${dict.normalize}"/>
-    </java>
+    <sequential>
+      <delete verbose="true">
+        <fileset dir="src/resources/org/apache/lucene/analysis/kuromoji" includes="**/*"/>
+      </delete>
+      <java fork="true" failonerror="true" maxmemory="512m" classname="org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder">
+        <classpath>
+          <path refid="tools.classpath"/>
+          <pathelement path="${build.dir}/classes/tools"/>
+        </classpath>
+        <assertions>
+          <enable package="org.apache.lucene"/>
+        </assertions>
+        <arg value="${dict.format}"/>
+        <arg value="${dict.src.dir}"/>
+        <arg value="${dict.target.dir}"/>
+        <arg value="${dict.encoding}"/>
+        <arg value="${dict.normalize}"/>
+      </java>
+    </sequential>
   </target>
 
-    <target name="compile-tools" depends="compile-core, common.compile-tools">
+  <target name="compile-tools" depends="compile-core, common.compile-tools">
     <compile
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">
       <classpath>
-        <path refid="classpath"/>
-        <pathelement path="${build.dir}/classes/java"/>
-        <path refid="tools.dependencies"/>
+        <path refid="tools.classpath"/>
+        <pathelement path="src/tools/java"/>
       </classpath>
     </compile>
   </target>
+
+  <target name="compile-tools-tests" depends="compile-tools">
+    <compile
+      srcdir="src/tools/test"
+      destdir="${build.dir}/classes/tools-test">
+      <classpath>
+        <path refid="tools.test.classpath"/>
+        <pathelement path="src/tools/test"/>
+      </classpath>
+     </compile>
+  </target>
+
+  <target name="test-tools" depends="compile-tools-tests">
+    <test-macro dataDir="src/tools/test" junit.classpath="tools.test.classpath"/>
+  </target>
+
+  <target name="compile-test" depends="contrib-build.compile-test, compile-tools-tests"/>
+  <target name="test" depends="contrib-build.test, test-tools"/>
+
 </project>

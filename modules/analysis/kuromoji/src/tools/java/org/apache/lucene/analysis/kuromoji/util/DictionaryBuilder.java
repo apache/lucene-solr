@@ -41,7 +41,7 @@ public class DictionaryBuilder {
       boolean normalizeEntry) throws IOException {
     System.out.println("building tokeninfo dict...");
     TokenInfoDictionaryBuilder tokenInfoBuilder = new TokenInfoDictionaryBuilder(format, encoding, normalizeEntry);
-    TokenInfoDictionary tokenInfoDictionary = tokenInfoBuilder.build(inputDirname);
+    TokenInfoDictionaryWriter tokenInfoDictionary = tokenInfoBuilder.build(inputDirname);
     
     System.out.print("  building double array trie...");
     DoubleArrayTrie trie = DoubleArrayTrieBuilder.build(tokenInfoBuilder.entrySet());
@@ -65,7 +65,7 @@ public class DictionaryBuilder {
     
     System.out.print("building unknown word dict...");
     UnknownDictionaryBuilder unkBuilder = new UnknownDictionaryBuilder(encoding);
-    UnknownDictionary unkDictionary = unkBuilder.build(inputDirname);
+    UnknownDictionaryWriter unkDictionary = unkBuilder.build(inputDirname);
     unkDictionary.write(outputDirname+File.separatorChar+UnknownDictionary.class.getPackage().getName().replace('.',File.separatorChar));
     System.out.println("done");
     

@@ -18,24 +18,15 @@ package org.apache.lucene.analysis.kuromoji.dict;
  */
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
 
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
@@ -52,72 +43,6 @@ public class TokenInfoDictionary implements Dictionary {
   protected ByteBuffer buffer;
   
   protected int[][] targetMap;
-  
-  public TokenInfoDictionary() {
-  }
-  
-  public TokenInfoDictionary(int size) {
-    targetMap = new int[1][];
-    buffer = ByteBuffer.allocate(size);
-  }
-  
-  /**
-   * put the entry in map
-   * @return current position of buffer, which will be wordId of next entry
-   */
-  public int put(String[] entry) {
-    short leftId = Short.parseShort(entry[1]);
-    short rightId = Short.parseShort(entry[2]);
-    short wordCost = Short.parseShort(entry[3]);
-    
-    StringBuilder sb = new StringBuilder();
-    for (int i = 4; i < entry.length; i++){
-      sb.append(entry[i]).append(INTERNAL_SEPARATOR);
-    }
-    String features = sb.deleteCharAt(sb.length() - 1).toString();
-    int featuresSize = features.length()* 2;
-    
-    // extend buffer if necessary
-    int left = buffer.limit() - buffer.position();
-    if (8 + featuresSize > left) { // four short and features
-      ByteBuffer newBuffer = ByteBuffer.allocate(buffer.limit() * 2);
-      buffer.flip();
-      newBuffer.put(buffer);
-      buffer = newBuffer;
-    }
-    
-    buffer.putShort(leftId);
-    buffer.putShort(rightId);
-    buffer.putShort(wordCost);
-    buffer.putShort((short)featuresSize);
-    for (char c : features.toCharArray()){
-      buffer.putChar(c);
-    }
-    
-    return buffer.position();
-  }
-  
-  public void addMapping(int sourceId, int wordId) {
-    if(targetMap.length <= sourceId) {
-      int[][] newArray = new int[sourceId + 1][];
-      System.arraycopy(targetMap, 0, newArray, 0, targetMap.length);
-      targetMap = newArray;
-    }
-    
-    // Prepare array -- extend the length of array by one
-    int[] current = targetMap[sourceId];
-    if (current == null) {
-      current = new int[1];
-    } else {
-      int[] newArray = new int[current.length + 1];
-      System.arraycopy(current, 0, newArray, 0, current.length);
-      current = newArray;
-    }
-    targetMap[sourceId] = current;
-    
-    int[] targets = targetMap[sourceId];
-    targets[targets.length - 1] = wordId;
-  }
   
   public int[] lookupWordIds(int sourceId) {
     return targetMap[sourceId];
@@ -190,69 +115,6 @@ public class TokenInfoDictionary implements Dictionary {
     String form = getFeature(wordId, 6);
     return "*".equals(form) ? null : form;
   }
-
-  /**
-   * Write dictionary in file
-   * Dictionary format is:
-   * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
-   * @throws IOException
-   */
-  public void write(String directoryname) throws IOException {
-    writeDictionary(directoryname + File.separator + FILENAME);
-    writeTargetMap(directoryname + File.separator + TARGETMAP_FILENAME);
-  }
-  
-  protected void writeTargetMap(String filename) throws IOException {
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
-      final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, TARGETMAP_HEADER, VERSION);
-      out.writeVInt(targetMap.length);
-      int nulls = 0;
-      for (int[] a : targetMap) {
-        if (a == null) {
-          // run-length encoding for all nulls:
-          if (nulls == 0) {
-            out.writeVInt(0);
-          }
-          nulls++;
-        } else {
-          if (nulls > 0) {
-            out.writeVInt(nulls);
-            nulls = 0;
-          }
-          assert a.length > 0;
-          out.writeVInt(a.length);
-          for (int i = 0; i < a.length; i++) {
-            out.writeVInt(a[i]);
-          }
-        }
-      }
-      // write the pending RLE count:
-      if (nulls > 0) {
-        out.writeVInt(nulls);
-      }
-    } finally {
-      os.close();
-    }
-  }
-  
-  protected void writeDictionary(String filename) throws IOException {
-    final FileOutputStream os = new FileOutputStream(filename);
-    try {
-      final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, DICT_HEADER, VERSION);
-      out.writeVInt(buffer.position());
-      final WritableByteChannel channel = Channels.newChannel(os);
-      // Write Buffer
-      buffer.flip();  // set position to 0, set limit to current position
-      channel.write(buffer);
-      assert buffer.remaining() == 0L;
-    } finally {
-      os.close();
-    }
-  }
   
   /**
    * Read dictionary into directly allocated buffer.
@@ -308,5 +170,4 @@ public class TokenInfoDictionary implements Dictionary {
       is.close();
     }
   }
-  
 }
