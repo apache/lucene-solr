@@ -20,6 +20,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
@@ -704,12 +705,12 @@ public abstract class TFIDFSimilarity extends Similarity {
 
   @Override
   public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactTFIDFDocScorer((IDFStats)stats, context.reader.norms(fieldName));
+    return new ExactTFIDFDocScorer((IDFStats)stats, context.reader.normValues(fieldName));
   }
 
   @Override
   public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyTFIDFDocScorer((IDFStats)stats, context.reader.norms(fieldName));
+    return new SloppyTFIDFDocScorer((IDFStats)stats, context.reader.normValues(fieldName));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
@@ -721,10 +722,10 @@ public abstract class TFIDFSimilarity extends Similarity {
     private static final int SCORE_CACHE_SIZE = 32;
     private float[] scoreCache = new float[SCORE_CACHE_SIZE];
     
-    ExactTFIDFDocScorer(IDFStats stats, byte norms[]) {
+    ExactTFIDFDocScorer(IDFStats stats, DocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
-      this.norms = norms;
+      this.norms = norms == null ? null : (byte[])norms.getSource().getArray(); 
       for (int i = 0; i < SCORE_CACHE_SIZE; i++)
         scoreCache[i] = tf(i) * weightValue;
     }
@@ -750,10 +751,10 @@ public abstract class TFIDFSimilarity extends Similarity {
     private final float weightValue;
     private final byte[] norms;
     
-    SloppyTFIDFDocScorer(IDFStats stats, byte norms[]) {
+    SloppyTFIDFDocScorer(IDFStats stats, DocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
-      this.norms = norms;
+      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
     }
     
     @Override

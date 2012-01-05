@@ -24,7 +24,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiNorms;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -74,8 +74,9 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   public void testBasics() throws Exception {
     // sanity check of norms writer
-    byte fooNorms[] = MultiNorms.norms(reader, "foo");
-    byte barNorms[] = MultiNorms.norms(reader, "bar");
+    // TODO: generalize
+    byte fooNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "foo").getSource().getArray();
+    byte barNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "bar").getSource().getArray();
     for (int i = 0; i < fooNorms.length; i++) {
       assertFalse(fooNorms[i] == barNorms[i]);
     }

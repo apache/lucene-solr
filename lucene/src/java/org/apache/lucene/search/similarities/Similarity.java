@@ -57,7 +57,7 @@ import org.apache.lucene.util.TermContext;
  * <a name="indextime"/>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to return a per-document byte for the field that will 
- * be later accessible via {@link IndexReader#norms(String)}.  Lucene makes no assumption
+ * be later accessible via {@link IndexReader#normValues(String)}.  Lucene makes no assumption
  * about what is in this byte, but it is most useful for encoding length normalization 
  * information.
  * <p>

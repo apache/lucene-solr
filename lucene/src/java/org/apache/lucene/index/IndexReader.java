@@ -727,26 +727,8 @@ public abstract class IndexReader implements Closeable {
     // backward compatible implementation.
     // SegmentReader has an efficient implementation.
     ensureOpen();
-    return norms(field) != null;
+    return normValues(field) != null;
   }
-
-  /** Returns the byte-encoded normalization factor for the named field of
-   *  every document.  This is used by the search code to score documents.
-   *  Returns null if norms were not indexed for this field.
-   *
-   * @see org.apache.lucene.document.Field#setBoost(float)
-   */
-  // TODO: cut over to source once we support other formats like float
-  public final byte[] norms(String field) throws IOException {
-    DocValues docValues = normValues(field);
-    if (docValues != null) {
-      Source source = docValues.getSource();
-      assert source.hasArray(); // TODO cut over to source
-      return (byte[])source.getArray();  
-    }
-    return null;
-  }
-  
 
   /**
    * Returns {@link Fields} for this reader.

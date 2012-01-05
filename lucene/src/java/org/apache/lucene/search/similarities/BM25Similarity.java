@@ -19,6 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
@@ -165,7 +166,7 @@ public class BM25Similarity extends Similarity {
 
   @Override
   public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    final byte[] norms = context.reader.norms(fieldName);
+    final DocValues norms = context.reader.normValues(fieldName);
     return norms == null 
       ? new ExactBM25DocScorerNoNorms((BM25Stats)stats)
       : new ExactBM25DocScorer((BM25Stats)stats, norms);
@@ -173,7 +174,7 @@ public class BM25Similarity extends Similarity {
 
   @Override
   public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
+    return new SloppyBM25DocScorer((BM25Stats) stats, context.reader.normValues(fieldName));
   }
   
   private class ExactBM25DocScorer extends ExactDocScorer {
@@ -182,12 +183,12 @@ public class BM25Similarity extends Similarity {
     private final byte[] norms;
     private final float[] cache;
     
-    ExactBM25DocScorer(BM25Stats stats, byte norms[]) {
+    ExactBM25DocScorer(BM25Stats stats, DocValues norms) throws IOException {
       assert norms != null;
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
       this.cache = stats.cache;
-      this.norms = norms;
+      this.norms = (byte[])norms.getSource().getArray();
     }
     
     @Override
@@ -235,11 +236,11 @@ public class BM25Similarity extends Similarity {
     private final byte[] norms;
     private final float[] cache;
     
-    SloppyBM25DocScorer(BM25Stats stats, byte norms[]) {
+    SloppyBM25DocScorer(BM25Stats stats, DocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.cache = stats.cache;
-      this.norms = norms;
+      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
     }
     
     @Override

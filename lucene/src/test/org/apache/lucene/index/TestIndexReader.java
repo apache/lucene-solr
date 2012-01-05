@@ -509,6 +509,7 @@ public class TestIndexReader extends LuceneTestCase {
         writer.addDocument(doc);
     }
 
+    // TODO: maybe this can reuse the logic of test dueling codecs?
     public static void assertIndexEquals(IndexReader index1, IndexReader index2) throws IOException {
       assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
       assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
@@ -531,13 +532,16 @@ public class TestIndexReader extends LuceneTestCase {
       it1 = fields1.iterator();
       while (it1.hasNext()) {
         String curField = it1.next();
-        byte[] norms1 = MultiNorms.norms(index1, curField);
-        byte[] norms2 = MultiNorms.norms(index2, curField);
+        DocValues norms1 = MultiDocValues.getNormDocValues(index1, curField);
+        DocValues norms2 = MultiDocValues.getNormDocValues(index2, curField);
         if (norms1 != null && norms2 != null)
         {
-          assertEquals(norms1.length, norms2.length);
-	        for (int i = 0; i < norms1.length; i++) {
-	          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1[i], norms2[i]);
+          // todo: generalize this (like TestDuelingCodecs assert)
+          byte[] b1 = (byte[]) norms1.getSource().getArray();
+          byte[] b2 = (byte[]) norms2.getSource().getArray();
+          assertEquals(b1.length, b2.length);
+	        for (int i = 0; i < b1.length; i++) {
+	          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", b1[i], b2[i]);
 	        }
         }
         else
