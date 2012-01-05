@@ -22,6 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -30,22 +31,50 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
-public class ConnectionCosts {
+public final class ConnectionCosts {
   
-  public static final String FILENAME = "cc.dat";
+  public static final String FILENAME_SUFFIX = ".dat";
   public static final String HEADER = "kuromoji_cc";
   public static final int VERSION = 1;
   
-  private short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
+  private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
   
-  public ConnectionCosts() {
-  }
-  
-  private ConnectionCosts(short[][] costs) {
+  private ConnectionCosts(boolean dummy) throws IOException {
+    assert dummy;
+        
+    IOException priorE = null;
+    InputStream is = null;
+    short[][] costs = null;
+    try {
+      is = getClass().getResourceAsStream(getClass().getSimpleName()+FILENAME_SUFFIX);
+      if (is == null)
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/')+FILENAME_SUFFIX);
+      is = new BufferedInputStream(is);
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
+      costs = new short[in.readVInt()][];
+      for (int j = 0; j < costs.length; j++) {
+        final int len = in.readVInt();
+        final short[] a = new short[len];
+        for (int i = 0; i < len; i++) {
+          a[i] = in.readShort();
+        }
+        costs[j] = a;
+      }
+    } catch (IOException ioe) {
+      priorE = ioe;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorE, is);
+    }
+    
     this.costs = costs;
   }
   
+  /**
+   * Constructor for building. TODO: remove write access
+   */
   public ConnectionCosts(int forwardSize, int backwardSize) {
     this.costs = new short[backwardSize][forwardSize]; 
   }
@@ -65,8 +94,9 @@ public class ConnectionCosts {
     }
   }
   
-  public void write(String directoryname) throws IOException {
-    String filename = directoryname + File.separator + FILENAME;
+  public void write(String baseDir) throws IOException {
+    String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
+    new File(filename).getParentFile().mkdirs();
     OutputStream os = new FileOutputStream(filename);
     try {
       os = new BufferedOutputStream(os);
@@ -84,29 +114,15 @@ public class ConnectionCosts {
     }
   }
   
-  public static ConnectionCosts getInstance() throws IOException, ClassNotFoundException {
-    InputStream is = ConnectionCosts.class.getResourceAsStream(FILENAME);
-    return read(is);
+  public synchronized static ConnectionCosts getInstance() {
+    if (singleton == null) try {
+      singleton = new ConnectionCosts(true);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Cannot load ConnectionCosts.", ioe);
+    }
+    return singleton;
   }
   
-  public static ConnectionCosts read(InputStream is) throws IOException, ClassNotFoundException {
-    is = new BufferedInputStream(is);
-    try {
-      final DataInput in = new InputStreamDataInput(is);
-      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
-      final short[][] costs = new short[in.readVInt()][];
-      for (int j = 0; j < costs.length; j++) {
-        final int len = in.readVInt();
-        final short[] a = new short[len];
-        for (int i = 0; i < len; i++) {
-          a[i] = in.readShort();
-        }
-        costs[j] = a;
-      }
-      return new ConnectionCosts(costs);
-    } finally {
-      is.close();
-    }
-  }
+  private static ConnectionCosts singleton;
   
 }

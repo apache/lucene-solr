@@ -113,6 +113,7 @@ public class TokenInfoDictionaryWriter {
   }
   
   protected void writeTargetMap(String filename) throws IOException {
+    new File(filename).getParentFile().mkdirs();
     OutputStream os = new FileOutputStream(filename);
     try {
       os = new BufferedOutputStream(os);
@@ -149,6 +150,7 @@ public class TokenInfoDictionaryWriter {
   }
   
   protected void writeDictionary(String filename) throws IOException {
+    new File(filename).getParentFile().mkdirs();
     final FileOutputStream os = new FileOutputStream(filename);
     try {
       final DataOutput out = new OutputStreamDataOutput(os);

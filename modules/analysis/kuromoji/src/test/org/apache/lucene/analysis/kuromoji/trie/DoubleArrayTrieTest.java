@@ -24,58 +24,19 @@ import java.io.IOException;
 import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 import org.apache.lucene.analysis.kuromoji.trie.Trie;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 public class DoubleArrayTrieTest extends LuceneTestCase {
 
   @Test
-  public void testBuild() {		
+  public void test() {		
     Trie trie = getTrie();
     DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
     doubleArrayTrie.build(trie);
-  }
-  
-  @Test
-  public void testWrite() throws IOException {
-    Trie trie = getTrie();
-    
-    DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
-    doubleArrayTrie.build(trie);
-    
-    try{
-      doubleArrayTrie.write("/some/path/which/is/not/exist");
-      fail();
-    }catch(IOException e){
-      
-    }
-    
-    File dir = _TestUtil.getTempDir("testWrite");
-    dir.mkdirs();
-    doubleArrayTrie.write(dir.getCanonicalPath());
-    
-    assertTrue(new File(dir, "dat.dat").exists());
-    
-  }
-  
-  @Test
-  public void testLookup() throws IOException {
-    Trie trie = getTrie();
-    
-    DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie();
-    doubleArrayTrie.build(trie);
-    
-    File dir = _TestUtil.getTempDir("testLookup");
-    dir.mkdirs();
-    doubleArrayTrie.write(dir.getCanonicalPath());
-    
-    doubleArrayTrie = DoubleArrayTrie.read(new FileInputStream(dir.getCanonicalPath() + File.separator + DoubleArrayTrie.FILENAME));
-    
     assertEquals(0, doubleArrayTrie.lookup("a"));
     assertTrue(doubleArrayTrie.lookup("abc") > 0);
     assertTrue(doubleArrayTrie.lookup("あいう") > 0);
     assertTrue(doubleArrayTrie.lookup("xyz") < 0);
-    
   }
   
   private Trie getTrie() {
@@ -86,6 +47,5 @@ public class DoubleArrayTrieTest extends LuceneTestCase {
     trie.add("あいう");
     return trie;
   }
-  
   
 }

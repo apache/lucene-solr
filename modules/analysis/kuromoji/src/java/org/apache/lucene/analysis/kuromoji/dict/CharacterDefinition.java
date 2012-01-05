@@ -148,6 +148,7 @@ public final class CharacterDefinition {
 
   public void write(String baseDir) throws IOException {
     String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
+    new File(filename).getParentFile().mkdirs();
     OutputStream os = new FileOutputStream(filename);
     try {
       os = new BufferedOutputStream(os);

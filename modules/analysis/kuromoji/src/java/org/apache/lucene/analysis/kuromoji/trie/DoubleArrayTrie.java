@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -37,10 +38,11 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 public class DoubleArrayTrie {
   
-  public static final String FILENAME = "dat.dat";
+  public static final String FILENAME_SUFFIX = ".dat";
   public static final String HEADER = "kuromoji_double_arr_trie";
   public static final int VERSION = 1;
   
@@ -60,16 +62,68 @@ public class DoubleArrayTrie {
   
   private int tailIndex = TAIL_OFFSET;
   
-  
-  public DoubleArrayTrie(){
+  /**
+   * Constructor for building. TODO: remove write access
+   */
+  public DoubleArrayTrie() {
   }
+  
+  private DoubleArrayTrie(boolean dummy) throws IOException {
+    assert dummy;
+    
+    IOException priorE = null;
+    InputStream is = null;
+    try {
+      is = getClass().getResourceAsStream(getClass().getSimpleName()+FILENAME_SUFFIX);
+      if (is == null)
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/')+FILENAME_SUFFIX);
+      is = new BufferedInputStream(is);
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
+      int baseCheckSize = in.readVInt();	// Read size of baseArr and checkArr
+      int tailSize = in.readVInt();		// Read size of tailArr
+      
+      ReadableByteChannel channel = Channels.newChannel(is);
+      
+      int toRead, read;
+      ByteBuffer tmpBaseBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);	// The size is 4 times the baseCheckSize since it is the length of array
+      read = channel.read(tmpBaseBuffer);
+      if (read != toRead) {
+        throw new EOFException("Cannot read DoubleArrayTree");
+      }
+      tmpBaseBuffer.rewind();
+      baseBuffer = tmpBaseBuffer.asIntBuffer().asReadOnlyBuffer();
+      
+      ByteBuffer tmpCheckBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);
+      read = channel.read(tmpCheckBuffer);
+      if (read != toRead) {
+        throw new EOFException("Cannot read DoubleArrayTree");
+      }
+      tmpCheckBuffer.rewind();
+      checkBuffer = tmpCheckBuffer.asIntBuffer().asReadOnlyBuffer();
+      
+      ByteBuffer tmpTailBuffer = ByteBuffer.allocateDirect(toRead = tailSize * 2);			// The size is 2 times the tailSize since it is the length of array
+      read = channel.read(tmpTailBuffer);
+      if (read != toRead) {
+        throw new EOFException("Cannot read DoubleArrayTree");
+      }
+      tmpTailBuffer.rewind();
+      tailBuffer = tmpTailBuffer.asCharBuffer().asReadOnlyBuffer();
+    } catch (IOException ioe) {
+      priorE = ioe;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorE, is);
+    }
+  }
+  
   
   /**
    * Write to file
    * @throws IOException
    */
-  public void write(String directoryname) throws IOException  {
-    String filename = directoryname + File.separator + FILENAME;
+  public void write(String baseDir) throws IOException  {
+    String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
+    new File(filename).getParentFile().mkdirs();
     
     baseBuffer.rewind();
     checkBuffer.rewind();
@@ -105,58 +159,6 @@ public class DoubleArrayTrie {
       assert tmpBuffer.remaining() == 0L;
     } finally {
       os.close();
-    }
-  }
-  
-  public static DoubleArrayTrie getInstance() throws IOException {
-    InputStream is = DoubleArrayTrie.class.getResourceAsStream(FILENAME);
-    return read(is);
-  }
-  
-  /**
-   * Load Stored data
-   * @throws IOException
-   */
-  public static DoubleArrayTrie read(InputStream is) throws IOException {
-    is = new BufferedInputStream(is);
-    try {
-      final DataInput in = new InputStreamDataInput(is);
-      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
-      int baseCheckSize = in.readVInt();	// Read size of baseArr and checkArr
-      int tailSize = in.readVInt();		// Read size of tailArr
-      
-      ReadableByteChannel channel = Channels.newChannel(is);
-      
-      DoubleArrayTrie trie = new DoubleArrayTrie();
-
-      int toRead, read;
-      ByteBuffer tmpBaseBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);	// The size is 4 times the baseCheckSize since it is the length of array
-      read = channel.read(tmpBaseBuffer);
-      if (read != toRead) {
-        throw new EOFException("Cannot read DoubleArrayTree");
-      }
-      tmpBaseBuffer.rewind();
-      trie.baseBuffer = tmpBaseBuffer.asIntBuffer().asReadOnlyBuffer();
-      
-      ByteBuffer tmpCheckBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);
-      read = channel.read(tmpCheckBuffer);
-      if (read != toRead) {
-        throw new EOFException("Cannot read DoubleArrayTree");
-      }
-      tmpCheckBuffer.rewind();
-      trie.checkBuffer = tmpCheckBuffer.asIntBuffer().asReadOnlyBuffer();
-      
-      ByteBuffer tmpTailBuffer = ByteBuffer.allocateDirect(toRead = tailSize * 2);			// The size is 2 times the tailSize since it is the length of array
-      read = channel.read(tmpTailBuffer);
-      if (read != toRead) {
-        throw new EOFException("Cannot read DoubleArrayTree");
-      }
-      tmpTailBuffer.rewind();
-      trie.tailBuffer = tmpTailBuffer.asCharBuffer().asReadOnlyBuffer();
-      
-      return trie;
-    } finally {
-      is.close();
     }
   }
   
@@ -337,4 +339,16 @@ public class DoubleArrayTrie {
       node = node.getChildren()[0];	// Move to next node
     }
   }
+  
+  public synchronized static DoubleArrayTrie getInstance() {
+    if (singleton == null) try {
+      singleton = new DoubleArrayTrie(true);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Cannot load DoubleArrayTrie.", ioe);
+    }
+    return singleton;
+  }
+  
+  private static DoubleArrayTrie singleton;
+  
 }
