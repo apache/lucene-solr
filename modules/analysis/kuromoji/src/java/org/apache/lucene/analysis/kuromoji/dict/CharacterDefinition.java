@@ -17,57 +17,74 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-import java.util.EnumMap;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 
-public final class CharacterDefinition implements Serializable {
-  private static final long serialVersionUID = -1436753619176638532L;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.CodecUtil;
+
+public final class CharacterDefinition {
+  public static final String FILENAME = "cd.dat";
+  public static final String HEADER = "kuromoji_cd";
+  public static final int VERSION = 1;
+
+  private static final int CLASS_COUNT = CharacterClass.values().length;
   
-  private final CharacterClass[] characterCategoryMap = new CharacterClass[65536];
-  
-  private final EnumMap<CharacterClass, int[]> invokeDefinitionMap =
-      new EnumMap<CharacterClass, int[]>(CharacterClass.class); // invoke, group, length
-      
-  public enum CharacterClass {
+  // only used internally for lookup:
+  private static enum CharacterClass {
     NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, KANJINUMERIC;
-    
-    public int getId() {
-      return ordinal();
-    }
   }
       
+  private final byte[] characterCategoryMap = new byte[0x10000];
+  
+  private final boolean[] invokeMap = new boolean[CLASS_COUNT];
+  private final boolean[] groupMap = new boolean[CLASS_COUNT];
+  
+  // the classes:
+  public static final byte NGRAM = (byte) CharacterClass.NGRAM.ordinal();
+  public static final byte DEFAULT = (byte) CharacterClass.DEFAULT.ordinal();
+  public static final byte SPACE = (byte) CharacterClass.SPACE.ordinal();
+  public static final byte SYMBOL = (byte) CharacterClass.SYMBOL.ordinal();
+  public static final byte NUMERIC = (byte) CharacterClass.NUMERIC.ordinal();
+  public static final byte ALPHA = (byte) CharacterClass.ALPHA.ordinal();
+  public static final byte CYRILLIC = (byte) CharacterClass.CYRILLIC.ordinal();
+  public static final byte GREEK = (byte) CharacterClass.GREEK.ordinal();
+  public static final byte HIRAGANA = (byte) CharacterClass.HIRAGANA.ordinal();
+  public static final byte KATAKANA = (byte) CharacterClass.KATAKANA.ordinal();
+  public static final byte KANJI = (byte) CharacterClass.KANJI.ordinal();
+  public static final byte KANJINUMERIC = (byte) CharacterClass.KANJINUMERIC.ordinal();
+  
   /**
    * Constructor
    */
   public CharacterDefinition() {
-    for (int i = 0; i < characterCategoryMap.length; i++) {
-      characterCategoryMap[i] = CharacterClass.DEFAULT;
-    }
+    Arrays.fill(characterCategoryMap, DEFAULT);
   }
   
-  public int lookup(char c) {
-    return characterCategoryMap[c].getId();
-  }
-  
-  public CharacterClass getCharacterClass(char c) {
+  public byte getCharacterClass(char c) {
     return characterCategoryMap[c];
   }
   
   public boolean isInvoke(char c) {
-    CharacterClass characterClass = characterCategoryMap[c];
-    int[] invokeDefinition = invokeDefinitionMap.get(characterClass);
-    return invokeDefinition[0] == 1;
+    return invokeMap[characterCategoryMap[c]];
   }
   
   public boolean isGroup(char c) {
-    CharacterClass characterClass = characterCategoryMap[c];
-    int[] invokeDefinition = invokeDefinitionMap.get(characterClass);
-    return invokeDefinition[1] == 1;
+    return groupMap[characterCategoryMap[c]];
   }
   
   public boolean isKanji(char c) {
-    return characterCategoryMap[c] == CharacterClass.KANJI ||
-        characterCategoryMap[c] == CharacterClass.KANJINUMERIC;
+    final byte characterClass = characterCategoryMap[c];
+    return characterClass == KANJI || characterClass == KANJINUMERIC;
   }
   
   /**
@@ -86,13 +103,61 @@ public final class CharacterDefinition implements Serializable {
     if (codePoint == 0x30FB) {
       characterClassName = "SYMBOL";
     }
-    characterCategoryMap[codePoint] = CharacterClass.valueOf(characterClassName);
+    characterCategoryMap[codePoint] = lookupCharacterClass(characterClassName);
   }
   
   public void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
-    CharacterClass characterClass = CharacterClass
-        .valueOf(characterClassName);
-    int[] values = { invoke, group, length };
-    invokeDefinitionMap.put(characterClass, values);
+    final byte characterClass = lookupCharacterClass(characterClassName);
+    invokeMap[characterClass] = invoke == 1;
+    groupMap[characterClass] = group == 1;
+    // TODO: length def ignored
   }
+  
+  public static byte lookupCharacterClass(String characterClassName) {
+    return (byte) CharacterClass.valueOf(characterClassName).ordinal();
+  }
+
+  public void write(String directoryname) throws IOException {
+    String filename = directoryname + File.separator + FILENAME;
+    OutputStream os = new FileOutputStream(filename);
+    try {
+      os = new BufferedOutputStream(os);
+      final DataOutput out = new OutputStreamDataOutput(os);
+      CodecUtil.writeHeader(out, HEADER, VERSION);
+      out.writeBytes(characterCategoryMap, 0, characterCategoryMap.length);
+      for (int i = 0; i < CLASS_COUNT; i++) {
+        final byte b = (byte) (
+          (invokeMap[i] ? 0x01 : 0x00) | 
+          (groupMap[i] ? 0x02 : 0x00)
+        );
+        out.writeByte(b);
+      }
+    } finally {
+      os.close();
+    }
+  }
+  
+  public static CharacterDefinition getInstance() throws IOException, ClassNotFoundException {
+    InputStream is = CharacterDefinition.class.getResourceAsStream(FILENAME);
+    return read(is);
+  }
+  
+  public static CharacterDefinition read(InputStream is) throws IOException, ClassNotFoundException {
+    is = new BufferedInputStream(is);
+    try {
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
+      CharacterDefinition cd = new CharacterDefinition();
+      in.readBytes(cd.characterCategoryMap, 0, cd.characterCategoryMap.length);
+      for (int i = 0; i < CLASS_COUNT; i++) {
+        final byte b = in.readByte();
+        cd.invokeMap[i] = (b & 0x01) != 0;
+        cd.groupMap[i] = (b & 0x02) != 0;
+      }
+      return cd;
+    } finally {
+      is.close();
+    }
+  }
+
 }

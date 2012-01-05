@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
-import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition.CharacterClass;
 import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
 
@@ -174,7 +173,7 @@ public class Viterbi {
       
       // EXTENDED mode convert unknown word into unigram node
       if (extendedMode && leftNode.getType() == Type.UNKNOWN) {
-        int unigramWordId = CharacterClass.NGRAM.getId();
+        byte unigramWordId = CharacterDefinition.NGRAM;
         int unigramLeftId = unkDictionary.getLeftId(unigramWordId); // isn't required
         int unigramRightId = unkDictionary.getLeftId(unigramWordId); // isn't required
         int unigramWordCost = unkDictionary.getWordCost(unigramWordId); // isn't required
@@ -256,7 +255,7 @@ public class Viterbi {
       
       if (unknownWordLength > 0) {      // found unknown word
         String unkWord = suffix.substring(0, unknownWordLength);
-        int characterId = characterDefinition.lookup(firstCharacter);
+        int characterId = characterDefinition.getCharacterClass(firstCharacter);
         int[] wordIds = unkDictionary.lookupWordIds(characterId); // characters in input text are supposed to be the same
         
         for (int wordId : wordIds) {

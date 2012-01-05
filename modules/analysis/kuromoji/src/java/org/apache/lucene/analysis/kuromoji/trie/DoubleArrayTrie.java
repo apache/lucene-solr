@@ -18,23 +18,31 @@ package org.apache.lucene.analysis.kuromoji.trie;
  */
 
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.EOFException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 import org.apache.lucene.analysis.kuromoji.trie.Trie.Node;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.CodecUtil;
 
 public class DoubleArrayTrie {
   
   public static final String FILENAME = "dat.dat";
+  public static final String HEADER = "kuromoji_double_arr_trie";
+  public static final int VERSION = 1;
   
   public static final char TERMINATING_CHARACTER = '\u0001';
   
@@ -67,35 +75,37 @@ public class DoubleArrayTrie {
     checkBuffer.rewind();
     tailBuffer.rewind();
     
-    File file = new File(filename);
-    if(file.exists()){
-      file.delete();
+    final FileOutputStream os = new FileOutputStream(filename);
+    try {
+      final DataOutput out = new OutputStreamDataOutput(os);
+      CodecUtil.writeHeader(out, HEADER, VERSION);
+      out.writeVInt(baseBuffer.capacity());
+      out.writeVInt(tailBuffer.capacity());
+      final WritableByteChannel channel = Channels.newChannel(os);
+      
+      ByteBuffer tmpBuffer = ByteBuffer.allocate(baseBuffer.capacity() * 4);
+      IntBuffer tmpIntBuffer = tmpBuffer.asIntBuffer();
+      tmpIntBuffer.put(baseBuffer);
+      tmpBuffer.rewind();
+      channel.write(tmpBuffer);
+      assert tmpBuffer.remaining() == 0L;
+      
+      tmpBuffer = ByteBuffer.allocate(checkBuffer.capacity() * 4);
+      tmpIntBuffer = tmpBuffer.asIntBuffer();
+      tmpIntBuffer.put(checkBuffer);
+      tmpBuffer.rewind();
+      channel.write(tmpBuffer);
+      assert tmpBuffer.remaining() == 0L;
+      
+      tmpBuffer = ByteBuffer.allocate(tailBuffer.capacity() * 2);
+      CharBuffer tmpCharBuffer = tmpBuffer.asCharBuffer();
+      tmpCharBuffer.put(tailBuffer);
+      tmpBuffer.rewind();
+      channel.write(tmpBuffer);
+      assert tmpBuffer.remaining() == 0L;
+    } finally {
+      os.close();
     }
-    
-    RandomAccessFile raf = new RandomAccessFile(filename, "rw");
-    FileChannel channel = raf.getChannel();
-    raf.writeInt(baseBuffer.capacity());
-    raf.writeInt(tailBuffer.capacity());		
-    
-    ByteBuffer tmpBuffer = ByteBuffer.allocate(baseBuffer.capacity() * 4);
-    IntBuffer tmpIntBuffer = tmpBuffer.asIntBuffer();
-    tmpIntBuffer.put(baseBuffer);
-    tmpBuffer.rewind();
-    channel.write(tmpBuffer);
-    
-    tmpBuffer = ByteBuffer.allocate(checkBuffer.capacity() * 4);
-    tmpIntBuffer = tmpBuffer.asIntBuffer();
-    tmpIntBuffer.put(checkBuffer);
-    tmpBuffer.rewind();
-    channel.write(tmpBuffer);
-    
-    tmpBuffer = ByteBuffer.allocate(tailBuffer.capacity() * 2);
-    CharBuffer tmpCharBuffer = tmpBuffer.asCharBuffer();
-    tmpCharBuffer.put(tailBuffer);
-    tmpBuffer.rewind();
-    channel.write(tmpBuffer);
-    
-    raf.close();
   }
   
   public static DoubleArrayTrie getInstance() throws IOException {
@@ -108,30 +118,46 @@ public class DoubleArrayTrie {
    * @throws IOException
    */
   public static DoubleArrayTrie read(InputStream is) throws IOException {
-    DoubleArrayTrie trie = new DoubleArrayTrie();
-    DataInputStream dis = new DataInputStream(new BufferedInputStream(is));
-    int baseCheckSize = dis.readInt();	// Read size of baseArr and checkArr
-    int tailSize = dis.readInt();		// Read size of tailArr
-    ReadableByteChannel channel = Channels.newChannel(dis);
-    
-    
-    ByteBuffer tmpBaseBuffer = ByteBuffer.allocateDirect(baseCheckSize * 4);	// The size is 4 times the baseCheckSize since it is the length of array
-    channel.read(tmpBaseBuffer);
-    tmpBaseBuffer.rewind();
-    trie.baseBuffer = tmpBaseBuffer.asIntBuffer().asReadOnlyBuffer();
-    
-    ByteBuffer tmpCheckBuffer = ByteBuffer.allocateDirect(baseCheckSize * 4);
-    channel.read(tmpCheckBuffer);
-    tmpCheckBuffer.rewind();
-    trie.checkBuffer = tmpCheckBuffer.asIntBuffer().asReadOnlyBuffer();
-    
-    ByteBuffer tmpTailBuffer = ByteBuffer.allocateDirect(tailSize * 2);			// The size is 2 times the tailSize since it is the length of array
-    channel.read(tmpTailBuffer);
-    tmpTailBuffer.rewind();
-    trie.tailBuffer = tmpTailBuffer.asCharBuffer().asReadOnlyBuffer();
-    
-    is.close();
-    return trie;
+    is = new BufferedInputStream(is);
+    try {
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
+      int baseCheckSize = in.readVInt();	// Read size of baseArr and checkArr
+      int tailSize = in.readVInt();		// Read size of tailArr
+      
+      ReadableByteChannel channel = Channels.newChannel(is);
+      
+      DoubleArrayTrie trie = new DoubleArrayTrie();
+
+      int toRead, read;
+      ByteBuffer tmpBaseBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);	// The size is 4 times the baseCheckSize since it is the length of array
+      read = channel.read(tmpBaseBuffer);
+      if (read != toRead) {
+        throw new EOFException("Cannot read DoubleArrayTree");
+      }
+      tmpBaseBuffer.rewind();
+      trie.baseBuffer = tmpBaseBuffer.asIntBuffer().asReadOnlyBuffer();
+      
+      ByteBuffer tmpCheckBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);
+      read = channel.read(tmpCheckBuffer);
+      if (read != toRead) {
+        throw new EOFException("Cannot read DoubleArrayTree");
+      }
+      tmpCheckBuffer.rewind();
+      trie.checkBuffer = tmpCheckBuffer.asIntBuffer().asReadOnlyBuffer();
+      
+      ByteBuffer tmpTailBuffer = ByteBuffer.allocateDirect(toRead = tailSize * 2);			// The size is 2 times the tailSize since it is the length of array
+      read = channel.read(tmpTailBuffer);
+      if (read != toRead) {
+        throw new EOFException("Cannot read DoubleArrayTree");
+      }
+      tmpTailBuffer.rewind();
+      trie.tailBuffer = tmpTailBuffer.asCharBuffer().asReadOnlyBuffer();
+      
+      return trie;
+    } finally {
+      is.close();
+    }
   }
   
   /**

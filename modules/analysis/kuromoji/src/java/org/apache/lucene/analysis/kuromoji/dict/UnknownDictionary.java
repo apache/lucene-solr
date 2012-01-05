@@ -17,24 +17,14 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
-import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition.CharacterClass;
 
 public class UnknownDictionary extends TokenInfoDictionary {
   
   public static final String FILENAME = "unk.dat";
   
   public static final String TARGETMAP_FILENAME = "unk_map.dat";
-  
-  public static final String CHARDEF_FILENAME = "cd.dat";
   
   private CharacterDefinition characterDefinition;
   
@@ -58,7 +48,7 @@ public class UnknownDictionary extends TokenInfoDictionary {
     int result = super.put(entry);
     
     // Put entry in targetMap
-    int characterId = CharacterClass.valueOf(entry[0]).getId();
+    int characterId = CharacterDefinition.lookupCharacterClass(entry[0]);
     addMapping(characterId, wordId);
     return result;
   }
@@ -69,10 +59,10 @@ public class UnknownDictionary extends TokenInfoDictionary {
     }
     
     // Extract unknown word. Characters with the same character class are considered to be part of unknown word
-    int characterIdOfFirstCharacter = characterDefinition.lookup(text.charAt(0));
+    byte characterIdOfFirstCharacter = characterDefinition.getCharacterClass(text.charAt(0));
     int length = 1;
     for (int i = 1; i < text.length(); i++) {
-      if (characterIdOfFirstCharacter == characterDefinition.lookup(text.charAt(i))){
+      if (characterIdOfFirstCharacter == characterDefinition.getCharacterClass(text.charAt(i))){
         length++;    			
       } else {
         break;
@@ -110,27 +100,15 @@ public class UnknownDictionary extends TokenInfoDictionary {
   public void write(String directoryname) throws IOException {
     writeDictionary(directoryname + File.separator + FILENAME);
     writeTargetMap(directoryname + File.separator + TARGETMAP_FILENAME);
-    writeCharDef(directoryname + File.separator + CHARDEF_FILENAME);
-  }
-  
-  protected void writeCharDef(String filename) throws IOException {
-    ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(filename)));		
-    oos.writeObject(characterDefinition);
-    oos.close();
+    characterDefinition.write(directoryname);
   }
   
   public static UnknownDictionary getInstance() throws IOException, ClassNotFoundException {
     UnknownDictionary dictionary = new UnknownDictionary();
+    dictionary.characterDefinition = CharacterDefinition.getInstance();
     dictionary.loadDictionary(UnknownDictionary.class.getResourceAsStream(FILENAME));
     dictionary.loadTargetMap(UnknownDictionary.class.getResourceAsStream(TARGETMAP_FILENAME));
-    dictionary.loadCharDef(UnknownDictionary.class.getResourceAsStream(CHARDEF_FILENAME));
     return dictionary;
-  }
-  
-  protected void loadCharDef(InputStream is) throws IOException, ClassNotFoundException {
-    ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is));
-    characterDefinition = (CharacterDefinition) ois.readObject();
-    ois.close();
   }
   
   @Override
