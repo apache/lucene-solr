@@ -101,7 +101,7 @@ public abstract class DocValuesConsumer {
   /**
    * Merges the given {@link SingleSubMergeState} into this {@link DocValuesConsumer}.
    * 
-   * @param mergeState
+   * @param state
    *          the {@link SingleSubMergeState} to merge
    * @throws IOException
    *           if an {@link IOException} occurs

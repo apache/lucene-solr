@@ -132,6 +132,11 @@ public class SimpleTextNormsProducer extends PerDocProducer {
     public Type type() {
       return Type.BYTES_FIXED_STRAIGHT;
     }
+
+    @Override
+    public int getValueSize() {
+      return 1;
+    }
   }
   
   static final class Norm extends Source {

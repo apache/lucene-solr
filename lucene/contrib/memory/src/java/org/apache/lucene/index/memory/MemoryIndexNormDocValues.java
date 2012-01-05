@@ -46,6 +46,11 @@ class MemoryIndexNormDocValues extends DocValues {
     return source.type();
   }
   
+  @Override
+  public int getValueSize() {
+    return 1;
+  }
+
   public static class SingleByteSource extends Source {
 
     private final byte[] bytes;

@@ -248,6 +248,11 @@ class Lucene3xNormsProducer extends PerDocProducer {
         }
       return bytes;
     }
+
+    @Override
+    public int getValueSize() {
+      return 1;
+    }
     
   }
 }
