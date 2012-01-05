@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.NormsWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -125,8 +124,7 @@ final class SegmentMerger {
     mergePerDoc(segmentWriteState);
     
     if (mergeState.fieldInfos.hasNorms()) {
-      int numMerged = mergeNorms(segmentWriteState);
-      assert numMerged == mergeState.mergedDocCount;
+      mergeNorms(segmentWriteState);
     }
 
     if (mergeState.fieldInfos.hasVectors()) {
@@ -379,20 +377,24 @@ final class SegmentMerger {
         }
       }
   }
-
-  private int mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
-    final NormsWriter writer = codec.normsFormat().normsWriter(segmentWriteState);
-    
+  
+  private void mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
+    final PerDocConsumer docsConsumer = codec.normsFormat()
+        .docsConsumer(new PerDocWriteState(segmentWriteState));
+    // TODO: remove this check when 3.x indexes are no longer supported
+    // (3.x indexes don't have docvalues)
+    if (docsConsumer == null) {
+      return;
+    }
     boolean success = false;
     try {
-      int numMerged = writer.merge(mergeState);
+      docsConsumer.merge(mergeState);
       success = true;
-      return numMerged;
     } finally {
       if (success) {
-        IOUtils.close(writer);
+        IOUtils.close(docsConsumer);
       } else {
-        IOUtils.closeWhileHandlingException(writer);
+        IOUtils.closeWhileHandlingException(docsConsumer);
       }
     }
   }

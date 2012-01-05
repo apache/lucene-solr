@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene40.values;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValue;
@@ -42,7 +43,7 @@ public final class Ints {
   private Ints() {
   }
   
-  public static Writer getWriter(Directory dir, String id, Counter bytesUsed,
+  public static DocValuesConsumer getWriter(Directory dir, String id, Counter bytesUsed,
       Type type, IOContext context) throws IOException {
     return type == Type.VAR_INTS ? new PackedIntValues.PackedIntsWriter(dir, id,
         bytesUsed, context) : new IntsWriter(dir, id, bytesUsed, context, type);
@@ -103,7 +104,7 @@ public final class Ints {
     }
     
     @Override
-    public void add(int docID, long v) throws IOException {
+    protected void add(int docID, long v) throws IOException {
       template.toBytes(v, bytesRef);
       add(docID, bytesRef);
     }

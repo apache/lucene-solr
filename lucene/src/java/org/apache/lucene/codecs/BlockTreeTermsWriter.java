@@ -17,10 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -42,7 +39,6 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
-import org.apache.lucene.util.fst.Util;
 
 /*
   TODO:
@@ -641,6 +637,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     }
 
     // for debugging
+    @SuppressWarnings("unused")
     private String toString(BytesRef b) {
       try {
         return b.utf8ToString() + " " + b;

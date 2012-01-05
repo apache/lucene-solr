@@ -619,6 +619,9 @@ New features
 * LUCENE-3638: Added sugar methods to IndexReader and IndexSearcher to
   load only certain fields when loading a document.  (Peter Chang via
   Mike McCandless)
+  
+* LUCENE-3628: Norms are represented as DocValues. IndexReader exposes
+  a #normValues(String) method to obtain norms per field. (Simon Willnauer) 
 
 Optimizations
 

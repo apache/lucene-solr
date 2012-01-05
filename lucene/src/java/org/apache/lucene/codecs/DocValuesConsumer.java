@@ -18,11 +18,14 @@ package org.apache.lucene.codecs;
  */
 import java.io.IOException;
 
+import org.apache.lucene.codecs.lucene40.values.Writer;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.DocValue;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Abstract API that consumes {@link DocValue}s.
@@ -34,6 +37,9 @@ import org.apache.lucene.util.Bits;
  * @lucene.experimental
  */
 public abstract class DocValuesConsumer {
+
+  protected Source currentMergeSource;
+  protected final BytesRef spare = new BytesRef();
 
   /**
    * Adds the given {@link DocValue} instance to this
@@ -83,6 +89,7 @@ public abstract class DocValuesConsumer {
         hasMerged = true;
         merge(new SingleSubMergeState(docValues[readerIDX], mergeState.docBase[readerIDX], reader.reader.maxDoc(),
                                     reader.liveDocs));
+        mergeState.checkAbort.work(reader.reader.maxDoc());
       }
     }
     // only finish if no exception is thrown!
@@ -99,10 +106,112 @@ public abstract class DocValuesConsumer {
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  // TODO: can't we have a default implementation here that merges naively with our apis?
-  // this is how stored fields and term vectors work. its a pain to have to impl merging
-  // (should be an optimization to override it)
-  protected abstract void merge(SingleSubMergeState mergeState) throws IOException;
+  protected void merge(SingleSubMergeState state) throws IOException {
+    // This enables bulk copies in subclasses per MergeState, subclasses can
+    // simply override this and decide if they want to merge
+    // segments using this generic implementation or if a bulk merge is possible
+    // / feasible.
+    final Source source = state.reader.getDirectSource();
+    assert source != null;
+    setNextMergeSource(source); // set the current enum we are working on - the
+    // impl. will get the correct reference for the type
+    // it supports
+    int docID = state.docBase;
+    final Bits liveDocs = state.liveDocs;
+    final int docCount = state.docCount;
+    for (int i = 0; i < docCount; i++) {
+      if (liveDocs == null || liveDocs.get(i)) {
+        mergeDoc(docID++, i);
+      }
+    }
+  }
+
+  /**
+   * Records the specified <tt>long</tt> value for the docID or throws an
+   * {@link UnsupportedOperationException} if this {@link Writer} doesn't record
+   * <tt>long</tt> values.
+   * 
+   * @throws UnsupportedOperationException
+   *           if this writer doesn't record <tt>long</tt> values
+   */
+  protected void add(int docID, long value) throws IOException {
+    throw new UnsupportedOperationException("override this method to support integer types");
+  }
+
+  /**
+   * Records the specified <tt>double</tt> value for the docID or throws an
+   * {@link UnsupportedOperationException} if this {@link Writer} doesn't record
+   * <tt>double</tt> values.
+   * 
+   * @throws UnsupportedOperationException
+   *           if this writer doesn't record <tt>double</tt> values
+   */
+  protected void add(int docID, double value) throws IOException {
+    throw new UnsupportedOperationException("override this method to support floating point types");
+  }
+
+  /**
+   * Records the specified {@link BytesRef} value for the docID or throws an
+   * {@link UnsupportedOperationException} if this {@link Writer} doesn't record
+   * {@link BytesRef} values.
+   * 
+   * @throws UnsupportedOperationException
+   *           if this writer doesn't record {@link BytesRef} values
+   */
+  protected void add(int docID, BytesRef value) throws IOException {
+    throw new UnsupportedOperationException("override this method to support byte types");
+  }
+
+  /**
+   * Merges a document with the given <code>docID</code>. The methods
+   * implementation obtains the value for the <i>sourceDoc</i> id from the
+   * current {@link Source} set to <i>setNextMergeSource(Source)</i>.
+   * <p>
+   * This method is used during merging to provide implementation agnostic
+   * default merge implementation.
+   * </p>
+   * <p>
+   * All documents IDs between the given ID and the previously given ID or
+   * <tt>0</tt> if the method is call the first time are filled with default
+   * values depending on the {@link Writer} implementation. The given document
+   * ID must always be greater than the previous ID or <tt>0</tt> if called the
+   * first time.
+   */
+  protected void mergeDoc(int docID, int sourceDoc)
+      throws IOException {
+    switch(currentMergeSource.type()) {
+    case BYTES_FIXED_DEREF:
+    case BYTES_FIXED_SORTED:
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_VAR_DEREF:
+    case BYTES_VAR_SORTED:
+    case BYTES_VAR_STRAIGHT:
+      add(docID, currentMergeSource.getBytes(sourceDoc, spare));
+      break;
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+    case FIXED_INTS_8:
+    case VAR_INTS:
+      add(docID, currentMergeSource.getInt(sourceDoc));
+      break;
+    case FLOAT_32:
+    case FLOAT_64:
+      add(docID, currentMergeSource.getFloat(sourceDoc));
+      break;
+    }
+  }
+  
+  /**
+   * Sets the next {@link Source} to consume values from on calls to
+   * {@link #mergeDoc(int, int)}
+   * 
+   * @param mergeSource
+   *          the next {@link Source}, this must not be null
+   */
+  protected final void setNextMergeSource(Source mergeSource) {
+    currentMergeSource = mergeSource;
+  }
 
   /**
    * Specialized auxiliary MergeState is necessary since we don't want to

@@ -32,12 +32,12 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new Lucene40DocValuesConsumer(state);
+    return new Lucene40DocValuesConsumer(state, Lucene40DocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX);
   }
 
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return new Lucene40DocValuesProducer(state);
+    return new Lucene40DocValuesProducer(state, Lucene40DocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX);
   }
 
   @Override

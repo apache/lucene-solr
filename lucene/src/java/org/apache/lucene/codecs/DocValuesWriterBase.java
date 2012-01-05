@@ -23,7 +23,6 @@ import java.util.Comparator;
 import org.apache.lucene.codecs.lucene40.values.Writer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadoc
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -38,7 +37,6 @@ import org.apache.lucene.util.Counter;
 //TODO: this needs to go under lucene40 codec (its specific to its impl)
 public abstract class DocValuesWriterBase extends PerDocConsumer {
   protected final String segmentName;
-  protected final String segmentSuffix;
   private final Counter bytesUsed;
   protected final IOContext context;
   private final boolean fasterButMoreRam;
@@ -58,7 +56,6 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
    */
   protected DocValuesWriterBase(PerDocWriteState state, boolean fasterButMoreRam) {
     this.segmentName = state.segmentName;
-    this.segmentSuffix = state.segmentSuffix;
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
     this.fasterButMoreRam = fasterButMoreRam;

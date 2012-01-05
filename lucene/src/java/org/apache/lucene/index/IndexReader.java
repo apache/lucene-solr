@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
@@ -735,7 +736,17 @@ public abstract class IndexReader implements Closeable {
    *
    * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public abstract byte[] norms(String field) throws IOException;
+  // TODO: cut over to source once we support other formats like float
+  public final byte[] norms(String field) throws IOException {
+    DocValues docValues = normValues(field);
+    if (docValues != null) {
+      Source source = docValues.getSource();
+      assert source.hasArray(); // TODO cut over to source
+      return (byte[])source.getArray();  
+    }
+    return null;
+  }
+  
 
   /**
    * Returns {@link Fields} for this reader.
@@ -1056,6 +1067,8 @@ public abstract class IndexReader implements Closeable {
    * using {@link ReaderUtil#gatherSubReaders} and iterate
    * through them yourself. */
   public abstract DocValues docValues(String field) throws IOException;
+  
+  public abstract DocValues normValues(String field) throws IOException;
 
   private volatile Fields fields;
 

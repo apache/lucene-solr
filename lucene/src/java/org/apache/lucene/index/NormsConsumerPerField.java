@@ -1,5 +1,4 @@
 package org.apache.lucene.index;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,65 +15,74 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
-/** Taps into DocInverter, as an InvertedDocEndConsumer,
- *  which is called at the end of inverting each field.  We
- *  just look at the length for the field (docState.length)
- *  and record the norm. */
-
-final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
-
-  final FieldInfo fieldInfo;
-  final DocumentsWriterPerThread.DocState docState;
-  final Similarity similarity;
+public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
+  private final FieldInfo fieldInfo;
+  private final DocumentsWriterPerThread.DocState docState;
+  private final Similarity similarity;
+  private final FieldInvertState fieldState;
+  private DocValuesConsumer consumer;
+  private final DocValuesField value = new DocValuesField("");
+  private final BytesRef spare = new BytesRef(1);
+  private final NormsConsumer parent;
   
-  // Holds all docID/norm pairs we've seen
-  int[] docIDs = new int[1];
-  byte[] norms = new byte[1];
-  int upto;
-
-  final FieldInvertState fieldState;
-
-  public void reset() {
-    // Shrink back if we are overallocated now:
-    docIDs = ArrayUtil.shrink(docIDs, upto);
-    norms = ArrayUtil.shrink(norms, upto);
-    upto = 0;
-  }
-
-  public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
+  public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo, NormsConsumer parent) {
     this.fieldInfo = fieldInfo;
+    this.parent = parent;
     docState = docInverterPerField.docState;
     fieldState = docInverterPerField.fieldState;
     similarity = docState.similarityProvider.get(fieldInfo.name);
-  }
+    spare.length = 1;
+    spare.offset = 0;
 
+  }
   @Override
-  void abort() {
-    upto = 0;
-  }
-
   public int compareTo(NormsConsumerPerField other) {
     return fieldInfo.name.compareTo(other.fieldInfo.name);
   }
-  
+
   @Override
-  void finish() {
+  void finish() throws IOException {
     if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {
-      if (docIDs.length <= upto) {
-        assert docIDs.length == upto;
-        docIDs = ArrayUtil.grow(docIDs, 1+upto);
-      }
-      if (norms.length <= upto) {
-        assert norms.length == upto;
-        norms = ArrayUtil.grow(norms, 1+upto);
-      }
-      norms[upto] = similarity.computeNorm(fieldState);
-      docIDs[upto] = docState.docID;
-      upto++;
+      DocValuesConsumer consumer = getConsumer();
+      spare.bytes[0] = similarity.computeNorm(fieldState);
+      value.setBytes(spare, Type.BYTES_FIXED_STRAIGHT);
+      consumer.add(docState.docID, value);
+      
+    }    
+  }
+  
+  void flush(int docCount) throws IOException {
+    DocValuesConsumer consumer = this.consumer;
+    if (consumer == null && fieldInfo.isIndexed) {
+       consumer = getConsumer();
+      spare.bytes[0] = 0x00;
+      value.setBytes(spare, Type.BYTES_FIXED_STRAIGHT);
+      consumer.add(docCount-1, value);
+    } 
+    if (consumer != null) {
+      consumer.finish(docCount);
     }
   }
+  
+  private DocValuesConsumer getConsumer() throws IOException {
+    if (consumer == null) {
+      consumer = parent.newConsumer(docState.docWriter.newPerDocWriteState(""), fieldInfo);
+    }
+    return consumer;
+  }
+  
+
+  @Override
+  void abort() {
+    //
+  }
+
 }

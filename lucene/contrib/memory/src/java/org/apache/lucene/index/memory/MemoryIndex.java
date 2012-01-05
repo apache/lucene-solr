@@ -48,6 +48,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleByteSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -1082,34 +1083,6 @@ public class MemoryIndex {
     private void setSearcher(IndexSearcher searcher) {
       this.searcher = searcher;
     }
-    
-    /** performance hack: cache norms to avoid repeated expensive calculations */
-    private byte[] cachedNorms;
-    private String cachedFieldName;
-    private SimilarityProvider cachedSimilarity;
-    
-    @Override
-    public byte[] norms(String fieldName) {
-      byte[] norms = cachedNorms;
-      SimilarityProvider sim = getSimilarityProvider();
-      if (!fieldName.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
-        Info info = getInfo(fieldName);
-        Similarity fieldSim = sim.get(fieldName);
-        int numTokens = info != null ? info.numTokens : 0;
-        int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
-        float boost = info != null ? info.getBoost() : 1.0f; 
-        FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
-        byte norm = fieldSim.computeNorm(invertState);
-        norms = new byte[] {norm};
-        
-        // cache it for future reuse
-        cachedNorms = norms;
-        cachedFieldName = fieldName;
-        cachedSimilarity = sim;
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + norm + ":" + numTokens);
-      }
-      return norms;
-    }
   
     @Override
     public int numDocs() {
@@ -1159,6 +1132,34 @@ public class MemoryIndex {
     @Override
     public DocValues docValues(String field) throws IOException {
       return null;
+    }
+    
+    /** performance hack: cache norms to avoid repeated expensive calculations */
+    private DocValues cachedNormValues;
+    private String cachedFieldName;
+    private SimilarityProvider cachedSimilarity;
+    
+    @Override
+    public DocValues normValues(String field) throws IOException {
+      DocValues norms = cachedNormValues;
+      SimilarityProvider sim = getSimilarityProvider();
+      if (!field.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
+        Info info = getInfo(field);
+        Similarity fieldSim = sim.get(field);
+        int numTokens = info != null ? info.numTokens : 0;
+        int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
+        float boost = info != null ? info.getBoost() : 1.0f; 
+        FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
+        byte norm = fieldSim.computeNorm(invertState);
+        SingleByteSource singleByteSource = new SingleByteSource(new byte[] {norm});
+        norms = new MemoryIndexNormDocValues(singleByteSource);
+        // cache it for future reuse
+        cachedNormValues = norms;
+        cachedFieldName = field;
+        cachedSimilarity = sim;
+        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + norm + ":" + numTokens);
+      }
+      return norms;
     }
   }
 

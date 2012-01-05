@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,13 @@ import org.apache.lucene.util.ReaderUtil.Gather;
  * @lucene.internal
  */
 public class MultiDocValues extends DocValues {
+  
+  private static DocValuesPuller DEFAULT_PULLER = new DocValuesPuller();
+  private static final DocValuesPuller NORMS_PULLER = new DocValuesPuller() {
+    public DocValues pull(IndexReader reader, String field) throws IOException {
+      return reader.normValues(field);
+    }
+  };
 
   public static class DocValuesSlice {
     public final static DocValuesSlice[] EMPTY_ARRAY = new DocValuesSlice[0];
@@ -44,6 +52,12 @@ public class MultiDocValues extends DocValues {
       this.docValues = docValues;
       this.start = start;
       this.length = length;
+    }
+  }
+  
+  private static class DocValuesPuller {
+    public DocValues pull(IndexReader reader, String field) throws IOException {
+      return reader.docValues(field);
     }
   }
 
@@ -58,7 +72,6 @@ public class MultiDocValues extends DocValues {
     this.type = promotedType.type();
     this.valueSize = promotedType.getValueSize();
   }
-  
   /**
    * Returns a single {@link DocValues} instance for this field, merging
    * their values on the fly.
@@ -68,15 +81,32 @@ public class MultiDocValues extends DocValues {
    * sub-readers (using {@link Gather}) and iterate through them yourself.
    */
   public static DocValues getDocValues(IndexReader r, final String field) throws IOException {
+    return getDocValues(r, field, DEFAULT_PULLER);
+  }
+  
+  /**
+   * Returns a single {@link DocValues} instance for this norms field, merging
+   * their values on the fly.
+   * 
+   * <p>
+   * <b>NOTE</b>: this is a slow way to access DocValues. It's better to get the
+   * sub-readers (using {@link Gather}) and iterate through them yourself.
+   */
+  public static DocValues getNormDocValues(IndexReader r, final String field) throws IOException {
+    return getDocValues(r, field, NORMS_PULLER);
+  }
+  
+ 
+  private static DocValues getDocValues(IndexReader r, final String field, final DocValuesPuller puller) throws IOException {
     final IndexReader[] subs = r.getSequentialSubReaders();
     if (subs == null) {
       // already an atomic reader
-      return r.docValues(field);
+      return puller.pull(r, field);
     } else if (subs.length == 0) {
       // no fields
       return null;
     } else if (subs.length == 1) {
-      return getDocValues(subs[0], field);
+      return getDocValues(subs[0], field, puller);
     } else {      
       final List<DocValuesSlice> slices = new ArrayList<DocValuesSlice>();
       
@@ -89,7 +119,7 @@ public class MultiDocValues extends DocValues {
       new ReaderUtil.Gather(r) {
         @Override
         protected void add(int base, IndexReader r) throws IOException {
-          final DocValues d = r.docValues(field);
+          final DocValues d = puller.pull(r, field);
           if (d != null) {
             TypePromoter incoming = TypePromoter.create(d.type(), d.getValueSize());
             promotedType[0] = promotedType[0].promote(incoming);
@@ -195,6 +225,7 @@ public class MultiDocValues extends DocValues {
     private final int[] starts;
     private final DocValuesSlice[] slices;
     private boolean direct;
+    private Object cachedArray; // cached array if supported
 
     public MultiSource(DocValuesSlice[] slices, int[] starts, boolean direct, Type type) {
       super(type);
@@ -243,6 +274,77 @@ public class MultiDocValues extends DocValues {
       final int doc = ensureSource(docID);
       return current.getBytes(doc, bytesRef);
     }
+
+    @Override
+    public boolean hasArray() {
+      boolean oneRealSource = false;
+      for (DocValuesSlice slice : slices) {
+        try {
+          Source source = slice.docValues.getSource();
+          if (source instanceof EmptySource) {
+            /*
+             * empty source marks a gap in the array skip if we encounter one
+             */
+            continue;
+          }
+          oneRealSource = true;
+          if (!source.hasArray()) {
+            return false;
+          }
+        } catch (IOException e) {
+          throw new RuntimeException("load failed", e);
+        }
+      }
+      return oneRealSource;
+    }
+
+    @Override
+    public Object getArray() {
+      if (!hasArray()) {
+        return null;
+      }
+      try {
+        Class<?> componentType = null;
+        Object[] arrays = new Object[slices.length];
+        int numDocs = 0;
+        for (int i = 0; i < slices.length; i++) {
+          DocValuesSlice slice = slices[i];
+          Source source = slice.docValues.getSource();
+          Object array = null;
+          if (!(source instanceof EmptySource)) {
+            // EmptySource is skipped - marks a gap in the array
+            array = source.getArray();
+          }
+          numDocs += slice.length;
+          if (array != null) {
+            if (componentType == null) {
+              componentType = array.getClass().getComponentType();
+            }
+            assert componentType == array.getClass().getComponentType();
+          }
+          arrays[i] = array;
+        }
+        assert componentType != null;
+        synchronized (this) {
+          if (cachedArray != null) {
+            return cachedArray;
+          }
+          final Object globalArray = Array.newInstance(componentType, numDocs);
+
+          for (int i = 0; i < slices.length; i++) {
+            DocValuesSlice slice = slices[i];
+            if (arrays[i] != null) {
+              assert slice.length == Array.getLength(arrays[i]);
+              System.arraycopy(arrays[i], 0, globalArray, slice.start,
+                  slice.length);
+            }
+          }
+          return cachedArray = globalArray;
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("load failed", e);
+      }
+    }
   }
 
   // TODO: this is dup of DocValues.getDefaultSource()?
@@ -269,7 +371,7 @@ public class MultiDocValues extends DocValues {
     }
   }
   
-  private static class EmptyFixedSource extends Source {
+  private static class EmptyFixedSource extends EmptySource {
     private final int valueSize;
     
     public EmptyFixedSource(Type type, int valueSize) {

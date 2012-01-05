@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +20,6 @@ package org.apache.lucene.index;
  */
 
 abstract class InvertedDocEndConsumerPerField {
-  abstract void finish();
+  abstract void finish() throws IOException;
   abstract void abort();
 }

@@ -39,16 +39,15 @@ import org.apache.lucene.util.IOUtils;
 public class Lucene40DocValuesProducer extends DocValuesReaderBase {
   protected final TreeMap<String,DocValues> docValues;
   private final Directory cfs;
-
   /**
    * Creates a new {@link Lucene40DocValuesProducer} instance and loads all
    * {@link DocValues} instances for this segment and codec.
    */
-  public Lucene40DocValuesProducer(SegmentReadState state) throws IOException {
-    if (state.fieldInfos.anyDocValuesFields()) {
+  public Lucene40DocValuesProducer(SegmentReadState state, String segmentSuffix) throws IOException {
+    if (anyDocValuesFields(state.fieldInfos)) {
       cfs = new CompoundFileDirectory(state.dir, 
                                       IndexFileNames.segmentFileName(state.segmentInfo.name,
-                                                                     Lucene40DocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION), 
+                                                                     segmentSuffix, IndexFileNames.COMPOUND_FILE_EXTENSION), 
                                       state.context, false);
       docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.docCount, cfs, state.context);
     } else {

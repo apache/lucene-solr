@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.sep;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesWriterBase;
@@ -28,6 +29,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Implementation of PerDocConsumer that uses separate files.
@@ -35,10 +37,11 @@ import org.apache.lucene.store.Directory;
  */
 public class SepDocValuesConsumer extends DocValuesWriterBase {
   private final Directory directory;
-  
+  private final FieldInfos fieldInfos;
   public SepDocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
     this.directory = state.directory;
+    fieldInfos = state.fieldInfos;
   }
   
   @Override
@@ -46,13 +49,16 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
     return directory;
   }
 
-  @SuppressWarnings("fallthrough")
   public static void files(Directory dir, SegmentInfo segmentInfo,
       Set<String> files) throws IOException {
-    FieldInfos fieldInfos = segmentInfo.getFieldInfos();
+    files(dir, segmentInfo.getFieldInfos(), segmentInfo.name, files);
+  }
+  
+  @SuppressWarnings("fallthrough")
+  private static void files(Directory dir,FieldInfos fieldInfos, String segmentName, Set<String> files)  {
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
-        String filename = docValuesId(segmentInfo.name, fieldInfo.number);
+        String filename = docValuesId(segmentName, fieldInfo.number);
         switch (fieldInfo.getDocValuesType()) {
           case BYTES_FIXED_DEREF:
           case BYTES_VAR_DEREF:
@@ -61,8 +67,13 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
           case BYTES_VAR_SORTED:
             files.add(IndexFileNames.segmentFileName(filename, "",
                 Writer.INDEX_EXTENSION));
+            try {
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
                 Writer.INDEX_EXTENSION));
+            } catch (IOException e) {
+              // don't throw checked exception - dir is only used in assert 
+              throw new RuntimeException(e);
+            }
             // until here all types use an index
           case BYTES_FIXED_STRAIGHT:
           case FLOAT_32:
@@ -74,13 +85,25 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
           case FIXED_INTS_8:
             files.add(IndexFileNames.segmentFileName(filename, "",
                 Writer.DATA_EXTENSION));
+          try {
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
                 Writer.DATA_EXTENSION));
+          } catch (IOException e) {
+            // don't throw checked exception - dir is only used in assert
+            throw new RuntimeException(e);
+          }
             break;
           default:
             assert false;
         }
       }
     }
+  }
+
+  @Override
+  public void abort() {
+    Set<String> files = new HashSet<String>();
+    files(directory, fieldInfos, segmentName, files);
+    IOUtils.deleteFilesIgnoringExceptions(directory, files.toArray(new String[0]));
   }
 }

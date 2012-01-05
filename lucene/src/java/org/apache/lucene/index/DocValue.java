@@ -20,8 +20,6 @@ import java.util.Comparator;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.document.DocValuesField;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -31,36 +29,6 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public interface DocValue {
-
-  /**
-   * Sets the given <code>long</code> value.
-   */
-  public void setInt(long value);
-
-  /**
-   * Sets the given <code>float</code> value.
-   */
-  public void setFloat(float value);
-
-  /**
-   * Sets the given <code>double</code> value.
-   */
-  public void setFloat(double value);
-
-  /**
-   * Sets the given {@link BytesRef} value and the field's {@link Type}. The
-   * comparator for this field is set to <code>null</code>. If a
-   * <code>null</code> comparator is set the default comparator for the given
-   * {@link Type} is used.
-   */
-  public void setBytes(BytesRef value, DocValues.Type type);
-
-  /**
-   * Sets the given {@link BytesRef} value, the field's {@link Type} and the
-   * field's comparator. If the {@link Comparator} is set to <code>null</code>
-   * the default for the given {@link Type} is used instead.
-   */
-  public void setBytes(BytesRef value, DocValues.Type type, Comparator<BytesRef> comp);
 
   /**
    * Returns the set {@link BytesRef} or <code>null</code> if not set.
@@ -82,19 +50,4 @@ public interface DocValue {
    */
   public long getInt();
 
-  /**
-   * Sets the {@link BytesRef} comparator for this field. If the field has a
-   * numeric {@link Type} the comparator will be ignored.
-   */
-  public void setBytesComparator(Comparator<BytesRef> comp);
-
-  /**
-   * Sets the {@link Type}
-   */
-  public void setDocValuesType(DocValues.Type type);
-
-  /**
-  * Returns the {@link Type}
-  */
-  public DocValues.Type docValueType();
 }

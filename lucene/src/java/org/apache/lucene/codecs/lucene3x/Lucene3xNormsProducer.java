@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +24,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import org.apache.lucene.codecs.NormsReader;
+import org.apache.lucene.codecs.PerDocProducer;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -32,14 +35,29 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.StringHelper;
 
-public class Lucene40NormsReader extends NormsReader {
-  // this would be replaced by Source/SourceCache in a dv impl.
-  // for now we have our own mini-version
-  final Map<String,Norm> norms = new HashMap<String,Norm>();
+/**
+ * Reads Lucene 3.x norms format and exposes it via DocValues API
+ * @lucene.experimental
+ */
+class Lucene3xNormsProducer extends PerDocProducer {
+  
+  /** norms header placeholder */
+  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
+  
+  /** Extension of norms file */
+  static final String NORMS_EXTENSION = "nrm";
+  
+  /** Extension of separate norms file
+   * @deprecated */
+  @Deprecated
+  static final String SEPARATE_NORMS_EXTENSION = "s";
+  
+  final Map<String,NormsDocValues> norms = new HashMap<String,NormsDocValues>();
   // any .nrm or .sNN files we have open at any time.
   // TODO: just a list, and double-close() separate norms files?
   final Set<IndexInput> openFiles = new MapBackedSet<IndexInput>(new IdentityHashMap<IndexInput,Boolean>());
@@ -49,20 +67,20 @@ public class Lucene40NormsReader extends NormsReader {
   
   // note: just like segmentreader in 3.x, we open up all the files here (including separate norms) up front.
   // but we just don't do any seeks or reading yet.
-  public Lucene40NormsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException {
+  public Lucene3xNormsProducer(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException {
     maxdoc = info.docCount;
     String segmentName = info.name;
     Map<Integer,Long> normGen = info.getNormGen();
     boolean success = false;
     try {
-      long nextNormSeek = Lucene40NormsWriter.NORMS_HEADER.length; //skip header (header unused for now)
+      long nextNormSeek = NORMS_HEADER.length; //skip header (header unused for now)
       for (FieldInfo fi : fields) {
         if (fi.isIndexed && !fi.omitNorms) {
           String fileName = getNormFilename(segmentName, normGen, fi.number);
           Directory d = hasSeparateNorms(normGen, fi.number) ? separateNormsDir : dir;
         
           // singleNormFile means multiple norms share this file
-          boolean singleNormFile = IndexFileNames.matchesExtension(fileName, Lucene40NormsWriter.NORMS_EXTENSION);
+          boolean singleNormFile = IndexFileNames.matchesExtension(fileName, NORMS_EXTENSION);
           IndexInput normInput = null;
           long normSeek;
 
@@ -90,19 +108,16 @@ public class Lucene40NormsReader extends NormsReader {
             if (isUnversioned) {
               normSeek = 0;
             } else {
-              normSeek = Lucene40NormsWriter.NORMS_HEADER.length;
+              normSeek = NORMS_HEADER.length;
             }
           }
-
-          Norm norm = new Norm();
-          norm.file = normInput;
-          norm.offset = normSeek;
+          NormsDocValues norm = new NormsDocValues(normInput, normSeek);
           norms.put(fi.name, norm);
           nextNormSeek += maxdoc; // increment also if some norms are separate
         }
       }
       // TODO: change to a real check? see LUCENE-3619
-      assert singleNormStream == null || nextNormSeek == singleNormStream.length();
+      assert singleNormStream == null || nextNormSeek == singleNormStream.length() : singleNormStream != null ? "len: " + singleNormStream.length() + " expected: " + nextNormSeek : "null";
       success = true;
     } finally {
       if (!success) {
@@ -112,12 +127,10 @@ public class Lucene40NormsReader extends NormsReader {
   }
   
   @Override
-  public byte[] norms(String name) throws IOException {
-    Norm norm = norms.get(name);
-    return norm == null ? null : norm.bytes();
+  public DocValues docValues(String field) throws IOException {
+    return norms.get(field);
   }
   
-
   @Override
   public void close() throws IOException {
     try {
@@ -130,10 +143,10 @@ public class Lucene40NormsReader extends NormsReader {
   
   private static String getNormFilename(String segmentName, Map<Integer,Long> normGen, int number) {
     if (hasSeparateNorms(normGen, number)) {
-      return IndexFileNames.fileNameFromGeneration(segmentName, Lucene40NormsWriter.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
+      return IndexFileNames.fileNameFromGeneration(segmentName, SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
     } else {
       // single file for all norms
-      return IndexFileNames.fileNameFromGeneration(segmentName, Lucene40NormsWriter.NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
+      return IndexFileNames.fileNameFromGeneration(segmentName, NORMS_EXTENSION, SegmentInfo.WITHOUT_GEN);
     }
   }
   
@@ -146,34 +159,38 @@ public class Lucene40NormsReader extends NormsReader {
     return gen != null && gen.longValue() != SegmentInfo.NO;
   }
   
-  class Norm {
-    IndexInput file;
-    long offset;
-    byte bytes[];
+  static final class NormSource extends Source {
+    protected NormSource(byte[] bytes) {
+      super(Type.BYTES_FIXED_STRAIGHT);
+      this.bytes = bytes;
+    }
+
+    final byte bytes[];
     
-    synchronized byte[] bytes() throws IOException {
-      if (bytes == null) {
-        bytes = new byte[maxdoc];
-        // some norms share fds
-        synchronized(file) {
-          file.seek(offset);
-          file.readBytes(bytes, 0, bytes.length, false);
-        }
-        // we are done with this file
-        if (file != singleNormStream) {
-          openFiles.remove(file);
-          file.close();
-          file = null;
-        }
-      }
+    @Override
+    public BytesRef getBytes(int docID, BytesRef ref) {
+      ref.bytes = bytes;
+      ref.offset = docID;
+      ref.length = 1;
+      return ref;
+    }
+
+    @Override
+    public boolean hasArray() {
+      return true;
+    }
+
+    @Override
+    public Object getArray() {
       return bytes;
     }
+    
   }
   
   static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     // TODO: This is what SI always did... but we can do this cleaner?
     // like first FI that has norms but doesn't have separate norms?
-    final String normsFileName = IndexFileNames.segmentFileName(info.name, "", Lucene40NormsWriter.NORMS_EXTENSION);
+    final String normsFileName = IndexFileNames.segmentFileName(info.name, "", NORMS_EXTENSION);
     if (dir.fileExists(normsFileName)) {
       files.add(normsFileName);
     }
@@ -188,9 +205,49 @@ public class Lucene40NormsReader extends NormsReader {
         long gen = entry.getValue();
         if (gen >= SegmentInfo.YES) {
           // Definitely a separate norm file, with generation:
-          files.add(IndexFileNames.fileNameFromGeneration(info.name, Lucene40NormsWriter.SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
+          files.add(IndexFileNames.fileNameFromGeneration(info.name, SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
         }
       }
     }
+  }
+
+  private class NormsDocValues extends DocValues {
+    private final IndexInput file;
+    private final long offset;
+    public NormsDocValues(IndexInput normInput, long normSeek) {
+      this.file = normInput;
+      this.offset = normSeek;
+    }
+
+    @Override
+    public Source load() throws IOException {
+      return new NormSource(bytes());
+    }
+
+    @Override
+    public Source getDirectSource() throws IOException {
+      return getSource();
+    }
+
+    @Override
+    public Type type() {
+      return Type.BYTES_FIXED_STRAIGHT;
+    }
+    
+    byte[] bytes() throws IOException {
+        byte[] bytes = new byte[maxdoc];
+        // some norms share fds
+        synchronized(file) {
+          file.seek(offset);
+          file.readBytes(bytes, 0, bytes.length, false);
+        }
+        // we are done with this file
+        if (file != singleNormStream) {
+          openFiles.remove(file);
+          file.close();
+        }
+      return bytes;
+    }
+    
   }
 }

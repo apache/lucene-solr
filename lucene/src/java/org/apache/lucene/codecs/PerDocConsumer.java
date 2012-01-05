@@ -20,7 +20,9 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.DocValues.Type;
 
 /**
  * Abstract API that consumes per document values. Concrete implementations of
@@ -32,7 +34,7 @@ import org.apache.lucene.index.MergeState;
  * 
  * @lucene.experimental
  */
-public abstract class PerDocConsumer implements Closeable{
+public abstract class PerDocConsumer implements Closeable {
   /** Adds a new DocValuesField */
   public abstract DocValuesConsumer addValuesField(DocValues.Type type, FieldInfo field)
       throws IOException;
@@ -46,14 +48,57 @@ public abstract class PerDocConsumer implements Closeable{
 
     for (FieldInfo fieldInfo : mergeState.fieldInfos) {
       mergeState.fieldInfo = fieldInfo; // set the field we are merging
-      if (fieldInfo.hasDocValues()) {
+      if (canMerge(fieldInfo)) {
         for (int i = 0; i < docValues.length; i++) {
-          docValues[i] = mergeState.readers.get(i).reader.docValues(fieldInfo.name);
+          docValues[i] = getDocValuesForMerge(mergeState.readers.get(i).reader, fieldInfo);
         }
-        final DocValuesConsumer docValuesConsumer = addValuesField(fieldInfo.getDocValuesType(), fieldInfo);
+        final DocValuesConsumer docValuesConsumer = addValuesField(getDocValuesType(fieldInfo), fieldInfo);
         assert docValuesConsumer != null;
         docValuesConsumer.merge(mergeState, docValues);
       }
     }
-  }  
+  }
+
+  /**
+   * Returns a {@link DocValues} instance for merging from the given reader for the given
+   * {@link FieldInfo}. This method is used for merging and uses
+   * {@link IndexReader#docValues(String)} by default.
+   * <p>
+   * To enable {@link DocValues} merging for different {@link DocValues} than
+   * the default override this method accordingly.
+   * <p>
+   */
+  protected DocValues getDocValuesForMerge(IndexReader reader, FieldInfo info) throws IOException {
+    return reader.docValues(info.name);
+  }
+  
+  /**
+   * Returns <code>true</code> iff the given field can be merged ie. has {@link DocValues}.
+   * By default this method uses {@link FieldInfo#hasDocValues()}.
+   * <p>
+   * To enable {@link DocValues} merging for different {@link DocValues} than
+   * the default override this method accordingly.
+   * <p>
+   */
+  protected boolean canMerge(FieldInfo info) {
+    return info.hasDocValues();
+  }
+  
+  /**
+   * Returns the {@link DocValues} {@link Type} for the given {@link FieldInfo}.
+   * By default this method uses {@link FieldInfo#getDocValuesType()}.
+   * <p>
+   * To enable {@link DocValues} merging for different {@link DocValues} than
+   * the default override this method accordingly.
+   * <p>
+   */
+  protected Type getDocValuesType(FieldInfo info) {
+    return info.getDocValuesType();
+  }
+  
+  /**
+   * Called during indexing if the indexing session is aborted due to a unrecoverable exception.
+   * This method should cleanup all resources.
+   */
+  public abstract void abort();
 }

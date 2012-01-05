@@ -21,8 +21,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.NormsWriter;
+import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store
@@ -33,14 +37,21 @@ import org.apache.lucene.util.IOUtils;
  */
 
 final class NormsConsumer extends InvertedDocEndConsumer {
-  final NormsFormat normsFormat;
+  private final NormsFormat normsFormat;
+  private PerDocConsumer consumer;
+  private final DocumentsWriterPerThread dwpt;
   
   public NormsConsumer(DocumentsWriterPerThread dwpt) {
     normsFormat = dwpt.codec.normsFormat();
+    this.dwpt = dwpt;
   }
 
   @Override
-  public void abort() {}
+  public void abort(){
+    if (consumer != null) {
+      consumer.abort();
+    }
+  }
 
   // We only write the _X.nrm file at flush
   void files(Collection<String> files) {}
@@ -49,50 +60,39 @@ final class NormsConsumer extends InvertedDocEndConsumer {
    *  not disabled */
   @Override
   public void flush(Map<FieldInfo,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
-    if (!state.fieldInfos.hasNorms()) {
-      return;
-    }
-
-    NormsWriter normsOut = null;
     boolean success = false;
+    boolean anythingFlushed = false;
     try {
-      normsOut = normsFormat.normsWriter(state);
-
-      for (FieldInfo fi : state.fieldInfos) {
-        final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
-        int upto = 0;
-        // we must check the final value of omitNorms for the fieldinfo, it could have 
-        // changed for this field since the first time we added it.
-        if (!fi.omitNorms && toWrite != null && toWrite.upto > 0) {
-          normsOut.startField(fi);
-          int docID = 0;
-          for (; docID < state.numDocs; docID++) {
-            if (upto < toWrite.upto && toWrite.docIDs[upto] == docID) {
-              normsOut.writeNorm(toWrite.norms[upto]);
-              upto++;
-            } else {
-              normsOut.writeNorm((byte) 0);
+      if (state.fieldInfos.hasNorms()) {
+        for (FieldInfo fi : state.fieldInfos) {
+          final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
+          if (!fi.omitNorms) {
+            if (toWrite != null) {
+              anythingFlushed = true;
+              toWrite.flush(state.numDocs);
+            } else if (fi.isIndexed) {
+              anythingFlushed = true;
+              // we must check the final value of omitNorms for the fieldinfo, it could have 
+              // changed for this field since the first time we added it.
+              final DocValuesConsumer valuesConsumer = newConsumer(new PerDocWriteState(state), fi);
+              final DocValuesField value = new DocValuesField("");
+              value.setBytes(new BytesRef(new byte[] {0x00}), Type.BYTES_FIXED_STRAIGHT);
+              valuesConsumer.add(state.numDocs-1, value);
+              valuesConsumer.finish(state.numDocs);
             }
           }
-
-          // we should have consumed every norm
-          assert upto == toWrite.upto;
-
-          toWrite.reset();
-        } else if (fi.isIndexed && !fi.omitNorms) {
-          // Fill entire field with default norm:
-          normsOut.startField(fi);
-          for(;upto<state.numDocs;upto++)
-            normsOut.writeNorm((byte) 0);
         }
-      }
-      normsOut.finish(state.numDocs);
+      } 
+      
       success = true;
+      if (!anythingFlushed && consumer != null) {
+        consumer.abort();
+      }
     } finally {
       if (success) {
-        IOUtils.close(normsOut);
+        IOUtils.close(consumer);
       } else {
-        IOUtils.closeWhileHandlingException(normsOut);
+        IOUtils.closeWhileHandlingException(consumer);
       }
     }
   }
@@ -106,6 +106,16 @@ final class NormsConsumer extends InvertedDocEndConsumer {
   @Override
   InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField,
       FieldInfo fieldInfo) {
-    return new NormsConsumerPerField(docInverterPerField, fieldInfo);
+    return new NormsConsumerPerField(docInverterPerField, fieldInfo, this);
+  }
+  
+  DocValuesConsumer newConsumer(PerDocWriteState perDocWriteState,
+      FieldInfo fieldInfo) throws IOException {
+    if (consumer == null) {
+      consumer = normsFormat.docsConsumer(perDocWriteState);
+    }
+    DocValuesConsumer addValuesField = consumer.addValuesField(
+        Type.BYTES_FIXED_STRAIGHT, fieldInfo);
+    return addValuesField;
   }
 }

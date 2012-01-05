@@ -131,6 +131,17 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
     
+    try {
+      PerDocConsumer perDocConsumer = perDocConsumers.get(0);
+      if (perDocConsumer != null) {
+        perDocConsumer.abort();  
+      }
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
+    
     // If any errors occured, throw it.
     if (th != null) {
       if (th instanceof RuntimeException) throw (RuntimeException) th;
@@ -329,7 +340,6 @@ final class DocFieldProcessor extends DocConsumer {
       perDocConsumer = dvFormat.docsConsumer(perDocWriteState);
       perDocConsumers.put(0, perDocConsumer);
     }
-
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
     fieldInfo.setDocValuesType(valueType);
 

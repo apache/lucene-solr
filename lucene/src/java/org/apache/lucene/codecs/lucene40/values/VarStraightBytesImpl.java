@@ -80,7 +80,7 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    public void add(int docID, BytesRef bytes) throws IOException {
+    protected void add(int docID, BytesRef bytes) throws IOException {
       assert !merge;
       if (bytes.length == 0) {
         return; // default

@@ -1,5 +1,4 @@
-package org.apache.lucene.codecs;
-
+package org.apache.lucene.codecs.preflexrw;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,11 +15,17 @@ package org.apache.lucene.codecs;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.Closeable;
 import java.io.IOException;
 
-//simple api just for now before switching to docvalues apis
-public abstract class NormsReader implements Closeable {
-  public abstract byte[] norms(String name) throws IOException;
+import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
+import org.apache.lucene.index.PerDocWriteState;
+
+public class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
+
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new PreFlexNormsConsumer(state.directory, state.segmentName, state.context);
+  }
+
 }
