@@ -102,7 +102,6 @@ public class ChaosMonkey {
     
     JettySolrRunner jetty = getRandomJetty(sliceName, DONTKILLLEADER);
     if (jetty != null) {
-      System.out.println("cause connection loss");
       causeConnectionLoss(jetty);
       connloss.incrementAndGet();
     }
@@ -114,28 +113,9 @@ public class ChaosMonkey {
     if (solrDispatchFilter != null) {
       CoreContainer cores = solrDispatchFilter.getCores();
       if (cores != null) {
-        ZkController zkController = cores.getZkController();
         SolrZkClient zkClient = cores.getZkController().getZkClient();
-        
-        // nocommit: two ways to try to force connectionloss...
         // must be at least double tick time...
         zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2);
-        
-        // open a new zk with same id and close it - should cause connection loss
-//        ZooKeeper zoo2;
-//        try {
-//          zoo2 = new ZooKeeper(zkController.getZkServerAddress(), zkClient.getSolrZooKeeper().getSessionTimeout(),
-//          null,
-//          zkClient.getSolrZooKeeper().getSessionId(), null);
-//          zoo2.close();
-//        } catch (IOException e1) {
-//          // TODO Auto-generated catch block
-//          e1.printStackTrace();
-//        } catch (InterruptedException e) {
-//          // TODO Auto-generated catch block
-//          e.printStackTrace();
-//        }
-
       }
     }
   }
@@ -351,7 +331,6 @@ public class ChaosMonkey {
             
             if (random.nextBoolean()) {
              if (!deadPool.isEmpty()) {
-               //System.out.println("start jetty");
                JettySolrRunner jetty = deadPool.remove(random.nextInt(deadPool.size()));
                if (jetty.isRunning()) {
                  
@@ -381,7 +360,7 @@ public class ChaosMonkey {
             }
             
             int rnd = random.nextInt(10);
-            // nocommit: we dont randomly expire yet
+
             if (expireSessions && rnd < 8) {
               expireRandomSession();
             } 
@@ -398,7 +377,7 @@ public class ChaosMonkey {
               jetty = killRandomShard();
             }
             if (jetty == null) {
-              // System.out.println("we cannot kill");
+              // we cannot kill
             } else {
               deadPool.add(jetty);
             }

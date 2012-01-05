@@ -3,7 +3,7 @@ package org.apache.zookeeper;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
-// nocommit - we use this class to expose nasty stuff for tests
+// we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
 
   public SolrZooKeeper(String connectString, int sessionTimeout,

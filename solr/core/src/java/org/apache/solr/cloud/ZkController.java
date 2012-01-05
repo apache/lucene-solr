@@ -158,7 +158,7 @@ public final class ZkController {
                   .getCurrentDescriptors();
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
-                  // nocommit: we need to think carefully about what happens when it was
+                  // TODO: we need to think carefully about what happens when it was
                   // a leader that was expired - as well as what to do about leaders/overseers
                   // with connection loss
                   register(descriptor.getName(), descriptor, true);

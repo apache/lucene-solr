@@ -247,7 +247,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     cmdDistrib.finish();
     Response response = cmdDistrib.getResponse();
-    // nocommit - we may need to tell about more than one error...
+    // TODO - we may need to tell about more than one error...
     
     // if its a forward, any fail is a problem - 
     // otherwise we assume things are fine if we got it locally
@@ -264,12 +264,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     for (SolrCmdDistributor.Error error : response.errors) {
       if (error.node instanceof RetryNode) {
+        // we don't try to force a leader to recover
+        // when we cannot forward to it
         continue;
       }
       // TODO: we should force their state to recovering ??
       
       // TODO: do retries??
-      // TODO: what if its is already recovering? Right now they line up -
+      // TODO: what if its is already recovering? Right now recoveries queue up -
       // should they?
       CommonsHttpSolrServer server;
       try {
