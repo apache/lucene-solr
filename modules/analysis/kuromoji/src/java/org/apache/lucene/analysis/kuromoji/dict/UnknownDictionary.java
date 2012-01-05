@@ -19,13 +19,13 @@ package org.apache.lucene.analysis.kuromoji.dict;
 
 import java.io.IOException;
 
-public class UnknownDictionary extends TokenInfoDictionary {
+public class UnknownDictionary extends BinaryDictionary {
+
+  private final CharacterDefinition characterDefinition = CharacterDefinition.getInstance();
   
-  public static final String FILENAME = "unk.dat";
-  
-  public static final String TARGETMAP_FILENAME = "unk_map.dat";
-  
-  private CharacterDefinition characterDefinition;
+  private UnknownDictionary() throws IOException {
+    super();
+  }
   
   public int lookup(String text) {
     if(!characterDefinition.isGroup(text.charAt(0))) {
@@ -50,16 +50,20 @@ public class UnknownDictionary extends TokenInfoDictionary {
     return characterDefinition;
   }
   
-  public static UnknownDictionary getInstance() throws IOException, ClassNotFoundException {
-    UnknownDictionary dictionary = new UnknownDictionary();
-    dictionary.characterDefinition = CharacterDefinition.getInstance();
-    dictionary.loadDictionary(UnknownDictionary.class.getResourceAsStream(FILENAME));
-    dictionary.loadTargetMap(UnknownDictionary.class.getResourceAsStream(TARGETMAP_FILENAME));
-    return dictionary;
-  }
-  
   @Override
   public String getReading(int wordId) {
     return null;
   }
+
+  public synchronized static UnknownDictionary getInstance() {
+    if (singleton == null) try {
+      singleton = new UnknownDictionary();
+    } catch (IOException ioe) {
+      throw new RuntimeException("Cannot load UnknownDictionary.", ioe);
+    }
+    return singleton;
+  }
+  
+  private static UnknownDictionary singleton;
+  
 }

@@ -56,7 +56,7 @@ public class DictionaryBuilder {
       assert doubleArrayId > 0;
       tokenInfoDictionary.addMapping(doubleArrayId, tokenInfoId);
     }		
-    tokenInfoDictionary.write(outputDirname+File.separatorChar+TokenInfoDictionary.class.getPackage().getName().replace('.',File.separatorChar));
+    tokenInfoDictionary.write(outputDirname);
     trie = null;
     tokenInfoBuilder = null;
     
@@ -66,7 +66,7 @@ public class DictionaryBuilder {
     System.out.print("building unknown word dict...");
     UnknownDictionaryBuilder unkBuilder = new UnknownDictionaryBuilder(encoding);
     UnknownDictionaryWriter unkDictionary = unkBuilder.build(inputDirname);
-    unkDictionary.write(outputDirname+File.separatorChar+UnknownDictionary.class.getPackage().getName().replace('.',File.separatorChar));
+    unkDictionary.write(outputDirname);
     System.out.println("done");
     
     System.out.print("building connection costs...");

@@ -106,9 +106,9 @@ public class TokenInfoDictionaryWriter {
    * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
    * @throws IOException
    */
-  public void write(String directoryname) throws IOException {
-    writeDictionary(directoryname + File.separator + TokenInfoDictionary.FILENAME);
-    writeTargetMap(directoryname + File.separator + TokenInfoDictionary.TARGETMAP_FILENAME);
+  public void write(String baseDir) throws IOException {
+    writeDictionary(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + TokenInfoDictionary.DICT_FILENAME_SUFFIX);
+    writeTargetMap(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + TokenInfoDictionary.TARGETMAP_FILENAME_SUFFIX);
   }
   
   protected void writeTargetMap(String filename) throws IOException {

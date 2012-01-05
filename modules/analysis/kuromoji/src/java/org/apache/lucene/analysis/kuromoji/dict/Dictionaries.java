@@ -30,15 +30,17 @@ public final class Dictionaries {
   private static DoubleArrayTrie trie;
   
   static {
+    Dictionaries.dictionary = TokenInfoDictionary.getInstance();
+    Dictionaries.unknownDictionary = UnknownDictionary.getInstance();
     try {
-      Dictionaries.dictionary = TokenInfoDictionary.getInstance();
-      Dictionaries.unknownDictionary = UnknownDictionary.getInstance();
       Dictionaries.costs = ConnectionCosts.getInstance();
       Dictionaries.trie = DoubleArrayTrie.getInstance();
     } catch (Exception ex) {
       throw new RuntimeException("Could not load dictionaries!", ex);
     }
   }
+  
+  private Dictionaries() {} // no instance!
   
   /**
    * @return the dictionary

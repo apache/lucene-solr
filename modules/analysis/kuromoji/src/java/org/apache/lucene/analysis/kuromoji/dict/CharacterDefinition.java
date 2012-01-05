@@ -22,6 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -31,9 +32,11 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 public final class CharacterDefinition {
-  public static final String FILENAME = "cd.dat";
+
+  public static final String FILENAME_SUFFIX = ".dat";
   public static final String HEADER = "kuromoji_cd";
   public static final int VERSION = 1;
 
@@ -64,10 +67,36 @@ public final class CharacterDefinition {
   public static final byte KANJINUMERIC = (byte) CharacterClass.KANJINUMERIC.ordinal();
   
   /**
-   * Constructor
+   * Constructor for building. TODO: remove write access
    */
   public CharacterDefinition() {
     Arrays.fill(characterCategoryMap, DEFAULT);
+  }
+  
+  // used only for singleton
+  private CharacterDefinition(boolean dummy) throws IOException {
+    assert dummy;
+    
+    IOException priorE = null;
+    InputStream is = null;
+    try {
+      is = getClass().getResourceAsStream(getClass().getSimpleName()+FILENAME_SUFFIX);
+      if (is == null)
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/')+FILENAME_SUFFIX);
+      is = new BufferedInputStream(is);
+      final DataInput in = new InputStreamDataInput(is);
+      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
+      in.readBytes(characterCategoryMap, 0, characterCategoryMap.length);
+      for (int i = 0; i < CLASS_COUNT; i++) {
+        final byte b = in.readByte();
+        invokeMap[i] = (b & 0x01) != 0;
+        groupMap[i] = (b & 0x02) != 0;
+      }
+    } catch (IOException ioe) {
+      priorE = ioe;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorE, is);
+    }
   }
   
   public byte getCharacterClass(char c) {
@@ -117,8 +146,8 @@ public final class CharacterDefinition {
     return (byte) CharacterClass.valueOf(characterClassName).ordinal();
   }
 
-  public void write(String directoryname) throws IOException {
-    String filename = directoryname + File.separator + FILENAME;
+  public void write(String baseDir) throws IOException {
+    String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
     OutputStream os = new FileOutputStream(filename);
     try {
       os = new BufferedOutputStream(os);
@@ -137,27 +166,15 @@ public final class CharacterDefinition {
     }
   }
   
-  public static CharacterDefinition getInstance() throws IOException, ClassNotFoundException {
-    InputStream is = CharacterDefinition.class.getResourceAsStream(FILENAME);
-    return read(is);
+  public synchronized static CharacterDefinition getInstance() {
+    if (singleton == null) try {
+      singleton = new CharacterDefinition(true);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Cannot load CharacterDefinition.", ioe);
+    }
+    return singleton;
   }
   
-  public static CharacterDefinition read(InputStream is) throws IOException, ClassNotFoundException {
-    is = new BufferedInputStream(is);
-    try {
-      final DataInput in = new InputStreamDataInput(is);
-      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
-      CharacterDefinition cd = new CharacterDefinition();
-      in.readBytes(cd.characterCategoryMap, 0, cd.characterCategoryMap.length);
-      for (int i = 0; i < CLASS_COUNT; i++) {
-        final byte b = in.readByte();
-        cd.invokeMap[i] = (b & 0x01) != 0;
-        cd.groupMap[i] = (b & 0x02) != 0;
-      }
-      return cd;
-    } finally {
-      is.close();
-    }
-  }
-
+  private static CharacterDefinition singleton;
+  
 }

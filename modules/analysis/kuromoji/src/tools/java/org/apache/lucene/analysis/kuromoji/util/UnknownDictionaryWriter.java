@@ -47,9 +47,9 @@ public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
    * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
    * @throws IOException
    */
-  public void write(String directoryname) throws IOException {
-    writeDictionary(directoryname + File.separator + UnknownDictionary.FILENAME);
-    writeTargetMap(directoryname + File.separator + UnknownDictionary.TARGETMAP_FILENAME);
-    characterDefinition.write(directoryname);
+  public void write(String baseDir) throws IOException {
+    writeDictionary(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + UnknownDictionary.DICT_FILENAME_SUFFIX);
+    writeTargetMap(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + UnknownDictionary.TARGETMAP_FILENAME_SUFFIX);
+    characterDefinition.write(baseDir);
   }
 }
