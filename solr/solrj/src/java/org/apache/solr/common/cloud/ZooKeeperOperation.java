@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 import org.apache.zookeeper.KeeperException;
 
 /**
  * A callback object which can be used for implementing retry-able operations in the 
- * {@link org.apache.zookeeper.ZkCmdExecutor.lock.ProtocolSupport} class
+ * {@link org.apache.solr.common.cloud.ZkCmdExecutor.lock.ProtocolSupport} class
  *
  */
 public interface ZooKeeperOperation {

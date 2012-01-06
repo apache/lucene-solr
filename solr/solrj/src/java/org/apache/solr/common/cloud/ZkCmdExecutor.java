@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -83,7 +82,7 @@ public class ZkCmdExecutor {
    * @return object. it needs to be cast to the callee's expected return type.
    */
   @SuppressWarnings("unchecked")
-  protected <T> T retryOperation(ZooKeeperOperation operation)
+  public <T> T retryOperation(ZooKeeperOperation operation)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
     for (int i = 0; i < retryCount; i++) {

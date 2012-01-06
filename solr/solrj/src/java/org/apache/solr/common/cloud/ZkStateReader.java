@@ -119,9 +119,12 @@ public class ZkStateReader {
   private SolrZkClient zkClient;
   
   private boolean closeClient = false;
+
+  private ZkCmdExecutor cmdExecutor;
   
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
+    cmdExecutor = new ZkCmdExecutor(zkClient);
   }
   
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
@@ -147,6 +150,7 @@ public class ZkStateReader {
 
           }
         });
+    cmdExecutor = new ZkCmdExecutor(zkClient);
   }
   
   // load and publish a new CollectionInfo
@@ -164,9 +168,26 @@ public class ZkStateReader {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
-      if (!zkClient.exists(CLUSTER_STATE)) {
+      Boolean exists = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+        
+        @Override
+        public Boolean execute() throws KeeperException, InterruptedException {
+          return zkClient.exists(CLUSTER_STATE);
+        }
+      });
+      
+      if (!exists) {
         try {
-          zkClient.create(CLUSTER_STATE, null, CreateMode.PERSISTENT);
+          cmdExecutor.retryOperation(new ZooKeeperOperation() {
+            
+            @Override
+            public Object execute() throws KeeperException, InterruptedException {
+              zkClient.create(CLUSTER_STATE, null, CreateMode.PERSISTENT);
+              return null;
+            }
+          });
+          
+          
         } catch (NodeExistsException e) {
           // if someone beats us to creating this ignore it
         }
@@ -186,7 +207,15 @@ public class ZkStateReader {
           // ZkStateReader.this.updateCloudState(false, false);
           synchronized (ZkStateReader.this.getUpdateLock()) {
             // remake watch
-            byte[] data = zkClient.getData(CLUSTER_STATE, this, null);
+            final Watcher thisWatch = this;
+            byte[] data = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+              @Override
+              public byte[] execute() throws KeeperException,
+                  InterruptedException {
+                return zkClient.getData(CLUSTER_STATE, thisWatch, null);
+              }
+            });
+            
             CloudState clusterState = CloudState.load(data,
                 ZkStateReader.this.cloudState.getLiveNodes());
             // update volatile

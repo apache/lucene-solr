@@ -437,7 +437,9 @@ public class CoreContainer
     synchronized(cores) {
       try {
         for(SolrCore core : cores.values()) {
-          core.close();
+          if (!core.isClosed()) {
+            core.close();
+          }
         }
         cores.clear();
       } finally {
