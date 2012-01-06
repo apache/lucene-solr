@@ -28,6 +28,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedBytesMergeUtils;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.SortedBytesMergeUtils.IndexOutputBytesRefConsumer;
 import org.apache.lucene.index.SortedBytesMergeUtils.MergeContext;
 import org.apache.lucene.index.SortedBytesMergeUtils.SortedSourceSlice;
 import org.apache.lucene.index.MergeState;
@@ -66,11 +67,11 @@ class FixedSortedBytesImpl {
         throws IOException {
       boolean success = false;
       try {
-        final MergeContext ctx = SortedBytesMergeUtils.init(Type.BYTES_FIXED_SORTED, docValues, comp, mergeState);
-        List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(mergeState, docValues, ctx);
+        final MergeContext ctx = SortedBytesMergeUtils.init(Type.BYTES_FIXED_SORTED, docValues, comp, mergeState.mergedDocCount);
+        List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(mergeState.docBase, mergeState.docMaps, docValues, ctx);
         final IndexOutput datOut = getOrCreateDataOut();
         datOut.writeInt(ctx.sizePerValues);
-        final int maxOrd = SortedBytesMergeUtils.mergeRecords(ctx, datOut, slices);
+        final int maxOrd = SortedBytesMergeUtils.mergeRecords(ctx, new IndexOutputBytesRefConsumer(datOut), slices);
         
         final IndexOutput idxOut = getOrCreateIndexOut();
         idxOut.writeInt(maxOrd);
