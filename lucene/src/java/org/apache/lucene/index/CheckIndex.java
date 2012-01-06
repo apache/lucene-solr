@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Array;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -639,20 +640,24 @@ public class CheckIndex {
         infoStream.print("    test: field norms.........");
       }
       FieldInfos infos = reader.fieldInfos();
-      byte[] b;
+      DocValues dv;
       for (final String fieldName : fieldNames) {
         FieldInfo info = infos.fieldInfo(fieldName);
         if (reader.hasNorms(fieldName)) {
-          b = reader.norms(fieldName);
-          if (b.length != reader.maxDoc()) {
-            throw new RuntimeException("norms for field: " + fieldName + " are of the wrong size");
+          dv = reader.normValues(fieldName);
+          assert dv != null;
+          if (dv.getSource().hasArray()) {
+            Object array = dv.getSource().getArray();
+            if (Array.getLength(array) != reader.maxDoc()) {
+              throw new RuntimeException("norms for field: " + fieldName + " are of the wrong size");
+            }
           }
           if (!info.isIndexed || info.omitNorms) {
             throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
           }
           ++status.totFields;
         } else {
-          if (reader.norms(fieldName) != null) {
+          if (reader.normValues(fieldName) != null) {
             throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
           }
           if (info.isIndexed && !info.omitNorms) {

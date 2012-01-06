@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -34,7 +33,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 final class DocInverterPerField extends DocFieldConsumerPerField {
 
-  final private DocInverter parent;
   final FieldInfo fieldInfo;
   final InvertedDocConsumerPerField consumer;
   final InvertedDocEndConsumerPerField endConsumer;
@@ -42,7 +40,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
   final FieldInvertState fieldState;
 
   public DocInverterPerField(DocInverter parent, FieldInfo fieldInfo) {
-    this.parent = parent;
     this.fieldInfo = fieldInfo;
     docState = parent.docState;
     fieldState = parent.fieldState;

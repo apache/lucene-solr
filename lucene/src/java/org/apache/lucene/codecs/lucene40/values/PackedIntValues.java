@@ -63,7 +63,7 @@ class PackedIntValues {
     }
 
     @Override
-    public void add(int docID, long v) throws IOException {
+    protected void add(int docID, long v) throws IOException {
       assert lastDocId < docID;
       if (!started) {
         started = true;

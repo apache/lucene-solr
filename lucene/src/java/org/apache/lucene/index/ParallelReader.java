@@ -48,7 +48,7 @@ public class ParallelReader extends IndexReader {
   private SortedMap<String,IndexReader> fieldToReader = new TreeMap<String,IndexReader>();
   private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
   private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
-  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
+  private Map<String, DocValues> normsCache = new HashMap<String,DocValues>();
   private final ReaderContext topLevelReaderContext = new AtomicReaderContext(this);
   private int maxDoc;
   private int numDocs;
@@ -337,27 +337,6 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public synchronized byte[] norms(String field) throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-
-    if (reader==null)
-      return null;
-    
-    byte[] bytes = normsCache.get(field);
-    if (bytes != null)
-      return bytes;
-    if (!hasNorms(field))
-      return null;
-    if (normsCache.containsKey(field)) // cached omitNorms, not missing key
-      return null;
-
-    bytes = MultiNorms.norms(reader, field);
-    normsCache.put(field, bytes);
-    return bytes;
-  }
-
-  @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);
@@ -426,5 +405,17 @@ public class ParallelReader extends IndexReader {
   public DocValues docValues(String field) throws IOException {
     IndexReader reader = fieldToReader.get(field);
     return reader == null ? null : MultiDocValues.getDocValues(reader, field);
+  }
+  
+  // TODO: I suspect this is completely untested!!!!!
+  @Override
+  public synchronized DocValues normValues(String field) throws IOException {
+    DocValues values = normsCache.get(field);
+    if (values == null) {
+      IndexReader reader = fieldToReader.get(field);
+      values = reader == null ? null : MultiDocValues.getNormDocValues(reader, field);
+      normsCache.put(field, values);
+    } 
+    return values;
   }
 }

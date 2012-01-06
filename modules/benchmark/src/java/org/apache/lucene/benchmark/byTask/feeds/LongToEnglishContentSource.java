@@ -17,10 +17,11 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.English;
-
 import java.io.IOException;
 import java.util.Date;
+import java.util.Locale;
+
+import com.ibm.icu.text.RuleBasedNumberFormat;
 
 /**
  * Creates documents whose content is a <code>long</code> number starting from
@@ -32,7 +33,10 @@ public class LongToEnglishContentSource extends ContentSource{
   @Override
   public void close() throws IOException {
   }
-  
+
+  // TODO: we could take param to specify locale...
+  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ENGLISH,
+                                                                       RuleBasedNumberFormat.SPELLOUT);
   @Override
   public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     docData.clear();
@@ -46,7 +50,8 @@ public class LongToEnglishContentSource extends ContentSource{
         ++counter;
       }
     }    
-    docData.setBody(English.longToEnglish(curCounter));
+
+    docData.setBody(rnbf.format(curCounter));
     docData.setName("doc_" + String.valueOf(curCounter));
     docData.setTitle("title_" + String.valueOf(curCounter));
     docData.setDate(new Date());

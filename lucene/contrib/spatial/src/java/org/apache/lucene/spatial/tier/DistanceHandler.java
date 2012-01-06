@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.tier;
 
 import org.apache.lucene.spatial.DistanceUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -96,11 +95,5 @@ public class DistanceHandler {
     
     //all else fails calculate the distances    
     return DistanceUtils.getDistanceMi(centerLat, centerLng, lat, lng);
-  }
-  
-  
-  public static void main(String args[]){ 
-    DistanceHandler db = new DistanceHandler(new HashMap<Integer,Double>(), new HashMap<String,Double>(), Precision.TWOHUNDREDFEET);
-    System.out.println(DistanceHandler.getPrecision(-1234.123456789, db.getPrecision()));
   }
 }

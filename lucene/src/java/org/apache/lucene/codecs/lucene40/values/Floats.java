@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40.values;
  */
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues.Source;
@@ -44,7 +45,7 @@ public class Floats {
   protected static final int VERSION_START = 0;
   protected static final int VERSION_CURRENT = VERSION_START;
   
-  public static Writer getWriter(Directory dir, String id, Counter bytesUsed,
+  public static DocValuesConsumer getWriter(Directory dir, String id, Counter bytesUsed,
       IOContext context, Type type) throws IOException {
     return new FloatsWriter(dir, id, bytesUsed, context, type);
   }
@@ -79,7 +80,7 @@ public class Floats {
       assert template != null;
     }
     
-    public void add(int docID, double v) throws IOException {
+    protected void add(int docID, double v) throws IOException {
       template.toBytes(v, bytesRef);
       add(docID, bytesRef);
     }

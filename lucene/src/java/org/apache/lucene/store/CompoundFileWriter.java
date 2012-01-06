@@ -91,7 +91,7 @@ final class CompoundFileWriter implements Closeable{
   // all entries that are written to a sep. file but not yet moved into CFS
   private final Queue<FileEntry> pendingEntries = new LinkedList<FileEntry>();
   private boolean closed = false;
-  private volatile IndexOutput dataOut;
+  private IndexOutput dataOut;
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);
   final String entryTableName;
   final String dataFileName;
@@ -113,16 +113,25 @@ final class CompoundFileWriter implements Closeable{
         IndexFileNames.stripExtension(name), "",
         IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
     dataFileName = name;
-    boolean success = false;
-    try {
-      dataOut = directory.createOutput(dataFileName, IOContext.DEFAULT);
-      dataOut.writeVInt(FORMAT_CURRENT);
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(dataOut);
+    
+  }
+  
+  private synchronized IndexOutput getOutput() throws IOException {
+    if (dataOut == null) {
+      IndexOutput dataOutput = null;
+      boolean success = false;
+      try {
+        dataOutput = directory.createOutput(dataFileName, IOContext.DEFAULT);
+        dataOutput.writeVInt(FORMAT_CURRENT);
+        dataOut = dataOutput;
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(dataOutput);
+        }
       }
-    }
+    } 
+    return dataOut;
   }
 
   /** Returns the directory of the compound file. */
@@ -154,6 +163,7 @@ final class CompoundFileWriter implements Closeable{
       }
       closed = true;
       // open the compound stream
+      getOutput();
       assert dataOut != null;
       long finalLength = dataOut.getFilePointer();
       assert assertFileLength(finalLength, dataOut);
@@ -246,7 +256,7 @@ final class CompoundFileWriter implements Closeable{
       seenIDs.add(id);
       final DirectCFSIndexOutput out;
       if (outputTaken.compareAndSet(false, true)) {
-        out = new DirectCFSIndexOutput(dataOut, entry, false);
+        out = new DirectCFSIndexOutput(getOutput(), entry, false);
         outputLocked = true;
         success = true;
       } else {
@@ -280,7 +290,7 @@ final class CompoundFileWriter implements Closeable{
       try {
         while (!pendingEntries.isEmpty()) {
           FileEntry entry = pendingEntries.poll();
-          copyFileEntry(dataOut, entry);
+          copyFileEntry(getOutput(), entry);
           entries.put(entry.file, entry);
         }
       } finally {

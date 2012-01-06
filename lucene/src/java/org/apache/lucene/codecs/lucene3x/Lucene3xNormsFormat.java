@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.simpletext;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,34 +29,37 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 
 /**
- * plain-text norms format
- * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * Read-Only Lucene 3.x Norms Format
+ * 
  * @lucene.experimental
  */
-public class SimpleTextNormsFormat extends NormsFormat {
-  
+public class Lucene3xNormsFormat extends NormsFormat {
+
+
+  @Override
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    Lucene3xNormsProducer.files(dir, info, files);
+  }
+
+  @Override
+  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    Lucene3xNormsProducer.separateFiles(dir, info, files);
+  }
+
+
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new SimpleTextNormsConsumer(state.directory, state.segmentName, state.context);
+    throw new IllegalArgumentException("this codec can only be used for reading");
   }
 
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context);
-  }
-
-  @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files)
-      throws IOException {
-    SimpleTextNormsConsumer.files(dir, info, files);
-
+    return docsProducer(state, null);
   }
 
   @Override
   public PerDocProducer docsProducer(SegmentReadState state,
       Directory separateNormsDir) throws IOException {
-    return docsProducer(state);
+    return new Lucene3xNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context, separateNormsDir);
   }
-   
 }

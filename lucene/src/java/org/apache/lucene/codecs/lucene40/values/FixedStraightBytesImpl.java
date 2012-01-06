@@ -64,7 +64,7 @@ class FixedStraightBytesImpl {
     }
     
     @Override
-    public void add(int docID, BytesRef bytes) throws IOException {
+    protected void add(int docID, BytesRef bytes) throws IOException {
       assert lastDocID < docID;
 
       if (size == -1) {

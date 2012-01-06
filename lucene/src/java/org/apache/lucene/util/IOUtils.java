@@ -30,6 +30,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 
+import org.apache.lucene.store.Directory;
+
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
  * @lucene.internal */
@@ -315,6 +317,16 @@ public final class IOUtils {
     } finally {
       if (!success) {
         IOUtils.close(stream);
+      }
+    }
+  }
+  
+  public static void deleteFilesIgnoringExceptions(Directory dir, String... files) {
+    for (String name : files) {
+      try {
+        dir.deleteFile(name);
+      } catch (IOException ignored) {
+        // ignore
       }
     }
   }

@@ -19,6 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
@@ -177,7 +178,7 @@ public abstract class SimilarityBase extends Similarity {
   @Override
   public ExactDocScorer exactDocScorer(Stats stats, String fieldName,
       AtomicReaderContext context) throws IOException {
-    byte norms[] = context.reader.norms(fieldName);
+    DocValues norms = context.reader.normValues(fieldName);
     
     if (stats instanceof MultiSimilarity.MultiStats) {
       // a multi term query (e.g. phrase). return the summation, 
@@ -196,7 +197,7 @@ public abstract class SimilarityBase extends Similarity {
   @Override
   public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName,
       AtomicReaderContext context) throws IOException {
-    byte norms[] = context.reader.norms(fieldName);
+    DocValues norms = context.reader.normValues(fieldName);
     
     if (stats instanceof MultiSimilarity.MultiStats) {
       // a multi term query (e.g. phrase). return the summation, 
@@ -274,9 +275,9 @@ public abstract class SimilarityBase extends Similarity {
     private final BasicStats stats;
     private final byte[] norms;
     
-    BasicExactDocScorer(BasicStats stats, byte norms[]) {
+    BasicExactDocScorer(BasicStats stats, DocValues norms) throws IOException {
       this.stats = stats;
-      this.norms = norms;
+      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
     }
     
     @Override
@@ -303,9 +304,9 @@ public abstract class SimilarityBase extends Similarity {
     private final BasicStats stats;
     private final byte[] norms;
     
-    BasicSloppyDocScorer(BasicStats stats, byte norms[]) {
+    BasicSloppyDocScorer(BasicStats stats, DocValues norms) throws IOException {
       this.stats = stats;
-      this.norms = norms;
+      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
     }
     
     @Override

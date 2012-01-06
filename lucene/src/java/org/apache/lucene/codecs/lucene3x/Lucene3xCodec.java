@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
@@ -65,7 +64,7 @@ public class Lucene3xCodec extends Codec {
   private final SegmentInfosFormat infosFormat = new Lucene40SegmentInfosFormat();
   
   // TODO: this should really be a different impl
-  private final NormsFormat normsFormat = new Lucene40NormsFormat();
+  private final NormsFormat normsFormat = new Lucene3xNormsFormat();
   
   // 3.x doesn't support docvalues
   private final DocValuesFormat docValuesFormat = new DocValuesFormat() {

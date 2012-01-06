@@ -118,11 +118,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
   }
   
   @Override
-  public synchronized byte[] norms(String field) throws IOException {
-    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
-  }
-  
-  @Override
   public int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in segments
@@ -156,5 +151,10 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
   @Override
   public DocValues docValues(String field) throws IOException {
     throw new UnsupportedOperationException("please use MultiDocValues#getDocValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level DocValues");
+  }
+  
+  @Override
+  public DocValues normValues(String field) throws IOException {
+    throw new UnsupportedOperationException("please use MultiDocValues#getNormValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Norm DocValues ");
   }
 }

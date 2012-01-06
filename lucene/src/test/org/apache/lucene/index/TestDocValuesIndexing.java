@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.DocValuesField;
@@ -414,6 +413,124 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
     }
 
+    w.close();
+    d.close();
+  }
+  
+  public void testGetArrayNumerics() throws CorruptIndexException, IOException {
+    Directory d = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriter w = new IndexWriter(d, cfg);
+    final int numValues = 50 + atLeast(10);
+    final List<Type> numVariantList = new ArrayList<Type>(NUMERICS);
+    Collections.shuffle(numVariantList, random);
+    for (Type val : numVariantList) {
+      indexValues(w, numValues, val, numVariantList,
+          false, 7);
+      IndexReader r = IndexReader.open(w, true);
+      DocValues docValues = getDocValues(r, val.name());
+      assertNotNull(docValues);
+      // make sure we don't get a direct source since they don't support getArray()
+      Source source = docValues.getSource();
+      
+      switch (source.type()) {
+      case FIXED_INTS_8:
+      {
+        assertTrue(source.hasArray());
+        byte[] values = (byte[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          assertEquals((long)values[i], source.getInt(i));
+        }
+      }
+      break;
+      case FIXED_INTS_16:
+      {
+        assertTrue(source.hasArray());
+        short[] values = (short[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          assertEquals((long)values[i], source.getInt(i));
+        }
+      }
+      break;
+      case FIXED_INTS_32:
+      {
+        assertTrue(source.hasArray());
+        int[] values = (int[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          assertEquals((long)values[i], source.getInt(i));
+        }
+      }
+      break;
+      case FIXED_INTS_64:
+      {
+        assertTrue(source.hasArray());
+        long[] values = (long[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          assertEquals(values[i], source.getInt(i));
+        }
+      }
+      break;
+      case VAR_INTS: 
+        assertFalse(source.hasArray());
+        break;
+      case FLOAT_32:
+      {
+        assertTrue(source.hasArray());
+        float[] values = (float[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          assertEquals((double)values[i], source.getFloat(i), 0.0d);
+        }
+      }
+      break;
+      case FLOAT_64:
+      {
+        assertTrue(source.hasArray());
+        double[] values = (double[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          assertEquals(values[i], source.getFloat(i), 0.0d);
+        }
+      }
+        break;
+      default:
+        fail("unexpected value " + source.type());
+      }
+      r.close();
+    }
+    w.close();
+    d.close();
+  }
+  
+  public void testGetArrayBytes() throws CorruptIndexException, IOException {
+    Directory d = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random));
+    IndexWriter w = new IndexWriter(d, cfg);
+    final int numValues = 50 + atLeast(10);
+    // only single byte fixed straight supports getArray()
+    indexValues(w, numValues, Type.BYTES_FIXED_STRAIGHT, null, false, 1);
+    IndexReader r = IndexReader.open(w, true);
+    DocValues docValues = getDocValues(r, Type.BYTES_FIXED_STRAIGHT.name());
+    assertNotNull(docValues);
+    // make sure we don't get a direct source since they don't support
+    // getArray()
+    Source source = docValues.getSource();
+
+    switch (source.type()) {
+    case BYTES_FIXED_STRAIGHT: {
+      BytesRef ref = new BytesRef();
+      assertTrue(source.hasArray());
+      byte[] values = (byte[]) source.getArray();
+      for (int i = 0; i < numValues; i++) {
+        source.getBytes(i, ref);
+        assertEquals(1, ref.length);
+        assertEquals(values[i], ref.bytes[ref.offset]);
+      }
+    }
+      break;
+    default:
+      fail("unexpected value " + source.type());
+    }
+    r.close();
     w.close();
     d.close();
   }

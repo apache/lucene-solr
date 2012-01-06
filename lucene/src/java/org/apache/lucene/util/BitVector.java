@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -218,6 +219,7 @@ public final class BitVector implements Cloneable, Bits {
     <code>d</code>, in a format that can be read by the constructor {@link
     #BitVector(Directory, String, IOContext)}.  */
   public final void write(Directory d, String name, IOContext context) throws IOException {
+    assert !(d instanceof CompoundFileDirectory);
     IndexOutput output = d.createOutput(name, context);
     try {
       output.writeInt(-2);

@@ -20,16 +20,10 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.BitSet;
 
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
 public class TestSortedVIntList extends LuceneTestCase {
-  /** Main for running test case by itself. */
-  public static void main(String args[]) {
-    TestRunner.run(new TestSuite(TestSortedVIntList.class));
-  }
   
   void tstIterator (
           SortedVIntList vintList,

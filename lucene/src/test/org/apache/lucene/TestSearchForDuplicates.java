@@ -28,17 +28,8 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 public class TestSearchForDuplicates extends LuceneTestCase {
-
-    /** Main for running test case by itself. */
-    public static void main(String args[]) {
-        TestRunner.run (new TestSuite(TestSearchForDuplicates.class));
-    }
-
-
 
   static final String PRIORITY_FIELD ="priority";
   static final String ID_FIELD ="id";
