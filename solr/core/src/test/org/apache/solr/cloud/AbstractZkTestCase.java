@@ -18,16 +18,20 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -76,33 +80,72 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.close();
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
+    final ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkClient);
 
     Map<String,String> props = new HashMap<String,String>();
     props.put("configName", "conf1");
-    ZkNodeProps zkProps = new ZkNodeProps(props);
-    zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
-    zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT);
+    final ZkNodeProps zkProps = new ZkNodeProps(props);
+    
+    zkCmdExecutor.retryOperation(new ZkOperation() {
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        zkCmdExecutor.getZkClient().makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
+        return null;
+      }
+    });
+    
+    zkCmdExecutor.retryOperation(new ZkOperation() {
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        zkCmdExecutor.getZkClient().makePath("/collections/collection1/shards", CreateMode.PERSISTENT);
+        return null;
+      }
+    });
+    
+    zkCmdExecutor.retryOperation(new ZkOperation() {
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        zkCmdExecutor.getZkClient().makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
+        return null;
+      }
+    });
 
-    zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
-    zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT);
+    zkCmdExecutor.retryOperation(new ZkOperation() {
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        zkCmdExecutor.getZkClient().makePath("/collections/control_collection/shards", CreateMode.PERSISTENT);
+        return null;
+      }
+    });
+    
 
-    putConfig(zkClient, config);
-    putConfig(zkClient, schema);
-    putConfig(zkClient, "solrconfig.xml");
-    putConfig(zkClient, "stopwords.txt");
-    putConfig(zkClient, "protwords.txt");
-    putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
-    putConfig(zkClient, "old_synonyms.txt");
-    putConfig(zkClient, "synonyms.txt");
+    putConfig(zkCmdExecutor, config);
+    putConfig(zkCmdExecutor, schema);
+    putConfig(zkCmdExecutor, "solrconfig.xml");
+    putConfig(zkCmdExecutor, "stopwords.txt");
+    putConfig(zkCmdExecutor, "protwords.txt");
+    putConfig(zkCmdExecutor, "mapping-ISOLatin1Accent.txt");
+    putConfig(zkCmdExecutor, "old_synonyms.txt");
+    putConfig(zkCmdExecutor, "synonyms.txt");
     
     zkClient.close();
   }
 
-  private static void putConfig(SolrZkClient zkClient, String name)
+  private static void putConfig(final ZkCmdExecutor zkCmdExecutor, final String name)
       throws Exception {
-
-    zkClient.makePath("/configs/conf1/" + name, getFile("solr"
-        + File.separator + "conf" + File.separator + name), false);
+    zkCmdExecutor.retryOperation(new ZkOperation() {
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        try {
+          zkCmdExecutor.getZkClient().makePath("/configs/conf1/" + name, getFile("solr"
+              + File.separator + "conf" + File.separator + name), false);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        return null;
+      }
+    });
+    
   }
 
   @Override

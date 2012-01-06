@@ -17,6 +17,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
+
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -24,8 +26,8 @@ import org.apache.zookeeper.KeeperException;
  * {@link org.apache.solr.common.cloud.ZkCmdExecutor.lock.ProtocolSupport} class
  *
  */
-public interface ZkOperation {
-    
+public abstract class ZkOperation {
+
     /**
      * Performs the operation - which may be involved multiple times if the connection
      * to ZooKeeper closes during this operation
@@ -33,6 +35,7 @@ public interface ZkOperation {
      * @return the result of the operation or null
      * @throws KeeperException
      * @throws InterruptedException
+     * @throws IOException 
      */
-    public Object execute() throws KeeperException, InterruptedException;
+    public abstract Object execute() throws KeeperException, InterruptedException;
 }

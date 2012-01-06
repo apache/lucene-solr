@@ -17,6 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -29,13 +30,13 @@ import org.apache.zookeeper.data.ACL;
 public class ZkCmdExecutor {
   private static final Logger LOG = Logger.getLogger(ZkCmdExecutor.class);
   
-  protected final SolrZkClient solrZkClient;
+  protected final SolrZkClient zkClient;
   private long retryDelay = 1000L;
   private int retryCount = 15;
   private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
   
   public ZkCmdExecutor(SolrZkClient solrZkClient) {
-    this.solrZkClient = solrZkClient;
+    this.zkClient = solrZkClient;
   }
   
   /**
@@ -80,6 +81,7 @@ public class ZkCmdExecutor {
    * Perform the given operation, retrying if the connection fails
    * 
    * @return object. it needs to be cast to the callee's expected return type.
+   * @throws IOException 
    */
   @SuppressWarnings("unchecked")
   public <T> T retryOperation(ZkOperation operation)
@@ -103,6 +105,7 @@ public class ZkCmdExecutor {
    * flags
    * 
    * @param path
+   * @throws IOException 
    */
   protected void ensurePathExists(String path) {
     ensureExists(path, null, acl, CreateMode.PERSISTENT);
@@ -114,16 +117,17 @@ public class ZkCmdExecutor {
    * @param path
    * @param acl
    * @param flags
+   * @throws IOException 
    */
   protected void ensureExists(final String path, final byte[] data,
       final List<ACL> acl, final CreateMode flags) {
     try {
       retryOperation(new ZkOperation() {
         public Object execute() throws KeeperException, InterruptedException {
-          if (solrZkClient.exists(path)) {
+          if (zkClient.exists(path)) {
             return true;
           }
-          solrZkClient.create(path, data, acl, flags);
+          zkClient.create(path, data, acl, flags);
           return true;
         }
       });
@@ -148,5 +152,9 @@ public class ZkCmdExecutor {
         LOG.debug("Failed to sleep: " + e, e);
       }
     }
+  }
+
+  public SolrZkClient getZkClient() {
+    return zkClient;
   }
 }
