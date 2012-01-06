@@ -18,19 +18,12 @@ package org.apache.lucene.analysis.kuromoji.dict;
  */
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
@@ -40,7 +33,7 @@ public final class CharacterDefinition {
   public static final String HEADER = "kuromoji_cd";
   public static final int VERSION = 1;
 
-  private static final int CLASS_COUNT = CharacterClass.values().length;
+  public static final int CLASS_COUNT = CharacterClass.values().length;
   
   // only used internally for lookup:
   private static enum CharacterClass {
@@ -66,17 +59,7 @@ public final class CharacterDefinition {
   public static final byte KANJI = (byte) CharacterClass.KANJI.ordinal();
   public static final byte KANJINUMERIC = (byte) CharacterClass.KANJINUMERIC.ordinal();
   
-  /**
-   * Constructor for building. TODO: remove write access
-   */
-  public CharacterDefinition() {
-    Arrays.fill(characterCategoryMap, DEFAULT);
-  }
-  
-  // used only for singleton
-  private CharacterDefinition(boolean dummy) throws IOException {
-    assert dummy;
-    
+  private CharacterDefinition() throws IOException {
     IOException priorE = null;
     InputStream is = null;
     try {
@@ -116,60 +99,13 @@ public final class CharacterDefinition {
     return characterClass == KANJI || characterClass == KANJINUMERIC;
   }
   
-  /**
-   * Put mapping from unicode code point to character class.
-   * 
-   * @param codePoint
-   *            code point
-   * @param characterClassName character class name
-   */
-  public void putCharacterCategory(int codePoint, String characterClassName) {
-    characterClassName = characterClassName.split(" ")[0]; // use first
-    // category
-    // class
-    
-    // Override Nakaguro
-    if (codePoint == 0x30FB) {
-      characterClassName = "SYMBOL";
-    }
-    characterCategoryMap[codePoint] = lookupCharacterClass(characterClassName);
-  }
-  
-  public void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
-    final byte characterClass = lookupCharacterClass(characterClassName);
-    invokeMap[characterClass] = invoke == 1;
-    groupMap[characterClass] = group == 1;
-    // TODO: length def ignored
-  }
-  
   public static byte lookupCharacterClass(String characterClassName) {
     return (byte) CharacterClass.valueOf(characterClassName).ordinal();
   }
 
-  public void write(String baseDir) throws IOException {
-    String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
-    new File(filename).getParentFile().mkdirs();
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
-      final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, HEADER, VERSION);
-      out.writeBytes(characterCategoryMap, 0, characterCategoryMap.length);
-      for (int i = 0; i < CLASS_COUNT; i++) {
-        final byte b = (byte) (
-          (invokeMap[i] ? 0x01 : 0x00) | 
-          (groupMap[i] ? 0x02 : 0x00)
-        );
-        out.writeByte(b);
-      }
-    } finally {
-      os.close();
-    }
-  }
-  
   public synchronized static CharacterDefinition getInstance() {
     if (singleton == null) try {
-      singleton = new CharacterDefinition(true);
+      singleton = new CharacterDefinition();
     } catch (IOException ioe) {
       throw new RuntimeException("Cannot load CharacterDefinition.", ioe);
     }

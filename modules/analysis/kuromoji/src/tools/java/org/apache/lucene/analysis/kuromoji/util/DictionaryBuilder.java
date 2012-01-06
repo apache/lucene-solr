@@ -21,9 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map.Entry;
 
-import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
-import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
-import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 
 public class DictionaryBuilder {
@@ -70,7 +67,7 @@ public class DictionaryBuilder {
     System.out.println("done");
     
     System.out.print("building connection costs...");
-    ConnectionCosts connectionCosts
+    ConnectionCostsWriter connectionCosts
       = ConnectionCostsBuilder.build(inputDirname + File.separator + "matrix.def");
     connectionCosts.write(outputDirname);
     System.out.println("done");

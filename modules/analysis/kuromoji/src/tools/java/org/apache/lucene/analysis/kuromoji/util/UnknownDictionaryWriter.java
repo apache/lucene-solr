@@ -8,7 +8,7 @@ import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 
 public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
-  private final CharacterDefinition characterDefinition = new CharacterDefinition();
+  private final CharacterDefinitionWriter characterDefinition = new CharacterDefinitionWriter();
   
   public UnknownDictionaryWriter(int size) {
     super(size);

@@ -25,15 +25,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 
-import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
-
 public class ConnectionCostsBuilder {
   
-  public ConnectionCostsBuilder() {
-    
+  private ConnectionCostsBuilder() {
   }
   
-  public static ConnectionCosts build(String filename) throws IOException {
+  public static ConnectionCostsWriter build(String filename) throws IOException {
     FileInputStream inputStream = new FileInputStream(filename);
     Charset cs = Charset.forName("US-ASCII");
     CharsetDecoder decoder = cs.newDecoder()
@@ -52,7 +49,7 @@ public class ConnectionCostsBuilder {
     
     assert forwardSize > 0 && backwardSize > 0;
     
-    ConnectionCosts costs = new ConnectionCosts(forwardSize, backwardSize);
+    ConnectionCostsWriter costs = new ConnectionCostsWriter(forwardSize, backwardSize);
     
     while ((line = lineReader.readLine()) != null) {
       String[] fields = line.split("\\s+");

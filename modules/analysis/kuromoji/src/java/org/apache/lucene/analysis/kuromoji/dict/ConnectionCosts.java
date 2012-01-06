@@ -18,18 +18,12 @@ package org.apache.lucene.analysis.kuromoji.dict;
  */
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
@@ -41,9 +35,7 @@ public final class ConnectionCosts {
   
   private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
   
-  private ConnectionCosts(boolean dummy) throws IOException {
-    assert dummy;
-        
+  private ConnectionCosts() throws IOException {
     IOException priorE = null;
     InputStream is = null;
     short[][] costs = null;
@@ -72,17 +64,6 @@ public final class ConnectionCosts {
     this.costs = costs;
   }
   
-  /**
-   * Constructor for building. TODO: remove write access
-   */
-  public ConnectionCosts(int forwardSize, int backwardSize) {
-    this.costs = new short[backwardSize][forwardSize]; 
-  }
-  
-  public void add(int forwardId, int backwardId, int cost) {
-    this.costs[backwardId][forwardId] = (short)cost;
-  }
-  
   public int get(int forwardId, int backwardId) {
     // FIXME: There seems to be something wrong with the double array trie in some rare
     // cases causing and IndexOutOfBoundsException.  Use a guard as a temporary work-around
@@ -94,29 +75,9 @@ public final class ConnectionCosts {
     }
   }
   
-  public void write(String baseDir) throws IOException {
-    String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
-    new File(filename).getParentFile().mkdirs();
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
-      final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, HEADER, VERSION);
-      out.writeVInt(costs.length);
-      for (short[] a : costs) {
-        out.writeVInt(a.length);
-        for (int i = 0; i < a.length; i++) {
-          out.writeShort(a[i]);
-        }
-      }
-    } finally {
-      os.close();
-    }
-  }
-  
   public synchronized static ConnectionCosts getInstance() {
     if (singleton == null) try {
-      singleton = new ConnectionCosts(true);
+      singleton = new ConnectionCosts();
     } catch (IOException ioe) {
       throw new RuntimeException("Cannot load ConnectionCosts.", ioe);
     }
