@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.IntBuffer;
@@ -40,7 +41,7 @@ import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
-public class DoubleArrayTrie {
+public final class DoubleArrayTrie {
   
   public static final String FILENAME_SUFFIX = ".dat";
   public static final String HEADER = "kuromoji_double_arr_trie";
@@ -63,115 +64,99 @@ public class DoubleArrayTrie {
   private int tailIndex = TAIL_OFFSET;
   
   /**
-   * Constructor for building. TODO: remove write access
+   * Construct double array trie which is equivalent to input trie
+   * @param trie normal trie which contains all dictionary words
+   * TODO: maybe remove write access
    */
-  public DoubleArrayTrie() {
+  public DoubleArrayTrie(Trie trie) {
+    baseBuffer = ByteBuffer.allocate(BASE_CHECK_INITILAL_SIZE * 4).asIntBuffer();
+    baseBuffer.put(0, 1);
+    checkBuffer = ByteBuffer.allocate(BASE_CHECK_INITILAL_SIZE * 4).asIntBuffer();
+    tailBuffer = ByteBuffer.allocate(TAIL_INITIAL_SIZE * 2).asCharBuffer();
+    add(-1, 0, trie.getRoot());
   }
   
-  private DoubleArrayTrie(boolean dummy) throws IOException {
-    assert dummy;
+  public DoubleArrayTrie(InputStream is) throws IOException {
+    final DataInput in = new InputStreamDataInput(is);
+    CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
+    int baseCheckSize = in.readVInt();	// Read size of baseArr and checkArr
+    int tailSize = in.readVInt();		// Read size of tailArr
     
-    IOException priorE = null;
-    InputStream is = null;
-    try {
-      is = getClass().getResourceAsStream(getClass().getSimpleName()+FILENAME_SUFFIX);
-      if (is == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/')+FILENAME_SUFFIX);
-      is = new BufferedInputStream(is);
-      final DataInput in = new InputStreamDataInput(is);
-      CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
-      int baseCheckSize = in.readVInt();	// Read size of baseArr and checkArr
-      int tailSize = in.readVInt();		// Read size of tailArr
-      
-      ReadableByteChannel channel = Channels.newChannel(is);
-      
-      int toRead, read;
-      ByteBuffer tmpBaseBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);	// The size is 4 times the baseCheckSize since it is the length of array
-      read = channel.read(tmpBaseBuffer);
-      if (read != toRead) {
-        throw new EOFException("Cannot read DoubleArrayTree");
-      }
-      tmpBaseBuffer.rewind();
-      baseBuffer = tmpBaseBuffer.asIntBuffer().asReadOnlyBuffer();
-      
-      ByteBuffer tmpCheckBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);
-      read = channel.read(tmpCheckBuffer);
-      if (read != toRead) {
-        throw new EOFException("Cannot read DoubleArrayTree");
-      }
-      tmpCheckBuffer.rewind();
-      checkBuffer = tmpCheckBuffer.asIntBuffer().asReadOnlyBuffer();
-      
-      ByteBuffer tmpTailBuffer = ByteBuffer.allocateDirect(toRead = tailSize * 2);			// The size is 2 times the tailSize since it is the length of array
-      read = channel.read(tmpTailBuffer);
-      if (read != toRead) {
-        throw new EOFException("Cannot read DoubleArrayTree");
-      }
-      tmpTailBuffer.rewind();
-      tailBuffer = tmpTailBuffer.asCharBuffer().asReadOnlyBuffer();
-    } catch (IOException ioe) {
-      priorE = ioe;
-    } finally {
-      IOUtils.closeWhileHandlingException(priorE, is);
+    ReadableByteChannel channel = Channels.newChannel(is);
+    
+    int toRead, read;
+    ByteBuffer tmpBaseBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);	// The size is 4 times the baseCheckSize since it is the length of array
+    read = channel.read(tmpBaseBuffer);
+    if (read != toRead) {
+      throw new EOFException("Cannot read DoubleArrayTree");
     }
-  }
-  
+    tmpBaseBuffer.rewind();
+    baseBuffer = tmpBaseBuffer.asIntBuffer().asReadOnlyBuffer();
+    
+    ByteBuffer tmpCheckBuffer = ByteBuffer.allocateDirect(toRead = baseCheckSize * 4);
+    read = channel.read(tmpCheckBuffer);
+    if (read != toRead) {
+      throw new EOFException("Cannot read DoubleArrayTree");
+    }
+    tmpCheckBuffer.rewind();
+    checkBuffer = tmpCheckBuffer.asIntBuffer().asReadOnlyBuffer();
+    
+    ByteBuffer tmpTailBuffer = ByteBuffer.allocateDirect(toRead = tailSize * 2);			// The size is 2 times the tailSize since it is the length of array
+    read = channel.read(tmpTailBuffer);
+    if (read != toRead) {
+      throw new EOFException("Cannot read DoubleArrayTree");
+    }
+    tmpTailBuffer.rewind();
+    tailBuffer = tmpTailBuffer.asCharBuffer().asReadOnlyBuffer();
+  }  
   
   /**
-   * Write to file
+   * Write to file (used by builder). Path is this class' slashed canonical classname + ".dat".
    * @throws IOException
    */
   public void write(String baseDir) throws IOException  {
     String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
     new File(filename).getParentFile().mkdirs();
     
-    baseBuffer.rewind();
-    checkBuffer.rewind();
-    tailBuffer.rewind();
-    
     final FileOutputStream os = new FileOutputStream(filename);
     try {
-      final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, HEADER, VERSION);
-      out.writeVInt(baseBuffer.capacity());
-      out.writeVInt(tailBuffer.capacity());
-      final WritableByteChannel channel = Channels.newChannel(os);
-      
-      ByteBuffer tmpBuffer = ByteBuffer.allocate(baseBuffer.capacity() * 4);
-      IntBuffer tmpIntBuffer = tmpBuffer.asIntBuffer();
-      tmpIntBuffer.put(baseBuffer);
-      tmpBuffer.rewind();
-      channel.write(tmpBuffer);
-      assert tmpBuffer.remaining() == 0L;
-      
-      tmpBuffer = ByteBuffer.allocate(checkBuffer.capacity() * 4);
-      tmpIntBuffer = tmpBuffer.asIntBuffer();
-      tmpIntBuffer.put(checkBuffer);
-      tmpBuffer.rewind();
-      channel.write(tmpBuffer);
-      assert tmpBuffer.remaining() == 0L;
-      
-      tmpBuffer = ByteBuffer.allocate(tailBuffer.capacity() * 2);
-      CharBuffer tmpCharBuffer = tmpBuffer.asCharBuffer();
-      tmpCharBuffer.put(tailBuffer);
-      tmpBuffer.rewind();
-      channel.write(tmpBuffer);
-      assert tmpBuffer.remaining() == 0L;
+      write(os);
     } finally {
       os.close();
     }
   }
   
-  /**
-   * Construct double array trie which is equivalent to input trie
-   * @param trie normal trie which contains all dictionary words
-   */
-  public void build(Trie trie) {
-    baseBuffer = ByteBuffer.allocate(BASE_CHECK_INITILAL_SIZE * 4).asIntBuffer();
-    baseBuffer.put(0, 1);
-    checkBuffer = ByteBuffer.allocate(BASE_CHECK_INITILAL_SIZE * 4).asIntBuffer();
-    tailBuffer = ByteBuffer.allocate(TAIL_INITIAL_SIZE * 2).asCharBuffer();
-    add(-1, 0, trie.getRoot());
+  public void write(OutputStream os) throws IOException {
+    baseBuffer.rewind();
+    checkBuffer.rewind();
+    tailBuffer.rewind();
+  
+    final DataOutput out = new OutputStreamDataOutput(os);
+    CodecUtil.writeHeader(out, HEADER, VERSION);
+    out.writeVInt(baseBuffer.capacity());
+    out.writeVInt(tailBuffer.capacity());
+    final WritableByteChannel channel = Channels.newChannel(os);
+    
+    ByteBuffer tmpBuffer = ByteBuffer.allocate(baseBuffer.capacity() * 4);
+    IntBuffer tmpIntBuffer = tmpBuffer.asIntBuffer();
+    tmpIntBuffer.put(baseBuffer);
+    tmpBuffer.rewind();
+    channel.write(tmpBuffer);
+    assert tmpBuffer.remaining() == 0L;
+    
+    tmpBuffer = ByteBuffer.allocate(checkBuffer.capacity() * 4);
+    tmpIntBuffer = tmpBuffer.asIntBuffer();
+    tmpIntBuffer.put(checkBuffer);
+    tmpBuffer.rewind();
+    channel.write(tmpBuffer);
+    assert tmpBuffer.remaining() == 0L;
+    
+    tmpBuffer = ByteBuffer.allocate(tailBuffer.capacity() * 2);
+    CharBuffer tmpCharBuffer = tmpBuffer.asCharBuffer();
+    tmpCharBuffer.put(tailBuffer);
+    tmpBuffer.rewind();
+    channel.write(tmpBuffer);
+    assert tmpBuffer.remaining() == 0L;
   }
   
   /**
@@ -340,11 +325,20 @@ public class DoubleArrayTrie {
     }
   }
   
+  /** Returns the default trie as singleton with data from classpath, that fits the other dictionaries */
   public synchronized static DoubleArrayTrie getInstance() {
-    if (singleton == null) try {
-      singleton = new DoubleArrayTrie(true);
-    } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load DoubleArrayTrie.", ioe);
+    if (singleton == null) {
+      InputStream is = null;
+      try {
+        is = DoubleArrayTrie.class.getResourceAsStream(DoubleArrayTrie.class.getSimpleName() + FILENAME_SUFFIX);
+        if (is == null)
+          throw new FileNotFoundException("Not in classpath: " + DoubleArrayTrie.class.getName().replace('.','/') + FILENAME_SUFFIX);
+        singleton = new DoubleArrayTrie(is);
+      } catch (IOException ioe) {
+        throw new RuntimeException("Cannot load DoubleArrayTrie.", ioe);
+      } finally {
+        IOUtils.closeWhileHandlingException(is);
+      }
     }
     return singleton;
   }

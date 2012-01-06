@@ -17,9 +17,9 @@ package org.apache.lucene.analysis.kuromoji.trie;
  * limitations under the License.
  */
 
-public class Trie {
+public final class Trie {
   
-  private Node root;	// Root node of Trie
+  private final Node root;	// Root node of Trie
   
   /**
    * Constructor

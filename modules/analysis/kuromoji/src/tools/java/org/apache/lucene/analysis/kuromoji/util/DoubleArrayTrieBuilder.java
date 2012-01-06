@@ -32,9 +32,7 @@ public class DoubleArrayTrieBuilder {
   
   public static DoubleArrayTrie build(Set<Entry<Integer, String>> entries) {
     Trie tempTrie = buildTrie(entries);
-    DoubleArrayTrie daTrie = new DoubleArrayTrie();
-    daTrie.build(tempTrie);
-    return daTrie;
+    return new DoubleArrayTrie(tempTrie);
   }
   
   public static Trie buildTrie(Set<Entry<Integer, String>> entries) {
