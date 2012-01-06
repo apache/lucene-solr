@@ -28,6 +28,7 @@ import java.nio.channels.WritableByteChannel;
 
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
 
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
@@ -60,9 +61,9 @@ public class TokenInfoDictionaryWriter {
     int featuresSize = features.length()* 2;
     
     // extend buffer if necessary
-    int left = buffer.limit() - buffer.position();
+    int left = buffer.remaining();
     if (8 + featuresSize > left) { // four short and features
-      ByteBuffer newBuffer = ByteBuffer.allocate(buffer.limit() * 2);
+      ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + 1, 1));
       buffer.flip();
       newBuffer.put(buffer);
       buffer = newBuffer;
