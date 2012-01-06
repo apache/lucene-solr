@@ -216,7 +216,7 @@ public class GraphvizFormatter {
         return BOS_LABEL;
       }
     } else {
-      return node.getSurfaceForm();
+      return node.getSurfaceFormString();
     }
   }
   

@@ -26,7 +26,9 @@ public final class ViterbiNode {
   
   private final int wordId;
   
-  private final String surfaceForm;
+  private final char[] surfaceForm;
+  private final int offset;
+  private final int length;
   
   private final int leftId;
   
@@ -44,9 +46,11 @@ public final class ViterbiNode {
   
   private final int startIndex;
   
-  public ViterbiNode(int wordId, String surfaceForm, int leftId, int rightId, int wordCost, int startIndex, Type type) {
+  public ViterbiNode(int wordId, char[] surfaceForm, int offset, int length, int leftId, int rightId, int wordCost, int startIndex, Type type) {
     this.wordId = wordId;
     this.surfaceForm = surfaceForm;
+    this.offset = offset;
+    this.length = length;
     this.leftId = leftId;
     this.rightId = rightId;
     this.wordCost = wordCost;
@@ -65,8 +69,29 @@ public final class ViterbiNode {
   /**
    * @return the surfaceForm
    */
-  public String getSurfaceForm() {
+  public char[] getSurfaceForm() {
     return surfaceForm;
+  }
+  
+  /**
+   * @return start offset into surfaceForm
+   */
+  public int getOffset() {
+    return offset;
+  }
+  
+  /**
+   * @return length of surfaceForm
+   */
+  public int getLength() {
+    return length;
+  }
+  
+  /**
+   * @return the surfaceForm as a String
+   */
+  public String getSurfaceFormString() {
+    return new String(surfaceForm, offset, length);
   }
   
   /**

@@ -48,8 +48,8 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
   @Override
   protected void setNextSentence(int sentenceStart, int sentenceEnd) {
     this.sentenceStart = sentenceStart;
-    // TODO: allow the tokenizer, at least maybe doTokenize to take char[] or charsequence or characteriterator?
-    tokens = tokenizer.tokenize(new String(buffer, sentenceStart, sentenceEnd-sentenceStart));
+    // TODO: maybe don't pass 0 here, so kuromoji tracks offsets for us?
+    tokens = tokenizer.doTokenize(0, buffer, sentenceStart, sentenceEnd-sentenceStart);
     tokenIndex = 0;
   }
 
@@ -59,10 +59,8 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
       return false;
     }
     Token token = tokens.get(tokenIndex);
-    // TODO: we don't really need the surface form except for its length? (its in the buffer already)
-    String surfaceForm = token.getSurfaceForm();
     int position = token.getPosition();
-    int length = surfaceForm.length();
+    int length = token.getLength();
     clearAttributes();
     termAtt.copyBuffer(buffer, sentenceStart + position, length);
     int startOffset = offset + sentenceStart + position;

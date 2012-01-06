@@ -49,10 +49,14 @@ public class UserDictionary implements Dictionary {
   
   /**
    * Lookup words in text
-   * @param text
+   * @param chars text
+   * @param off offset into text
+   * @param len length of text
    * @return array of {wordId, position, length}
    */
-  public int[][] lookup(String text) {
+  public int[][] lookup(char[] chars, int off, int len) {
+    // TODO: this method should be more efficient.
+    String text = new String(chars, off, len);
     TreeMap<Integer, int[]> result = new TreeMap<Integer, int[]>(); // index, [length, length...]
     
     for (String keyword : entries.descendingKeySet()) {

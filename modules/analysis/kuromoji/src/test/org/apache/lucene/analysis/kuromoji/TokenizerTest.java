@@ -59,7 +59,7 @@ public class TokenizerTest extends LuceneTestCase {
     List<Token> tokens = tokenizer.tokenize(input);
     assertTrue(tokens.size() == surfaceForms.length);
     for (int i = 0; i < tokens.size(); i++) {
-      assertEquals(surfaceForms[i], tokens.get(i).getSurfaceForm());
+      assertEquals(surfaceForms[i], tokens.get(i).getSurfaceFormString());
     }
   }
   

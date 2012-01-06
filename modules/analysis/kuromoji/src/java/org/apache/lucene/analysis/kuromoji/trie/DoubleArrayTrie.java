@@ -180,14 +180,14 @@ public final class DoubleArrayTrie {
    * @param key key to match
    * @return index value of last character in baseBuffer(double array id) if it is complete match. Negative value if it doesn't match. 0 if it is prefix match.
    */
-  public int lookup(String key) {
+  public int lookup(char key[], int offset, int length) {
     int index = 0;
     int base = 1; // base at index 0 should be 1
     
-    int keyLength = key.length();
-    for(int i = 0; i < keyLength; i++) {
+    int end = offset + length;
+    for(int i = offset; i < end; i++) {
       int previous = index;
-      index = index + base + key.charAt(i);
+      index = index + base + key[i];
       
       if(index > baseBuffer.limit()) { // Too long
         return -1;
@@ -204,7 +204,8 @@ public final class DoubleArrayTrie {
       }
       
       if(base >= TAIL_OFFSET) {	// If base is bigger than TAIL_OFFSET, start processing "tail"
-        return matchTail(base, index, key.substring(i + 1));
+        int newOffset = i + 1;
+        return matchTail(base, index, key, newOffset, end - newOffset);
       }
       
     }
@@ -222,16 +223,15 @@ public final class DoubleArrayTrie {
    * @param key
    * @return	index if it is complete match. 0 if it is prefix match. negative value if it doesn't match
    */
-  private int matchTail(int base, int index, String key) {
+  private int matchTail(int base, int index, char key[], int offset, int length) {
     int positionInTailArr = base - TAIL_OFFSET;
     
-    int keyLength = key.length();
-    for(int i = 0; i < keyLength; i++) {
-      if(key.charAt(i) != tailBuffer.get(positionInTailArr + i)){
+    for(int i = 0; i < length; i++) {
+      if(key[offset + i] != tailBuffer.get(positionInTailArr + i)){
         return -1;
       }
     }
-    return tailBuffer.get(positionInTailArr + keyLength) == TERMINATING_CHARACTER ? index : 0;
+    return tailBuffer.get(positionInTailArr + length) == TERMINATING_CHARACTER ? index : 0;
     
   }
   

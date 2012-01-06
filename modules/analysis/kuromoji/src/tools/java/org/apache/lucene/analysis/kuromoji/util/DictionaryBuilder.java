@@ -48,7 +48,7 @@ public class DictionaryBuilder {
     for (Entry<Integer, String> entry : tokenInfoBuilder.entrySet()) {
       int tokenInfoId = entry.getKey();
       String surfaceform = entry.getValue();
-      int doubleArrayId = trie.lookup(surfaceform);
+      int doubleArrayId = trie.lookup(surfaceform.toCharArray(), 0, surfaceform.length());
       assert doubleArrayId > 0;
       tokenInfoDictionary.addMapping(doubleArrayId, tokenInfoId);
     }		

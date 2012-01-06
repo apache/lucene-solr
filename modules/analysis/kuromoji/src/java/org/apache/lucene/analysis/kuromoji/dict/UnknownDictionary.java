@@ -27,16 +27,16 @@ public final class UnknownDictionary extends BinaryDictionary {
     super();
   }
   
-  public int lookup(String text) {
-    if(!characterDefinition.isGroup(text.charAt(0))) {
+  public int lookup(char[] text, int offset, int len) {
+    if(!characterDefinition.isGroup(text[offset])) {
       return 1;
     }
     
     // Extract unknown word. Characters with the same character class are considered to be part of unknown word
-    byte characterIdOfFirstCharacter = characterDefinition.getCharacterClass(text.charAt(0));
+    byte characterIdOfFirstCharacter = characterDefinition.getCharacterClass(text[offset]);
     int length = 1;
-    for (int i = 1; i < text.length(); i++) {
-      if (characterIdOfFirstCharacter == characterDefinition.getCharacterClass(text.charAt(i))){
+    for (int i = 1; i < len; i++) {
+      if (characterIdOfFirstCharacter == characterDefinition.getCharacterClass(text[offset+i])){
         length++;    			
       } else {
         break;

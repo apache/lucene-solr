@@ -30,7 +30,8 @@ public class UserDictionaryTest extends LuceneTestCase {
   public void testLookup() throws IOException {
     
     UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
-    int[][] dictionaryEntryResult = dictionary.lookup("関西国際空港に行った");
+    String s = "関西国際空港に行った";
+    int[][] dictionaryEntryResult = dictionary.lookup(s.toCharArray(), 0, s.length());
     // Length should be three 関西, 国際, 空港
     assertEquals(3, dictionaryEntryResult.length);
     
@@ -44,7 +45,8 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertEquals(2, dictionaryEntryResult[1][2]); // length of 国際
     assertEquals(2, dictionaryEntryResult[2][2]); // length of 空港
     
-    int[][] dictionaryEntryResult2 = dictionary.lookup("関西国際空港と関西国際空港に行った");
+    s = "関西国際空港と関西国際空港に行った";
+    int[][] dictionaryEntryResult2 = dictionary.lookup(s.toCharArray(), 0, s.length());
     // Length should be six 
     assertEquals(6, dictionaryEntryResult2.length);
   }

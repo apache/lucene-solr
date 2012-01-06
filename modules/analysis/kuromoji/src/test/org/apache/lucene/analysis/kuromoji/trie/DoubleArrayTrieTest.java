@@ -32,10 +32,10 @@ public class DoubleArrayTrieTest extends LuceneTestCase {
   public void test() {		
     Trie trie = getTrie();
     DoubleArrayTrie doubleArrayTrie = new DoubleArrayTrie(trie);
-    assertEquals(0, doubleArrayTrie.lookup("a"));
-    assertTrue(doubleArrayTrie.lookup("abc") > 0);
-    assertTrue(doubleArrayTrie.lookup("あいう") > 0);
-    assertTrue(doubleArrayTrie.lookup("xyz") < 0);
+    assertEquals(0, doubleArrayTrie.lookup("a".toCharArray(), 0, 1));
+    assertTrue(doubleArrayTrie.lookup("abc".toCharArray(), 0, 3) > 0);
+    assertTrue(doubleArrayTrie.lookup("あいう".toCharArray(), 0, 3) > 0);
+    assertTrue(doubleArrayTrie.lookup("xyz".toCharArray(), 0, 3) < 0);
   }
   
   private Trie getTrie() {

@@ -49,7 +49,7 @@ public class DebugTokenizer {
   }
   
   public String debugTokenize(String text) {
-    ViterbiNode[][][] lattice = this.viterbi.build(text);
+    ViterbiNode[][][] lattice = this.viterbi.build(text.toCharArray(), 0, text.length());
     List<ViterbiNode> bestPath = this.viterbi.search(lattice);
     return this.formatter.format(lattice[0], lattice[1], bestPath);
   }

@@ -20,22 +20,24 @@ package org.apache.lucene.analysis.kuromoji;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
 
-// TODO: somehow this thing needs to keep state, so that once it decodes metadata
-// it never does it again.
 public class Token {
   private final Dictionary dictionary;
   
   private final int wordId;
   
-  private final String surfaceForm;
+  private final char[] surfaceForm;
+  private final int offset;
+  private final int length;
   
   private final int position;
   
   private final Type type;
   
-  public Token(int wordId, String surfaceForm, Type type, int position, Dictionary dictionary) {
+  public Token(int wordId, char[] surfaceForm, int offset, int length, Type type, int position, Dictionary dictionary) {
     this.wordId = wordId;
     this.surfaceForm = surfaceForm;
+    this.offset = offset;
+    this.length = length;
     this.type = type;
     this.position = position;
     this.dictionary = dictionary;
@@ -44,8 +46,29 @@ public class Token {
   /**
    * @return surfaceForm
    */
-  public String getSurfaceForm() {
+  public char[] getSurfaceForm() {
     return surfaceForm;
+  }
+  
+  /**
+   * @return offset into surfaceForm
+   */
+  public int getOffset() {
+    return offset;
+  }
+  
+  /**
+   * @return length of surfaceForm
+   */
+  public int getLength() {
+    return length;
+  }
+  
+  /**
+   * @return surfaceForm as a String
+   */
+  public String getSurfaceFormString() {
+    return new String(surfaceForm, offset, length);
   }
   
   /**

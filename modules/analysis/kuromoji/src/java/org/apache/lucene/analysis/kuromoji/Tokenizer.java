@@ -129,23 +129,28 @@ public class Tokenizer {
     return splitPositions;
   }
   
+  private List<Token> doTokenize(int offset, String sentence) {
+    char text[] = sentence.toCharArray();
+    return doTokenize(offset, text, 0, text.length);
+  }
+  
   /**
    * Tokenize input sentence.
    * @param offset offset of sentence in original input text
    * @param sentence sentence to tokenize
    * @return list of Token
    */
-  private List<Token> doTokenize(int offset, String sentence) {
+  public List<Token> doTokenize(int offset, char[] sentence, int sentenceOffset, int sentenceLength) {
     ArrayList<Token> result = new ArrayList<Token>();
     
-    ViterbiNode[][][] lattice = viterbi.build(sentence);
+    ViterbiNode[][][] lattice = viterbi.build(sentence, sentenceOffset, sentenceLength);
     List<ViterbiNode> bestPath = viterbi.search(lattice);
     for (ViterbiNode node : bestPath) {
       int wordId = node.getWordId();
       if (node.getType() == Type.KNOWN && wordId == 0){ // Do not include BOS/EOS 
         continue;
       }
-      Token token = new Token(wordId, node.getSurfaceForm(), node.getType(), offset + node.getStartIndex(), dictionaryMap.get(node.getType()));	// Pass different dictionary based on the type of node
+      Token token = new Token(wordId, node.getSurfaceForm(), node.getOffset(), node.getLength(), node.getType(), offset + node.getStartIndex(), dictionaryMap.get(node.getType()));	// Pass different dictionary based on the type of node
       result.add(token);
     }
     
@@ -167,7 +172,9 @@ public class Tokenizer {
     
     private Mode mode = Mode.NORMAL;
     
-    private boolean split = false;
+    // this is true, for other use.
+    // lucene's tokenizer uses a breakiterator and doTokenize directly.
+    private boolean split = true;
     
     private UserDictionary userDictionary = null;
     
