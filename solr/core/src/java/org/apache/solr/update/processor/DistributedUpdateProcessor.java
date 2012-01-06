@@ -282,12 +282,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         recoverRequestCmd.setCoreName(error.node.getCoreName());
         
         server.request(recoverRequestCmd);
-      } catch (MalformedURLException e) {
+      } catch (Exception e) {
         log.warn("Problem trying to tell a replica to recover", e);
-      } catch (SolrServerException e) {
-        log.warn("Problem trying to tell a replica to recover", e);
-      } catch (IOException e) {
-        log.warn("", e);
       }
       
     }
