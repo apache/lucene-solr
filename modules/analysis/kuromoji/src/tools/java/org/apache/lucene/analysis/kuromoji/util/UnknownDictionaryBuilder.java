@@ -31,10 +31,6 @@ public class UnknownDictionaryBuilder {
   
   private String encoding = "euc-jp";
   
-  public UnknownDictionaryBuilder() {
-    
-  }
-  
   public UnknownDictionaryBuilder(String encoding) {
     this.encoding = encoding;
   }

@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder.DictionaryFormat;
+import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
+import org.apache.lucene.analysis.kuromoji.trie.Trie;
 
 import com.ibm.icu.text.Normalizer2;
 
@@ -53,9 +55,6 @@ public class TokenInfoDictionaryBuilder {
   private Normalizer2 normalizer;
   
   private DictionaryFormat format = DictionaryFormat.IPADIC;
-  
-  public TokenInfoDictionaryBuilder() {
-  }
   
   public TokenInfoDictionaryBuilder(DictionaryFormat format, String encoding, boolean normalizeEntries) {
     this.format = format;
@@ -80,6 +79,19 @@ public class TokenInfoDictionaryBuilder {
     return buildDictionary(csvFiles);
   }
   
+  public DoubleArrayTrie buildDoubleArrayTrie() {
+    Trie tempTrie = buildTrie();
+    return new DoubleArrayTrie(tempTrie);
+  }
+  
+  private Trie buildTrie() {
+    Trie trie = new Trie();
+    for (final String surfaceForm : dictionaryEntries.values()) {
+      trie.add(surfaceForm);
+    }
+    return trie;
+  }
+
   public TokenInfoDictionaryWriter buildDictionary(List<File> csvFiles) throws IOException {
     TokenInfoDictionaryWriter dictionary = new TokenInfoDictionaryWriter(10 * 1024 * 1024);
     

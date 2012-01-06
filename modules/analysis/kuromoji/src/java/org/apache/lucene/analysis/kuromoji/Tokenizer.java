@@ -53,8 +53,7 @@ public class Tokenizer {
    */
   protected Tokenizer(UserDictionary userDictionary, Mode mode, boolean split) {
     
-    this.viterbi = new Viterbi(Dictionaries.getTrie(),
-        Dictionaries.getDictionary(),
+    this.viterbi = new Viterbi(Dictionaries.getDictionary(),
         Dictionaries.getUnknownDictionary(),
         Dictionaries.getCosts(),
         userDictionary,

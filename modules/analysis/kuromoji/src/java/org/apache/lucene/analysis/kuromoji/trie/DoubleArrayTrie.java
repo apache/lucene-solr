@@ -18,11 +18,8 @@ package org.apache.lucene.analysis.kuromoji.trie;
  */
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.EOFException;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -118,22 +115,6 @@ public final class DoubleArrayTrie {
     tailByteBuffer = tailByteBuffer.asReadOnlyBuffer();
     tailBuffer = tailByteBuffer.asCharBuffer().asReadOnlyBuffer();
   }  
-  
-  /**
-   * Write to file (used by builder). Path is this class' slashed canonical classname + ".dat".
-   * @throws IOException
-   */
-  public void write(String baseDir) throws IOException  {
-    String filename = baseDir + File.separator + getClass().getName().replace('.', File.separatorChar) + FILENAME_SUFFIX;
-    new File(filename).getParentFile().mkdirs();
-    
-    final FileOutputStream os = new FileOutputStream(filename);
-    try {
-      write(os);
-    } finally {
-      os.close();
-    }
-  }
   
   public void write(OutputStream os) throws IOException {
     baseByteBuffer.rewind();
@@ -335,25 +316,5 @@ public final class DoubleArrayTrie {
       node = node.getChildren()[0];	// Move to next node
     }
   }
-  
-  /** Returns the default trie as singleton with data from classpath, that fits the other dictionaries */
-  public synchronized static DoubleArrayTrie getInstance() {
-    if (singleton == null) {
-      InputStream is = null;
-      try {
-        is = DoubleArrayTrie.class.getResourceAsStream(DoubleArrayTrie.class.getSimpleName() + FILENAME_SUFFIX);
-        if (is == null)
-          throw new FileNotFoundException("Not in classpath: " + DoubleArrayTrie.class.getName().replace('.','/') + FILENAME_SUFFIX);
-        singleton = new DoubleArrayTrie(is);
-      } catch (IOException ioe) {
-        throw new RuntimeException("Cannot load DoubleArrayTrie.", ioe);
-      } finally {
-        IOUtils.closeWhileHandlingException(is);
-      }
-    }
-    return singleton;
-  }
-  
-  private static DoubleArrayTrie singleton;
   
 }

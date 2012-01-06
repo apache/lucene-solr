@@ -64,14 +64,13 @@ public class Viterbi {
   /**
    * Constructor
    */
-  public Viterbi(DoubleArrayTrie trie,
-      TokenInfoDictionary dictionary,
+  public Viterbi(TokenInfoDictionary dictionary,
       UnknownDictionary unkDictionary,
       ConnectionCosts costs,
       UserDictionary userDictionary,
       Mode mode) {
-    this.trie = trie;
     this.dictionary = dictionary;
+    this.trie = dictionary.getTrie();
     this.unkDictionary = unkDictionary;
     this.costs = costs;
     this.userDictionary = userDictionary;

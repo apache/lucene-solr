@@ -17,12 +17,39 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
+import java.io.InputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
-public class TokenInfoDictionary extends BinaryDictionary {
+import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
+
+import org.apache.lucene.util.IOUtils;
+
+public final class TokenInfoDictionary extends BinaryDictionary {
+
+  public static final String TRIE_FILENAME_SUFFIX = "$trie.dat";
+
+  private final DoubleArrayTrie trie;
   
   private TokenInfoDictionary() throws IOException {
     super();
+    InputStream is = null;
+    DoubleArrayTrie trie = null;
+    try {
+      is = getClass().getResourceAsStream(getClass().getSimpleName() + TRIE_FILENAME_SUFFIX);
+      if (is == null)
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + TRIE_FILENAME_SUFFIX);
+      trie = new DoubleArrayTrie(is);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Cannot load DoubleArrayTrie.", ioe);
+    } finally {
+      IOUtils.closeWhileHandlingException(is);
+    }
+    this.trie = trie;
+  }
+  
+  public DoubleArrayTrie getTrie() {
+    return trie;
   }
   
   public synchronized static TokenInfoDictionary getInstance() {

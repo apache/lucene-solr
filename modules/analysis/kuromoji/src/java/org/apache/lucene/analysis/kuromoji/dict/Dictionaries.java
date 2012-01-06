@@ -17,19 +17,15 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
-
 public final class Dictionaries {
   
   private static TokenInfoDictionary dictionary;
   private static UnknownDictionary unknownDictionary;
   private static ConnectionCosts costs;
-  private static DoubleArrayTrie trie;
   static {
     dictionary = TokenInfoDictionary.getInstance();
     unknownDictionary = UnknownDictionary.getInstance();
     costs = ConnectionCosts.getInstance();
-    trie = DoubleArrayTrie.getInstance();
   }
   
   private Dictionaries() {} // no instance!
@@ -74,19 +70,5 @@ public final class Dictionaries {
    */
   public static void setCosts(ConnectionCosts costs) {
     Dictionaries.costs = costs;
-  }
-  
-  /**
-   * @return the trie
-   */
-  public static DoubleArrayTrie getTrie() {
-    return trie;
-  }
-  
-  /**
-   * @param trie the trie to set
-   */
-  public static void setTrie(DoubleArrayTrie trie) {
-    Dictionaries.trie = trie;
   }
 }

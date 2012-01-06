@@ -27,11 +27,10 @@ public class DictionaryBuilder {
   
   public enum DictionaryFormat { IPADIC, UNIDIC };
   
-  public DictionaryBuilder() {
-    
+  private DictionaryBuilder() {
   }
   
-  public void build(DictionaryFormat format,
+  public static void build(DictionaryFormat format,
       String inputDirname,
       String outputDirname,
       String encoding,
@@ -41,8 +40,8 @@ public class DictionaryBuilder {
     TokenInfoDictionaryWriter tokenInfoDictionary = tokenInfoBuilder.build(inputDirname);
     
     System.out.print("  building double array trie...");
-    DoubleArrayTrie trie = DoubleArrayTrieBuilder.build(tokenInfoBuilder.entrySet());
-    trie.write(outputDirname);
+    DoubleArrayTrie trie = tokenInfoBuilder.buildDoubleArrayTrie();
+    TokenInfoDictionaryWriter.writeDoubleArrayTrie(outputDirname, trie);
     System.out.println("  done");
     
     System.out.print("  processing target map...");
@@ -89,7 +88,6 @@ public class DictionaryBuilder {
     String inputEncoding = args[3];
     boolean normalizeEntries = Boolean.parseBoolean(args[4]);
     
-    DictionaryBuilder builder = new DictionaryBuilder();
     System.out.println("dictionary builder");
     System.out.println("");
     System.out.println("dictionary format: " + format);
@@ -98,7 +96,7 @@ public class DictionaryBuilder {
     System.out.println("input encoding: " + inputEncoding);
     System.out.println("normalize entries: " + normalizeEntries);
     System.out.println("");
-    builder.build(format, inputDirname, outputDirname, inputEncoding, normalizeEntries);
+    DictionaryBuilder.build(format, inputDirname, outputDirname, inputEncoding, normalizeEntries);
   }
   
 }

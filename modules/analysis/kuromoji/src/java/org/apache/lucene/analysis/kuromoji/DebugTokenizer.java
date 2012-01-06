@@ -39,8 +39,7 @@ public class DebugTokenizer {
   
   protected DebugTokenizer(UserDictionary userDictionary, Mode mode) {
     
-    this.viterbi = new Viterbi(Dictionaries.getTrie(),
-        Dictionaries.getDictionary(),
+    this.viterbi = new Viterbi(Dictionaries.getDictionary(),
         Dictionaries.getUnknownDictionary(),
         Dictionaries.getCosts(),
         userDictionary,

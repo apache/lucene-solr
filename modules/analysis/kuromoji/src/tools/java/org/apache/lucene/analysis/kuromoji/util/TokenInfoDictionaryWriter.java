@@ -39,6 +39,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
+import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 
 public class TokenInfoDictionaryWriter {
   protected ByteBuffer buffer;
@@ -267,4 +268,17 @@ public class TokenInfoDictionaryWriter {
       os.close();
     }
   }
+  
+  public static void writeDoubleArrayTrie(String baseDir, DoubleArrayTrie trie) throws IOException  {
+    String filename = baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + TokenInfoDictionary.TRIE_FILENAME_SUFFIX;
+    new File(filename).getParentFile().mkdirs();
+    
+    final FileOutputStream os = new FileOutputStream(filename);
+    try {
+      trie.write(os);
+    } finally {
+      os.close();
+    }
+  }
+  
 }

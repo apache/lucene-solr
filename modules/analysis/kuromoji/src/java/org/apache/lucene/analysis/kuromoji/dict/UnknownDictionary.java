@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.kuromoji.dict;
 
 import java.io.IOException;
 
-public class UnknownDictionary extends BinaryDictionary {
+public final class UnknownDictionary extends BinaryDictionary {
 
   private final CharacterDefinition characterDefinition = CharacterDefinition.getInstance();
   
