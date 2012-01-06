@@ -56,6 +56,13 @@ public class Token {
   }
   
   /**
+   * @return pronunciation. null if token doesn't have pronunciation.
+   */
+  public String getPronunciation() {
+    return dictionary.getPronunciation(wordId);
+  }
+  
+  /**
    * @return part of speech.
    */
   public String getPartOfSpeech() {

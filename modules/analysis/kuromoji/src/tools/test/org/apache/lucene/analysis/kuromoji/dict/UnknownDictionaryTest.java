@@ -54,15 +54,15 @@ public class UnknownDictionaryTest extends LuceneTestCase {
   public void testPut() {
     UnknownDictionaryWriter unkDic = new UnknownDictionaryWriter(10 * 1024 * 1024);
     try{
-      unkDic.put(CSVUtil.parse("KANJI,1285,11426,名詞,一般,*,*,*,*,*"));
+      unkDic.put(CSVUtil.parse("KANJI,1285,11426,名詞,一般,*,*,*,*,*,*,*"));
       fail();
     } catch(Exception e){
       
     }
     
-    String entry1 = "KANJI,1285,1285,11426,名詞,一般,*,*,*,*,*";
-    String entry2 = "ALPHA,1285,1285,13398,名詞,一般,*,*,*,*,*";
-    String entry3 = "HIRAGANA,1285,1285,13069,名詞,一般,*,*,*,*,*";
+    String entry1 = "KANJI,1285,1285,11426,名詞,一般,*,*,*,*,*,*,*";
+    String entry2 = "ALPHA,1285,1285,13398,名詞,一般,*,*,*,*,*,*,*";
+    String entry3 = "HIRAGANA,1285,1285,13069,名詞,一般,*,*,*,*,*,*,*";
     
     unkDic.putCharacterCategory(0, "KANJI");
     unkDic.putCharacterCategory(1, "ALPHA");

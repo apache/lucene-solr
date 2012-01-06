@@ -31,8 +31,6 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
-import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
-
 public abstract class BinaryDictionary implements Dictionary {
   
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";
@@ -130,67 +128,65 @@ public abstract class BinaryDictionary implements Dictionary {
   public int getWordCost(int wordId) {
     return buffer.getShort(wordId + 4);	// Skip left id and right id
   }
-  
-  // TODO: this method will likely never be efficient, do we need it?
-  @Override
-  public String[] getAllFeaturesArray(int wordId) {
-    char posIndex = buffer.getChar(wordId + 6); // read index into posDict
-    String pos = posDict[posIndex];
-    int posLen = pos.length();
-    int size = buffer.getShort(wordId + 8) / 2; // Read length of feature String. Skip 8 bytes, see data structure.
-    char[] targetArr = new char[posLen + 1 + size]; // pos + separator + the rest
-    int offset = wordId + 8 + 2; // offset is position where features string starts
-    for (int i = 0; i < pos.length(); i++) {
-      targetArr[i] = pos.charAt(i);
-    }
-    int upto = posLen;
-    targetArr[upto++] = INTERNAL_SEPARATOR.charAt(0);
-    for(int i = 0; i < size; i++){
-      targetArr[upto++] = buffer.getChar(offset + i * 2);
-    }
-    String allFeatures = new String(targetArr);
-    return allFeatures.split(INTERNAL_SEPARATOR);
-  }
-  
-  @Override
-  public String getFeature(int wordId, int... fields) {
-    String[] allFeatures = getAllFeaturesArray(wordId);
-    StringBuilder sb = new StringBuilder();
-    
-    if(fields.length == 0){ // All features
-      for(String feature : allFeatures) {
-        sb.append(CSVUtil.quoteEscape(feature)).append(",");
+
+  private String readString(int offset, int length, boolean kana) {
+    char text[] = new char[length];
+    if (kana) {
+      for (int i = 0; i < length; i++) {
+        text[i] = (char) (0x30A0 + (buffer.get(offset + i) & 0xff));
       }
-    } else if(fields.length == 1) { // One feature doesn't need to escape value
-      sb.append(allFeatures[fields[0]]).append(",");			
     } else {
-      for(int field : fields){
-        sb.append(CSVUtil.quoteEscape(allFeatures[field])).append(",");
+      for (int i = 0; i < length; i++) {
+        text[i] = buffer.getChar(offset + (i << 1));
       }
     }
-    
-    return sb.deleteCharAt(sb.length() - 1).toString();
+    return new String(text);
   }
   
   @Override
   public String getReading(int wordId) {
-    return getFeature(wordId, 7);
+    int offset = wordId + 7;
+    int baseFormLength = buffer.get(offset++) & 0xff;
+    offset += baseFormLength << 1;
+    int readingData = buffer.get(offset++) & 0xff;
+    return readString(offset, readingData >>> 1, (readingData & 1) == 1);
   }
   
   @Override
-  public String getAllFeatures(int wordId) {
-    return getFeature(wordId);
+  public String getPronunciation(int wordId) {
+    int offset = wordId + 7;
+    int baseFormLength = buffer.get(offset++) & 0xff;
+    offset += baseFormLength << 1;
+    int readingData = buffer.get(offset++) & 0xff;
+    int readingLength = readingData >>> 1;
+    int readingOffset = offset;
+    if ((readingData & 1) == 0) {
+      offset += readingLength << 1;
+    } else {
+      offset += readingLength;
+    }
+    int pronunciationData = buffer.get(offset++) & 0xff;
+    if (pronunciationData == 0) {
+      return readString(readingOffset, readingLength, (readingData & 1) == 1); 
+    } else {
+      return readString(offset, pronunciationData >>> 1, (pronunciationData & 1) == 1);
+    }
   }
   
   @Override
   public String getPartOfSpeech(int wordId) {
-    return getFeature(wordId, 0, 1, 2, 3);
+    int posIndex = buffer.get(wordId + 6) & 0xff; // read index into posDict
+    return posDict[posIndex];
   }
   
   @Override
   public String getBaseForm(int wordId) {
-    String form = getFeature(wordId, 6);
-    return "*".equals(form) ? null : form;
+    int offset = wordId + 7;
+    int length = buffer.get(offset++) & 0xff;
+    if (length == 0) {
+      return null; // same as surface form
+    } else {
+      return readString(offset, length, false);
+    }
   }
-  
 }

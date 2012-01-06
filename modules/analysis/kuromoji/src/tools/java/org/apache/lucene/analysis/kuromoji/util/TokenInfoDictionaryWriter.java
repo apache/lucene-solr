@@ -59,10 +59,10 @@ public class TokenInfoDictionaryWriter {
     StringBuilder sb = new StringBuilder();
     
     // build up the POS string
-    for (int i = 4; i < 10; i++) {
-      sb.append(entry[i]);
-      if (i < 9) {
-        sb.append(Dictionary.INTERNAL_SEPARATOR);
+    for (int i = 4; i < 8; i++) {
+      sb.append(CSVUtil.quoteEscape(entry[i]));
+      if (i < 7) {
+        sb.append(',');
       }
     }
     String pos = sb.toString();
@@ -72,16 +72,18 @@ public class TokenInfoDictionaryWriter {
       posDict.add(pos);
     }
     
-    sb.setLength(0);
-    for (int i = 10; i < entry.length; i++){
-      sb.append(entry[i]).append(Dictionary.INTERNAL_SEPARATOR);
-    }
-    String features = sb.deleteCharAt(sb.length() - 1).toString();
-    int featuresSize = features.length()* 2;
+    // TODO: what are the parts 9 and 10 that kuromoji does not expose via Token?
+    // we need to break all these out (we can structure them inside posdict)
+    
+    String baseForm = entry[10];
+    String reading = entry[11];
+    String pronunciation = entry[12];
     
     // extend buffer if necessary
     int left = buffer.remaining();
-    if (10 + featuresSize > left) { // five short and features
+    // worst case: three short, 4 bytes and features (all as utf-16)
+    int worstCase = 6 + 4 + 2*(baseForm.length() + reading.length() + pronunciation.length());
+    if (worstCase > left) {
       ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + 1, 1));
       buffer.flip();
       newBuffer.put(buffer);
@@ -91,14 +93,59 @@ public class TokenInfoDictionaryWriter {
     buffer.putShort(leftId);
     buffer.putShort(rightId);
     buffer.putShort(wordCost);
-    assert posIndex < Character.MAX_VALUE;
-    buffer.putChar((char)posIndex);
-    buffer.putShort((short)featuresSize);
-    for (char c : features.toCharArray()){
-      buffer.putChar(c);
+    assert posIndex < 256;
+    buffer.put((byte)posIndex);
+    
+    if (baseForm.equals(entry[0])) {
+      buffer.put((byte)0); // base form is the same as surface form
+    } else {
+      buffer.put((byte)baseForm.length());
+      for (int i = 0; i < baseForm.length(); i++) {
+        buffer.putChar(baseForm.charAt(i));
+      }
+    }
+    
+    if (isKatakana(reading)) {
+      buffer.put((byte) (reading.length() << 1 | 1));
+      writeKatakana(reading);
+    } else {
+      buffer.put((byte) (reading.length() << 1));
+      for (int i = 0; i < reading.length(); i++) {
+        buffer.putChar(reading.charAt(i));
+      }
+    }
+    
+    if (pronunciation.equals(reading)) {
+      buffer.put((byte)0); // pronunciation is the same as reading
+    } else {
+      if (isKatakana(pronunciation)) {
+        buffer.put((byte) (pronunciation.length() << 1 | 1));
+        writeKatakana(pronunciation);
+      } else {
+        buffer.put((byte) (pronunciation.length() << 1));
+        for (int i = 0; i < pronunciation.length(); i++) {
+          buffer.putChar(pronunciation.charAt(i));
+        }
+      }
     }
     
     return buffer.position();
+  }
+  
+  private boolean isKatakana(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      char ch = s.charAt(i);
+      if (ch < 0x30A0 || ch > 0x30FF) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  private void writeKatakana(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      buffer.put((byte) (s.charAt(i) - 0x30A0));
+    }
   }
   
   public void addMapping(int sourceId, int wordId) {
@@ -186,6 +233,7 @@ public class TokenInfoDictionaryWriter {
     } finally {
       os.close();
     }
+    System.out.println("Info: wrote " + posDict.size() + " unique POS entries");
   }
   
   protected void writeDictionary(String filename) throws IOException {

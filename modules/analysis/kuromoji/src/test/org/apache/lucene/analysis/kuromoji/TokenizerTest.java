@@ -63,7 +63,6 @@ public class TokenizerTest extends LuceneTestCase {
     }
   }
   
-  
   @Test
   public void testReadings() {
     List<Token> tokens = tokenizer.tokenize("寿司が食べたいです。");
@@ -74,6 +73,49 @@ public class TokenizerTest extends LuceneTestCase {
     assertEquals(tokens.get(3).getReading(), "タイ");
     assertEquals(tokens.get(4).getReading(), "デス");
     assertEquals(tokens.get(5).getReading(), "。");
+  }
+  
+  @Test
+  public void testReadings2() {
+    List<Token> tokens = tokenizer.tokenize("多くの学生が試験に落ちた。");
+    assertEquals(9, tokens.size());
+    assertEquals("オオク", tokens.get(0).getReading());
+    assertEquals("ノ", tokens.get(1).getReading());
+    assertEquals("ガクセイ", tokens.get(2).getReading());
+    assertEquals("ガ", tokens.get(3).getReading());
+    assertEquals("シケン", tokens.get(4).getReading());
+    assertEquals("ニ", tokens.get(5).getReading());
+    assertEquals("オチ", tokens.get(6).getReading());
+    assertEquals("タ", tokens.get(7).getReading());
+    assertEquals("。", tokens.get(8).getReading());
+  }
+  
+  @Test
+  public void testPronunciations() {
+    List<Token> tokens = tokenizer.tokenize("寿司が食べたいです。");
+    assertTrue(tokens.size() == 6);
+    assertEquals("スシ", tokens.get(0).getPronunciation());
+    assertEquals("ガ",    tokens.get(1).getPronunciation());
+    assertEquals("タベ", tokens.get(2).getPronunciation());
+    assertEquals("タイ",  tokens.get(3).getPronunciation());
+    assertEquals("デス", tokens.get(4).getPronunciation());
+    assertEquals("。", tokens.get(5).getPronunciation());
+  }
+  
+  @Test
+  public void testPronunciations2() {
+    List<Token> tokens = tokenizer.tokenize("多くの学生が試験に落ちた。");
+    assertEquals(9, tokens.size());
+    // pronunciation differs from reading here
+    assertEquals("オーク", tokens.get(0).getPronunciation());
+    assertEquals("ノ", tokens.get(1).getPronunciation());
+    assertEquals("ガクセイ", tokens.get(2).getPronunciation());
+    assertEquals("ガ", tokens.get(3).getPronunciation());
+    assertEquals("シケン", tokens.get(4).getPronunciation());
+    assertEquals("ニ", tokens.get(5).getPronunciation());
+    assertEquals("オチ", tokens.get(6).getPronunciation());
+    assertEquals("タ", tokens.get(7).getPronunciation());
+    assertEquals("。", tokens.get(8).getPronunciation());
   }
   
   @Test

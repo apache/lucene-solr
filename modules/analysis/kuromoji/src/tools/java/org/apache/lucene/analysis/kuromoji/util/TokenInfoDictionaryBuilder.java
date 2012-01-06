@@ -154,44 +154,9 @@ public class TokenInfoDictionaryBuilder {
    * 13	- surface reading
    */
   
-  // TODO: encoding in the current way (basically as CSV) is transparent, but we can
-  // save a lot of space, RAM, and some cpu if we use a binary format (via ByteBuffer) 
-  // instead: (example entry from IPADIC):
-  //
-  // 零れ話,1285,1285,5622,名詞,一般,*,*,*,*,零れ話,コボレバナシ,コボレバナシ
-  //
-  // 1. (名詞,一般,*,*,*,*) POS parts are huge but don't have many unique entries. 
-  //    they can be deduplicated into separate 'indexes' (arrays) and encoded as a byte or vint refs.
-  // 2. surface (零れ話) == basicForm (零れ話) very often, i think all words except adjectives/verbs.
-  //    in these common cases we can use a bit (or even '*' as basic form) to mark this.
-  // 3. reading (コボレバナシ) == pronunciation (コボレバナシ) often, we can do the same as 2 here.
-  // 4. readings and pronunciations are often completely katakana, cuts their size in half 
-  //    to mark this as a bit and encode singlebyte instead of utf-16: writeByte(ch - 0x30A0)
-  // 
-  // we can associate lazy decoding of these additional features in Token and speed things up a lot:
-  // in lucene-gosen we have an enum 'loadState' (3-stages of laziness):
-  //   NONE, BASIC (pos and base forms), FULL (BASIC + reading/pronunciation).
-  // the idea is that reading/pronunciation is rarely used by consumers, so its worth it to lazily
-  // only load whats needed, and in the rarer case where someone asks for reading/pronunciation its
-  // not too slow to skip over the BASIC stuff we already read in previously.
-  // in some cases people just tokenize and don't even use POS or anything and this really helps then.
-  public String[] compactEntry(String[] features) {
-    // 2. when basicForm == surfaceForm, just indicate this with a * instead of duplicating it.
-    if (features[0].equals(features[10])) {
-      features[10] = "*";
-    }
-    // 3. when pronunciation == reading, just indicate this with a * instead of duplicating it.
-    // TODO: is there also additional redundancy in the unidic case here that we can improve? 
-    if (features[12].equals(features[11])) {
-      features[12] = "*";
-    }
-    
-    return features;
-  }
-  
   public String[] formatEntry(String[] features) {
     if (this.format == DictionaryFormat.IPADIC) {
-      return compactEntry(features);
+      return features;
     } else {
       String[] features2 = new String[13];
       features2[0] = features[0];
@@ -215,7 +180,7 @@ public class TokenInfoDictionaryBuilder {
         features2[11] = features[13];
         features2[12] = features[13];
       }			
-      return compactEntry(features2);
+      return features2;
     }
   }
   

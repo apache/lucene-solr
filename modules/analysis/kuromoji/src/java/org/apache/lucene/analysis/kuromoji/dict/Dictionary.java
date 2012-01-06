@@ -43,24 +43,11 @@ public interface Dictionary {
   public int getWordCost(int wordId);
   
   /**
-   * Get all features of tokens
-   * @param wordId word ID of token
-   * @return All features of the token
-   */
-  public String getAllFeatures(int wordId);
-  
-  /**
-   * Get all features as array
-   * @param wordId word ID of token
-   * @return Array containing all features of the token
-   */
-  public String[] getAllFeaturesArray(int wordId);
-  
-  /**
    * Get Part-Of-Speech of tokens
    * @param wordId word ID of token
    * @return Part-Of-Speech of the token
    */
+  // TODO: split into the type-safe components
   public String getPartOfSpeech(int wordId);
   
   /**
@@ -78,10 +65,12 @@ public interface Dictionary {
   public String getBaseForm(int wordId);
   
   /**
-   * Get feature(s) of tokens
-   * @param wordId word ID token
-   * @param fields array of index. If this is empty, return all features.
-   * @return Features of the token
+   * Get pronunciation of tokens
+   * @param wordId word ID of token
+   * @return Pronunciation of the token
    */
-  public String getFeature(int wordId, int... fields);
+  public String getPronunciation(int wordId);
+  
+  // TODO: maybe we should have a optimal method, a non-typesafe
+  // 'getAdditionalData' if other dictionaries like unidic have additional data
 }

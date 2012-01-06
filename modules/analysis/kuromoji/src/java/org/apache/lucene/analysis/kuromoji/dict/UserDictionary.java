@@ -117,17 +117,16 @@ public class UserDictionary implements Dictionary {
   }
   
   @Override
-  public String getAllFeatures(int wordId) {
-    return getFeature(wordId);
-  }
-  
-  @Override
   public String getBaseForm(int wordId) {
     return null; // TODO: add support?
   }
   
   @Override
-  public String[] getAllFeaturesArray(int wordId) {
+  public String getPronunciation(int wordId) {
+    return null; // TODO: add support?
+  }
+  
+  private String[] getAllFeaturesArray(int wordId) {
     String allFeatures = featureEntries.get(wordId);
     if(allFeatures == null) {
       return null;
@@ -137,8 +136,7 @@ public class UserDictionary implements Dictionary {
   }
   
   
-  @Override
-  public String getFeature(int wordId, int... fields) {
+  private String getFeature(int wordId, int... fields) {
     String[] allFeatures = getAllFeaturesArray(wordId);
     if (allFeatures == null) {
       return null;

@@ -27,7 +27,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 
 public class UnknownDictionaryBuilder {
-  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*";
+  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*,*,*";
   
   private String encoding = "euc-jp";
   
@@ -66,7 +66,9 @@ public class UnknownDictionaryBuilder {
     
     String line = null;
     while ((line = lineReader.readLine()) != null) {
-      dictionary.put(CSVUtil.parse(line)); // Probably we don't need to validate entry
+      // note: unk.def only has 10 fields, it simplifies the writer to just append empty reading and pronunciation,
+      // even though the unknown dictionary returns hardcoded null here.
+      dictionary.put(CSVUtil.parse(line + ",*,*")); // Probably we don't need to validate entry
     }
     
     return dictionary;
