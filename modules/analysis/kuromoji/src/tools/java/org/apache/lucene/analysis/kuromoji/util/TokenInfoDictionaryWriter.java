@@ -84,7 +84,7 @@ public class TokenInfoDictionaryWriter {
     // worst case: three short, 4 bytes and features (all as utf-16)
     int worstCase = 6 + 4 + 2*(baseForm.length() + reading.length() + pronunciation.length());
     if (worstCase > left) {
-      ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + 1, 1));
+      ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
       buffer.flip();
       newBuffer.put(buffer);
       buffer = newBuffer;
