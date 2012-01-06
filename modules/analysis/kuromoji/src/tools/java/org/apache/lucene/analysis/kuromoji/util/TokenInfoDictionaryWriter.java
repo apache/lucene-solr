@@ -27,11 +27,14 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
@@ -39,11 +42,13 @@ import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 
 public class TokenInfoDictionaryWriter {
   protected ByteBuffer buffer;
-  protected int[][] targetMap = new int[1][];
-  protected List<String> posDict = new ArrayList<String>();
+  private int targetMapSize = 0;
+  private int[][] targetMap = new int[8192][];
+  private int[] targetMapComponentSizes = new int[8192];
+  private final List<String> posDict = new ArrayList<String>();
+  private final Map<String,Integer> posDictLookup = new HashMap<String,Integer>();
 
   public TokenInfoDictionaryWriter(int size) {
-    targetMap = new int[1][];
     buffer = ByteBuffer.allocate(size);
   }
   
@@ -66,10 +71,12 @@ public class TokenInfoDictionaryWriter {
       }
     }
     String pos = sb.toString();
-    int posIndex = posDict.indexOf(pos);
-    if (posIndex < 0) {
+    Integer posIndex = posDictLookup.get(pos);
+    if (posIndex == null) {
       posIndex = posDict.size();
       posDict.add(pos);
+      posDictLookup.put(pos, posIndex);
+      assert posDict.size() == posDictLookup.size();
     }
     
     // TODO: what are the parts 9 and 10 that kuromoji does not expose via Token?
@@ -93,8 +100,8 @@ public class TokenInfoDictionaryWriter {
     buffer.putShort(leftId);
     buffer.putShort(rightId);
     buffer.putShort(wordCost);
-    assert posIndex < 256;
-    buffer.put((byte)posIndex);
+    assert posIndex.intValue() < 256;
+    buffer.put(posIndex.byteValue());
     
     if (baseForm.equals(entry[0])) {
       buffer.put((byte)0); // base form is the same as surface form
@@ -150,24 +157,29 @@ public class TokenInfoDictionaryWriter {
   
   public void addMapping(int sourceId, int wordId) {
     if(targetMap.length <= sourceId) {
-      int[][] newArray = new int[sourceId + 1][];
+      final int newSize = ArrayUtil.oversize(sourceId + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+      int[][] newArray = new int[newSize][];
       System.arraycopy(targetMap, 0, newArray, 0, targetMap.length);
       targetMap = newArray;
+      int[] newSizeArray = new int[newSize];
+      System.arraycopy(targetMapComponentSizes, 0, newSizeArray, 0, targetMapComponentSizes.length);
+      targetMapComponentSizes = newSizeArray;
     }
     
-    // Prepare array -- extend the length of array by one
+    // Prepare array -- extend the length of array
     int[] current = targetMap[sourceId];
     if (current == null) {
+      assert targetMapComponentSizes[sourceId] == 0;
       current = new int[1];
     } else {
-      int[] newArray = new int[current.length + 1];
-      System.arraycopy(current, 0, newArray, 0, current.length);
-      current = newArray;
+      current = ArrayUtil.grow(current);
     }
     targetMap[sourceId] = current;
     
     int[] targets = targetMap[sourceId];
-    targets[targets.length - 1] = wordId;
+    targets[targetMapComponentSizes[sourceId]] = wordId;
+    targetMapComponentSizes[sourceId]++;
+    targetMapSize = Math.max(targetMapSize, sourceId + 1);
   }
 
   /**
@@ -177,9 +189,10 @@ public class TokenInfoDictionaryWriter {
    * @throws IOException
    */
   public void write(String baseDir) throws IOException {
-    writeDictionary(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.DICT_FILENAME_SUFFIX);
-    writeTargetMap(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
-    writePosDict(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
+    final String baseName = baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar);
+    writeDictionary(baseName + BinaryDictionary.DICT_FILENAME_SUFFIX);
+    writeTargetMap(baseName + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
+    writePosDict(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
   }
   
   protected void writeTargetMap(String filename) throws IOException {
@@ -189,10 +202,11 @@ public class TokenInfoDictionaryWriter {
       os = new BufferedOutputStream(os);
       final DataOutput out = new OutputStreamDataOutput(os);
       CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
-      out.writeVInt(targetMap.length);
+      out.writeVInt(targetMapSize);
       int nulls = 0;
-      for (int[] a : targetMap) {
-        if (a == null) {
+      for (int j = 0; j < targetMapSize; j++) {
+        final int size = targetMapComponentSizes[j];
+        if (size == 0) {
           // run-length encoding for all nulls:
           if (nulls == 0) {
             out.writeVInt(0);
@@ -203,9 +217,10 @@ public class TokenInfoDictionaryWriter {
             out.writeVInt(nulls);
             nulls = 0;
           }
-          assert a.length > 0;
-          out.writeVInt(a.length);
-          for (int i = 0; i < a.length; i++) {
+          final int[] a = targetMap[j];
+          assert size > 0 && size <= a.length;
+          out.writeVInt(size);
+          for (int i = 0; i < size; i++) {
             out.writeVInt(a[i]);
           }
         }
