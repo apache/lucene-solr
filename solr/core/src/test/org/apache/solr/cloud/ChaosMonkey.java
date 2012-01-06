@@ -153,9 +153,7 @@ public class ChaosMonkey {
       }
     }
    
-    if (!jetty.isStopped()) {
-      jetty.stop();
-    }
+    jetty.stop();
     
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not stop jetty");
