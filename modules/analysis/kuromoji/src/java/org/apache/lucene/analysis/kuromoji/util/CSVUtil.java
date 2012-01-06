@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CSVUtil {
+public final class CSVUtil {
   private static final char QUOTE = '"';
   
   private static final char COMMA = ',';
@@ -29,6 +29,8 @@ public class CSVUtil {
   private static final Pattern QUOTE_REPLACE_PATTERN = Pattern.compile("^\"([^\"]+)\"$");
   
   private static final String ESCAPED_QUOTE = "\"\"";
+  
+  private CSVUtil() {} // no instance!!!
   
   /**
    * Parse CSV line

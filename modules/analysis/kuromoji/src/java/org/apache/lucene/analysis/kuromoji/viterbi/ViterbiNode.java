@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.kuromoji.viterbi;
  * limitations under the License.
  */
 
-public class ViterbiNode {
+public final class ViterbiNode {
   public enum Type {
     KNOWN,
     UNKNOWN,

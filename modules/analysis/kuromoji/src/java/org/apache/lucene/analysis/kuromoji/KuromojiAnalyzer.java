@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 
 public class KuromojiAnalyzer extends Analyzer {
-  org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
+  private final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
   
   public KuromojiAnalyzer(org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer) {
     this.tokenizer = tokenizer;
