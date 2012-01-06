@@ -82,7 +82,7 @@ public class ZkCmdExecutor {
    * @return object. it needs to be cast to the callee's expected return type.
    */
   @SuppressWarnings("unchecked")
-  public <T> T retryOperation(ZooKeeperOperation operation)
+  public <T> T retryOperation(ZkOperation operation)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
     for (int i = 0; i < retryCount; i++) {
@@ -118,7 +118,7 @@ public class ZkCmdExecutor {
   protected void ensureExists(final String path, final byte[] data,
       final List<ACL> acl, final CreateMode flags) {
     try {
-      retryOperation(new ZooKeeperOperation() {
+      retryOperation(new ZkOperation() {
         public Object execute() throws KeeperException, InterruptedException {
           if (solrZkClient.exists(path)) {
             return true;

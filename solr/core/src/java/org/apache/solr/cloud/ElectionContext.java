@@ -4,7 +4,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperOperation;
+import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -58,7 +58,7 @@ final class ShardLeaderElectionContext extends ElectionContext {
 
   @Override
   void runLeaderProcess() throws KeeperException, InterruptedException {
-    proto.retryOperation(new ZooKeeperOperation() {
+    proto.retryOperation(new ZkOperation() {
       
       @Override
       public Object execute() throws KeeperException, InterruptedException {

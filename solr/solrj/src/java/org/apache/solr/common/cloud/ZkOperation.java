@@ -24,7 +24,7 @@ import org.apache.zookeeper.KeeperException;
  * {@link org.apache.solr.common.cloud.ZkCmdExecutor.lock.ProtocolSupport} class
  *
  */
-public interface ZooKeeperOperation {
+public interface ZkOperation {
     
     /**
      * Performs the operation - which may be involved multiple times if the connection

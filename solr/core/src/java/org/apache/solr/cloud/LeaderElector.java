@@ -30,7 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.cloud.ZooKeeperOperation;
+import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -89,7 +89,7 @@ public  class LeaderElector {
       InterruptedException, IOException {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
-    List<String> seqs = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+    List<String> seqs = cmdExecutor.retryOperation(new ZkOperation() {
       
       @Override
       public Object execute() throws KeeperException, InterruptedException {
@@ -220,7 +220,7 @@ public  class LeaderElector {
         cont = false;
       } catch (ConnectionLossException e) {
         // we don't know if we made our node or not...
-        List<String> entries = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+        List<String> entries = cmdExecutor.retryOperation(new ZkOperation() {
           
           @Override
           public Object execute() throws KeeperException, InterruptedException {

@@ -168,7 +168,7 @@ public class ZkStateReader {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
-      Boolean exists = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+      Boolean exists = cmdExecutor.retryOperation(new ZkOperation() {
         
         @Override
         public Boolean execute() throws KeeperException, InterruptedException {
@@ -178,7 +178,7 @@ public class ZkStateReader {
       
       if (!exists) {
         try {
-          cmdExecutor.retryOperation(new ZooKeeperOperation() {
+          cmdExecutor.retryOperation(new ZkOperation() {
             
             @Override
             public Object execute() throws KeeperException, InterruptedException {
@@ -208,7 +208,7 @@ public class ZkStateReader {
           synchronized (ZkStateReader.this.getUpdateLock()) {
             // remake watch
             final Watcher thisWatch = this;
-            byte[] data = cmdExecutor.retryOperation(new ZooKeeperOperation() {
+            byte[] data = cmdExecutor.retryOperation(new ZkOperation() {
               @Override
               public byte[] execute() throws KeeperException,
                   InterruptedException {

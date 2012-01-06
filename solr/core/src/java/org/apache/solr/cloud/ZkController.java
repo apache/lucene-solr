@@ -74,8 +74,9 @@ public final class ZkController {
   public final static String CONFIGNAME_PROP="configName";
 
   private final Map<String, CoreState> coreStates = Collections.synchronizedMap(new HashMap<String, CoreState>());
-  private SolrZkClient zkClient;
   
+  private SolrZkClient zkClient;
+  private ZkCmdExecutor cmdExecutor;
   private ZkStateReader zkStateReader;
 
   private LeaderElector leaderElector;
@@ -179,7 +180,7 @@ public final class ZkController {
 
           }
         });
-    
+    cmdExecutor = new ZkCmdExecutor(zkClient);
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
     init();
@@ -759,9 +760,17 @@ public final class ZkController {
     final String nodePath = "/node_states/" + getNodeName();
 
     try {
-      zkClient.setData(
-          nodePath,
-          ZkStateReader.toJSON(coreStates.values()));
+      cmdExecutor.retryOperation(new ZkOperation() {
+        
+        @Override
+        public Object execute() throws KeeperException, InterruptedException {
+          zkClient.setData(
+              nodePath,
+              ZkStateReader.toJSON(coreStates.values()));
+          return null;
+        }
+      });
+
     } catch (KeeperException e) {
       throw new ZooKeeperException(
           SolrException.ErrorCode.SERVER_ERROR,
