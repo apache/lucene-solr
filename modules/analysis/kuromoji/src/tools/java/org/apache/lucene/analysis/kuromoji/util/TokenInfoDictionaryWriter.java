@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
@@ -38,7 +40,8 @@ import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 public class TokenInfoDictionaryWriter {
   protected ByteBuffer buffer;
   protected int[][] targetMap = new int[1][];
-  
+  protected List<String> posDict = new ArrayList<String>();
+
   public TokenInfoDictionaryWriter(int size) {
     targetMap = new int[1][];
     buffer = ByteBuffer.allocate(size);
@@ -54,7 +57,23 @@ public class TokenInfoDictionaryWriter {
     short wordCost = Short.parseShort(entry[3]);
     
     StringBuilder sb = new StringBuilder();
-    for (int i = 4; i < entry.length; i++){
+    
+    // build up the POS string
+    for (int i = 4; i < 10; i++) {
+      sb.append(entry[i]);
+      if (i < 9) {
+        sb.append(Dictionary.INTERNAL_SEPARATOR);
+      }
+    }
+    String pos = sb.toString();
+    int posIndex = posDict.indexOf(pos);
+    if (posIndex < 0) {
+      posIndex = posDict.size();
+      posDict.add(pos);
+    }
+    
+    sb.setLength(0);
+    for (int i = 10; i < entry.length; i++){
       sb.append(entry[i]).append(Dictionary.INTERNAL_SEPARATOR);
     }
     String features = sb.deleteCharAt(sb.length() - 1).toString();
@@ -62,7 +81,7 @@ public class TokenInfoDictionaryWriter {
     
     // extend buffer if necessary
     int left = buffer.remaining();
-    if (8 + featuresSize > left) { // four short and features
+    if (10 + featuresSize > left) { // five short and features
       ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + 1, 1));
       buffer.flip();
       newBuffer.put(buffer);
@@ -72,6 +91,8 @@ public class TokenInfoDictionaryWriter {
     buffer.putShort(leftId);
     buffer.putShort(rightId);
     buffer.putShort(wordCost);
+    assert posIndex < Character.MAX_VALUE;
+    buffer.putChar((char)posIndex);
     buffer.putShort((short)featuresSize);
     for (char c : features.toCharArray()){
       buffer.putChar(c);
@@ -111,6 +132,7 @@ public class TokenInfoDictionaryWriter {
   public void write(String baseDir) throws IOException {
     writeDictionary(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.DICT_FILENAME_SUFFIX);
     writeTargetMap(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
+    writePosDict(baseDir + File.separator + TokenInfoDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
   }
   
   protected void writeTargetMap(String filename) throws IOException {
@@ -144,6 +166,22 @@ public class TokenInfoDictionaryWriter {
       // write the pending RLE count:
       if (nulls > 0) {
         out.writeVInt(nulls);
+      }
+    } finally {
+      os.close();
+    }
+  }
+  
+  protected void writePosDict(String filename) throws IOException {
+    new File(filename).getParentFile().mkdirs();
+    OutputStream os = new FileOutputStream(filename);
+    try {
+      os = new BufferedOutputStream(os);
+      final DataOutput out = new OutputStreamDataOutput(os);
+      CodecUtil.writeHeader(out, BinaryDictionary.POSDICT_HEADER, BinaryDictionary.VERSION);
+      out.writeVInt(posDict.size());
+      for (String s : posDict) {
+        out.writeString(s);
       }
     } finally {
       os.close();

@@ -91,6 +91,21 @@ public class TokenizerTest extends LuceneTestCase {
     assertNull(tokens.get(8).getBaseForm());
   }
   
+  @Test
+  public void testPartOfSpeech() {
+    List<Token> tokens = tokenizer.tokenize("それはまだ実験段階にあります。");
+    assertEquals(9, tokens.size());
+    assertEquals("名詞,代名詞,一般,*",  tokens.get(0).getPartOfSpeech());
+    assertEquals("助詞,係助詞,*,*",    tokens.get(1).getPartOfSpeech());
+    assertEquals("副詞,助詞類接続,*,*", tokens.get(2).getPartOfSpeech());
+    assertEquals("名詞,サ変接続,*,*",   tokens.get(3).getPartOfSpeech());
+    assertEquals("名詞,一般,*,*",      tokens.get(4).getPartOfSpeech());
+    assertEquals("助詞,格助詞,一般,*",  tokens.get(5).getPartOfSpeech());
+    assertEquals("動詞,自立,*,*",      tokens.get(6).getPartOfSpeech());
+    assertEquals("助動詞,*,*,*",       tokens.get(7).getPartOfSpeech());
+    assertEquals("記号,句点,*,*",      tokens.get(8).getPartOfSpeech());
+  }
+  
   public void testBocchan() throws Exception {
     doTestBocchan(1);
   }

@@ -37,18 +37,22 @@ public abstract class BinaryDictionary implements Dictionary {
   
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";
   public static final String TARGETMAP_FILENAME_SUFFIX = "$targetMap.dat";
+  public static final String POSDICT_FILENAME_SUFFIX = "$posDict.dat";
   
-  public static final String TARGETMAP_HEADER = "kuromoji_dict_map";
   public static final String DICT_HEADER = "kuromoji_dict";
+  public static final String TARGETMAP_HEADER = "kuromoji_dict_map";
+  public static final String POSDICT_HEADER = "kuromoji_dict_pos";
   public static final int VERSION = 1;
   
   private final ByteBuffer buffer;
   private final int[][] targetMap;
+  private final String[] posDict;
   
   protected BinaryDictionary() throws IOException {
-    InputStream mapIS = null, dictIS = null;
+    InputStream mapIS = null, dictIS = null, posIS = null;
     IOException priorE = null;
     int[][] targetMap = null;
+    String[] posDict = null;
     ByteBuffer buffer = null;
     try {
       mapIS = getClass().getResourceAsStream(getClass().getSimpleName() + TARGETMAP_FILENAME_SUFFIX);
@@ -72,6 +76,17 @@ public abstract class BinaryDictionary implements Dictionary {
           j++;
         }
       }
+      
+      posIS = getClass().getResourceAsStream(getClass().getSimpleName() + POSDICT_FILENAME_SUFFIX);
+      if (posIS == null)
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + POSDICT_FILENAME_SUFFIX);
+      posIS = new BufferedInputStream(posIS);
+      in = new InputStreamDataInput(posIS);
+      CodecUtil.checkHeader(in, POSDICT_HEADER, VERSION, VERSION);
+      posDict = new String[in.readVInt()];
+      for (int j = 0; j < posDict.length; j++) {
+        posDict[j] = in.readString();
+      }
 
       dictIS = getClass().getResourceAsStream(getClass().getSimpleName() + DICT_FILENAME_SUFFIX);
       if (dictIS == null)
@@ -89,10 +104,11 @@ public abstract class BinaryDictionary implements Dictionary {
     } catch (IOException ioe) {
       priorE = ioe;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, mapIS, dictIS);
+      IOUtils.closeWhileHandlingException(priorE, mapIS, posIS, dictIS);
     }
     
     this.targetMap = targetMap;
+    this.posDict = posDict;
     this.buffer = buffer;
   }
   
@@ -115,13 +131,22 @@ public abstract class BinaryDictionary implements Dictionary {
     return buffer.getShort(wordId + 4);	// Skip left id and right id
   }
   
+  // TODO: this method will likely never be efficient, do we need it?
   @Override
   public String[] getAllFeaturesArray(int wordId) {
-    int size = buffer.getShort(wordId + 6) / 2; // Read length of feature String. Skip 6 bytes, see data structure.
-    char[] targetArr = new char[size];
-    int offset = wordId + 6 + 2; // offset is position where features string starts
+    char posIndex = buffer.getChar(wordId + 6); // read index into posDict
+    String pos = posDict[posIndex];
+    int posLen = pos.length();
+    int size = buffer.getShort(wordId + 8) / 2; // Read length of feature String. Skip 8 bytes, see data structure.
+    char[] targetArr = new char[posLen + 1 + size]; // pos + separator + the rest
+    int offset = wordId + 8 + 2; // offset is position where features string starts
+    for (int i = 0; i < pos.length(); i++) {
+      targetArr[i] = pos.charAt(i);
+    }
+    int upto = posLen;
+    targetArr[upto++] = INTERNAL_SEPARATOR.charAt(0);
     for(int i = 0; i < size; i++){
-      targetArr[i] = buffer.getChar(offset + i * 2);
+      targetArr[upto++] = buffer.getChar(offset + i * 2);
     }
     String allFeatures = new String(targetArr);
     return allFeatures.split(INTERNAL_SEPARATOR);

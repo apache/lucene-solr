@@ -51,6 +51,7 @@ public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
   public void write(String baseDir) throws IOException {
     writeDictionary(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.DICT_FILENAME_SUFFIX);
     writeTargetMap(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
+    writePosDict(baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar) + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
     characterDefinition.write(baseDir);
   }
 }
