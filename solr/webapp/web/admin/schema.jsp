@@ -53,7 +53,20 @@
       });
 
     },
-    
+    // get the reportDocCount parameter, could ask for others
+    getParamDefault: function(paramName, defaultVal) {        
+     var searchString = window.location.search.substring(1),
+                                    i, val, params = searchString.split("&");
+
+      for (i=0;i<params.length;i++) {
+         val = params[i].split("=");
+         if (val[0] == paramName) {
+            return unescape(val[1]);
+         }
+      }
+      return defaultVal;
+    },
+ 
     //load the Schema from the LukeRequestHandler
     // this loads every field, and in each field the copy source/dests and flags
     // we also load the list of field types, and the list of flags
@@ -114,7 +127,8 @@
     //further populates the loaded schema with information gathered
     // from the no argument LukeRequestHandler
     loadFromLukeHandler: function(func) {
-      $.getJSON(solr.pathToLukeHandler+'?wt=json', function(data) {
+
+      $.getJSON(solr.pathToLukeHandler+'?wt=json' + '&reportDocCount=' + solr.getParamDefault('reportDocCount', 'false'), function(data) {
         $.each(data.fields, function(i, item) {
           var field = solr.schemaFields[i];
           
@@ -183,7 +197,8 @@
       if (isNaN(numTerms) || numTerms <=0 || numTerms.indexOf('.') != -1) {
         return;
       }
-			$.getJSON(solr.pathToLukeHandler+'?fl='+fieldName+'&wt=json&numTerms='+numTerms, function(data) {                  
+ 
+	    $.getJSON(solr.pathToLukeHandler+'?fl='+fieldName+'&wt=json&numTerms='+numTerms+'&reportDocCount=' + solr.getParamDefault('reportDocCount', 'false'), function(data) {                  
 				solr.schemaFields[fieldName]['topTerms'] = solr.lukeArrayToHash(data.fields[fieldName].topTerms);
         if ($.isFunction(func)) {
           func(solr.schemaFields[fieldName]['topTerms'], fieldName);

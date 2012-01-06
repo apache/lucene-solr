@@ -20,15 +20,10 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import org.apache.commons.lang.BooleanUtils;
+import org.apache.lucene.index.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +33,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_ONLY;
 import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_AND_FREQS;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.TermFreqVector;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
@@ -89,7 +81,10 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final String NUMTERMS = "numTerms";
   public static final String DOC_ID = "docId";
   public static final String ID = "id";
+  public static final String REPORT_DOC_COUNT = "reportDocCount";
   public static final int DEFAULT_COUNT = 10;
+
+  static final int HIST_ARRAY_SIZE = 33;
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
@@ -99,9 +94,20 @@ public class LukeRequestHandler extends RequestHandlerBase
     IndexReader reader = searcher.getReader();
     SolrParams params = req.getParams();
     int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
-        
+
     // Always show the core lucene info
-    rsp.add("index", getIndexInfo(reader, numTerms>0 ) );
+
+    Map<String, TopTermQueue> topTerms = new TreeMap<String, TopTermQueue>();
+
+    // If no doc is given, show all fields and top terms
+    Set<String> fields = null;
+    if( params.get( CommonParams.FL ) != null ) {
+      fields = new TreeSet<String>(Arrays.asList(params.getParams( CommonParams.FL ) ) );
+    }
+    if ( "schema".equals( params.get( "show" ))) {
+      numTerms = 0; // Abort any statistics gathering.
+    }
+    rsp.add("index", getIndexInfo(reader, numTerms, topTerms, fields ) );
 
     Integer docId = params.getInt( DOC_ID );
     if( docId == null && params.get( ID ) != null ) {
@@ -114,7 +120,6 @@ public class LukeRequestHandler extends RequestHandlerBase
         throw new SolrException( SolrException.ErrorCode.NOT_FOUND, "Can't find document: "+params.get( ID ) );
       }
     }
-        
     // Read the document from the index
     if( docId != null ) {
       Document doc = null;
@@ -138,21 +143,18 @@ public class LukeRequestHandler extends RequestHandlerBase
       rsp.add( "schema", getSchemaInfo( req.getSchema() ) );
     }
     else {
-      // If no doc is given, show all fields and top terms
-      Set<String> fields = null;
-      if( params.get( CommonParams.FL ) != null ) {
-        fields = new HashSet<String>();
-        for( String f : params.getParams( CommonParams.FL ) ) {
-          fields.add( f );
-        }
-      }
-      rsp.add( "fields", getIndexedFieldsInfo( searcher, fields, numTerms ) ) ;
+      boolean reportDocCount = true;
+      String reportDoc = params.get(REPORT_DOC_COUNT, "false");
+      if ("1".equals(reportDoc)) reportDocCount = true;
+      else if ("0".equals(reportDoc)) reportDocCount = false;
+      else reportDocCount = BooleanUtils.toBoolean(reportDoc);
+      rsp.add( "fields", getIndexedFieldsInfo( searcher, fields, numTerms, topTerms, reportDocCount ) ) ;
     }
 
     // Add some generally helpful information
     NamedList<Object> info = new SimpleOrderedMap<Object>();
     info.add( "key", getFieldFlagsKey() );
-    info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." ); 
+    info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." );
     rsp.add( "info", info );
     rsp.setHttpCaching(false);
   }
@@ -284,26 +286,21 @@ public class LukeRequestHandler extends RequestHandlerBase
   
   @SuppressWarnings("unchecked")
   private static SimpleOrderedMap<Object> getIndexedFieldsInfo( 
-    final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms ) 
+    final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms, Map<String,TopTermQueue> ttinfo,
+    boolean reportDocCount)
     throws Exception {
 
     IndexReader reader = searcher.getReader();
     IndexSchema schema = searcher.getSchema();
     
     // Walk the term enum and keep a priority queue for each map in our set
-    Map<String,TopTermQueue> ttinfo = null;
-    if( numTerms > 0 ) {
-      ttinfo = getTopTerms(reader, fields, numTerms, null );
-    }
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
-    Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
+    Set<String> fieldNames = new TreeSet<String>(reader.getFieldNames(IndexReader.FieldOption.ALL));
     for (String fieldName : fieldNames) {
       if( fields != null && !fields.contains( fieldName ) ) {
         continue; // if a field is specified, only them
       }
-      
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
-      
       SchemaField sfield = schema.getFieldOrNull( fieldName );
       FieldType ftype = (sfield==null)?null:sfield.getType();
 
@@ -312,31 +309,48 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
     	  f.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
-
       // If numTerms==0, the call is just asking for a quick field list
+      TopTermQueue topTerms = ttinfo.get( fieldName );
       if( ttinfo != null && sfield != null && sfield.indexed() ) {
-        Query q = new TermRangeQuery(fieldName,null,null,false,false); 
-        TopDocs top = searcher.search( q, 1 );
-        if( top.totalHits > 0 ) {
-          // Find a document with this field
-          try {
-            Document doc = searcher.doc( top.scoreDocs[0].doc );
-            Fieldable fld = doc.getFieldable( fieldName );
-            if( fld != null ) {
-              f.add( "index", getFieldFlags( fld ) );
+        if (numTerms > 0) {
+          Document doc = null;
+          int totalHits = 0;
+          if (reportDocCount) {
+            Query q = new TermRangeQuery(fieldName, null, null, false, false);
+            TopDocs top = searcher.search(q, 1);
+            if (top.totalHits > 0) {
+              doc = searcher.doc(top.scoreDocs[0].doc);
+              totalHits = top.totalHits;
             }
-            else {
-              // it is a non-stored field...
-              f.add( "index", "(unstored field)" );
+          } else if (topTerms != null) {
+            TermDocs td = reader.termDocs();
+            td.seek(topTerms.getTopTerm());
+            if (td.next()) {
+              totalHits = 1;
+              doc = reader.document(td.doc());
             }
           }
-          catch( Exception ex ) {
-            log.warn( "error reading field: "+fieldName );
+          
+          if (totalHits > 0) { // Doc won't be null if totalHits > 0
+            // Find a document with this field
+            try {
+              Fieldable fld = doc.getFieldable(fieldName);
+              if (fld != null) {
+                f.add("index", getFieldFlags(fld));
+              } else {
+                // it is a non-stored field...
+                f.add("index", "(unstored field)");
+              }
+            } catch (Exception ex) {
+              log.warn("error reading field: " + fieldName);
+            }
+          }
+          if (reportDocCount) {
+            f.add("docs", totalHits);
           }
         }
-        f.add( "docs", top.totalHits );
-        
-        TopTermQueue topTerms = ttinfo.get( fieldName );
+
+
         if( topTerms != null ) {
           f.add( "distinct", topTerms.distinctTerms );
           
@@ -358,19 +372,21 @@ public class LukeRequestHandler extends RequestHandlerBase
    * Return info from the index
    */
   private static SimpleOrderedMap<Object> getSchemaInfo( IndexSchema schema ) {
-    Map<String, List<String>> typeusemap = new HashMap<String, List<String>>();
-    SimpleOrderedMap<Object> fields = new SimpleOrderedMap<Object>();
+    Map<String, List<String>> typeusemap = new TreeMap<String, List<String>>();
+    
+    Map<String, Object> fields = new TreeMap<String, Object>();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for( SchemaField f : schema.getFields().values() ) {
       populateFieldInfo(schema, typeusemap, fields, uniqueField, f);
     }
     
-    SimpleOrderedMap<Object> dynamicFields = new SimpleOrderedMap<Object>();
+    Map<String, Object> dynamicFields = new TreeMap<String, Object>();
     for (SchemaField f : schema.getDynamicFieldPrototypes()) {
     	populateFieldInfo(schema, typeusemap, dynamicFields, uniqueField, f);
     }
     SimpleOrderedMap<Object> types = new SimpleOrderedMap<Object>();
-    for( FieldType ft : schema.getFieldTypes().values() ) {
+    Map<String, FieldType> sortedTypes = new TreeMap<String, FieldType>(schema.getFieldTypes());
+    for( FieldType ft : sortedTypes.values() ) {
       SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
       field.add("fields", typeusemap.get( ft.getTypeName() ) );
       field.add("tokenized", ft.isTokenized() );
@@ -380,10 +396,25 @@ public class LukeRequestHandler extends RequestHandlerBase
       types.add( ft.getTypeName(), field );
     }
 
+
+    // Must go through this to maintain binary compatbility. Putting a TreeMap into a resp leads to casting errors
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
+
+    SimpleOrderedMap<Object> fieldsSimple = new SimpleOrderedMap<Object>();
+    for (Map.Entry<String, Object> ent : fields.entrySet()) {
+      fieldsSimple.add(ent.getKey(), ent.getValue());
+    }
+    finfo.add("fields", fieldsSimple);
+
+    SimpleOrderedMap<Object> dynamicSimple = new SimpleOrderedMap<Object>();
+    for (Map.Entry<String, Object> ent : dynamicFields.entrySet()) {
+      dynamicSimple.add(ent.getKey(), ent.getValue());
+    }
+    finfo.add("dynamicFields", dynamicSimple);
+
     finfo.add("fields", fields);
     finfo.add("dynamicFields", dynamicFields);
-    finfo.add("uniqueKeyField", 
+    finfo.add("uniqueKeyField",
               null == uniqueField ? null : uniqueField.getName());
     finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
     finfo.add("types", types);
@@ -434,7 +465,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   private static void populateFieldInfo(IndexSchema schema,
-		Map<String, List<String>> typeusemap, SimpleOrderedMap<Object> fields,
+		Map<String, List<String>> typeusemap, Map<String, Object> fields,
 		SchemaField uniqueField, SchemaField f) {
       FieldType ft = f.getType();
       SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
@@ -456,7 +487,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       field.add("copySources", schema.getCopySources(f.getName()));
 
       
-      fields.add( f.getName(), field );
+      fields.put(f.getName(), field);
       
       List<String> v = typeusemap.get( ft.getTypeName() );
       if( v == null ) {
@@ -465,29 +496,79 @@ public class LukeRequestHandler extends RequestHandlerBase
       v.add( f.getName() );
       typeusemap.put( ft.getTypeName(), v );
   }
-  
-  public static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException {
+  public static SimpleOrderedMap<Object> getIndexInfo(IndexReader reader, boolean countTerms) throws IOException {
+    return getIndexInfo(reader, countTerms ? 1 : 0, null, null);
+  }
+  public static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, int numTerms, 
+                                                       Map<String,TopTermQueue> topTerms,
+                                                       Set<String> fields) throws IOException {
     Directory dir = reader.directory();
     SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<Object>();
     
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
-    
-    if( countTerms ) {
-      TermEnum te = null;
+    if( numTerms > 0 ) {
+      TermEnum terms = null;
       try{
-        te = reader.terms();
-        int numTerms = 0;
-        while (te.next()) {
-          numTerms++;
+        terms = reader.terms();
+        int totalUniqueTerms = 0;
+        String lastField = "";
+        int[] buckets = new int[HIST_ARRAY_SIZE];
+        TopTermQueue tiq = null;
+        String field = "";
+        while (terms.next()) {
+          totalUniqueTerms++;
+          field = terms.term().field();
+
+          if (! field.equals(lastField)) {
+            // We're switching fields, wrap up the one we've just accumulated
+            // stats for and get ready for the next one.
+            if (tiq != null) {
+              // Histogram from last time through is the one to use
+              tiq.histogram.add(buckets);
+              topTerms.put(lastField, tiq);
+              tiq = null;
+            }
+            lastField = field;
+
+            // Skip fields not in fl list (if specified)
+            if (fields != null && !fields.contains(field)) {
+              continue;
+            }
+            tiq = new TopTermQueue(numTerms + 1);
+            for (int idx = 0; idx < buckets.length; ++idx) {
+              buckets[idx] = 0;
+            }
+          }
+          // When we're on a field we don't care about, tiq is null
+          if (tiq == null) {
+            continue;
+          }
+          int freq = terms.docFreq();
+          int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
+          buckets[slot] = buckets[slot] + 1;
+          // Compute distinct terms for every field
+          tiq.distinctTerms++;
+
+          if( terms.docFreq() > tiq.minFreq ) {
+            tiq.add(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
+            if (tiq.size() > numTerms) { // if tiq full
+              tiq.pop(); // remove lowest in tiq
+              tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
+            }
+          }
         }
-        indexInfo.add("numTerms", numTerms );
+        // We fall off the end and have to add the last field!
+        if (tiq != null) {
+          tiq.histogram.add(buckets);
+          topTerms.put(field, tiq);
+        }
+        indexInfo.add("numTerms", totalUniqueTerms );
       }
       finally{
-        if( te != null ) te.close();
+        if( terms != null ) terms.close();
       }
     }
-
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.getSequentialSubReaders().length);
     indexInfo.add("current", reader.isCurrent() );
@@ -496,7 +577,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("lastModified", new Date(IndexReader.lastModified(dir)) );
     return indexInfo;
   }
-  
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
@@ -528,43 +608,25 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  
-  static class TermHistogram 
+
+  static class TermHistogram
   {
-    int maxBucket = -1;
-    public Map<Integer,Integer> hist = new HashMap<Integer, Integer>();
-    
-    private static final double LOG2 = Math.log( 2 );
-    public static int getPowerOfTwoBucket( int num )
-    {
-      return Math.max(1, Integer.highestOneBit(num-1) << 1);
-    }
-    
-    public void add( int df )
-    {
-      Integer bucket = getPowerOfTwoBucket( df );
-      if( bucket > maxBucket ) {
-        maxBucket = bucket;
+    int _maxBucket = -1;
+    int _buckets[] = new int[HIST_ARRAY_SIZE];
+    public void add(int[] buckets) {
+      for (int idx = 0; idx < buckets.length; ++idx) {
+        if (buckets[idx] != 0) _maxBucket = idx;
       }
-      Integer old = hist.get( bucket );
-      if( old == null ) {
-        hist.put( bucket, 1 );
-      }
-      else {
-        hist.put( bucket, old+1 );
+      for (int idx = 0; idx <= _maxBucket; ++idx) {
+        _buckets[idx] = buckets[idx];
       }
     }
-    
     // TODO? should this be a list or a map?
     public NamedList<Integer> toNamedList()
     {
       NamedList<Integer> nl = new NamedList<Integer>();
-      for( int bucket = 1; bucket <= maxBucket; bucket *= 2 ) {
-        Integer val = hist.get( bucket );
-        if( val == null ) {
-          val = 0;
-        }
-        nl.add( ""+bucket, val );
+      for( int bucket = 0; bucket <= _maxBucket; bucket++ ) {
+        nl.add( ""+ (1 << bucket), _buckets[bucket] );
       }
       return nl;
     }
@@ -622,57 +684,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
       return list;
     }
-  }
-
-  private static Map<String,TopTermQueue> getTopTerms( IndexReader reader, Set<String> fields, int numTerms, Set<String> junkWords ) throws Exception 
-  {
-    Map<String,TopTermQueue> info = new HashMap<String, TopTermQueue>();
-    
-    TermEnum terms = null;
-    try{
-      terms = reader.terms();    
-      while (terms.next()) {
-        String field = terms.term().field();
-        String t = terms.term().text();
-  
-        // Compute distinct terms for every field
-        TopTermQueue tiq = info.get( field );
-        if( tiq == null ) {
-          tiq = new TopTermQueue( numTerms+1 );
-          info.put( field, tiq );
-        }
-        tiq.distinctTerms++;
-        tiq.histogram.add( terms.docFreq() );  // add the term to the histogram
-        
-        // Only save the distinct terms for fields we worry about
-        if (fields != null && fields.size() > 0) {
-          if( !fields.contains( field ) ) {
-            continue;
-          }
-        }
-        if( junkWords != null && junkWords.contains( t ) ) {
-          continue;
-        }
-        
-        if( terms.docFreq() > tiq.minFreq ) {
-          tiq.add(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
-            if (tiq.size() > numTerms) { // if tiq full
-            tiq.pop(); // remove lowest in tiq
-            tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
-          }
-        }
-      }
+    public Term getTopTerm() {
+       return ((TermInfo)top()).term;
     }
-    finally {
-      if( terms != null ) terms.close();
-    }
-    return info;
   }
 }
-
-
-
-
-
-
-
