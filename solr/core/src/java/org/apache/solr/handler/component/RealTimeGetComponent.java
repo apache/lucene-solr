@@ -40,6 +40,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.transform.Transformer;
 import java.io.IOException;
@@ -55,6 +57,7 @@ import java.util.List;
  */
 public class RealTimeGetComponent extends SearchComponent
 {
+  public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
   public static final String COMPONENT_NAME = "get";
 
   @Override
@@ -81,8 +84,13 @@ public class RealTimeGetComponent extends SearchComponent
       processGetVersions(rb);
       return;
     }
-    
-    
+
+    val = params.get("getUpdates");
+    if (val != null) {
+      processGetUpdates(rb);
+      return;
+    }
+
     String id[] = params.getParams("id");
     String ids[] = params.getParams("ids");
 
@@ -287,6 +295,51 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
 
+  public void processGetUpdates(ResponseBuilder rb) throws IOException
+  {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+    SolrParams params = req.getParams();
 
+    if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+
+    String versionsStr = params.get("getUpdates");
+    if (versionsStr == null) return;
+
+    UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
+    if (ulog == null) return;
+
+    List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
+
+    // TODO: get this from cache instead of rebuilding?
+    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
+
+    List<Object> updates = new ArrayList<Object>(versions.size());
+    
+    try {
+    for (String versionStr : versions) {
+      long version = Long.parseLong(versionStr);
+      try {
+        Object o = recentUpdates.lookup(version);
+        if (o == null) continue;
+
+        // TODO: do any kind of validation here?
+        updates.add(o);
+
+      } catch (SolrException e) {
+        log.warn("Exception reverse reading log", e);
+      } catch (ClassCastException e) {
+        log.warn("Exception reverse reading log", e);
+      }
+    }
+
+    rb.rsp.add("updates", updates);
+
+    } finally {
+      recentUpdates.close();  // cache this somehow?
+    }
+  }
 
 }

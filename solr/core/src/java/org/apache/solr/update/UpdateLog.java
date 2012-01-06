@@ -560,16 +560,24 @@ public class UpdateLog implements PluginInfoInitialized {
   }
 
 
+  static class Update {
+    TransactionLog log;
+    long version;
+    long pointer;
+  } 
+  
   // TODO: nocommit: decrement the references of the transaction logs at some point
   public class RecentUpdates {
     Deque<TransactionLog> logList;    // newest first
-    List<List<LogPtr>> updates;
+    List<List<Update>> updateList;
+    HashMap<Long, Update> updates;
+
 
     public List<Long> getVersions(int n) {
       List<Long> ret = new ArrayList(n);
       
-      for (List<LogPtr> singleList : updates) {
-        for (LogPtr ptr : singleList) {
+      for (List<Update> singleList : updateList) {
+        for (Update ptr : singleList) {
           ret.add(ptr.version);
           if (--n <= 0) return ret;
         }
@@ -577,13 +585,21 @@ public class UpdateLog implements PluginInfoInitialized {
       
       return ret;
     }
+    
+    public Object lookup(long version) {
+      Update update = updates.get(version);
+      if (update == null) return null;
+
+      return update.log.lookup(update.pointer);
+    }
 
     private void update() {
       int numUpdates = 0;
-      updates = new ArrayList<List<LogPtr>>(logList.size());
+      updateList = new ArrayList<List<Update>>(logList.size());
+      updates = new HashMap<Long,Update>(numRecordsToKeep);
 
       for (TransactionLog oldLog : logList) {
-        List<LogPtr> updatesForLog = new ArrayList<LogPtr>();
+        List<Update> updatesForLog = new ArrayList<Update>();
 
         TransactionLog.ReverseReader reader = null;
         try {
@@ -605,8 +621,13 @@ public class UpdateLog implements PluginInfoInitialized {
                 case UpdateLog.ADD:
                 case UpdateLog.DELETE:
                 case UpdateLog.DELETE_BY_QUERY:
-                  LogPtr ptr = new LogPtr(reader.position(), version);
-                  updatesForLog.add(ptr);
+                  Update update = new Update();
+                  update.log = oldLog;
+                  update.pointer = reader.position();
+                  update.version = version;
+
+                  updatesForLog.add(update);
+                  updates.put(version, update);
                   break;
 
                 case UpdateLog.COMMIT:
@@ -630,7 +651,7 @@ public class UpdateLog implements PluginInfoInitialized {
           if (reader != null) reader.close();
         }
 
-        updates.add(updatesForLog);
+        updateList.add(updatesForLog);
       }
 
     }
