@@ -118,8 +118,6 @@ public class ZkCmdExecutor {
             zkClient.makePath(path, data);
           } catch (NodeExistsException e) {
             // its okay if another beats us creating the node
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
           }
           return true;
         }
