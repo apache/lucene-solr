@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 
@@ -100,34 +102,25 @@ public class ZkCmdExecutor {
     throw exception;
   }
   
-  /**
-   * Ensures that the given path exists with no data, the current ACL and no
-   * flags
-   * 
-   * @param path
-   * @throws IOException 
-   */
-  protected void ensurePathExists(String path) {
-    ensureExists(path, null, acl, CreateMode.PERSISTENT);
+  public void ensureExists(String path) {
+    ensureExists(path, null, CreateMode.PERSISTENT);
   }
   
-  /**
-   * Ensures that the given path exists with the given data, ACL and flags
-   * 
-   * @param path
-   * @param acl
-   * @param flags
-   * @throws IOException 
-   */
-  protected void ensureExists(final String path, final byte[] data,
-      final List<ACL> acl, final CreateMode flags) {
+  public void ensureExists(final String path, final byte[] data,
+      CreateMode createMode) {
     try {
       retryOperation(new ZkOperation() {
         public Object execute() throws KeeperException, InterruptedException {
           if (zkClient.exists(path)) {
             return true;
           }
-          zkClient.create(path, data, acl, flags);
+          try {
+            zkClient.makePath(path, data);
+          } catch (NodeExistsException e) {
+            // its okay if another beats us creating the node
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          }
           return true;
         }
       });

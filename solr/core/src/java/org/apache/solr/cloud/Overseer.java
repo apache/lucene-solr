@@ -34,14 +34,14 @@ import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.CoreState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -64,10 +64,12 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
 
   // shard leader watchers  (collection->slice->watcher)
   private HashMap<String, HashMap<String,ShardLeaderWatcher>> shardLeaderWatches = new HashMap<String,HashMap<String,ShardLeaderWatcher>>();
+  private ZkCmdExecutor zkCmdExecutor;
 
   public Overseer(final SolrZkClient zkClient, final ZkStateReader reader) throws KeeperException, InterruptedException {
     log.info("Constructing new Overseer");
     this.zkClient = zkClient;
+    this.zkCmdExecutor = new ZkCmdExecutor(zkClient);
     this.reader = reader;
     createWatches();
   }
@@ -84,32 +86,31 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
   private void addCollectionsWatch() throws KeeperException,
       InterruptedException {
     
-    if(!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE)) {
-      try {
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE);
-      } catch (NodeExistsException ne) {
-        //ok
-      }
-    }
+    zkCmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE);
     
-    List<String> collections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, new Watcher(){
+    List<String> collections = zkCmdExecutor.retryOperation(new ZkOperation() {
       @Override
-      public void process(WatchedEvent event) {
-        try {
-          List<String> collections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, this);
-          collectionsChanged(collections);
-        } catch (KeeperException e) {
-            if (e.code() == Code.CONNECTIONLOSS || e.code() == Code.SESSIONEXPIRED) {
-            log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-            return;
+      public Object execute() throws KeeperException, InterruptedException {
+        return zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, new Watcher(){
+          @Override
+          public void process(WatchedEvent event) {
+            try {
+              List<String> collections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, this);
+              collectionsChanged(collections);
+            } catch (KeeperException e) {
+                if (e.code() == Code.CONNECTIONLOSS || e.code() == Code.SESSIONEXPIRED) {
+                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                return;
+              }
+            } catch (InterruptedException e) {
+              // Restore the interrupted status
+              Thread.currentThread().interrupt();
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            }
           }
-        } catch (InterruptedException e) {
-          // Restore the interrupted status
-          Thread.currentThread().interrupt();
-          log.error("", e);
-          throw new ZooKeeperException(
-              SolrException.ErrorCode.SERVER_ERROR, "", e);
-        }
+        });
       }
     });
     
@@ -137,42 +138,42 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
   private void addShardLeadersWatch(final String collection) throws KeeperException,
       InterruptedException {
     
-    if(!zkClient.exists(ZkStateReader.getShardLeadersPath(collection, null))) {
-      try {
-        zkClient.makePath(ZkStateReader.getShardLeadersPath(collection, null));
-      } catch (NodeExistsException ne) {
-        //ok if someone created it
-      }
-    }
+    zkCmdExecutor.ensureExists(ZkStateReader.getShardLeadersPath(collection, null));
     
-    final List<String> leaderNodes = zkClient.getChildren(
-        ZkStateReader.getShardLeadersPath(collection, null), new Watcher() {
-          
-          @Override
-          public void process(WatchedEvent event) {
-            try {
-              List<String> leaderNodes = zkClient.getChildren(
-                  ZkStateReader.getShardLeadersPath(collection, null), this);
+    final List<String> leaderNodes = zkCmdExecutor.retryOperation(new ZkOperation() {
+      
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        return zkClient.getChildren(
+            ZkStateReader.getShardLeadersPath(collection, null), new Watcher() {
               
-              processLeaderNodesChanged(collection, leaderNodes);
-            } catch (KeeperException e) {
-              if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-                return;
+              @Override
+              public void process(WatchedEvent event) {
+                try {
+                  List<String> leaderNodes = zkClient.getChildren(
+                      ZkStateReader.getShardLeadersPath(collection, null), this);
+                  
+                  processLeaderNodesChanged(collection, leaderNodes);
+                } catch (KeeperException e) {
+                  if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                      || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+                    log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                    return;
+                  }
+                  log.error("", e);
+                  throw new ZooKeeperException(
+                      SolrException.ErrorCode.SERVER_ERROR, "", e);
+                } catch (InterruptedException e) {
+                  // Restore the interrupted status
+                  Thread.currentThread().interrupt();
+                  log.error("", e);
+                  throw new ZooKeeperException(
+                      SolrException.ErrorCode.SERVER_ERROR, "", e);
+                }
               }
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            }
-          }
-        });
+            });
+      }
+    });
     
     processLeaderNodesChanged(collection, leaderNodes);
   }
@@ -217,35 +218,41 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
 
   private void addLiveNodesWatch() throws KeeperException,
       InterruptedException {
-    List<String> liveNodes = zkClient.getChildren(
-        ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
-          
-          @Override
-          public void process(WatchedEvent event) {
-            try {
-                List<String> liveNodes = zkClient.getChildren(
-                    ZkStateReader.LIVE_NODES_ZKNODE, this);
-                Set<String> liveNodesSet = new HashSet<String>();
-                liveNodesSet.addAll(liveNodes);
-                processLiveNodesChanged(nodeStateWatches.keySet(), liveNodes);
-            } catch (KeeperException e) {
-              if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-                return;
+    List<String> liveNodes = zkCmdExecutor.retryOperation(new ZkOperation() {
+      
+      @Override
+      public Object execute() throws KeeperException, InterruptedException {
+        return zkClient.getChildren(
+            ZkStateReader.LIVE_NODES_ZKNODE, new Watcher() {
+              
+              @Override
+              public void process(WatchedEvent event) {
+                try {
+                    List<String> liveNodes = zkClient.getChildren(
+                        ZkStateReader.LIVE_NODES_ZKNODE, this);
+                    Set<String> liveNodesSet = new HashSet<String>();
+                    liveNodesSet.addAll(liveNodes);
+                    processLiveNodesChanged(nodeStateWatches.keySet(), liveNodes);
+                } catch (KeeperException e) {
+                  if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                      || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+                    log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                    return;
+                  }
+                  log.error("", e);
+                  throw new ZooKeeperException(
+                      SolrException.ErrorCode.SERVER_ERROR, "", e);
+                } catch (InterruptedException e) {
+                  // Restore the interrupted status
+                  Thread.currentThread().interrupt();
+                  log.error("", e);
+                  throw new ZooKeeperException(
+                      SolrException.ErrorCode.SERVER_ERROR, "", e);
+                }
               }
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            }
-          }
-        });
+            });
+      }
+    });
     
     processLiveNodesChanged(Collections.<String>emptySet(), liveNodes);
   }
@@ -270,13 +277,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       final String path = STATES_NODE + "/" + nodeName;
       synchronized (nodeStateWatches) {
         if (!nodeStateWatches.containsKey(nodeName)) {
-          try {
-            if (!zkClient.exists(path)) {
-              zkClient.makePath(path);
-            }
-          } catch (NodeExistsException e) {
-            // thats okay...
-          }
+          zkCmdExecutor.ensureExists(path);
           nodeStateWatches.put(nodeName, new NodeStateWatcher(zkClient, nodeName, path, this));
         } else {
           log.debug("watch already added");
@@ -337,10 +338,17 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       for (CoreState state : states) {
         cloudState = updateState(cloudState, nodeName, state);
       }
-      
+      final CloudState finalState = cloudState;
       try {
-        zkClient.setData(ZkStateReader.CLUSTER_STATE,
-            ZkStateReader.toJSON(cloudState));
+        zkCmdExecutor.retryOperation(new ZkOperation() {
+          
+          @Override
+          public Object execute() throws KeeperException, InterruptedException {
+            zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                ZkStateReader.toJSON(finalState));            
+            return null;
+          }
+        });
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -355,14 +363,8 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       log.info("creating node:" + node);
     }
     
-    try {
-      if (!zkClient.exists(node)) {
-        zkClient.makePath(node, CreateMode.PERSISTENT, null);
-      }
-      
-    } catch (NodeExistsException e) {
-      // it's ok
-    }
+    ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkClient);
+    zkCmdExecutor.ensureExists(node);
   }
   
   private CloudState updateSlice(CloudState state, String collection, Slice slice) {
@@ -453,13 +455,21 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       try {
         reader.updateCloudState(true); // get fresh copy of the state
       final CloudState state = reader.getCloudState();
-      CloudState newState = setShardLeader(state, collection, shardId,
+      final CloudState newState = setShardLeader(state, collection, shardId,
           props.getCoreUrl());
         if (state != newState) { // if same instance was returned no need to
                                  // update state
           log.info("Announcing new leader: coll: " + collection + " shard: " + shardId + " props:" + props);
-          zkClient.setData(ZkStateReader.CLUSTER_STATE,
-              ZkStateReader.toJSON(newState));
+          zkCmdExecutor.retryOperation(new ZkOperation() {
+            
+            @Override
+            public Object execute() throws KeeperException, InterruptedException {
+              zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                  ZkStateReader.toJSON(newState));
+              return null;
+            }
+          });
+          
         } else {
           log.debug("State was not changed.");
         }

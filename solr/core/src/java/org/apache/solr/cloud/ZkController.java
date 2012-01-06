@@ -291,20 +291,11 @@ public final class ZkController {
       }
       
       // makes nodes zkNode
-      try {
-        zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
-      } catch (KeeperException e) {
-        // its okay if another beats us creating the node
-        if (e.code() != KeeperException.Code.NODEEXISTS) {
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        }
-      }
+      cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE);
       
       Overseer.createClientNodes(zkClient, getNodeName());
       createEphemeralLiveNode();
-      setUpCollectionsNode();
+      cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE);
 
       overseerElector = new LeaderElector(zkClient);
       ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
@@ -631,20 +622,6 @@ public final class ZkController {
   // convenience for testing
   void printLayoutToStdOut() throws KeeperException, InterruptedException {
     zkClient.printLayoutToStdOut();
-  }
-
-  private void setUpCollectionsNode() throws KeeperException, InterruptedException {
-    try {
-      if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE)) {
-        if (log.isInfoEnabled()) {
-          log.info("creating zk collections node:" + ZkStateReader.COLLECTIONS_ZKNODE);
-        }
-        // makes collections zkNode if it doesn't exist
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE, CreateMode.PERSISTENT, null);
-      }
-    } catch (NodeExistsException e) {
-      // its okay if another beats us creating the node
-    }
   }
 
   public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {

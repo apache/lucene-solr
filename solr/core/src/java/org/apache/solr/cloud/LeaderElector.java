@@ -271,18 +271,7 @@ public  class LeaderElector {
     String electZKPath = context.electionPath
         + LeaderElector.ELECTION_NODE;
     
-    try {
-      
-      // leader election node
-      if (!zkClient.exists(electZKPath)) { // on connection loss we throw out an exception
-        
-        // make new leader election node
-        zkClient.makePath(electZKPath, CreateMode.PERSISTENT, null);
-        
-      }
-    } catch (NodeExistsException e) {
-      // its okay if another beats us creating the node
-    }
+      cmdExecutor.ensureExists(electZKPath);
   }
   
   /**
