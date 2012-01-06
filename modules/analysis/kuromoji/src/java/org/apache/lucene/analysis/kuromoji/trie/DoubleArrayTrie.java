@@ -55,7 +55,7 @@ public final class DoubleArrayTrie {
   
   private static final int TAIL_INITIAL_SIZE = 16384;
   
-  private static final int TAIL_OFFSET = Integer.MAX_VALUE >> 1;
+  private static final int TAIL_OFFSET = 1 << 30;
   
   // the underlying raw byte buffers
   private ByteBuffer baseByteBuffer, checkByteBuffer, tailByteBuffer;
