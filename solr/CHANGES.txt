@@ -422,6 +422,13 @@ New Features
   JMX.  The default root name is "solr" followed by the core name.
   (Constantijn Visinescu, hossman)
 
+Optimizations
+----------------------
+* SOLR-1931 Speedup for LukeRequestHandler and admin/schema browser. New parameter
+  reportDocCount defaults to 'false'. Old behavior still possible by specifying this as 'true'
+  (Erick Erickson)
+
+
 Bug Fixes
 ----------------------
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
