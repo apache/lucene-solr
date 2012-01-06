@@ -51,11 +51,11 @@ public final class DoubleArrayTrie {
   
   public static final char TERMINATING_CHARACTER = '\u0001';
   
-  private static final int BASE_CHECK_INITILAL_SIZE = 1000000;
+  private static final int BASE_CHECK_INITILAL_SIZE = 16384;
   
-  private static final int TAIL_INITIAL_SIZE = 10000;
+  private static final int TAIL_INITIAL_SIZE = 16384;
   
-  private static final int TAIL_OFFSET = 10000000;
+  private static final int TAIL_OFFSET = Integer.MAX_VALUE >> 1;
   
   // the underlying raw byte buffers
   private ByteBuffer baseByteBuffer, checkByteBuffer, tailByteBuffer;
