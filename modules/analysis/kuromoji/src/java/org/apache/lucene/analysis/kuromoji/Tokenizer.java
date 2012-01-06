@@ -26,9 +26,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
-import org.apache.lucene.analysis.kuromoji.dict.Dictionaries;
-import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
-import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
+import org.apache.lucene.analysis.kuromoji.dict.*;
 import org.apache.lucene.analysis.kuromoji.viterbi.Viterbi;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
@@ -53,16 +51,18 @@ public class Tokenizer {
    */
   protected Tokenizer(UserDictionary userDictionary, Mode mode, boolean split) {
     
-    this.viterbi = new Viterbi(Dictionaries.getDictionary(),
-        Dictionaries.getUnknownDictionary(),
-        Dictionaries.getCosts(),
+    final TokenInfoDictionary dict = TokenInfoDictionary.getInstance();
+    final UnknownDictionary unknownDict = UnknownDictionary.getInstance();
+    this.viterbi = new Viterbi(dict,
+        unknownDict,
+        ConnectionCosts.getInstance(),
         userDictionary,
         mode);
     
     this.split = split;
     
-    dictionaryMap.put(Type.KNOWN, Dictionaries.getDictionary());
-    dictionaryMap.put(Type.UNKNOWN, Dictionaries.getUnknownDictionary());
+    dictionaryMap.put(Type.KNOWN, dict);
+    dictionaryMap.put(Type.UNKNOWN, unknownDict);
     dictionaryMap.put(Type.USER, userDictionary);
   }
   

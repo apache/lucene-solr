@@ -25,8 +25,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
-import org.apache.lucene.analysis.kuromoji.dict.Dictionaries;
-import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
+import org.apache.lucene.analysis.kuromoji.dict.*;
 import org.apache.lucene.analysis.kuromoji.viterbi.GraphvizFormatter;
 import org.apache.lucene.analysis.kuromoji.viterbi.Viterbi;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
@@ -39,13 +38,14 @@ public class DebugTokenizer {
   
   protected DebugTokenizer(UserDictionary userDictionary, Mode mode) {
     
-    this.viterbi = new Viterbi(Dictionaries.getDictionary(),
-        Dictionaries.getUnknownDictionary(),
-        Dictionaries.getCosts(),
+    final ConnectionCosts costs = ConnectionCosts.getInstance();
+    this.viterbi = new Viterbi(TokenInfoDictionary.getInstance(),
+        UnknownDictionary.getInstance(),
+        costs,
         userDictionary,
         mode);
     
-    this.formatter = new GraphvizFormatter(Dictionaries.getCosts());
+    this.formatter = new GraphvizFormatter(costs);
   }
   
   public String debugTokenize(String text) {
