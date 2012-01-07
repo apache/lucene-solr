@@ -133,11 +133,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       log.info("Adding  debug component:" + dbgCmp);
     }
     if(shfInfo ==null) {
-      Map m = new HashMap();
-      m.put("class",HttpShardHandlerFactory.class.getName());
-      shfInfo = new PluginInfo("shardHandlerFactory", m,null,Collections.<PluginInfo>emptyList());
+      shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    } else {
+      shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
     }
-    shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
   }
 
   public List<SearchComponent> getComponents() {

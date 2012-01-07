@@ -329,9 +329,9 @@ public class RealTimeGetComponent extends SearchComponent
         updates.add(o);
 
       } catch (SolrException e) {
-        log.warn("Exception reverse reading log", e);
+        log.warn("Exception reading log for updates", e);
       } catch (ClassCastException e) {
-        log.warn("Exception reverse reading log", e);
+        log.warn("Exception reading log for updates", e);
       }
     }
 

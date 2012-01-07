@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.text.SimpleDateFormat;
 
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +88,7 @@ public class CoreContainer
   private SolrXMLSerializer solrXMLSerializer = new SolrXMLSerializer();
   private ZkController zkController;
   private SolrZkServer zkServer;
+  private ShardHandlerFactory shardHandlerFactory;
 
   private String zkHost;
 
@@ -955,6 +958,22 @@ public class CoreContainer
   
   public ZkController getZkController() {
     return zkController;
+  }
+
+  /** The default ShardHandlerFactory used to communicate with other solr instances */
+  public ShardHandlerFactory getShardHandlerFactory() {
+    synchronized (this) {
+      if (shardHandlerFactory == null) {
+        Map m = new HashMap();
+        m.put("class",HttpShardHandlerFactory.class.getName());
+        PluginInfo info = new PluginInfo("shardHandlerFactory", m,null,Collections.<PluginInfo>emptyList());
+
+        HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
+        fac.init(info);
+        shardHandlerFactory = fac;
+      }
+      return shardHandlerFactory;
+    }
   }
   
   private SolrConfig getSolrConfigFromZk(String zkConfigName, String solrConfigFileName,
