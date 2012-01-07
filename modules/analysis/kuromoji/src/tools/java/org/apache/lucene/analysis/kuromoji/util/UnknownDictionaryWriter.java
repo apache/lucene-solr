@@ -7,11 +7,11 @@ import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
 import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 
-public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
+public class UnknownDictionaryWriter extends BinaryDictionaryWriter {
   private final CharacterDefinitionWriter characterDefinition = new CharacterDefinitionWriter();
   
   public UnknownDictionaryWriter(int size) {
-    super(size);
+    super(UnknownDictionary.class, size);
   }
   
   @Override
@@ -42,17 +42,9 @@ public class UnknownDictionaryWriter extends TokenInfoDictionaryWriter {
     characterDefinition.putInvokeDefinition(characterClassName, invoke, group, length);
   }
   
-  /**
-   * Write dictionary in file
-   * Dictionary format is:
-   * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
-   * @throws IOException
-   */
+  @Override
   public void write(String baseDir) throws IOException {
-    final String baseName = baseDir + File.separator + UnknownDictionary.class.getName().replace('.', File.separatorChar);
-    writeDictionary(baseName + BinaryDictionary.DICT_FILENAME_SUFFIX);
-    writeTargetMap(baseName + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
-    writePosDict(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
+    super.write(baseDir);
     characterDefinition.write(baseDir);
   }
 }

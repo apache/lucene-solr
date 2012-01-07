@@ -138,6 +138,22 @@ public class TokenInfoDictionaryBuilder {
       }
     }
     
+    System.out.print("  building double array trie...");
+    DoubleArrayTrie trie = buildDoubleArrayTrie();
+    dictionary.setTrie(trie);
+    System.out.println("  done");
+    
+    System.out.print("  processing target map...");
+    assert trie != null;
+    for (Entry<Integer, String> entry : entrySet()) {
+      int tokenInfoId = entry.getKey();
+      String surfaceform = entry.getValue();
+      int doubleArrayId = trie.lookup(surfaceform.toCharArray(), 0, surfaceform.length());
+      assert doubleArrayId > 0;
+      dictionary.addMapping(doubleArrayId, tokenInfoId);
+    }
+    System.out.println("  done");
+    
     return dictionary;
   }
   

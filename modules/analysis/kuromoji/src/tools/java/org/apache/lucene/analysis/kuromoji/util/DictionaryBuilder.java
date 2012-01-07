@@ -36,33 +36,19 @@ public class DictionaryBuilder {
       String encoding,
       boolean normalizeEntry) throws IOException {
     System.out.println("building tokeninfo dict...");
-    TokenInfoDictionaryBuilder tokenInfoBuilder = new TokenInfoDictionaryBuilder(format, encoding, normalizeEntry);
+    TokenInfoDictionaryBuilder tokenInfoBuilder = new TokenInfoDictionaryBuilder(format, encoding, normalizeEntry);    
     TokenInfoDictionaryWriter tokenInfoDictionary = tokenInfoBuilder.build(inputDirname);
-    
-    System.out.print("  building double array trie...");
-    DoubleArrayTrie trie = tokenInfoBuilder.buildDoubleArrayTrie();
-    TokenInfoDictionaryWriter.writeDoubleArrayTrie(outputDirname, trie);
-    System.out.println("  done");
-    
-    System.out.print("  processing target map...");
-    for (Entry<Integer, String> entry : tokenInfoBuilder.entrySet()) {
-      int tokenInfoId = entry.getKey();
-      String surfaceform = entry.getValue();
-      int doubleArrayId = trie.lookup(surfaceform.toCharArray(), 0, surfaceform.length());
-      assert doubleArrayId > 0;
-      tokenInfoDictionary.addMapping(doubleArrayId, tokenInfoId);
-    }		
     tokenInfoDictionary.write(outputDirname);
-    trie = null;
+    tokenInfoDictionary = null;
     tokenInfoBuilder = null;
-    
-    System.out.println("  done");
     System.out.println("done");
     
     System.out.print("building unknown word dict...");
     UnknownDictionaryBuilder unkBuilder = new UnknownDictionaryBuilder(encoding);
     UnknownDictionaryWriter unkDictionary = unkBuilder.build(inputDirname);
     unkDictionary.write(outputDirname);
+    unkDictionary = null;
+    unkBuilder = null;
     System.out.println("done");
     
     System.out.print("building connection costs...");
