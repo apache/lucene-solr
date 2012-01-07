@@ -23,7 +23,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.kuromoji.TokenizerTest;
+import org.apache.lucene.analysis.kuromoji.SegmenterTest;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -32,7 +32,7 @@ import org.junit.Test;
 public class UserDictionaryTest extends LuceneTestCase {
 
   private UserDictionary readDict() throws IOException {
-    InputStream is = TokenizerTest.class.getResourceAsStream("userdict.txt");
+    InputStream is = SegmenterTest.class.getResourceAsStream("userdict.txt");
     if (is == null)
       throw new FileNotFoundException("Cannot find userdict.txt in test classpath!");
     try {

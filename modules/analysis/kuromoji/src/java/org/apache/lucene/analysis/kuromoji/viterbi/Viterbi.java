@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.kuromoji.viterbi;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
+import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
 import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;

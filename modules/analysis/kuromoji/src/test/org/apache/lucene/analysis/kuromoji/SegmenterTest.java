@@ -21,25 +21,23 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.util.List;
 
-import org.apache.lucene.analysis.kuromoji.Token;
-import org.apache.lucene.analysis.kuromoji.Tokenizer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TokenizerTest extends LuceneTestCase {
+public class SegmenterTest extends LuceneTestCase {
   
-  private static Tokenizer tokenizer;
+  private static Segmenter segmenter;
   
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-    tokenizer = Tokenizer.builder().build();
+    segmenter = new Segmenter();
   }
   
   @AfterClass
   public static void afterClass() throws Exception {
-    tokenizer = null;
+    segmenter = null;
   }
   
   @Test
@@ -56,7 +54,7 @@ public class TokenizerTest extends LuceneTestCase {
         "スペース", "ステーション", "に", "行き", "ます", "。",
         "うたがわしい", "。"
     };
-    List<Token> tokens = tokenizer.tokenize(input);
+    List<Token> tokens = segmenter.tokenize(input);
     assertTrue(tokens.size() == surfaceForms.length);
     for (int i = 0; i < tokens.size(); i++) {
       assertEquals(surfaceForms[i], tokens.get(i).getSurfaceFormString());
@@ -65,7 +63,7 @@ public class TokenizerTest extends LuceneTestCase {
   
   @Test
   public void testReadings() {
-    List<Token> tokens = tokenizer.tokenize("寿司が食べたいです。");
+    List<Token> tokens = segmenter.tokenize("寿司が食べたいです。");
     assertTrue(tokens.size() == 6);
     assertEquals(tokens.get(0).getReading(), "スシ");
     assertEquals(tokens.get(1).getReading(), "ガ");
@@ -77,7 +75,7 @@ public class TokenizerTest extends LuceneTestCase {
   
   @Test
   public void testReadings2() {
-    List<Token> tokens = tokenizer.tokenize("多くの学生が試験に落ちた。");
+    List<Token> tokens = segmenter.tokenize("多くの学生が試験に落ちた。");
     assertEquals(9, tokens.size());
     assertEquals("オオク", tokens.get(0).getReading());
     assertEquals("ノ", tokens.get(1).getReading());
@@ -92,7 +90,7 @@ public class TokenizerTest extends LuceneTestCase {
   
   @Test
   public void testPronunciations() {
-    List<Token> tokens = tokenizer.tokenize("寿司が食べたいです。");
+    List<Token> tokens = segmenter.tokenize("寿司が食べたいです。");
     assertTrue(tokens.size() == 6);
     assertEquals("スシ", tokens.get(0).getPronunciation());
     assertEquals("ガ",    tokens.get(1).getPronunciation());
@@ -104,7 +102,7 @@ public class TokenizerTest extends LuceneTestCase {
   
   @Test
   public void testPronunciations2() {
-    List<Token> tokens = tokenizer.tokenize("多くの学生が試験に落ちた。");
+    List<Token> tokens = segmenter.tokenize("多くの学生が試験に落ちた。");
     assertEquals(9, tokens.size());
     // pronunciation differs from reading here
     assertEquals("オーク", tokens.get(0).getPronunciation());
@@ -120,7 +118,7 @@ public class TokenizerTest extends LuceneTestCase {
   
   @Test
   public void testBasicForms() {
-    List<Token> tokens = tokenizer.tokenize("それはまだ実験段階にあります。");
+    List<Token> tokens = segmenter.tokenize("それはまだ実験段階にあります。");
     assertEquals(9, tokens.size());
     assertNull(tokens.get(0).getBaseForm());
     assertNull(tokens.get(1).getBaseForm());
@@ -135,7 +133,7 @@ public class TokenizerTest extends LuceneTestCase {
   
   @Test
   public void testPartOfSpeech() {
-    List<Token> tokens = tokenizer.tokenize("それはまだ実験段階にあります。");
+    List<Token> tokens = segmenter.tokenize("それはまだ実験段階にあります。");
     assertEquals(9, tokens.size());
     assertEquals("名詞,代名詞,一般,*",  tokens.get(0).getPartOfSpeech());
     assertEquals("助詞,係助詞,*,*",    tokens.get(1).getPartOfSpeech());
@@ -169,7 +167,7 @@ public class TokenizerTest extends LuceneTestCase {
     }
     long totalStart = System.currentTimeMillis();
     for (int i = 0; i < numIterations; i++){
-      tokenizer.tokenize(line);
+      segmenter.tokenize(line);
     }
     if (VERBOSE) {
       System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
@@ -179,7 +177,7 @@ public class TokenizerTest extends LuceneTestCase {
     totalStart = System.currentTimeMillis();
     for (int i = 0; i < numIterations; i++) {
       for (String sentence: sentences) {
-        tokenizer.tokenize(sentence);       
+        segmenter.tokenize(sentence);       
       }
     }
     if (VERBOSE) {

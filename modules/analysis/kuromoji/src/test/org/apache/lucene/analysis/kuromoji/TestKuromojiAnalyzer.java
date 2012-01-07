@@ -22,7 +22,6 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
 import org.apache.lucene.util._TestUtil;
 
 public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
@@ -30,9 +29,8 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer = 
-        org.apache.lucene.analysis.kuromoji.Tokenizer.builder().mode(Mode.NORMAL).build();
-    analyzer = new KuromojiAnalyzer(tokenizer);
+    final Segmenter segmenter = new Segmenter();
+    analyzer = new KuromojiAnalyzer(segmenter);
   }
   
   public void testDecomposition1() throws Exception {

@@ -27,6 +27,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.apache.lucene.analysis.kuromoji.dict.*;
+import org.apache.lucene.analysis.kuromoji.viterbi.GraphvizFormatter;
 import org.apache.lucene.analysis.kuromoji.viterbi.Viterbi;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
@@ -35,8 +36,8 @@ import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
  * Tokenizer main class.
  * Thread safe.
  */
-public class Tokenizer {
-  public enum Mode {
+public class Segmenter {
+  public static enum Mode {
     NORMAL, SEARCH, EXTENDED
   }
   
@@ -46,10 +47,26 @@ public class Tokenizer {
   
   private final boolean split;
   
-  /**
-   * Constructor
-   */
-  protected Tokenizer(UserDictionary userDictionary, Mode mode, boolean split) {
+  private final Object formatterLock = new Object();
+  private transient GraphvizFormatter formatter = null;
+
+  public Segmenter() {
+    this(null, Mode.NORMAL, false);
+  }
+
+  public Segmenter(UserDictionary userDictionary, Mode mode) {
+    this(userDictionary, mode, false);
+  }
+
+  public Segmenter(UserDictionary userDictionary) {
+    this(userDictionary, Mode.NORMAL, false);
+  }
+
+  public Segmenter(Mode mode) {
+    this(null, mode, false);
+  }
+
+  public Segmenter(UserDictionary userDictionary, Mode mode, boolean split) {
     
     final TokenInfoDictionary dict = TokenInfoDictionary.getInstance();
     final UnknownDictionary unknownDict = UnknownDictionary.getInstance();
@@ -157,80 +174,17 @@ public class Tokenizer {
     return result;
   }
   
-  /**
-   * Get Builder to create Tokenizer instance.
-   * @return Builder
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-  
-  /**
-   * Builder class used to create Tokenizer instance.
-   */
-  public static class Builder {
-    
-    private Mode mode = Mode.NORMAL;
-    
-    // this is true, for other use.
-    // lucene's tokenizer uses a breakiterator and doTokenize directly.
-    private boolean split = true;
-    
-    private UserDictionary userDictionary = null;
-    
-    /**
-     * Set tokenization mode
-     * Default: NORMAL
-     * @param mode tokenization mode
-     * @return Builder
-     */
-    public Builder mode(Mode mode) {
-      this.mode = mode;
-      return this;
+  /** returns a Graphviz String */
+  public String debugTokenize(String text) {
+    synchronized(formatterLock) {
+      if (this.formatter == null) {
+        this.formatter = new GraphvizFormatter(ConnectionCosts.getInstance());
+      }
     }
     
-    /**
-     * Set if tokenizer should split input string at "。" and "、" before tokenize to increase performance.
-     * Splitting shouldn't change the result of tokenization most of the cases.
-     * Default: true
-     * 
-     * @param split whether tokenizer should split input string
-     * @return Builder
-     */
-    public Builder split(boolean split) {
-      this.split = split;
-      return this;
-    }
+    ViterbiNode[][][] lattice = this.viterbi.build(text.toCharArray(), 0, text.length());
+    List<ViterbiNode> bestPath = this.viterbi.search(lattice);
     
-    /**
-     * Set user dictionary input stream
-     * @param userDictionaryReader dictionary file as {@link Reader}
-     * @return Builder
-     * @throws IOException 
-     */
-    public Builder userDictionary(Reader userDictionaryReader) throws IOException {
-      this.userDictionary = new UserDictionary(userDictionaryReader);
-      return this;
-    }
-    
-    /**
-     * Set user dictionary path
-     * @param userDictionaryPath path to dictionary file
-     * @return Builder
-     * @throws IOException 
-     * @throws FileNotFoundException 
-     */
-    public Builder userDictionary(String userDictionaryPath) throws FileNotFoundException, IOException {
-      this.userDictionary = new UserDictionary(userDictionaryPath);
-      return this;
-    }
-    
-    /**
-     * Create Tokenizer instance
-     * @return Tokenizer
-     */
-    public Tokenizer build() {
-      return new Tokenizer(userDictionary, mode, split);
-    }
+    return this.formatter.format(lattice[0], lattice[1], bestPath);
   }
 }

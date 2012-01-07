@@ -31,7 +31,6 @@ import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -56,9 +55,8 @@ public class TestQuality extends LuceneTestCase {
      sentence agreement?: 0.998161495317142
      word agreement?: 0.999587584716181
      */
-    final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer = 
-        org.apache.lucene.analysis.kuromoji.Tokenizer.builder().mode(Mode.NORMAL).build();
-    Analyzer testAnalyzer = new KuromojiAnalyzer(tokenizer);
+    final Segmenter segmenter = new Segmenter();
+    Analyzer testAnalyzer = new KuromojiAnalyzer(segmenter);
     
     String line1 = null;
     String line2 = null;

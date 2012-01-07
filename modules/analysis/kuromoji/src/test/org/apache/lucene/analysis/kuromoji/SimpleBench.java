@@ -5,7 +5,6 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cjk.CJKAnalyzer;
-import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
 import org.apache.lucene.analysis.kuromoji.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
@@ -15,9 +14,8 @@ import org.apache.lucene.util.Version;
 public class SimpleBench {
   
   public static void main(String args[]) throws Exception {
-    org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer = 
-        org.apache.lucene.analysis.kuromoji.Tokenizer.builder().mode(Mode.NORMAL).build();
-    Analyzer a = new KuromojiAnalyzer(tokenizer);
+    Segmenter segmenter = new Segmenter();
+    Analyzer a = new KuromojiAnalyzer(segmenter);
     Analyzer b = new CJKAnalyzer(Version.LUCENE_CURRENT);
     
     /* slight warmup */

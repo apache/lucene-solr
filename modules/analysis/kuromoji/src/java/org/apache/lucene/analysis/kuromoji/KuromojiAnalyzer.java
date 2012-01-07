@@ -23,15 +23,15 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 
 public class KuromojiAnalyzer extends Analyzer {
-  private final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
+  private final Segmenter segmenter;
   
-  public KuromojiAnalyzer(org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer) {
-    this.tokenizer = tokenizer;
+  public KuromojiAnalyzer(Segmenter segmenter) {
+    this.segmenter = segmenter;
   }
   
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer tokenizer = new KuromojiTokenizer(this.tokenizer, reader);
+    Tokenizer tokenizer = new KuromojiTokenizer(this.segmenter, reader);
     return new TokenStreamComponents(tokenizer, tokenizer);
   }
 }

@@ -34,22 +34,22 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final BaseFormAttribute basicFormAtt = addAttribute(BaseFormAttribute.class);
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
-  private final org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer;
+  private final Segmenter segmenter;
   
   private List<Token> tokens; 
   private int tokenIndex = 0;
   private int sentenceStart = 0;
   
-  public KuromojiTokenizer(org.apache.lucene.analysis.kuromoji.Tokenizer tokenizer, Reader input) {
+  public KuromojiTokenizer(Segmenter segmenter, Reader input) {
     super(input, (BreakIterator) proto.clone());
-    this.tokenizer = tokenizer;
+    this.segmenter = segmenter;
   }
   
   @Override
   protected void setNextSentence(int sentenceStart, int sentenceEnd) {
     this.sentenceStart = sentenceStart;
     // TODO: maybe don't pass 0 here, so kuromoji tracks offsets for us?
-    tokens = tokenizer.doTokenize(0, buffer, sentenceStart, sentenceEnd-sentenceStart);
+    tokens = segmenter.doTokenize(0, buffer, sentenceStart, sentenceEnd-sentenceStart);
     tokenIndex = 0;
   }
 
