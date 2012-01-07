@@ -262,6 +262,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // if it is not a forward request, for each fail, try to tell them to
     // recover nocommit: we would really like to only do this on connection problems
 
+    // TODO: we should do this in the background it would seem
     for (SolrCmdDistributor.Error error : response.errors) {
       if (error.node instanceof RetryNode) {
         // we don't try to force a leader to recover
