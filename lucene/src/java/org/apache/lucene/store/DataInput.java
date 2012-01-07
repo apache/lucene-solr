@@ -181,7 +181,7 @@ public abstract class DataInput implements Cloneable {
     int length = readVInt();
     final byte[] bytes = new byte[length];
     readBytes(bytes, 0, length);
-    return new String(bytes, 0, length, IOUtils.CHARSET_UTF_8);
+    return new String(bytes, 0, length, "UTF-8");
   }
 
   private String readModifiedUTF8String() throws IOException {
