@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Test;
 
 import java.util.EnumSet;
 import java.util.Arrays;
@@ -38,33 +39,31 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     return "solrconfig.xml";
   }
 
-  /** tests some simple edge cases */
-  public void doTestHistogramPowerOfTwoBucket() {
-    assertHistoBucket(1,  1);
-    assertHistoBucket(2,  2);
-    assertHistoBucket(4,  3);
-    assertHistoBucket(4,  4);
-    assertHistoBucket(8,  5);
-    assertHistoBucket(8,  6);
-    assertHistoBucket(8,  7);
-    assertHistoBucket(8,  8);
-    assertHistoBucket(16, 9);
+  public void testHistogramBucket() {
+    assertHistoBucket(0, 1);
+    assertHistoBucket(1, 2);
+    assertHistoBucket(2, 3);
+    assertHistoBucket(2, 4);
+    assertHistoBucket(3, 5);
+    assertHistoBucket(3, 6);
+    assertHistoBucket(3, 7);
+    assertHistoBucket(3, 8);
+    assertHistoBucket(4, 9);
 
     final int MAX_VALID = ((Integer.MAX_VALUE/2)+1)/2;
-    
-    assertHistoBucket(MAX_VALID,   MAX_VALID-1 );
-    assertHistoBucket(MAX_VALID,   MAX_VALID   );
-    assertHistoBucket(MAX_VALID*2, MAX_VALID+1 );
-    
+
+    assertHistoBucket(29,   MAX_VALID-1 );
+    assertHistoBucket(29,   MAX_VALID   );
+    assertHistoBucket(30, MAX_VALID+1 );
+
   }
 
-  private void assertHistoBucket(int expected, int in) {
-    assertEquals("histobucket: " + in, expected,
-                 LukeRequestHandler.TermHistogram.getPowerOfTwoBucket( in ));
+  private void assertHistoBucket(int slot, int in) {
+    assertEquals("histobucket: " + in, slot, 32 - Integer.numberOfLeadingZeros(Math.max(0, in - 1)));
   }
 
+  @Test
   public void testLuke() {
-    doTestHistogramPowerOfTwoBucket();
 
     assertU(adoc("id","SOLR1000", "name","Apache Solr",
       "solr_si", "10",
@@ -99,7 +98,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     assertQ(req("qt","/admin/luke", "id","SOLR1000"));
 
     final int numFlags = EnumSet.allOf(FieldFlag.class).size();
-    
+
     assertQ("Not all flags ("+numFlags+") mentioned in info->key",
             req("qt","/admin/luke"),
             numFlags+"=count(//lst[@name='info']/lst[@name='key']/str)");
@@ -116,7 +115,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
     }
 
-    // diff loop for checking 'index' flags, 
+    // diff loop for checking 'index' flags,
     // only valid for fields that are indexed & stored
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
                                   "solr_td","solr_pl","solr_dt","solr_b")) {
@@ -125,10 +124,17 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
               req("qt","/admin/luke", "fl", f),
               numFlags+"=string-length("+xp+"[@name='index'])");
-    }
 
+    final String hxp = getFieldXPathHistogram(f);
+    assertQ("Historgram field should be present for field "+f,
+        req("qt", "/admin/luke", "fl", f),
+        hxp+"[@name='histogram']");
+    }
   }
 
+  private static String getFieldXPathHistogram(String field) {
+    return "//lst[@name='fields']/lst[@name='"+field+"']/lst";
+  }
   private static String getFieldXPathPrefix(String field) {
     return "//lst[@name='fields']/lst[@name='"+field+"']/str";
   }

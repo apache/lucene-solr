@@ -21,13 +21,12 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.NormsReader;
-import org.apache.lucene.codecs.NormsWriter;
-import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.codecs.PerDocProducer;
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 
 /**
  * plain-text norms format
@@ -36,19 +35,28 @@ import org.apache.lucene.store.IOContext;
  * @lucene.experimental
  */
 public class SimpleTextNormsFormat extends NormsFormat {
-
+  
   @Override
-  public NormsReader normsReader(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context, Directory separateNormsDir) throws IOException {
-    return new SimpleTextNormsReader(dir, info, fields, context);
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new SimpleTextNormsConsumer(state.directory, state.segmentName, state.context);
   }
 
   @Override
-  public NormsWriter normsWriter(SegmentWriteState state) throws IOException {
-    return new SimpleTextNormsWriter(state.directory, state.segmentName, state.context);
+  public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
+    return new SimpleTextNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context);
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextNormsReader.files(dir, info, files);
+  public void files(Directory dir, SegmentInfo info, Set<String> files)
+      throws IOException {
+    SimpleTextNormsConsumer.files(dir, info, files);
+
   }
+
+  @Override
+  public PerDocProducer docsProducer(SegmentReadState state,
+      Directory separateNormsDir) throws IOException {
+    return docsProducer(state);
+  }
+   
 }

@@ -462,9 +462,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
     while ((field = fieldsEnum.next()) != null) {
       assertEquals(info, leftReader.hasNorms(field), rightReader.hasNorms(field));
       if (leftReader.hasNorms(field)) {
-        byte leftNorms[] = MultiNorms.norms(leftReader, field);
-        byte rightNorms[] = MultiNorms.norms(rightReader, field);
-        assertArrayEquals(info, leftNorms, rightNorms);
+        DocValues leftNorms = MultiDocValues.getNormDocValues(leftReader, field);
+        DocValues rightNorms = MultiDocValues.getNormDocValues(rightReader, field);
+        assertDocValues(leftNorms, rightNorms);
       }
     }
   }
@@ -528,13 +528,17 @@ public class TestDuelingCodecs extends LuceneTestCase {
     for (String field : leftValues) {
       DocValues leftDocValues = MultiDocValues.getDocValues(leftReader, field);
       DocValues rightDocValues = MultiDocValues.getDocValues(rightReader, field);
-      assertNotNull(info, leftDocValues);
-      assertNotNull(info, rightDocValues);
-      assertEquals(info, leftDocValues.type(), rightDocValues.type());
-      assertEquals(info, leftDocValues.getValueSize(), rightDocValues.getValueSize());
-      assertDocValuesSource(leftDocValues.getDirectSource(), rightDocValues.getDirectSource());
-      assertDocValuesSource(leftDocValues.getSource(), rightDocValues.getSource());
+      assertDocValues(leftDocValues, rightDocValues);
     }
+  }
+  
+  public void assertDocValues(DocValues leftDocValues, DocValues rightDocValues) throws Exception {
+    assertNotNull(info, leftDocValues);
+    assertNotNull(info, rightDocValues);
+    assertEquals(info, leftDocValues.type(), rightDocValues.type());
+    assertEquals(info, leftDocValues.getValueSize(), rightDocValues.getValueSize());
+    assertDocValuesSource(leftDocValues.getDirectSource(), rightDocValues.getDirectSource());
+    assertDocValuesSource(leftDocValues.getSource(), rightDocValues.getSource());
   }
   
   /**

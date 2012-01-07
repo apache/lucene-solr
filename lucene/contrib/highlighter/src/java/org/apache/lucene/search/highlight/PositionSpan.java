@@ -1,5 +1,4 @@
-package org.apache.lucene.codecs;
-
+package org.apache.lucene.search.highlight;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,10 +16,16 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
+/**
+ * Utility class to record Positions Spans
+ * @lucene.internal
+ */
+public class PositionSpan {
+  int start;
+  int end;
 
-//simple api just for now before switching to docvalues apis
-public abstract class NormsReader implements Closeable {
-  public abstract byte[] norms(String name) throws IOException;
+  public PositionSpan(int start, int end) {
+    this.start = start;
+    this.end = end;
+  }
 }

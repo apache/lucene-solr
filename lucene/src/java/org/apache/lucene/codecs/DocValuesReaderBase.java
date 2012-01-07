@@ -41,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
  */
 // TODO: this needs to go under lucene40 codec (its specific to its impl)
 public abstract class DocValuesReaderBase extends PerDocProducer {
-  
+
   protected abstract void closeInternal(Collection<? extends Closeable> closeables) throws IOException;
   protected abstract Map<String, DocValues> docValues();
   
@@ -68,14 +68,14 @@ public abstract class DocValuesReaderBase extends PerDocProducer {
     try {
 
       for (FieldInfo fieldInfo : fieldInfos) {
-        if (fieldInfo.hasDocValues()) {
+        if (canLoad(fieldInfo)) {
           final String field = fieldInfo.name;
           // TODO can we have a compound file per segment and codec for
           // docvalues?
           final String id = DocValuesWriterBase.docValuesId(segment,
               fieldInfo.number);
           values.put(field,
-              loadDocValues(docCount, dir, id, fieldInfo.getDocValuesType(), context));
+              loadDocValues(docCount, dir, id, getDocValuesType(fieldInfo), context));
         }
       }
       success = true;
@@ -86,6 +86,18 @@ public abstract class DocValuesReaderBase extends PerDocProducer {
       }
     }
     return values;
+  }
+  
+  protected boolean canLoad(FieldInfo info) {
+    return info.hasDocValues();
+  }
+  
+  protected Type getDocValuesType(FieldInfo info) {
+    return info.getDocValuesType();
+  }
+  
+  protected boolean anyDocValuesFields(FieldInfos infos) {
+    return infos.anyDocValuesFields();
   }
   
   /**

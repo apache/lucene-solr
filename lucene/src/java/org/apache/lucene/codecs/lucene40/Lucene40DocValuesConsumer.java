@@ -28,6 +28,7 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Default PerDocConsumer implementation that uses compound file.
@@ -36,11 +37,13 @@ import org.apache.lucene.store.Directory;
 public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   private final Directory mainDirectory;
   private Directory directory;
+  private final String segmentSuffix;
+  public final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
 
-  final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
-  
-  public Lucene40DocValuesConsumer(PerDocWriteState state) throws IOException {
+
+  public Lucene40DocValuesConsumer(PerDocWriteState state, String segmentSuffix) throws IOException {
     super(state);
+    this.segmentSuffix = segmentSuffix;
     mainDirectory = state.directory;
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
   }
@@ -50,7 +53,7 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
     // lazy init
     if (directory == null) {
       directory = new CompoundFileDirectory(mainDirectory,
-                                            IndexFileNames.segmentFileName(segmentName, DOC_VALUES_SEGMENT_SUFFIX,
+                                            IndexFileNames.segmentFileName(segmentName, segmentSuffix,
                                                                            IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
     }
     return directory;
@@ -74,5 +77,16 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
         break;
       }
     }
+  }
+
+  @Override
+  public void abort() {
+    try {
+      close();
+    } catch (IOException ignored) {}
+    IOUtils.deleteFilesIgnoringExceptions(mainDirectory, IndexFileNames.segmentFileName(
+        segmentName, segmentSuffix, IndexFileNames.COMPOUND_FILE_EXTENSION),
+        IndexFileNames.segmentFileName(segmentName, segmentSuffix,
+            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
   }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.DocValue;
@@ -122,7 +123,7 @@ public final class Bytes {
    * @throws IOException
    *           if the files for the writer can not be created.
    */
-  public static Writer getWriter(Directory dir, String id, Mode mode,
+  public static DocValuesConsumer getWriter(Directory dir, String id, Mode mode,
       boolean fixedSize, Comparator<BytesRef> sortComparator,
       Counter bytesUsed, IOContext context, boolean fasterButMoreRam)
       throws IOException {
@@ -295,7 +296,8 @@ public final class Bytes {
      * skipped; they will be filled with 0 bytes.
      */
     @Override
-    public abstract void add(int docID, BytesRef bytes) throws IOException;
+    protected
+    abstract void add(int docID, BytesRef bytes) throws IOException;
 
     @Override
     public abstract void finish(int docCount) throws IOException;
@@ -431,7 +433,7 @@ public final class Bytes {
     }
 
     @Override
-    public void add(int docID, BytesRef bytes) throws IOException {
+    protected void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0) { // default value - skip it
         return;
       }

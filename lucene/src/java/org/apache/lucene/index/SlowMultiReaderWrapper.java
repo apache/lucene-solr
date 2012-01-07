@@ -34,7 +34,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * IndexReader#getSequentialSubReaders}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiNorms}, {@link MultiDocValues}, 
+ * MultiFields}, {@link MultiDocValues}, 
  * by stepping through the sub-readers to merge fields/terms, 
  * appending docs, etc.
  *
@@ -53,7 +53,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
 public final class SlowMultiReaderWrapper extends FilterIndexReader {
 
   private final ReaderContext readerContext;
-  private final Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
+  private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
   
   public SlowMultiReaderWrapper(IndexReader other) {
     super(other);
@@ -76,7 +76,17 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     ensureOpen();
     return MultiDocValues.getDocValues(in, field);
   }
-
+  
+  @Override
+  public synchronized DocValues normValues(String field) throws IOException {
+    ensureOpen();
+    DocValues values = normsCache.get(field);
+    if (values == null) {
+      values = MultiDocValues.getNormDocValues(in, field);
+      normsCache.put(field, values);
+    }
+    return values;
+  }
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
@@ -86,22 +96,6 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return null;
-  }
-
-  @Override
-  public synchronized byte[] norms(String field) throws IOException {
-    ensureOpen();
-    byte[] bytes = normsCache.get(field);
-    if (bytes != null)
-      return bytes;
-    if (!hasNorms(field))
-      return null;
-    if (normsCache.containsKey(field)) // cached omitNorms, not missing key
-      return null;
-    
-    bytes = MultiNorms.norms(in, field);
-    normsCache.put(field, bytes);
-    return bytes;
   }
   
   @Override

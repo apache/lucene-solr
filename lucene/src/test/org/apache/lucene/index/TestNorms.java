@@ -82,11 +82,11 @@ public class TestNorms extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    byte fooNorms[] = MultiNorms.norms(reader, "foo");
+    byte fooNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "foo").getSource().getArray();
     for (int i = 0; i < reader.maxDoc(); i++)
       assertEquals(0, fooNorms[i]);
     
-    byte barNorms[] = MultiNorms.norms(reader, "bar");
+    byte barNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "bar").getSource().getArray();
     for (int i = 0; i < reader.maxDoc(); i++)
       assertEquals(1, barNorms[i]);
     

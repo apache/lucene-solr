@@ -332,12 +332,6 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  public byte[] norms(String f) throws IOException {
-    ensureOpen();
-    return in.norms(f);
-  }
-
-  @Override
   public int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
     return in.docFreq(field, t);
@@ -418,6 +412,12 @@ public class FilterIndexReader extends IndexReader {
   public DocValues docValues(String field) throws IOException {
     ensureOpen();
     return in.docValues(field);
+  }
+  
+  @Override
+  public DocValues normValues(String field) throws IOException {
+    ensureOpen();
+    return in.normValues(field);
   }
 
   @Override

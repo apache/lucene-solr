@@ -182,9 +182,4 @@ public final class English {
   public static void intToEnglish(int i, StringBuilder result) {
     longToEnglish(i, result);
   }
-
-  public static void main(String[] args) {
-    System.out.println(longToEnglish(Long.parseLong(args[0])));
-  }
-
 }

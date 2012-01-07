@@ -122,14 +122,9 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     try {
       close();
     } catch (IOException ignored) {}
-    
-    try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
-    } catch (IOException ignored) {}
-    
-    try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
-    } catch (IOException ignored) {}
+    IOUtils.deleteFilesIgnoringExceptions(directory,
+        IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION),
+        IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
   }
 
   public final void writeField(FieldInfo info, IndexableField field) throws IOException {

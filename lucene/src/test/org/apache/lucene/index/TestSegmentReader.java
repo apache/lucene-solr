@@ -172,7 +172,7 @@ public class TestSegmentReader extends LuceneTestCase {
         assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
         if (!reader.hasNorms(f.name())) {
           // test for norms of null
-          byte [] norms = MultiNorms.norms(reader, f.name());
+          DocValues norms = MultiDocValues.getNormDocValues(reader, f.name());
           assertNull(norms);
         }
       }

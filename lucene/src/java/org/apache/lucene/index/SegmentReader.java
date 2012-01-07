@@ -18,16 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
@@ -262,12 +261,6 @@ public final class SegmentReader extends IndexReader {
     return fi != null && fi.isIndexed && !fi.omitNorms;
   }
 
-  @Override
-  public byte[] norms(String field) throws IOException {
-    ensureOpen();
-    return core.norms.norms(field);
-  }
-
   /** @lucene.internal */
   public TermVectorsReader getTermVectorsReader() {
     ensureOpen();
@@ -352,6 +345,17 @@ public final class SegmentReader extends IndexReader {
     }
     return perDoc.docValues(field);
   }
+  
+  @Override
+  public DocValues normValues(String field) throws IOException {
+    ensureOpen();
+    final PerDocProducer perDoc = core.norms;
+    if (perDoc == null) {
+      return null;
+    }
+    return perDoc.docValues(field);
+  }
+  
 
   /**
    * Called when the shared core for this SegmentReader

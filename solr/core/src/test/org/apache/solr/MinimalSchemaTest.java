@@ -89,7 +89,6 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
             req("qt", "/admin/luke",
                 "show","schema")
             ,"//int[@name='numDocs'][.='2']"
-            ,"//int[@name='numTerms'][.='5']"
             ,"//null[@name='uniqueKeyField']"
             ,"//null[@name='defaultSearchField']"
             );

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.NormsReader;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -54,7 +53,7 @@ final class SegmentCoreReaders {
   
   final FieldsProducer fields;
   final PerDocProducer perDocProducer;
-  final NormsReader norms;
+  final PerDocProducer norms;
 
   final Directory dir;
   final Directory cfsDir;
@@ -120,7 +119,7 @@ final class SegmentCoreReaders {
       // ask codec for its Norms: 
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
-      norms = codec.normsFormat().normsReader(cfsDir, si, fieldInfos, context, dir);
+      norms = codec.normsFormat().docsProducer(segmentReadState, dir);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
 
       final Directory storeDir;

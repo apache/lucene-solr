@@ -258,7 +258,7 @@ public class TestSort extends LuceneTestCase {
     //System.out.println(writer.getSegmentCount());
     writer.close();
     IndexReader reader = IndexReader.open(indexStore);
-    return new IndexSearcher (reader);
+    return newSearcher(reader);
   }
   
   public String getRandomNumberString(int num, int low, int high) {
@@ -1210,34 +1210,10 @@ public class TestSort extends LuceneTestCase {
     assertMatches( null, searcher, query, sort, expectedResult );
   }
 
-  private static boolean hasSlowMultiReaderWrapper(IndexReader r) {
-    if (r instanceof SlowMultiReaderWrapper) {
-      return true;
-    } else {
-      IndexReader[] subReaders = r.getSequentialSubReaders();
-      if (subReaders != null) {
-        for (IndexReader subReader : subReaders) {
-          if (hasSlowMultiReaderWrapper(subReader)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
 
   // make sure the documents returned by the search match the expected list
   private void assertMatches(String msg, IndexSearcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
-
-    for(SortField sortField : sort.getSort()) {
-      if (sortField.getUseIndexValues() && sortField.getType() == SortField.Type.STRING) {
-        if (hasSlowMultiReaderWrapper(searcher.getIndexReader())) {
-          // Cannot use STRING DocValues sort with SlowMultiReaderWrapper
-          return;
-        }
-      }
-    }
 
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
     TopDocs hits = searcher.search(query, null, Math.max(1, expectedResult.length()), sort);

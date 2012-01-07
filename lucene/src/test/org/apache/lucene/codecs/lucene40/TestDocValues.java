@@ -20,10 +20,11 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.lucene40.values.Bytes;
 import org.apache.lucene.codecs.lucene40.values.Floats;
 import org.apache.lucene.codecs.lucene40.values.Ints;
-import org.apache.lucene.codecs.lucene40.values.Writer;
+import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
@@ -58,12 +59,13 @@ public class TestDocValues extends LuceneTestCase {
 
   public void runTestBytes(final Bytes.Mode mode, final boolean fixedSize)
       throws IOException {
-
+    DocValueHolder valueHolder = new DocValueHolder();
+    valueHolder.comp = COMP;
     final BytesRef bytesRef = new BytesRef();
 
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Bytes.getWriter(dir, "test", mode, fixedSize, COMP, trackBytes, newIOContext(random),
+    DocValuesConsumer w = Bytes.getWriter(dir, "test", mode, fixedSize, COMP, trackBytes, newIOContext(random),
         random.nextBoolean());
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
@@ -79,7 +81,8 @@ public class TestDocValues extends LuceneTestCase {
       values[2 * i] = s;
 
       UnicodeUtil.UTF16toUTF8(s, 0, s.length(), bytesRef);
-      w.add(2 * i, bytesRef);
+      valueHolder.bytes = bytesRef;
+      w.add(2 * i, valueHolder);
     }
     w.finish(maxDoc);
     assertEquals(0, trackBytes.get());
@@ -167,12 +170,15 @@ public class TestDocValues extends LuceneTestCase {
         Type.FIXED_INTS_64, Type.FIXED_INTS_64,
         Type.FIXED_INTS_64, Type.VAR_INTS, Type.VAR_INTS,
         Type.VAR_INTS, };
+    DocValueHolder valueHolder = new DocValueHolder();
     for (int i = 0; i < minMax.length; i++) {
       Directory dir = newDirectory();
       final Counter trackBytes = Counter.newCounter();
-      Writer w = Ints.getWriter(dir, "test", trackBytes, Type.VAR_INTS, newIOContext(random));
-      w.add(0, minMax[i][0]);
-      w.add(1, minMax[i][1]);
+      DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.VAR_INTS, newIOContext(random));
+      valueHolder.intValue = minMax[i][0];
+      w.add(0, valueHolder);
+      valueHolder.intValue = minMax[i][1];
+      w.add(1, valueHolder);
       w.finish(2);
       assertEquals(0, trackBytes.get());
       DocValues r = Ints.getValues(dir, "test", 2,  Type.VAR_INTS, newIOContext(random));
@@ -200,12 +206,14 @@ public class TestDocValues extends LuceneTestCase {
   }
   
   public void testGetInt8Array() throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     byte[] sourceArray = new byte[] {1,2,3};
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_8, newIOContext(random));
+    DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_8, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      w.add(i, (long) sourceArray[i]);
+      valueHolder.intValue = (long) sourceArray[i];
+      w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
     DocValues r = Ints.getValues(dir, "test", sourceArray.length, Type.FIXED_INTS_8, newIOContext(random));
@@ -221,12 +229,14 @@ public class TestDocValues extends LuceneTestCase {
   }
   
   public void testGetInt16Array() throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     short[] sourceArray = new short[] {1,2,3};
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_16, newIOContext(random));
+    DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_16, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      w.add(i, (long) sourceArray[i]);
+      valueHolder.intValue = (long) sourceArray[i];
+      w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
     DocValues r = Ints.getValues(dir, "test", sourceArray.length, Type.FIXED_INTS_16, newIOContext(random));
@@ -242,12 +252,14 @@ public class TestDocValues extends LuceneTestCase {
   }
   
   public void testGetInt64Array() throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     long[] sourceArray = new long[] {1,2,3};
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_64, newIOContext(random));
+    DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_64, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      w.add(i, sourceArray[i]);
+      valueHolder.intValue = sourceArray[i];
+      w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
     DocValues r = Ints.getValues(dir, "test", sourceArray.length, Type.FIXED_INTS_64, newIOContext(random));
@@ -263,12 +275,14 @@ public class TestDocValues extends LuceneTestCase {
   }
   
   public void testGetInt32Array() throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     int[] sourceArray = new int[] {1,2,3};
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_32, newIOContext(random));
+    DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_32, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      w.add(i, (long) sourceArray[i]);
+      valueHolder.intValue = (long) sourceArray[i];
+      w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
     DocValues r = Ints.getValues(dir, "test", sourceArray.length, Type.FIXED_INTS_32, newIOContext(random));
@@ -284,12 +298,14 @@ public class TestDocValues extends LuceneTestCase {
   }
   
   public void testGetFloat32Array() throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     float[] sourceArray = new float[] {1,2,3};
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), Type.FLOAT_32);
+    DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), Type.FLOAT_32);
     for (int i = 0; i < sourceArray.length; i++) {
-      w.add(i, sourceArray[i]);
+      valueHolder.floatValue = sourceArray[i];
+      w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
     DocValues r = Floats.getValues(dir, "test", 3, newIOContext(random), Type.FLOAT_32);
@@ -305,12 +321,14 @@ public class TestDocValues extends LuceneTestCase {
   }
   
   public void testGetFloat64Array() throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     double[] sourceArray = new double[] {1,2,3};
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), Type.FLOAT_64);
+    DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), Type.FLOAT_64);
     for (int i = 0; i < sourceArray.length; i++) {
-      w.add(i, sourceArray[i]);
+      valueHolder.floatValue = sourceArray[i];
+      w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
     DocValues r = Floats.getValues(dir, "test", 3, newIOContext(random), Type.FLOAT_64);
@@ -326,17 +344,18 @@ public class TestDocValues extends LuceneTestCase {
   }
 
   private void testInts(Type type, int maxBit) throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     long maxV = 1;
     final int NUM_VALUES = 333 + random.nextInt(333);
     final long[] values = new long[NUM_VALUES];
     for (int rx = 1; rx < maxBit; rx++, maxV *= 2) {
       Directory dir = newDirectory();
       final Counter trackBytes = Counter.newCounter();
-      Writer w = Ints.getWriter(dir, "test", trackBytes, type, newIOContext(random));
+      DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, type, newIOContext(random));
       for (int i = 0; i < NUM_VALUES; i++) {
         final long v = random.nextLong() % (1 + maxV);
-        values[i] = v;
-        w.add(i, v);
+        valueHolder.intValue = values[i] = v;
+        w.add(i, valueHolder);
       }
       final int additionalDocs = 1 + random.nextInt(9);
       w.finish(NUM_VALUES + additionalDocs);
@@ -362,16 +381,17 @@ public class TestDocValues extends LuceneTestCase {
   }
 
   private void runTestFloats(Type type, double delta) throws IOException {
+    DocValueHolder valueHolder = new DocValueHolder();
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
-    Writer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), type);
+    DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), type);
     final int NUM_VALUES = 777 + random.nextInt(777);;
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
       final double v = type == Type.FLOAT_32 ? random.nextFloat() : random
           .nextDouble();
-      values[i] = v;
-      w.add(i, v);
+      valueHolder.floatValue = values[i] = v;
+      w.add(i, valueHolder);
     }
     final int additionalValues = 1 + random.nextInt(10);
     w.finish(NUM_VALUES + additionalValues);
@@ -409,6 +429,33 @@ public class TestDocValues extends LuceneTestCase {
   
   private SortedSource getSortedSource(DocValues values) throws IOException {
     return getSource(values).asSortedSource();
+  }
+  
+  public static class DocValueHolder implements DocValue {
+    BytesRef bytes;
+    long intValue;
+    double floatValue;
+    Comparator<BytesRef> comp;
+    @Override
+    public BytesRef getBytes() {
+      return bytes;
+    }
+
+    @Override
+    public Comparator<BytesRef> bytesComparator() {
+      return comp;
+    }
+
+    @Override
+    public double getFloat() {
+      return floatValue;
+    }
+
+    @Override
+    public long getInt() {
+      return intValue;
+    }
+    
   }
   
 }

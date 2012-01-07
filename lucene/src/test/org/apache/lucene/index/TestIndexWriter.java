@@ -455,8 +455,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
       IndexReader reader = IndexReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
-      assertEquals(n*100, hits.length);
+      int totalHits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1).totalHits;
+      assertEquals(n*100, totalHits);
       reader.close();
 
       dir.close();

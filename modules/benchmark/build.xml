@@ -154,6 +154,7 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
+      <fileset dir="${common.dir}/../modules/analysis/icu/lib" includes="icu4j*.jar"/>
       <path refid="base.classpath"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>

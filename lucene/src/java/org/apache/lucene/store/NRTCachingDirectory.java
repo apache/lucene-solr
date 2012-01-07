@@ -282,35 +282,33 @@ public class NRTCachingDirectory extends Directory {
   private void unCache(String fileName) throws IOException {
     // Only let one thread uncache at a time; this only
     // happens during commit() or close():
-    IndexOutput out = null;
-    IndexInput in = null;
-    try {
-      synchronized(uncacheLock) {
-        if (VERBOSE) {
-          System.out.println("nrtdir.unCache name=" + fileName);
-        }
-        if (!cache.fileExists(fileName)) {
-          // Another thread beat us...
-          return;
-        }
-        IOContext context = IOContext.DEFAULT;
-        if (delegate.fileExists(fileName)) {
-          throw new IOException("cannot uncache file=\"" + fileName + "\": it was separately also created in the delegate directory");
-        }
-        out = delegate.createOutput(fileName, context);
-
+    synchronized(uncacheLock) {
+      if (VERBOSE) {
+        System.out.println("nrtdir.unCache name=" + fileName);
+      }
+      if (!cache.fileExists(fileName)) {
+        // Another thread beat us...
+        return;
+      }
+      if (delegate.fileExists(fileName)) {
+        throw new IOException("cannot uncache file=\"" + fileName + "\": it was separately also created in the delegate directory");
+      }
+      final IOContext context = IOContext.DEFAULT;
+      final IndexOutput out = delegate.createOutput(fileName, context);
+      IndexInput in = null;
+      try {
         in = cache.openInput(fileName, context);
         in.copyBytes(out, in.length());
-
-        // Lock order: uncacheLock -> this
-        synchronized(this) {
-          // Must sync here because other sync methods have
-          // if (cache.fileExists(name)) { ... } else { ... }:
-          cache.deleteFile(fileName);
-        }
+      } finally {
+        IOUtils.close(in, out);
       }
-    } finally {
-      IOUtils.close(in, out);
+
+      // Lock order: uncacheLock -> this
+      synchronized(this) {
+        // Must sync here because other sync methods have
+        // if (cache.fileExists(name)) { ... } else { ... }:
+        cache.deleteFile(fileName);
+      }
     }
   }
 }

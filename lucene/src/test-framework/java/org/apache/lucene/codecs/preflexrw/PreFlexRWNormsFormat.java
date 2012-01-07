@@ -1,3 +1,4 @@
+package org.apache.lucene.codecs.preflexrw;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,38 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.tier;
+import java.io.IOException;
 
-import org.apache.lucene.spatial.DistanceUtils;
+import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
+import org.apache.lucene.index.PerDocWriteState;
 
-import java.text.DecimalFormat;
+public class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
 
-
-public class DistanceCheck {
-
-  /**
-   * @param args
-   */
-  public static void main(String[] args) {
-    double lat1 = 0;
-    double long1 = 0;
-    double lat2 = 0;
-    double long2 = 0;
-    
-    for (int i =0; i < 90; i++){
-      double dis = DistanceUtils.getDistanceMi(lat1, long1, lat2, long2);
-      lat1 +=1;
-      lat2 = lat1 + 0.001;
-      
-      System.out.println(lat1+","+long1+","+lat2+","+long2+","+formatDistance(dis));
-      
-    }
-
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new PreFlexNormsConsumer(state.directory, state.segmentName, state.context);
   }
 
-  public static String formatDistance (Double d){
-    DecimalFormat df1 = new DecimalFormat("####.000000");
-    return df1.format(d);
-  }
-  
 }

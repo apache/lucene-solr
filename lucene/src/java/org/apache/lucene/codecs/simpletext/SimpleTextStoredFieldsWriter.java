@@ -166,9 +166,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     try {
       close();
     } catch (IOException ignored) {}
-    try {
-      directory.deleteFile(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
-    } catch (IOException ignored) {}
+    IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
   }
 
   @Override
