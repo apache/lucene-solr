@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.CoreState;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -488,7 +489,7 @@ public final class ZkController {
     SolrCore core = null;
     try {
       boolean doRecovery = true;
-      if (leaderUrl.equals(baseUrl)) {
+      if (leaderUrl.equals(ZkCoreNodeProps.getCoreUrl(baseUrl, coreName))) {
         doRecovery = false;
 
         // recover from local transaction log and wait for it to complete before
@@ -536,6 +537,7 @@ public final class ZkController {
       }
       
       if (doRecovery && !SKIP_AUTO_RECOVERY) {
+        log.info("Core needs to recover:" + core.getName());
         recoveryStrat.recover(core);
       }
     } finally {

@@ -273,9 +273,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: do retries??
       // TODO: what if its is already recovering? Right now recoveries queue up -
       // should they?
+      String recoveryUrl = error.node.getBaseUrl();
       CommonsHttpSolrServer server;
+      log.info("try and ask " + recoveryUrl + " to recover");
       try {
-        server = new CommonsHttpSolrServer(error.node.getBaseUrl());
+        server = new CommonsHttpSolrServer(recoveryUrl);
         server.setSoTimeout(5000);
         server.setConnectionTimeout(5000);
         
