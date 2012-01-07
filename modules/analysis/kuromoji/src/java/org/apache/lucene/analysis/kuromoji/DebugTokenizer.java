@@ -21,7 +21,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.util.List;
 
 import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
@@ -58,6 +58,10 @@ public class DebugTokenizer {
     return new Builder();
   }
   
+  /**
+   * Builder class used to create DebugTokenizer instance.
+   * nocommit: why is everything synchronized here? Makes no sense for builders!
+   */
   public static class Builder {
     
     private Mode mode = Mode.NORMAL;
@@ -69,15 +73,26 @@ public class DebugTokenizer {
       return this;
     }
     
-    public synchronized Builder userDictionary(InputStream userDictionaryInputStream)
-        throws IOException {
-      this.userDictionary = UserDictionary.read(userDictionaryInputStream);
+    /**
+     * Set user dictionary input stream
+     * @param userDictionaryReader dictionary file as {@link Reader}
+     * @return Builder
+     * @throws IOException 
+     */
+    public synchronized Builder userDictionary(Reader userDictionaryReader) throws IOException {
+      this.userDictionary = new UserDictionary(userDictionaryReader);
       return this;
     }
     
-    public synchronized Builder userDictionary(String userDictionaryPath)
-        throws FileNotFoundException, IOException {
-      this.userDictionary(new BufferedInputStream(new FileInputStream(userDictionaryPath)));
+    /**
+     * Set user dictionary path
+     * @param userDictionaryPath path to dictionary file
+     * @return Builder
+     * @throws IOException 
+     * @throws FileNotFoundException 
+     */
+    public synchronized Builder userDictionary(String userDictionaryPath) throws FileNotFoundException, IOException {
+      this.userDictionary = new UserDictionary(userDictionaryPath);
       return this;
     }
     

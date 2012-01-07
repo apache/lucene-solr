@@ -17,6 +17,10 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.kuromoji.TokenizerTest;
@@ -25,11 +29,22 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class UserDictionaryTest extends LuceneTestCase {
+
+  private UserDictionary readDict() throws IOException {
+    InputStream is = TokenizerTest.class.getResourceAsStream("userdict.txt");
+    if (is == null)
+      throw new FileNotFoundException("Cannot find userdict.txt in test classpath!");
+    try {
+      Reader reader = new InputStreamReader(is, "UTF-8");
+      return new UserDictionary(reader);
+    } finally {
+      is.close();
+    }
+  }
   
   @Test
   public void testLookup() throws IOException {
-    
-    UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
+    UserDictionary dictionary = readDict();
     String s = "関西国際空港に行った";
     int[][] dictionaryEntryResult = dictionary.lookup(s.toCharArray(), 0, s.length());
     // Length should be three 関西, 国際, 空港
@@ -53,7 +68,7 @@ public class UserDictionaryTest extends LuceneTestCase {
   
   @Test
   public void testReadings() throws IOException {
-    UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
+    UserDictionary dictionary = readDict();
     int wordIdNihon = 100000000; // wordId of 日本 in 日本経済新聞
     assertEquals("ニホン", dictionary.getReading(wordIdNihon));
     
@@ -66,14 +81,14 @@ public class UserDictionaryTest extends LuceneTestCase {
   
   @Test
   public void testPartOfSpeech() throws IOException {
-    UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
+    UserDictionary dictionary = readDict();
     int wordIdKeizai = 100000001; // wordId of 経済 in 日本経済新聞
     assertEquals("カスタム名詞", dictionary.getPartOfSpeech(wordIdKeizai));
   }
   
   @Test
   public void testRead() throws IOException {
-    UserDictionary dictionary = UserDictionary.read( TokenizerTest.class.getResourceAsStream("userdict.txt"));
+    UserDictionary dictionary = readDict();
     assertNotNull(dictionary);		
   }
 }

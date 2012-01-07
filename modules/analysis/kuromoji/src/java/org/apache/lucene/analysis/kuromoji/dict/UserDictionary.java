@@ -19,21 +19,23 @@ package org.apache.lucene.analysis.kuromoji.dict;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
+import org.apache.lucene.util.IOUtils;
 
-public class UserDictionary implements Dictionary {
+public final class UserDictionary implements Dictionary {
   
-  private TreeMap<String, int[]> entries = new TreeMap<String, int[]>();
+  private final TreeMap<String, int[]> entries = new TreeMap<String, int[]>();
   
-  private HashMap<Integer, String> featureEntries = new HashMap<Integer, String>();
+  private final HashMap<Integer, String> featureEntries = new HashMap<Integer, String>();
   
   private static final int CUSTOM_DICTIONARY_WORD_ID_OFFSET = 100000000;
   
@@ -43,7 +45,54 @@ public class UserDictionary implements Dictionary {
   
   public static final int RIGHT_ID = 5;
   
-  private UserDictionary() {
+  public UserDictionary(String filename) throws IOException {
+    IOException priorE = null;
+    final InputStream is = new FileInputStream(filename);
+    try {
+      final Reader r = new InputStreamReader(is, "UTF-8");
+      read(r);
+    } catch (IOException ioe) {
+      priorE = ioe;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorE, is);
+    }
+  }
+  
+  public UserDictionary(Reader reader) throws IOException {
+    read(reader);
+  }
+  
+  private void read(Reader reader) throws IOException {
+    BufferedReader br = new BufferedReader(reader);
+    String line = null;
+    int wordId = CUSTOM_DICTIONARY_WORD_ID_OFFSET;
+    while ((line = br.readLine()) != null) {
+      // Remove comments
+      line = line.replaceAll("#.*$", "");
+      
+      // Skip empty lines or comment lines
+      if (line.trim().length() == 0) {
+        continue;
+      }
+      String[] values = CSVUtil.parse(line);
+      String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
+      String[] readings = values[2].replaceAll("  *", " ").split(" ");
+      String pos = values[3];
+      
+      if (segmentation.length != readings.length) {
+        // FIXME: Should probably deal with this differently.  Exception?
+        System.out.println("This entry is not properly formatted : " + line);
+      }
+      
+      int[] wordIdAndLength = new int[segmentation.length + 1]; // wordId offset, length, length....
+      wordIdAndLength[0] = wordId;
+      for (int i = 0; i < segmentation.length; i++) {
+        wordIdAndLength[i + 1] = segmentation[i].length();
+        featureEntries.put(wordId, readings[i] + INTERNAL_SEPARATOR + pos);
+        wordId++;
+      }
+      entries.put(values[0], wordIdAndLength);
+    }
   }
   
   /**
@@ -157,47 +206,6 @@ public class UserDictionary implements Dictionary {
       }
     }
     return sb.deleteCharAt(sb.length() - 1).toString();
-  }
-  
-  public static UserDictionary read(String filename) throws IOException {
-    return read(new FileInputStream(filename));
-  }
-  
-  public static UserDictionary read(InputStream is) throws IOException {
-    UserDictionary dictionary = new UserDictionary();
-    // nocommit: require Readers not InputStreams (or InputStream/filename + charset)
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-    String line = null;
-    int wordId = CUSTOM_DICTIONARY_WORD_ID_OFFSET;
-    while ((line = reader.readLine()) != null) {
-      // Remove comments
-      line = line.replaceAll("#.*$", "");
-      
-      // Skip empty lines or comment lines
-      if (line.trim().length() == 0) {
-        continue;
-      }
-      String[] values = CSVUtil.parse(line);
-      String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
-      String[] readings = values[2].replaceAll("  *", " ").split(" ");
-      String pos = values[3];
-      
-      if (segmentation.length != readings.length) {
-        // FIXME: Should probably deal with this differently.  Exception?
-        System.out.println("This entry is not properly formatted : " + line);
-      }
-      
-      int[] wordIdAndLength = new int[segmentation.length + 1]; // wordId offset, length, length....
-      wordIdAndLength[0] = wordId;
-      for (int i = 0; i < segmentation.length; i++) {
-        wordIdAndLength[i + 1] = segmentation[i].length();
-        dictionary.featureEntries.put(wordId, readings[i] + INTERNAL_SEPARATOR + pos);
-        wordId++;
-      }
-      dictionary.entries.put(values[0], wordIdAndLength);
-    }
-    reader.close();
-    return dictionary;
   }
   
 }

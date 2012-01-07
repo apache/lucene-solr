@@ -21,7 +21,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -167,6 +167,7 @@ public class Tokenizer {
   
   /**
    * Builder class used to create Tokenizer instance.
+   * nocommit: why is everything synchronized here? Makes no sense for builders!
    */
   public static class Builder {
     
@@ -204,12 +205,12 @@ public class Tokenizer {
     
     /**
      * Set user dictionary input stream
-     * @param userDictionaryInputStream dictionary file as input stream
+     * @param userDictionaryReader dictionary file as {@link Reader}
      * @return Builder
      * @throws IOException 
      */
-    public synchronized Builder userDictionary(InputStream userDictionaryInputStream) throws IOException {
-      this.userDictionary = UserDictionary.read(userDictionaryInputStream);
+    public synchronized Builder userDictionary(Reader userDictionaryReader) throws IOException {
+      this.userDictionary = new UserDictionary(userDictionaryReader);
       return this;
     }
     
@@ -221,9 +222,7 @@ public class Tokenizer {
      * @throws FileNotFoundException 
      */
     public synchronized Builder userDictionary(String userDictionaryPath) throws FileNotFoundException, IOException {
-      if (userDictionaryPath != null && ! userDictionaryPath.isEmpty()) {
-        this.userDictionary(new BufferedInputStream(new FileInputStream(userDictionaryPath)));
-      }
+      this.userDictionary = new UserDictionary(userDictionaryPath);
       return this;
     }
     
