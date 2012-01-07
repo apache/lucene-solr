@@ -119,5 +119,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     }
     return list.toArray(new String[0]);
   }
+
+  public String getCollectionZkPath() {
+    return collectionZkPath;
+  }
   
 }

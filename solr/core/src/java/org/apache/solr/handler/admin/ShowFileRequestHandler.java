@@ -18,26 +18,32 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.KeeperException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -111,8 +117,90 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   }
   
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, KeeperException, InterruptedException 
   {
+    CoreContainer coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
+    if (coreContainer.isZooKeeperAware()) {
+      showFromZooKeeper(req, rsp, coreContainer);
+    } else {
+      showFromFileSystem(req, rsp);
+    }
+  }
+
+  private void showFromZooKeeper(SolrQueryRequest req, SolrQueryResponse rsp,
+      CoreContainer coreContainer) throws KeeperException,
+      InterruptedException, UnsupportedEncodingException {
+    String adminFile = null;
+    SolrCore core = req.getCore();
+    SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
+    final ZkSolrResourceLoader loader = (ZkSolrResourceLoader) core
+        .getResourceLoader();
+    String confPath = loader.getCollectionZkPath();
+    
+    String fname = req.getParams().get("file", null);
+    if (fname == null) {
+      adminFile = confPath;
+    } else {
+      fname = fname.replace('\\', '/'); // normalize slashes
+      if (hiddenFiles.contains(fname.toUpperCase(Locale.ENGLISH))) {
+        throw new SolrException(ErrorCode.FORBIDDEN, "Can not access: " + fname);
+      }
+      if (fname.indexOf("..") >= 0) {
+        throw new SolrException(ErrorCode.FORBIDDEN, "Invalid path: " + fname);
+      }
+      adminFile = confPath + "/" + fname;
+    }
+    
+    // Make sure the file exists, is readable and is not a hidden file
+    if (!zkClient.exists(adminFile, true)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find: "
+          + adminFile);
+    }
+    
+    // Show a directory listing
+    List<String> children = zkClient.getChildren(adminFile, null, true);
+    if (children.size() > 0) {
+      
+      NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<SimpleOrderedMap<Object>>();
+      for (String f : children) {
+        if (hiddenFiles.contains(f.toUpperCase(Locale.ENGLISH))) {
+          continue; // don't show 'hidden' files
+        }
+        if (f.startsWith(".")) {
+          continue; // skip hidden system files...
+        }
+        
+        SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<Object>();
+        files.add(f, fileInfo);
+        List<String> fchildren = zkClient.getChildren(adminFile, null, true);
+        if (fchildren.size() > 0) {
+          fileInfo.add("directory", true);
+        } else {
+          // TODO? content type
+          fileInfo.add("size", f.length());
+        }
+        // TODO: ?
+        // fileInfo.add( "modified", new Date( f.lastModified() ) );
+      }
+      rsp.add("files", files);
+    } else {
+      // Include the file contents
+      // The file logic depends on RawResponseWriter, so force its use.
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      params.set(CommonParams.WT, "raw");
+      req.setParams(params);
+      
+      ContentStreamBase content = new ContentStreamBase.StringStream(
+          new String(zkClient.getData(adminFile, null, null, true), "UTF-8"));
+      content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
+      
+      rsp.add(RawResponseWriter.CONTENT, content);
+    }
+    rsp.setHttpCaching(false);
+  }
+
+  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException {
     File adminFile = null;
     
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
