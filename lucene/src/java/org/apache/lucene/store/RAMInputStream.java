@@ -91,7 +91,7 @@ public class RAMInputStream extends IndexInput implements Cloneable {
     if (currentBufferIndex >= file.numBuffers()) {
       // end of file reached, no more buffers left
       if (enforceEOF) {
-        throw new EOFException("Read past EOF (resource: " + this + ")");
+        throw new EOFException("read past EOF: " + this);
       } else {
         // Force EOF if a read takes place at this position
         currentBufferIndex--;

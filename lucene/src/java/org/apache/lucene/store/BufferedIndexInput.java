@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.EOFException;
 import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexInput}. */
@@ -138,7 +139,7 @@ public abstract class BufferedIndexInput extends IndexInput {
         if(bufferLength<len){
           // Throw an exception when refill() could not read len bytes:
           System.arraycopy(buffer, 0, b, offset, bufferLength);
-          throw new IOException("read past EOF");
+          throw new EOFException("read past EOF: " + this);
         } else {
           System.arraycopy(buffer, 0, b, offset, len);
           bufferPosition=len;
@@ -153,7 +154,7 @@ public abstract class BufferedIndexInput extends IndexInput {
         // had in the buffer.
         long after = bufferStart+bufferPosition+len;
         if(after > length())
-          throw new IOException("read past EOF");
+          throw new EOFException("read past EOF: " + this);
         readInternal(b, offset, len);
         bufferStart = after;
         bufferPosition = 0;
@@ -231,7 +232,7 @@ public abstract class BufferedIndexInput extends IndexInput {
       end = length();
     int newLength = (int)(end - start);
     if (newLength <= 0)
-      throw new IOException("read past EOF");
+      throw new EOFException("read past EOF: " + this);
 
     if (buffer == null) {
       newBuffer(new byte[bufferSize]);  // allocate buffer lazily

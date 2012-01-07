@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
  
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -303,7 +304,7 @@ public class MMapDirectory extends FSDirectory {
         do {
           curBufIndex++;
           if (curBufIndex >= buffers.length) {
-            throw new IOException("read past EOF: " + this);
+            throw new EOFException("read past EOF: " + this);
           }
           curBuf = buffers[curBufIndex];
           curBuf.position(0);
@@ -326,7 +327,7 @@ public class MMapDirectory extends FSDirectory {
           offset += curAvail;
           curBufIndex++;
           if (curBufIndex >= buffers.length) {
-            throw new IOException("read past EOF: " + this);
+            throw new EOFException("read past EOF: " + this);
           }
           curBuf = buffers[curBufIndex];
           curBuf.position(0);
@@ -394,12 +395,12 @@ public class MMapDirectory extends FSDirectory {
         if (pos < 0L) {
           throw new IllegalArgumentException("Seeking to negative position: " + this);
         }
-        throw new IOException("seek past EOF");
+        throw new EOFException("seek past EOF: " + this);
       } catch (IllegalArgumentException iae) {
         if (pos < 0L) {
           throw new IllegalArgumentException("Seeking to negative position: " + this);
         }
-        throw new IOException("seek past EOF: " + this);
+        throw new EOFException("seek past EOF: " + this);
       } catch (NullPointerException npe) {
         throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }
