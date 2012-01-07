@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.kuromoji.TokenizerTest;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -35,7 +36,7 @@ public class UserDictionaryTest extends LuceneTestCase {
     if (is == null)
       throw new FileNotFoundException("Cannot find userdict.txt in test classpath!");
     try {
-      Reader reader = new InputStreamReader(is, "UTF-8");
+      Reader reader = new InputStreamReader(is, IOUtils.CHARSET_UTF_8);
       return new UserDictionary(reader);
     } finally {
       is.close();

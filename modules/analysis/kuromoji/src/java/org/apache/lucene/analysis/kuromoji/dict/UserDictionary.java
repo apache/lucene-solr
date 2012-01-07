@@ -49,7 +49,7 @@ public final class UserDictionary implements Dictionary {
     IOException priorE = null;
     final InputStream is = new FileInputStream(filename);
     try {
-      final Reader r = new InputStreamReader(is, "UTF-8");
+      final Reader r = new InputStreamReader(is, IOUtils.CHARSET_UTF_8);
       read(r);
     } catch (IOException ioe) {
       priorE = ioe;

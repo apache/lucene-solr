@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.kuromoji.Tokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 // nocommit: we don't need this or its huge files i dont think?
@@ -43,9 +44,9 @@ public class TestQuality extends LuceneTestCase {
     File datafile = getDataFile("tanakaseg.zip");
     ZipFile zip = new ZipFile(datafile);
     InputStream is = zip.getInputStream(zip.getEntry("sentences.txt"));
-    BufferedReader unseg = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+    BufferedReader unseg = new BufferedReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
     InputStream is2 = zip.getInputStream(zip.getEntry("segmented.txt"));
-    BufferedReader seg = new BufferedReader(new InputStreamReader(is2, "UTF-8"));
+    BufferedReader seg = new BufferedReader(new InputStreamReader(is2, IOUtils.CHARSET_UTF_8));
     Stats stats = new Stats();
     /**
      #words: 1578506
