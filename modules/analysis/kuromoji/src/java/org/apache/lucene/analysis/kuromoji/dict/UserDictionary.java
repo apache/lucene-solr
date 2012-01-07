@@ -43,8 +43,7 @@ public class UserDictionary implements Dictionary {
   
   public static final int RIGHT_ID = 5;
   
-  public UserDictionary() {
-    
+  private UserDictionary() {
   }
   
   /**
