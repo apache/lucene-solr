@@ -155,7 +155,7 @@ public class CoreContainer
       zookeeperHost = zkServer.getClientString();
     }
 
-    int zkClientConnectTimeout = 5000;
+    int zkClientConnectTimeout = 15000;
 
     if (zookeeperHost != null) {
       // we are ZooKeeper enabled
