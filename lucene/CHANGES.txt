@@ -75,6 +75,12 @@ New Features
 * LUCENE-3634: IndexReader's static main method was moved to a new
   tool, CompoundFileExtractor, in contrib/misc.  (Robert Muir, Mike
   McCandless)
+
+* LUCENE-995: The QueryParser now interprets * as an open end for range
+  queries.  Literal asterisks may be represented by quoting or escaping
+  (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
+  will be passed null for any open endpoint. (Ingo Renner, Adriano
+  Crestani, yonik, Mike McCandless 
   
 Bug fixes
 

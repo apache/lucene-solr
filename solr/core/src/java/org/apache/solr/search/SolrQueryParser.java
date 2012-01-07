@@ -19,14 +19,16 @@ package org.apache.solr.search;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.*;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.solr.analysis.*;
+import org.apache.lucene.search.Query;
+import org.apache.solr.analysis.ReversedWildcardFilter;
+import org.apache.solr.analysis.ReversedWildcardFilterFactory;
+import org.apache.solr.analysis.TokenFilterFactory;
+import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -174,12 +176,8 @@ public class SolrQueryParser extends QueryParser {
   @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     checkNullField(field);
-
     SchemaField sf = schema.getField(field);
-    return sf.getType().getRangeQuery(parser, sf,
-            "*".equals(part1) ? null : part1,
-            "*".equals(part2) ? null : part2,
-            inclusive, inclusive);
+    return sf.getType().getRangeQuery(parser, sf, part1, part2, inclusive, inclusive);
   }
 
   @Override

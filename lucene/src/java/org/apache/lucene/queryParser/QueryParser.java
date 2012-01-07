@@ -33,7 +33,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.VirtualMethod;
 
@@ -772,13 +771,25 @@ public class QueryParser implements QueryParserConstants {
                                 boolean inclusive) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      part1 = part1.toLowerCase();
-      part2 = part2.toLowerCase();
+      part1 = part1==null ? null : part1.toLowerCase();
+      part2 = part2==null ? null : part2.toLowerCase();
     }
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
+    df.setLenient(true);
+    DateTools.Resolution resolution = getDateResolution(field);
     try {
-      DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
-      df.setLenient(true);
       Date d1 = df.parse(part1);
+      if (resolution == null) {
+        // no default or field specific date resolution has been set,
+        // use deprecated DateField to maintain compatibility with
+        // pre-1.9 Lucene versions.
+        part1 = DateField.dateToString(d1);
+      } else {
+        part1 = DateTools.dateToString(d1, resolution);
+      }
+    } catch (Exception e) { }
+
+    try {
       Date d2 = df.parse(part2);
       if (inclusive) {
         // The user can only specify the date, not the time, so make sure
@@ -792,19 +803,15 @@ public class QueryParser implements QueryParserConstants {
         cal.set(Calendar.MILLISECOND, 999);
         d2 = cal.getTime();
       }
-      DateTools.Resolution resolution = getDateResolution(field);
       if (resolution == null) {
         // no default or field specific date resolution has been set,
         // use deprecated DateField to maintain compatibility with
         // pre-1.9 Lucene versions.
-        part1 = DateField.dateToString(d1);
         part2 = DateField.dateToString(d2);
       } else {
-        part1 = DateTools.dateToString(d1, resolution);
         part2 = DateTools.dateToString(d2, resolution);
       }
-    }
-    catch (Exception e) { }
+    } catch (Exception e) { }
 
     return newRangeQuery(field, part1, part2, inclusive);
   }
@@ -910,6 +917,7 @@ public class QueryParser implements QueryParserConstants {
 
     return termRet;
   }
+
 
   /**
    * Builds a new TermRangeQuery instance
@@ -1501,13 +1509,21 @@ public class QueryParser implements QueryParserConstants {
         jj_la1[15] = jj_gen;
         ;
       }
-          if (goop1.kind == RANGEIN_QUOTED) {
-            goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+          {
+            boolean startOpen=false;
+            boolean endOpen=false;
+            if (goop1.kind == RANGEIN_QUOTED) {
+              goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+            } else if ("*".equals(goop1.image)) {
+              startOpen = true;
+            }
+            if (goop2.kind == RANGEIN_QUOTED) {
+              goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+            } else if ("*".equals(goop2.image)) {
+              endOpen = true;
+            }
+            q = getRangeQuery(field, startOpen ? null : discardEscapeChar(goop1.image), endOpen ? null : discardEscapeChar(goop2.image), true);
           }
-          if (goop2.kind == RANGEIN_QUOTED) {
-            goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-          }
-          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), true);
       break;
     case RANGEEX_START:
       jj_consume_token(RANGEEX_START);
@@ -1553,14 +1569,22 @@ public class QueryParser implements QueryParserConstants {
         jj_la1[19] = jj_gen;
         ;
       }
-          if (goop1.kind == RANGEEX_QUOTED) {
-            goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          }
-          if (goop2.kind == RANGEEX_QUOTED) {
-            goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-          }
+          {
+            boolean startOpen=false;
+            boolean endOpen=false;
+            if (goop1.kind == RANGEEX_QUOTED) {
+              goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+            } else if ("*".equals(goop1.image)) {
+              startOpen = true;
+            }
+            if (goop2.kind == RANGEEX_QUOTED) {
+              goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+            } else if ("*".equals(goop2.image)) {
+              endOpen = true;
+            }
 
-          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), false);
+            q = getRangeQuery(field, startOpen ? null : discardEscapeChar(goop1.image), endOpen ? null : discardEscapeChar(goop2.image), false);
+          }
       break;
     case QUOTED:
       term = jj_consume_token(QUOTED);
