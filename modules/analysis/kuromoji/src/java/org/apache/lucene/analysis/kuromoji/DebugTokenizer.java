@@ -60,7 +60,6 @@ public class DebugTokenizer {
   
   /**
    * Builder class used to create DebugTokenizer instance.
-   * nocommit: why is everything synchronized here? Makes no sense for builders!
    */
   public static class Builder {
     
@@ -68,7 +67,7 @@ public class DebugTokenizer {
     
     private UserDictionary userDictionary = null;
     
-    public synchronized Builder mode(Mode mode) {
+    public Builder mode(Mode mode) {
       this.mode = mode;
       return this;
     }
@@ -79,7 +78,7 @@ public class DebugTokenizer {
      * @return Builder
      * @throws IOException 
      */
-    public synchronized Builder userDictionary(Reader userDictionaryReader) throws IOException {
+    public Builder userDictionary(Reader userDictionaryReader) throws IOException {
       this.userDictionary = new UserDictionary(userDictionaryReader);
       return this;
     }
@@ -91,12 +90,12 @@ public class DebugTokenizer {
      * @throws IOException 
      * @throws FileNotFoundException 
      */
-    public synchronized Builder userDictionary(String userDictionaryPath) throws FileNotFoundException, IOException {
+    public Builder userDictionary(String userDictionaryPath) throws FileNotFoundException, IOException {
       this.userDictionary = new UserDictionary(userDictionaryPath);
       return this;
     }
     
-    public synchronized DebugTokenizer build() {
+    public DebugTokenizer build() {
       return new DebugTokenizer(userDictionary, mode);
     }
   }
