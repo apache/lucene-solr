@@ -161,7 +161,7 @@ public class NIOFSDirectory extends FSDirectory {
           bb.limit(limit);
           int i = channel.read(bb, pos);
           if (i == -1) {
-            throw new EOFException("read past EOF (resource: " + this + ")");
+            throw new EOFException("read past EOF: " + this);
           }
           pos += i;
           readOffset += i;

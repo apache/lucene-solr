@@ -1,5 +1,6 @@
 package org.apache.lucene.util;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +60,7 @@ public class TestByteBlockPool extends LuceneTestCase {
     try {
       input.readByte();
       fail("must be EOF");
-    } catch (IOException e) {
+    } catch (EOFException e) {
       // expected - read past EOF
     }
     dir.close();

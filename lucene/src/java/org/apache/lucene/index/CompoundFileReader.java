@@ -153,7 +153,7 @@ class CompoundFileReader extends Directory {
     id = IndexFileNames.stripSegmentName(id);
     FileEntry entry = entries.get(id);
     if (entry == null) {
-      throw new IOException("No sub-file with id " + id + " found (fileName=" + fileName + " files: " + entries.keySet() + ")");
+      throw new FileNotFoundException("No sub-file with id " + id + " found (fileName=" + fileName + " files: " + entries.keySet() + ")");
     }
     
     return new CSIndexInput(stream, entry.offset, entry.length, readBufferSize);
@@ -269,7 +269,7 @@ class CompoundFileReader extends Directory {
     protected void readInternal(byte[] b, int offset, int len) throws IOException {
       long start = getFilePointer();
       if(start + len > length)
-        throw new EOFException("read past EOF (resource: " + base + ")");
+        throw new EOFException("read past EOF: " + base);
       base.seek(fileOffset + start);
       base.readBytes(b, offset, len, false);
     }
@@ -302,7 +302,7 @@ class CompoundFileReader extends Directory {
       if (numBytes > 0) {
         long start = getFilePointer();
         if (start + numBytes > length) {
-          throw new EOFException("read past EOF (resource: " + base + ")");
+          throw new EOFException("read past EOF: " + base);
         }
         base.seek(fileOffset + start);
         base.copyBytes(out, numBytes);
