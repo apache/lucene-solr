@@ -276,6 +276,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       CommonsHttpSolrServer server;
       try {
         server = new CommonsHttpSolrServer(error.node.getBaseUrl());
+        server.setSoTimeout(5000);
+        server.setConnectionTimeout(5000);
         
         RequestRecovery recoverRequestCmd = new RequestRecovery();
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
