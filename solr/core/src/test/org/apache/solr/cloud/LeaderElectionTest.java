@@ -29,8 +29,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.KeeperException;
@@ -48,6 +50,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   private Map<Integer,Thread> seqToThread;
   
   private volatile boolean stopStress = false;
+  private ZkCmdExecutor zkCmdExecutor;
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -72,6 +75,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
     zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+    zkCmdExecutor = new ZkCmdExecutor(zkClient);
     seqToThread = new HashMap<Integer,Thread>();
   }
   
@@ -145,11 +149,16 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     assertEquals("http://127.0.0.1/solr/", getLeaderUrl("collection1", "shard2"));
   }
   
-  private String getLeaderUrl(String collection, String slice) throws KeeperException, InterruptedException {
+  private String getLeaderUrl(final String collection, final String slice) throws KeeperException, InterruptedException {
     int iterCount=30;
     while (iterCount-- > 0)
       try {
-      byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
+      byte[] data = zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public byte[] execute() throws KeeperException, InterruptedException {
+          return zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
+        }
+      });
       ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
       return leaderProps.getCoreUrl();
     } catch (NoNodeException e) {
