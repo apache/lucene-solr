@@ -59,7 +59,12 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     }
   }
 
-  // todo: we should probably refactor this guy to use/take analyzer,
+  // For the output string: separate positions with a space,
+  // and separate multiple tokens at each position with a
+  // /.  If a token should have end offset != the input
+  // token's end offset then add :X to it:
+
+  // TODO: we should probably refactor this guy to use/take analyzer,
   // the tests are a little messy
   private void verify(String input, String output) throws Exception {
     if (VERBOSE) {
@@ -73,7 +78,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     while(tokensOut.incrementToken()) {
 
       if (VERBOSE) {
-        System.out.println("  incr token=" + termAtt.toString() + " posIncr=" + posIncrAtt.getPositionIncrement());
+        System.out.println("  incr token=" + termAtt.toString() + " posIncr=" + posIncrAtt.getPositionIncrement() + " startOff=" + offsetAtt.startOffset() + " endOff=" + offsetAtt.endOffset());
       }
 
       assertTrue(expectedUpto < expected.length);
@@ -85,16 +90,26 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         if (atPos > 0) {
           assertTrue(tokensOut.incrementToken());
           if (VERBOSE) {
-            System.out.println("  incr token=" + termAtt.toString() + " posIncr=" + posIncrAtt.getPositionIncrement());
+            System.out.println("  incr token=" + termAtt.toString() + " posIncr=" + posIncrAtt.getPositionIncrement() + " startOff=" + offsetAtt.startOffset() + " endOff=" + offsetAtt.endOffset());
           }
         }
-        assertEquals(termAtt, expectedAtPos[atPos]);
+        final int colonIndex = expectedAtPos[atPos].indexOf(':');
+        final String expectedToken;
+        final int expectedEndOffset;
+        if (colonIndex != -1) {
+          expectedToken = expectedAtPos[atPos].substring(0, colonIndex);
+          expectedEndOffset = Integer.parseInt(expectedAtPos[atPos].substring(1+colonIndex));
+        } else {
+          expectedToken = expectedAtPos[atPos];
+          expectedEndOffset = endOffset;
+        }
+        assertEquals(expectedToken, termAtt.toString());
         assertEquals(atPos == 0 ? 1 : 0,
                      posIncrAtt.getPositionIncrement());
         // start/end offset of all tokens at same pos should
         // be the same:
         assertEquals(startOffset, offsetAtt.startOffset());
-        assertEquals(endOffset, offsetAtt.endOffset());
+        assertEquals(expectedEndOffset, offsetAtt.endOffset());
       }
     }
     tokensOut.end();
@@ -112,6 +127,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     add("b c", "dog collar", true);
     add("c d", "dog harness holder extras", true);
     add("m c e", "dog barks loudly", false);
+    add("i j k", "feep", true);
 
     add("e f", "foo bar", false);
     add("e f", "baz bee", false);
@@ -147,6 +163,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
     // two outputs for same input
     verify("e f", "foo/baz bar/bee");
+
+    // verify multi-word / single-output offsets:
+    verify("g i j k g", "g i/feep:7 j k g");
 
     // mixed keepOrig true/false:
     verify("a m c e x", "a/foo dog barks loudly x");
@@ -240,6 +259,10 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
             outputs[matchIDX] = synOutputs[synUpto++];
           } else {
             outputs[matchIDX] = outputs[matchIDX] + "/" + synOutputs[synUpto++];
+          }
+          if (synOutputs.length == 1) {
+            // Add endOffset
+            outputs[matchIDX] = outputs[matchIDX] + ":" + ((inputIDX*2) + syn.in.length());
           }
         }
       }
@@ -662,5 +685,25 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "zoo zoo $ zoo",
         new String[] { "zoo", "zoo", "zoo", "$", "zoo", "zoo", "zoo" },
         new int[] { 1, 0, 1, 1, 1, 0, 1 });
+  }
+  
+  public void testMultiwordOffsets() throws Exception {
+    b = new SynonymMap.Builder(true);
+    final boolean keepOrig = true;
+    add("national hockey league", "nhl", keepOrig);
+    final SynonymMap map = b.build();
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
+      }
+    };
+    
+    assertAnalyzesTo(a, "national hockey league",
+        new String[] { "national", "nhl", "hockey", "league" },
+        new int[] { 0, 0, 9, 16 },
+        new int[] { 8, 22, 15, 22 },
+        new int[] { 1, 0, 1, 1 });
   }
 }

@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,25 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
         new int[] { 1, 0, 0, 0 });
   }
   
+  /** test multiword offsets with the old impl
+   * @deprecated Remove this test in Lucene 5.0 */
+  @Deprecated
+  public void testMultiwordOffsetsOld() throws Exception {
+    SynonymFilterFactory factory = new SynonymFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("luceneMatchVersion", Version.LUCENE_33.toString());
+    args.put("synonyms", "synonyms.txt");
+    factory.init(args);
+    factory.inform(new StringMockSolrResourceLoader("national hockey league, nhl"));
+    TokenStream ts = factory.create(new MockTokenizer(new StringReader("national hockey league"), MockTokenizer.WHITESPACE, false));
+    // WTF?
+    assertTokenStreamContents(ts, 
+        new String[] { "national", "nhl", "hockey", "league" },
+        new int[] { 0, 0, 0, 0 },
+        new int[] { 22, 22, 22, 22 },
+        new int[] { 1, 0, 1, 1 });
+  }
+  
   /** if the synonyms are completely empty, test that we still analyze correctly */
   public void testEmptySynonyms() throws Exception {
     SynonymFilterFactory factory = new SynonymFilterFactory();
@@ -85,7 +105,7 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
     }
 
     public List<String> getLines(String resource) throws IOException {
-      return null;
+      return Arrays.asList(text.split("\n"));
     }
 
     public Object newInstance(String cname, String... subpackages) {

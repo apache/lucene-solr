@@ -136,6 +136,14 @@ Bug Fixes
  * LUCENE-3609: Fix regression in BooleanFilter, introduced in Lucene 3.5,
    to correctly handle minShouldMatch behaviour of previous versions.
    (Shay Banon, Uwe Schindler)
+
+ * LUCENE-3668: For a multi-token synonym mapping to a single token,
+   SynonymFilter will now set the start offset of the synonym token to
+   the start offset of the first matched token, and the end offset of
+   the synonym token to the end offset of the last matched token.
+   This way if the synonym token is used for highlighting, it will
+   cover all tokens it had matched.  (Koji Sekiguchi, Robert Muir,
+   Mike McCandless)
  
 Documentation
 
