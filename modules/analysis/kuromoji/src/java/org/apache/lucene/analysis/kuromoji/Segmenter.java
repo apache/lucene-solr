@@ -47,9 +47,6 @@ public class Segmenter {
   
   private final boolean split;
   
-  private final Object formatterLock = new Object();
-  private transient GraphvizFormatter formatter = null;
-
   public Segmenter() {
     this(null, Mode.NORMAL, false);
   }
@@ -176,15 +173,10 @@ public class Segmenter {
   
   /** returns a Graphviz String */
   public String debugTokenize(String text) {
-    synchronized(formatterLock) {
-      if (this.formatter == null) {
-        this.formatter = new GraphvizFormatter(ConnectionCosts.getInstance());
-      }
-    }
-    
     ViterbiNode[][][] lattice = this.viterbi.build(text.toCharArray(), 0, text.length());
     List<ViterbiNode> bestPath = this.viterbi.search(lattice);
     
-    return this.formatter.format(lattice[0], lattice[1], bestPath);
+    return new GraphvizFormatter(ConnectionCosts.getInstance())
+      .format(lattice[0], lattice[1], bestPath);
   }
 }
