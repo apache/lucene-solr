@@ -39,6 +39,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   <about label="About">
     <index label="Welcome" href="index.html" description="Welcome to Solr"/>
     <index label="Who We Are" href="ext:lucene_who" description="Lucene/Solr Committers"/>
+    <privacy label="Privacy Policy" href="ext:privacy"/>
   </about>
 
   <docs label="Documentation">
@@ -81,7 +82,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     </forrest>
     <cocoon href="http://cocoon.apache.org/"/>
     <xml.apache.org href="http://xml.apache.org/"/>
-
+    <privacy href="http://lucene.apache.org/privacy.html"/>
     <lucene      href="http://lucene.apache.org/java/" />
     <lucene_who  href="http://lucene.apache.org/java/docs/whoweare.html" />
     <nutch     href="http://lucene.apache.org/nutch/" />

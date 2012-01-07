@@ -3,7 +3,7 @@
 <head>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta content="Apache Forrest" name="Generator">
-<meta name="Forrest-version" content="0.8">
+<meta name="Forrest-version" content="0.9">
 <meta name="Forrest-skin-name" content="lucene">
 <title>Solr tutorial</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
@@ -108,6 +108,9 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div class="menuitem">
 <a href="http://lucene.apache.org/java/docs/whoweare.html" title="Lucene/Solr Committers">Who We Are</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/privacy.html">Privacy Policy</a>
 </div>
 </div>
 <div onclick="SwitchMenu('menu_selected_1.2', 'skin/')" id="menu_selected_1.2Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
@@ -274,7 +277,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
 
-<a name="N1000D"></a><a name="Overview"></a>
+<a name="N1000E"></a><a name="Overview"></a>
 <h2 class="boxed">Overview</h2>
 <div class="section">
 <p>
@@ -284,7 +287,7 @@ schema, and some sample data.
 </div>
 
 
-<a name="N10017"></a><a name="Requirements"></a>
+<a name="N10018"></a><a name="Requirements"></a>
 <h2 class="boxed">Requirements</h2>
 <div class="section">
 <p>
@@ -308,7 +311,7 @@ To follow along with this tutorial, you will need...
 </div>
 
 
-<a name="N1003F"></a><a name="Getting+Started"></a>
+<a name="N10040"></a><a name="Getting+Started"></a>
 <h2 class="boxed">Getting Started</h2>
 <div class="section">
 <p>
@@ -356,7 +359,7 @@ You can see that the Solr is running by loading <a href="http://localhost:8983/s
 
 
 
-<a name="N10077"></a><a name="Indexing+Data"></a>
+<a name="N10078"></a><a name="Indexing+Data"></a>
 <h2 class="boxed">Indexing Data</h2>
 <div class="section">
 <p>
@@ -391,7 +394,7 @@ Clicking the "Search" button should take you to the following URL...
 </p>
 <p>
 
-<a href="http://localhost:8983/solr/select/?q=solr&start=0&rows=10&indent=on">http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on</a>
+<a href="http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on">http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on</a>
 
 </p>
 <p>
@@ -471,7 +474,7 @@ SimplePostTool: COMMITting Solr index changes..
 
 
 
-<a name="N100ED"></a><a name="Updating+Data"></a>
+<a name="N100EE"></a><a name="Updating+Data"></a>
 <h2 class="boxed">Updating Data</h2>
 <div class="section">
 <p>
@@ -503,7 +506,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run
 the <span class="codefrag">java -jar post.jar</span> command, you'll see your changes reflected
 in subsequent searches.
 </p>
-<a name="N1012C"></a><a name="Deleting+Data"></a>
+<a name="N1012D"></a><a name="Deleting+Data"></a>
 <h3 class="boxed">Deleting Data</h3>
 <p>You can delete data by POSTing a delete command to the update URL and specifying the value
       of the document's unique key field, or a query that matches multiple documents (be careful with that one!).  Since these commands
@@ -520,7 +523,7 @@ in subsequent searches.
 <p>Now re-execute the previous search and verify that no matching documents are found.  Also revisit the
     statistics page and observe the changes in both the UPDATE_HANDLERS section and the CORE section.</p>
 <p>Here is an example of using delete-by-query to delete anything with
-      <a href="http://localhost:8983/solr/select?q=name:DDR&fl=name">DDR</a> in the name:</p>
+      <a href="http://localhost:8983/solr/select?q=name:DDR&amp;fl=name">DDR</a> in the name:</p>
 <pre class="code">java -Ddata=args -jar post.jar "&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;"</pre>
 <p>Commit can be an expensive operation so it's best to make many changes to an index in a batch and
       then send the <span class="codefrag">commit</span> command at the end.  There is also an <span class="codefrag">optimize</span> command that does the same thing as <span class="codefrag">commit</span>,
@@ -532,7 +535,7 @@ in subsequent searches.
 </div>
 
 
-<a name="N1017B"></a><a name="Querying+Data"></a>
+<a name="N1017C"></a><a name="Querying+Data"></a>
 <h2 class="boxed">Querying Data</h2>
 <div class="section">
 <p>
@@ -544,26 +547,26 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&fl=name,id">q=video&amp;fl=name,id</a>       (return only name and id fields)   </li>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=name,id</a>       (return only name and id fields)   </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&fl=name,id,score">q=video&amp;fl=name,id,score</a>  (return relevancy score as well) </li>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id,score">q=video&amp;fl=name,id,score</a>  (return relevancy score as well) </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price desc&fl=name,id,price">q=video&amp;sort=price desc&amp;fl=name,id,price</a>  (add sort specification: sort by price descending) </li>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price desc&amp;fl=name,id,price">q=video&amp;sort=price desc&amp;fl=name,id,price</a>  (add sort specification: sort by price descending) </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&wt=json">q=video&amp;wt=json</a> (return response in JSON format)  </li>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;wt=json">q=video&amp;wt=json</a> (return response in JSON format)  </li>
     
 </ul>
 <p>
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
     that allows setting the various request parameters and is useful when testing or debugging queries.
   </p>
-<a name="N101B9"></a><a name="Sorting"></a>
+<a name="N101BA"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
       Solr provides a simple method to sort on one or more indexed fields.
@@ -572,15 +575,15 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+desc">q=video&amp;sort=price desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price+desc">q=video&amp;sort=price desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+asc">q=video&amp;sort=price asc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price+asc">q=video&amp;sort=price asc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc,price+desc">q=video&amp;sort=inStock asc, price desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=inStock+asc,price+desc">q=video&amp;sort=inStock asc, price desc</a>
 </li>
     
 </ul>
@@ -590,11 +593,11 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=score+desc">q=video&amp;sort=score desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=score+desc">q=video&amp;sort=score desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc,score+desc">q=video&amp;sort=inStock asc, score desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=inStock+asc,score+desc">q=video&amp;sort=inStock asc, score desc</a>
 </li>
     
 </ul>
@@ -604,7 +607,7 @@ in subsequent searches.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=*:*&sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&amp;q=*:*&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
 </li>
     
 </ul>
@@ -615,7 +618,7 @@ in subsequent searches.
 
 
 
-<a name="N101FD"></a><a name="Highlighting"></a>
+<a name="N101FE"></a><a name="Highlighting"></a>
 <h2 class="boxed">Highlighting</h2>
 <div class="section">
 <p>
@@ -631,7 +634,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&indent=on&q=video+card&fl=name,id&hl=true&hl.fl=name,features">...&amp;q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
+<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=video+card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features">...&amp;q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
   
 </p>
 <p>
@@ -642,7 +645,7 @@ in subsequent searches.
 
 
 
-<a name="N10226"></a><a name="Faceted+Search"></a>
+<a name="N10227"></a><a name="Faceted+Search"></a>
 <h2 class="boxed">Faceted Search</h2>
 <div class="section">
 <p>
@@ -656,7 +659,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&indent=on&q=*:*&fl=name&facet=true&facet.field=cat">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat</a>
+<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat</a>
   
 </p>
 <p>
@@ -669,7 +672,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&indent=on&q=*:*&fl=name&facet=true&facet.field=cat&facet.field=inStock">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
+<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
   
 </p>
 <p>
@@ -679,7 +682,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&indent=on&q=ipod&fl=name&facet=true&facet.query=price:[0+TO+100]&facet.query=price:[100+TO+*]">...&amp;q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
+<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=ipod&amp;fl=name&amp;facet=true&amp;facet.query=price:[0+TO+100]&amp;facet.query=price:[100+TO+*]">...&amp;q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
   
 </p>
 <p>
@@ -687,7 +690,7 @@ in subsequent searches.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/select/?wt=json&indent=on&q=*:*&fl=name,manufacturedate_dt&facet=true&facet.date=manufacturedate_dt&facet.date.start=2004-01-01T00:00:00Z&facet.date.end=2010-01-01T00:00:00Z&facet.date.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=+1YEAR</a>
+<a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=+1YEAR</a>
   
 </p>
 <p>
@@ -701,7 +704,7 @@ in subsequent searches.
 
 
 
-<a name="N10277"></a><a name="Search+UI"></a>
+<a name="N10278"></a><a name="Search+UI"></a>
 <h2 class="boxed">Search UI</h2>
 <div class="section">
 <p>
@@ -719,7 +722,7 @@ in subsequent searches.
 
 
 
-<a name="N1028A"></a><a name="Text+Analysis"></a>
+<a name="N1028B"></a><a name="Text+Analysis"></a>
 <h2 class="boxed">Text Analysis</h2>
 <div class="section">
 <p>
@@ -747,23 +750,23 @@ in subsequent searches.
 <ul>
     
 <li>A search for
-       <a href="http://localhost:8983/solr/select/?indent=on&q=power-shot&fl=name">power-shot</a>
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
        matches <span class="codefrag">PowerShot</span>, and
-      <a href="http://localhost:8983/solr/select/?indent=on&q=adata&fl=name">adata</a>
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
       matches <span class="codefrag">A-DATA</span> due to the use of <span class="codefrag">WordDelimiterFilter</span> and <span class="codefrag">LowerCaseFilter</span>.
     </li>
 
     
 <li>A search for
-      <a href="http://localhost:8983/solr/select/?indent=on&q=features:recharging&fl=name,features">features:recharging</a>
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
        matches <span class="codefrag">Rechargeable</span> due to stemming with the <span class="codefrag">EnglishPorterFilter</span>.
     </li>
 
     
 <li>A search for
-       <a href="http://localhost:8983/solr/select/?indent=on&q=%221 gigabyte%22&fl=name">"1 gigabyte"</a>
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=%221 gigabyte%22&amp;fl=name">"1 gigabyte"</a>
        matches things with <span class="codefrag">GB</span>, and the misspelled
-      <a href="http://localhost:8983/solr/select/?indent=on&q=pixima&fl=name">pixima</a>
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a>
        matches <span class="codefrag">Pixma</span> due to use of a <span class="codefrag">SynonymFilter</span>.
     </li>
 
@@ -772,7 +775,7 @@ in subsequent searches.
 <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
     available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
   </p>
-<a name="N1030A"></a><a name="Analysis+Debugging"></a>
+<a name="N1030B"></a><a name="Analysis+Debugging"></a>
 <h3 class="boxed">Analysis Debugging</h3>
 <p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
       debugging page where you can see how a text value is broken down into words,
@@ -780,28 +783,28 @@ in subsequent searches.
     </p>
 <p>
       
-<a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&val=Canon+Power-Shot+SD500">This</a>
+<a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;val=Canon+Power-Shot+SD500">This</a>
       shows how "<span class="codefrag">Canon Power-Shot SD500</span>" would be indexed as a value in the name field.  Each row of
       the table shows the resulting tokens after having passed through the next <span class="codefrag">TokenFilter</span> in the analyzer for the <span class="codefrag">name</span> field.
       Notice how both <span class="codefrag">powershot</span> and <span class="codefrag">power</span>, <span class="codefrag">shot</span> are indexed.  Tokens generated at the same position
       are shown in the same column, in this case <span class="codefrag">shot</span> and <span class="codefrag">powershot</span>.
     </p>
-<p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&verbose=on&val=Canon+Power-Shot+SD500">verbose output</a>
+<p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;verbose=on&amp;val=Canon+Power-Shot+SD500">verbose output</a>
     will show more details, such as the name of each analyzer component in the chain, token positions, and the start and end positions
     of the token in the original text.
     </p>
-<p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&highlight=on&val=Canon+Power-Shot+SD500&qval=Powershot sd-500">highlight matches</a>
+<p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;highlight=on&amp;val=Canon+Power-Shot+SD500&amp;qval=Powershot sd-500">highlight matches</a>
     when both index and query values are provided will take the resulting terms from the query value and highlight
     all matches in the index value analysis.
     </p>
 <p>
-<a href="http://localhost:8983/solr/admin/analysis.jsp?name=text&highlight=on&val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&qval=liberties+and+equality">Here</a>
+<a href="http://localhost:8983/solr/admin/analysis.jsp?name=text&amp;highlight=on&amp;val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&amp;qval=liberties+and+equality">Here</a>
     is an example of stemming and stop-words at work.
     </p>
 </div>
 
 
-<a name="N1034C"></a><a name="Conclusion"></a>
+<a name="N1034D"></a><a name="Conclusion"></a>
 <h2 class="boxed">Conclusion</h2>
 <div class="section">
 <p>
@@ -859,5 +862,18 @@ document.write("Last Published: " + document.lastModified);
     |end bottomstrip
     +-->
 </div>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-94576-12']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+        </script>
 </body>
 </html>

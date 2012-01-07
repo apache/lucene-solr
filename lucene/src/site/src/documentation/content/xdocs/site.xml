@@ -78,6 +78,7 @@ See http://forrest.apache.org/docs/linking.html for more info
       <query-syntax label="Query Syntax" href="queryparsersyntax.html"/>
       <scoring label="Scoring" href="scoring.html"/>
       <wiki        label="Wiki"             href="ext:wiki" />
+      <privacy label="Privacy Policy" href="ext:privacy"/>
   </docs>
   
   <!--
@@ -113,7 +114,7 @@ See http://forrest.apache.org/docs/linking.html for more info
       <webapp href="docs/your-project.html#webapp"/>
       <dtd-docs href="docs/dtd-docs.html"/>
     </forrest>
-
+    <privacy href="http://lucene.apache.org/privacy.html"/>
     <cocoon href="http://cocoon.apache.org/"/>
     <xml.apache.org href="http://xml.apache.org/"/>
     <issues href="http://issues.apache.org/jira/browse/LUCENE"/>
