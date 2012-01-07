@@ -196,52 +196,63 @@ public class ZkStateReader {
     
     
     log.info("Updating cluster state from ZooKeeper... ");
-    zkClient.exists(CLUSTER_STATE, new Watcher() {
+    cmdExecutor.retryOperation(new ZkOperation() {
       
       @Override
-      public void process(WatchedEvent event) {
-        log.info("A cluster state change has occurred");
-        try {
+      public Object execute() throws KeeperException, InterruptedException {
+        // TODO Auto-generated method stub
+        return  zkClient.exists(CLUSTER_STATE, new Watcher() {
           
-          // delayed approach
-          // ZkStateReader.this.updateCloudState(false, false);
-          synchronized (ZkStateReader.this.getUpdateLock()) {
-            // remake watch
-            final Watcher thisWatch = this;
-            byte[] data = cmdExecutor.retryOperation(new ZkOperation() {
-              @Override
-              public byte[] execute() throws KeeperException,
-                  InterruptedException {
-                return zkClient.getData(CLUSTER_STATE, thisWatch, null);
+          @Override
+          public void process(WatchedEvent event) {
+            log.info("A cluster state change has occurred");
+            try {
+              
+              // delayed approach
+              // ZkStateReader.this.updateCloudState(false, false);
+              synchronized (ZkStateReader.this.getUpdateLock()) {
+                // remake watch
+                final Watcher thisWatch = this;
+                byte[] data = cmdExecutor.retryOperation(new ZkOperation() {
+                  @Override
+                  public byte[] execute() throws KeeperException,
+                      InterruptedException {
+                    return zkClient.getData(CLUSTER_STATE, thisWatch, null);
+                  }
+                });
+                
+                CloudState clusterState = CloudState.load(data,
+                    ZkStateReader.this.cloudState.getLiveNodes());
+                // update volatile
+                cloudState = clusterState;
               }
-            });
-            
-            CloudState clusterState = CloudState.load(data,
-                ZkStateReader.this.cloudState.getLiveNodes());
-            // update volatile
-            cloudState = clusterState;
+            } catch (KeeperException e) {
+              if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                return;
+              }
+              log.error("", e);
+              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                  "", e);
+            } catch (InterruptedException e) {
+              // Restore the interrupted status
+              Thread.currentThread().interrupt();
+              log.warn("", e);
+              return;
+            } 
           }
-        } catch (KeeperException e) {
-          if (e.code() == KeeperException.Code.SESSIONEXPIRED
-              || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-            log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-            return;
-          }
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        } catch (InterruptedException e) {
-          // Restore the interrupted status
-          Thread.currentThread().interrupt();
-          log.warn("", e);
-          return;
-        } 
+          
+        });
       }
-      
     });
+   
     
     synchronized (ZkStateReader.this.getUpdateLock()) {
-      List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE,
+      List<String> liveNodes = cmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public List<String> execute() throws KeeperException, InterruptedException {
+          return zkClient.getChildren(LIVE_NODES_ZKNODE,
           new Watcher() {
             
             @Override
@@ -277,6 +288,8 @@ public class ZkStateReader {
             }
             
           });
+        }
+      });
       Set<String> liveNodeSet = new HashSet<String>();
       liveNodeSet.addAll(liveNodes);
       CloudState clusterState = CloudState.load(zkClient, liveNodeSet);
@@ -295,7 +308,13 @@ public class ZkStateReader {
     if (immediate) {
       CloudState clusterState;
       synchronized (getUpdateLock()) {
-      List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE, null);
+      List<String> liveNodes = cmdExecutor.retryOperation(new ZkOperation() {
+        
+        @Override
+        public Object execute() throws KeeperException, InterruptedException {
+          return zkClient.getChildren(LIVE_NODES_ZKNODE, null);
+        }
+      });
       Set<String> liveNodesSet = new HashSet<String>();
       liveNodesSet.addAll(liveNodes);
       
@@ -326,8 +345,14 @@ public class ZkStateReader {
             cloudStateUpdateScheduled = false;
             CloudState clusterState;
             try {
-              List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE,
-                  null);
+              List<String> liveNodes = cmdExecutor.retryOperation(new ZkOperation() {
+                
+                @Override
+                public Object execute() throws KeeperException, InterruptedException {
+                  return zkClient.getChildren(LIVE_NODES_ZKNODE,
+                      null);
+                }
+              });
               Set<String> liveNodesSet = new HashSet<String>();
               liveNodesSet.addAll(liveNodes);
               
