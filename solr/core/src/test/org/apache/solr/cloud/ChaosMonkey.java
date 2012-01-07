@@ -152,8 +152,10 @@ public class ChaosMonkey {
         sdf.destroy();
       }
     }
-   
-    jetty.stop();
+    
+    if (!jetty.isStopped()) {
+      jetty.stop();
+    }
     
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not stop jetty");
