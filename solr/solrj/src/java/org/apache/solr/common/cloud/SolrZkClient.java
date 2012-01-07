@@ -70,6 +70,8 @@ public class SolrZkClient {
   private ConnectionManager connManager;
 
   private volatile SolrZooKeeper keeper;
+  
+  private ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor();
 
   private volatile boolean isClosed = false;
   
@@ -151,12 +153,23 @@ public class SolrZkClient {
   /**
    * @param path
    * @param version
+   * @param retryOnConnLoss 
    * @throws InterruptedException
    * @throws KeeperException
    */
-  public void delete(final String path, int version)
+  public void delete(final String path, final int version, boolean retryOnConnLoss)
       throws InterruptedException, KeeperException {
-    keeper.delete(path, version);
+    if (retryOnConnLoss) {
+      zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public Stat execute() throws KeeperException, InterruptedException {
+          keeper.delete(path, version);
+          return null;
+        }
+      });
+    } else {
+      keeper.delete(path, version);
+    }
   }
 
   /**
@@ -170,26 +183,46 @@ public class SolrZkClient {
    *
    * @param path the node path
    * @param watcher explicit watcher
+   * @param retryOnConnLoss 
    * @return the stat of the node of the given path; return null if no such a
    *         node exists.
    * @throws KeeperException If the server signals an error
    * @throws InterruptedException If the server transaction is interrupted.
    * @throws IllegalArgumentException if an invalid path is specified
    */
-  public Stat exists(final String path, Watcher watcher)
+  public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return keeper.exists(path, watcher);
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public Stat execute() throws KeeperException, InterruptedException {
+          return keeper.exists(path, watcher);
+        }
+      });
+    } else {
+      return keeper.exists(path, watcher);
+    }
   }
   
   /**
    * @param path
    * @return true if path exists
    * @throws KeeperException
+   * @param retryOnConnLoss  
    * @throws InterruptedException
    */
-  public boolean exists(final String path)
+  public Boolean exists(final String path, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return keeper.exists(path, null) != null;
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public Boolean execute() throws KeeperException, InterruptedException {
+          return keeper.exists(path, null) != null;
+        }
+      });
+    } else {
+      return keeper.exists(path, null) != null;
+    }
   }
 
   /**
@@ -197,51 +230,91 @@ public class SolrZkClient {
    * @param data
    * @param acl
    * @param createMode
+   * @param retryOnConnLoss 
    * @return path of created node
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public String create(final String path, byte data[], List<ACL> acl,
-      CreateMode createMode) throws KeeperException, InterruptedException {
-    return keeper.create(path, data, acl, createMode);
+  public String create(final String path, final byte data[], final List<ACL> acl,
+      final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public String execute() throws KeeperException, InterruptedException {
+          return keeper.create(path, data, acl, createMode);
+        }
+      });
+    } else {
+      return keeper.create(path, data, acl, createMode);
+    }
   }
 
   /**
    * @param path
    * @param watcher
+   * @param retryOnConnLoss 
    * @return children of the node at the path
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public List<String> getChildren(final String path, Watcher watcher)
+  public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return keeper.getChildren(path, watcher);
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public List<String> execute() throws KeeperException, InterruptedException {
+          return keeper.getChildren(path, watcher);
+        }
+      });
+    } else {
+      return keeper.getChildren(path, watcher);
+    }
   }
 
   /**
    * @param path
    * @param watcher
    * @param stat
+   * @param retryOnConnLoss 
    * @return node's data
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public byte[] getData(final String path, Watcher watcher, Stat stat)
+  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return keeper.getData(path, watcher, stat);
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public byte[] execute() throws KeeperException, InterruptedException {
+          return keeper.getData(path, watcher, stat);
+        }
+      });
+    } else {
+      return keeper.getData(path, watcher, stat);
+    }
   }
 
   /**
    * @param path
    * @param data
    * @param version
+   * @param retryOnConnLoss 
    * @return node's state
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public Stat setData(final String path, byte data[], int version)
+  public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return keeper.setData(path, data, version);
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public Stat execute() throws KeeperException, InterruptedException {
+          return keeper.setData(path, data, version);
+        }
+      });
+    } else {
+      return keeper.setData(path, data, version);
+    }
   }
   
   /**
@@ -250,14 +323,24 @@ public class SolrZkClient {
    * @param data
    * @param createMode
    * @return path of created node
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public String create(String path, byte[] data, CreateMode createMode) throws KeeperException, InterruptedException {
-
-    String zkPath = keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
-
-    return zkPath;
+  public String create(final String path, final byte[] data,
+      final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
+      InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public String execute() throws KeeperException, InterruptedException {
+          return keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+              createMode);
+        }
+      });
+    } else {
+      return keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+    }
   }
 
   /**
@@ -267,33 +350,34 @@ public class SolrZkClient {
    * group, node exist, each will be created.
    * 
    * @param path
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void makePath(String path) throws KeeperException,
+  public void makePath(String path, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    makePath(path, null, CreateMode.PERSISTENT);
+    makePath(path, null, CreateMode.PERSISTENT, retryOnConnLoss);
   }
   
-  public void makePath(String path, boolean failOnExists) throws KeeperException,
+  public void makePath(String path, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists);
+    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss);
   }
   
-  public void makePath(String path, File file, boolean failOnExists)
+  public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
     makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"),
-        CreateMode.PERSISTENT, null, failOnExists);
+        CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss);
   }
   
-  public void makePath(String path, File file) throws IOException,
+  public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"));
+    makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"), retryOnConnLoss);
   }
   
-  public void makePath(String path, CreateMode createMode) throws KeeperException,
+  public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    makePath(path, null, createMode);
+    makePath(path, null, createMode, retryOnConnLoss);
   }
 
   /**
@@ -301,12 +385,13 @@ public class SolrZkClient {
    * 
    * @param path
    * @param data to set on the last zkNode
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void makePath(String path, byte[] data) throws KeeperException,
+  public void makePath(String path, byte[] data, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    makePath(path, data, CreateMode.PERSISTENT);
+    makePath(path, data, CreateMode.PERSISTENT, retryOnConnLoss);
   }
 
   /**
@@ -318,12 +403,13 @@ public class SolrZkClient {
    * @param path
    * @param data to set on the last zkNode
    * @param createMode
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void makePath(String path, byte[] data, CreateMode createMode)
+  public void makePath(String path, byte[] data, CreateMode createMode, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, null);
+    makePath(path, data, createMode, null, retryOnConnLoss);
   }
 
   /**
@@ -336,17 +422,18 @@ public class SolrZkClient {
    * @param data to set on the last zkNode
    * @param createMode
    * @param watcher
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
-      Watcher watcher) throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, watcher, true);
+      Watcher watcher, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    makePath(path, data, createMode, watcher, true, retryOnConnLoss);
   }
   
 
+
   /**
-   * 
    * Creates the path in ZooKeeper, creating each node as necessary.
    * 
    * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
@@ -357,11 +444,12 @@ public class SolrZkClient {
    * @param createMode
    * @param watcher
    * @param failOnExists
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
-      Watcher watcher, boolean failOnExists) throws KeeperException, InterruptedException {
+      Watcher watcher, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
       log.info("makePath: " + path);
     }
@@ -375,8 +463,8 @@ public class SolrZkClient {
       byte[] bytes = null;
       String pathPiece = paths[i];
       sbPath.append("/" + pathPiece);
-      String currentPath = sbPath.toString();
-      Object exists = exists(currentPath, watcher);
+      final String currentPath = sbPath.toString();
+      Object exists = exists(currentPath, watcher, retryOnConnLoss);
       if (exists == null || ((i == paths.length -1) && failOnExists)) {
         CreateMode mode = CreateMode.PERSISTENT;
         if (i == paths.length - 1) {
@@ -384,7 +472,19 @@ public class SolrZkClient {
           bytes = data;
         }
         try {
-          keeper.create(currentPath, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
+          if (retryOnConnLoss) {
+            final CreateMode finalMode = mode;
+            final byte[] finalBytes = bytes;
+            zkCmdExecutor.retryOperation(new ZkOperation() {
+              @Override
+              public Object execute() throws KeeperException, InterruptedException {
+                keeper.create(currentPath, finalBytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, finalMode);
+                return null;
+              }
+            });
+          } else {
+            keeper.create(currentPath, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
+          }
         } catch (NodeExistsException e) {
           // ignore unless it's the last node in the path
           if (i == paths.length - 1) {
@@ -393,13 +493,13 @@ public class SolrZkClient {
         }
         if(i == paths.length -1) {
           // set new watch
-          exists(currentPath, watcher);
+          exists(currentPath, watcher, retryOnConnLoss);
         }
       } else if (i == paths.length - 1) {
         // TODO: version ? for now, don't worry about race
-        setData(currentPath, data, -1);
+        setData(currentPath, data, -1, retryOnConnLoss);
         // set new watch
-        exists(currentPath, watcher);
+        exists(currentPath, watcher, retryOnConnLoss);
       }
     }
   }
@@ -408,12 +508,13 @@ public class SolrZkClient {
    * @param zkPath
    * @param createMode
    * @param watcher
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void makePath(String zkPath, CreateMode createMode, Watcher watcher)
+  public void makePath(String zkPath, CreateMode createMode, Watcher watcher, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    makePath(zkPath, null, createMode, watcher);
+    makePath(zkPath, null, createMode, watcher, retryOnConnLoss);
   }
 
   /**
@@ -421,12 +522,13 @@ public class SolrZkClient {
    * 
    * @param path
    * @param data
+   * @param retryOnConnLoss
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void setData(String path, byte[] data) throws KeeperException,
+  public void setData(String path, byte[] data, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    setData(path, data, -1);
+    setData(path, data, -1, retryOnConnLoss);
   }
 
   /**
@@ -434,18 +536,19 @@ public class SolrZkClient {
    * 
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
    * @param file path to file to be uploaded
+   * @param retryOnConnLoss
    * @throws IOException
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void setData(String path, File file) throws IOException,
+  public void setData(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
       log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
     }
 
     String data = FileUtils.readFileToString(file);
-    setData(path, data.getBytes("UTF-8"));
+    setData(path, data.getBytes("UTF-8"), retryOnConnLoss);
   }
 
   /**
@@ -458,8 +561,8 @@ public class SolrZkClient {
    */
   public void printLayout(String path, int indent, StringBuilder string)
       throws KeeperException, InterruptedException {
-    byte[] data = getData(path, null, null);
-    List<String> children = getChildren(path, null);
+    byte[] data = getData(path, null, null, true);
+    List<String> children = getChildren(path, null, true);
     StringBuilder dent = new StringBuilder();
     for (int i = 0; i < indent; i++) {
       dent.append(" ");

@@ -1,10 +1,8 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -46,28 +44,20 @@ public abstract class ElectionContext {
 final class ShardLeaderElectionContext extends ElectionContext {
   
   private final SolrZkClient zkClient;
-  private ZkCmdExecutor proto;
+
   public ShardLeaderElectionContext(final String shardId,
       final String collection, final String shardZkNodeName, ZkNodeProps props, SolrZkClient zkClient) {
     super(shardZkNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
         + shardId, ZkStateReader.getShardLeadersPath(collection, shardId),
         props);
     this.zkClient = zkClient;
-    this.proto = new ZkCmdExecutor(zkClient);
   }
 
   @Override
   void runLeaderProcess() throws KeeperException, InterruptedException {
-    proto.retryOperation(new ZkOperation() {
-      
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        zkClient.makePath(leaderPath, leaderProps == null ? null
-            : ZkStateReader.toJSON(leaderProps), CreateMode.EPHEMERAL);
-        return null;
-      }
-    });
-
+    zkClient.makePath(leaderPath,
+        leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),
+        CreateMode.EPHEMERAL, true);
   }
 }
 

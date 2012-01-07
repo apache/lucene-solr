@@ -63,13 +63,12 @@ public  class LeaderElector {
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?)-n_\\d+");
   
-  private ZkCmdExecutor cmdExecutor;
-  
   protected SolrZkClient zkClient;
+  
+  private ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor();
   
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    cmdExecutor = new ZkCmdExecutor(zkClient);
   }
   
   /**
@@ -89,14 +88,7 @@ public  class LeaderElector {
       InterruptedException, IOException {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
-    List<String> seqs = cmdExecutor.retryOperation(new ZkOperation() {
-      
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-         return zkClient.getChildren(holdElectionPath, null);
-      }
-    });
-    
+    List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
     
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
@@ -134,7 +126,7 @@ public  class LeaderElector {
                 }
               }
               
-            }, null);
+            }, null, true);
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
@@ -216,17 +208,11 @@ public  class LeaderElector {
     while (cont) {
       try {
         leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
-            CreateMode.EPHEMERAL_SEQUENTIAL);
+            CreateMode.EPHEMERAL_SEQUENTIAL, false);
         cont = false;
       } catch (ConnectionLossException e) {
         // we don't know if we made our node or not...
-        List<String> entries = cmdExecutor.retryOperation(new ZkOperation() {
-          
-          @Override
-          public Object execute() throws KeeperException, InterruptedException {
-             return zkClient.getChildren(shardsElectZkPath, null);
-          }
-        });
+        List<String> entries = zkClient.getChildren(shardsElectZkPath, null, true);
         
         boolean foundId = false;
         for (String entry : entries) {
@@ -266,12 +252,11 @@ public  class LeaderElector {
    * @throws InterruptedException
    * @throws KeeperException
    */
-  public void setup(final ElectionContext context)
-      throws InterruptedException, KeeperException {
-    String electZKPath = context.electionPath
-        + LeaderElector.ELECTION_NODE;
+  public void setup(final ElectionContext context) throws InterruptedException,
+      KeeperException {
+    String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
-      cmdExecutor.ensureExists(electZKPath);
+    zkCmdExecutor.ensureExists(electZKPath, zkClient);
   }
   
   /**

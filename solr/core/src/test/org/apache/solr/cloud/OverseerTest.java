@@ -337,13 +337,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      zkClient.makePath("/live_nodes");
+      zkClient.makePath("/live_nodes", true);
 
       System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "2");
 
       //live node
       String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + "node1";
-      zkClient.makePath(nodePath,CreateMode.EPHEMERAL);
+      zkClient.makePath(nodePath,CreateMode.EPHEMERAL, true);
 
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -363,14 +363,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
       nodePath = "/node_states/node1";
 
       try {
-        zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+        zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
       } catch (KeeperException ke) {
         if(ke.code()!=Code.NODEEXISTS) {
           throw ke;
         }
       }
       //publish node state (recovering)
-      zkClient.setData(nodePath, ZkStateReader.toJSON(new CoreState[]{state}));
+      zkClient.setData(nodePath, ZkStateReader.toJSON(new CoreState[]{state}), true);
 
       //wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
@@ -385,7 +385,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       coreProps.put(ZkStateReader.SHARD_ID_PROP, "shard1");
       state = new CoreState("core1", "collection1", coreProps);
 
-      zkClient.setData(nodePath, ZkStateReader.toJSON(new CoreState[]{state}));
+      zkClient.setData(nodePath, ZkStateReader.toJSON(new CoreState[]{state}), true);
 
       verifyStatus(reader, ZkStateReader.ACTIVE);
 
@@ -436,7 +436,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
+      controllerClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
       
       reader = new ZkStateReader(controllerClient);
       reader.createClusterStateWatchersAndUpdate();
@@ -446,7 +446,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       // live node
       final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + "node1";
-      controllerClient.makePath(nodePath, CreateMode.EPHEMERAL);
+      controllerClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
       
       HashMap<String,String> coreProps = new HashMap<String,String>();
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
@@ -455,7 +455,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       final String statePath = Overseer.STATES_NODE + "/node1";
       // publish node state (recovering)
-      controllerClient.setData(statePath, ZkStateReader.toJSON(new CoreState[] {state}));
+      controllerClient.setData(statePath, ZkStateReader.toJSON(new CoreState[] {state}), true);
       
       // wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
@@ -467,7 +467,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       coreProps.put(ZkStateReader.SHARD_ID_PROP, "shard1");
       state = new CoreState("core1", "collection1", coreProps);
       controllerClient.setData(statePath,
-          ZkStateReader.toJSON(new CoreState[] {state}));
+          ZkStateReader.toJSON(new CoreState[] {state}), true);
 
       verifyStatus(reader, ZkStateReader.ACTIVE);
       overseerClient.close();
@@ -476,7 +476,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       state = new CoreState("core1", "collection1", coreProps);
              
       controllerClient.setData(statePath,
-          ZkStateReader.toJSON(new CoreState[] {state}));
+          ZkStateReader.toJSON(new CoreState[] {state}), true);
 
       overseerClient = electNewOverseer(server.getZkAddress());
       

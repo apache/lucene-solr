@@ -36,11 +36,9 @@ import org.apache.noggit.JSONParser;
 import org.apache.noggit.JSONWriter;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,11 +118,10 @@ public class ZkStateReader {
   
   private boolean closeClient = false;
 
-  private ZkCmdExecutor cmdExecutor;
+  private ZkCmdExecutor cmdExecutor = new ZkCmdExecutor();
   
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    cmdExecutor = new ZkCmdExecutor(zkClient);
   }
   
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
@@ -150,7 +147,6 @@ public class ZkStateReader {
 
           }
         });
-    cmdExecutor = new ZkCmdExecutor(zkClient);
   }
   
   // load and publish a new CollectionInfo
@@ -168,40 +164,13 @@ public class ZkStateReader {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
-      Boolean exists = cmdExecutor.retryOperation(new ZkOperation() {
-        
-        @Override
-        public Boolean execute() throws KeeperException, InterruptedException {
-          return zkClient.exists(CLUSTER_STATE);
-        }
-      });
-      
-      if (!exists) {
-        try {
-          cmdExecutor.retryOperation(new ZkOperation() {
-            
-            @Override
-            public Object execute() throws KeeperException, InterruptedException {
-              zkClient.create(CLUSTER_STATE, null, CreateMode.PERSISTENT);
-              return null;
-            }
-          });
-          
-          
-        } catch (NodeExistsException e) {
-          // if someone beats us to creating this ignore it
-        }
-      }
-    }
+     cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
+
     
     
     log.info("Updating cluster state from ZooKeeper... ");
-    cmdExecutor.retryOperation(new ZkOperation() {
-      
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        // TODO Auto-generated method stub
-        return  zkClient.exists(CLUSTER_STATE, new Watcher() {
+
+    zkClient.exists(CLUSTER_STATE, new Watcher() {
           
           @Override
           public void process(WatchedEvent event) {
@@ -213,13 +182,7 @@ public class ZkStateReader {
               synchronized (ZkStateReader.this.getUpdateLock()) {
                 // remake watch
                 final Watcher thisWatch = this;
-                byte[] data = cmdExecutor.retryOperation(new ZkOperation() {
-                  @Override
-                  public byte[] execute() throws KeeperException,
-                      InterruptedException {
-                    return zkClient.getData(CLUSTER_STATE, thisWatch, null);
-                  }
-                });
+                byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, null, true);
                 
                 CloudState clusterState = CloudState.load(data,
                     ZkStateReader.this.cloudState.getLiveNodes());
@@ -243,16 +206,12 @@ public class ZkStateReader {
             } 
           }
           
-        });
+        }, true);
       }
-    });
    
     
     synchronized (ZkStateReader.this.getUpdateLock()) {
-      List<String> liveNodes = cmdExecutor.retryOperation(new ZkOperation() {
-        @Override
-        public List<String> execute() throws KeeperException, InterruptedException {
-          return zkClient.getChildren(LIVE_NODES_ZKNODE,
+      List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE,
           new Watcher() {
             
             @Override
@@ -263,7 +222,7 @@ public class ZkStateReader {
                 // ZkStateReader.this.updateCloudState(false, true);
                 synchronized (ZkStateReader.this.getUpdateLock()) {
                   List<String> liveNodes = zkClient.getChildren(
-                      LIVE_NODES_ZKNODE, this);
+                      LIVE_NODES_ZKNODE, this, true);
                   Set<String> liveNodesSet = new HashSet<String>();
                   liveNodesSet.addAll(liveNodes);
                   CloudState clusterState = new CloudState(liveNodesSet,
@@ -287,9 +246,8 @@ public class ZkStateReader {
               }
             }
             
-          });
-        }
-      });
+          }, true);
+    
       Set<String> liveNodeSet = new HashSet<String>();
       liveNodeSet.addAll(liveNodes);
       CloudState clusterState = CloudState.load(zkClient, liveNodeSet);
@@ -308,13 +266,7 @@ public class ZkStateReader {
     if (immediate) {
       CloudState clusterState;
       synchronized (getUpdateLock()) {
-      List<String> liveNodes = cmdExecutor.retryOperation(new ZkOperation() {
-        
-        @Override
-        public Object execute() throws KeeperException, InterruptedException {
-          return zkClient.getChildren(LIVE_NODES_ZKNODE, null);
-        }
-      });
+      List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
       Set<String> liveNodesSet = new HashSet<String>();
       liveNodesSet.addAll(liveNodes);
       
@@ -345,14 +297,8 @@ public class ZkStateReader {
             cloudStateUpdateScheduled = false;
             CloudState clusterState;
             try {
-              List<String> liveNodes = cmdExecutor.retryOperation(new ZkOperation() {
-                
-                @Override
-                public Object execute() throws KeeperException, InterruptedException {
-                  return zkClient.getChildren(LIVE_NODES_ZKNODE,
-                      null);
-                }
-              });
+              List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE,
+                  null, true);
               Set<String> liveNodesSet = new HashSet<String>();
               liveNodesSet.addAll(liveNodes);
               

@@ -286,7 +286,7 @@ static class ZKPrinter
 		Stat stat = new Stat();
 		try
 		{
-			byte[] data = zkClient.getData(path, null, stat);
+			byte[] data = zkClient.getData(path, null, stat, true);
 
 			if( stat.getEphemeralOwner() != 0 )
 			{
@@ -361,7 +361,7 @@ static class ZKPrinter
 			List<String> children = null;
 			try
 			{
-				children = zkClient.getChildren(path, null);
+				children = zkClient.getChildren(path, null, true);
 			}
 			catch (KeeperException e)
 			{
@@ -407,7 +407,7 @@ static class ZKPrinter
 		try
 		{
 			Stat stat = new Stat();
-			byte[] data = zkClient.getData(path, null, stat);
+			byte[] data = zkClient.getData(path, null, stat, true);
 
 			out.println("\"znode\" : {");
 

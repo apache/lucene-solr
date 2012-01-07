@@ -33,7 +33,15 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.CoreState;
+import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -41,7 +49,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,7 +187,7 @@ public final class ZkController {
 
           }
         });
-    cmdExecutor = new ZkCmdExecutor(zkClient);
+    cmdExecutor = new ZkCmdExecutor();
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
     init();
@@ -212,7 +219,7 @@ public final class ZkController {
    */
   public boolean configFileExists(String collection, String fileName)
       throws KeeperException, InterruptedException {
-    Stat stat = zkClient.exists(CONFIGS_ZKNODE + "/" + collection + "/" + fileName, null);
+    Stat stat = zkClient.exists(CONFIGS_ZKNODE + "/" + collection + "/" + fileName, null, true);
     return stat != null;
   }
 
@@ -233,7 +240,7 @@ public final class ZkController {
   public byte[] getConfigFileData(String zkConfigName, String fileName)
       throws KeeperException, InterruptedException {
     String zkPath = CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
-    byte[] bytes = zkClient.getData(zkPath, null, null);
+    byte[] bytes = zkClient.getData(zkPath, null, null, true);
     if (bytes == null) {
       log.error("Config file contains no data:" + zkPath);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -291,11 +298,11 @@ public final class ZkController {
       }
       
       // makes nodes zkNode
-      cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE);
+      cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
       
       Overseer.createClientNodes(zkClient, getNodeName());
       createEphemeralLiveNode();
-      cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE);
+      cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
 
       overseerElector = new LeaderElector(zkClient);
       ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
@@ -335,7 +342,7 @@ public final class ZkController {
         // until expiration timeout - so a node won't be created here because
         // it exists, but eventually the node will be removed. So delete
         // in case it exists and create a new node.
-        zkClient.delete(nodePath, -1);
+        zkClient.delete(nodePath, -1, true);
       } catch (KeeperException.NoNodeException e) {
         // fine if there is nothing to delete
         // TODO: annoying that ZK logs a warning on us
@@ -346,7 +353,7 @@ public final class ZkController {
             .info("Found a previous node that still exists while trying to register a new live node "
                 + nodePath + " - removing existing node to create another.");
       }
-      zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+      zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
     } catch (KeeperException e) {
       // its okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -367,7 +374,7 @@ public final class ZkController {
    */
   public boolean pathExists(String path) throws KeeperException,
       InterruptedException {
-    return zkClient.exists(path);
+    return zkClient.exists(path, true);
   }
 
   /**
@@ -386,14 +393,14 @@ public final class ZkController {
     if (log.isInfoEnabled()) {
       log.info("Load collection config from:" + path);
     }
-    byte[] data = zkClient.getData(path, null, null);
+    byte[] data = zkClient.getData(path, null, null, true);
     
     if(data != null) {
       ZkNodeProps props = ZkNodeProps.load(data);
       configName = props.get(CONFIGNAME_PROP);
     }
     
-    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName)) {
+    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
       log.error("Specified config does not exist in ZooKeeper:" + configName);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "Specified config does not exist in ZooKeeper:" + configName);
@@ -631,7 +638,7 @@ public final class ZkController {
     String collectionPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
     
     try {
-      if(!zkClient.exists(collectionPath)) {
+      if(!zkClient.exists(collectionPath, true)) {
         log.info("Creating collection in ZooKeeper:" + collection);
        SolrParams params = cd.getParams();
 
@@ -675,14 +682,14 @@ public final class ZkController {
             log.info("Looking for collection configName");
             int retry = 1;
             for (; retry < 6; retry++) {
-              if (zkClient.exists(collectionPath)) {
-                ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null));
+              if (zkClient.exists(collectionPath, true)) {
+                ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null, true));
                 if (cProps.containsKey(CONFIGNAME_PROP)) {
                   break;
                 }
               }
               // if there is only one conf, use that
-              List<String> configNames = zkClient.getChildren(CONFIGS_ZKNODE, null);
+              List<String> configNames = zkClient.getChildren(CONFIGS_ZKNODE, null, true);
               if (configNames.size() == 1) {
                 // no config set named, but there is only 1 - use it
                 log.info("Only one config set found in zk - using it:" + configNames.get(0));
@@ -704,7 +711,7 @@ public final class ZkController {
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
          
           // ping that there is a new collection
-          zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
+          zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null, true);
         } catch (KeeperException e) {
           // its okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -743,7 +750,7 @@ public final class ZkController {
         public Object execute() throws KeeperException, InterruptedException {
           zkClient.setData(
               nodePath,
-              ZkStateReader.toJSON(coreStates.values()));
+              ZkStateReader.toJSON(coreStates.values()), true);
           return null;
         }
       });
@@ -790,7 +797,7 @@ public final class ZkController {
     for(File file : files) {
       if (!file.getName().startsWith(".")) {
         if (!file.isDirectory()) {
-          zkClient.makePath(zkPath + "/" + file.getName(), file);
+          zkClient.makePath(zkPath + "/" + file.getName(), file, true);
         } else {
           uploadToZK(zkClient, file, zkPath + "/" + file.getName());
         }

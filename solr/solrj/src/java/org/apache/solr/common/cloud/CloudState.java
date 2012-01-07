@@ -154,7 +154,7 @@ public class CloudState implements JSONWriter.Writable {
 
 	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
-        null, null);
+        null, null, true);
     return load(state, liveNodes);
 	}
 	

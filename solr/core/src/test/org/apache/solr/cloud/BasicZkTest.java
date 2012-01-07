@@ -139,7 +139,7 @@ public class BasicZkTest extends AbstractZkTestCase {
    
     
     // SOLR-2651: test that reload still gets config files from zookeeper 
-    zkController.getZkClient().setData("/configs/conf1/solrconfig.xml", new byte[0]);
+    zkController.getZkClient().setData("/configs/conf1/solrconfig.xml", new byte[0], true);
  
     // we set the solrconfig to nothing, so this reload should fail
     try {

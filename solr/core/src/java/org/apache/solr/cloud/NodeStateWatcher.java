@@ -78,7 +78,7 @@ public class NodeStateWatcher implements Watcher {
   }
 
   private void processStateChange() throws KeeperException, InterruptedException {
-    byte[] data = zkClient.getData(path, this, null);
+    byte[] data = zkClient.getData(path, this, null, true);
 
     if (data != null) {
         CoreState[] states = CoreState.load(data);

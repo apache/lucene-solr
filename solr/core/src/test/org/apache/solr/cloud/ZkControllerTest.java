@@ -60,12 +60,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       String actualConfigName = "firstConfig";
 
-      zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + actualConfigName);
+      zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + actualConfigName, true);
       
       Map<String,String> props = new HashMap<String,String>();
       props.put("configName", actualConfigName);
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME , ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/"
+          + COLLECTION_NAME, ZkStateReader.toJSON(zkProps),
+          CreateMode.PERSISTENT, true);
 
       if (DEBUG) {
         zkClient.printLayoutToStdOut();

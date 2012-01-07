@@ -57,7 +57,7 @@ public class ShardLeaderWatcher implements Watcher {
   private void processLeaderChange() throws KeeperException, InterruptedException {
     if(closed) return;
     try {
-      byte[] data = zkClient.getData(path, this, null);
+      byte[] data = zkClient.getData(path, this, null, true);
       if (data != null) {
         final ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         listener.announceLeader(collection, shard, leaderProps);

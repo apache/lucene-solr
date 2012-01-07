@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -32,13 +31,13 @@ import org.apache.zookeeper.data.ACL;
 public class ZkCmdExecutor {
   private static final Logger LOG = Logger.getLogger(ZkCmdExecutor.class);
   
-  protected final SolrZkClient zkClient;
+  //protected final SolrZkClient zkClient;
   private long retryDelay = 1000L;
   private int retryCount = 15;
   private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
   
-  public ZkCmdExecutor(SolrZkClient solrZkClient) {
-    this.zkClient = solrZkClient;
+  public ZkCmdExecutor() {
+    //this.zkClient = solrZkClient;
   }
   
   /**
@@ -102,20 +101,20 @@ public class ZkCmdExecutor {
     throw exception;
   }
   
-  public void ensureExists(String path) {
-    ensureExists(path, null, CreateMode.PERSISTENT);
+  public void ensureExists(String path, final SolrZkClient zkClient) {
+    ensureExists(path, null, CreateMode.PERSISTENT, zkClient);
   }
   
   public void ensureExists(final String path, final byte[] data,
-      CreateMode createMode) {
+      CreateMode createMode, final SolrZkClient zkClient) {
     try {
       retryOperation(new ZkOperation() {
         public Object execute() throws KeeperException, InterruptedException {
-          if (zkClient.exists(path)) {
+          if (zkClient.exists(path, false)) {
             return true;
           }
           try {
-            zkClient.makePath(path, data);
+            zkClient.makePath(path, data, false);
           } catch (NodeExistsException e) {
             // its okay if another beats us creating the node
           }
@@ -145,7 +144,4 @@ public class ZkCmdExecutor {
     }
   }
 
-  public SolrZkClient getZkClient() {
-    return zkClient;
-  }
 }

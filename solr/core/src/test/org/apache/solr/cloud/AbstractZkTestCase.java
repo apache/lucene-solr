@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,11 +26,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -76,76 +73,37 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   static void buildZooKeeper(String zkHost, String zkAddress, String config,
       String schema) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/solr");
+    zkClient.makePath("/solr", false, true);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
-    final ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkClient);
+    final ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor();
 
     Map<String,String> props = new HashMap<String,String>();
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
     
-    zkCmdExecutor.retryOperation(new ZkOperation() {
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        zkCmdExecutor.getZkClient().makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
-        return null;
-      }
-    });
-    
-    zkCmdExecutor.retryOperation(new ZkOperation() {
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        zkCmdExecutor.getZkClient().makePath("/collections/collection1/shards", CreateMode.PERSISTENT);
-        return null;
-      }
-    });
-    
-    zkCmdExecutor.retryOperation(new ZkOperation() {
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        zkCmdExecutor.getZkClient().makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT);
-        return null;
-      }
-    });
+    zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
-    zkCmdExecutor.retryOperation(new ZkOperation() {
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        zkCmdExecutor.getZkClient().makePath("/collections/control_collection/shards", CreateMode.PERSISTENT);
-        return null;
-      }
-    });
-    
-
-    putConfig(zkCmdExecutor, config);
-    putConfig(zkCmdExecutor, schema);
-    putConfig(zkCmdExecutor, "solrconfig.xml");
-    putConfig(zkCmdExecutor, "stopwords.txt");
-    putConfig(zkCmdExecutor, "protwords.txt");
-    putConfig(zkCmdExecutor, "mapping-ISOLatin1Accent.txt");
-    putConfig(zkCmdExecutor, "old_synonyms.txt");
-    putConfig(zkCmdExecutor, "synonyms.txt");
+    putConfig(zkClient, config);
+    putConfig(zkClient, schema);
+    putConfig(zkClient, "solrconfig.xml");
+    putConfig(zkClient, "stopwords.txt");
+    putConfig(zkClient, "protwords.txt");
+    putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
+    putConfig(zkClient, "old_synonyms.txt");
+    putConfig(zkClient, "synonyms.txt");
     
     zkClient.close();
   }
 
-  private static void putConfig(final ZkCmdExecutor zkCmdExecutor, final String name)
+  private static void putConfig(SolrZkClient zkClient, final String name)
       throws Exception {
-    zkCmdExecutor.retryOperation(new ZkOperation() {
-      @Override
-      public Object execute() throws KeeperException, InterruptedException {
-        try {
-          zkCmdExecutor.getZkClient().makePath("/configs/conf1/" + name, getFile("solr"
-              + File.separator + "conf" + File.separator + name), false);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-        return null;
-      }
-    });
-    
+    zkClient.makePath("/configs/conf1/" + name, getFile("solr"
+        + File.separator + "conf" + File.separator + name), false, false);  
   }
 
   @Override
@@ -178,7 +136,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   public static void makeSolrZkNode(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
-    zkClient.makePath("/solr", false);
+    zkClient.makePath("/solr", false, true);
     zkClient.close();
   }
   
@@ -188,12 +146,12 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   
   static void tryCleanPath(String zkHost, String path) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
-    if (zkClient.exists(path)) {
-      List<String> children = zkClient.getChildren(path, null);
+    if (zkClient.exists(path, true)) {
+      List<String> children = zkClient.getChildren(path, null, true);
       for (String string : children) {
         tryCleanPath(zkHost, path+"/"+string);
       }
-      zkClient.delete(path, -1);
+      zkClient.delete(path, -1, true);
     }
     zkClient.close();
   }

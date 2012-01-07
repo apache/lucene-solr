@@ -138,11 +138,14 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     props2.put("configName", "conf1");
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore", ZkStateReader.toJSON(zkProps2), CreateMode.PERSISTENT);
-    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore/shards", CreateMode.PERSISTENT);
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
+        AbstractZkTestCase.TIMEOUT);
+    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore",
+        ZkStateReader.toJSON(zkProps2), CreateMode.PERSISTENT, true);
+    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore/shards",
+        CreateMode.PERSISTENT, true);
     zkClient.close();
-    
+
     CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
         "testcore");
     
