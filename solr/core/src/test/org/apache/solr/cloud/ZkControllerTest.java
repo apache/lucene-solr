@@ -119,6 +119,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       zkController.uploadToZK(getFile("solr/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");
+      
+      // uploading again should overwrite, not error...
+      zkController.uploadToZK(getFile("solr/conf"),
+          ZkController.CONFIGS_ZKNODE + "/config1");
 
       if (DEBUG) {
         zkController.printLayoutToStdOut();

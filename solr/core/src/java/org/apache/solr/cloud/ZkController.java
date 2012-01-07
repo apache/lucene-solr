@@ -483,7 +483,6 @@ public final class ZkController {
     leaderElector.setup(context);
     leaderElector.joinElection(context);
     
-    // should be fine if we do this rather than read from cloud state since it's rare?
     String leaderUrl = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId());
     
     SolrCore core = null;
@@ -797,7 +796,7 @@ public final class ZkController {
     for(File file : files) {
       if (!file.getName().startsWith(".")) {
         if (!file.isDirectory()) {
-          zkClient.makePath(zkPath + "/" + file.getName(), file, true);
+          zkClient.makePath(zkPath + "/" + file.getName(), file, false, true);
         } else {
           uploadToZK(zkClient, file, zkPath + "/" + file.getName());
         }
