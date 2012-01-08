@@ -207,7 +207,6 @@ public class Viterbi {
     FST.Arc<Long> arc = new FST.Arc<Long>();
     FST.Arc<Long> endArc = new FST.Arc<Long>();
     final Long NO_OUTPUT = fst.NO_OUTPUT;
-    Long output;
     ViterbiNode bosNode = new ViterbiNode(0, BOS, 0, BOS.length, 0, 0, 0, -1, Type.KNOWN);
     addToArrays(bosNode, 0, 1, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
     
@@ -229,23 +228,20 @@ public class Viterbi {
       
       boolean found = false;
       arc = fst.getFirstArc(arc);
-      output = NO_OUTPUT;
+      int output = 0;
       for (int endIndex = 1; endIndex < suffixLength + 1; endIndex++) {
         int ch = text[suffixStart + endIndex - 1];
         
         if (fst.findTargetArc(ch, arc, arc, endIndex == 1) == null) {
           break; // continue to next position
-        } else if (arc.output != NO_OUTPUT) {
-          output = fst.addOutput(output, arc.output);
         }
-        
-        if (fst.findTargetArc(FST.END_LABEL, arc, endArc, false) != null) { // Found match in FST
-          int result = endArc.output == NO_OUTPUT 
-              ? output.intValue() 
-              : fst.addOutput(output, endArc.output).intValue();
+        output += arc.output.intValue();
+
+        if (arc.isFinal()) {
+          output += arc.nextFinalOutput.intValue();
           found = true; // Don't produce unknown word starting from this index
           
-          for (int wordId : dictionary.lookupWordIds(result)) {
+          for (int wordId : dictionary.lookupWordIds(output)) {
             ViterbiNode node = new ViterbiNode(wordId, text, suffixStart, endIndex, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId), startIndex, Type.KNOWN);
             addToArrays(node, startIndex + 1, startIndex + 1 + endIndex, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
           }
