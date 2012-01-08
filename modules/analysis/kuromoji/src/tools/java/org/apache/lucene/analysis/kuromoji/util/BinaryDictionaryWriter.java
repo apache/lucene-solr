@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 import org.apache.lucene.analysis.kuromoji.dict.BinaryDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 
 public abstract class BinaryDictionaryWriter {
   protected final Class<? extends BinaryDictionary> implClazz;
@@ -202,6 +202,7 @@ public abstract class BinaryDictionaryWriter {
     writePosDict(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
   }
   
+  // TODO: maybe this int[] should instead be the output to the FST...
   protected void writeTargetMap(String filename) throws IOException {
     new File(filename).getParentFile().mkdirs();
     OutputStream os = new FileOutputStream(filename);
@@ -225,10 +226,13 @@ public abstract class BinaryDictionaryWriter {
             nulls = 0;
           }
           final int[] a = targetMap[j];
+          Arrays.sort(a, 0, size);
           assert size > 0 && size <= a.length;
           out.writeVInt(size);
+          int prev = 0;
           for (int i = 0; i < size; i++) {
-            out.writeVInt(a[i]);
+            out.writeVInt(a[i] - prev);
+            prev = a[i];
           }
         }
       }

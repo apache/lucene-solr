@@ -19,9 +19,6 @@ package org.apache.lucene.analysis.kuromoji.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map.Entry;
-
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 
 public class DictionaryBuilder {
   

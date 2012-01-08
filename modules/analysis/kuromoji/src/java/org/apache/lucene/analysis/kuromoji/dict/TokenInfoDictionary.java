@@ -21,37 +21,39 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
-
+import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 public final class TokenInfoDictionary extends BinaryDictionary {
 
-  public static final String TRIE_FILENAME_SUFFIX = "$trie.dat";
+  public static final String FST_FILENAME_SUFFIX = "$fst.dat";
 
-  private final DoubleArrayTrie trie;
+  private final TokenInfoFST fst;
   
   private TokenInfoDictionary() throws IOException {
     super();
     InputStream is = null;
-    DoubleArrayTrie trie = null;
+    FST<Long> fst = null;
     try {
-      is = getClass().getResourceAsStream(getClass().getSimpleName() + TRIE_FILENAME_SUFFIX);
+      is = getClass().getResourceAsStream(getClass().getSimpleName() + FST_FILENAME_SUFFIX);
       if (is == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + TRIE_FILENAME_SUFFIX);
-      trie = new DoubleArrayTrie(is);
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + FST_FILENAME_SUFFIX);
+      fst = new FST<Long>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton(true));
     } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load DoubleArrayTrie.", ioe);
+      throw new RuntimeException("Cannot load FST.", ioe);
     } finally {
       IOUtils.closeWhileHandlingException(is);
     }
-    this.trie = trie;
+    // TODO: some way to configure?
+    this.fst = new TokenInfoFST(fst, true);
   }
   
-  public DoubleArrayTrie getTrie() {
-    return trie;
+  public TokenInfoFST getFST() {
+    return fst;
   }
-  
+   
   public synchronized static TokenInfoDictionary getInstance() {
     if (singleton == null) try {
       singleton = new TokenInfoDictionary();

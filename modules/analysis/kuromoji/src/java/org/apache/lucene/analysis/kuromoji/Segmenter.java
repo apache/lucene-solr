@@ -157,7 +157,12 @@ public class Segmenter {
   public List<Token> doTokenize(int offset, char[] sentence, int sentenceOffset, int sentenceLength) {
     ArrayList<Token> result = new ArrayList<Token>();
     
-    ViterbiNode[][][] lattice = viterbi.build(sentence, sentenceOffset, sentenceLength);
+    ViterbiNode[][][] lattice;
+    try {
+      lattice = viterbi.build(sentence, sentenceOffset, sentenceLength);
+    } catch (IOException impossible) {
+      throw new RuntimeException(impossible);
+    }
     List<ViterbiNode> bestPath = viterbi.search(lattice);
     for (ViterbiNode node : bestPath) {
       int wordId = node.getWordId();
@@ -173,7 +178,12 @@ public class Segmenter {
   
   /** returns a Graphviz String */
   public String debugTokenize(String text) {
-    ViterbiNode[][][] lattice = this.viterbi.build(text.toCharArray(), 0, text.length());
+    ViterbiNode[][][] lattice;
+    try {
+      lattice = this.viterbi.build(text.toCharArray(), 0, text.length());
+    } catch (IOException impossible) {
+      throw new RuntimeException(impossible);
+    }
     List<ViterbiNode> bestPath = this.viterbi.search(lattice);
     
     return new GraphvizFormatter(ConnectionCosts.getInstance())

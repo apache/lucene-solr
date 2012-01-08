@@ -27,15 +27,20 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import org.apache.lucene.analysis.kuromoji.dict.TokenInfoFST;
 import org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder.DictionaryFormat;
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
-import org.apache.lucene.analysis.kuromoji.trie.Trie;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 import com.ibm.icu.text.Normalizer2;
 
@@ -77,19 +82,6 @@ public class TokenInfoDictionaryBuilder {
     }
     Collections.sort(csvFiles);
     return buildDictionary(csvFiles);
-  }
-  
-  public DoubleArrayTrie buildDoubleArrayTrie() {
-    Trie tempTrie = buildTrie();
-    return new DoubleArrayTrie(tempTrie);
-  }
-  
-  private Trie buildTrie() {
-    Trie trie = new Trie();
-    for (final String surfaceForm : dictionaryEntries.values()) {
-      trie.add(surfaceForm);
-    }
-    return trie;
   }
 
   public TokenInfoDictionaryWriter buildDictionary(List<File> csvFiles) throws IOException {
@@ -138,23 +130,48 @@ public class TokenInfoDictionaryBuilder {
       }
     }
     
-    System.out.print("  building double array trie...");
-    DoubleArrayTrie trie = buildDoubleArrayTrie();
-    dictionary.setTrie(trie);
-    System.out.println("  done");
+    System.out.print(" building FST...");
+    FST<Long> fst = buildFST();
+    dictionary.setFST(fst);
+    System.out.println(" done");
     
     System.out.print("  processing target map...");
-    assert trie != null;
+    TokenInfoFST lookup = new TokenInfoFST(fst, false);
+    assert fst != null;
     for (Entry<Integer, String> entry : entrySet()) {
       int tokenInfoId = entry.getKey();
       String surfaceform = entry.getValue();
-      int doubleArrayId = trie.lookup(surfaceform.toCharArray(), 0, surfaceform.length());
-      assert doubleArrayId > 0;
-      dictionary.addMapping(doubleArrayId, tokenInfoId);
+      int fstId = lookupOrd(lookup, surfaceform);
+      dictionary.addMapping(fstId, tokenInfoId);
     }
+    
     System.out.println("  done");
     
     return dictionary;
+  }
+    
+  public int lookupOrd(TokenInfoFST fst, String word) throws IOException {
+    final FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
+    // Accumulate output as we go
+    final Long NO_OUTPUT = fst.NO_OUTPUT;
+    Long output = NO_OUTPUT;
+    for (int i = 0; i < word.length(); i++) {
+      int ch = word.charAt(i);
+      if (fst.findTargetArc(ch, arc, arc, i == 0) == null) {
+        assert false;
+        return -1;
+      } else if (arc.output != NO_OUTPUT) {
+        output = fst.addOutput(output, arc.output);
+      }
+    }
+    if (fst.findTargetArc(FST.END_LABEL, arc, arc, false) == null) {
+      assert false;
+      return -1;
+    } else if (arc.output != NO_OUTPUT) {
+      return fst.addOutput(output, arc.output).intValue();
+    } else {
+      return output.intValue();
+    }
   }
   
   /*
@@ -212,7 +229,29 @@ public class TokenInfoDictionaryBuilder {
     }
   }
   
-  public Set<Entry<Integer, String>> entrySet() {
+  private Set<Entry<Integer, String>> entrySet() {
     return dictionaryEntries.entrySet();
-  }	
+  }
+  
+  private FST<Long> buildFST() throws IOException {    
+    FST<Long> words;
+    Collection<String> values = dictionaryEntries.values();
+    TreeSet<String> unique = new TreeSet<String>(values);
+    PositiveIntOutputs o = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE2, o);
+    IntsRef scratch = new IntsRef();
+    long ord = 1;
+    for (String entry : unique) {
+      scratch.grow(entry.length());
+      scratch.length = entry.length();
+      for (int i = 0; i < entry.length(); i++) {
+        scratch.ints[i] = (int) entry.charAt(i);
+      }
+      b.add(scratch, ord);
+      ord++;
+    }
+    words = b.finish();
+    System.out.print(" " + words.getNodeCount() + " nodes, " + words.getArcCount() + " arcs, " + words.sizeInBytes() + " bytes...  ");
+    return words;
+  }
 }

@@ -18,39 +18,31 @@ package org.apache.lucene.analysis.kuromoji.util;
  */
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
+import org.apache.lucene.util.fst.FST;
 
 public class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
-
-  private DoubleArrayTrie trie;
+  private FST<Long> fst;
 
   public TokenInfoDictionaryWriter(int size) {
     super(TokenInfoDictionary.class, size);
-    this.trie = trie;
   }
   
-  public void setTrie(DoubleArrayTrie trie) {
-    this.trie = trie;
+  public void setFST(FST<Long> fst) {
+    this.fst = fst;
   }
   
   @Override
   public void write(String baseDir) throws IOException {
     super.write(baseDir);
-    writeDoubleArrayTrie(getBaseFileName(baseDir) + TokenInfoDictionary.TRIE_FILENAME_SUFFIX);
+    writeFST(getBaseFileName(baseDir) + TokenInfoDictionary.FST_FILENAME_SUFFIX);
   }
   
-  protected void writeDoubleArrayTrie(String filename) throws IOException  {
-    new File(filename).getParentFile().mkdirs();
-    final FileOutputStream os = new FileOutputStream(filename);
-    try {
-      trie.write(os);
-    } finally {
-      os.close();
-    }
-  }
-  
+  protected void writeFST(String filename) throws IOException {
+    File f = new File(filename);
+    f.getParentFile().mkdirs();
+    fst.save(f);
+  }  
 }

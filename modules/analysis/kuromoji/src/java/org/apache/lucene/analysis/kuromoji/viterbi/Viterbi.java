@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.kuromoji.viterbi;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,14 +25,15 @@ import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
 import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
 import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
+import org.apache.lucene.analysis.kuromoji.dict.TokenInfoFST;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
-import org.apache.lucene.analysis.kuromoji.trie.DoubleArrayTrie;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
+import org.apache.lucene.util.fst.FST;
 
 public class Viterbi {
   
-  private final DoubleArrayTrie trie;
+  private final TokenInfoFST fst;
   
   private final TokenInfoDictionary dictionary;
   
@@ -70,7 +72,7 @@ public class Viterbi {
       UserDictionary userDictionary,
       Mode mode) {
     this.dictionary = dictionary;
-    this.trie = dictionary.getTrie();
+    this.fst = dictionary.getFST();
     this.unkDictionary = unkDictionary;
     this.costs = costs;
     this.userDictionary = userDictionary;
@@ -192,18 +194,20 @@ public class Viterbi {
     
     return result;
   }
-  
-  
+
   /**
    * Build lattice from input text
    * @param text
    */
-  public ViterbiNode[][][] build(char text[], int offset, int length) {
+  public ViterbiNode[][][] build(char text[], int offset, int length) throws IOException {
     ViterbiNode[][] startIndexArr = new ViterbiNode[length + 2][];  // text length + BOS and EOS
     ViterbiNode[][] endIndexArr = new ViterbiNode[length + 2][];  // text length + BOS and EOS
     int[] startSizeArr = new int[length + 2]; // array to keep ViterbiNode count in startIndexArr
     int[] endSizeArr = new int[length + 2];   // array to keep ViterbiNode count in endIndexArr
-    
+    FST.Arc<Long> arc = new FST.Arc<Long>();
+    FST.Arc<Long> endArc = new FST.Arc<Long>();
+    final Long NO_OUTPUT = fst.NO_OUTPUT;
+    Long output;
     ViterbiNode bosNode = new ViterbiNode(0, BOS, 0, BOS.length, 0, 0, 0, -1, Type.KNOWN);
     addToArrays(bosNode, 0, 1, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
     
@@ -224,18 +228,27 @@ public class Viterbi {
       int suffixLength = length - startIndex;
       
       boolean found = false;
+      arc = fst.getFirstArc(arc);
+      output = NO_OUTPUT;
       for (int endIndex = 1; endIndex < suffixLength + 1; endIndex++) {
+        int ch = text[suffixStart + endIndex - 1];
         
-        int result = trie.lookup(text, suffixStart, endIndex);
+        if (fst.findTargetArc(ch, arc, arc, endIndex == 1) == null) {
+          break; // continue to next position
+        } else if (arc.output != NO_OUTPUT) {
+          output = fst.addOutput(output, arc.output);
+        }
         
-        if (result > 0) {	// Found match in double array trie
-          found = true;	// Don't produce unknown word starting from this index
+        if (fst.findTargetArc(FST.END_LABEL, arc, endArc, false) != null) { // Found match in FST
+          int result = endArc.output == NO_OUTPUT 
+              ? output.intValue() 
+              : fst.addOutput(output, endArc.output).intValue();
+          found = true; // Don't produce unknown word starting from this index
+          
           for (int wordId : dictionary.lookupWordIds(result)) {
             ViterbiNode node = new ViterbiNode(wordId, text, suffixStart, endIndex, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId), startIndex, Type.KNOWN);
             addToArrays(node, startIndex + 1, startIndex + 1 + endIndex, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
           }
-        } else if(result < 0) {	// If result is less than zero, continue to next position
-          break;						
         }
       }
       

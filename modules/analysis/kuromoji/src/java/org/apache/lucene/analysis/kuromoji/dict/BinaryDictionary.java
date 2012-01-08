@@ -67,8 +67,10 @@ public abstract class BinaryDictionary implements Dictionary {
           j += in.readVInt();
         } else {
           final int[] a = new int[len];
+          int accum = 0;
           for (int i = 0; i < len; i++) {
-            a[i] = in.readVInt();
+            accum += in.readVInt();
+            a[i] = accum;
           }
           targetMap[j] = a;
           j++;
