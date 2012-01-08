@@ -108,7 +108,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     // try and wait for any replications and what not to finish...
 
     // give a moment to make sure any recoveries have started
-    Thread.sleep(4000);
+    Thread.sleep(12000);
     
     // wait until there are no recoveries...
     waitForRecoveriesToFinish(VERBOSE);
