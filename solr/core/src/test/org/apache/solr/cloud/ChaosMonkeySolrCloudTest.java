@@ -17,11 +17,15 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -106,19 +110,39 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     }
     
     // try and wait for any replications and what not to finish...
-
-    // give a moment to make sure any recoveries have started
-    Thread.sleep(12000);
     
     // wait until there are no recoveries...
-    waitForRecoveriesToFinish(VERBOSE);
-    
-    
-    commit();
+    waitForThingsToLevelOut();
 
     checkShardConsistency(true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
+  }
+
+  private void waitForThingsToLevelOut() throws KeeperException,
+      InterruptedException, Exception, IOException, URISyntaxException {
+    int cnt = 0;
+    boolean retry = false;
+    do {
+      waitForRecoveriesToFinish(VERBOSE);
+      
+      commit();
+      
+      updateMappingsFromZk(jettys, clients);
+      
+      Set<String> theShards = shardToClient.keySet();
+      String failMessage = null;
+      for (String shard : theShards) {
+        failMessage = checkShardConsistency(shard, false);
+      }
+      
+      if (failMessage != null) {
+        retry  = true;
+      }
+      cnt++;
+      if (cnt > 10) break;
+      Thread.sleep(4000);
+    } while (retry);
   }
   
   // skip the randoms - they can deadlock...
