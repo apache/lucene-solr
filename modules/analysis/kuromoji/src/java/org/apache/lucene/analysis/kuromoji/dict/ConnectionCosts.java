@@ -75,15 +75,19 @@ public final class ConnectionCosts {
     }
   }
   
-  public synchronized static ConnectionCosts getInstance() {
-    if (singleton == null) try {
-      singleton = new ConnectionCosts();
-    } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load ConnectionCosts.", ioe);
-    }
-    return singleton;
+  public static ConnectionCosts getInstance() {
+    return SingletonHolder.INSTANCE;
   }
   
-  private static ConnectionCosts singleton;
+  private static class SingletonHolder {
+    static final ConnectionCosts INSTANCE;
+    static {
+      try {
+        INSTANCE = new ConnectionCosts();
+      } catch (IOException ioe) {
+        throw new RuntimeException("Cannot load ConnectionCosts.", ioe);
+      }
+    }
+   }
   
 }

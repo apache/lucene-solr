@@ -103,15 +103,18 @@ public final class CharacterDefinition {
     return (byte) CharacterClass.valueOf(characterClassName).ordinal();
   }
 
-  public synchronized static CharacterDefinition getInstance() {
-    if (singleton == null) try {
-      singleton = new CharacterDefinition();
-    } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load CharacterDefinition.", ioe);
-    }
-    return singleton;
+  public static CharacterDefinition getInstance() {
+    return SingletonHolder.INSTANCE;
   }
   
-  private static CharacterDefinition singleton;
-  
+  private static class SingletonHolder {
+    static final CharacterDefinition INSTANCE;
+    static {
+      try {
+        INSTANCE = new CharacterDefinition();
+      } catch (IOException ioe) {
+        throw new RuntimeException("Cannot load CharacterDefinition.", ioe);
+      }
+    }
+   }
 }

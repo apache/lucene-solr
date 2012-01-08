@@ -55,15 +55,19 @@ public final class UnknownDictionary extends BinaryDictionary {
     return null;
   }
 
-  public synchronized static UnknownDictionary getInstance() {
-    if (singleton == null) try {
-      singleton = new UnknownDictionary();
-    } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load UnknownDictionary.", ioe);
-    }
-    return singleton;
+  public static UnknownDictionary getInstance() {
+    return SingletonHolder.INSTANCE;
   }
   
-  private static UnknownDictionary singleton;
+  private static class SingletonHolder {
+    static final UnknownDictionary INSTANCE;
+    static {
+      try {
+        INSTANCE = new UnknownDictionary();
+      } catch (IOException ioe) {
+        throw new RuntimeException("Cannot load UnknownDictionary.", ioe);
+      }
+    }
+   }
   
 }

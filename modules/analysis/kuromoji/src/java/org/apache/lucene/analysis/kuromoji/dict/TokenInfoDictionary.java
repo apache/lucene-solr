@@ -55,15 +55,19 @@ public final class TokenInfoDictionary extends BinaryDictionary {
     return fst;
   }
    
-  public synchronized static TokenInfoDictionary getInstance() {
-    if (singleton == null) try {
-      singleton = new TokenInfoDictionary();
-    } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load TokenInfoDictionary.", ioe);
-    }
-    return singleton;
+  public static TokenInfoDictionary getInstance() {
+    return SingletonHolder.INSTANCE;
   }
   
-  private static TokenInfoDictionary singleton;
+  private static class SingletonHolder {
+    static final TokenInfoDictionary INSTANCE;
+    static {
+      try {
+        INSTANCE = new TokenInfoDictionary();
+      } catch (IOException ioe) {
+        throw new RuntimeException("Cannot load TokenInfoDictionary.", ioe);
+      }
+    }
+   }
   
 }
