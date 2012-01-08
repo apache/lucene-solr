@@ -165,8 +165,8 @@ public class Builder<T> {
   }
 
   /** Pass false to disable the array arc optimization
-   *  while building the FST.  This is necessary if
-   *  encoding a single arc may take more than 255 bytes. */
+   *  while building the FST; this will make the resulting
+   *  FST smaller but slower to traverse. */
   public void setAllowArrayArcs(boolean b) {
     fst.setAllowArrayArcs(b);
   }
