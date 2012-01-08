@@ -223,8 +223,7 @@ public abstract class BinaryDictionaryWriter {
       int prev = 0;
       for (int j = 0; j < targetMapSize; j++) {
         final int size = targetMapComponentSizes[j];
-        // note: size is 0 for ONLY wordID 0 of TokenInfoDictionary
-        // this is because the FST uses 0 for NO_OUTPUT... 
+        assert size > 0;
         if (size == 1) {
           int delta = targetMap[j][0] - prev;
           assert delta >= 0;

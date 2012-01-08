@@ -255,14 +255,14 @@ public class TokenInfoDictionaryBuilder {
     PositiveIntOutputs o = PositiveIntOutputs.getSingleton(true);
     Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE2, o);
     IntsRef scratch = new IntsRef();
-    long ord = 1;
+    long ord = 0;
     for (String entry : unique) {
       scratch.grow(entry.length());
       scratch.length = entry.length();
       for (int i = 0; i < entry.length(); i++) {
         scratch.ints[i] = (int) entry.charAt(i);
       }
-      b.add(scratch, ord);
+      b.add(scratch, o.get(ord));
       ord++;
     }
     words = b.finish();

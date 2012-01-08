@@ -24,11 +24,11 @@ public class SimpleBench {
     
     for (int i = 0; i < 4; i++) {
       long ms = System.currentTimeMillis();
-      for (int j = 0; j < 50000; j++) {
+      for (int j = 0; j < 500000; j++) {
         consume(a, "魔女狩大将マシュー・ホプキンス。 魔女狩大将マシュー・ホプキンス。");
       }
       long ms2 = System.currentTimeMillis();
-      for (int j = 0; j < 50000; j++) {
+      for (int j = 0; j < 500000; j++) {
         consume(b, "魔女狩大将マシュー・ホプキンス。 魔女狩大将マシュー・ホプキンス。");
       }
       long ms3 = System.currentTimeMillis();
