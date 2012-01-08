@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.IOUtils;
+
 /**
  * Abstract base class for performing read operations of Lucene's low-level
  * data types.
@@ -166,7 +168,7 @@ public abstract class DataInput implements Cloneable {
     int length = readVInt();
     final byte[] bytes = new byte[length];
     readBytes(bytes, 0, length);
-    return new String(bytes, 0, length, "UTF-8");
+    return new String(bytes, 0, length, IOUtils.CHARSET_UTF_8);
   }
 
   /** Returns a clone of this stream.

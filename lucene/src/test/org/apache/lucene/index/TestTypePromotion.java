@@ -100,14 +100,12 @@ public class TestTypePromotion extends LuceneTestCase {
           randomValueType(types, random), values, num_1 + num_2, num_3);
       writer_2.commit();
       writer_2.close();
-      if (random.nextBoolean()) {
+      if (rarely()) {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
         IndexReader open = IndexReader.open(dir_2);
-        // we cannot use SlowMR for sorted bytes, because it returns a null sortedsource
-        boolean useSlowMRWrapper = types != SORTED_BYTES && random.nextBoolean();
-        writer.addIndexes(useSlowMRWrapper ? new SlowMultiReaderWrapper(open) : open);
+        writer.addIndexes(new SlowMultiReaderWrapper(open));
         open.close();
       }
       dir_2.close();

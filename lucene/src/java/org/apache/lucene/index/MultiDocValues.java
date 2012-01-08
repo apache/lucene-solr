@@ -20,11 +20,17 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.index.SortedBytesMergeUtils.MergeContext;
+import org.apache.lucene.index.SortedBytesMergeUtils.SortedSourceSlice;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;
+import org.apache.lucene.util.packed.PackedInts.Reader;
 
 /**
  * A wrapper for compound IndexReader providing access to per segment
@@ -143,6 +149,8 @@ public class MultiDocValues extends DocValues {
           switch(promoted) {
             case BYTES_FIXED_DEREF:
             case BYTES_FIXED_STRAIGHT:
+            case BYTES_FIXED_SORTED:
+              assert promotedType[0].getValueSize() >= 0;
               slice.docValues = new EmptyFixedDocValues(slice.length, promoted, promotedType[0].getValueSize());
               break;
             default:
@@ -178,7 +186,6 @@ public class MultiDocValues extends DocValues {
     public Type type() {
       return emptySource.type();
     }
-
 
     @Override
     public Source getDirectSource() throws IOException {
@@ -276,6 +283,59 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
+    public SortedSource asSortedSource() {
+      try {
+        if (type == Type.BYTES_FIXED_SORTED || type == Type.BYTES_VAR_SORTED) {
+          DocValues[] values = new DocValues[slices.length];
+          Comparator<BytesRef> comp = null;
+          for (int i = 0; i < values.length; i++) {
+            values[i] = slices[i].docValues;
+            if (!(values[i] instanceof EmptyDocValues)) {
+              Comparator<BytesRef> comparator = values[i].getDirectSource()
+                  .asSortedSource().getComparator();
+              assert comp == null || comp == comparator;
+              comp = comparator;
+            }
+          }
+          assert comp != null;
+          final int globalNumDocs = globalNumDocs();
+          final MergeContext ctx = SortedBytesMergeUtils.init(type, values,
+              comp, globalNumDocs);
+          List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(
+              docBases(), new int[values.length][], values, ctx);
+          RecordingBytesRefConsumer consumer = new RecordingBytesRefConsumer(
+              type);
+          final int maxOrd = SortedBytesMergeUtils.mergeRecords(ctx, consumer,
+              slices);
+          final int[] docToOrd = new int[globalNumDocs];
+          for (SortedSourceSlice slice : slices) {
+            slice.toAbsolutOrds(docToOrd);
+          }
+          return new MultiSortedSource(type, comp, consumer.pagedBytes,
+              ctx.sizePerValues, maxOrd, docToOrd, consumer.ordToOffset);
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("load failed", e);
+      }
+      return super.asSortedSource();
+    }
+    
+    private int globalNumDocs() {
+      int docs = 0;
+      for (int i = 0; i < slices.length; i++) {
+        docs += slices[i].length;
+      }
+      return docs;
+    }
+    
+    private int[] docBases() {
+      int[] docBases = new int[slices.length];
+      for (int i = 0; i < slices.length; i++) {
+        docBases[i] = slices[i].start;
+      }
+      return docBases;
+    }
+    
     public boolean hasArray() {
       boolean oneRealSource = false;
       for (DocValuesSlice slice : slices) {
@@ -346,12 +406,79 @@ public class MultiDocValues extends DocValues {
       }
     }
   }
+  
+  private static final class RecordingBytesRefConsumer implements SortedBytesMergeUtils.BytesRefConsumer {
+    private final static int PAGED_BYTES_BITS = 15;
+    final PagedBytes pagedBytes = new PagedBytes(PAGED_BYTES_BITS);
+    long[] ordToOffset;
+    
+    public RecordingBytesRefConsumer(Type type) {
+      ordToOffset = type == Type.BYTES_VAR_SORTED ? new long[2] : null;
+    }
+    @Override
+    public void consume(BytesRef ref, int ord, long offset) throws IOException {
+      pagedBytes.copy(ref);
+      if (ordToOffset != null) {
+        if (ord+1 >= ordToOffset.length) {
+          ordToOffset = ArrayUtil.grow(ordToOffset, ord + 2);
+        }
+        ordToOffset[ord+1] = offset;
+      }
+    }
+    
+  }
+  
+  private static final class MultiSortedSource extends SortedSource {
+    private final PagedBytes.Reader data;
+    private final int[] docToOrd;
+    private final long[] ordToOffset;
+    private int size;
+    private int valueCount;
+    public MultiSortedSource(Type type, Comparator<BytesRef> comparator, PagedBytes pagedBytes, int size, int numValues, int[] docToOrd, long[] ordToOffset) {
+      super(type, comparator);
+      data = pagedBytes.freeze(true);
+      this.size = size;
+      this.valueCount = numValues;
+      this.docToOrd = docToOrd;
+      this.ordToOffset = ordToOffset;
+    }
+
+    @Override
+    public int ord(int docID) {
+      return docToOrd[docID];
+    }
+
+    @Override
+    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+      int size = this.size;
+      long offset = (ord*size);
+      if (ordToOffset != null) {
+        offset =  ordToOffset[ord];
+        size = (int) (ordToOffset[1 + ord] - offset);
+      }
+      if (size < 0) {
+        System.out.println();
+      }
+      assert size >=0;
+      return data.fillSlice(bytesRef, offset, size);
+     }
+
+    @Override
+    public Reader getDocToOrd() {
+      return null;
+    }
+
+    @Override
+    public int getValueCount() {
+      return valueCount;
+    }
+  }
 
   // TODO: this is dup of DocValues.getDefaultSource()?
-  private static class EmptySource extends Source {
+  private static class EmptySource extends SortedSource {
 
     public EmptySource(Type type) {
-      super(type);
+      super(type, BytesRef.getUTF8SortedAsUnicodeComparator());
     }
 
     @Override
@@ -369,14 +496,46 @@ public class MultiDocValues extends DocValues {
     public long getInt(int docID) {
       return 0;
     }
+
+    @Override
+    public SortedSource asSortedSource() {
+      if (type() == Type.BYTES_FIXED_SORTED || type() == Type.BYTES_VAR_SORTED) {
+        
+      }
+      return super.asSortedSource();
+    }
+
+    @Override
+    public int ord(int docID) {
+      return 0;
+    }
+
+    @Override
+    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+      bytesRef.length = 0;
+      bytesRef.offset = 0;
+      return bytesRef;
+    }
+
+    @Override
+    public Reader getDocToOrd() {
+      return null;
+    }
+
+    @Override
+    public int getValueCount() {
+      return 1;
+    }
+    
   }
   
   private static class EmptyFixedSource extends EmptySource {
     private final int valueSize;
-    
+    private final byte[] valueArray;
     public EmptyFixedSource(Type type, int valueSize) {
       super(type);
       this.valueSize = valueSize;
+      valueArray = new byte[valueSize];
     }
 
     @Override
@@ -396,6 +555,14 @@ public class MultiDocValues extends DocValues {
     public long getInt(int docID) {
       return 0;
     }
+    
+    @Override
+    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+      bytesRef.bytes = valueArray;
+      bytesRef.length = valueSize;
+      bytesRef.offset = 0;
+      return bytesRef;
+    }
   }
 
   @Override
@@ -412,4 +579,6 @@ public class MultiDocValues extends DocValues {
   public Source getDirectSource() throws IOException {
     return new MultiSource(slices, starts, true, type);
   }
+  
+  
 }

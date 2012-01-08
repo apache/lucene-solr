@@ -100,11 +100,11 @@ public final class ByteArrayDataInput extends DataInput {
 
   @Override
   public int readVInt() {
-    checkBounds();
+    assert checkBounds();
     byte b = bytes[pos++];
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      checkBounds();
+      assert checkBounds();
       b = bytes[pos++];
       i |= (b & 0x7F) << shift;
     }
@@ -113,11 +113,11 @@ public final class ByteArrayDataInput extends DataInput {
  
   @Override
   public long readVLong() {
-    checkBounds();
+    assert checkBounds();
     byte b = bytes[pos++];
     long i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      checkBounds();
+      assert checkBounds();
       b = bytes[pos++];
       i |= (b & 0x7FL) << shift;
     }
@@ -127,7 +127,7 @@ public final class ByteArrayDataInput extends DataInput {
   // NOTE: AIOOBE not EOF if you read too much
   @Override
   public byte readByte() {
-    checkBounds();
+    assert checkBounds();
     return bytes[pos++];
   }
 
@@ -140,7 +140,6 @@ public final class ByteArrayDataInput extends DataInput {
   }
 
   private boolean checkBounds() {
-    assert pos < limit;
-    return true;
+    return pos < limit;
   }
 }

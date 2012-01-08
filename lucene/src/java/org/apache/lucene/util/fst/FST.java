@@ -92,7 +92,10 @@ public class FST<T> {
   /** Changed numBytesPerArc for array'd case from byte to int. */
   private final static int VERSION_INT_NUM_BYTES_PER_ARC = 1;
 
-  private final static int VERSION_CURRENT = VERSION_INT_NUM_BYTES_PER_ARC;
+  /** Write BYTE2 labels as 2-byte short, not vInt. */
+  private final static int VERSION_SHORT_BYTE2_LABELS = 2;
+
+  private final static int VERSION_CURRENT = VERSION_SHORT_BYTE2_LABELS;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -199,7 +202,9 @@ public class FST<T> {
   public FST(DataInput in, Outputs<T> outputs) throws IOException {
     this.outputs = outputs;
     writer = null;
-    CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_INT_NUM_BYTES_PER_ARC, VERSION_INT_NUM_BYTES_PER_ARC);
+    // NOTE: only reads most recent format; we don't have
+    // back-compat promise for FSTs (they are experimental):
+    CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_SHORT_BYTE2_LABELS, VERSION_SHORT_BYTE2_LABELS);
     if (in.readByte() == 1) {
       // accepts empty string
       int numBytes = in.readVInt();
@@ -389,7 +394,7 @@ public class FST<T> {
       writer.writeByte((byte) v);
     } else if (inputType == INPUT_TYPE.BYTE2) {
       assert v <= 65535: "v=" + v;
-      writer.writeVInt(v);
+      writer.writeShort((short) v);
     } else {
       //writeInt(v);
       writer.writeVInt(v);
@@ -399,7 +404,11 @@ public class FST<T> {
   int readLabel(DataInput in) throws IOException {
     final int v;
     if (inputType == INPUT_TYPE.BYTE1) {
+      // Unsigned byte:
       v = in.readByte()&0xFF;
+    } else if (inputType == INPUT_TYPE.BYTE2) {
+      // Unsigned short:
+      v = in.readShort()&0xFFFF;
     } else { 
       v = in.readVInt();
     }

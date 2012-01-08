@@ -182,7 +182,7 @@ public class NIOFSDirectory extends FSDirectory {
       long pos = getFilePointer() + off;
       
       if (pos + len > end) {
-        throw new EOFException("read past EOF (resource: " + this + ")");
+        throw new EOFException("read past EOF: " + this);
       }
 
       try {

@@ -714,6 +714,11 @@ Changes in backwards compatibility policy
   contrib/queryparser. If you have used those classes in your code
   just add the lucene-queryparser.jar file to your classpath.
   (Uwe Schindler)
+
+* LUCENE-3681: FST now stores labels for BYTE2 input type as 2 bytes
+  instead of vInt; this can make FSTs smaller and faster, but it is a
+  break in the binary format so if you had built and saved any FSTs
+  then you need to rebuild them. (Robert Muir, Mike McCandless)
   
 Security fixes
 
