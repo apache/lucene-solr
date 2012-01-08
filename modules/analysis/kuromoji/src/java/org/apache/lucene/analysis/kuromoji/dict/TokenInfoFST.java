@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 
-public class TokenInfoFST {
+public final class TokenInfoFST {
   private final FST<Long> fst;
 
   // depending upon fasterButMoreRam, we cache root arcs for either 

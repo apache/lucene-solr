@@ -34,6 +34,7 @@ public final class TokenInfoDictionary extends BinaryDictionary {
   
   private TokenInfoDictionary() throws IOException {
     super();
+    IOException priorE = null;
     InputStream is = null;
     FST<Long> fst = null;
     try {
@@ -42,9 +43,9 @@ public final class TokenInfoDictionary extends BinaryDictionary {
         throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + FST_FILENAME_SUFFIX);
       fst = new FST<Long>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton(true));
     } catch (IOException ioe) {
-      throw new RuntimeException("Cannot load FST.", ioe);
+      priorE = ioe;
     } finally {
-      IOUtils.closeWhileHandlingException(is);
+      IOUtils.closeWhileHandlingException(priorE, is);
     }
     // TODO: some way to configure?
     this.fst = new TokenInfoFST(fst, true);
