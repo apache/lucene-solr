@@ -25,6 +25,12 @@ import java.io.LineNumberReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
 
 public class UnknownDictionaryBuilder {
   private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*,*,*";
@@ -60,11 +66,24 @@ public class UnknownDictionaryBuilder {
     
     dictionary.put(CSVUtil.parse(NGRAM_DICTIONARY_ENTRY));
     
+    List<String[]> lines = new ArrayList<String[]>();
     String line = null;
     while ((line = lineReader.readLine()) != null) {
       // note: unk.def only has 10 fields, it simplifies the writer to just append empty reading and pronunciation,
       // even though the unknown dictionary returns hardcoded null here.
-      dictionary.put(CSVUtil.parse(line + ",*,*")); // Probably we don't need to validate entry
+      lines.add(CSVUtil.parse(line + ",*,*")); // Probably we don't need to validate entry
+    }
+    
+    Collections.sort(lines, new Comparator<String[]>() {
+      public int compare(String[] left, String[] right) {
+        int leftId = CharacterDefinition.lookupCharacterClass(left[0]);
+        int rightId = CharacterDefinition.lookupCharacterClass(right[0]);
+        return leftId - rightId;
+      }
+    });
+    
+    for (String[] entry : lines) {
+      dictionary.put(entry);
     }
     
     return dictionary;

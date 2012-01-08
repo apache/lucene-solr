@@ -59,14 +59,14 @@ public class UnknownDictionaryTest extends LuceneTestCase {
     } catch(Exception e){
       
     }
-    
-    String entry1 = "KANJI,1285,1285,11426,名詞,一般,*,*,*,*,*,*,*";
-    String entry2 = "ALPHA,1285,1285,13398,名詞,一般,*,*,*,*,*,*,*";
-    String entry3 = "HIRAGANA,1285,1285,13069,名詞,一般,*,*,*,*,*,*,*";
-    
-    unkDic.putCharacterCategory(0, "KANJI");
-    unkDic.putCharacterCategory(1, "ALPHA");
-    unkDic.putCharacterCategory(2, "HIRAGANA");
+
+    String entry1 = "ALPHA,1285,1285,13398,名詞,一般,*,*,*,*,*,*,*";
+    String entry2 = "HIRAGANA,1285,1285,13069,名詞,一般,*,*,*,*,*,*,*";
+    String entry3 = "KANJI,1285,1285,11426,名詞,一般,*,*,*,*,*,*,*";
+
+    unkDic.putCharacterCategory(0, "ALPHA");
+    unkDic.putCharacterCategory(1, "HIRAGANA");
+    unkDic.putCharacterCategory(2, "KANJI");
     
     unkDic.put(CSVUtil.parse(entry1));
     unkDic.put(CSVUtil.parse(entry2));

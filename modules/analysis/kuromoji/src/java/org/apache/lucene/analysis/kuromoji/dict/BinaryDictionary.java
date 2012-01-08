@@ -60,21 +60,22 @@ public abstract class BinaryDictionary implements Dictionary {
       DataInput in = new InputStreamDataInput(mapIS);
       CodecUtil.checkHeader(in, TARGETMAP_HEADER, VERSION, VERSION);
       targetMap = new int[in.readVInt()][];
-      for (int j = 0; j < targetMap.length;) {
+      int accum = 0;
+      for (int j = 0; j < targetMap.length; j++) {
         final int len = in.readVInt();
-        if (len == 0) {
-          // decode RLE: number of nulls
-          j += in.readVInt();
+        final int a[];
+        if ((len & 1) == 1) {
+          a = new int[1];
+          accum += len >>> 1;
+          a[0] = accum;
         } else {
-          final int[] a = new int[len];
-          int accum = 0;
-          for (int i = 0; i < len; i++) {
+          a = new int[len >>> 1];
+          for (int i = 0; i < a.length; i++) {
             accum += in.readVInt();
             a[i] = accum;
           }
-          targetMap[j] = a;
-          j++;
         }
+        targetMap[j] = a;
       }
       
       posIS = getClass().getResourceAsStream(getClass().getSimpleName() + POSDICT_FILENAME_SUFFIX);

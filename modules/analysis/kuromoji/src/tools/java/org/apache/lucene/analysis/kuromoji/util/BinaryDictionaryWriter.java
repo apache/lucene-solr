@@ -158,7 +158,16 @@ public abstract class BinaryDictionaryWriter {
     }
   }
   
+  // only for assert
+  int lastWordId = -1;
+  int lastSourceId = 0;
+
   public void addMapping(int sourceId, int wordId) {
+    assert sourceId >= lastSourceId;
+    assert wordId > lastWordId : "words out of order: " + wordId + " vs lastID: " + lastWordId;
+    lastSourceId = sourceId;
+    lastWordId = wordId;
+    
     if(targetMap.length <= sourceId) {
       final int newSize = ArrayUtil.oversize(sourceId + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       int[][] newArray = new int[newSize][];
@@ -211,34 +220,26 @@ public abstract class BinaryDictionaryWriter {
       final DataOutput out = new OutputStreamDataOutput(os);
       CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(targetMapSize);
-      int nulls = 0;
+      int prev = 0;
       for (int j = 0; j < targetMapSize; j++) {
         final int size = targetMapComponentSizes[j];
-        if (size == 0) {
-          // run-length encoding for all nulls:
-          if (nulls == 0) {
-            out.writeVInt(0);
-          }
-          nulls++;
+        // note: size is 0 for ONLY wordID 0 of TokenInfoDictionary
+        // this is because the FST uses 0 for NO_OUTPUT... 
+        if (size == 1) {
+          int delta = targetMap[j][0] - prev;
+          assert delta >= 0;
+          out.writeVInt(delta << 1 | 1);
+          prev += delta;
         } else {
-          if (nulls > 0) {
-            out.writeVInt(nulls);
-            nulls = 0;
-          }
+          out.writeVInt(size << 1);
           final int[] a = targetMap[j];
-          Arrays.sort(a, 0, size);
-          assert size > 0 && size <= a.length;
-          out.writeVInt(size);
-          int prev = 0;
           for (int i = 0; i < size; i++) {
-            out.writeVInt(a[i] - prev);
-            prev = a[i];
+            int delta = a[i] - prev;
+            assert delta >= 0;
+            out.writeVInt(delta);
+            prev += delta;
           }
         }
-      }
-      // write the pending RLE count:
-      if (nulls > 0) {
-        out.writeVInt(nulls);
       }
     } finally {
       os.close();

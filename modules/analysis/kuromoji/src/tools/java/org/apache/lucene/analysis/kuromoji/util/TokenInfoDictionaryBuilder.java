@@ -27,8 +27,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -87,6 +89,8 @@ public class TokenInfoDictionaryBuilder {
   public TokenInfoDictionaryWriter buildDictionary(List<File> csvFiles) throws IOException {
     TokenInfoDictionaryWriter dictionary = new TokenInfoDictionaryWriter(10 * 1024 * 1024);
     
+    // all lines in the file
+    List<String[]> lines = new ArrayList<String[]>();
     for (File file : csvFiles){
       FileInputStream inputStream = new FileInputStream(file);
       Charset cs = Charset.forName(encoding);
@@ -103,15 +107,7 @@ public class TokenInfoDictionaryBuilder {
           System.out.println("Entry in CSV is not valid: " + line);
           continue;
         }
-        int next = dictionary.put(formatEntry(entry));
-        
-        if(next == offset){
-          System.out.println("Failed to process line: " + line);
-          continue;
-        }
-        
-        dictionaryEntries.put(offset, entry[0]);
-        offset = next;
+        lines.add(formatEntry(entry));
         
         // NFKC normalize dictionary entry
         if (normalizeEntries) {
@@ -122,14 +118,32 @@ public class TokenInfoDictionaryBuilder {
           for (int i = 0; i < entry.length; i++) {
             normalizedEntry[i] = normalizer.normalize(entry[i]);
           }
-          
-          next = dictionary.put(formatEntry(normalizedEntry));
-          dictionaryEntries.put(offset, normalizedEntry[0]);
-          offset = next;
+            
+          lines.add(formatEntry(normalizedEntry));
         }
       }
     }
     
+    // sort by term
+    Collections.sort(lines, new Comparator<String[]>() {
+      public int compare(String[] left, String[] right) {
+        return left[0].compareTo(right[0]);
+      }
+    });
+    
+    for (String[] entry : lines) {
+      int next = dictionary.put(entry);
+        
+      if(next == offset){
+        System.out.println("Failed to process line: " + Arrays.toString(entry));
+        continue;
+      }
+        
+      dictionaryEntries.put(offset, entry[0]);
+      offset = next;
+    }
+    
+    // TODO: we can do this in parallel
     System.out.print("  building FST...");
     FST<Long> fst = buildFST();
     dictionary.setFST(fst);
@@ -236,6 +250,7 @@ public class TokenInfoDictionaryBuilder {
   private FST<Long> buildFST() throws IOException {    
     FST<Long> words;
     Collection<String> values = dictionaryEntries.values();
+    // TODO: we don't need to sort again, we could just check != last
     TreeSet<String> unique = new TreeSet<String>(values);
     PositiveIntOutputs o = PositiveIntOutputs.getSingleton(true);
     Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE2, o);
