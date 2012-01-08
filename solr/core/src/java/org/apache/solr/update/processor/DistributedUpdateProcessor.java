@@ -288,7 +288,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         
         server.request(recoverRequestCmd);
       } catch (Exception e) {
-        log.warn("Problem trying to tell a replica to recover", e);
+        log.info("Could not tell a replica to recover", e);
       }
       
     }
