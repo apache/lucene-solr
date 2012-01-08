@@ -130,7 +130,7 @@ public class TokenInfoDictionaryBuilder {
       }
     }
     
-    System.out.print(" building FST...");
+    System.out.print("  building FST...");
     FST<Long> fst = buildFST();
     dictionary.setFST(fst);
     System.out.println(" done");
