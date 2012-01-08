@@ -152,6 +152,13 @@ public class Builder<T> {
     return dedupHash == null ? 0 : fst.nodeCount;
   }
 
+  /** Pass false to disable the array arc optimization
+   *  while building the FST; this will make the resulting
+   *  FST smaller but slower to traverse. */
+  public void setAllowArrayArcs(boolean b) {
+    fst.setAllowArrayArcs(b);
+  }
+
   private CompiledNode compileNode(UnCompiledNode<T> n, int tailLength) throws IOException {
     final int address;
     if (dedupHash != null && (doShareNonSingletonNodes || n.numArcs <= 1) && tailLength <= shareMaxTailLength) {

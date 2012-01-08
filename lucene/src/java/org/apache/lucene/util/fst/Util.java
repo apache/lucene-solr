@@ -213,6 +213,7 @@ public final class Util {
 
     // Shape for states.
     final String stateShape = "circle";
+    final String finalStateShape = "doublecircle";
 
     // Emit DOT prologue.
     out.write("digraph FST {\n");
@@ -223,12 +224,34 @@ public final class Util {
     }
 
     emitDotState(out, "initial", "point", "white", "");
-    emitDotState(out, Integer.toString(startArc.target), stateShape, 
-        fst.isExpandedTarget(startArc) ? expandedNodeColor : null, 
-        "");
-    out.write("  initial -> " + startArc.target + "\n");
 
     final T NO_OUTPUT = fst.outputs.getNoOutput();
+
+    // final FST.Arc<T> scratchArc = new FST.Arc<T>();
+
+    {
+      final String stateColor;
+      if (fst.isExpandedTarget(startArc)) {
+        stateColor = expandedNodeColor;
+      } else {
+        stateColor = null;
+      }
+
+      final boolean isFinal;
+      final T finalOutput;
+      if (startArc.isFinal()) {
+        isFinal = true;
+        finalOutput = startArc.nextFinalOutput == NO_OUTPUT ? null : startArc.nextFinalOutput;
+      } else {
+        isFinal = false;
+        finalOutput = null;
+      }
+      
+      emitDotState(out, Integer.toString(startArc.target), isFinal ? finalStateShape : stateShape, stateColor, finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
+    }
+
+    out.write("  initial -> " + startArc.target + "\n");
+
     int level = 0;
 
     while (!nextLevelQueue.isEmpty()) {
@@ -240,19 +263,48 @@ public final class Util {
       out.write("\n  // Transitions and states at level: " + level + "\n");
       while (!thisLevelQueue.isEmpty()) {
         final FST.Arc<T> arc = thisLevelQueue.remove(thisLevelQueue.size() - 1);
-        
         if (fst.targetHasArcs(arc)) {
           // scan all arcs
           final int node = arc.target;
           fst.readFirstTargetArc(arc, arc);
-          
+
+          if (arc.label == FST.END_LABEL) {
+            // Skip it -- prior recursion took this into account already
+            assert !arc.isLast();
+            fst.readNextArc(arc);
+          }
+
           while (true) {
+
             // Emit the unseen state and add it to the queue for the next level.
             if (arc.target >= 0 && !seen.get(arc.target)) {
-              final boolean isExpanded = fst.isExpandedTarget(arc);
-              emitDotState(out, Integer.toString(arc.target), stateShape, 
-                  isExpanded ?  expandedNodeColor : null, 
-                  labelStates ? Integer.toString(arc.target) : ""); 
+
+              /*
+              boolean isFinal = false;
+              T finalOutput = null;
+              fst.readFirstTargetArc(arc, scratchArc);
+              if (scratchArc.isFinal() && fst.targetHasArcs(scratchArc)) {
+                // target is final
+                isFinal = true;
+                finalOutput = scratchArc.output == NO_OUTPUT ? null : scratchArc.output;
+                System.out.println("dot hit final label=" + (char) scratchArc.label);
+              }
+              */
+              final String stateColor;
+              if (fst.isExpandedTarget(arc)) {
+                stateColor = expandedNodeColor;
+              } else {
+               stateColor = null;
+              }
+
+              final String finalOutput;
+              if (arc.nextFinalOutput != null && arc.nextFinalOutput != NO_OUTPUT) {
+                finalOutput = fst.outputs.outputToString(arc.nextFinalOutput);
+              } else {
+                finalOutput = "";
+              }
+
+              emitDotState(out, Integer.toString(arc.target), arc.isFinal() ? finalStateShape : stateShape, stateColor, finalOutput);
               seen.set(arc.target);
               nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
               sameLevelStates.add(arc.target);
@@ -265,15 +317,19 @@ public final class Util {
               outs = "";
             }
 
-            final String cl;
-            if (arc.label == FST.END_LABEL) {
-              cl = "~";
-            } else {
-              cl = printableLabel(arc.label);
+            if (!fst.targetHasArcs(arc) && arc.isFinal() && arc.nextFinalOutput != NO_OUTPUT) {
+              // Tricky special case: sometimes, due to
+              // pruning, the builder can [sillily] produce
+              // an FST with an arc into the final end state
+              // (-1) but also with a next final output; in
+              // this case we pull that output up onto this
+              // arc
+              outs = outs + "/[" + fst.outputs.outputToString(arc.nextFinalOutput) + "]";
             }
 
-            out.write("  " + node + " -> " + arc.target + " [label=\"" + cl + outs + "\"]\n");
-            
+            assert arc.label != FST.END_LABEL;
+            out.write("  " + node + " -> " + arc.target + " [label=\"" + printableLabel(arc.label) + outs + "\"]\n");
+                   
             // Break the loop if we're on the last arc of this state.
             if (arc.isLast()) {
               break;
@@ -295,7 +351,7 @@ public final class Util {
     }
 
     // Emit terminating state (always there anyway).
-    out.write("  -1 [style=filled, color=black, shape=circle, label=\"\"]\n\n");
+    out.write("  -1 [style=filled, color=black, shape=doublecircle, label=\"\"]\n\n");
     out.write("  {rank=sink; -1 }\n");
     
     out.write("}\n");
