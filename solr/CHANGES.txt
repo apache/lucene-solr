@@ -54,9 +54,6 @@ Upgrading from Solr 3.5-dev
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
   
-* FacetComponent no longer catches and embeds exceptions occurred during facet
-  processing, it throws HTTP 400 or 500 exceptions instead.
-  
 * The VelocityResponseWriter is no longer built into the core.  Its JAR and
   dependencies now need to be added (via <lib> or solr/home lib inclusion),
   and it needs to be registered in solrconfig.xml like this:
@@ -588,6 +585,9 @@ Upgrading from Solr 3.3
   "true" for consistent behavior with previous Solr versions.  This
   situation has now been fixed to cause an error on startup when these
   contradictory options.  See SOLR-2669.
+  
+* FacetComponent no longer catches and embeds exceptions occurred during facet
+  processing, it throws HTTP 400 or 500 exceptions instead.
 
 New Features
 ----------------------
