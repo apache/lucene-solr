@@ -474,7 +474,6 @@ public class SolrZkClient {
         if (i == paths.length - 1) {
           mode = createMode;
           bytes = data;
-          System.out.println("bytes = data");
           if (!retryOnConnLoss) retry = false;
         }
         try {
