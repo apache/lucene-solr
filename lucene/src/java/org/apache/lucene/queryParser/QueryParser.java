@@ -883,42 +883,6 @@ public class QueryParser implements QueryParserConstants {
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
   }
 
-  protected String analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
-    TokenStream source;
-
-    if (analyzerIn == null) analyzerIn = analyzer;
-
-    try {
-      source = analyzerIn.tokenStream(field, new StringReader(part));
-      source.reset();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
-    }
-
-    CharTermAttribute termAtt = source.getAttribute(CharTermAttribute.class);
-    String termRet = "";
-
-    try {
-      if (!source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
-      termRet = termAtt.toString();
-      if (source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
-    } catch (IOException e) {
-      throw new RuntimeException("error analyzing range part: " + part, e);
-    }
-
-    try {
-      source.end();
-      source.close();
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to end & close TokenStream after analyzing multiTerm term: " + part, e);
-    }
-
-    return termRet;
-  }
-
-
   /**
    * Builds a new TermRangeQuery instance
    * @param field Field
@@ -1647,12 +1611,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1666,6 +1624,12 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
     return false;
   }
 
