@@ -55,6 +55,16 @@ public final class UnknownDictionary extends BinaryDictionary {
     return null;
   }
 
+  @Override
+  public String getInflectionType(int wordId) {
+    return null;
+  }
+
+  @Override
+  public String getInflectionForm(int wordId) {
+    return null;
+  }
+
   public static UnknownDictionary getInstance() {
     return SingletonHolder.INSTANCE;
   }

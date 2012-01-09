@@ -63,7 +63,6 @@ public final class ConnectionCostsWriter {
       for (short[] a : costs) {
         assert a.length == forwardSize;
         for (int i = 0; i < a.length; i++) {
-          // TODO: when delta is 0, maybe we should RLE
           int delta = (int)a[i] - last;
           out.writeVInt((delta >> 31) ^ (delta << 1));
           last = a[i];

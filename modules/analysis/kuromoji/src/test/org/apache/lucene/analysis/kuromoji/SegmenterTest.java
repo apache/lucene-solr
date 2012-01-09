@@ -132,6 +132,36 @@ public class SegmenterTest extends LuceneTestCase {
   }
   
   @Test
+  public void testInflectionTypes() {
+    List<Token> tokens = segmenter.tokenize("それはまだ実験段階にあります。");
+    assertEquals(9, tokens.size());
+    assertNull(tokens.get(0).getInflectionType());
+    assertNull(tokens.get(1).getInflectionType());
+    assertNull(tokens.get(2).getInflectionType());
+    assertNull(tokens.get(3).getInflectionType());
+    assertNull(tokens.get(4).getInflectionType());
+    assertNull(tokens.get(5).getInflectionType());
+    assertEquals(tokens.get(6).getInflectionType(), "五段・ラ行");
+    assertEquals(tokens.get(7).getInflectionType(), "特殊・マス");
+    assertNull(tokens.get(8).getInflectionType());
+  }
+  
+  @Test
+  public void testInflectionForms() {
+    List<Token> tokens = segmenter.tokenize("それはまだ実験段階にあります。");
+    assertEquals(9, tokens.size());
+    assertNull(tokens.get(0).getInflectionForm());
+    assertNull(tokens.get(1).getInflectionForm());
+    assertNull(tokens.get(2).getInflectionForm());
+    assertNull(tokens.get(3).getInflectionForm());
+    assertNull(tokens.get(4).getInflectionForm());
+    assertNull(tokens.get(5).getInflectionForm());
+    assertEquals(tokens.get(6).getInflectionForm(), "連用形");
+    assertEquals(tokens.get(7).getInflectionForm(), "基本形");
+    assertNull(tokens.get(8).getInflectionForm());
+  }
+  
+  @Test
   public void testPartOfSpeech() {
     List<Token> tokens = segmenter.tokenize("それはまだ実験段階にあります。");
     assertEquals(9, tokens.size());

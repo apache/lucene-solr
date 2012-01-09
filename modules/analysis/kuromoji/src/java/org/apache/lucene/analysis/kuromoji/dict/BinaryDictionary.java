@@ -37,21 +37,27 @@ public abstract class BinaryDictionary implements Dictionary {
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";
   public static final String TARGETMAP_FILENAME_SUFFIX = "$targetMap.dat";
   public static final String POSDICT_FILENAME_SUFFIX = "$posDict.dat";
+  public static final String INFLDICT_FILENAME_SUFFIX = "$inflDict.dat";
   
   public static final String DICT_HEADER = "kuromoji_dict";
   public static final String TARGETMAP_HEADER = "kuromoji_dict_map";
   public static final String POSDICT_HEADER = "kuromoji_dict_pos";
+  public static final String INFLDICT_HEADER = "kuromoji_dict_infl";
   public static final int VERSION = 1;
   
   private final ByteBuffer buffer;
   private final int[] targetMapOffsets, targetMap;
   private final String[] posDict;
+  private final String[] inflTypeDict;
+  private final String[] inflFormDict;
   
   protected BinaryDictionary() throws IOException {
-    InputStream mapIS = null, dictIS = null, posIS = null;
+    InputStream mapIS = null, dictIS = null, posIS = null, inflIS = null;
     IOException priorE = null;
     int[] targetMapOffsets = null, targetMap = null;
     String[] posDict = null;
+    String[] inflFormDict = null;
+    String[] inflTypeDict = null;
     ByteBuffer buffer = null;
     try {
       mapIS = getClass().getResourceAsStream(getClass().getSimpleName() + TARGETMAP_FILENAME_SUFFIX);
@@ -86,6 +92,20 @@ public abstract class BinaryDictionary implements Dictionary {
       for (int j = 0; j < posDict.length; j++) {
         posDict[j] = in.readString();
       }
+      
+      inflIS = getClass().getResourceAsStream(getClass().getSimpleName() + INFLDICT_FILENAME_SUFFIX);
+      if (inflIS == null)
+        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + INFLDICT_FILENAME_SUFFIX);
+      inflIS = new BufferedInputStream(inflIS);
+      in = new InputStreamDataInput(inflIS);
+      CodecUtil.checkHeader(in, INFLDICT_HEADER, VERSION, VERSION);
+      int length = in.readVInt();
+      inflTypeDict = new String[length];
+      inflFormDict = new String[length];
+      for (int j = 0; j < length; j++) {
+        inflTypeDict[j] = in.readString();
+        inflFormDict[j] = in.readString();
+      }
 
       dictIS = getClass().getResourceAsStream(getClass().getSimpleName() + DICT_FILENAME_SUFFIX);
       if (dictIS == null)
@@ -103,12 +123,14 @@ public abstract class BinaryDictionary implements Dictionary {
     } catch (IOException ioe) {
       priorE = ioe;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, mapIS, posIS, dictIS);
+      IOUtils.closeWhileHandlingException(priorE, mapIS, posIS, inflIS, dictIS);
     }
     
     this.targetMap = targetMap;
     this.targetMapOffsets = targetMapOffsets;
     this.posDict = posDict;
+    this.inflTypeDict = inflTypeDict;
+    this.inflFormDict = inflFormDict;
     this.buffer = buffer;
   }
   
@@ -134,6 +156,116 @@ public abstract class BinaryDictionary implements Dictionary {
     return buffer.getShort(wordId + 4);	// Skip left id and right id
   }
 
+  @Override
+  public String getBaseForm(int wordId) {
+    int offset = baseFormOffset(wordId);
+    int length = (buffer.get(offset++) & 0xff) >>> 1;
+    if (length == 0) {
+      return null; // same as surface form
+    } else {
+      return readString(offset, length, false);
+    }
+  }
+  
+  @Override
+  public String getReading(int wordId) {
+    int offset = readingOffset(wordId);
+    int readingData = buffer.get(offset++) & 0xff;
+    return readString(offset, readingData >>> 1, (readingData & 1) == 1);
+  }
+  
+  @Override
+  public String getPartOfSpeech(int wordId) {
+    int posIndex = buffer.get(posOffset(wordId)) & 0xff; // read index into posDict
+    return posDict[posIndex >>> 1];
+  }
+  
+  @Override
+  public String getPronunciation(int wordId) {
+    if (hasPronunciationData(wordId)) {
+      int offset = pronunciationOffset(wordId);
+      int pronunciationData = buffer.get(offset++) & 0xff;
+      return readString(offset, pronunciationData >>> 1, (pronunciationData & 1) == 1);
+    } else {
+      return getReading(wordId); // same as the reading
+    }
+  }
+  
+  @Override
+  public String getInflectionType(int wordId) {
+    int index = getInflectionIndex(wordId);
+    return index < 0 ? null : inflTypeDict[index];
+  }
+
+  @Override
+  public String getInflectionForm(int wordId) {
+    int index = getInflectionIndex(wordId);
+    return index < 0 ? null : inflFormDict[index];
+  }
+  
+  private static int posOffset(int wordId) {
+    return wordId + 6;
+  }
+  
+  private static int baseFormOffset(int wordId) {
+    return wordId + 7;
+  }
+  
+  private int readingOffset(int wordId) {
+    int offset = baseFormOffset(wordId);
+    int baseFormLength = buffer.get(offset++) & 0xfe; // mask away pronunciation bit
+    return offset + baseFormLength;
+  }
+  
+  private int pronunciationOffset(int wordId) {
+    int offset = readingOffset(wordId);
+    int readingData = buffer.get(offset++) & 0xff;
+    final int readingLength;
+    if ((readingData & 1) == 0) {
+      readingLength = readingData & 0xfe; // UTF-16: mask off kana bit
+    } else {
+      readingLength = readingData >>> 1;
+    }
+    return offset + readingLength;
+  }
+  
+  private boolean hasPronunciationData(int wordId) {
+    int baseFormData = buffer.get(baseFormOffset(wordId)) & 0xff;
+    return (baseFormData & 1) == 0;
+  }
+  
+  private boolean hasInflectionData(int wordId) {
+    int posData = buffer.get(posOffset(wordId)) & 0xff;
+    return (posData & 1) == 1;
+  }
+  
+  private int getInflectionIndex(int wordId) {
+    if (!hasInflectionData(wordId)) {
+      return -1; // common case: no inflection data
+    }
+    
+    // skip past reading/pronunciation at the end
+    int offset = hasPronunciationData(wordId) ? pronunciationOffset(wordId) : readingOffset(wordId);
+    int endData = buffer.get(offset++) & 0xff;
+    
+    final int endLength;
+    if ((endData & 1) == 0) {
+      endLength = endData & 0xfe; // UTF-16: mask off kana bit
+    } else {
+      endLength = endData >>> 1;
+    }
+    
+    offset += endLength;
+    
+    byte b = buffer.get(offset++);
+    int i = b & 0x7F;
+    if ((b & 0x80) == 0) return i;
+    b = buffer.get(offset++);
+    i |= (b & 0x7F) << 7;
+    assert ((b & 0x80) == 0);
+    return i;
+  }
+  
   private String readString(int offset, int length, boolean kana) {
     char text[] = new char[length];
     if (kana) {
@@ -146,52 +278,5 @@ public abstract class BinaryDictionary implements Dictionary {
       }
     }
     return new String(text);
-  }
-  
-  @Override
-  public String getReading(int wordId) {
-    int offset = wordId + 7;
-    int baseFormLength = buffer.get(offset++) & 0xff;
-    offset += baseFormLength << 1;
-    int readingData = buffer.get(offset++) & 0xff;
-    return readString(offset, readingData >>> 1, (readingData & 1) == 1);
-  }
-  
-  @Override
-  public String getPronunciation(int wordId) {
-    int offset = wordId + 7;
-    int baseFormLength = buffer.get(offset++) & 0xff;
-    offset += baseFormLength << 1;
-    int readingData = buffer.get(offset++) & 0xff;
-    int readingLength = readingData >>> 1;
-    int readingOffset = offset;
-    if ((readingData & 1) == 0) {
-      offset += readingLength << 1;
-    } else {
-      offset += readingLength;
-    }
-    int pronunciationData = buffer.get(offset++) & 0xff;
-    if (pronunciationData == 0) {
-      return readString(readingOffset, readingLength, (readingData & 1) == 1); 
-    } else {
-      return readString(offset, pronunciationData >>> 1, (pronunciationData & 1) == 1);
-    }
-  }
-  
-  @Override
-  public String getPartOfSpeech(int wordId) {
-    int posIndex = buffer.get(wordId + 6) & 0xff; // read index into posDict
-    return posDict[posIndex];
-  }
-  
-  @Override
-  public String getBaseForm(int wordId) {
-    int offset = wordId + 7;
-    int length = buffer.get(offset++) & 0xff;
-    if (length == 0) {
-      return null; // same as surface form
-    } else {
-      return readString(offset, length, false);
-    }
   }
 }

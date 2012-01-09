@@ -47,7 +47,6 @@ public interface Dictionary {
    * @param wordId word ID of token
    * @return Part-Of-Speech of the token
    */
-  // TODO: split into the type-safe components
   public String getPartOfSpeech(int wordId);
   
   /**
@@ -71,6 +70,19 @@ public interface Dictionary {
    */
   public String getPronunciation(int wordId);
   
+  /**
+   * Get inflection type of tokens
+   * @param wordId word ID of token
+   * @return inflection type, or null
+   */
+  public String getInflectionType(int wordId);
+  
+  /**
+   * Get inflection form of tokens
+   * @param wordId word ID of token
+   * @return inflection form, or null
+   */
+  public String getInflectionForm(int wordId);
   // TODO: maybe we should have a optimal method, a non-typesafe
   // 'getAdditionalData' if other dictionaries like unidic have additional data
 }

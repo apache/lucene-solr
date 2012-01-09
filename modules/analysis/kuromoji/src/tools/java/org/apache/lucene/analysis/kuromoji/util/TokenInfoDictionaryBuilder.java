@@ -94,11 +94,15 @@ public class TokenInfoDictionaryBuilder {
       String line = null;
       while ((line = reader.readLine()) != null) {
         String[] entry = CSVUtil.parse(line);
+
         if(entry.length < 13) {
           System.out.println("Entry in CSV is not valid: " + line);
           continue;
         }
-        lines.add(formatEntry(entry));
+        
+        String[] formatted = formatEntry(entry);
+        dictionary.noteInflection(formatted);
+        lines.add(formatted);
         
         // NFKC normalize dictionary entry
         if (normalizeEntries) {
@@ -109,15 +113,19 @@ public class TokenInfoDictionaryBuilder {
           for (int i = 0; i < entry.length; i++) {
             normalizedEntry[i] = normalizer.normalize(entry[i]);
           }
-            
-          lines.add(formatEntry(normalizedEntry));
+          
+          formatted = formatEntry(normalizedEntry);
+          dictionary.noteInflection(formatted);
+          lines.add(formatted);
         }
       }
     }
     
+    dictionary.finalizeInflections();
+    
     System.out.println("  sort...");
 
-    // sort by term
+    // sort by term, then cost, then all other features
     Collections.sort(lines, new Comparator<String[]>() {
       public int compare(String[] left, String[] right) {
         return left[0].compareTo(right[0]);

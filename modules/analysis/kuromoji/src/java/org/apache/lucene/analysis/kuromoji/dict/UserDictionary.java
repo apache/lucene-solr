@@ -178,6 +178,16 @@ public final class UserDictionary implements Dictionary {
     return null; // TODO: add support?
   }
   
+  @Override
+  public String getInflectionType(int wordId) {
+    return null; // TODO: add support?
+  }
+
+  @Override
+  public String getInflectionForm(int wordId) {
+    return null; // TODO: add support?
+  }
+  
   private String[] getAllFeaturesArray(int wordId) {
     String allFeatures = featureEntries.get(wordId);
     if(allFeatures == null) {

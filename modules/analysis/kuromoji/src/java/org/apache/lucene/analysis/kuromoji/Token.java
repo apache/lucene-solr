@@ -93,6 +93,20 @@ public class Token {
   }
   
   /**
+   * @return inflection type or null
+   */
+  public String getInflectionType() {
+    return dictionary.getInflectionType(wordId);
+  }
+  
+  /**
+   * @return inflection form or null
+   */
+  public String getInflectionForm() {
+    return dictionary.getInflectionForm(wordId);
+  }
+  
+  /**
    * @return base form or null if token is not inflected
    */
   public String getBaseForm() {
