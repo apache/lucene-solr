@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.kuromoji.dict;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 
 import org.apache.lucene.store.DataInput;
@@ -63,9 +62,7 @@ public final class CharacterDefinition {
     IOException priorE = null;
     InputStream is = null;
     try {
-      is = getClass().getResourceAsStream(getClass().getSimpleName()+FILENAME_SUFFIX);
-      if (is == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/')+FILENAME_SUFFIX);
+      is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
       final DataInput in = new InputStreamDataInput(is);
       CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);

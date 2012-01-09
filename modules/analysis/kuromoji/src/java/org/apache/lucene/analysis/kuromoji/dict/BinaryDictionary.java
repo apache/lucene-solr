@@ -132,9 +132,14 @@ public abstract class BinaryDictionary implements Dictionary {
   }
   
   protected final InputStream getResource(String suffix) throws IOException {
-    InputStream is = getClass().getResourceAsStream(getClass().getSimpleName() + suffix);
+    return getClassResource(getClass(), suffix);
+  }
+  
+  // util, reused by ConnectionCosts and CharacterDefinition
+  public static final InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
+    final InputStream is = clazz.getResourceAsStream(clazz.getSimpleName() + suffix);
     if (is == null)
-      throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + suffix);
+      throw new FileNotFoundException("Not in classpath: " + clazz.getName().replace('.','/') + suffix);
     return is;
   }
   
