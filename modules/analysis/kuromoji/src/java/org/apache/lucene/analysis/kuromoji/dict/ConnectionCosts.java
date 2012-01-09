@@ -49,10 +49,13 @@ public final class ConnectionCosts {
       int forwardSize = in.readVInt();
       int backwardSize = in.readVInt();
       costs = new short[backwardSize][forwardSize];
+      int accum = 0;
       for (int j = 0; j < costs.length; j++) {
         final short[] a = costs[j];
         for (int i = 0; i < a.length; i++) {
-          a[i] = in.readShort();
+          int raw = in.readVInt();
+          accum += (raw >>> 1) ^ -(raw & 1);
+          a[i] = (short)accum;
         }
       }
     } catch (IOException ioe) {

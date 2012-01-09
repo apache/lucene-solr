@@ -58,11 +58,15 @@ public final class ConnectionCostsWriter {
       CodecUtil.writeHeader(out, ConnectionCosts.HEADER, ConnectionCosts.VERSION);
       out.writeVInt(forwardSize);
       out.writeVInt(backwardSize);
+      int last = 0;
       assert costs.length == backwardSize;
       for (short[] a : costs) {
         assert a.length == forwardSize;
         for (int i = 0; i < a.length; i++) {
-          out.writeShort(a[i]);
+          // TODO: when delta is 0, maybe we should RLE
+          int delta = (int)a[i] - last;
+          out.writeVInt((delta >> 31) ^ (delta << 1));
+          last = a[i];
         }
       }
     } finally {
