@@ -44,9 +44,9 @@ import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
 public abstract class BinaryDictionaryWriter {
   protected final Class<? extends BinaryDictionary> implClazz;
   protected ByteBuffer buffer;
-  private int targetMapSize = 0;
-  private int[][] targetMap = new int[8192][];
-  private int[] targetMapComponentSizes = new int[8192];
+  private int targetMapEndOffset = 0, lastWordId = -1, lastSourceId = -1;
+  private int[] targetMap = new int[8192];
+  private int[] targetMapOffsets = new int[8192];
   private final List<String> posDict = new ArrayList<String>();
   private final Map<String,Integer> posDictLookup = new HashMap<String,Integer>();
 
@@ -158,40 +158,25 @@ public abstract class BinaryDictionaryWriter {
     }
   }
   
-  // only for assert
-  int lastWordId = -1;
-  int lastSourceId = 0;
-
   public void addMapping(int sourceId, int wordId) {
-    assert sourceId >= lastSourceId;
     assert wordId > lastWordId : "words out of order: " + wordId + " vs lastID: " + lastWordId;
+    
+    if (sourceId > lastSourceId) {
+      assert sourceId > lastSourceId : "source ids out of order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId;
+      targetMapOffsets = ArrayUtil.grow(targetMapOffsets, sourceId + 1);
+      for (int i = lastSourceId + 1; i <= sourceId; i++) {
+        targetMapOffsets[i] = targetMapEndOffset;
+      }
+    } else {
+      assert sourceId == lastSourceId;
+    }
+
+    targetMap = ArrayUtil.grow(targetMap, targetMapEndOffset + 1);
+    targetMap[targetMapEndOffset] = wordId;
+    targetMapEndOffset++;
+
     lastSourceId = sourceId;
     lastWordId = wordId;
-    
-    if(targetMap.length <= sourceId) {
-      final int newSize = ArrayUtil.oversize(sourceId + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-      int[][] newArray = new int[newSize][];
-      System.arraycopy(targetMap, 0, newArray, 0, targetMap.length);
-      targetMap = newArray;
-      int[] newSizeArray = new int[newSize];
-      System.arraycopy(targetMapComponentSizes, 0, newSizeArray, 0, targetMapComponentSizes.length);
-      targetMapComponentSizes = newSizeArray;
-    }
-    
-    // Prepare array -- extend the length of array
-    int[] current = targetMap[sourceId];
-    if (current == null) {
-      assert targetMapComponentSizes[sourceId] == 0;
-      current = new int[1];
-    } else {
-      current = ArrayUtil.grow(current);
-    }
-    targetMap[sourceId] = current;
-    
-    int[] targets = targetMap[sourceId];
-    targets[targetMapComponentSizes[sourceId]] = wordId;
-    targetMapComponentSizes[sourceId]++;
-    targetMapSize = Math.max(targetMapSize, sourceId + 1);
   }
 
   protected final String getBaseFileName(String baseDir) throws IOException {
@@ -219,27 +204,23 @@ public abstract class BinaryDictionaryWriter {
       os = new BufferedOutputStream(os);
       final DataOutput out = new OutputStreamDataOutput(os);
       CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
-      out.writeVInt(targetMapSize);
-      int prev = 0;
-      for (int j = 0; j < targetMapSize; j++) {
-        final int size = targetMapComponentSizes[j];
-        assert size > 0;
-        if (size == 1) {
-          int delta = targetMap[j][0] - prev;
-          assert delta >= 0;
-          out.writeVInt(delta << 1 | 1);
-          prev += delta;
+      
+      final int numSourceIds = lastSourceId + 1;
+      out.writeVInt(targetMapEndOffset); // <-- size of main array
+      out.writeVInt(numSourceIds + 1); // <-- size of offset array (+ 1 more entry)
+      int prev = 0, sourceId = 0;
+      for (int ofs = 0; ofs < targetMapEndOffset; ofs++) {
+        final int val = targetMap[ofs], delta = val - prev;
+        assert delta >= 0;
+        if (ofs == targetMapOffsets[sourceId]) {
+          out.writeVInt((delta << 1) | 0x01);
+          sourceId++;
         } else {
-          out.writeVInt(size << 1);
-          final int[] a = targetMap[j];
-          for (int i = 0; i < size; i++) {
-            int delta = a[i] - prev;
-            assert delta >= 0;
-            out.writeVInt(delta);
-            prev += delta;
-          }
+          out.writeVInt((delta << 1));
         }
+        prev += delta;
       }
+      assert sourceId == numSourceIds : "sourceId:"+sourceId+" != numSourceIds:"+numSourceIds;
     } finally {
       os.close();
     }

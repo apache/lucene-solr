@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.kuromoji.dict.TokenInfoFST;
 import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST;
 
 public class Viterbi {
@@ -217,6 +218,8 @@ public class Viterbi {
     
     int unknownWordEndIndex = -1;	// index of the last character of unknown word
     
+    final IntsRef wordIdRef = new IntsRef();
+    
     for (int startIndex = 0; startIndex < length; startIndex++) {
       // If no token ends where current token starts, skip this index
       if (endSizeArr[startIndex + 1] == 0) {
@@ -240,8 +243,9 @@ public class Viterbi {
         if (arc.isFinal()) {
           output += arc.nextFinalOutput.intValue();
           found = true; // Don't produce unknown word starting from this index
-          
-          for (int wordId : dictionary.lookupWordIds(output)) {
+          dictionary.lookupWordIds(output, wordIdRef);
+          for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
+            final int wordId = wordIdRef.ints[wordIdRef.offset + ofs];
             ViterbiNode node = new ViterbiNode(wordId, text, suffixStart, endIndex, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId), startIndex, Type.KNOWN);
             addToArrays(node, startIndex + 1, startIndex + 1 + endIndex, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
           }
@@ -264,10 +268,10 @@ public class Viterbi {
       }
       
       if (unknownWordLength > 0) {      // found unknown word
-        int characterId = characterDefinition.getCharacterClass(firstCharacter);
-        int[] wordIds = unkDictionary.lookupWordIds(characterId); // characters in input text are supposed to be the same
-        
-        for (int wordId : wordIds) {
+        final int characterId = characterDefinition.getCharacterClass(firstCharacter);
+        unkDictionary.lookupWordIds(characterId, wordIdRef); // characters in input text are supposed to be the same
+        for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
+          final int wordId = wordIdRef.ints[wordIdRef.offset + ofs];
           ViterbiNode node = new ViterbiNode(wordId, text, suffixStart, unknownWordLength, unkDictionary.getLeftId(wordId), unkDictionary.getRightId(wordId), unkDictionary.getWordCost(wordId), startIndex, Type.UNKNOWN);
           addToArrays(node, startIndex + 1, startIndex + 1 + unknownWordLength, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
         }

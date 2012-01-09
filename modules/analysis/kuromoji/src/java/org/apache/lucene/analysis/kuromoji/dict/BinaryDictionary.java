@@ -29,6 +29,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IOUtils;
 
 public abstract class BinaryDictionary implements Dictionary {
@@ -43,13 +44,13 @@ public abstract class BinaryDictionary implements Dictionary {
   public static final int VERSION = 1;
   
   private final ByteBuffer buffer;
-  private final int[][] targetMap;
+  private final int[] targetMapOffsets, targetMap;
   private final String[] posDict;
   
   protected BinaryDictionary() throws IOException {
     InputStream mapIS = null, dictIS = null, posIS = null;
     IOException priorE = null;
-    int[][] targetMap = null;
+    int[] targetMapOffsets = null, targetMap = null;
     String[] posDict = null;
     ByteBuffer buffer = null;
     try {
@@ -59,24 +60,21 @@ public abstract class BinaryDictionary implements Dictionary {
       mapIS = new BufferedInputStream(mapIS);
       DataInput in = new InputStreamDataInput(mapIS);
       CodecUtil.checkHeader(in, TARGETMAP_HEADER, VERSION, VERSION);
-      targetMap = new int[in.readVInt()][];
-      int accum = 0;
-      for (int j = 0; j < targetMap.length; j++) {
-        final int len = in.readVInt();
-        final int a[];
-        if ((len & 1) == 1) {
-          a = new int[1];
-          accum += len >>> 1;
-          a[0] = accum;
-        } else {
-          a = new int[len >>> 1];
-          for (int i = 0; i < a.length; i++) {
-            accum += in.readVInt();
-            a[i] = accum;
-          }
+      targetMap = new int[in.readVInt()];
+      targetMapOffsets = new int[in.readVInt()];
+      int accum = 0, sourceId = 0;
+      for (int ofs = 0; ofs < targetMap.length; ofs++) {
+        final int val = in.readVInt();
+        if ((val & 0x01) != 0) {
+          targetMapOffsets[sourceId] = ofs;
+          sourceId++;
         }
-        targetMap[j] = a;
+        accum += val >>> 1;
+        targetMap[ofs] = accum;
       }
+      if (sourceId + 1 != targetMapOffsets.length)
+        throw new IOException("targetMap file format broken");
+      targetMapOffsets[sourceId] = targetMap.length;
       
       posIS = getClass().getResourceAsStream(getClass().getSimpleName() + POSDICT_FILENAME_SUFFIX);
       if (posIS == null)
@@ -109,12 +107,16 @@ public abstract class BinaryDictionary implements Dictionary {
     }
     
     this.targetMap = targetMap;
+    this.targetMapOffsets = targetMapOffsets;
     this.posDict = posDict;
     this.buffer = buffer;
   }
   
-  public int[] lookupWordIds(int sourceId) {
-    return targetMap[sourceId];
+  public void lookupWordIds(int sourceId, IntsRef ref) {
+    ref.ints = targetMap;
+    ref.offset = targetMapOffsets[sourceId];
+    // targetMapOffsets always has one more entry pointing behind last:
+    ref.length = targetMapOffsets[sourceId + 1] - ref.offset;
   }
   
   @Override	
