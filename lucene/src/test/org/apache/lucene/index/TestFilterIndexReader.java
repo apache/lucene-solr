@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -84,6 +85,11 @@ public class TestFilterIndexReader extends LuceneTestCase {
     @Override
     public TermPositions termPositions() throws IOException {
       return new TestTermPositions(in.termPositions());
+    }
+
+    @Override
+    public FieldInfos getFieldInfos() {
+      return ReaderUtil.getMergedFieldInfos(in);
     }
   }
 

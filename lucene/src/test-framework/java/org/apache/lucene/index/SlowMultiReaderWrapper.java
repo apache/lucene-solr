@@ -46,4 +46,13 @@ public class SlowMultiReaderWrapper extends MultiReader {
   public String toString() {
     return "SlowMultiReaderWrapper(" + super.toString() + ")";
   }
+
+  @Override
+  public FieldInfos getFieldInfos() {
+    final FieldInfos fieldInfos = new FieldInfos();
+    for(IndexReader subReader : subReaders) {
+      fieldInfos.add(subReader.getFieldInfos());
+    }
+    return fieldInfos;
+  }
 }
