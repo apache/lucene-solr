@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
@@ -38,9 +39,8 @@ public final class TokenInfoDictionary extends BinaryDictionary {
     InputStream is = null;
     FST<Long> fst = null;
     try {
-      is = getClass().getResourceAsStream(getClass().getSimpleName() + FST_FILENAME_SUFFIX);
-      if (is == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + FST_FILENAME_SUFFIX);
+      is = getResource(FST_FILENAME_SUFFIX);
+      is = new BufferedInputStream(is);
       fst = new FST<Long>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton(true));
     } catch (IOException ioe) {
       priorE = ioe;

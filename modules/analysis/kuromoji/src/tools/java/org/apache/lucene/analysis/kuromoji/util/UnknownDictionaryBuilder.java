@@ -71,8 +71,11 @@ public class UnknownDictionaryBuilder {
     while ((line = lineReader.readLine()) != null) {
       // note: unk.def only has 10 fields, it simplifies the writer to just append empty reading and pronunciation,
       // even though the unknown dictionary returns hardcoded null here.
-      lines.add(CSVUtil.parse(line + ",*,*")); // Probably we don't need to validate entry
+      final String[] parsed = CSVUtil.parse(line + ",*,*"); // Probably we don't need to validate entry
+      lines.add(parsed);
+      dictionary.noteInflection(parsed); // for completeness; I think unk.def has no inflections...
     }
+    dictionary.finalizeInflections(); // should also be no-op
     
     Collections.sort(lines, new Comparator<String[]>() {
       public int compare(String[] left, String[] right) {

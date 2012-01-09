@@ -60,9 +60,7 @@ public abstract class BinaryDictionary implements Dictionary {
     String[] inflTypeDict = null;
     ByteBuffer buffer = null;
     try {
-      mapIS = getClass().getResourceAsStream(getClass().getSimpleName() + TARGETMAP_FILENAME_SUFFIX);
-      if (mapIS == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + TARGETMAP_FILENAME_SUFFIX);
+      mapIS = getResource(TARGETMAP_FILENAME_SUFFIX);
       mapIS = new BufferedInputStream(mapIS);
       DataInput in = new InputStreamDataInput(mapIS);
       CodecUtil.checkHeader(in, TARGETMAP_HEADER, VERSION, VERSION);
@@ -81,10 +79,9 @@ public abstract class BinaryDictionary implements Dictionary {
       if (sourceId + 1 != targetMapOffsets.length)
         throw new IOException("targetMap file format broken");
       targetMapOffsets[sourceId] = targetMap.length;
+      mapIS.close(); mapIS = null;
       
-      posIS = getClass().getResourceAsStream(getClass().getSimpleName() + POSDICT_FILENAME_SUFFIX);
-      if (posIS == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + POSDICT_FILENAME_SUFFIX);
+      posIS = getResource(POSDICT_FILENAME_SUFFIX);
       posIS = new BufferedInputStream(posIS);
       in = new InputStreamDataInput(posIS);
       CodecUtil.checkHeader(in, POSDICT_HEADER, VERSION, VERSION);
@@ -92,10 +89,9 @@ public abstract class BinaryDictionary implements Dictionary {
       for (int j = 0; j < posDict.length; j++) {
         posDict[j] = in.readString();
       }
+      posIS.close(); posIS = null;
       
-      inflIS = getClass().getResourceAsStream(getClass().getSimpleName() + INFLDICT_FILENAME_SUFFIX);
-      if (inflIS == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + INFLDICT_FILENAME_SUFFIX);
+      inflIS = getResource(INFLDICT_FILENAME_SUFFIX);
       inflIS = new BufferedInputStream(inflIS);
       in = new InputStreamDataInput(inflIS);
       CodecUtil.checkHeader(in, INFLDICT_HEADER, VERSION, VERSION);
@@ -106,10 +102,10 @@ public abstract class BinaryDictionary implements Dictionary {
         inflTypeDict[j] = in.readString();
         inflFormDict[j] = in.readString();
       }
+      inflIS.close(); inflIS = null;
 
-      dictIS = getClass().getResourceAsStream(getClass().getSimpleName() + DICT_FILENAME_SUFFIX);
-      if (dictIS == null)
-        throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + DICT_FILENAME_SUFFIX);
+      dictIS = getResource(DICT_FILENAME_SUFFIX);
+      // no buffering here, as we load in one large buffer
       in = new InputStreamDataInput(dictIS);
       CodecUtil.checkHeader(in, DICT_HEADER, VERSION, VERSION);
       final int size = in.readVInt();
@@ -119,6 +115,7 @@ public abstract class BinaryDictionary implements Dictionary {
       if (read != size) {
         throw new EOFException("Cannot read whole dictionary");
       }
+      dictIS.close(); dictIS = null;
       buffer = tmpBuffer.asReadOnlyBuffer();
     } catch (IOException ioe) {
       priorE = ioe;
@@ -132,6 +129,13 @@ public abstract class BinaryDictionary implements Dictionary {
     this.inflTypeDict = inflTypeDict;
     this.inflFormDict = inflFormDict;
     this.buffer = buffer;
+  }
+  
+  protected final InputStream getResource(String suffix) throws IOException {
+    InputStream is = getClass().getResourceAsStream(getClass().getSimpleName() + suffix);
+    if (is == null)
+      throw new FileNotFoundException("Not in classpath: " + getClass().getName().replace('.','/') + suffix);
+    return is;
   }
   
   public void lookupWordIds(int sourceId, IntsRef ref) {
