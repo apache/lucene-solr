@@ -36,7 +36,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
@@ -46,6 +45,7 @@ import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Assume;
 
@@ -102,11 +102,11 @@ public class TestIndexReader extends LuceneTestCase {
         writer.close();
         // set up reader
         IndexReader reader = IndexReader.open(d);
-        Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
-        assertTrue(fieldNames.contains("keyword"));
-        assertTrue(fieldNames.contains("text"));
-        assertTrue(fieldNames.contains("unindexed"));
-        assertTrue(fieldNames.contains("unstored"));
+        FieldInfos fieldInfos = ReaderUtil.getMergedFieldInfos(reader);
+        assertNotNull(fieldInfos.fieldInfo("keyword"));
+        assertNotNull(fieldInfos.fieldInfo("text"));
+        assertNotNull(fieldInfos.fieldInfo("unindexed"));
+        assertNotNull(fieldInfos.fieldInfo("unstored"));
         reader.close();
         // add more documents
         writer = new IndexWriter(
@@ -160,61 +160,66 @@ public class TestIndexReader extends LuceneTestCase {
         }
         
         writer.close();
+
         // verify fields again
         reader = IndexReader.open(d);
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
-        assertEquals(13, fieldNames.size());    // the following fields
-        assertTrue(fieldNames.contains("keyword"));
-        assertTrue(fieldNames.contains("text"));
-        assertTrue(fieldNames.contains("unindexed"));
-        assertTrue(fieldNames.contains("unstored"));
-        assertTrue(fieldNames.contains("keyword2"));
-        assertTrue(fieldNames.contains("text2"));
-        assertTrue(fieldNames.contains("unindexed2"));
-        assertTrue(fieldNames.contains("unstored2"));
-        assertTrue(fieldNames.contains("tvnot"));
-        assertTrue(fieldNames.contains("termvector"));
-        assertTrue(fieldNames.contains("tvposition"));
-        assertTrue(fieldNames.contains("tvoffset"));
-        assertTrue(fieldNames.contains("tvpositionoffset"));
+        fieldInfos = ReaderUtil.getMergedFieldInfos(reader);
+
+        Collection<String> allFieldNames = new HashSet<String>();
+        Collection<String> indexedFieldNames = new HashSet<String>();
+        Collection<String> notIndexedFieldNames = new HashSet<String>();
+        Collection<String> tvFieldNames = new HashSet<String>();
+
+        for(FieldInfo fieldInfo : fieldInfos) {
+          final String name = fieldInfo.name;
+          allFieldNames.add(name);
+          if (fieldInfo.isIndexed) {
+            indexedFieldNames.add(name);
+          } else {
+            notIndexedFieldNames.add(name);
+          }
+          if (fieldInfo.storeTermVector) {
+            tvFieldNames.add(name);
+          }
+        }
+
+        assertTrue(allFieldNames.contains("keyword"));
+        assertTrue(allFieldNames.contains("text"));
+        assertTrue(allFieldNames.contains("unindexed"));
+        assertTrue(allFieldNames.contains("unstored"));
+        assertTrue(allFieldNames.contains("keyword2"));
+        assertTrue(allFieldNames.contains("text2"));
+        assertTrue(allFieldNames.contains("unindexed2"));
+        assertTrue(allFieldNames.contains("unstored2"));
+        assertTrue(allFieldNames.contains("tvnot"));
+        assertTrue(allFieldNames.contains("termvector"));
+        assertTrue(allFieldNames.contains("tvposition"));
+        assertTrue(allFieldNames.contains("tvoffset"));
+        assertTrue(allFieldNames.contains("tvpositionoffset"));
         
         // verify that only indexed fields were returned
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
-        assertEquals(11, fieldNames.size());    // 6 original + the 5 termvector fields 
-        assertTrue(fieldNames.contains("keyword"));
-        assertTrue(fieldNames.contains("text"));
-        assertTrue(fieldNames.contains("unstored"));
-        assertTrue(fieldNames.contains("keyword2"));
-        assertTrue(fieldNames.contains("text2"));
-        assertTrue(fieldNames.contains("unstored2"));
-        assertTrue(fieldNames.contains("tvnot"));
-        assertTrue(fieldNames.contains("termvector"));
-        assertTrue(fieldNames.contains("tvposition"));
-        assertTrue(fieldNames.contains("tvoffset"));
-        assertTrue(fieldNames.contains("tvpositionoffset"));
+        assertEquals(11, indexedFieldNames.size());    // 6 original + the 5 termvector fields 
+        assertTrue(indexedFieldNames.contains("keyword"));
+        assertTrue(indexedFieldNames.contains("text"));
+        assertTrue(indexedFieldNames.contains("unstored"));
+        assertTrue(indexedFieldNames.contains("keyword2"));
+        assertTrue(indexedFieldNames.contains("text2"));
+        assertTrue(indexedFieldNames.contains("unstored2"));
+        assertTrue(indexedFieldNames.contains("tvnot"));
+        assertTrue(indexedFieldNames.contains("termvector"));
+        assertTrue(indexedFieldNames.contains("tvposition"));
+        assertTrue(indexedFieldNames.contains("tvoffset"));
+        assertTrue(indexedFieldNames.contains("tvpositionoffset"));
         
         // verify that only unindexed fields were returned
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
-        assertEquals(2, fieldNames.size());    // the following fields
-        assertTrue(fieldNames.contains("unindexed"));
-        assertTrue(fieldNames.contains("unindexed2"));
+        assertEquals(2, notIndexedFieldNames.size());    // the following fields
+        assertTrue(notIndexedFieldNames.contains("unindexed"));
+        assertTrue(notIndexedFieldNames.contains("unindexed2"));
                 
         // verify index term vector fields  
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR);
-        assertEquals(1, fieldNames.size());    // 1 field has term vector only
-        assertTrue(fieldNames.contains("termvector"));
-        
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION);
-        assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
-        assertTrue(fieldNames.contains("tvposition"));
-        
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET);
-        assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
-        assertTrue(fieldNames.contains("tvoffset"));
-                
-        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET);
-        assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
-        assertTrue(fieldNames.contains("tvpositionoffset"));
+        assertEquals(tvFieldNames.toString(), 4, tvFieldNames.size());    // 4 field has term vector only
+        assertTrue(tvFieldNames.contains("termvector"));
+
         reader.close();
         d.close();
     }
@@ -519,19 +524,19 @@ public class TestIndexReader extends LuceneTestCase {
       }
       
       // check field names
-      Collection<String> fields1 = index1.getFieldNames(FieldOption.ALL);
-      Collection<String> fields2 = index1.getFieldNames(FieldOption.ALL);
-      assertEquals("IndexReaders have different numbers of fields.", fields1.size(), fields2.size());
-      Iterator<String> it1 = fields1.iterator();
-      Iterator<String> it2 = fields1.iterator();
-      while (it1.hasNext()) {
-        assertEquals("Different field names.", it1.next(), it2.next());
+      FieldInfos fieldInfos1 = ReaderUtil.getMergedFieldInfos(index1);
+      FieldInfos fieldInfos2 = ReaderUtil.getMergedFieldInfos(index2);
+      assertEquals("IndexReaders have different numbers of fields.", fieldInfos1.size(), fieldInfos2.size());
+      final int numFields = fieldInfos1.size();
+      for(int fieldID=0;fieldID<numFields;fieldID++) {
+        final FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldID);
+        final FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldID);
+        assertEquals("Different field names.", fieldInfo1.name, fieldInfo2.name);
       }
       
       // check norms
-      it1 = fields1.iterator();
-      while (it1.hasNext()) {
-        String curField = it1.next();
+      for(FieldInfo fieldInfo : fieldInfos1) {
+        String curField = fieldInfo.name;
         DocValues norms1 = MultiDocValues.getNormDocValues(index1, curField);
         DocValues norms2 = MultiDocValues.getNormDocValues(index2, curField);
         if (norms1 != null && norms2 != null)

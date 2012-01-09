@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -74,33 +74,42 @@ public class TestSegmentReader extends LuceneTestCase {
   }
   
   public void testGetFieldNameVariations() {
-    Collection<String> result = reader.getFieldNames(IndexReader.FieldOption.ALL);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.all.size());
-    for (Iterator<String> iter = result.iterator(); iter.hasNext();) {
-      String s =  iter.next();
-      //System.out.println("Name: " + s);
+    Collection<String> allFieldNames = new HashSet<String>();
+    Collection<String> indexedFieldNames = new HashSet<String>();
+    Collection<String> notIndexedFieldNames = new HashSet<String>();
+    Collection<String> tvFieldNames = new HashSet<String>();
+    Collection<String> noTVFieldNames = new HashSet<String>();
+
+    for(FieldInfo fieldInfo : reader.getFieldInfos()) {
+      final String name = fieldInfo.name;
+      allFieldNames.add(name);
+      if (fieldInfo.isIndexed) {
+        indexedFieldNames.add(name);
+      } else {
+        notIndexedFieldNames.add(name);
+      }
+      if (fieldInfo.storeTermVector) {
+        tvFieldNames.add(name);
+      } else if (fieldInfo.isIndexed) {
+        noTVFieldNames.add(name);
+      }
+    }
+
+    assertTrue(allFieldNames.size() == DocHelper.all.size());
+    for (String s : allFieldNames) {
       assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
     }                                                                               
-    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.indexed.size());
-    for (Iterator<String> iter = result.iterator(); iter.hasNext();) {
-      String s = iter.next();
+
+    assertTrue(indexedFieldNames.size() == DocHelper.indexed.size());
+    for (String s : indexedFieldNames) {
       assertTrue(DocHelper.indexed.containsKey(s) == true || s.equals(""));
     }
     
-    result = reader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.unindexed.size());
+    assertTrue(notIndexedFieldNames.size() == DocHelper.unindexed.size());
     //Get all indexed fields that are storing term vectors
-    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.termvector.size());
-    
-    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.notermvector.size());
+    assertTrue(tvFieldNames.size() == DocHelper.termvector.size());
+
+    assertTrue(noTVFieldNames.size() == DocHelper.notermvector.size());
   } 
   
   public void testTerms() throws IOException {

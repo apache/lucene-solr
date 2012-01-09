@@ -103,4 +103,9 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     ensureOpen();
     return readerContext;
   }
+
+  @Override
+  public FieldInfos getFieldInfos() {
+    return ReaderUtil.getMergedFieldInfos(in);
+  }
 }

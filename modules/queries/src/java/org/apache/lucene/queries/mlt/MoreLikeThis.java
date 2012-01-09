@@ -34,6 +34,7 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
 
@@ -569,7 +570,7 @@ public final class MoreLikeThis {
   public Query like(int docNum) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = ir.getFieldNames(IndexReader.FieldOption.INDEXED);
+      Collection<String> fields = ReaderUtil.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
 

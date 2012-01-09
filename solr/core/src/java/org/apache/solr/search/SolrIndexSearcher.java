@@ -38,6 +38,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -180,7 +181,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
     optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
 
-    fieldNames = r.getFieldNames(IndexReader.FieldOption.ALL);
+    fieldNames = new HashSet<String>();
+    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(r)) {
+      fieldNames.add(fieldInfo.name);
+    }
 
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();
@@ -421,8 +425,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       final FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
       ft.setIndexed(fieldInfo.isIndexed);
       ft.setOmitNorms(fieldInfo.omitNorms);

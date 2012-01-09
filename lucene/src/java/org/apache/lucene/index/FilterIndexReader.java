@@ -22,7 +22,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Comparator;
 
@@ -295,6 +294,11 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
+  public FieldInfos getFieldInfos() {
+    return in.getFieldInfos();
+  }
+
+  @Override
   public Fields getTermVectors(int docID)
           throws IOException {
     ensureOpen();
@@ -340,12 +344,6 @@ public class FilterIndexReader extends IndexReader {
   @Override
   protected void doClose() throws IOException {
     in.close();
-  }
-
-  @Override
-  public Collection<String> getFieldNames(IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    return in.getFieldNames(fieldNames);
   }
 
   @Override

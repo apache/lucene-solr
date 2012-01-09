@@ -47,8 +47,6 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
-  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x4;
-  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
@@ -66,14 +64,13 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         byte bits = 0x0;
         if (fi.isIndexed) bits |= IS_INDEXED;
         if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
-        if (fi.storePositionWithTermVector) bits |= STORE_POSITIONS_WITH_TERMVECTOR;
-        if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
         if (fi.omitNorms) bits |= OMIT_NORMS;
         if (fi.storePayloads) bits |= STORE_PAYLOADS;
-        if (fi.indexOptions == IndexOptions.DOCS_ONLY)
+        if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
           bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS)
+        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
           bits |= OMIT_POSITIONS;
+        }
         output.writeString(fi.name);
         output.writeInt(fi.number);
         output.writeByte(bits);

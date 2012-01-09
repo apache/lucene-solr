@@ -25,7 +25,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocValues;
 
 /** Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -122,6 +121,16 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
   }
 
+  public FieldInfos() {
+    this(new FieldNumberBiMap());
+  }
+
+  public void add(FieldInfos other) {
+    for(FieldInfo fieldInfo : other){ 
+      add(fieldInfo);
+    }
+  }
+
   /**
    * Creates a new FieldInfos instance with the given {@link FieldNumberBiMap}. 
    * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
@@ -202,13 +211,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * 
    * @param names The names of the fields
    * @param storeTermVectors Whether the fields store term vectors or not
-   * @param storePositionWithTermVector true if positions should be stored.
-   * @param storeOffsetWithTermVector true if offsets should be stored
    */
-  synchronized public void addOrUpdateIndexed(Collection<String> names, boolean storeTermVectors, boolean storePositionWithTermVector, 
-                         boolean storeOffsetWithTermVector) {
+  synchronized public void addOrUpdateIndexed(Collection<String> names, boolean storeTermVectors) {
     for (String name : names) {
-      addOrUpdate(name, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
+      addOrUpdate(name, true, storeTermVectors);
     }
   }
 
@@ -231,23 +237,12 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * 
    * @param name The name of the IndexableField
    * @param isIndexed true if the field is indexed
-   * @see #addOrUpdate(String, boolean, boolean, boolean, boolean)
+   * @see #addOrUpdate(String, boolean, boolean)
    */
   synchronized public void addOrUpdate(String name, boolean isIndexed) {
-    addOrUpdate(name, isIndexed, false, false, false, false);
+    addOrUpdate(name, isIndexed, false, false);
   }
 
-  /**
-   * Calls 5 parameter add with false for term vector positions and offsets.
-   * 
-   * @param name The name of the field
-   * @param isIndexed  true if the field is indexed
-   * @param storeTermVector true if the term vector should be stored
-   */
-  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector){
-    addOrUpdate(name, isIndexed, storeTermVector, false, false, false);
-  }
-  
   /** If the field is not yet known, adds it. If it is known, checks to make
    *  sure that the isIndexed flag is the same as was given previously for this
    *  field. If not - marks it as being indexed.  Same goes for the TermVector
@@ -256,13 +251,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param name The name of the field
    * @param isIndexed true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
-   * @param storePositionWithTermVector true if the term vector with positions should be stored
-   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    */
-  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector) {
-
-    addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector) {
+    addOrUpdate(name, isIndexed, storeTermVector, false);
   }
 
     /** If the field is not yet known, adds it. If it is known, checks to make
@@ -273,14 +264,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param name The name of the field
    * @param isIndexed true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
-   * @param storePositionWithTermVector true if the term vector with positions should be stored
-   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    */
   synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
-    addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector,
-        storeOffsetWithTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null);
+                  boolean omitNorms) {
+    addOrUpdate(name, isIndexed, storeTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -291,17 +279,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param name The name of the field
    * @param isIndexed true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
-   * @param storePositionWithTermVector true if the term vector with positions should be stored
-   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
    * @param indexOptions if term freqs should be omitted for this field
    */
   synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
                        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
-    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
-                               storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
+    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues);
   }
 
   // NOTE: this method does not carry over termVector
@@ -315,13 +299,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     // rather, each component in the chain should update
     // what it "owns".  EG fieldType.indexOptions() should
     // be updated by maybe FreqProxTermsWriterPerField:
-    return addOrUpdateInternal(name, -1, fieldType.indexed(), false, false, false,
+    return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
                                fieldType.omitNorms(), false,
                                fieldType.indexOptions(), null);
   }
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
-      boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
+      boolean storeTermVector,
       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
@@ -329,9 +313,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
       final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
-      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
+      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues);
     } else {
-      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
+      fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
       fi.setDocValuesType(docValues);
     }
     version++;
@@ -341,7 +325,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   synchronized public FieldInfo add(FieldInfo fi) {
     // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
     return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
-               fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
                fi.indexOptions, fi.getDocValuesType());
   }
@@ -350,14 +333,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * NOTE: if you call this method from a public method make sure you check if we are modifiable and throw an exception otherwise
    */
   private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
-                                boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValuesType) {
+                                boolean storeTermVector, boolean omitNorms, boolean storePayloads,
+                                IndexOptions indexOptions, DocValues.Type docValuesType) {
     // don't check modifiable here since we use that to initially build up FIs
     if (globalFieldNumbers != null) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
     } 
-    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
-                                       storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
+    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
     putInternal(fi);
     return fi;
   }
@@ -390,7 +372,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * doesn't exist.
    */  
   public FieldInfo fieldInfo(int fieldNumber) {
-	return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
+    return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
   public Iterator<FieldInfo> iterator() {

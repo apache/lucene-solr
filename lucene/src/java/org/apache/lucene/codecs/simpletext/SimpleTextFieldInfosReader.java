@@ -80,14 +80,6 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         boolean storeTermVector = Boolean.parseBoolean(readString(STORETV.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, STORETVPOS);
-        boolean storePositionsWithTermVector = Boolean.parseBoolean(readString(STORETVPOS.length, scratch));
-        
-        SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, STORETVOFF);
-        boolean storeOffsetWithTermVector = Boolean.parseBoolean(readString(STORETVOFF.length, scratch));
-        
-        SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, PAYLOADS);
         boolean storePayloads = Boolean.parseBoolean(readString(PAYLOADS.length, scratch));
         
@@ -115,7 +107,6 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          storePositionsWithTermVector, storeOffsetWithTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType);
       }
 

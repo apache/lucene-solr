@@ -80,14 +80,6 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.write(out, Boolean.toString(fi.storeTermVector), scratch);
         SimpleTextUtil.writeNewline(out);
         
-        SimpleTextUtil.write(out, STORETVPOS);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storePositionWithTermVector), scratch);
-        SimpleTextUtil.writeNewline(out);
-
-        SimpleTextUtil.write(out, STORETVOFF);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storeOffsetWithTermVector), scratch);
-        SimpleTextUtil.writeNewline(out);
-        
         SimpleTextUtil.write(out, PAYLOADS);
         SimpleTextUtil.write(out, Boolean.toString(fi.storePayloads), scratch);
         SimpleTextUtil.writeNewline(out);

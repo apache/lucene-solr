@@ -1,6 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.index.DocValues;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,15 +26,11 @@ public final class FieldInfo {
   public boolean isIndexed;
   private DocValues.Type docValues;
 
-
-  // true if term vector for this field should be stored
+  // True if any document indexed term vectors
   public boolean storeTermVector;
-  public boolean storeOffsetWithTermVector;
-  public boolean storePositionWithTermVector;
 
   public boolean omitNorms; // omit norms associated with indexed fields  
   public IndexOptions indexOptions;
-
   public boolean storePayloads; // whether this field stores payloads together with term positions
 
   /**
@@ -56,7 +51,6 @@ public final class FieldInfo {
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean isIndexed, int number, boolean storeTermVector, 
-            boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
             boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
     this.name = name;
     this.isIndexed = isIndexed;
@@ -64,15 +58,11 @@ public final class FieldInfo {
     this.docValues = docValues;
     if (isIndexed) {
       this.storeTermVector = storeTermVector;
-      this.storeOffsetWithTermVector = storeOffsetWithTermVector;
-      this.storePositionWithTermVector = storePositionWithTermVector;
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
       this.indexOptions = indexOptions;
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
-      this.storeOffsetWithTermVector = false;
-      this.storePositionWithTermVector = false;
       this.storePayloads = false;
       this.omitNorms = false;
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -82,14 +72,12 @@ public final class FieldInfo {
   
   @Override
   public Object clone() {
-    FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
-                         storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
-    return clone;
+    return new FieldInfo(name, isIndexed, number, storeTermVector,
+                         omitNorms, storePayloads, indexOptions, docValues);
   }
 
   // should only be called by FieldInfos#addOrUpdate
-  void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
-              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
+  void update(boolean isIndexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
 
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
@@ -97,12 +85,6 @@ public final class FieldInfo {
     if (isIndexed) { // if updated field data is not for indexing, leave the updates out
       if (this.storeTermVector != storeTermVector) {
         this.storeTermVector = true;                // once vector, always vector
-      }
-      if (this.storePositionWithTermVector != storePositionWithTermVector) {
-        this.storePositionWithTermVector = true;                // once vector, always vector
-      }
-      if (this.storeOffsetWithTermVector != storeOffsetWithTermVector) {
-        this.storeOffsetWithTermVector = true;                // once vector, always vector
       }
       if (this.storePayloads != storePayloads) {
         this.storePayloads = true;
@@ -139,9 +121,7 @@ public final class FieldInfo {
     return docValues;
   }
 
-  public void setStoreTermVectors(boolean withPositions, boolean withOffsets) {
+  public void setStoreTermVectors() {
     storeTermVector = true;
-    storePositionWithTermVector |= withPositions;
-    storeOffsetWithTermVector |= withOffsets;
   }
 }
