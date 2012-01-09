@@ -276,7 +276,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             int j;
             try {
               // always 1 we won't kill...
-              j = random.nextInt(threads.size() - 1);
+              j = random.nextInt(threads.size() - 2);
             } catch(IllegalArgumentException e) {
               continue;
             }
