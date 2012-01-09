@@ -108,7 +108,7 @@ public class ZkCmdExecutor {
   public void ensureExists(final String path, final byte[] data,
       CreateMode createMode, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
     
-    if (zkClient.exists(path, false)) {
+    if (zkClient.exists(path, true)) {
       return;
     }
     try {
