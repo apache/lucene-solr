@@ -46,14 +46,14 @@ public final class ConnectionCosts {
       is = new BufferedInputStream(is);
       final DataInput in = new InputStreamDataInput(is);
       CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
-      costs = new short[in.readVInt()][];
+      int forwardSize = in.readVInt();
+      int backwardSize = in.readVInt();
+      costs = new short[backwardSize][forwardSize];
       for (int j = 0; j < costs.length; j++) {
-        final int len = in.readVInt();
-        final short[] a = new short[len];
-        for (int i = 0; i < len; i++) {
+        final short[] a = costs[j];
+        for (int i = 0; i < a.length; i++) {
           a[i] = in.readShort();
         }
-        costs[j] = a;
       }
     } catch (IOException ioe) {
       priorE = ioe;
