@@ -125,7 +125,7 @@ public class TokenInfoDictionaryBuilder {
     
     System.out.println("  sort...");
 
-    // sort by term, then cost, then all other features
+    // sort by term: we sorted the files already and use a stable sort.
     Collections.sort(lines, new Comparator<String[]>() {
       public int compare(String[] left, String[] right) {
         return left[0].compareTo(right[0]);
