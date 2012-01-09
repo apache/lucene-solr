@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,12 +28,15 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * Represented as a coupled graph of class instances, this
@@ -51,7 +53,11 @@ import org.apache.lucene.util.BitVector;
  * at the same time as a searcher is reading from it.
  *
  * Consider using InstantiatedIndex as if it was immutable.
+ *
+ * @deprecated contrib/instantiated will be removed in 4.0;
+ * you can use the memory codec to hold all postings in RAM
  */
+@Deprecated
 public class InstantiatedIndex
     implements Serializable,Closeable {
 
@@ -69,6 +75,7 @@ public class InstantiatedIndex
   private Map<String, byte[]> normsByFieldNameAndDocumentNumber;
 
   private FieldSettings fieldSettings;
+  private transient FieldInfos fieldInfos;
 
   /**
    * Creates an empty instantiated index for you to fill with data using an {@link org.apache.lucene.store.instantiated.InstantiatedIndexWriter}. 
@@ -84,8 +91,28 @@ public class InstantiatedIndex
     orderedTerms = new InstantiatedTerm[0];
     documentsByNumber = new InstantiatedDocument[0];
     normsByFieldNameAndDocumentNumber = new HashMap<String, byte[]>();
+    rebuildFieldInfos();
   }
 
+  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    rebuildFieldInfos();
+  }
+
+  void rebuildFieldInfos() {
+    fieldInfos = new FieldInfos();
+    for(FieldSetting fieldSetting : fieldSettings.values()) {
+      fieldInfos.add(fieldSetting.fieldName,
+                     fieldSetting.indexed,
+                     fieldSetting.storeTermVector,
+                     false, fieldSetting.storePayloads,
+                     FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    }
+  }
+
+  public FieldInfos getFieldInfos() {
+    return fieldInfos;
+  }
   
   /**
    * Creates a new instantiated index that looks just like the index in a specific state as represented by a reader.
@@ -113,62 +140,17 @@ public class InstantiatedIndex
       //throw new IOException("Source index has more than one segment.");
     }
 
-
     initialize();
 
-    Collection<String> allFieldNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.ALL);
-        
-    // load field options
-
-    Collection<String> indexedNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.INDEXED);
-    for (String name : indexedNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.indexed = true;
-    }
-    Collection<String> indexedNoVecNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR);
-    for (String name : indexedNoVecNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.storeTermVector = false;
-      setting.indexed = true;
-    }
-    Collection<String> indexedVecNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
-    for (String name : indexedVecNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.storeTermVector = true;
-      setting.indexed = true;
-    }
-    Collection<String> payloadNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS);
-    for (String name : payloadNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.storePayloads = true;
-    }
-    Collection<String> termVecNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR);
-    for (String name : termVecNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.storeTermVector = true;
-    }
-    Collection<String> termVecOffsetNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET);
-    for (String name : termVecOffsetNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.storeOffsetWithTermVector = true;
-    }
-    Collection<String> termVecPosNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION);
-    for (String name : termVecPosNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.storePositionWithTermVector = true;
-    }
-    Collection<String> termVecPosOffNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET);
-    for (String name : termVecPosOffNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
+    // load field infos
+    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(sourceIndexReader)) {
+      FieldSetting setting = fieldSettings.get(fieldInfo.name, true);
+      setting.indexed = fieldInfo.isIndexed;
+      setting.storeTermVector = fieldInfo.storeTermVector;
       setting.storeOffsetWithTermVector = true;
       setting.storePositionWithTermVector = true;
+      setting.storePayloads = fieldInfo.storePayloads;
     }
-    Collection<String> unindexedNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
-    for (String name : unindexedNames) {
-      FieldSetting setting = fieldSettings.get(name, true);
-      setting.indexed = false;
-    }
-
 
     documentsByNumber = new InstantiatedDocument[sourceIndexReader.maxDoc()];
 
@@ -204,17 +186,17 @@ public class InstantiatedIndex
       }
     }
 
-
-
     // create norms
-    for (String fieldName : allFieldNames) {
+    for (FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(sourceIndexReader)) {
+      String fieldName = fieldInfo.name;
       if (fields == null || fields.contains(fieldName)) {
         getNormsByFieldNameAndDocumentNumber().put(fieldName, sourceIndexReader.norms(fieldName));
       }
     }
 
     // create terms
-    for (String fieldName : allFieldNames) {
+    for (FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(sourceIndexReader)) {
+      String fieldName = fieldInfo.name;
       if (fields == null || fields.contains(fieldName)) {
         getTermsByFieldAndText().put(fieldName, new HashMap<String, InstantiatedTerm>(5000));
       }
@@ -269,15 +251,13 @@ public class InstantiatedIndex
         continue; // deleted
       }
       for (Fieldable field : document.getDocument().getFields()) {
-        if (field.isTermVectorStored() && field.isStoreOffsetWithTermVector()) {
-          TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
-          if (termPositionVector != null) {
-            for (int i = 0; i < termPositionVector.getTerms().length; i++) {
-              String token = termPositionVector.getTerms()[i];
-              InstantiatedTerm term = findTerm(field.name(), token);
-              InstantiatedTermDocumentInformation termDocumentInformation = term.getAssociatedDocument(document.getDocumentNumber());
-              termDocumentInformation.setTermOffsets(termPositionVector.getOffsets(i));
-            }
+        TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
+        if (termPositionVector != null) {
+          for (int i = 0; i < termPositionVector.getTerms().length; i++) {
+            String token = termPositionVector.getTerms()[i];
+            InstantiatedTerm term = findTerm(field.name(), token);
+            InstantiatedTermDocumentInformation termDocumentInformation = term.getAssociatedDocument(document.getDocumentNumber());
+            termDocumentInformation.setTermOffsets(termPositionVector.getOffsets(i));
           }
         }
       }

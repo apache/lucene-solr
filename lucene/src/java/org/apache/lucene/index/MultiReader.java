@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -78,12 +77,19 @@ public class MultiReader extends IndexReader implements Cloneable {
     starts = new int[subReaders.length + 1];    // build starts array
     int maxDoc = 0;
     for (int i = 0; i < subReaders.length; i++) {
+      final IndexReader reader = subReaders[i];
       starts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
-      if (subReaders[i].hasDeletions())
+      maxDoc += reader.maxDoc();      // compute maxDocs
+      if (reader.hasDeletions()) {
         hasDeletions = true;
+      }
     }
     this.maxDoc = starts[subReaders.length] = maxDoc;
+  }
+
+  @Override
+  public FieldInfos getFieldInfos() {
+    throw new UnsupportedOperationException("call getFieldInfos() on each sub reader, or use ReaderUtil.getMergedFieldInfos, instead");
   }
 
   @Override
@@ -425,12 +431,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     // throw the first exception
     if (ioe != null) throw ioe;
   }
-  
-  @Override
-  public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    return DirectoryReader.getFieldNames(fieldNames, this.subReaders);
-  }  
   
   /**
    * Checks recursively if all subreaders are up to date. 

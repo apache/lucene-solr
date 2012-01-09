@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
@@ -140,18 +139,6 @@ final class SegmentMerger {
     return files;
   }
 
-  private static void addIndexed(IndexReader reader, FieldInfos fInfos,
-      Collection<String> names, boolean storeTermVectors,
-      boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean storePayloads, IndexOptions indexOptions)
-      throws IOException {
-    for (String field : names) {
-      fInfos.add(field, true, storeTermVectors,
-          storePositionWithTermVector, storeOffsetWithTermVector, !reader
-              .hasNorms(field), storePayloads, indexOptions);
-    }
-  }
-
   private SegmentReader[] matchingSegmentReaders;
   private int[] rawDocLengths;
   private int[] rawDocLengths2;
@@ -174,10 +161,15 @@ final class SegmentMerger {
     // stored fields:
     for (int i = 0; i < numReaders; i++) {
       IndexReader reader = readers.get(i);
+      // TODO: we may be able to broaden this to
+      // non-SegmentReaders, since FieldInfos is now
+      // required?  But... this'd also require exposing
+      // bulk-copy (TVs and stored fields) API in foreign
+      // readers..
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         boolean same = true;
-        FieldInfos segmentFieldInfos = segmentReader.fieldInfos();
+        FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
         int numFieldInfos = segmentFieldInfos.size();
         for (int j = 0; j < numFieldInfos; j++) {
           if (!fieldInfos.fieldName(j).equals(segmentFieldInfos.fieldName(j))) {
@@ -206,24 +198,7 @@ final class SegmentMerger {
   private int mergeFields() throws CorruptIndexException, IOException {
 
     for (IndexReader reader : readers) {
-      if (reader instanceof SegmentReader) {
-        SegmentReader segmentReader = (SegmentReader) reader;
-        FieldInfos readerFieldInfos = segmentReader.fieldInfos();
-        int numReaderFieldInfos = readerFieldInfos.size();
-        for (int j = 0; j < numReaderFieldInfos; j++) {
-          fieldInfos.add(readerFieldInfos.fieldInfo(j));
-        }
-      } else {
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR), true, false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_POSITIONS), false, false, false, false, IndexOptions.DOCS_AND_FREQS);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_TERM_FREQ_AND_POSITIONS), false, false, false, false, IndexOptions.DOCS_ONLY);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-        fieldInfos.add(reader.getFieldNames(FieldOption.UNINDEXED), false);
-      }
+      fieldInfos.add(reader.getFieldInfos());
     }
     fieldInfos.write(directory, segment + ".fnm");
 

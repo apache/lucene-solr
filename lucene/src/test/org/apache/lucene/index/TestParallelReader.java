@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -82,12 +81,12 @@ public class TestParallelReader extends LuceneTestCase {
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
-    Collection<String> fieldNames = pr.getFieldNames(IndexReader.FieldOption.ALL);
-    assertEquals(4, fieldNames.size());
-    assertTrue(fieldNames.contains("f1"));
-    assertTrue(fieldNames.contains("f2"));
-    assertTrue(fieldNames.contains("f3"));
-    assertTrue(fieldNames.contains("f4"));
+    FieldInfos fieldInfos = pr.getFieldInfos();
+    assertEquals(4, fieldInfos.size());
+    assertNotNull(fieldInfos.fieldInfo("f1"));
+    assertNotNull(fieldInfos.fieldInfo("f2"));
+    assertNotNull(fieldInfos.fieldInfo("f3"));
+    assertNotNull(fieldInfos.fieldInfo("f4"));
     pr.close();
     dir1.close();
     dir2.close();

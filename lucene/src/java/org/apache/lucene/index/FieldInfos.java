@@ -33,8 +33,10 @@ import java.util.*;
  *  of this class are thread-safe for multiple readers, but only one thread can
  *  be adding documents at a time, with no other reader or writer threads
  *  accessing this object.
+ *
+ * @lucene.experimental
  */
-final class FieldInfos {
+public final class FieldInfos implements Iterable<FieldInfo> {
 
   // Used internally (ie not written to *.fnm files) for pre-2.9 files
   public static final int FORMAT_PRE = -1;
@@ -50,8 +52,6 @@ final class FieldInfos {
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
-  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x4;
-  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
@@ -61,7 +61,7 @@ final class FieldInfos {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private int format;
 
-  FieldInfos() { }
+  public FieldInfos() { }
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
@@ -70,7 +70,7 @@ final class FieldInfos {
    * @param name The name of the file to open the IndexInput from in the Directory
    * @throws IOException
    */
-  FieldInfos(Directory d, String name) throws IOException {
+  public FieldInfos(Directory d, String name) throws IOException {
     IndexInput input = d.openInput(name);
     try {
       try {
@@ -101,6 +101,12 @@ final class FieldInfos {
     }
   }
 
+  public void add(FieldInfos other) {
+    for(FieldInfo fieldInfo : other){ 
+      add(fieldInfo);
+    }
+  }
+
   /**
    * Returns a deep clone of this FieldInfos instance.
    */
@@ -120,13 +126,13 @@ final class FieldInfos {
   synchronized public void add(Document doc) {
     List<Fieldable> fields = doc.getFields();
     for (Fieldable field : fields) {
-      add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getIndexOptions());
+      add(field.name(), field.isIndexed(), field.isTermVectorStored(),
+          field.getOmitNorms(), false, field.getIndexOptions());
     }
   }
 
   /** Returns true if any fields do not omitTermFreqAndPositions */
-  boolean hasProx() {
+  public boolean hasProx() {
     final int numFields = byNumber.size();
     for(int i=0;i<numFields;i++) {
       final FieldInfo fi = fieldInfo(i);
@@ -138,43 +144,14 @@ final class FieldInfos {
   }
   
   /**
-   * Add fields that are indexed. Whether they have termvectors has to be specified.
-   * 
-   * @param names The names of the fields
-   * @param storeTermVectors Whether the fields store term vectors or not
-   * @param storePositionWithTermVector true if positions should be stored.
-   * @param storeOffsetWithTermVector true if offsets should be stored
-   */
-  synchronized public void addIndexed(Collection<String> names, boolean storeTermVectors, boolean storePositionWithTermVector, 
-                         boolean storeOffsetWithTermVector) {
-    for (String name : names) {
-      add(name, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
-    }
-  }
-
-  /**
-   * Assumes the fields are not storing term vectors.
-   * 
-   * @param names The names of the fields
-   * @param isIndexed Whether the fields are indexed or not
-   * 
-   * @see #add(String, boolean)
-   */
-  synchronized public void add(Collection<String> names, boolean isIndexed) {
-    for (String name : names) {
-      add(name, isIndexed);
-    }
-  }
-
-  /**
    * Calls 5 parameter add with false for all TermVector parameters.
    * 
    * @param name The name of the Fieldable
    * @param isIndexed true if the field is indexed
-   * @see #add(String, boolean, boolean, boolean, boolean)
+   * @see #add(String, boolean, boolean)
    */
   synchronized public void add(String name, boolean isIndexed) {
-    add(name, isIndexed, false, false, false, false);
+    add(name, isIndexed, false, false);
   }
 
   /**
@@ -185,27 +162,10 @@ final class FieldInfos {
    * @param storeTermVector true if the term vector should be stored
    */
   synchronized public void add(String name, boolean isIndexed, boolean storeTermVector){
-    add(name, isIndexed, storeTermVector, false, false, false);
+    add(name, isIndexed, storeTermVector, false);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
-   *  sure that the isIndexed flag is the same as was given previously for this
-   *  field. If not - marks it as being indexed.  Same goes for the TermVector
-   * parameters.
-   * 
-   * @param name The name of the field
-   * @param isIndexed true if the field is indexed
-   * @param storeTermVector true if the term vector should be stored
-   * @param storePositionWithTermVector true if the term vector with positions should be stored
-   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
-   */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
-                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector) {
-
-    add(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
-  }
-
-    /** If the field is not yet known, adds it. If it is known, checks to make
    *  sure that the isIndexed flag is the same as was given previously for this
    *  field. If not - marks it as being indexed.  Same goes for the TermVector
    * parameters.
@@ -213,14 +173,12 @@ final class FieldInfos {
    * @param name The name of the field
    * @param isIndexed true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
-   * @param storePositionWithTermVector true if the term vector with positions should be stored
-   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    */
   synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
-                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
-    add(name, isIndexed, storeTermVector, storePositionWithTermVector,
-        storeOffsetWithTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+                               boolean omitNorms) {
+    add(name, isIndexed, storeTermVector,
+        omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -231,20 +189,17 @@ final class FieldInfos {
    * @param name The name of the field
    * @param isIndexed true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
-   * @param storePositionWithTermVector true if the term vector with positions should be stored
-   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
    * @param indexOptions if term freqs should be omitted for this field
    */
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
-                       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
                        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
+      return addInternal(name, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
     } else {
-      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
+      fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
     }
     assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
     return fi;
@@ -252,17 +207,15 @@ final class FieldInfos {
 
   synchronized public FieldInfo add(FieldInfo fi) {
     return add(fi.name, fi.isIndexed, fi.storeTermVector,
-               fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
                fi.indexOptions);
   }
 
   private FieldInfo addInternal(String name, boolean isIndexed,
-                                boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
+                                boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     name = StringHelper.intern(name);
-    FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
-                                 storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
+    FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector,
+                                 omitNorms, storePayloads, indexOptions);
     byNumber.add(fi);
     byName.put(name, fi);
     return fi;
@@ -274,7 +227,7 @@ final class FieldInfos {
   }
 
   public FieldInfo fieldInfo(String fieldName) {
-    return  byName.get(fieldName);
+    return byName.get(fieldName);
   }
 
   /**
@@ -296,7 +249,11 @@ final class FieldInfos {
    * doesn't exist.
    */  
   public FieldInfo fieldInfo(int fieldNumber) {
-	return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
+    return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
+  }
+
+  public Iterator<FieldInfo> iterator() {
+    return byNumber.iterator();
   }
 
   public int size() {
@@ -332,15 +289,13 @@ final class FieldInfos {
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
-      if (fi.storePositionWithTermVector) bits |= STORE_POSITIONS_WITH_TERMVECTOR;
-      if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
-      if (fi.indexOptions == IndexOptions.DOCS_ONLY)
+      if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
         bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-      else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS)
+      } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
         bits |= OMIT_POSITIONS;
-      
+      }
       output.writeString(fi.name);
       output.writeByte(bits);
     }
@@ -372,8 +327,6 @@ final class FieldInfos {
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
-      boolean storePositionsWithTermVector = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-      boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       final IndexOptions indexOptions;
@@ -396,7 +349,7 @@ final class FieldInfos {
         storePayloads = false;
       }
 
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
+      addInternal(name, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
     }
 
     if (input.getFilePointer() != input.length()) {

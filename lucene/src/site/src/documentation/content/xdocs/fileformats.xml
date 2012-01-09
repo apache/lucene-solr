@@ -1216,8 +1216,6 @@
                             bit is one for fields that have term vectors stored, and zero for fields
                             without term vectors.
                         </li>
-                        <li>If the third lowest-order bit is set (0x04), term positions are stored with the term vectors.</li>
-                        <li>If the fourth lowest-order bit is set (0x08), term offsets are stored with the term vectors.</li>
                         <li>If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field.</li>
                         <li>If the sixth lowest-order bit is set (0x20), payloads are stored for the indexed field.</li>
                         <li>If the seventh lowest-order bit is set (0x40), term frequencies and positions omitted for the indexed field.</li>

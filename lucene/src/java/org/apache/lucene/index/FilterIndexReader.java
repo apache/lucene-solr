@@ -22,7 +22,6 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
@@ -126,6 +125,11 @@ public class FilterIndexReader extends IndexReader {
     return in.getIndexCommit();
   }
   
+  @Override
+  public FieldInfos getFieldInfos() {
+    return in.getFieldInfos();
+  }
+
   @Override
   public int getTermInfosIndexDivisor() {
     ensureOpen();
@@ -271,12 +275,6 @@ public class FilterIndexReader extends IndexReader {
   @Override
   protected void doClose() throws IOException {
     in.close();
-  }
-
-  @Override
-  public Collection<String> getFieldNames(IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    return in.getFieldNames(fieldNames);
   }
 
   @Override

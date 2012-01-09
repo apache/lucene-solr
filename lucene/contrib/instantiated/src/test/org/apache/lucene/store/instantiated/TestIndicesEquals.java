@@ -29,6 +29,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Payload;
@@ -41,6 +43,7 @@ import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
@@ -387,18 +390,11 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     assertEquals(aprioriReader.numDocs(), testReader.numDocs());
 
-    // assert field options
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.INDEXED), testReader.getFieldNames(IndexReader.FieldOption.INDEXED));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR), testReader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR), testReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), testReader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET));
-    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.UNINDEXED), testReader.getFieldNames(IndexReader.FieldOption.UNINDEXED));
+    final FieldInfos aprioriFieldInfos = ReaderUtil.getMergedFieldInfos(aprioriReader);
 
-    for (Object field : aprioriReader.getFieldNames(IndexReader.FieldOption.ALL)) {
+    for (FieldInfo aprioriFieldInfo : aprioriFieldInfos) {
+      
+      Object field = aprioriFieldInfo.name;
 
       // test norms as used by normal use
 

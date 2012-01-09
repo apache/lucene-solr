@@ -364,7 +364,7 @@ final class FieldsReader implements Cloneable, Closeable {
     } else {
       Field.Store store = Field.Store.YES;
       Field.Index index = Field.Index.toIndex(fi.isIndexed, tokenize);
-      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
+      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, false, false);
 
       if (compressed) {
         int toRead = fieldsStream.readVInt();
@@ -408,7 +408,7 @@ final class FieldsReader implements Cloneable, Closeable {
     } else {
       Field.Store store = Field.Store.YES;
       Field.Index index = Field.Index.toIndex(fi.isIndexed, tokenize);
-      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
+      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, false, false);
       if (compressed) {
         int toRead = fieldsStream.readVInt();
         final byte[] b = new byte[toRead];

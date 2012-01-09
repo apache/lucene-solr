@@ -17,26 +17,25 @@
 
 package org.apache.solr.tst;
 
-import org.apache.lucene.search.*;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.net.URL;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.solr.search.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Id$
@@ -156,10 +155,19 @@ public class TestRequestHandler implements SolrRequestHandler {
         rsp.add("myNamedList", nl);
       } else if (qs.startsWith("fields")) {
         NamedList nl = new NamedList();
-        Collection flst;
-        flst = searcher.getReader().getFieldNames(IndexReader.FieldOption.INDEXED);
+        Collection<String> flst = new HashSet<String>();
+        for(FieldInfo fieldInfo : searcher.getReader().getFieldInfos()) {
+          if (fieldInfo.isIndexed) {
+            flst.add(fieldInfo.name);
+          }
+        }
         nl.add("indexed",flst);
-        flst = searcher.getReader().getFieldNames(IndexReader.FieldOption.UNINDEXED);
+        flst = new HashSet<String>();
+        for(FieldInfo fieldInfo : searcher.getReader().getFieldInfos()) {
+          if (!fieldInfo.isIndexed) {
+            flst.add(fieldInfo.name);
+          }
+        }
         nl.add("unindexed",flst);
         rsp.add("fields", nl);
       }

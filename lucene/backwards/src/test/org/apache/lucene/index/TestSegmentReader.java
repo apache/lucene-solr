@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -86,36 +84,6 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(deleteReader.numDocs() == 0);
     deleteReader.close();
   }    
-  
-  public void testGetFieldNameVariations() {
-    Collection<String> result = reader.getFieldNames(IndexReader.FieldOption.ALL);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.all.size());
-    for (Iterator<String> iter = result.iterator(); iter.hasNext();) {
-      String s =  iter.next();
-      //System.out.println("Name: " + s);
-      assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
-    }                                                                               
-    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.indexed.size());
-    for (Iterator<String> iter = result.iterator(); iter.hasNext();) {
-      String s = iter.next();
-      assertTrue(DocHelper.indexed.containsKey(s) == true || s.equals(""));
-    }
-    
-    result = reader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.unindexed.size());
-    //Get all indexed fields that are storing term vectors
-    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.termvector.size());
-    
-    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR);
-    assertTrue(result != null);
-    assertTrue(result.size() == DocHelper.notermvector.size());
-  } 
   
   public void testTerms() throws IOException {
     TermEnum terms = reader.terms();

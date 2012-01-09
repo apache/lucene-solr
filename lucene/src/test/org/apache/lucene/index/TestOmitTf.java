@@ -92,7 +92,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
@@ -146,7 +146,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
@@ -191,7 +191,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should not be set.", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         

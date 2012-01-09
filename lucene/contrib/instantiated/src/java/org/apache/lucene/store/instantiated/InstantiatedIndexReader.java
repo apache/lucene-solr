@@ -18,15 +18,11 @@ package org.apache.lucene.store.instantiated;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -39,7 +35,11 @@ import org.apache.lucene.util.BitVector;
  * sync with the latest commit to the store!
  * <p>
  * Consider using InstantiatedIndex as if it was immutable.
+ *
+ * @deprecated contrib/instantiated will be removed in 4.0;
+ * you can use the memory codec to hold all postings in RAM
  */
+@Deprecated
 public class InstantiatedIndexReader extends IndexReader {
 
   private final InstantiatedIndex index;
@@ -66,6 +66,11 @@ public class InstantiatedIndexReader extends IndexReader {
     return index.getVersion();
   }
 
+  @Override
+  public FieldInfos getFieldInfos() {
+    return index.getFieldInfos();
+  }
+  
   @Override
   public Directory directory() {
     throw new UnsupportedOperationException();
@@ -203,39 +208,6 @@ public class InstantiatedIndexReader extends IndexReader {
     // todo perhaps release all associated instances?
   }
 
-  @Override
-  public Collection<String> getFieldNames(FieldOption fieldOption) {
-    Set<String> fieldSet = new HashSet<String>();
-    for (FieldSetting fi : index.getFieldSettings().values()) {
-      if (fieldOption == IndexReader.FieldOption.ALL) {
-        fieldSet.add(fi.fieldName);
-      } else if (!fi.indexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.indexed && fieldOption == IndexReader.FieldOption.INDEXED) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.indexed && fi.storeTermVector == false && fieldOption == IndexReader.FieldOption.INDEXED_NO_TERMVECTOR) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.storeTermVector == true && fi.storePositionWithTermVector == false && fi.storeOffsetWithTermVector == false
-          && fieldOption == IndexReader.FieldOption.TERMVECTOR) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.indexed && fi.storeTermVector && fieldOption == IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.storePositionWithTermVector && fi.storeOffsetWithTermVector == false
-          && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION) {
-        fieldSet.add(fi.fieldName);
-      } else if (fi.storeOffsetWithTermVector && fi.storePositionWithTermVector == false
-          && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET) {
-        fieldSet.add(fi.fieldName);
-      } else if ((fi.storeOffsetWithTermVector && fi.storePositionWithTermVector)
-          && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET) {
-        fieldSet.add(fi.fieldName);
-      } 
-    }
-    return fieldSet;
-  }
-
   /**
    * Return the {@link org.apache.lucene.document.Document} at the <code>n</code><sup>th</sup>
    * position.
@@ -249,7 +221,7 @@ public class InstantiatedIndexReader extends IndexReader {
    * This can also be seen as a feature for live changes of stored values,
    * but be careful! Adding a field with an name unknown to the index
    * or to a field with previously no stored values will make
-   * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)}
+   * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldInfos()}
    * out of sync, causing problems for instance when merging the
    * instantiated index to another index.
      <p>

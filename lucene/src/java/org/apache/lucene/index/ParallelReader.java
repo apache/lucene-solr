@@ -17,13 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
-
-import java.io.IOException;
-import java.util.*;
+import org.apache.lucene.util.ReaderUtil;
 
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
@@ -54,6 +55,7 @@ public class ParallelReader extends IndexReader {
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
+  private final FieldInfos fieldInfos;
 
  /** Construct a ParallelReader. 
   * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
@@ -67,6 +69,7 @@ public class ParallelReader extends IndexReader {
   public ParallelReader(boolean closeSubReaders) throws IOException {
     super();
     this.incRefReaders = !closeSubReaders;
+    fieldInfos = new FieldInfos();
   }
 
   /** {@inheritDoc} */
@@ -119,11 +122,13 @@ public class ParallelReader extends IndexReader {
       throw new IllegalArgumentException
         ("All readers must have same numDocs: "+numDocs+"!="+reader.numDocs());
 
-    Collection<String> fields = reader.getFieldNames(IndexReader.FieldOption.ALL);
-    readerToFields.put(reader, fields);
-    for (final String field : fields) {                         // update fieldToReader map
-      if (fieldToReader.get(field) == null)
-        fieldToReader.put(field, reader);
+    final FieldInfos readerFieldInfos = ReaderUtil.getMergedFieldInfos(reader);
+    for(FieldInfo fieldInfo : readerFieldInfos) {   // update fieldToReader map
+      // NOTE: first reader having a given field "wins":
+      if (fieldToReader.get(fieldInfo.name) == null) {
+        fieldInfos.add(fieldInfo);
+        fieldToReader.put(fieldInfo.name, reader);
+      }
     }
 
     if (!ignoreStoredFields)
@@ -134,6 +139,11 @@ public class ParallelReader extends IndexReader {
       reader.incRef();
     }
     decrefOnClose.add(Boolean.valueOf(incRefReaders));
+  }
+
+  @Override
+  public FieldInfos getFieldInfos() {
+    return fieldInfos;
   }
   
   @Override
@@ -292,12 +302,12 @@ public class ParallelReader extends IndexReader {
 
       boolean include = (fieldSelector==null);
       if (!include) {
-        Collection<String> fields = readerToFields.get(reader);
-        for (final String field : fields)
-          if (fieldSelector.accept(field) != FieldSelectorResult.NO_LOAD) {
+        for(FieldInfo fieldInfo : fieldInfos) {
+          if (fieldSelector.accept(fieldInfo.name) != FieldSelectorResult.NO_LOAD) {
             include = true;
             break;
           }
+        }
       }
       if (include) {
         List<Fieldable> fields = reader.document(n, fieldSelector).getFields();
@@ -484,17 +494,6 @@ public class ParallelReader extends IndexReader {
         readers.get(i).close();
       }
     }
-  }
-
-  @Override
-  public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    Set<String> fieldSet = new HashSet<String>();
-    for (final IndexReader reader : readers) {
-      Collection<String> names = reader.getFieldNames(fieldNames);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
   }
 
   private class ParallelTermEnum extends TermEnum {

@@ -18,16 +18,15 @@
 package org.apache.solr.search;
 
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ReaderUtil;
 
 /** Solr wrapper for IndexReader that contains extra context.
  * This is currently experimental, for internal use only, and subject to change.
@@ -340,8 +339,8 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
-    return in.getFieldNames(fieldNames);
+  public FieldInfos getFieldInfos() {
+    return ReaderUtil.getMergedFieldInfos(in);
   }
 
   @Override

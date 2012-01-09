@@ -116,37 +116,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
 
-  /**
-   * Constants describing field properties, for example used for
-   * {@link IndexReader#getFieldNames(FieldOption)}.
-   */
-  public static enum FieldOption {
-    /** All fields */
-    ALL,
-    /** All indexed fields */
-    INDEXED,
-    /** All fields that store payloads */
-    STORES_PAYLOADS,
-    /** All fields that omit tf */
-    OMIT_TERM_FREQ_AND_POSITIONS,
-    /** All fields that omit positions */
-    OMIT_POSITIONS,
-    /** All fields which are not indexed */
-    UNINDEXED,
-    /** All fields which are indexed with termvectors enabled */
-    INDEXED_WITH_TERMVECTOR,
-    /** All fields which are indexed but don't have termvectors enabled */
-    INDEXED_NO_TERMVECTOR,
-    /** All fields with termvectors enabled. Please note that only standard termvector fields are returned */
-    TERMVECTOR,
-    /** All fields with termvectors with position values enabled */
-    TERMVECTOR_WITH_POSITION,
-    /** All fields with termvectors with offset values enabled */
-    TERMVECTOR_WITH_OFFSET,
-    /** All fields with termvectors with offset values and position values enabled */
-    TERMVECTOR_WITH_POSITION_OFFSET,
-  }
-
   private volatile boolean closed;
   protected boolean hasChanges;
   
@@ -1572,15 +1541,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Implements close. */
   protected abstract void doClose() throws IOException;
 
-
   /**
-   * Get a list of unique field names that exist in this index and have the specified
-   * field option information.
-   * @param fldOption specifies which field option should be available for the returned fields
-   * @return Collection of Strings indicating the names of the fields.
-   * @see IndexReader.FieldOption
+   * Get the {@link FieldInfos} describing all fields in
+   * this reader.  NOTE: do not make any changes to the
+   * returned FieldInfos!
+   *
+   * @lucene.experimental
    */
-  public abstract Collection<String> getFieldNames(FieldOption fldOption);
+  public abstract FieldInfos getFieldInfos();
 
   /**
    * Expert: return the IndexCommit that this reader has

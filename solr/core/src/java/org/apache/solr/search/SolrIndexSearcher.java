@@ -17,7 +17,13 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
@@ -25,20 +31,16 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.request.UnInvertedField;
-import org.apache.lucene.util.OpenBitSet;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,7 +198,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
     optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
 
-    fieldNames = r.getFieldNames(IndexReader.FieldOption.ALL);
+    fieldNames = new HashSet<String>();
+    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(r)) {
+      fieldNames.add(fieldInfo.name);
+    }
 
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();

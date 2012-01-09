@@ -321,7 +321,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     // f1
     assertFalse("f1 should have no norms", reader.hasNorms("f1"));
     assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);

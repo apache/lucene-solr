@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -548,16 +547,16 @@ public class CheckIndex {
         if (reader.maxDoc() != info.docCount)
           throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.docCount);
 
-        // Test getFieldNames()
+        // Test getFieldInfos()
         if (infoStream != null) {
           infoStream.print("    test: fields..............");
         }         
-        Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
-        msg("OK [" + fieldNames.size() + " fields]");
-        segInfoStat.numFields = fieldNames.size();
+        FieldInfos fieldInfos = reader.getFieldInfos();
+        msg("OK [" + fieldInfos.size() + " fields]");
+        segInfoStat.numFields = fieldInfos.size();
         
         // Test Field Norms
-        segInfoStat.fieldNormStatus = testFieldNorms(fieldNames, reader);
+        segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
 
         // Test the Term Index
         segInfoStat.termIndexStatus = testTermIndex(info, reader);
@@ -623,7 +622,7 @@ public class CheckIndex {
   /**
    * Test field norms.
    */
-  private Status.FieldNormStatus testFieldNorms(Collection<String> fieldNames, SegmentReader reader) {
+  private Status.FieldNormStatus testFieldNorms(FieldInfos fieldInfos, SegmentReader reader) {
     final Status.FieldNormStatus status = new Status.FieldNormStatus();
 
     try {
@@ -632,9 +631,9 @@ public class CheckIndex {
         infoStream.print("    test: field norms.........");
       }
       final byte[] b = new byte[reader.maxDoc()];
-      for (final String fieldName : fieldNames) {
-        if (reader.hasNorms(fieldName)) {
-          reader.norms(fieldName, b, 0);
+      for (FieldInfo fieldInfo : fieldInfos) {
+        if (reader.hasNorms(fieldInfo.name)) {
+          reader.norms(fieldInfo.name, b, 0);
           ++status.totFields;
         }
       }

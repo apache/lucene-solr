@@ -60,7 +60,11 @@ import org.apache.lucene.util.BitVector;
  * Consider using InstantiatedIndex as if it was immutable.
  *
  * @see org.apache.lucene.index.IndexWriter 
+ *
+ * @deprecated contrib/instantiated will be removed in 4.0;
+ * you can use the memory codec to hold all postings in RAM
  */
+@Deprecated
 public class InstantiatedIndexWriter implements Closeable {
 
   private PrintStream infoStream = null;
@@ -382,6 +386,9 @@ public class InstantiatedIndexWriter implements Closeable {
     for (FieldSetting fieldSetting : fieldSettingsByFieldName.values()) {
       index.getFieldSettings().merge(fieldSetting);
     }
+
+    index.rebuildFieldInfos();
+
     // set term index
     if (orderedTermsDirty) {
       // todo optimize, only update from start position

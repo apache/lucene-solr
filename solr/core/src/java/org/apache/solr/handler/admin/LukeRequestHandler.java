@@ -292,10 +292,14 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     IndexReader reader = searcher.getReader();
     IndexSchema schema = searcher.getSchema();
-    
+
+    Set<String> fieldNames = new TreeSet<String>();
+    for(FieldInfo fieldInfo : reader.getFieldInfos()) {
+      fieldNames.add(fieldInfo.name);
+    }
+
     // Walk the term enum and keep a priority queue for each map in our set
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
-    Set<String> fieldNames = new TreeSet<String>(reader.getFieldNames(IndexReader.FieldOption.ALL));
     for (String fieldName : fieldNames) {
       if( fields != null && !fields.contains( fieldName ) ) {
         continue; // if a field is specified, only them

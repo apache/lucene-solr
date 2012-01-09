@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
@@ -41,14 +40,11 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -621,8 +617,7 @@ public final class MoreLikeThis {
   public Query like(int docNum) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = ir
-          .getFieldNames(IndexReader.FieldOption.INDEXED);
+      Collection<String> fields = ReaderUtil.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
     
@@ -638,8 +633,7 @@ public final class MoreLikeThis {
   public Query like(File f) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = ir
-          .getFieldNames(IndexReader.FieldOption.INDEXED);
+      Collection<String> fields = ReaderUtil.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
     

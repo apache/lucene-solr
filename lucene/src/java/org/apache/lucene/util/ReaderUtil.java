@@ -19,8 +19,12 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
 
 /**
@@ -150,5 +154,27 @@ public final class ReaderUtil {
       }
     }
     return hi;
+  }
+
+  public static Collection<String> getIndexedFields(IndexReader reader) {
+    final Collection<String> fields = new HashSet<String>();
+    for(FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
+      if (fieldInfo.isIndexed) {
+        fields.add(fieldInfo.name);
+      }
+    }
+    return fields;
+  }
+
+  /** Call this to get the (merged) FieldInfos for a
+   *  composite reader */
+  public static FieldInfos getMergedFieldInfos(IndexReader reader) {
+    final List<IndexReader> subReaders = new ArrayList<IndexReader>();
+    ReaderUtil.gatherSubReaders(subReaders, reader);
+    final FieldInfos fieldInfos = new FieldInfos();
+    for(IndexReader subReader : subReaders) {
+      fieldInfos.add(subReader.getFieldInfos());
+    }
+    return fieldInfos;
   }
 }

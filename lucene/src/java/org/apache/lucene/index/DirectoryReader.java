@@ -24,11 +24,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -314,15 +312,21 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return buffer.toString();
   }
 
+  @Override
+  public FieldInfos getFieldInfos() {
+    throw new UnsupportedOperationException("call getFieldInfos() on each sub reader, or use ReaderUtil.getMergedFieldInfos, instead");
+  }
+
   private void initialize(SegmentReader[] subReaders) throws IOException {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
     for (int i = 0; i < subReaders.length; i++) {
+      final SegmentReader reader = subReaders[i];
       starts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
-
-      if (subReaders[i].hasDeletions())
+      maxDoc += reader.maxDoc();      // compute maxDocs
+      if (reader.hasDeletions()) {
         hasDeletions = true;
+      }
     }
     starts[subReaders.length] = maxDoc;
 
@@ -913,22 +917,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     if (ioe != null) throw ioe;
   }
 
-  @Override
-  public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    return getFieldNames(fieldNames, this.subReaders);
-  }
-  
-  static Collection<String> getFieldNames (IndexReader.FieldOption fieldNames, IndexReader[] subReaders) {
-    // maintain a unique set of field names
-    Set<String> fieldSet = new HashSet<String>();
-    for (IndexReader reader : subReaders) {
-      Collection<String> names = reader.getFieldNames(fieldNames);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  } 
-  
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;

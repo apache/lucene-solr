@@ -26,7 +26,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 
 public class TestSerialization extends LuceneTestCase {
 
@@ -49,8 +51,13 @@ public class TestSerialization extends LuceneTestCase {
     oos.writeObject(ii);
     oos.close();
     baos.close();
+
+    final byte[] bytes = baos.toByteArray();
+    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+    ObjectInputStream ois = new ObjectInputStream(bais);
+    InstantiatedIndex ii2 = (InstantiatedIndex) ois.readObject();
+    assertNotNull(ii2.getFieldInfos());
     dir.close();
-    
   }
 
 }

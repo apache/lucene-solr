@@ -222,7 +222,6 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
         // to have a new "thing" my Fields can do, I can
         // easily add it
         FieldInfo fi = fieldInfos.add(fieldName, field.isIndexed(), field.isTermVectorStored(),
-                                      field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
                                       field.getOmitNorms(), false, field.getIndexOptions());
 
         fp = new DocFieldProcessorPerField(this, fi);
@@ -234,7 +233,6 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
           rehash();
       } else {
         fp.fieldInfo.update(field.isIndexed(), field.isTermVectorStored(),
-                            field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
                             field.getOmitNorms(), false, field.getIndexOptions());
       }
 

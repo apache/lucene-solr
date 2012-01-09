@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 import java.io.IOException;
-import java.util.Collection;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
@@ -101,11 +100,6 @@ public class TestSegmentMerger extends LuceneTestCase {
     TermDocs termDocs = mergedReader.termDocs(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
     assertTrue(termDocs != null);
     assertTrue(termDocs.next() == true);
-    
-    Collection<String> stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
-    assertTrue(stored != null);
-    //System.out.println("stored size: " + stored.size());
-    assertTrue("We do not have 3 fields that were indexed with term vector",stored.size() == 3);
     
     TermFreqVector vector = mergedReader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);

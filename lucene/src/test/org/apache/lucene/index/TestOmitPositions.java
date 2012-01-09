@@ -162,7 +162,7 @@ public class TestOmitPositions extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     // docs + docs = docs
     assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
     // docs + docs/freqs = docs

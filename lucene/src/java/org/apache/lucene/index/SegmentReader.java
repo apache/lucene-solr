@@ -20,20 +20,16 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -473,6 +469,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return core.getTermsReader().terms(t);
   }
 
+  @Override
+  public FieldInfos getFieldInfos() {
+    return core.fieldInfos;
+  }
+
+  // TODO: remove in 4.0
   FieldInfos fieldInfos() {
     return core.fieldInfos;
   }
@@ -535,60 +537,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return si.docCount;
-  }
-
-  /**
-   * @see IndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)
-   */
-  @Override
-  public Collection<String> getFieldNames(IndexReader.FieldOption fieldOption) {
-    ensureOpen();
-
-    Set<String> fieldSet = new HashSet<String>();
-    for (int i = 0; i < core.fieldInfos.size(); i++) {
-      FieldInfo fi = core.fieldInfos.fieldInfo(i);
-      if (fieldOption == IndexReader.FieldOption.ALL) {
-        fieldSet.add(fi.name);
-      }
-      else if (!fi.isIndexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.indexOptions == IndexOptions.DOCS_ONLY && fieldOption == IndexReader.FieldOption.OMIT_TERM_FREQ_AND_POSITIONS) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS && fieldOption == IndexReader.FieldOption.OMIT_POSITIONS) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.isIndexed && fieldOption == IndexReader.FieldOption.INDEXED) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.isIndexed && fi.storeTermVector == false && fieldOption == IndexReader.FieldOption.INDEXED_NO_TERMVECTOR) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.storeTermVector == true &&
-               fi.storePositionWithTermVector == false &&
-               fi.storeOffsetWithTermVector == false &&
-               fieldOption == IndexReader.FieldOption.TERMVECTOR) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.isIndexed && fi.storeTermVector && fieldOption == IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.storePositionWithTermVector && fi.storeOffsetWithTermVector == false && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION) {
-        fieldSet.add(fi.name);
-      }
-      else if (fi.storeOffsetWithTermVector && fi.storePositionWithTermVector == false && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET) {
-        fieldSet.add(fi.name);
-      }
-      else if ((fi.storeOffsetWithTermVector && fi.storePositionWithTermVector) &&
-                fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET) {
-        fieldSet.add(fi.name);
-      }
-    }
-    return fieldSet;
   }
 
   @Override

@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /** Sort an index by document importance factor. Higher scoring documents are
@@ -192,6 +193,11 @@ public class IndexSorter {
     @Override
     public IndexReader[] getSequentialSubReaders() {
       return null;
+    }
+
+    @Override
+    public FieldInfos getFieldInfos() {
+      return ReaderUtil.getMergedFieldInfos(in);
     }
 
     @Override
