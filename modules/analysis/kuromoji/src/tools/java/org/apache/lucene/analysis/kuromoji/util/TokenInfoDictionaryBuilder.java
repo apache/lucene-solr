@@ -28,16 +28,10 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
-import org.apache.lucene.analysis.kuromoji.dict.TokenInfoFST;
 import org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder.DictionaryFormat;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -46,15 +40,12 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 import com.ibm.icu.text.Normalizer2;
 
-
 /**
  */
 public class TokenInfoDictionaryBuilder {
   
   /** Internal word id - incrementally assigned as entries are read and added. This will be byte offset of dictionary file */
   private int offset = 4; // Start from 4. First 4 bytes are used to store size of dictionary file.
-  
-  private TreeMap<Integer, String> dictionaryEntries; // wordId, surface form
   
   private String encoding = "euc-jp";
   
@@ -66,7 +57,6 @@ public class TokenInfoDictionaryBuilder {
   public TokenInfoDictionaryBuilder(DictionaryFormat format, String encoding, boolean normalizeEntries) {
     this.format = format;
     this.encoding = encoding;
-    this.dictionaryEntries = new TreeMap<Integer, String>();		
     this.normalizeEntries = normalizeEntries;
     this.normalizer = normalizeEntries ? Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE) : null;
   }
@@ -90,7 +80,8 @@ public class TokenInfoDictionaryBuilder {
     TokenInfoDictionaryWriter dictionary = new TokenInfoDictionaryWriter(10 * 1024 * 1024);
     
     // all lines in the file
-    List<String[]> lines = new ArrayList<String[]>();
+    System.out.println("  parse...");
+    List<String[]> lines = new ArrayList<String[]>(400000);
     for (File file : csvFiles){
       FileInputStream inputStream = new FileInputStream(file);
       Charset cs = Charset.forName(encoding);
@@ -124,6 +115,8 @@ public class TokenInfoDictionaryBuilder {
       }
     }
     
+    System.out.println("  sort...");
+
     // sort by term
     Collections.sort(lines, new Comparator<String[]>() {
       public int compare(String[] left, String[] right) {
@@ -131,6 +124,15 @@ public class TokenInfoDictionaryBuilder {
       }
     });
     
+    System.out.println("  encode...");
+
+    PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    IntsRef scratch = new IntsRef();
+    long ord = -1; // first ord will be 0
+    String lastValue = null;
+
+    // build tokeninfo dictionary
     for (String[] entry : lines) {
       int next = dictionary.put(entry);
         
@@ -138,54 +140,29 @@ public class TokenInfoDictionaryBuilder {
         System.out.println("Failed to process line: " + Arrays.toString(entry));
         continue;
       }
-        
-      dictionaryEntries.put(offset, entry[0]);
+      
+      String token = entry[0];
+      if (!token.equals(lastValue)) {
+        // new word to add to fst
+        ord++;
+        lastValue = token;
+        scratch.grow(token.length());
+        scratch.length = token.length();
+        for (int i = 0; i < token.length(); i++) {
+          scratch.ints[i] = (int) token.charAt(i);
+        }
+        fstBuilder.add(scratch, fstOutput.get(ord));
+      }
+      dictionary.addMapping((int)ord, offset);
       offset = next;
     }
     
-    // TODO: we can do this in parallel
-    System.out.print("  building FST...");
-    FST<Long> fst = buildFST();
+    FST<Long> fst = fstBuilder.finish();
+    System.out.print("  " + fst.getNodeCount() + " nodes, " + fst.getArcCount() + " arcs, " + fst.sizeInBytes() + " bytes...  ");
     dictionary.setFST(fst);
     System.out.println(" done");
     
-    System.out.print("  processing target map...");
-    TokenInfoFST lookup = new TokenInfoFST(fst, false);
-    assert fst != null;
-    for (Entry<Integer, String> entry : entrySet()) {
-      int tokenInfoId = entry.getKey();
-      String surfaceform = entry.getValue();
-      int fstId = lookupOrd(lookup, surfaceform);
-      dictionary.addMapping(fstId, tokenInfoId);
-    }
-    
-    System.out.println("  done");
-    
     return dictionary;
-  }
-    
-  public int lookupOrd(TokenInfoFST fst, String word) throws IOException {
-    final FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
-    // Accumulate output as we go
-    final Long NO_OUTPUT = fst.NO_OUTPUT;
-    Long output = NO_OUTPUT;
-    for (int i = 0; i < word.length(); i++) {
-      int ch = word.charAt(i);
-      if (fst.findTargetArc(ch, arc, arc, i == 0) == null) {
-        assert false;
-        return -1;
-      } else if (arc.output != NO_OUTPUT) {
-        output = fst.addOutput(output, arc.output);
-      }
-    }
-    if (fst.findTargetArc(FST.END_LABEL, arc, arc, false) == null) {
-      assert false;
-      return -1;
-    } else if (arc.output != NO_OUTPUT) {
-      return fst.addOutput(output, arc.output).intValue();
-    } else {
-      return output.intValue();
-    }
   }
   
   /*
@@ -241,32 +218,5 @@ public class TokenInfoDictionaryBuilder {
       }			
       return features2;
     }
-  }
-  
-  private Set<Entry<Integer, String>> entrySet() {
-    return dictionaryEntries.entrySet();
-  }
-  
-  private FST<Long> buildFST() throws IOException {    
-    FST<Long> words;
-    Collection<String> values = dictionaryEntries.values();
-    // TODO: we don't need to sort again, we could just check != last
-    TreeSet<String> unique = new TreeSet<String>(values);
-    PositiveIntOutputs o = PositiveIntOutputs.getSingleton(true);
-    Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE2, o);
-    IntsRef scratch = new IntsRef();
-    long ord = 0;
-    for (String entry : unique) {
-      scratch.grow(entry.length());
-      scratch.length = entry.length();
-      for (int i = 0; i < entry.length(); i++) {
-        scratch.ints[i] = (int) entry.charAt(i);
-      }
-      b.add(scratch, o.get(ord));
-      ord++;
-    }
-    words = b.finish();
-    System.out.print(" " + words.getNodeCount() + " nodes, " + words.getArcCount() + " arcs, " + words.sizeInBytes() + " bytes...  ");
-    return words;
   }
 }
