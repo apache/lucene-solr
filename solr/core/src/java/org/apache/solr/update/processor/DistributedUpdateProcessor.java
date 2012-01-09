@@ -72,7 +72,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final SolrQueryResponse rsp;
   private final UpdateRequestProcessor next;
 
-  private static final String VERSION_FIELD = "_version_";
+  public static final String VERSION_FIELD = "_version_";
 
   private final UpdateHandler updateHandler;
   private final UpdateLog ulog;

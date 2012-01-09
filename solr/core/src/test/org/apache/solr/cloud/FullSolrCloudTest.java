@@ -992,7 +992,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // wait for recovery to finish
     // if it takes over n seconds, assume we didnt get our listener attached before
     // recover started - it should be done before n though
-    recoveryLatch.await(30, TimeUnit.SECONDS);
+    if (!recoveryLatch.await(45, TimeUnit.SECONDS)) {
+      log.warn("Timed out waiting to be notified of replication");
+    }
   }
 
   @Override

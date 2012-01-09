@@ -26,8 +26,11 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.update.VersionInfo;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
 
 /**
@@ -162,6 +165,8 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     assertEquals(2, results.getResults().getNumFound());
     
     testIndexingWithSuss();
+    
+    // TODO: testOptimisticUpdate(results);
   }
 
   private void testIndexingWithSuss() throws MalformedURLException, Exception {
@@ -176,6 +181,49 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     commit();
     
     checkShardConsistency(false);
+  }
+  
+  private void testOptimisticUpdate(QueryResponse results) throws Exception {
+    SolrDocument doc = results.getResults().get(0);
+    System.out.println("version:" + doc.getFieldValue(VersionInfo.VERSION_FIELD));
+    Long version = (Long) doc.getFieldValue(VersionInfo.VERSION_FIELD);
+    Integer theDoc = (Integer) doc.getFieldValue("id");
+    UpdateRequest uReq = new UpdateRequest();
+    SolrInputDocument doc1 = new SolrInputDocument();
+    uReq.setParams(new ModifiableSolrParams());
+    uReq.getParams().set(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+    addFields(doc1, "id", theDoc, t1, "theupdatestuff");
+    uReq.add(doc1);
+    
+    uReq.process(cloudClient);
+    uReq.process(controlClient);
+    
+    commit();
+    
+    // updating the old version should fail...
+    SolrInputDocument doc2 = new SolrInputDocument();
+    uReq = new UpdateRequest();
+    uReq.setParams(new ModifiableSolrParams());
+    uReq.getParams().set(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+    addFields(doc2, "id", theDoc, t1, "thenewupdatestuff");
+    uReq.add(doc2);
+    
+    uReq.process(cloudClient);
+    uReq.process(controlClient);
+    
+    commit();
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("distrib", "true");
+    params.add("q", t1 + ":thenewupdatestuff");
+    QueryResponse res = clients.get(0).query(params);
+    assertEquals(0, res.getResults().getNumFound());
+    
+    params = new ModifiableSolrParams();
+    params.add("distrib", "true");
+    params.add("q", t1 + ":theupdatestuff");
+    res = clients.get(0).query(params);
+    assertEquals(1, res.getResults().getNumFound());
   }
 
   private QueryResponse query(SolrServer server) throws SolrServerException {

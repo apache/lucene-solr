@@ -439,6 +439,9 @@ public class SolrZkClient {
    * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
    * group, node exist, each will be created.
    * 
+   * Note: retryOnConnLoss is only respected for the final node - nodes
+   * before that are always retried on connection loss.
+   * 
    * @param path
    * @param data
    * @param createMode
@@ -453,6 +456,7 @@ public class SolrZkClient {
     if (log.isInfoEnabled()) {
       log.info("makePath: " + path);
     }
+    boolean retry = true;
     
     if (path.startsWith("/")) {
       path = path.substring(1, path.length());
@@ -470,9 +474,11 @@ public class SolrZkClient {
         if (i == paths.length - 1) {
           mode = createMode;
           bytes = data;
+          System.out.println("bytes = data");
+          if (!retryOnConnLoss) retry = false;
         }
         try {
-          if (retryOnConnLoss) {
+          if (retry) {
             final CreateMode finalMode = mode;
             final byte[] finalBytes = bytes;
             zkCmdExecutor.retryOperation(new ZkOperation() {

@@ -101,31 +101,22 @@ public class ZkCmdExecutor {
     throw exception;
   }
   
-  public void ensureExists(String path, final SolrZkClient zkClient) {
+  public void ensureExists(String path, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
     ensureExists(path, null, CreateMode.PERSISTENT, zkClient);
   }
   
   public void ensureExists(final String path, final byte[] data,
-      CreateMode createMode, final SolrZkClient zkClient) {
-    try {
-      retryOperation(new ZkOperation() {
-        public Object execute() throws KeeperException, InterruptedException {
-          if (zkClient.exists(path, false)) {
-            return true;
-          }
-          try {
-            zkClient.makePath(path, data, false);
-          } catch (NodeExistsException e) {
-            // its okay if another beats us creating the node
-          }
-          return true;
-        }
-      });
-    } catch (KeeperException e) {
-      LOG.warn("", e);
-    } catch (InterruptedException e) {
-      LOG.warn("", e);
+      CreateMode createMode, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    
+    if (zkClient.exists(path, false)) {
+      return;
     }
+    try {
+      zkClient.makePath(path, data, true);
+    } catch (NodeExistsException e) {
+      // its okay if another beats us creating the node
+    }
+    
   }
   
   /**
