@@ -361,11 +361,11 @@ public class ChaosMonkey {
             
             int rnd = random.nextInt(10);
 
-            if (expireSessions && rnd < 6) {
+            if (expireSessions && rnd < 3) {
               expireRandomSession();
             } 
             
-            if (causeConnectionLoss && rnd < 5) {
+            if (causeConnectionLoss && rnd < 2) {
               randomConnectionLoss();
               randomConnectionLoss();
             }
