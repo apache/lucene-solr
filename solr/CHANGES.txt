@@ -448,6 +448,9 @@ Bug Fixes
 
 * SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
   the LukeRequestHandler (hossman)
+
+* SOLR-3024: Fixed JSONTestUtil.matchObj, in previous releases it was not 
+  respecting the 'delta' arg (David Smiley via hossman)
   
 Other Changes
 ----------------------
