@@ -159,7 +159,6 @@ public final class ZkController {
           public void command() {
             try {
               // we need to create all of our lost watches
-              createEphemeralLiveNode();
               zkStateReader.createClusterStateWatchersAndUpdate();
               
               // re register all descriptors
@@ -173,6 +172,9 @@ public final class ZkController {
                   register(descriptor.getName(), descriptor, true);
                 }
               }
+              
+              // don't advertise as live until everyone has registered
+              createEphemeralLiveNode();
 
             } catch (InterruptedException e) {
               // Restore the interrupted status
