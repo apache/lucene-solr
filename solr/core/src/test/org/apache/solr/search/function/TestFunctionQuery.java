@@ -296,6 +296,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExternalFileFieldNumericKey() throws Exception {
+    final String extField = "eff_trie";
+    final String keyField = "eff_ti";
+    assertU(adoc("id", "991", keyField, "91"));
+    assertU(adoc("id", "992", keyField, "92"));
+    assertU(adoc("id", "993", keyField, "93"));
+    assertU(commit());
+    makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67","UTF-8");
+    singleTest(extField,"\0",991,543210,992,-8,993,250);
+  }
+
+  @Test
   public void testGeneral() throws Exception {
     clearIndex();
     
