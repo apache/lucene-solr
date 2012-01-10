@@ -299,9 +299,10 @@ public class FileFloatSource extends ValueSource {
         String key = line.substring(0, delimIndex);
         String val = line.substring(delimIndex+1, endIndex);
 
-        String internalKey = idType.toInternal(key);
+        String internalKey = "";
         float fval;
         try {
+          internalKey = idType.toInternal(key);
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {
