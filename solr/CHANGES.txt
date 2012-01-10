@@ -394,6 +394,11 @@ Documentation
   
 ==================  3.6.0  ==================
 
+Upgrading from Solr 3.5
+----------------------
+* As doGet() methods in SimplePostTool was changed to static, the client applications of this
+  class need to be recompiled.
+
 New Features
 ----------------------
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
@@ -421,10 +426,12 @@ New Features
 
 Optimizations
 ----------------------
-* SOLR-1931 Speedup for LukeRequestHandler and admin/schema browser. New parameter
+* SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
   reportDocCount defaults to 'false'. Old behavior still possible by specifying this as 'true'
   (Erick Erickson)
 
+* SOLR-3012: Move System.getProperty("type") in postData() to main() and add type argument so that
+  the client applications of SimplePostTool can set content type via method argument. (koji)
 
 Bug Fixes
 ----------------------
