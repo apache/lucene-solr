@@ -5,6 +5,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -55,9 +56,17 @@ final class ShardLeaderElectionContext extends ElectionContext {
 
   @Override
   void runLeaderProcess() throws KeeperException, InterruptedException {
-    zkClient.makePath(leaderPath,
-        leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),
-        CreateMode.EPHEMERAL, true);
+    try {
+      zkClient.makePath(leaderPath,
+          leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),
+          CreateMode.EPHEMERAL, true);
+    } catch (NodeExistsException e) {
+      // if a previous leader ephemeral exists for some reason, try and remove it
+      zkClient.delete(leaderPath, -1, true);
+      zkClient.makePath(leaderPath,
+          leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),
+          CreateMode.EPHEMERAL, true);
+    }
   }
 }
 
