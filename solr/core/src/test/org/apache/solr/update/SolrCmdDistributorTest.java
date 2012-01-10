@@ -95,7 +95,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // add one doc to controlClient
     
     AddUpdateCommand cmd = new AddUpdateCommand(null);
-    cmd.solrDoc = getSolrDoc("id", 1);
+    cmd.solrDoc = sdoc("id", 1);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
@@ -116,16 +116,16 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     // add another 2 docs to control and 3 to client
     
-    cmd.solrDoc = getSolrDoc("id", 2);
+    cmd.solrDoc = sdoc("id", 2);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
     AddUpdateCommand cmd2 = new AddUpdateCommand(null);
-    cmd2.solrDoc = getSolrDoc("id", 3);
+    cmd2.solrDoc = sdoc("id", 3);
 
     cmdDistrib.distribAdd(cmd2, nodes, params);
     
     AddUpdateCommand cmd3 = new AddUpdateCommand(null);
-    cmd3.solrDoc = getSolrDoc("id", 4);
+    cmd3.solrDoc = sdoc("id", 4);
     
     cmdDistrib.distribAdd(cmd3, Collections.singletonList(nodes.get(1)), params);
     
@@ -163,17 +163,5 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     numFound = client.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     assertEquals(results.toString(), 2, numFound);
-  }
-  
-  protected void addFields(SolrInputDocument doc, Object... fields) {
-    for (int i = 0; i < fields.length; i += 2) {
-      doc.addField((String) (fields[i]), fields[i + 1]);
-    }
-  }
-  
-  private SolrInputDocument getSolrDoc(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    return doc;
   }
 }
