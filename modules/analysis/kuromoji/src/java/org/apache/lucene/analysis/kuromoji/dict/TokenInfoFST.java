@@ -74,8 +74,4 @@ public final class TokenInfoFST {
   public Arc<Long> getFirstArc(FST.Arc<Long> arc) {
     return fst.getFirstArc(arc);
   }
-  
-  public Long addOutput(Long prefix, Long output) {
-    return fst.outputs.add(prefix, output);
-  }
 }
