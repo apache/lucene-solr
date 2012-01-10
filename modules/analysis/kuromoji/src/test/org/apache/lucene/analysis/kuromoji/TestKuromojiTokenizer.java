@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -24,6 +25,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
 public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
@@ -103,6 +106,25 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       ts.reset();
       while (ts.incrementToken()) {
+      }
+    }
+  }
+  
+  /** simple test for supplementary characters */
+  public void testSurrogates() throws IOException {
+    assertAnalyzesTo(analyzer, "𩬅艱鍟䇹愯瀛",
+      new String[] { "𩬅", "艱", "鍟", "䇹", "愯", "瀛" });
+  }
+  
+  /** random test ensuring we don't ever split supplementaries */
+  public void testSurrogates2() throws IOException {
+    for (int i = 0; i < 10000; i++) {
+      String s = _TestUtil.randomUnicodeString(random, 100);
+      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      ts.reset();
+      while (ts.incrementToken()) {
+        assertTrue(UnicodeUtil.validUTF16String(termAtt));
       }
     }
   }
