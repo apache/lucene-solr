@@ -241,7 +241,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
  
   // TODO: optionally fail if n replicas are not reached...
-  // nocommit: what the hell - doesnt seem to fail when cannot forward - need to check that...
   private void doFinish() {
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
