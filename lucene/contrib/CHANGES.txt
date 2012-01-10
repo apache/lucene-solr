@@ -28,6 +28,9 @@ New Features
 * LUCENE-3634: IndexReader's static main method was moved to a new
   tool, CompoundFileExtractor, in contrib/misc.  (Mike McCandless)
 
+* SOLR-3020: Add KeywordAttribute support to HunspellStemFilter. Terms marked as
+  keywords are not modified by the stemmer. (Simon Willnauer, Helge Jenssen) 
+
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 

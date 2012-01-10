@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hunspell.HunspellStemmer.Stem;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
@@ -34,6 +35,7 @@ public final class HunspellStemFilter extends TokenFilter {
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final HunspellStemmer stemmer;
   
   private List<Stem> buffer;
@@ -82,6 +84,10 @@ public final class HunspellStemFilter extends TokenFilter {
     
     if (!input.incrementToken()) {
       return false;
+    }
+    
+    if (keywordAtt.isKeyword()) {
+      return true;
     }
     
     buffer = dedup ? stemmer.uniqueStems(termAtt.buffer(), termAtt.length()) : stemmer.stem(termAtt.buffer(), termAtt.length());
