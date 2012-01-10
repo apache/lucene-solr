@@ -206,8 +206,6 @@ public class Viterbi {
     int[] startSizeArr = new int[length + 2]; // array to keep ViterbiNode count in startIndexArr
     int[] endSizeArr = new int[length + 2];   // array to keep ViterbiNode count in endIndexArr
     FST.Arc<Long> arc = new FST.Arc<Long>();
-    FST.Arc<Long> endArc = new FST.Arc<Long>();
-    final Long NO_OUTPUT = fst.NO_OUTPUT;
     ViterbiNode bosNode = new ViterbiNode(0, BOS, 0, BOS.length, 0, 0, 0, -1, Type.KNOWN);
     addToArrays(bosNode, 0, 1, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
     
