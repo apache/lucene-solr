@@ -25,24 +25,17 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 
 public class TestKuromojiBaseFormFilter extends BaseTokenStreamTestCase {
-  private Analyzer analyzer;
-
-  public void setUp() throws Exception {
-    super.setUp();
-    final Segmenter segmenter = new Segmenter();
-    analyzer = new Analyzer() {
-
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
-        return new TokenStreamComponents(tokenizer, new KuromojiBaseFormFilter(tokenizer));
-      }
-    };
-  }
+  private Analyzer analyzer = new Analyzer() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new KuromojiTokenizer(reader);
+      return new TokenStreamComponents(tokenizer, new KuromojiBaseFormFilter(tokenizer));
+    }
+  };
   
   public void testBasics() throws IOException {
-    assertAnalyzesTo(analyzer, "それはまだ実験段階にあります。",
-        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます", "。" }
+    assertAnalyzesTo(analyzer, "それはまだ実験段階にあります",
+        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"  }
     );
   }
   

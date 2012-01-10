@@ -17,35 +17,37 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util._TestUtil;
 
-public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
-  private Analyzer analyzer;
-
-  public void setUp() throws Exception {
-    super.setUp();
-    final Segmenter segmenter = new Segmenter();
-    analyzer = new KuromojiAnalyzer(segmenter);
-  }
+public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
+  private Analyzer analyzer = new Analyzer() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new KuromojiTokenizer(reader);
+      return new TokenStreamComponents(tokenizer, tokenizer);
+    }
+  };
   
   public void testDecomposition1() throws Exception {
     assertAnalyzesTo(analyzer, "本来は、貧困層の女性や子供に医療保護を提供するために創設された制度である、" +
                          "アメリカ低所得者医療援助制度が、今日では、その予算の約３分の１を老人に費やしている。",
-     new String[] { "本来", "は", "、", "貧困", "層", "の", "女性", "や", "子供", "に", "医療", "保護", "を",      
-                    "提供", "する", "ため", "に", "創設", "さ", "れ", "た", "制度", "で", "ある", "、", "アメリカ", 
-                    "低", "所得", "者", "医療", "援助", "制度", "が", "、", "今日", "で", "は", "、", "その",
-                    "予算", "の", "約", "３", "分の", "１", "を", "老人", "に", "費やし", "て", "いる", "。" },
-     new int[] { 0, 2, 3, 4, 6, 7,  8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30, 
-                 31, 33, 34, 36, 37, 41, 42, 44, 45, 47, 49, 51, 52, 53, 55, 56, 57, 58, 60,
-                 62, 63, 64, 65, 67, 68, 69, 71, 72, 75, 76, 78 },
-     new int[] { 2, 3, 4, 6, 7, 8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30, 31,
-                 33, 34, 36, 37, 41, 42, 44, 45, 47, 49, 51, 52, 53, 55, 56, 57, 58, 60, 62,
-                 63, 64, 65, 67, 68, 69, 71, 72, 75, 76, 78, 79 }
+     new String[] { "本来", "は",  "貧困", "層", "の", "女性", "や", "子供", "に", "医療", "保護", "を",      
+                    "提供", "する", "ため", "に", "創設", "さ", "れ", "た", "制度", "で", "ある",  "アメリカ", 
+                    "低", "所得", "者", "医療", "援助", "制度", "が",  "今日", "で", "は",  "その",
+                    "予算", "の", "約", "３", "分の", "１", "を", "老人", "に", "費やし", "て", "いる" },
+     new int[] { 0, 2, 4, 6, 7,  8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30, 
+                 31, 33, 34, 37, 41, 42, 44, 45, 47, 49, 51, 53, 55, 56, 58, 60,
+                 62, 63, 64, 65, 67, 68, 69, 71, 72, 75, 76 },
+     new int[] { 2, 3, 6, 7, 8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30, 31,
+                 33, 34, 36, 41, 42, 44, 45, 47, 49, 51, 52, 55, 56, 57, 60, 62,
+                 63, 64, 65, 67, 68, 69, 71, 72, 75, 76, 78 }
     );
   }
   
@@ -59,9 +61,9 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   
   public void testDecomposition3() throws Exception {
     assertAnalyzesTo(analyzer, "魔女狩大将マシュー・ホプキンス。",
-      new String[] { "魔女", "狩", "大将", "マシュー", "・", "ホプキンス", "。" },
-      new int[] { 0, 2, 3, 5,  9, 10, 15 },
-      new int[] { 2, 3, 5, 9, 10, 15, 16 }
+      new String[] { "魔女", "狩", "大将", "マシュー",  "ホプキンス" },
+      new int[] { 0, 2, 3, 5, 10 },
+      new int[] { 2, 3, 5, 9, 15 }
     );
   }
 
@@ -84,9 +86,9 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   /** Tests that sentence offset is incorporated into the resulting offsets */
   public void testTwoSentences() throws Exception {
     assertAnalyzesTo(analyzer, "魔女狩大将マシュー・ホプキンス。 魔女狩大将マシュー・ホプキンス。",
-      new String[] { "魔女", "狩", "大将", "マシュー", "・", "ホプキンス", "。", " ", "魔女", "狩", "大将", "マシュー", "・", "ホプキンス", "。" },
-      new int[] { 0, 2, 3, 5,  9, 10, 15, 16, 17, 19, 20, 22, 26, 27, 32 },
-      new int[] { 2, 3, 5, 9, 10, 15, 16, 17, 19, 20, 22, 26, 27, 32, 33 }
+      new String[] { "魔女", "狩", "大将", "マシュー", "ホプキンス",  "魔女", "狩", "大将", "マシュー",  "ホプキンス"  },
+      new int[] { 0, 2, 3, 5, 10, 17, 19, 20, 22, 27 },
+      new int[] { 2, 3, 5, 9, 15, 19, 20, 22, 26, 32 }
     );
   }
 
@@ -116,9 +118,9 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
     );
     
     assertTokenStreamContents(analyzer.tokenStream("foo", new StringReader("これは本ではない    ")),
-        new String[] { "これ", "は", "本", "で", "は", "ない", " ", " ", " ", " " },
-        new int[] { 0, 2, 3, 4, 5, 6, 8, 9, 10, 11 },
-        new int[] { 2, 3, 4, 5, 6, 8, 9, 10, 11, 12 },
+        new String[] { "これ", "は", "本", "で", "は", "ない"  },
+        new int[] { 0, 2, 3, 4, 5, 6, 8 },
+        new int[] { 2, 3, 4, 5, 6, 8, 9 },
         new Integer(12)
     );
   }

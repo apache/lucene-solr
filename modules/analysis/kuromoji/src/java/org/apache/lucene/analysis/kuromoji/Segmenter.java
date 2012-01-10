@@ -145,7 +145,7 @@ public class Segmenter {
   
   private List<Token> doTokenize(int offset, String sentence) {
     char text[] = sentence.toCharArray();
-    return doTokenize(offset, text, 0, text.length);
+    return doTokenize(offset, text, 0, text.length, false);
   }
   
   /**
@@ -154,7 +154,7 @@ public class Segmenter {
    * @param sentence sentence to tokenize
    * @return list of Token
    */
-  public List<Token> doTokenize(int offset, char[] sentence, int sentenceOffset, int sentenceLength) {
+  public List<Token> doTokenize(int offset, char[] sentence, int sentenceOffset, int sentenceLength, boolean discardPunctuation) {
     ArrayList<Token> result = new ArrayList<Token>();
     
     ViterbiNode[][][] lattice;
@@ -168,6 +168,8 @@ public class Segmenter {
       int wordId = node.getWordId();
       if (node.getType() == Type.KNOWN && wordId == 0){ // Do not include BOS/EOS 
         continue;
+      } else if (discardPunctuation && node.getLength() > 0 && isPunctuation(node.getSurfaceForm()[node.getOffset()])) {
+        continue; // Do not emit punctuation
       }
       Token token = new Token(wordId, node.getSurfaceForm(), node.getOffset(), node.getLength(), node.getType(), offset + node.getStartIndex(), dictionaryMap.get(node.getType()));	// Pass different dictionary based on the type of node
       result.add(token);
@@ -188,5 +190,29 @@ public class Segmenter {
     
     return new GraphvizFormatter(ConnectionCosts.getInstance())
       .format(lattice[0], lattice[1], bestPath);
+  }
+  
+  static final boolean isPunctuation(char ch) {
+    switch(Character.getType(ch)) {
+      case Character.SPACE_SEPARATOR:
+      case Character.LINE_SEPARATOR:
+      case Character.PARAGRAPH_SEPARATOR:
+      case Character.CONTROL:
+      case Character.FORMAT:
+      case Character.DASH_PUNCTUATION:
+      case Character.START_PUNCTUATION:
+      case Character.END_PUNCTUATION:
+      case Character.CONNECTOR_PUNCTUATION:
+      case Character.OTHER_PUNCTUATION:
+      case Character.MATH_SYMBOL:
+      case Character.CURRENCY_SYMBOL:
+      case Character.MODIFIER_SYMBOL:
+      case Character.OTHER_SYMBOL:
+      case Character.INITIAL_QUOTE_PUNCTUATION:
+      case Character.FINAL_QUOTE_PUNCTUATION:
+        return true;
+      default:
+        return false;
+    }
   }
 }

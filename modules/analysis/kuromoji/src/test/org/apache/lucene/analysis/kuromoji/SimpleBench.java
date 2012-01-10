@@ -14,8 +14,7 @@ import org.apache.lucene.util.Version;
 public class SimpleBench {
   
   public static void main(String args[]) throws Exception {
-    Segmenter segmenter = new Segmenter();
-    Analyzer a = new KuromojiAnalyzer(segmenter);
+    Analyzer a = new KuromojiAnalyzer(Version.LUCENE_CURRENT);
     Analyzer b = new CJKAnalyzer(Version.LUCENE_CURRENT);
     
     /* slight warmup */

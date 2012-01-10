@@ -22,11 +22,15 @@ import org.apache.lucene.analysis.kuromoji.util.ToStringUtil;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSpeechAttribute, Cloneable {
+public class ReadingAttributeImpl extends AttributeImpl implements ReadingAttribute, Cloneable {
   private Token token;
   
-  public String getPartOfSpeech() {
-    return token == null ? null : token.getPartOfSpeech();
+  public String getReading() {
+    return token == null ? null : token.getReading();
+  }
+  
+  public String getPronunciation() {
+    return token == null ? null : token.getPronunciation();
   }
   
   public void setToken(Token token) {
@@ -40,15 +44,19 @@ public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSp
 
   @Override
   public void copyTo(AttributeImpl target) {
-    PartOfSpeechAttribute t = (PartOfSpeechAttribute) target;
+    ReadingAttribute t = (ReadingAttribute) target;
     t.setToken(token);
   }
   
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    String partOfSpeech = getPartOfSpeech();
-    String partOfSpeechEN = partOfSpeech == null ? null : ToStringUtil.getPOSTranslation(partOfSpeech);
-    reflector.reflect(PartOfSpeechAttribute.class, "partOfSpeech", partOfSpeech);
-    reflector.reflect(PartOfSpeechAttribute.class, "partOfSpeech (en)", partOfSpeechEN);
+    String reading = getReading();
+    String readingEN = reading == null ? null : ToStringUtil.getRomanization(reading);
+    String pronunciation = getPronunciation();
+    String pronunciationEN = pronunciation == null ? null : ToStringUtil.getRomanization(pronunciation);
+    reflector.reflect(ReadingAttribute.class, "reading", reading);
+    reflector.reflect(ReadingAttribute.class, "reading (en)", readingEN);
+    reflector.reflect(ReadingAttribute.class, "pronunciation", pronunciation);
+    reflector.reflect(ReadingAttribute.class, "pronunciation (en)", pronunciationEN);
   }
 }

@@ -22,11 +22,15 @@ import org.apache.lucene.analysis.kuromoji.util.ToStringUtil;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSpeechAttribute, Cloneable {
+public class InflectionAttributeImpl extends AttributeImpl implements InflectionAttribute, Cloneable {
   private Token token;
   
-  public String getPartOfSpeech() {
-    return token == null ? null : token.getPartOfSpeech();
+  public String getInflectionType() {
+    return token == null ? null : token.getInflectionType();
+  }
+  
+  public String getInflectionForm() {
+    return token == null ? null : token.getInflectionForm();
   }
   
   public void setToken(Token token) {
@@ -40,15 +44,19 @@ public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSp
 
   @Override
   public void copyTo(AttributeImpl target) {
-    PartOfSpeechAttribute t = (PartOfSpeechAttribute) target;
+    InflectionAttribute t = (InflectionAttribute) target;
     t.setToken(token);
   }
   
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    String partOfSpeech = getPartOfSpeech();
-    String partOfSpeechEN = partOfSpeech == null ? null : ToStringUtil.getPOSTranslation(partOfSpeech);
-    reflector.reflect(PartOfSpeechAttribute.class, "partOfSpeech", partOfSpeech);
-    reflector.reflect(PartOfSpeechAttribute.class, "partOfSpeech (en)", partOfSpeechEN);
+    String type = getInflectionType();
+    String typeEN = type == null ? null : ToStringUtil.getInflectionTypeTranslation(type);
+    reflector.reflect(InflectionAttribute.class, "inflectionType", type);
+    reflector.reflect(InflectionAttribute.class, "inflectionType (en)", typeEN);
+    String form = getInflectionForm();
+    String formEN = form == null ? null : ToStringUtil.getInflectedFormTranslation(form);
+    reflector.reflect(InflectionAttribute.class, "inflectionForm", form);
+    reflector.reflect(InflectionAttribute.class, "inflectionForm", formEN);
   }
 }

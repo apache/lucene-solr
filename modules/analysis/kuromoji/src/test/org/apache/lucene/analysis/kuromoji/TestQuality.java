@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,9 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.zip.ZipFile;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -56,13 +52,12 @@ public class TestQuality extends LuceneTestCase {
      word agreement?: 0.999587584716181
      */
     final Segmenter segmenter = new Segmenter();
-    Analyzer testAnalyzer = new KuromojiAnalyzer(segmenter);
     
     String line1 = null;
     String line2 = null;
     while ((line1 = unseg.readLine()) != null) {
       line2 = seg.readLine();
-      evaluateLine(line1, line2, testAnalyzer, stats);
+      evaluateLine(line1, line2, segmenter, stats);
     }
     
     System.out.println("#words: " + stats.numWords);
@@ -84,15 +79,12 @@ public class TestQuality extends LuceneTestCase {
     long numSentencesCorrect = 0;
   }
   
-  public static void evaluateLine(String unseg, String seg, Analyzer analyzer, Stats stats) throws Exception {
+  public static void evaluateLine(String unseg, String seg, Segmenter segmenter, Stats stats) throws Exception {
     List<String> tokens = new ArrayList<String>();
-    TokenStream stream = analyzer.tokenStream("bogus", new StringReader(unseg));
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    stream.reset();
-    while (stream.incrementToken()) {
-      tokens.add(termAtt.toString());
+    List<Token> output = segmenter.tokenize(unseg);
+    for (Token t : output) {
+      tokens.add(t.getSurfaceFormString());
     }
-    stream.close();
     
     List<String> expectedTokens = Arrays.asList(seg.split("\\s+"));
     tokens = normalize(tokens);

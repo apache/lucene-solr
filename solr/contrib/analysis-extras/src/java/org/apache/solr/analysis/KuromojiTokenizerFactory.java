@@ -42,7 +42,11 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory{
     Mode mode = args.get(MODE) != null ? Mode.valueOf(args.get(MODE).toUpperCase(Locale.ENGLISH)) : Mode.NORMAL;
     String userDictionaryPath = args.get(USER_DICT_PATH);
     try {
-      this.segmenter = new Segmenter(new UserDictionary(userDictionaryPath), mode);
+      if (userDictionaryPath != null) {
+        this.segmenter = new Segmenter(new UserDictionary(userDictionaryPath), mode);
+      } else {
+        this.segmenter = new Segmenter(mode);
+      }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

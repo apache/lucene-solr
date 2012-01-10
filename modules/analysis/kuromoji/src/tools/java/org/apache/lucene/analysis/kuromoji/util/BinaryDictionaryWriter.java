@@ -69,9 +69,13 @@ public abstract class BinaryDictionaryWriter {
     
     // build up the POS string
     for (int i = 4; i < 8; i++) {
-      sb.append(CSVUtil.quoteEscape(entry[i]));
-      if (i < 7) {
-        sb.append(',');
+      String part = entry[i];
+      assert part.length() > 0;
+      if (!"*".equals(part)) {
+        if (sb.length() > 0) {
+          sb.append('-');
+        }
+        sb.append(part);
       }
     }
     String pos = sb.toString();
