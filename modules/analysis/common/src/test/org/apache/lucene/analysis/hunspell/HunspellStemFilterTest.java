@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 import org.junit.BeforeClass;
 
 public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
@@ -40,7 +39,7 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
     InputStream affixStream = HunspellStemmerTest.class.getResourceAsStream("test.aff");
     InputStream dictStream = HunspellStemmerTest.class.getResourceAsStream("test.dic");
 
-    return new HunspellDictionary(affixStream, dictStream, Version.LUCENE_40, ignoreCase);
+    return new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT, ignoreCase);
   }
   
   /**
