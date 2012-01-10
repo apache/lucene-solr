@@ -70,7 +70,7 @@
   <target name="build-dict" depends="compile-tools, download-dict">
     <sequential>
       <delete verbose="true">
-        <fileset dir="src/resources/org/apache/lucene/analysis/kuromoji" includes="**/*"/>
+        <fileset dir="src/resources/org/apache/lucene/analysis/kuromoji/dict" includes="**/*"/>
       </delete>
       <java fork="true" failonerror="true" maxmemory="512m" classname="org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder">
         <classpath>

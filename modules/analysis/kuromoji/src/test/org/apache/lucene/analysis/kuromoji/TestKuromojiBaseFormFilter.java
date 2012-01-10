@@ -39,6 +39,11 @@ public class TestKuromojiBaseFormFilter extends BaseTokenStreamTestCase {
     );
   }
   
+  public void testEnglish() throws IOException {
+    assertAnalyzesTo(analyzer, "this atest",
+        new String[] { "this", "atest" });
+  }
+  
   public void testRandomStrings() throws IOException {
     checkRandomData(random, analyzer, 10000);
   }

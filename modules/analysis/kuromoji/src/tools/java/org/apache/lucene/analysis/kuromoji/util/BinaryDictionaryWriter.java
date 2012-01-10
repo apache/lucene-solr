@@ -131,7 +131,7 @@ public abstract class BinaryDictionaryWriter {
     
     int pronunciationIsReading = pronunciation.equals(reading) ? 1 : 0;
     
-    if (baseForm.equals(entry[0])) {
+    if ("*".equals(baseForm) || baseForm.equals(entry[0])) {
       buffer.put((byte)pronunciationIsReading); // base form is the same as surface form
     } else {
       assert baseForm.length() < 128;
