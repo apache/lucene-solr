@@ -265,7 +265,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    
     
     // if it is not a forward request, for each fail, try to tell them to
-    // recover nocommit: we would really like to only do this on connection problems
+    // recover - the doc was already added locally, so it should have been
+    // legit
 
     // TODO: we should do this in the background it would seem
     for (SolrCmdDistributor.Error error : response.errors) {
