@@ -27,9 +27,9 @@ import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -252,7 +252,6 @@ public class LBHttpSolrServer extends SolrServer {
         return rsp; // SUCCESS
       } catch (SolrException e) {
         // we retry on 404 or 403 or 503 - you can see this on solr shutdown
-        System.err.println("code:" + e.code());
         if (e.code() == 404 || e.code() == 403 || e.code() == 503) {
           ex = addZombie(server, e);
         } else {
@@ -266,9 +265,11 @@ public class LBHttpSolrServer extends SolrServer {
        //     || e.getMessage().contains("java.net.ConnectException")
       } catch (SocketException e) {
         ex = addZombie(server, e);
+      } catch (SocketTimeoutException e) {
+        ex = addZombie(server, e);
       } catch (SolrServerException e) {
         Throwable rootCause = e.getRootCause();
-        if (rootCause instanceof IOException || rootCause instanceof ConnectException) {
+        if (rootCause instanceof IOException) {
           ex = addZombie(server, e);
         } else {
           throw e;
@@ -295,8 +296,13 @@ public class LBHttpSolrServer extends SolrServer {
           throw e;
         }
 
+      } catch (SocketException e) {
+        ex = e;
+      } catch (SocketTimeoutException e) {
+        ex = e;
       } catch (SolrServerException e) {
-        if (e.getRootCause() instanceof IOException) {
+        Throwable rootCause = e.getRootCause();
+        if (rootCause instanceof IOException) {
           ex = e;
           // already a zombie, no need to re-add
         } else {

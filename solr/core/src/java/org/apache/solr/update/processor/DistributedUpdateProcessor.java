@@ -254,9 +254,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // otherwise we assume things are fine if we got it locally
     // until we start allowing min replication param
     if (response.errors.size() > 0) {
+      // if one node is a RetryNode, this was a forward request
+      if (response.errors.get(0).node instanceof RetryNode) {
+        rsp.setException(response.errors.get(0).e);
+      }
+      // else
       // for now we don't error - we assume if it was added locally, we
-      // succeeded - nocommit: forwards should error
-      //rsp.setException(response.errors.get(0).e);
+      // succeeded 
     }
    
     

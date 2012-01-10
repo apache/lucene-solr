@@ -378,7 +378,7 @@ public class ZkStateReader {
   }
   
   public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
-    int tries = 120;
+    int tries = 50;
     while (tries-- > 0) {
       if (cloudState != null) {
         final CloudState currentState = cloudState;
@@ -393,7 +393,7 @@ public class ZkStateReader {
           }
         }
       }
-      Thread.sleep(500);
+      Thread.sleep(50);
     }
     throw new RuntimeException("No registered leader was found, collection:" + collection + " slice:" + shard);
   }

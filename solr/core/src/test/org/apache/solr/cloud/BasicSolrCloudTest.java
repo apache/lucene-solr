@@ -17,7 +17,11 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -27,10 +31,16 @@ import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
 /**
@@ -60,63 +70,14 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
     // add a doc, update it, and delete it
     
-    long docId = 99999999L;
-    indexr("id", docId, t1, "originalcontent");
-    
-    commit();
-    
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("distrib", "true");
-    params.add("q", t1 + ":originalcontent");
-    QueryResponse results = clients.get(0).query(params);
-    assertEquals(1, results.getResults().getNumFound());
-    
-    // update doc
-    indexr("id", docId, t1, "updatedcontent");
-    
-    commit();
-    
-    assertDocCounts(VERBOSE);
-    
-    results = clients.get(0).query(params);
-    assertEquals(0, results.getResults().getNumFound());
-    
-    params.set("q", t1 + ":updatedcontent");
-    
-    results = clients.get(0).query(params);
-    assertEquals(1, results.getResults().getNumFound());
-    
-    UpdateRequest uReq = new UpdateRequest();
-    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
-    uReq.deleteById(Long.toString(docId)).process(clients.get(0));
-    
-    commit();
-    
-    results = clients.get(0).query(params);
-    assertEquals(0, results.getResults().getNumFound());
+    QueryResponse results;
+    UpdateRequest uReq;
+    long docId = addUpdateDelete();
     
     // add 2 docs in a request
-    uReq = new UpdateRequest();
-    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
-    SolrInputDocument doc1 = new SolrInputDocument();
-
-    addFields(doc1, "id", docId++);
-    uReq.add(doc1);
-    SolrInputDocument doc2 = new SolrInputDocument();
-    addFields(doc2, "id", docId++);
-    uReq.add(doc2);
-    
-    uReq.process(cloudClient);
-    uReq.process(controlClient);
-    
-    commit();
-    
-    checkShardConsistency();
-    
-    assertDocCounts(VERBOSE);
-    
-    results = query(cloudClient);
-    assertEquals(2, results.getResults().getNumFound());
+    SolrInputDocument doc1;
+    SolrInputDocument doc2;
+    docId = addTwoDocsInOneRequest(docId);
     
     // two deletes
     uReq = new UpdateRequest();
@@ -168,6 +129,108 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
     // TODO: testOptimisticUpdate(results);
     
+    testDeleteByQueryDistrib();
+    
+    testThatCantForwardToLeaderFails();
+  }
+
+  private void testThatCantForwardToLeaderFails() throws InterruptedException,
+      Exception, TimeoutException, IOException, KeeperException {
+    ZkNodeProps props = zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard1");
+    
+    chaosMonkey.stopShard("shard1");
+
+    // fake that the leader is still advertised
+    String leaderPath = ZkStateReader.getShardLeadersPath(DEFAULT_COLLECTION, "shard1");
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), 10000);
+    int fails = 0;
+    try {
+      zkClient.makePath(leaderPath, ZkStateReader.toJSON(props),
+          CreateMode.EPHEMERAL, true);
+      for (int i = 200; i < 210; i++) {
+        try {
+          index_specific(cloudClient, id, i);
+        } catch (SolrException e) {
+          // expected
+          fails++;
+          break;
+        }
+      }
+    } finally {
+      zkClient.close();
+    }
+    
+    assertTrue("A whole shard is down - some of these should fail", fails > 0);
+  }
+
+  private long addTwoDocsInOneRequest(long docId) throws SolrServerException,
+      IOException, Exception {
+    QueryResponse results;
+    UpdateRequest uReq;
+    uReq = new UpdateRequest();
+    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    SolrInputDocument doc1 = new SolrInputDocument();
+
+    addFields(doc1, "id", docId++);
+    uReq.add(doc1);
+    SolrInputDocument doc2 = new SolrInputDocument();
+    addFields(doc2, "id", docId++);
+    uReq.add(doc2);
+    
+    uReq.process(cloudClient);
+    uReq.process(controlClient);
+    
+    commit();
+    
+    checkShardConsistency();
+    
+    assertDocCounts(VERBOSE);
+    
+    results = query(cloudClient);
+    assertEquals(2, results.getResults().getNumFound());
+    return docId;
+  }
+
+  private long addUpdateDelete() throws Exception, SolrServerException,
+      IOException {
+    long docId = 99999999L;
+    indexr("id", docId, t1, "originalcontent");
+    
+    commit();
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("distrib", "true");
+    params.add("q", t1 + ":originalcontent");
+    QueryResponse results = clients.get(0).query(params);
+    assertEquals(1, results.getResults().getNumFound());
+    
+    // update doc
+    indexr("id", docId, t1, "updatedcontent");
+    
+    commit();
+    
+    assertDocCounts(VERBOSE);
+    
+    results = clients.get(0).query(params);
+    assertEquals(0, results.getResults().getNumFound());
+    
+    params.set("q", t1 + ":updatedcontent");
+    
+    results = clients.get(0).query(params);
+    assertEquals(1, results.getResults().getNumFound());
+    
+    UpdateRequest uReq = new UpdateRequest();
+    //uReq.setParam(UpdateParams.UPDATE_CHAIN, DISTRIB_UPDATE_CHAIN);
+    uReq.deleteById(Long.toString(docId)).process(clients.get(0));
+    
+    commit();
+    
+    results = clients.get(0).query(params);
+    assertEquals(0, results.getResults().getNumFound());
+    return docId;
+  }
+
+  private void testDeleteByQueryDistrib() throws Exception, SolrServerException {
     del("*:*");
     commit();
     assertEquals(0, query(cloudClient).getResults().getNumFound());
@@ -238,6 +301,7 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
   
   @Override
   public void tearDown() throws Exception {
+    printLayout();
     super.tearDown();
   }
 
