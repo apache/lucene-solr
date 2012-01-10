@@ -103,10 +103,6 @@ public class SolrException extends RuntimeException {
 
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
-    // nocommit
-    if (e instanceof ConnectionLossException || e.getCause() != null && e.getCause() instanceof ConnectionLossException) {
-      e.printStackTrace();
-    }
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
@@ -121,10 +117,6 @@ public class SolrException extends RuntimeException {
   }
 
   public static void log(Logger log, String msg, Throwable e) {
-  // nocommit
-    if (e instanceof ConnectionLossException || getRootCause(e) != null && getRootCause(e) instanceof ConnectionLossException) {
-      e.printStackTrace();
-    }
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
