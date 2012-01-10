@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.hunspell;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,23 +17,21 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 
-import static junit.framework.Assert.assertEquals;
-
-public class HunspellDictionaryTest {
+public class HunspellDictionaryTest extends LuceneTestCase {
 
   @Test
   public void testHunspellDictionary_loadDicAff() throws IOException, ParseException {
     InputStream affixStream = getClass().getResourceAsStream("test.aff");
     InputStream dictStream = getClass().getResourceAsStream("test.dic");
 
-    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStream, Version.LUCENE_34);
+    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT);
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());

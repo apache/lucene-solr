@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.hunspell;
 
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,9 +26,7 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.util.List;
 
-import static junit.framework.Assert.assertEquals;
-
-public class HunspellStemmerTest {
+public class HunspellStemmerTest extends LuceneTestCase {
 
   private static HunspellStemmer stemmer;
 
@@ -115,8 +113,7 @@ public class HunspellStemmerTest {
   private static void createStemmer(boolean ignoreCase) throws IOException, ParseException {
     InputStream affixStream = HunspellStemmerTest.class.getResourceAsStream("test.aff");
     InputStream dictStream = HunspellStemmerTest.class.getResourceAsStream("test.dic");
-
-    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStream, Version.LUCENE_34, ignoreCase);
+    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT, ignoreCase);
     stemmer = new HunspellStemmer(dictionary);
 
     affixStream.close();
