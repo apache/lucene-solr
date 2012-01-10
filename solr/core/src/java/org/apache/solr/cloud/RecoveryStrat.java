@@ -191,6 +191,8 @@ public class RecoveryStrat {
     String leaderUrl = leaderCNodeProps.getCoreUrl();
     String leaderCoreName = leaderCNodeProps.getCoreName();
     
+    log.info("Attempt to replicate from " + leaderUrl);
+    
     // if we are the leader, either we are trying to recover faster
     // then our ephemeral timed out or we are the only node
     if (!leaderBaseUrl.equals(baseUrl)) {
