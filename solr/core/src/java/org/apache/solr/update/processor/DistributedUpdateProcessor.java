@@ -67,6 +67,7 @@ import org.apache.solr.update.VersionInfo;
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String SEEN_LEADER = "leader";
   public static final String COMMIT_END_POINT = "commit_end_point";
+  public static final String DELQUERY_END_POINT = "delquery_end_point";
   
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
@@ -587,6 +588,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.unblockUpdates();
     }
 
+    // TODO: we should consider this? Send delete query to everyone in the current collection
+
+    if (zkEnabled) {
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      if (!params.getBool(DELQUERY_END_POINT, false)) {
+        params.set(DELQUERY_END_POINT, true);
+
+        String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
+            .getZkController().getNodeName();
+        String shardZkNodeName = nodeName + "_" + req.getCore().getName();
+        List<Node> nodes = getReplicaUrls(req, req.getCore().getCoreDescriptor()
+            .getCloudDescriptor().getCollectionName(), shardZkNodeName);
+
+        if (nodes != null) {
+          cmdDistrib.distribDelete(cmd, nodes, params);
+          finish();
+        }
+      }
+    }
   }
 
   @Override

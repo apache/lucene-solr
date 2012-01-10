@@ -167,6 +167,10 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     testIndexingWithSuss();
     
     // TODO: testOptimisticUpdate(results);
+    
+    del("*:*");
+    commit();
+    assertEquals(0, query(cloudClient).getResults().getNumFound());
   }
 
   private void testIndexingWithSuss() throws MalformedURLException, Exception {
