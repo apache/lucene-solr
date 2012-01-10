@@ -96,7 +96,6 @@ public class SolrCmdDistributor {
     if (cmd.isDeleteById()) {
       doDelete(cmd, urls, params);
     } else {
-      // nocommit TODO: query must be broadcast to all ??
       doDelete(cmd, urls, params);
     }
   }
