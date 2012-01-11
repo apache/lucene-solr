@@ -83,25 +83,46 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     // TODO: test that updates weren't necessary
 
-/**
- assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit();
-    client1.commit();
-    queryAndCompare(params("q", "*:*"), client0, client1);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
 
-    for (int i=0; i<numVersions; i++) {
+    add(client0, seenLeader, addRandFields(sdoc("id","2","_version_",++v)));
 
+    // now client1 has the context to sync
+    assertSync(client1, numVersions, true, shardsArr[0]);
+
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
+
+    add(client0, seenLeader, addRandFields(sdoc("id","3","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","4","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","5","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","6","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","7","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","8","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","9","_version_",++v)));
+    add(client0, seenLeader, addRandFields(sdoc("id","10","_version_",++v)));
+
+    assertSync(client1, numVersions, true, shardsArr[0]);
+
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
+
+    int toAdd = (int)(numVersions *.95);
+    for (int i=0; i<toAdd; i++) {
+      add(client0, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
     }
 
+    // sync should fail since there's not enough overlap to give us confidence
+    assertSync(client1, numVersions, false, shardsArr[0]);
 
- *  client0.add(addRandFields(sdoc("id",1)));
+    // add some of the docs that were missing... just enough to give enough overlap
+    int toAdd2 = (int)(numVersions * .25);
+    for (int i=0; i<toAdd2; i++) {
+      add(client1, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
+    }
 
- client0.add(addRandFields(sdoc("id",1)));
- client0.add(addRandFields(sdoc("id", 1)));
- client0.add(addRandFields(sdoc("id", 2)));
- **/
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
-
+    v+= toAdd;
   }
 
 
