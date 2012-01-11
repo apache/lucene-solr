@@ -166,7 +166,7 @@ public class Segmenter {
     List<ViterbiNode> bestPath = viterbi.search(lattice);
     for (ViterbiNode node : bestPath) {
       int wordId = node.getWordId();
-      if (node.getType() == Type.KNOWN && wordId == 0){ // Do not include BOS/EOS 
+      if (node.getType() == Type.KNOWN && wordId == -1){ // Do not include BOS/EOS 
         continue;
       } else if (discardPunctuation && node.getLength() > 0 && isPunctuation(node.getSurfaceForm()[node.getOffset()])) {
         continue; // Do not emit punctuation

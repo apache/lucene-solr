@@ -175,7 +175,21 @@ public class SegmenterTest extends LuceneTestCase {
     assertEquals("助動詞",       tokens.get(7).getPartOfSpeech());
     assertEquals("記号-句点",      tokens.get(8).getPartOfSpeech());
   }
-  
+
+  // TODO: the next 2 tests are no longer using the first/last word ids, maybe lookup the words and fix?
+  // do we have a possibility to actually lookup the first and last word from dictionary?
+  public void testYabottai() {
+    List<Token> tokens = segmenter.tokenize("やぼったい");
+    assertEquals(1, tokens.size());
+    assertEquals("やぼったい", tokens.get(0).getSurfaceFormString());
+  }
+
+  public void testTsukitosha() {
+    List<Token> tokens = segmenter.tokenize("突き通しゃ");
+    assertEquals(1, tokens.size());
+    assertEquals("突き通しゃ", tokens.get(0).getSurfaceFormString());
+  }
+
   public void testBocchan() throws Exception {
     doTestBocchan(1);
   }

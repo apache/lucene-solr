@@ -206,7 +206,7 @@ public class Viterbi {
     int[] startSizeArr = new int[length + 2]; // array to keep ViterbiNode count in startIndexArr
     int[] endSizeArr = new int[length + 2];   // array to keep ViterbiNode count in endIndexArr
     FST.Arc<Long> arc = new FST.Arc<Long>();
-    ViterbiNode bosNode = new ViterbiNode(0, BOS, 0, BOS.length, 0, 0, 0, -1, Type.KNOWN);
+    ViterbiNode bosNode = new ViterbiNode(-1, BOS, 0, BOS.length, 0, 0, 0, -1, Type.KNOWN);
     addToArrays(bosNode, 0, 1, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
     
     // Process user dictionary;
@@ -277,7 +277,7 @@ public class Viterbi {
       }
     }
     
-    ViterbiNode eosNode = new ViterbiNode(0, EOS, 0, EOS.length, 0, 0, 0, length + 1, Type.KNOWN);
+    ViterbiNode eosNode = new ViterbiNode(-1, EOS, 0, EOS.length, 0, 0, 0, length + 1, Type.KNOWN);
     addToArrays(eosNode, length + 1, 0, startIndexArr, endIndexArr, startSizeArr, endSizeArr); //Add EOS node to endIndexArr at index 0
     
     ViterbiNode[][][] result = new ViterbiNode[][][]{startIndexArr, endIndexArr};

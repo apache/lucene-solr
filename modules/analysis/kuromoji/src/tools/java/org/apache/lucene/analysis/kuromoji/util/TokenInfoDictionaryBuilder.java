@@ -45,7 +45,7 @@ import com.ibm.icu.text.Normalizer2;
 public class TokenInfoDictionaryBuilder {
   
   /** Internal word id - incrementally assigned as entries are read and added. This will be byte offset of dictionary file */
-  private int offset = 4; // Start from 4. First 4 bytes are used to store size of dictionary file.
+  private int offset = 0;
   
   private String encoding = "euc-jp";
   
