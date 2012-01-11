@@ -763,7 +763,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     try {
       updateHandler.close();
-    } catch (Exception e) {
+    } catch (Throwable e) {
       SolrException.log(log,e);
     }
     
