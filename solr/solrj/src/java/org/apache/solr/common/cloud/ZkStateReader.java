@@ -372,14 +372,22 @@ public class ZkStateReader {
 	}
   
   public String getLeaderUrl(String collection, String shard) throws InterruptedException, KeeperException {
+    return getLeaderUrl(collection, shard, 1000);
+  }
+  
+  public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException, KeeperException {
     ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,shard));
     
     return props.getCoreUrl();
   }
   
   public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
-    int tries = 50;
-    while (tries-- > 0) {
+    return getLeaderProps(collection, shard, 1000);
+  }
+  
+  public ZkNodeProps getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
+    long timeoutAt = System.currentTimeMillis() + timeout;
+    while (System.currentTimeMillis() < timeoutAt) {
       if (cloudState != null) {
         final CloudState currentState = cloudState;
         final Slice slice = currentState.getSlice(collection, shard);

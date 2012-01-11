@@ -486,7 +486,7 @@ public final class ZkController {
     leaderElector.setup(context);
     leaderElector.joinElection(context);
     
-    String leaderUrl = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId());
+    String leaderUrl = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId(), 15000);
     
     SolrCore core = null;
     try {
