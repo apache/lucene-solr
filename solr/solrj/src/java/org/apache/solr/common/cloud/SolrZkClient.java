@@ -141,7 +141,6 @@ public class SolrZkClient {
           }
         });
     connManager.waitForConnected(clientConnectTimeout);
-    // TODO: if we cannot connect initially, stop connect retries from happening...
   }
 
   /**
