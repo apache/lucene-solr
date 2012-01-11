@@ -32,11 +32,14 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -297,6 +300,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
     SolrServer client = clients.get(which);
     client.add(doc);
+  }
+  
+  protected UpdateResponse add(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    for (SolrInputDocument sdoc : sdocs) {
+      ureq.add(sdoc);
+    }
+    return ureq.process(server);
   }
 
   protected void index_specific(int serverNumber, Object... fields) throws Exception {

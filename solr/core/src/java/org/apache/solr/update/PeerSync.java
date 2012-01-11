@@ -125,7 +125,9 @@ public class PeerSync  {
       ourLowThreshold = percentile(ourUpdates, 0.8f);
       ourHighThreshold = percentile(ourUpdates, 0.2f);
     }  else {
-      ourHighThreshold = Long.MAX_VALUE;  // nocommit - this is just temporary
+      // we have no versions and hence no frame of reference to tell if we can use a peers
+      // updates to bring us into sync
+      return false;
     }
 
     ourUpdateSet = new HashSet<Long>(ourUpdates);
