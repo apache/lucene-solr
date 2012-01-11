@@ -69,12 +69,11 @@ class FixedStraightBytesImpl {
 
       if (size == -1) {
         if (bytes.length > BYTE_BLOCK_SIZE) {
-          throw new IllegalArgumentException("bytes arrays > " + Short.MAX_VALUE + " are not supported");
+          throw new IllegalArgumentException("bytes arrays > " + BYTE_BLOCK_SIZE + " are not supported");
         }
         size = bytes.length;
       } else if (bytes.length != size) {
-        throw new IllegalArgumentException("expected bytes size=" + size
-            + " but got " + bytes.length);
+        throw new IllegalArgumentException("byte[] length changed for BYTES_FIXED_STRAIGHT type (before=" + size + " now=" + bytes.length);
       }
       if (lastDocID+1 < docID) {
         advancePool(docID);
@@ -203,8 +202,6 @@ class FixedStraightBytesImpl {
     protected void setMergeBytes(int sourceDoc) {
       currentMergeSource.getBytes(sourceDoc, bytesRef);
     }
-
-
 
     // Fills up to but not including this docID
     private void fill(IndexOutput datOut, int docID) throws IOException {

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,17 +36,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.*;
@@ -85,7 +74,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      DocValuesField valuesField = new DocValuesField("docId");
+      DocValuesField valuesField = new DocValuesField("docId", DocValues.Type.VAR_INTS);
       valuesField.setInt(i);
       doc.add(valuesField);
       doc.add(new TextField("docId", "" + i));
@@ -582,7 +571,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final boolean isNumeric = NUMERICS.contains(value);
     FixedBitSet deleted = new FixedBitSet(numValues);
     Document doc = new Document();
-    DocValuesField valField = new DocValuesField(value.name());
+    DocValuesField valField = new DocValuesField(value.name(), value);
     doc.add(valField);
     final BytesRef bytesRef = new BytesRef();
 
@@ -601,16 +590,16 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           valField.setInt((long)i);
           break;
         case FIXED_INTS_16:
-          valField.setInt((short)i, random.nextInt(10) != 0);
+          valField.setInt((short)i);
           break;
         case FIXED_INTS_32:
-          valField.setInt(i, random.nextInt(10) != 0);
+          valField.setInt(i);
           break;
         case FIXED_INTS_64:
-          valField.setInt((long)i, random.nextInt(10) != 0);
+          valField.setInt((long)i);
           break;
         case FIXED_INTS_8:
-          valField.setInt((byte)(0xFF & (i % 128)), random.nextInt(10) != 0);
+          valField.setInt((byte)(0xFF & (i % 128)));
           break;
         case FLOAT_32:
           valField.setFloat(2.0f * i);
@@ -627,7 +616,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           b[j] = upto++;
         }
         if (bytesRef != null) {
-          valField.setBytes(bytesRef, value);
+          valField.setBytes(bytesRef);
         }
       }
       doc.removeFields("id");
@@ -663,7 +652,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, d);
     Document doc = new Document();
-    DocValuesField f = new DocValuesField("field");
+    DocValuesField f = new DocValuesField("field", Type.VAR_INTS);
     f.setInt(17);
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
@@ -691,12 +680,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, d);
     Document doc = new Document();
-    DocValuesField f = new DocValuesField("field");
+    DocValuesField f = new DocValuesField("field", Type.VAR_INTS);
     f.setInt(17);
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
     doc.add(f);
-    DocValuesField f2 = new DocValuesField("field");
+    DocValuesField f2 = new DocValuesField("field", Type.FLOAT_32);
     f2.setFloat(22.0);
     doc.add(f2);
     try {
@@ -725,6 +714,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       IndexWriter w = new IndexWriter(d, cfg);
+      // nocommit
       Comparator<BytesRef> comp = BytesRef.getUTF8SortedAsUnicodeComparator();
       int numDocs = atLeast(100);
       BytesRefHash hash = new BytesRefHash();
@@ -733,13 +723,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       for (int i = 0; i < numDocs; i++) {
         Document doc = new Document();
         doc.add(newField("id", "" + i, TextField.TYPE_STORED));
-        DocValuesField f = new DocValuesField("field");
+        DocValuesField f = new DocValuesField("field", type);
         String string =fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random,
             len) : _TestUtil.randomRealisticUnicodeString(random, 1, len);
         hash.add(new BytesRef(string));
         docToString.put("" + i, string);
 
-        f.setBytes(new BytesRef(string), type, comp);
+        f.setBytes(new BytesRef(string));
         doc.add(f);
         w.addDocument(doc);
       }
@@ -763,12 +753,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         Document doc = new Document();
         String id = "" + i + numDocs;
         doc.add(newField("id", id, TextField.TYPE_STORED));
-        DocValuesField f = new DocValuesField("field");
+        DocValuesField f = new DocValuesField("field", type);
         String string = fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random,
             len) : _TestUtil.randomRealisticUnicodeString(random, 1, len);
         hash.add(new BytesRef(string));
         docToString.put(id, string);
-        f.setBytes(new BytesRef(string), type, comp);
+        f.setBytes(new BytesRef(string));
         doc.add(f);
         w.addDocument(doc);
       }

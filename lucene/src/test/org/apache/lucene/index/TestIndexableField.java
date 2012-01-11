@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -85,6 +84,11 @@ public class TestIndexableField extends LuceneTestCase {
       public FieldInfo.IndexOptions indexOptions() {
         return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       }
+
+      @Override
+      public DocValues.Type docValueType() {
+        return null;
+      }
     };
 
     public MyField(int counter) {
@@ -135,13 +139,8 @@ public class TestIndexableField extends LuceneTestCase {
 
     // Numeric field:
     @Override
-    public boolean numeric() {
-      return counter%10 == 9;
-    }
-
-    @Override
     public DataType numericDataType() {
-      return DataType.INT;
+      return counter%10 == 9 ? DataType.INT : null;
     }
 
     @Override
@@ -154,24 +153,14 @@ public class TestIndexableField extends LuceneTestCase {
       return fieldType;
     }
 
-    // TODO: randomly enable doc values
-    @Override
-    public DocValue docValue() {
-      return null;
-    }
-
-    @Override
-    public DocValues.Type docValueType() {
-      return null;
-    }
-
     @Override
     public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-      if (numeric()) {
+      if (numericDataType() != null) {
         return new NumericField(name()).setIntValue(counter).tokenStream(analyzer);
-      }
-      return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
+      } else {
+        return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
           analyzer.tokenStream(name(), new StringReader(stringValue()));
+      }
     }
   }
 

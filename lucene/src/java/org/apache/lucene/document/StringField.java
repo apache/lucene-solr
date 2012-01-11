@@ -29,6 +29,9 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  *  {@link StringField#TYPE_STORED} type (pass it to <code>new
  *  Field</code>) to store the value. */
 
+// nocommit maybe have a separate StoredField that apps add
+// to store a value; then String/TextField etc. wouldn't store...
+
 public final class StringField extends Field {
 
   /** Indexed, not tokenized, omits norms, indexes

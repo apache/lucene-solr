@@ -1256,7 +1256,7 @@ public class TestAddIndexes extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random, d1);
     Document doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    DocValuesField dv = new DocValuesField("dv");
+    DocValuesField dv = new DocValuesField("dv", DocValues.Type.VAR_INTS);
     dv.setInt(1);
     doc.add(dv);
     w.addDocument(doc);
@@ -1267,7 +1267,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w = new RandomIndexWriter(random, d2);
     doc = new Document();
     doc.add(newField("id", "2", StringField.TYPE_STORED));
-    dv = new DocValuesField("dv");
+    dv = new DocValuesField("dv", DocValues.Type.VAR_INTS);
     dv.setInt(2);
     doc.add(dv);
     w.addDocument(doc);

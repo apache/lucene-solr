@@ -20,7 +20,6 @@ import java.io.Reader;
 import java.util.Comparator;
 
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.util.BytesRef;
@@ -69,167 +68,90 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * */
-public class DocValuesField extends Field implements DocValue {
+
+// nocommit -- how to sugar this...?
+
+public class DocValuesField extends Field {
 
   protected BytesRef bytes;
-  protected double doubleValue;
-  protected long longValue;
-  protected DocValues.Type type;
+  protected Number numberValue;
   protected Comparator<BytesRef> bytesComparator;
+
+  // nocommit sugar ctors taking byte, short, int, etc.?
 
   /**
    * Creates a new {@link DocValuesField} with the given name.
    */
-  public DocValuesField(String name) {
-    this(name, new FieldType());
+  public DocValuesField(String name, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    if (docValueType == null) {
+      throw new NullPointerException("docValueType cannot be null");
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
   }
 
   public DocValuesField(String name, IndexableFieldType type) {
-    this(name, type, null);
-  }
-
-  public DocValuesField(String name, IndexableFieldType type, String value) {
     super(name, type);
-    fieldsData = value;
-  }
-
-  @Override
-  public DocValue docValue() {
-    return this;
+    if (type.docValueType() == null) {
+      throw new NullPointerException("docValueType cannot be null");
+    }
   }
 
   /**
-   * Sets the given <code>long</code> value and sets the field's {@link Type} to
-   * {@link Type#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setDocValuesType(DocValues.Type)}.
+   * Sets the given <code>long</code> value.
    */
   public void setInt(long value) {
-    setInt(value, false);
-  }
-  
-  /**
-   * Sets the given <code>long</code> value as a 64 bit signed integer.
-   * 
-   * @param value
-   *          the value to set
-   * @param fixed
-   *          if <code>true</code> {@link Type#FIXED_INTS_64} is used
-   *          otherwise {@link Type#VAR_INTS}
-   */
-  public void setInt(long value, boolean fixed) {
-    if (type == null) {
-      type = fixed ? DocValues.Type.FIXED_INTS_64 : DocValues.Type.VAR_INTS;
-    }
-    longValue = value;
+    // nocommit assert type matches
+    numberValue = value;
   }
 
   /**
-   * Sets the given <code>int</code> value and sets the field's {@link Type} to
-   * {@link Type#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setDocValuesType(DocValues.Type)}.
+   * Sets the given <code>int</code> value.
    */
   public void setInt(int value) {
-    setInt(value, false);
+    // nocommit assert type matches
+    numberValue = value;
   }
 
   /**
-   * Sets the given <code>int</code> value as a 32 bit signed integer.
-   * 
-   * @param value
-   *          the value to set
-   * @param fixed
-   *          if <code>true</code> {@link Type#FIXED_INTS_32} is used
-   *          otherwise {@link Type#VAR_INTS}
-   */
-  public void setInt(int value, boolean fixed) {
-    if (type == null) {
-      type = fixed ? DocValues.Type.FIXED_INTS_32 : DocValues.Type.VAR_INTS;
-    }
-    longValue = value;
-  }
-
-  /**
-   * Sets the given <code>short</code> value and sets the field's {@link Type} to
-   * {@link Type#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setDocValuesType(DocValues.Type)}.
+   * Sets the given <code>short</code> value.
    */
   public void setInt(short value) {
-    setInt(value, false);
+    // nocommit assert type matches
+    numberValue = value;
   }
 
   /**
-   * Sets the given <code>short</code> value as a 16 bit signed integer.
-   * 
-   * @param value
-   *          the value to set
-   * @param fixed
-   *          if <code>true</code> {@link Type#FIXED_INTS_16} is used
-   *          otherwise {@link Type#VAR_INTS}
-   */
-  public void setInt(short value, boolean fixed) {
-    if (type == null) {
-      type = fixed ? DocValues.Type.FIXED_INTS_16 : DocValues.Type.VAR_INTS;
-    }
-    longValue = value;
-  }
-
-  /**
-   * Sets the given <code>byte</code> value and sets the field's {@link Type} to
-   * {@link Type#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setDocValuesType(DocValues.Type)}.
+   * Sets the given <code>byte</code> value.
    */
   public void setInt(byte value) {
-    setInt(value, false);
+    // nocommit assert type matches
+    numberValue = value;
   }
 
   /**
-   * Sets the given <code>byte</code> value as a 8 bit signed integer.
-   * 
-   * @param value
-   *          the value to set
-   * @param fixed
-   *          if <code>true</code> {@link Type#FIXED_INTS_8} is used
-   *          otherwise {@link Type#VAR_INTS}
-   */
-  public void setInt(byte value, boolean fixed) {
-    if (type == null) {
-      type = fixed ? DocValues.Type.FIXED_INTS_8 : DocValues.Type.VAR_INTS;
-    }
-    longValue = value;
-  }
-
-  /**
-   * Sets the given <code>float</code> value and sets the field's {@link Type}
-   * to {@link Type#FLOAT_32} unless already set. If you want to
-   * change the type use {@link #setDocValuesType(DocValues.Type)}.
+   * Sets the given <code>float</code> value.
    */
   public void setFloat(float value) {
-    if (type == null) {
-      type = DocValues.Type.FLOAT_32;
-    }
-    doubleValue = value;
+    // nocommit assert type matches
+    numberValue = value;
   }
 
   /**
-   * Sets the given <code>double</code> value and sets the field's {@link Type}
-   * to {@link Type#FLOAT_64} unless already set. If you want to
-   * change the default type use {@link #setDocValuesType(DocValues.Type)}.
+   * Sets the given <code>double</code> value.
    */
   public void setFloat(double value) {
-    if (type == null) {
-      type = DocValues.Type.FLOAT_64;
-    }
-    doubleValue = value;
+    // nocommit assert type matches
+    numberValue = value;
   }
 
   /**
-   * Sets the given {@link BytesRef} value and the field's {@link Type}. The
-   * comparator for this field is set to <code>null</code>. If a
-   * <code>null</code> comparator is set the default comparator for the given
-   * {@link Type} is used.
+   * Sets the given {@link BytesRef} value.
    */
-  public void setBytes(BytesRef value, DocValues.Type type) {
-    setBytes(value, type, null);
+  public void setBytes(BytesRef value) {
+    bytes = value;
   }
 
   /**
@@ -240,6 +162,8 @@ public class DocValuesField extends Field implements DocValue {
    * @throws IllegalArgumentException
    *           if the value or the type are null
    */
+  // nocommit what to do w/ comparator...
+  /*
   public void setBytes(BytesRef value, DocValues.Type type, Comparator<BytesRef> comp) {
     if (value == null) {
       throw new IllegalArgumentException("value must not be null");
@@ -252,69 +176,49 @@ public class DocValuesField extends Field implements DocValue {
     }
     bytesComparator = comp;
   }
+  */
 
-  /**
-   * Returns the set {@link BytesRef} or <code>null</code> if not set.
-   */
-  public BytesRef getBytes() {
+  @Override
+  public BytesRef binaryValue() {
     return bytes;
   }
 
   /**
    * Returns the set {@link BytesRef} comparator or <code>null</code> if not set
    */
+  /*
   public Comparator<BytesRef> bytesComparator() {
     return bytesComparator;
   }
+  */
 
-  /**
-   * Returns the set floating point value or <code>0.0d</code> if not set.
-   */
-  public double getFloat() {
-    return doubleValue;
-  }
-
-  /**
-   * Returns the set <code>long</code> value of <code>0</code> if not set.
-   */
-  public long getInt() {
-    return longValue;
+  @Override
+  public Number numericValue() {
+    return numberValue;
   }
 
   /**
    * Sets the {@link BytesRef} comparator for this field. If the field has a
    * numeric {@link Type} the comparator will be ignored.
    */
+  /*
   public void setBytesComparator(Comparator<BytesRef> comp) {
     this.bytesComparator = comp;
   }
-
-  /**
-   * Sets the {@link Type} for this field.
-   */
-  public void setDocValuesType(DocValues.Type type) {
-    if (type == null) {
-      throw new IllegalArgumentException("Type must not be null");
-    }
-    this.type = type;
-  }
+  */
 
   /**
    * Returns always <code>null</code>
    */
+  @Override
   public Reader readerValue() {
     return null;
   }
 
   @Override
-  public DocValues.Type docValueType() {
-    return type;
-  }
-
-  @Override
   public String toString() {
     final String value;
-    switch (type) {
+    switch (type.docValueType()) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_STRAIGHT:
     case BYTES_VAR_DEREF:
@@ -325,70 +229,29 @@ public class DocValuesField extends Field implements DocValue {
       value = "bytes: " + bytes.toString();
       break;
     case FIXED_INTS_16:
-      value = "int16: " + longValue;
+      value = "int16: " + numberValue;
       break;
     case FIXED_INTS_32:
-      value = "int32: " + longValue;
+      value = "int32: " + numberValue;
       break;
     case FIXED_INTS_64:
-      value = "int64: " + longValue;
+      value = "int64: " + numberValue;
       break;
     case FIXED_INTS_8:
-      value = "int8: " + longValue;
+      value = "int8: " + numberValue;
       break;
     case VAR_INTS:
-      value = "vint: " + longValue;
+      value = "vint: " + numberValue;
       break;
     case FLOAT_32:
-      value = "float32: " + doubleValue;
+      value = "float32: " + numberValue;
       break;
     case FLOAT_64:
-      value = "float64: " + doubleValue;
+      value = "float64: " + numberValue;
       break;
     default:
       throw new IllegalArgumentException("unknown type: " + type);
     }
     return "<" + name() + ": DocValuesField " + value + ">";
-  }
-
-  /**
-   * Returns an DocValuesField holding the value from
-   * the provided string field, as the specified type.  The
-   * incoming field must have a string value.  The name, {@link
-   * FieldType} and string value are carried over from the
-   * incoming Field.
-   */
-  public static DocValuesField build(Field field, DocValues.Type type) {
-    if (field instanceof DocValuesField) {
-      return (DocValuesField) field;
-    }
-    final DocValuesField valField = new DocValuesField(field.name(), field.fieldType(), field.stringValue());
-    switch (type) {
-    case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_VAR_DEREF:
-    case BYTES_VAR_STRAIGHT:
-    case BYTES_FIXED_SORTED:
-    case BYTES_VAR_SORTED:
-      BytesRef ref = field.isBinary() ? field.binaryValue() : new BytesRef(field.stringValue());
-      valField.setBytes(ref, type);
-      break;
-    case FIXED_INTS_16:
-    case FIXED_INTS_32:
-    case FIXED_INTS_64:
-    case FIXED_INTS_8:
-    case VAR_INTS:
-      valField.setInt(Long.parseLong(field.stringValue()));
-      break;
-    case FLOAT_32:
-      valField.setFloat(Float.parseFloat(field.stringValue()));
-      break;
-    case FLOAT_64:
-      valField.setFloat(Double.parseDouble(field.stringValue()));
-      break;
-    default:
-      throw new IllegalArgumentException("unknown type: " + type);
-    }
-    return valField;
   }
 }

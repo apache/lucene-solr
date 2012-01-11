@@ -25,37 +25,38 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.DocValue;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A field is a section of a Document. Each field has two parts, a name and a
- * value. Values may be free text, provided as a String or as a Reader, or they
- * may be atomic keywords, which are not further processed. Such keywords may be
- * used to represent dates, urls, etc. Fields are optionally stored in the
+ * A field is a section of a Document. Each field has three
+ * parts: name, type andvalue. Values may be text
+ * (String, Reader or pre-analyzed TokenStream), binary
+ * (byte[]), or numeric (a Number).  Fields are optionally stored in the
  * index, so that they may be returned with hits on the document.
  * <p/>
- * Note, Field instances are instantiated with a {@link IndexableFieldType}.  Making changes
- * to the state of the FieldType will impact any Field it is used in, therefore
- * it is strongly recommended that no changes are made after Field instantiation.
+ * NOTE: the field type is an {@link IndexableFieldType}.  Making changes
+ * to the state of the IndexableFieldType will impact any
+ * Field it is used in.  It is strongly recommended that no
+ * changes be made after Field instantiation.
  */
 public class Field implements IndexableField {
   
-  protected IndexableFieldType type;
-  protected String name = "body";
+  protected final IndexableFieldType type;
+  protected final String name;
   // the data object for all different kind of field values
   protected Object fieldsData;
+
+  // nocommit why not stuffed into fieldsData...?  hmm are you
+  // allowed to have field value *and* tokenStream?... messy
   // pre-analyzed tokenStream for indexed fields
   protected TokenStream tokenStream;
   // length/offset for all primitive types
-  protected DocValue docValue;
-  
+
   protected float boost = 1.0f;
 
-  public Field(String name, IndexableFieldType type) {
+  protected Field(String name, IndexableFieldType type) {
     this.name = name;
     this.type = type;
   }
@@ -75,13 +76,19 @@ public class Field implements IndexableField {
     this.fieldsData = reader;
     this.type = type;
   }
-  
+
   public Field(String name, TokenStream tokenStream, IndexableFieldType type) {
     if (name == null) {
       throw new NullPointerException("name cannot be null");
     }
     if (tokenStream == null) {
       throw new NullPointerException("tokenStream cannot be null");
+    }
+    if (!type.indexed()) {
+      throw new IllegalArgumentException("TokenStream fields must be indexed");
+    }
+    if (type.stored()) {
+      throw new IllegalArgumentException("TokenStream fields cannot be stored");
     }
     if (type.indexed() && !type.tokenized()) {
       throw new IllegalArgumentException("Non-tokenized fields must use String values");
@@ -101,6 +108,8 @@ public class Field implements IndexableField {
     this(name, new BytesRef(value, offset, length), type);
   }
 
+  // nocommit numerics ctors too
+
   public Field(String name, BytesRef bytes, IndexableFieldType type) {
     if (type.indexed() && !type.tokenized()) {
       throw new IllegalArgumentException("Non-tokenized fields must use String values");
@@ -110,6 +119,8 @@ public class Field implements IndexableField {
     this.type = type;
     this.name = name;
   }
+
+  // nocommit test case for LUCENE-3616 (and other invalid combos)
   
   public Field(String name, String value, IndexableFieldType type) {
     if (name == null) {
@@ -119,10 +130,12 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException("value cannot be null");
     }
     if (!type.stored() && !type.indexed()) {
+      // nocommit... but it could be DocValue'd (only) tand
+      // that's ok...?
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
         + "is neither indexed nor stored");
     }
-    if (!type.indexed() && !type.tokenized() && (type.storeTermVectors())) {
+    if (!type.indexed() && (type.storeTermVectors())) {
       throw new IllegalArgumentException("cannot store term vector information "
           + "for a field that is not indexed");
     }
@@ -131,6 +144,8 @@ public class Field implements IndexableField {
     this.name = name;
     this.fieldsData = value;
   }
+
+  // nocommit Object getValue()?
 
   /**
    * The value of the field as a String, or null. If null, the Reader value or
@@ -202,6 +217,7 @@ public class Field implements IndexableField {
    * Expert: change the value of this field. See <a
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
+  // nocommit why not setValue(bytesref)...?
   public void setValue(byte[] value) {
     if (!isBinary()) {
       throw new IllegalArgumentException(
@@ -230,6 +246,8 @@ public class Field implements IndexableField {
   public float boost() {
     return boost;
   }
+
+  // nocommit move set/getInt/Float/Long up here?  or just get/setNumber
 
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this
@@ -292,20 +310,6 @@ public class Field implements IndexableField {
     return result.toString();
   }
   
-  public void setDocValue(DocValue docValue) {
-    this.docValue = docValue;
-  }
-
-  @Override
-  public DocValue docValue() {
-    return null;
-  }
-  
-  @Override
-  public DocValues.Type docValueType() {
-    return null;
-  }
-
   /** Returns FieldType for this field. */
   public IndexableFieldType fieldType() {
     return type;

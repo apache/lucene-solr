@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 
@@ -30,6 +31,7 @@ public class FieldType implements IndexableFieldType {
   private boolean storeTermVectorPositions;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+  private DocValues.Type docValueType;
   private boolean frozen;
 
   public FieldType(IndexableFieldType ref) {
@@ -134,6 +136,16 @@ public class FieldType implements IndexableFieldType {
     this.indexOptions = value;
   }
 
+  public void setDocValueType(DocValues.Type type) {
+    checkIfFrozen();
+    docValueType = type;
+  }
+  
+  @Override
+  public DocValues.Type docValueType() {
+    return docValueType;
+  }
+
   /** Prints a Field for human consumption. */
   @Override
   public final String toString() {
@@ -172,6 +184,9 @@ public class FieldType implements IndexableFieldType {
         result.append(",indexOptions=");
         result.append(indexOptions);
       }
+    }
+    if (docValueType != null) {
+      result.append(",docValueType=" + docValueType);
     }
     
     return result.toString();

@@ -29,7 +29,7 @@ public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implem
   private final Similarity similarity;
   private final FieldInvertState fieldState;
   private DocValuesConsumer consumer;
-  private final DocValuesField value = new DocValuesField("");
+  private final DocValuesField value = new DocValuesField("", Type.BYTES_FIXED_STRAIGHT);
   private final BytesRef spare = new BytesRef(1);
   private final NormsConsumer parent;
   
@@ -53,9 +53,8 @@ public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implem
     if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {
       DocValuesConsumer consumer = getConsumer();
       spare.bytes[0] = similarity.computeNorm(fieldState);
-      value.setBytes(spare, Type.BYTES_FIXED_STRAIGHT);
+      value.setBytes(spare);
       consumer.add(docState.docID, value);
-      
     }    
   }
   

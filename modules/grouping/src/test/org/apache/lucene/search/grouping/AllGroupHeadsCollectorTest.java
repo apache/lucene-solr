@@ -211,7 +211,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       doc.add(group);
       DocValuesField valuesField = null;
       if (canUseIDV) {
-        valuesField = new DocValuesField("group");
+        valuesField = new DocValuesField("group", valueType);
         doc.add(valuesField);
       }
       Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
@@ -257,7 +257,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         if (groupDoc.group != null) {
           group.setValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            valuesField.setBytes(new BytesRef(groupDoc.group.utf8ToString()), valueType);
+            valuesField.setBytes(new BytesRef(groupDoc.group.utf8ToString()));
           }
         }
         sort1.setValue(groupDoc.sort1.utf8ToString());
@@ -527,8 +527,8 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, Type valueType) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      DocValuesField valuesField = new DocValuesField(groupField);
-      valuesField.setBytes(new BytesRef(value), valueType);
+      DocValuesField valuesField = new DocValuesField(groupField, valueType);
+      valuesField.setBytes(new BytesRef(value));
       doc.add(valuesField);
     }
   }

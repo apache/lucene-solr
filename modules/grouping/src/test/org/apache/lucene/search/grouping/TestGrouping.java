@@ -171,8 +171,8 @@ public class TestGrouping extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      DocValuesField valuesField = new DocValuesField(groupField);
-      valuesField.setBytes(new BytesRef(value), Type.BYTES_VAR_SORTED);
+      DocValuesField valuesField = new DocValuesField(groupField, Type.BYTES_VAR_SORTED);
+      valuesField.setBytes(new BytesRef(value));
       doc.add(valuesField);
     }
   }
@@ -705,7 +705,7 @@ public class TestGrouping extends LuceneTestCase {
 
       Document doc = new Document();
       Document docNoGroup = new Document();
-      DocValuesField idvGroupField = new DocValuesField("group");
+      DocValuesField idvGroupField = new DocValuesField("group", Type.BYTES_VAR_SORTED);
       if (canUseIDV) {
         doc.add(idvGroupField);
       }
@@ -747,7 +747,7 @@ public class TestGrouping extends LuceneTestCase {
         if (groupDoc.group != null) {
           group.setValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            idvGroupField.setBytes(BytesRef.deepCopyOf(groupDoc.group), Type.BYTES_VAR_SORTED);
+            idvGroupField.setBytes(BytesRef.deepCopyOf(groupDoc.group));
           }
         }
         sort1.setValue(groupDoc.sort1.utf8ToString());

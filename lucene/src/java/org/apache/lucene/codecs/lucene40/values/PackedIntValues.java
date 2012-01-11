@@ -20,11 +20,11 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.lucene40.values.DocValuesArray.LongValues;
 import org.apache.lucene.codecs.lucene40.values.FixedStraightBytesImpl.FixedBytesWriterBase;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -151,8 +151,11 @@ class PackedIntValues {
     }
 
     @Override
-    public void add(int docID, DocValue docValue) throws IOException {
-      add(docID, docValue.getInt());
+    public void add(int docID, IndexableField docValue) throws IOException {
+      final Number number = docValue.numericValue();
+      if (number != null) {
+        add(docID, number.longValue());
+      }
     }
   }
 

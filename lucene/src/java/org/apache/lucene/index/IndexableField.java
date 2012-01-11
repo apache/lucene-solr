@@ -23,7 +23,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
@@ -47,7 +46,7 @@ public interface IndexableField {
 
   /** Field boost (you must pre-multiply in any doc boost). */
   public float boost();
-  
+
   /** Non-null if this field has a binary value */
   public BytesRef binaryValue();
 
@@ -57,16 +56,15 @@ public interface IndexableField {
   /** Non-null if this field has a Reader value */
   public Reader readerValue();
 
-  // Numeric field:
-  /** True if this field is numeric */
-  public boolean numeric();
+  /** Numeric value; only used if the field is numeric
+   * (returns non-null result from {@link
+   * #numericDataType}. */
+  public Number numericValue();
 
   /** Numeric {@link org.apache.lucene.document.NumericField.DataType}; only used if
    * the field is numeric */
+  // nocommit move to IFT...?
   public NumericField.DataType numericDataType();
-
-  /** Numeric value; only used if the field is numeric */
-  public Number numericValue();
 
   /**
    * Returns the IndexableFieldType describing the properties of this field
@@ -75,12 +73,6 @@ public interface IndexableField {
    */
   public IndexableFieldType fieldType();
   
-  /** Non-null if doc values should be indexed */
-  public DocValue docValue();
-
-  /** DocValues type; only used if docValue is non-null */
-  public DocValues.Type docValueType();
-
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,
    * implementations should use the given Analyzer to create the TokenStreams.

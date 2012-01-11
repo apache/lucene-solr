@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
@@ -98,8 +99,10 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     newLine();
     
     write(TYPE);
-    if (field.numeric()) {
-      switch (field.numericDataType()) {
+    final NumericField.DataType numericType = field.numericDataType();
+
+    if (numericType != null) {
+      switch (numericType) {
         case INT:
           write(TYPE_INT);
           newLine();

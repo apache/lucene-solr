@@ -36,11 +36,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -146,35 +144,39 @@ public class TestSort extends LuceneTestCase {
         doc.add (new Field ("tracer", data[i][0], ft1));
         doc.add (new TextField ("contents", data[i][1]));
         if (data[i][2] != null) {
-          Field f = new StringField ("int", data[i][2]);
+          doc.add(new StringField ("int", data[i][2]));
           if (supportsDocValues) {
-            f = DocValuesField.build(f, DocValues.Type.VAR_INTS);
+            DocValuesField dvf = new DocValuesField("int", DocValues.Type.VAR_INTS);
+            dvf.setInt(Integer.parseInt(data[i][2]));
+            doc.add(dvf);
           }
-          doc.add(f);
         }
         if (data[i][3] != null) {
-          Field f = new StringField ("float", data[i][3]);
+          doc.add(new StringField ("float", data[i][3]));
           if (supportsDocValues) {
-            f = DocValuesField.build(f, DocValues.Type.FLOAT_32);
+            DocValuesField dvf = new DocValuesField("float", DocValues.Type.FLOAT_32);
+            dvf.setFloat(Float.parseFloat(data[i][3]));
+            doc.add(dvf);
           }
-          doc.add(f);
         }
         if (data[i][4] != null) {
-          Field f = new StringField ("string", data[i][4]);
+          doc.add(new StringField ("string", data[i][4]));
           if (supportsDocValues) {
-            f = DocValuesField.build(f, stringDVType);
+            DocValuesField dvf = new DocValuesField("string", stringDVType);
+            dvf.setBytes(new BytesRef(data[i][4]));
+            doc.add(dvf);
           }
-          doc.add(f);
         }
         if (data[i][5] != null) doc.add (new StringField ("custom",   data[i][5]));
         if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6]));
         if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7]));
         if (data[i][8] != null) {
-          Field f = new StringField ("double", data[i][8]);
+          doc.add(new StringField ("double", data[i][8]));
           if (supportsDocValues) {
-            f = DocValuesField.build(f, DocValues.Type.FLOAT_64);
+            DocValuesField dvf = new DocValuesField("double", DocValues.Type.FLOAT_64);
+            dvf.setFloat(Double.parseDouble(data[i][8]));
+            doc.add(dvf);
           }
-          doc.add(f);
         }
         if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9]));
         if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10]));
@@ -216,17 +218,19 @@ public class TestSort extends LuceneTestCase {
       String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
       doc.add (new Field ("tracer", num, onlyStored));
       //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-      Field f = new StringField("string", num);
+      doc.add(new StringField("string", num));
       if (supportsDocValues) {
-        f = DocValuesField.build(f, DocValues.Type.BYTES_VAR_SORTED);
+        DocValuesField dvf = new DocValuesField("string", DocValues.Type.BYTES_VAR_SORTED);
+        dvf.setBytes(new BytesRef(num));
+        doc.add(dvf);
       }
-      doc.add (f);
       String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
-      f = new StringField ("string2", num2);
+      doc.add(new StringField ("string2", num2));
       if (supportsDocValues) {
-        f = DocValuesField.build(f, DocValues.Type.BYTES_VAR_SORTED);
+        DocValuesField dvf = new DocValuesField("string2", DocValues.Type.BYTES_VAR_SORTED);
+        dvf.setBytes(new BytesRef(num2));
+        doc.add(dvf);
       }
-      doc.add (f);
       doc.add (new Field ("tracer2", num2, onlyStored));
       for(IndexableField f2 : doc.getFields()) {
         ((Field) f2).setBoost(2.0f);
@@ -235,17 +239,19 @@ public class TestSort extends LuceneTestCase {
       String numFixed = getRandomCharString(fixedLen, 48, 52);
       doc.add (new Field ("fixed_tracer", numFixed, onlyStored));
       //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-      f = new StringField("string_fixed", numFixed);
+      doc.add(new StringField("string_fixed", numFixed));
       if (supportsDocValues) {
-        f = DocValuesField.build(f, DocValues.Type.BYTES_FIXED_SORTED);
+        DocValuesField dvf = new DocValuesField("string_fixed", DocValues.Type.BYTES_FIXED_SORTED);
+        dvf.setBytes(new BytesRef(numFixed));
+        doc.add(dvf);
       }
-      doc.add (f);
       String num2Fixed = getRandomCharString(fixedLen2, 48, 52);
-      f = new StringField ("string2_fixed", num2Fixed);
+      doc.add(new StringField ("string2_fixed", num2Fixed));
       if (supportsDocValues) {
-        f = DocValuesField.build(f, DocValues.Type.BYTES_FIXED_SORTED);
+        DocValuesField dvf = new DocValuesField("string2_fixed", DocValues.Type.BYTES_FIXED_SORTED);
+        dvf.setBytes(new BytesRef(num2Fixed));
+        doc.add(dvf);
       }
-      doc.add (f);
       doc.add (new Field ("tracer2_fixed", num2Fixed, onlyStored));
 
       for(IndexableField f2 : doc.getFields()) {
@@ -387,7 +393,7 @@ public class TestSort extends LuceneTestCase {
       sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC );
       assertMatches (full, queryX, sort, "IGAEC");
       assertMatches (full, queryY, sort, "DHFJB");
-      
+
       sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)), SortField.FIELD_DOC );
       assertMatches (full, queryX, sort, "GCIEA");
       assertMatches (full, queryY, sort, "DHJFB");

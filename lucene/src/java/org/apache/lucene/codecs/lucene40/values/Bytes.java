@@ -23,12 +23,12 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -308,9 +308,9 @@ public final class Bytes {
     }
 
     @Override
-    public void add(int docID, DocValue docValue) throws IOException {
-      final BytesRef ref;
-      if ((ref = docValue.getBytes()) != null) {
+    public void add(int docID, IndexableField docValue) throws IOException {
+      final BytesRef ref = docValue.binaryValue();
+      if (ref != null) {
         add(docID, ref);
       }
     }

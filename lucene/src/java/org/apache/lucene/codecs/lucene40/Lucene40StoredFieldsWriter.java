@@ -21,13 +21,14 @@ import java.io.IOException;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -127,7 +128,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
   }
 
-  public final void writeField(FieldInfo info, IndexableField field) throws IOException {
+  public void writeField(FieldInfo info, IndexableField field) throws IOException {
     fieldsStream.writeVInt(info.number);
     int bits = 0;
     final BytesRef bytes;
@@ -136,8 +137,9 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     // this way we don't bake into indexer all these
     // specific encodings for different fields?  and apps
     // can customize...
-    if (field.numeric()) {
-      switch (field.numericDataType()) {
+    final NumericField.DataType numericType = field.numericDataType();
+    if (numericType != null) {
+      switch (numericType) {
         case INT:
           bits |= FIELD_IS_NUMERIC_INT; break;
         case LONG:
@@ -193,7 +195,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
    *  document.  The stream IndexInput is the
    *  fieldsStream from which we should bulk-copy all
    *  bytes. */
-  public final void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
+  public void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
     long position = fieldsStream.getFilePointer();
     long start = position;
     for(int i=0;i<numDocs;i++) {

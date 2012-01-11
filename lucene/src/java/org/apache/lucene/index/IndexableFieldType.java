@@ -46,4 +46,8 @@ public interface IndexableFieldType {
   /** {@link IndexOptions}, describing what should be
    * recorded into the inverted index */
   public IndexOptions indexOptions();
+
+  /** DocValues type; if non-null then the field's value
+   *  will be indexed into docValues */
+  public DocValues.Type docValueType();
 }
