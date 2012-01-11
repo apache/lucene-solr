@@ -1,0 +1,363 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.update;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
+import org.apache.solr.update.processor.RunUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** @lucene.experimental */
+public class PeerSync  {
+  public static Logger log = LoggerFactory.getLogger(PeerSync.class);
+  public boolean debug = log.isDebugEnabled();
+
+  private SolrCore core;
+  private List<String> replicas;
+  private int nUpdates;
+
+  private UpdateHandler uhandler;
+  private UpdateLog ulog;
+  private ShardHandlerFactory shardHandlerFactory;
+  private ShardHandler shardHandler;
+
+  private UpdateLog.RecentUpdates recentUpdates;
+
+  private List<Long> ourUpdates;
+  private Set<Long> ourUpdateSet;
+  private Set<Long> requestedUpdateSet;
+  private long ourLowThreshold;  // 20th percentile
+  private long ourHighThreshold; // 80th percentile
+
+  // comparator that sorts by absolute value, putting highest first
+  private static Comparator<Long> absComparator = new Comparator<Long>() {
+    @Override
+    public int compare(Long o1, Long o2) {
+      long l1 = Math.abs(o1);
+      long l2 = Math.abs(o2);
+      if (l1 >l2) return -1;
+      if (l1 < l2) return 1;
+      return 0;
+    }
+  };
+
+  private static class SyncShardRequest extends ShardRequest {
+    List<Long> reportedVersions;
+    List<Long> requestedUpdates;
+    Exception updateException;
+  }
+
+
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
+    this.core = core;
+    this.replicas = replicas;
+    this.nUpdates = nUpdates;
+
+    uhandler = core.getUpdateHandler();
+    ulog = uhandler.getUpdateLog();
+    shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    shardHandler = shardHandlerFactory.getShardHandler();
+  }
+
+  public long percentile(List<Long> arr, float frac) {
+    int elem = (int) (arr.size() * frac);
+    return Math.abs(arr.get(elem));
+  }
+
+  /** Returns true if peer sync was successful, meaning that this core may not be considered to have the latest updates.
+   *  A commit is not performed.
+   */
+  public boolean sync() {
+    if (ulog == null) {
+      return false;
+    }
+
+    // fire off the requests before getting our own recent updates (for better concurrency)
+    for (String replica : replicas) {
+      requestVersions(replica);
+    }
+
+    recentUpdates = ulog.getRecentUpdates();
+    ourUpdates = recentUpdates.getVersions(nUpdates);
+    Collections.sort(ourUpdates, absComparator);
+
+    if (ourUpdates.size() > 0) {
+      ourLowThreshold = percentile(ourUpdates, 0.8f);
+      ourHighThreshold = percentile(ourUpdates, 0.2f);
+    }  else {
+      ourHighThreshold = Long.MAX_VALUE;  // nocommit - this is just temporary
+    }
+
+    ourUpdateSet = new HashSet<Long>(ourUpdates);
+    requestedUpdateSet = new HashSet<Long>(ourUpdates);
+
+    for(;;) {
+      ShardResponse srsp = shardHandler.takeCompletedOrError();
+      if (srsp == null) break;
+      boolean success = handleResponse(srsp);
+      if (!success) {
+        shardHandler.cancelAll();
+        return false;
+      }
+    }
+
+    return true;
+  }
+  
+  private void requestVersions(String replica) {
+    SyncShardRequest sreq = new SyncShardRequest();
+    sreq.purpose = 1;
+    sreq.shards = new String[]{replica};
+    sreq.actualShards = sreq.shards;
+    sreq.params = new ModifiableSolrParams();
+    sreq.params.set("qt","/get");
+    sreq.params.set("getVersions",nUpdates);
+    shardHandler.submit(sreq, replica, sreq.params);
+  }
+
+  private boolean  handleResponse(ShardResponse srsp) {
+    if (srsp.getException() != null) {
+      return false;
+    }
+
+    ShardRequest sreq = srsp.getShardRequest();
+    if (sreq.purpose == 1) {
+      return handleVersions(srsp);
+    } else {
+      return handleUpdates(srsp);
+    }
+  }
+  
+  private boolean handleVersions(ShardResponse srsp) {
+    // we retrieved the last N updates from the replica
+    List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
+    // TODO: how to handle short lists?
+
+    SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
+    sreq.reportedVersions =  otherVersions;
+
+    Collections.sort(otherVersions, absComparator);
+
+    long otherHigh = percentile(otherVersions, .2f);
+    long otherLow = percentile(otherVersions, .8f);
+
+    if (ourHighThreshold < otherLow) {
+      // Small overlap between version windows and ours is older
+      // This means that we might miss updates if we attempted to use this method.
+      // Since there exists just one replica that is so much newer, we must
+      // fail the sync.
+      return false;
+    }
+
+    if (ourLowThreshold > otherHigh) {
+      // Small overlap between windows and ours is newer.
+      // Using this list to sync would result in requesting/replaying results we don't need
+      // and possibly bringing deleted docs back to life.
+      return true;
+    }
+    
+    List<Long> toRequest = new ArrayList<Long>();
+    for (Long otherVersion : otherVersions) {
+      // stop when the entries get old enough that reorders may lead us to see updates we don't need
+      if (Math.abs(otherVersion) < ourLowThreshold) break;
+
+      if (ourUpdateSet.contains(otherVersion) || requestedUpdateSet.contains(otherVersion)) {
+        // we either have this update, or already requested it
+        continue;
+      }
+
+      toRequest.add(otherVersion);
+      requestedUpdateSet.add(otherVersion);
+    }
+
+    sreq.requestedUpdates = toRequest;
+
+    if (toRequest.isEmpty()) {
+      // we had (or already requested) all the updates referenced by the replica
+      return true;
+    }
+
+    return requestUpdates(srsp, toRequest);
+  }
+
+  private boolean requestUpdates(ShardResponse srsp, List<Long> toRequest) {
+    String replica = srsp.getShardRequest().shards[0];
+
+    log.info("Requesting updates from " + replica + " versions=" + toRequest);
+
+
+
+    // reuse our original request object
+    ShardRequest sreq = srsp.getShardRequest();
+
+    sreq.purpose = 0;
+    sreq.params = new ModifiableSolrParams();
+    sreq.params.set("qt","/get");
+    sreq.params.set("getUpdates", StrUtils.join(toRequest, ','));
+    sreq.responses.clear();  // needs to be zeroed for correct correlation to occur
+
+    shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+
+    return true;
+  }
+
+
+  private boolean handleUpdates(ShardResponse srsp) {
+    // we retrieved the last N updates from the replica
+    List<Object> updates = (List<Object>)srsp.getSolrResponse().getResponse().get("updates");
+
+    SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
+    if (sreq.requestedUpdates.size() <  updates.size()) {
+      log.error("PeerSync: Requested " + sreq.requestedUpdates.size() + " updates from " + sreq.shards[0] + " but retrieved " + updates.size());
+      return false;
+    }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
+    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+
+    RunUpdateProcessorFactory runFac = new RunUpdateProcessorFactory();
+    DistributedUpdateProcessorFactory magicFac = new DistributedUpdateProcessorFactory();
+    runFac.init(new NamedList());
+    magicFac.init(new NamedList());
+
+    UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
+
+    Object obj = null;
+    try {
+
+    for (Object o : updates) {
+      obj = o; // for error reporting
+
+      // should currently be a List<Oper,Ver,Doc/Id>
+      List entry = (List)o;
+
+      int oper = (Integer)entry.get(0);
+      long version = (Long) entry.get(1);
+
+      switch (oper) {
+        case UpdateLog.ADD:
+        {
+          // byte[] idBytes = (byte[]) entry.get(2);
+          SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
+          AddUpdateCommand cmd = new AddUpdateCommand(req);
+          // cmd.setIndexedId(new BytesRef(idBytes));
+          cmd.solrDoc = sdoc;
+          cmd.setVersion(version);
+          cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+          proc.processAdd(cmd);
+          break;
+        }
+        case UpdateLog.DELETE:
+        {
+          byte[] idBytes = (byte[]) entry.get(2);
+          DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+          cmd.setIndexedId(new BytesRef(idBytes));
+          cmd.setVersion(version);
+          cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+          proc.processDelete(cmd);
+          break;
+        }
+
+        case UpdateLog.DELETE_BY_QUERY:
+        {
+          String query = (String)entry.get(2);
+          DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+          cmd.query = query;
+          cmd.setVersion(version);
+          cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+          proc.processDelete(cmd);
+          break;
+        }
+
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
+      }
+
+    }
+      
+    }
+    catch (IOException e) {
+      // TODO: should this be handled separately as a problem with us?
+      // I guess it probably already will by causing replication to be kicked off.
+      sreq.updateException = e;
+      log.error("Error applying updates from " + sreq.shards + " ,update=" + obj, e);
+      return false;
+    }
+    catch (Exception e) {
+      sreq.updateException = e;
+      log.error("Error applying updates from " + sreq.shards + " ,update=" + obj, e);
+      return false;
+    }
+
+    return true;
+  }
+
+
+
+  /** Requests and applies recent updates from peers */
+  public static void sync(SolrCore core, List<String> replicas, int nUpdates) {
+    UpdateHandler uhandler = core.getUpdateHandler();
+
+    ShardHandlerFactory shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+   
+    for (String replica : replicas) {
+      ShardRequest sreq = new ShardRequest();
+      sreq.shards = new String[]{replica};
+      sreq.params = new ModifiableSolrParams();
+      sreq.params.set("qt","/get");
+      sreq.params.set("getVersions",nUpdates);
+      shardHandler.submit(sreq, replica, sreq.params);
+    }
+    
+    for (String replica : replicas) {
+      ShardResponse srsp = shardHandler.takeCompletedOrError();
+    }
+
+
+  }
+  
+}

@@ -38,6 +38,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DocumentBuilder;
+import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
@@ -49,12 +50,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TODO!
- * 
- *
- * @since solr 1.3
- */
+
 public class RealTimeGetComponent extends SearchComponent
 {
   public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
@@ -283,6 +279,11 @@ public class RealTimeGetComponent extends SearchComponent
     int nVersions = params.getInt("getVersions", -1);
     if (nVersions == -1) return;
 
+    String sync = params.get("sync");
+    if (sync != null) {
+      processSync(rb, nVersions, sync);
+      return;
+    }
 
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
@@ -294,6 +295,18 @@ public class RealTimeGetComponent extends SearchComponent
     recentUpdates.close();  // cache this somehow?
   }
 
+  
+  public void processSync(ResponseBuilder rb, int nVersions, String sync) {
+    List<String> replicas = StrUtils.splitSmart(sync, ",", true);
+    
+    
+    PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions);
+    boolean success = peerSync.sync();
+    
+    // TODO: more complex response?
+    rb.rsp.add("sync", success);
+  }
+  
 
   public void processGetUpdates(ResponseBuilder rb) throws IOException
   {
