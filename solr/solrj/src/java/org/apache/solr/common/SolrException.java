@@ -17,14 +17,13 @@
 
 package org.apache.solr.common;
 
-import org.apache.zookeeper.KeeperException.ConnectionLossException;
-import org.slf4j.Logger;
-
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
 
 /**
  *
