@@ -590,7 +590,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
   }
   
-  protected void handlePrepRecoveryAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  protected void handlePrepRecoveryAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, InterruptedException {
     final SolrParams params = req.getParams();
 
     String cname = params.get(CoreAdminParams.CORE);
@@ -606,6 +606,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
     try {
       String state;
+      int retry = 0;
       while (true) {
         // wait until we are sure the recovering node is ready
         // to accept updates
@@ -618,20 +619,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
                 cloudDescriptor.getShardId()).getShards().get(nodeName);
         state = nodeProps.get(ZkStateReader.STATE_PROP);
         if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)) {
-          // nocommit: this should time out
           break;
         }
+        
+        if (retry++ == 10) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "I was asked to prep for recovery for " + nodeName
+                  + " but she is not in a recovery state");
+        }
+
+        Thread.sleep(1000);
       }
       
       if (core != null) {
         // small safety net for any updates that started with state that
         // kept it from sending the update to be buffered -
         // pause for a while to let any outstanding updates finish
-        try {
-          Thread.sleep(1500);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+
+        Thread.sleep(1500);
         
         UpdateRequestProcessorChain processorChain = core
             .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
