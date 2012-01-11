@@ -32,7 +32,7 @@
   <property name="dict.src.dir" value="${build.dir}/${ipadic.version}" />
   <property name="dict.encoding" value="euc-jp"/>
   <property name="dict.format" value="ipadic"/>
-  <property name="dict.normalize" value="true"/>
+  <property name="dict.normalize" value="false"/>
   <property name="dict.target.dir" location="./src/resources"/>
   <import file="../../../lucene/contrib/contrib-build.xml"/> 
 
