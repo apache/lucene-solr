@@ -566,7 +566,6 @@ public class UpdateLog implements PluginInfoInitialized {
     long pointer;
   } 
   
-  // TODO: nocommit: decrement the references of the transaction logs at some point
   public class RecentUpdates {
     Deque<TransactionLog> logList;    // newest first
     List<List<Update>> updateList;
@@ -897,8 +896,8 @@ public class UpdateLog implements PluginInfoInitialized {
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
             }
 
-            // nocommit: do we want to at least log it?
             if (rsp.getException() != null) {
+              log.error("Exception replaying log", rsp.getException());
               throw rsp.getException();
             }
           } catch (IOException ex) {
