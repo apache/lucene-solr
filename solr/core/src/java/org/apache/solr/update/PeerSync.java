@@ -264,70 +264,71 @@ public class PeerSync  {
 
     UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
 
-    Object obj = null;
+    Object o = null;
     try {
 
-    for (Object o : updates) {
-      obj = o; // for error reporting
+      // Apply oldest updates first
+      for (int i=updates.size()-1; i>=0; i--) {
+        o = updates.get(i);
 
-      // should currently be a List<Oper,Ver,Doc/Id>
-      List entry = (List)o;
+        // should currently be a List<Oper,Ver,Doc/Id>
+        List entry = (List)o;
 
-      int oper = (Integer)entry.get(0);
-      long version = (Long) entry.get(1);
+        int oper = (Integer)entry.get(0);
+        long version = (Long) entry.get(1);
 
-      switch (oper) {
-        case UpdateLog.ADD:
-        {
-          // byte[] idBytes = (byte[]) entry.get(2);
-          SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
-          AddUpdateCommand cmd = new AddUpdateCommand(req);
-          // cmd.setIndexedId(new BytesRef(idBytes));
-          cmd.solrDoc = sdoc;
-          cmd.setVersion(version);
-          cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
-          proc.processAdd(cmd);
-          break;
+        switch (oper) {
+          case UpdateLog.ADD:
+          {
+            // byte[] idBytes = (byte[]) entry.get(2);
+            SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
+            AddUpdateCommand cmd = new AddUpdateCommand(req);
+            // cmd.setIndexedId(new BytesRef(idBytes));
+            cmd.solrDoc = sdoc;
+            cmd.setVersion(version);
+            cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+            proc.processAdd(cmd);
+            break;
+          }
+          case UpdateLog.DELETE:
+          {
+            byte[] idBytes = (byte[]) entry.get(2);
+            DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+            cmd.setIndexedId(new BytesRef(idBytes));
+            cmd.setVersion(version);
+            cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+            proc.processDelete(cmd);
+            break;
+          }
+
+          case UpdateLog.DELETE_BY_QUERY:
+          {
+            String query = (String)entry.get(2);
+            DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+            cmd.query = query;
+            cmd.setVersion(version);
+            cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+            proc.processDelete(cmd);
+            break;
+          }
+
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
         }
-        case UpdateLog.DELETE:
-        {
-          byte[] idBytes = (byte[]) entry.get(2);
-          DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
-          cmd.setIndexedId(new BytesRef(idBytes));
-          cmd.setVersion(version);
-          cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
-          proc.processDelete(cmd);
-          break;
-        }
 
-        case UpdateLog.DELETE_BY_QUERY:
-        {
-          String query = (String)entry.get(2);
-          DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
-          cmd.query = query;
-          cmd.setVersion(version);
-          cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
-          proc.processDelete(cmd);
-          break;
-        }
-
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
       }
 
-    }
-      
     }
     catch (IOException e) {
       // TODO: should this be handled separately as a problem with us?
       // I guess it probably already will by causing replication to be kicked off.
       sreq.updateException = e;
-      log.error("Error applying updates from " + sreq.shards + " ,update=" + obj, e);
+      log.error("Error applying updates from " + sreq.shards + " ,update=" + o, e);
       return false;
     }
     catch (Exception e) {
       sreq.updateException = e;
-      log.error("Error applying updates from " + sreq.shards + " ,update=" + obj, e);
+      log.error("Error applying updates from " + sreq.shards + " ,update=" + o, e);
       return false;
     }
 
