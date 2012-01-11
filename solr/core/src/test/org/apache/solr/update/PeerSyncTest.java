@@ -54,19 +54,28 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   
   @Override
   public void doTest() throws Exception {
+    handle.clear();
+    handle.put("QTime", SKIPVAL);
+    handle.put("timestamp", SKIPVAL);
+    handle.put("score", SKIPVAL);
+    handle.put("maxScore", SKIPVAL);
+
     SolrServer clients0 = clients.get(0);
     SolrServer clients1 = clients.get(1);
     SolrServer clients2 = clients.get(2);
 
-    clients0.add(sdoc("id",1));
+    clients0.add(addRandFields(sdoc("id",1)));
+    clients0.add(addRandFields(sdoc("id",1)));
+    clients0.add(addRandFields(sdoc("id",2)));
 
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions","100", "sync",shardsArr[0]));
     NamedList rsp = clients1.request(qr);
     // System.out.println("RESPONSE="+rsp);
     assertTrue( (Boolean)rsp.get("sync") );
+    clients0.commit();
     clients1.commit();
-    assertEquals(1, clients1.query(params("q","id:1")).getResults().getNumFound());
 
+    queryAndCompare(params("q","*:*"), clients0, clients1);
   }
 
 

@@ -41,7 +41,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Test;
@@ -274,8 +276,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
     addFields(doc, "rnd_b", true);
-    addFields(doc, getRandFields(getFieldNames(), getRandValues()));
+    addRandFields(doc);
     indexDoc(doc);
+  }
+  
+  protected SolrInputDocument addRandFields(SolrInputDocument sdoc) {
+    addFields(sdoc, getRandFields(getFieldNames(), getRandValues()));
+    return sdoc;
   }
 
   protected void index(Object... fields) throws Exception {
@@ -368,6 +375,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         thread.join();
       }
     }
+  }
+  
+  public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
+    QueryResponse first = null;
+    for (SolrServer server : servers) {
+      QueryResponse rsp = server.query(new ModifiableSolrParams(params));
+      if (first == null) {
+        first = rsp;
+      } else {
+        compareResponses(first, rsp);
+      }
+    }
+
+    return first;
   }
 
   public static boolean eq(String a, String b) {
