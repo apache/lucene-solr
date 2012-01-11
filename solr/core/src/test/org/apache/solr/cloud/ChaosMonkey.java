@@ -331,10 +331,8 @@ public class ChaosMonkey {
             
             if (random.nextBoolean()) {
              if (!deadPool.isEmpty()) {
-               JettySolrRunner jetty = deadPool.remove(random.nextInt(deadPool.size()));
-               if (jetty.isRunning()) {
-                 
-               }
+               int index = random.nextInt(deadPool.size());
+               JettySolrRunner jetty = deadPool.get(index);
                try {
                  jetty.start();
                } catch (BindException e) {
@@ -354,6 +352,7 @@ public class ChaosMonkey {
                  }
                }
                //System.out.println("started on port:" + jetty.getLocalPort());
+               deadPool.remove(index);
                starts.incrementAndGet();
                continue;
              }
