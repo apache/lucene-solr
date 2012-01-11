@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
 
@@ -71,7 +72,17 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
   @Override
   public void close() throws IOException {
     if (writer != null) {
-      writer.finish();
+      boolean success = false;
+      try {
+        writer.finish();
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(writer);
+        } else {
+          IOUtils.closeWhileHandlingException(writer);
+        }
+      }
     }
   }
   
@@ -181,7 +192,7 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
     return writer;
   }
 
-  private static class NormsWriter {
+  private static class NormsWriter implements Closeable{
 
     private final IndexOutput output;
     private int numTotalDocs = 0;
@@ -253,12 +264,16 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
     }
 
     public void abort() throws IOException {
-      IOUtils.close(output);
+      close();
     }
 
     public void finish() throws IOException {
-      finish(numTotalDocs);
-      IOUtils.close(output);
+        finish(numTotalDocs);
+    }
+
+    @Override
+    public void close() throws IOException {
+      output.close();
     }
   }
 
