@@ -584,6 +584,17 @@ public final class ZkController {
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
     publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
   }
+  
+  void publishAsRecoveryFailed(String baseUrl,
+      final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
+    Map<String,String> finalProps = new HashMap<String,String>();
+    finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
+    finalProps.put(ZkStateReader.CORE_PROP, coreName);
+    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
+    finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
+    publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
+  }
 
 
   private boolean getShardId(final CoreDescriptor desc,
@@ -813,4 +824,5 @@ public final class ZkController {
   public static void uploadConfigDir(SolrZkClient zkClient, File dir, String configName) throws IOException, KeeperException, InterruptedException {
     uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
+
 }

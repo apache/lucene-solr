@@ -60,6 +60,7 @@ public class ZkStateReader {
   public static final String CLUSTER_STATE = "/clusterstate.json";
   
   public static final String RECOVERING = "recovering";
+  public static final String RECOVERY_FAILED = "recovery_failed";
   public static final String ACTIVE = "active";
   
   private volatile CloudState cloudState;

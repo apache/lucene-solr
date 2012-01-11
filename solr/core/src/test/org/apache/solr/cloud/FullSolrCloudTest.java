@@ -844,10 +844,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         live = true;
       }
       if (verbose) System.out.println(" live:" + live);
-      boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
-      if (verbose) System.out.println(" num:" + num + "\n" + (recovering ? "recovering" : ""));
+      boolean active = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
+      if (verbose) System.out.println(" num:" + num + "\n" + (active ? "recovering" : ""));
       
-      if (!recovering && live) {
+      if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
           failMessage = shard + " is not consistent, expected:" + lastNum
               + " and got:" + num;
@@ -889,8 +889,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         try {
           SolrServer client = shardToClient.get(s).get(i);
           ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
-          boolean recovering = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.RECOVERING);
-          if (!recovering) {
+          boolean active = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
+          if (active) {
             cnt += client.query(new SolrQuery("*:*")).getResults()
                 .getNumFound();
             break;
@@ -957,7 +957,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       long count = 0;
       String currentState = clientToInfo.get(new CloudSolrServerClient(client)).get(ZkStateReader.STATE_PROP);
-      if (currentState != null && !currentState.equals(ZkStateReader.RECOVERING)) {
+      if (currentState != null && currentState.equals(ZkStateReader.ACTIVE)) {
         count = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       }
 

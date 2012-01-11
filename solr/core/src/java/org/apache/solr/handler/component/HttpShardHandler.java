@@ -320,8 +320,8 @@ public class HttpShardHandler extends ShardHandler {
             for (ZkNodeProps nodeProps : sliceShards.values()) {
               ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
               if (!liveNodes.contains(coreNodeProps.getNodeName())
-                  && !coreNodeProps.getState().equals(
-                      ZkStateReader.RECOVERING)) continue;
+                  && coreNodeProps.getState().equals(
+                      ZkStateReader.ACTIVE)) continue;
               if (first) {
                 first = false;
               } else {

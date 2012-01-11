@@ -148,6 +148,9 @@ public class RecoveryStrat {
               retries++;
               if (retries >= MAX_RETRIES) {
                 // TODO: for now, give up after 10 tries - should we do more?
+                log.error("Recovery failed - I give up.");
+                zkController.publishAsRecoveryFailed(baseUrl, cloudDesc,
+                    shardZkNodeName, core.getName());
                 close = true;
               }
               
