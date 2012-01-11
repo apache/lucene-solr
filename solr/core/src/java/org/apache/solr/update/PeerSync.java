@@ -331,6 +331,15 @@ public class PeerSync  {
       log.error("Error applying updates from " + sreq.shards + " ,update=" + o, e);
       return false;
     }
+    finally {
+      try {
+        proc.finish();
+      } catch (Exception e) {
+        sreq.updateException = e;
+        log.error("Error applying updates from " + sreq.shards + " ,finish()", e);
+        return false;
+      }
+    }
 
     return true;
   }
