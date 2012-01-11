@@ -849,7 +849,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       if (!recovering && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
-          failMessage = "shard is not consistent, expected:" + lastNum
+          failMessage = shard + " is not consistent, expected:" + lastNum
               + " and got:" + num;
         }
         lastNum = num;
