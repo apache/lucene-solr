@@ -347,6 +347,7 @@ public class ChaosMonkey {
                      jetty.start();
                    } catch (BindException e3) {
                      // we coud not get the port
+                     jetty.stop();
                      continue;
                    }
                  }
