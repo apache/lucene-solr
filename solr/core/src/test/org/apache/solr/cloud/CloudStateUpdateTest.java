@@ -105,6 +105,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     
+    System.setProperty("solr.solr.home", TEST_HOME());
     System.setProperty("hostPort", "1661");
     CoreContainer.Initializer init1 = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir1.getAbsolutePath());
@@ -123,6 +124,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir3.getAbsolutePath());
     container3 = init3.initialize();
     System.clearProperty("hostPort");
+    System.clearProperty("solr.solr.home");
     
     log.info("####SETUP_END " + getName());
     

@@ -310,14 +310,7 @@ public class CoreContainer
     shareSchema = cfg.getBool("solr/cores/@shareSchema", false);
     zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
 
-    hostPort = System.getProperty("hostPort");
-    if (hostPort == null || hostPort.length() == 0) {
-      hostPort = cfg.get("solr/cores/@hostPort", "8983");
-    }
-    // TODO: should we do this generically in cfg?
-    if (hostPort != null && hostPort.length() == 0) {
-      hostPort = "8983";
-    }
+    hostPort = cfg.get("solr/cores/@hostPort", "8983");
 
     hostContext = cfg.get("solr/cores/@hostContext", "solr");
     host = cfg.get("solr/cores/@host", null);

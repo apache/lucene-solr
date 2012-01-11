@@ -491,7 +491,9 @@ public final class ZkController {
     SolrCore core = null;
     try {
       boolean doRecovery = true;
-      if (leaderUrl.equals(ZkCoreNodeProps.getCoreUrl(baseUrl, coreName))) {
+      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+      log.info("We are " + ourUrl + " and leader is " + leaderUrl);
+      if (leaderUrl.equals(ourUrl)) {
         doRecovery = false;
 
         // recover from local transaction log and wait for it to complete before

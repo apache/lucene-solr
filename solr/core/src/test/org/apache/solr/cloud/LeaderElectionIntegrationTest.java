@@ -115,6 +115,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("shard", shard);
     Initializer init = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", data.getAbsolutePath());
+    System.setProperty("solr.solr.home", TEST_HOME());
     Set<Integer> ports = shardPorts.get(shard);
     if (ports == null) {
       ports = new HashSet<Integer>();
@@ -123,6 +124,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     ports.add(port);
     CoreContainer container = init.initialize();
     containerMap.put(port, container);
+    System.clearProperty("solr.solr.home");
     System.clearProperty("hostPort");
   }
   
@@ -244,6 +246,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     if (VERBOSE) {
       printLayout(zkServer.getZkHost());
     }
+
     if (zkClient != null) {
       zkClient.close();
     }
