@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.lucene40.values.DocValuesArray.LongValues;
 import org.apache.lucene.codecs.lucene40.values.FixedStraightBytesImpl.FixedBytesWriterBase;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
@@ -62,7 +63,6 @@ class PackedIntValues {
       bytesRef = new BytesRef(8);
     }
 
-    @Override
     protected void add(int docID, long v) throws IOException {
       assert lastDocId < docID;
       if (!started) {
@@ -113,10 +113,10 @@ class PackedIntValues {
     }
 
     @Override
-    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
+    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
-        add(docID, currentMergeSource.getInt(sourceDoc));
+        add(docID, source.getInt(sourceDoc));
     }
 
     private void writePackedInts(IndexOutput datOut, int docCount) throws IOException {
@@ -152,10 +152,7 @@ class PackedIntValues {
 
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      final Number number = docValue.numericValue();
-      if (number != null) {
-        add(docID, number.longValue());
-      }
+      add(docID, docValue.numericValue().longValue());
     }
   }
 

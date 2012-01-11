@@ -312,11 +312,6 @@ public final class NumericField extends Field {
     return dataType;
   }
 
-  @Override
-  public boolean numeric() {
-    return true;
-  }
-
   /**
    * Initializes the field with the supplied <code>long</code> value.
    * 

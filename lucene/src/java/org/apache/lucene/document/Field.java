@@ -225,7 +225,17 @@ public class Field implements IndexableField {
     }
     fieldsData = new BytesRef(value);
   }
-  
+
+  // nocommit jdocs warning that we hold ref
+  public void setValue(BytesRef value) {
+    fieldsData = value;
+  }
+
+  // nocommit jdocs
+  public void setValue(Number value) {
+    fieldsData = value;
+  }
+
   /**
    * Expert: sets the token stream to be used for indexing and causes
    * isIndexed() and isTokenized() to return true. May be combined with stored
@@ -266,13 +276,13 @@ public class Field implements IndexableField {
   public void setBoost(float boost) {
     this.boost = boost;
   }
-  
-  public boolean numeric() {
-    return false;
-  }
 
   public Number numericValue() {
-    return null;
+    if (fieldsData instanceof Number) {
+      return (Number) fieldsData;
+    } else {
+      return null;
+    }
   }
 
   public NumericField.DataType numericDataType() {

@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene40.values;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
@@ -103,7 +104,6 @@ public final class Ints {
       template = DocValuesArray.TEMPLATES.get(valueType);
     }
     
-    @Override
     protected void add(int docID, long v) throws IOException {
       template.toBytes(v, bytesRef);
       add(docID, bytesRef);
@@ -111,15 +111,12 @@ public final class Ints {
 
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      final Number number = docValue.numericValue();
-      if (number != null) {
-        add(docID, number.longValue());
-      }
+      add(docID, docValue.numericValue().longValue());
     }
     
     @Override
-    protected void setMergeBytes(int sourceDoc) {
-      final long value = currentMergeSource.getInt(sourceDoc);
+    protected void setMergeBytes(Source source, int sourceDoc) {
+      final long value = source.getInt(sourceDoc);
       template.toBytes(value, bytesRef);
     }
     

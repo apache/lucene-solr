@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -295,7 +296,6 @@ public final class Bytes {
      * Must be called only with increasing docIDs. It's OK for some docIDs to be
      * skipped; they will be filled with 0 bytes.
      */
-    @Override
     protected
     abstract void add(int docID, BytesRef bytes) throws IOException;
 
@@ -303,16 +303,13 @@ public final class Bytes {
     public abstract void finish(int docCount) throws IOException;
 
     @Override
-    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
-      add(docID, currentMergeSource.getBytes(sourceDoc, bytesRef));
+    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
+      add(docID, source.getBytes(sourceDoc, bytesRef));
     }
 
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      final BytesRef ref = docValue.binaryValue();
-      if (ref != null) {
-        add(docID, ref);
-      }
+      add(docID, docValue.binaryValue());
     }
   }
 

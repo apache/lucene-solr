@@ -87,10 +87,7 @@ public class Floats {
     
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      Number number = docValue.numericValue();
-      if (number != null) {
-        add(docID, number.doubleValue());
-      }
+      add(docID, docValue.numericValue().doubleValue());
     }
     
     @Override
@@ -100,8 +97,8 @@ public class Floats {
     }
     
     @Override
-    protected void setMergeBytes(int sourceDoc) {
-      final double value = currentMergeSource.getFloat(sourceDoc);
+    protected void setMergeBytes(Source source, int sourceDoc) {
+      final double value = source.getFloat(sourceDoc);
       template.toBytes(value, bytesRef);
     }
   }
