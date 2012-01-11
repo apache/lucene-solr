@@ -226,7 +226,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
-      NumericField id = new NumericField("id");
+      NumericField id = new NumericField("id", NumericField.DataType.INT);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];

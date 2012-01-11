@@ -78,7 +78,7 @@ public class TestFieldCache extends LuceneTestCase {
       }
 
       if (i%2 == 0) {
-        doc.add(new NumericField("numInt").setIntValue(i));
+        doc.add(new NumericField("numInt", i));
       }
 
       // sometimes skip the field:

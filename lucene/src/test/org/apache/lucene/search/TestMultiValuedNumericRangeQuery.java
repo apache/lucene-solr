@@ -52,7 +52,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       for (int m=0, c=random.nextInt(10); m<=c; m++) {
         int value = random.nextInt(Integer.MAX_VALUE);
         doc.add(newField("asc", format.format(value), StringField.TYPE_UNSTORED));
-        doc.add(new NumericField("trie").setIntValue(value));
+        doc.add(new NumericField("trie", value));
       }
       writer.addDocument(doc);
     }

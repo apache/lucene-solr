@@ -19,6 +19,9 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
+// nocommit we should pull the NF.DataType into index package?
+import org.apache.lucene.document.NumericField;
+
 /** @lucene.experimental */
 public interface IndexableFieldType {
 
@@ -50,4 +53,9 @@ public interface IndexableFieldType {
   /** DocValues type; if non-null then the field's value
    *  will be indexed into docValues */
   public DocValues.Type docValueType();
+
+  /** Numeric {@link NumericField.DataType}; if
+   * non-null then the field's value will be indexed
+   * numerically. */
+  public NumericField.DataType numericType();
 }

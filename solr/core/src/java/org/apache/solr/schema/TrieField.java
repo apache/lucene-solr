@@ -104,7 +104,7 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
   @Override
   public Object toObject(IndexableField f) {
-    if (f.numericDataType() != null) {
+    if (f.fieldType().numericType() != null) {
       final Number val = f.numericValue();
       if (val==null) return badFieldString(f);
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
@@ -481,8 +481,29 @@ public class TrieField extends org.apache.solr.schema.FieldType {
     ft.setIndexed(indexed);
     ft.setOmitNorms(field.omitNorms());
     ft.setIndexOptions(getIndexOptions(field, value.toString()));
-    
+
+    switch (type) {
+      case INTEGER:
+        ft.setNumericType(NumericField.DataType.INT);
+        break;
+      case FLOAT:
+        ft.setNumericType(NumericField.DataType.FLOAT);
+        break;
+      case LONG:
+        ft.setNumericType(NumericField.DataType.LONG);
+        break;
+      case DOUBLE:
+        ft.setNumericType(NumericField.DataType.DOUBLE);
+        break;
+      case DATE:
+        ft.setNumericType(NumericField.DataType.LONG);
+        break;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
+    }
+
     final org.apache.lucene.document.NumericField f = new org.apache.lucene.document.NumericField(field.getName(), precisionStep, ft);
+
     switch (type) {
       case INTEGER:
         int i = (value instanceof Number)

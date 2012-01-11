@@ -60,15 +60,17 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         .setMergePolicy(newLogMergePolicy()));
     
     NumericField
-      field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
-      field6 = new NumericField("field6", 6, NumericField.TYPE_STORED),
-      field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
-      field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
-      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? NumericField.TYPE_STORED : NumericField.TYPE_UNSTORED),
-      ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
-      ascfield6 = new NumericField("ascfield6", 6, NumericField.TYPE_UNSTORED),
-      ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
-      ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
+      field8 = new NumericField("field8", 8, NumericField.getFieldType(NumericField.DataType.LONG, true)),
+      field6 = new NumericField("field6", 6, NumericField.getFieldType(NumericField.DataType.LONG, true)),
+      field4 = new NumericField("field4", 4, NumericField.getFieldType(NumericField.DataType.LONG, true)),
+      field2 = new NumericField("field2", 2, NumericField.getFieldType(NumericField.DataType.LONG, true)),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE,
+                                     NumericField.getFieldType(NumericField.DataType.LONG, rarely())),
+
+      ascfield8 = new NumericField("ascfield8", 8, NumericField.DataType.LONG),
+      ascfield6 = new NumericField("ascfield6", 6, NumericField.DataType.LONG),
+      ascfield4 = new NumericField("ascfield4", 4, NumericField.DataType.LONG),
+      ascfield2 = new NumericField("ascfield2", 2, NumericField.DataType.LONG);
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
@@ -292,23 +294,23 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
-    doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));
+    doc.add(new NumericField("double", Double.NEGATIVE_INFINITY));
+    doc.add(new NumericField("long", Long.MIN_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("double").setDoubleValue(Double.POSITIVE_INFINITY));
-    doc.add(new NumericField("long").setLongValue(Long.MAX_VALUE));
+    doc.add(new NumericField("double", Double.POSITIVE_INFINITY));
+    doc.add(new NumericField("long", Long.MAX_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("double").setDoubleValue(0.0));
-    doc.add(new NumericField("long").setLongValue(0L));
+    doc.add(new NumericField("double", 0.0));
+    doc.add(new NumericField("long", 0L));
     writer.addDocument(doc);
     
     for (double d : TestNumericUtils.DOUBLE_NANs) {
       doc = new Document();
-      doc.add(new NumericField("double").setDoubleValue(d));
+      doc.add(new NumericField("double", d));
       writer.addDocument(doc);
     }
     

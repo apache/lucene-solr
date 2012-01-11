@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -115,15 +114,6 @@ public class LazyDocument {
         return getDocument().getField(name).readerValue();
       } else {
         return getDocument().getFields(name)[num].readerValue();
-      }
-    }
-
-    @Override
-    public DataType numericDataType() {
-      if (num == 0) {
-        return getDocument().getField(name).numericDataType();
-      } else {
-        return getDocument().getFields(name)[num].numericDataType();
       }
     }
 

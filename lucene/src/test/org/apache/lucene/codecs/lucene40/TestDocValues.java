@@ -27,7 +27,6 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.lucene40.values.Bytes;
 import org.apache.lucene.codecs.lucene40.values.Floats;
 import org.apache.lucene.codecs.lucene40.values.Ints;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -461,6 +460,7 @@ public class TestDocValues extends LuceneTestCase {
       return bytes;
     }
 
+    // nocommit
     /*
     @Override
     public Comparator<BytesRef> bytesComparator() {
@@ -485,11 +485,6 @@ public class TestDocValues extends LuceneTestCase {
 
     @Override
     public IndexableFieldType fieldType() {
-      return null;
-    }
-
-    @Override
-    public NumericField.DataType numericDataType() {
       return null;
     }
   }

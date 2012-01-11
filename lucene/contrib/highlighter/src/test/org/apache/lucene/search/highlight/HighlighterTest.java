@@ -1738,21 +1738,21 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
+    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.getFieldType(NumericField.DataType.INT, true));
     nfield.setIntValue(1);
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.getFieldType(NumericField.DataType.INT, true));
     nfield.setIntValue(3);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.getFieldType(NumericField.DataType.INT, true));
     nfield.setIntValue(5);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.getFieldType(NumericField.DataType.INT, true));
     nfield.setIntValue(7);
     doc = new Document();
     doc.add(nfield);

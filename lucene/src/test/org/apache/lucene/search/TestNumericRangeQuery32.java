@@ -60,13 +60,14 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         .setMergePolicy(newLogMergePolicy()));
   
     NumericField
-	    field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
-	    field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
-	    field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
-	    fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? NumericField.TYPE_STORED : NumericField.TYPE_UNSTORED),
-	    ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
-	    ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
-	    ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
+	    field8 = new NumericField("field8", 8, NumericField.getFieldType(NumericField.DataType.INT, true)),
+	    field4 = new NumericField("field4", 4, NumericField.getFieldType(NumericField.DataType.INT, true)),
+	    field2 = new NumericField("field2", 2, NumericField.getFieldType(NumericField.DataType.INT, true)),
+	    fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE,
+                                           NumericField.getFieldType(NumericField.DataType.INT, rarely())),
+	    ascfield8 = new NumericField("ascfield8", 8, NumericField.DataType.INT),
+	    ascfield4 = new NumericField("ascfield4", 4, NumericField.DataType.INT),
+	    ascfield2 = new NumericField("ascfield2", 2, NumericField.DataType.INT);
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
@@ -273,23 +274,23 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
       newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));
-    doc.add(new NumericField("int").setIntValue(Integer.MIN_VALUE));
+    doc.add(new NumericField("float", Float.NEGATIVE_INFINITY));
+    doc.add(new NumericField("int", Integer.MIN_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("float").setFloatValue(Float.POSITIVE_INFINITY));
-    doc.add(new NumericField("int").setIntValue(Integer.MAX_VALUE));
+    doc.add(new NumericField("float", Float.POSITIVE_INFINITY));
+    doc.add(new NumericField("int", Integer.MAX_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("float").setFloatValue(0.0f));
-    doc.add(new NumericField("int").setIntValue(0));
+    doc.add(new NumericField("float", 0.0f));
+    doc.add(new NumericField("int", 0));
     writer.addDocument(doc);
     
     for (float f : TestNumericUtils.FLOAT_NANs) {
       doc = new Document();
-      doc.add(new NumericField("float").setFloatValue(f));
+      doc.add(new NumericField("float", f));
       writer.addDocument(doc);
     }
     

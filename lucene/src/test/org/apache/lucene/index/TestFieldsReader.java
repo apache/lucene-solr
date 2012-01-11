@@ -237,19 +237,20 @@ public class TestFieldsReader extends LuceneTestCase {
     final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
     for(int id=0;id<numDocs;id++) {
       Document doc = new Document();
-      NumericField nf = new NumericField("nf", NumericField.TYPE_STORED);
-      doc.add(nf);
+      final NumericField nf;
       final Number answer;
       final NumericField.DataType typeAnswer;
       if (random.nextBoolean()) {
         // float/double
         if (random.nextBoolean()) {
           final float f = random.nextFloat();
+          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.FLOAT, true));
           nf.setFloatValue(f);
           answer = Float.valueOf(f);
           typeAnswer = NumericField.DataType.FLOAT;
         } else {
           final double d = random.nextDouble();
+          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
           nf.setDoubleValue(d);
           answer = Double.valueOf(d);
           typeAnswer = NumericField.DataType.DOUBLE;
@@ -258,19 +259,22 @@ public class TestFieldsReader extends LuceneTestCase {
         // int/long
         if (random.nextBoolean()) {
           final int i = random.nextInt();
+          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.INT, true));
           nf.setIntValue(i);
           answer = Integer.valueOf(i);
           typeAnswer = NumericField.DataType.INT;
         } else {
           final long l = random.nextLong();
+          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.LONG, true));
           nf.setLongValue(l);
           answer = Long.valueOf(l);
           typeAnswer = NumericField.DataType.LONG;
         }
       }
+      doc.add(nf);
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      doc.add(new NumericField("id", Integer.MAX_VALUE).setIntValue(id));
+      doc.add(new NumericField("id", Integer.MAX_VALUE, NumericField.DataType.INT).setIntValue(id));
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
@@ -286,7 +290,7 @@ public class TestFieldsReader extends LuceneTestCase {
         assertTrue("got f=" + f, f instanceof NumericField);
         final NumericField nf = (NumericField) f;
         assertEquals(answers[ids[docID]], nf.numericValue());
-        assertSame(typeAnswers[ids[docID]], nf.numericDataType());
+        assertSame(typeAnswers[ids[docID]], nf.fieldType().numericType());
       }
     }
     r.close();

@@ -93,7 +93,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         final Document doc = new Document();
         doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random), StringField.TYPE_UNSTORED));
         doc.add(newField("text", content[random.nextInt(content.length)], TextField.TYPE_UNSTORED));
-        doc.add(new NumericField("float").setFloatValue(random.nextFloat()));
+        doc.add(new NumericField("float", random.nextFloat()));
         final int intValue;
         if (random.nextInt(100) == 17) {
           intValue = Integer.MIN_VALUE;
@@ -102,7 +102,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         } else {
           intValue = random.nextInt();
         }
-        doc.add(new NumericField("int").setIntValue(intValue));
+        doc.add(new NumericField("int", intValue));
         if (VERBOSE) {
           System.out.println("  doc=" + doc);
         }

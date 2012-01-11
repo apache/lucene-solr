@@ -137,7 +137,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     // this way we don't bake into indexer all these
     // specific encodings for different fields?  and apps
     // can customize...
-    final NumericField.DataType numericType = field.numericDataType();
+    final NumericField.DataType numericType = field.fieldType().numericType();
     if (numericType != null) {
       switch (numericType) {
         case INT:
@@ -175,7 +175,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       if (n == null) {
         throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
       }
-      switch (field.numericDataType()) {
+      switch (field.fieldType().numericType()) {
         case INT:
           fieldsStream.writeInt(n.intValue()); break;
         case LONG:

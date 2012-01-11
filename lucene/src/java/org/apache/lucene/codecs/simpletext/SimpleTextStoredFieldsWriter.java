@@ -99,7 +99,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     newLine();
     
     write(TYPE);
-    final NumericField.DataType numericType = field.numericDataType();
+    final NumericField.DataType numericType = field.fieldType().numericType();
 
     if (numericType != null) {
       switch (numericType) {

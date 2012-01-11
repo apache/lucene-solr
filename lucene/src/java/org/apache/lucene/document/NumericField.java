@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -139,28 +138,51 @@ public final class NumericField extends Field {
    */
   public static enum DataType { INT, LONG, FLOAT, DOUBLE }
 
-  public static final FieldType TYPE_UNSTORED = new FieldType();
-  public static final FieldType TYPE_STORED = new FieldType();
-  static {
-    TYPE_UNSTORED.setIndexed(true);
-    TYPE_UNSTORED.setTokenized(true);
-    TYPE_UNSTORED.setOmitNorms(true);
-    TYPE_UNSTORED.setIndexOptions(IndexOptions.DOCS_ONLY);
-    TYPE_UNSTORED.freeze();
-
-    TYPE_STORED.setIndexed(true);
-    TYPE_STORED.setStored(true);
-    TYPE_STORED.setTokenized(true);
-    TYPE_STORED.setOmitNorms(true);
-    TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
-    TYPE_STORED.freeze();
-  }
-
-  //public static enum DataType { INT, LONG, FLOAT, DOUBLE }
-  
-  private DataType dataType;
   private transient NumericTokenStream numericTS;
   private final int precisionStep;
+
+  // nocommit -- we can precompute static array indexed by
+  // type.ord()?  and give them names ... TYPE_INT_STORED, etc.
+
+  /** @lucene.experimental */
+  public static FieldType getFieldType(DataType type, boolean stored) {
+    final FieldType ft = new FieldType();
+    ft.setIndexed(true);
+    ft.setStored(stored);
+    ft.setTokenized(true);
+    ft.setOmitNorms(true);
+    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    ft.setNumericType(type);
+    ft.freeze();
+    return ft;
+  }
+
+  // nocommit: add sugar ctors taking native type value & inferring
+  // DataType from it...
+
+  /** Creates an int NumericField with the provided value. */
+  public NumericField(String name, int value) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.INT, false));
+    setIntValue(value);
+  }
+
+  /** Creates a long NumericField with the provided value. */
+  public NumericField(String name, long value) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.LONG, false));
+    setLongValue(value);
+  }
+
+  /** Creates a float NumericField with the provided value. */
+  public NumericField(String name, float value) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.FLOAT, false));
+    setFloatValue(value);
+  }
+
+  /** Creates a double NumericField with the provided value. */
+  public NumericField(String name, double value) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.DOUBLE, false));
+    setDoubleValue(value);
+  }
   
   /**
    * Creates a field for numeric values using the default
@@ -173,8 +195,8 @@ public final class NumericField extends Field {
    * @param name
    *          the field name
    */
-  public NumericField(String name) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, NumericField.TYPE_UNSTORED);
+  public NumericField(String name, DataType type) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(type, false));
   }
   
   /**
@@ -210,8 +232,8 @@ public final class NumericField extends Field {
    *          href="../search/NumericRangeQuery.html#precisionStepDesc"
    *          >precision step</a>
    */
-  public NumericField(String name, int precisionStep) {
-    this(name, precisionStep, NumericField.TYPE_UNSTORED);
+  public NumericField(String name, int precisionStep, DataType type) {
+    this(name, precisionStep, getFieldType(type, false));
   }
   
   /**
@@ -227,15 +249,19 @@ public final class NumericField extends Field {
    *          href="../search/NumericRangeQuery.html#precisionStepDesc"
    *          >precision step</a>
    * @param type
-   *          if the defualt field should be altered, e.g. stored, 
+   *          if the default field should be altered, e.g. stored, 
    *          {@link Document#getField} then returns {@code NumericField} 
    *          instances on search results, or indexed using 
    *          {@link NumericTokenStream}
    */
   public NumericField(String name, int precisionStep, FieldType type) {
     super(name, type);
-    if (precisionStep < 1)
+    if (type.numericType() == null) {
+      throw new IllegalArgumentException("FieldType.numericType() is null");
+    }
+    if (precisionStep < 1) {
       throw new IllegalArgumentException("precisionStep must be >=1");
+    }
     this.precisionStep = precisionStep;
   }
   
@@ -248,33 +274,25 @@ public final class NumericField extends Field {
       // if not needed (stored field loading)
       numericTS = new NumericTokenStream(precisionStep);
       // initialize value in TokenStream
-      if (fieldsData != null) {
-        assert dataType != null;
-        final Number val = (Number) fieldsData;
-        switch (dataType) {
-          case INT:
-            numericTS.setIntValue(val.intValue());
-            break;
-          case LONG:
-            numericTS.setLongValue(val.longValue());
-            break;
-          case FLOAT:
-            numericTS.setFloatValue(val.floatValue());
-            break;
-          case DOUBLE:
-            numericTS.setDoubleValue(val.doubleValue());
-            break;
-          default:
-            assert false : "Should never get here";
-        }
+      final Number val = (Number) fieldsData;
+      switch (type.numericType()) {
+      case INT:
+        numericTS.setIntValue(val.intValue());
+        break;
+      case LONG:
+        numericTS.setLongValue(val.longValue());
+        break;
+      case FLOAT:
+        numericTS.setFloatValue(val.floatValue());
+        break;
+      case DOUBLE:
+        numericTS.setDoubleValue(val.doubleValue());
+        break;
+      default:
+        assert false : "Should never get here";
       }
     }
     return numericTS;
-  }
-  
-  /** Returns always <code>null</code> for numeric fields */
-  public Reader readerValue() {
-    return null;
   }
   
   /**
@@ -288,30 +306,11 @@ public final class NumericField extends Field {
     return (fieldsData == null) ? null : fieldsData.toString();
   }
   
-  /**
-   * Returns the current numeric value as a subclass of {@link Number},
-   * <code>null</code> if not yet initialized.
-   */
-  @Override
-  public Number numericValue() {
-    return (Number) fieldsData;
-  }
-  
   /** Returns the precision step. */
   public int getPrecisionStep() {
     return precisionStep;
   }
   
-  /**
-   * Returns the data type of the current value, {@code null} if not yet set.
-   * 
-   * @since 3.2
-   */
-  @Override
-  public DataType numericDataType() {
-    return dataType;
-  }
-
   /**
    * Initializes the field with the supplied <code>long</code> value.
    * 
@@ -321,9 +320,11 @@ public final class NumericField extends Field {
    *         <code>document.add(new NumericField(name, precisionStep).setLongValue(value))</code>
    */
   public NumericField setLongValue(final long value) {
+    if (type.numericType() != DataType.LONG) {
+      throw new IllegalArgumentException("cannot set long value when FieldType.numericType() is " + type.numericType());
+    }
     if (numericTS != null) numericTS.setLongValue(value);
     fieldsData = Long.valueOf(value);
-    dataType = DataType.LONG;
     return this;
   }
   
@@ -336,9 +337,11 @@ public final class NumericField extends Field {
    *         <code>document.add(new NumericField(name, precisionStep).setIntValue(value))</code>
    */
   public NumericField setIntValue(final int value) {
+    if (type.numericType() != DataType.INT) {
+      throw new IllegalArgumentException("cannot set int value when FieldType.numericType() is " + type.numericType());
+    }
     if (numericTS != null) numericTS.setIntValue(value);
     fieldsData = Integer.valueOf(value);
-    dataType = DataType.INT;
     return this;
   }
   
@@ -351,9 +354,11 @@ public final class NumericField extends Field {
    *         <code>document.add(new NumericField(name, precisionStep).setDoubleValue(value))</code>
    */
   public NumericField setDoubleValue(final double value) {
+    if (type.numericType() != DataType.DOUBLE) {
+      throw new IllegalArgumentException("cannot set double value when FieldType.numericType() is " + type.numericType());
+    }
     if (numericTS != null) numericTS.setDoubleValue(value);
     fieldsData = Double.valueOf(value);
-    dataType = DataType.DOUBLE;
     return this;
   }
   
@@ -366,10 +371,11 @@ public final class NumericField extends Field {
    *         <code>document.add(new NumericField(name, precisionStep).setFloatValue(value))</code>
    */
   public NumericField setFloatValue(final float value) {
+    if (type.numericType() != DataType.FLOAT) {
+      throw new IllegalArgumentException("cannot set float value when FieldType.numericType() is " + type.numericType());
+    }
     if (numericTS != null) numericTS.setFloatValue(value);
     fieldsData = Float.valueOf(value);
-    dataType = DataType.FLOAT;
     return this;
   }
-  
 }

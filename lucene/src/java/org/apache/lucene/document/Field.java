@@ -285,10 +285,6 @@ public class Field implements IndexableField {
     }
   }
 
-  public NumericField.DataType numericDataType() {
-    return null;
-  }
-  
   public BytesRef binaryValue() {
     if (!isBinary()) {
       return null;

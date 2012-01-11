@@ -34,8 +34,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.join.BlockJoinCollector;
-import org.apache.lucene.search.join.BlockJoinQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -57,7 +55,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeJob(String skill, int year) {
     Document job = new Document();
     job.add(newField("skill", skill, StringField.TYPE_STORED));
-    job.add(new NumericField("year").setIntValue(year));
+    job.add(new NumericField("year", year));
     return job;
   }
 
@@ -65,7 +63,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeQualification(String qualification, int year) {
     Document job = new Document();
     job.add(newField("qualification", qualification, StringField.TYPE_STORED));
-    job.add(new NumericField("year").setIntValue(year));
+    job.add(new NumericField("year", year));
     return job;
   }
 

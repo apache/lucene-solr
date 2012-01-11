@@ -32,6 +32,7 @@ public class FieldType implements IndexableFieldType {
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
   private DocValues.Type docValueType;
+  private NumericField.DataType numericType;
   private boolean frozen;
 
   public FieldType(IndexableFieldType ref) {
@@ -43,6 +44,8 @@ public class FieldType implements IndexableFieldType {
     this.storeTermVectorPositions = ref.storeTermVectorPositions();
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
+    this.docValueType = ref.docValueType();
+    this.numericType = ref.numericType();
     // Do not copy frozen!
   }
   
@@ -51,7 +54,7 @@ public class FieldType implements IndexableFieldType {
 
   private void checkIfFrozen() {
     if (frozen) {
-      throw new IllegalStateException();
+      throw new IllegalStateException("this FieldType is already frozen and cannot be changed");
     }
   }
 
@@ -144,6 +147,16 @@ public class FieldType implements IndexableFieldType {
   @Override
   public DocValues.Type docValueType() {
     return docValueType;
+  }
+
+  public void setNumericType(NumericField.DataType type) {
+    checkIfFrozen();
+    numericType = type;
+  }
+
+  @Override
+  public NumericField.DataType numericType() {
+    return numericType;
   }
 
   /** Prints a Field for human consumption. */

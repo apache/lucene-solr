@@ -193,7 +193,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
       
-      NumericField field = new NumericField(type.name(), PRECISION_STEP, NumericField.TYPE_STORED);
+      NumericField field = new NumericField(type.name(), PRECISION_STEP, NumericField.getFieldType(type, true));
       
       numericFieldMap.put(type.name(), field);
       doc.add(field);
@@ -202,7 +202,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
         DATE_FORMAT, NumericField.DataType.LONG));
-    NumericField dateField = new NumericField(DATE_FIELD_NAME, PRECISION_STEP, NumericField.TYPE_STORED);
+    NumericField dateField = new NumericField(DATE_FIELD_NAME, PRECISION_STEP, NumericField.getFieldType(NumericField.DataType.LONG, true));
     numericFieldMap.put(DATE_FIELD_NAME, dateField);
     doc.add(dateField);
     

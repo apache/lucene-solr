@@ -593,7 +593,7 @@ public class TestGrouping extends LuceneTestCase {
         }
         doc.add(newField("sort1", groupValue.sort1.utf8ToString(), StringField.TYPE_UNSTORED));
         doc.add(newField("sort2", groupValue.sort2.utf8ToString(), StringField.TYPE_UNSTORED));
-        doc.add(new NumericField("id").setIntValue(groupValue.id));
+        doc.add(new NumericField("id", groupValue.id));
         doc.add(newField("content", groupValue.content, TextField.TYPE_UNSTORED));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
@@ -721,7 +721,7 @@ public class TestGrouping extends LuceneTestCase {
       Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
-      NumericField id = new NumericField("id");
+      NumericField id = new NumericField("id", NumericField.DataType.INT);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];

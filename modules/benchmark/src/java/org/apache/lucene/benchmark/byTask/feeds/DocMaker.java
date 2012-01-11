@@ -109,8 +109,8 @@ public class DocMaker implements Closeable {
         fields.put(ID_FIELD, new Field(ID_FIELD, "", StringField.TYPE_STORED));
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
 
-        numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD));
-        numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD));
+        numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD, NumericField.DataType.LONG));
+        numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD, NumericField.DataType.INT));
         
         doc = new Document();
       } else {
@@ -138,14 +138,14 @@ public class DocMaker implements Closeable {
       return f;
     }
 
-    NumericField getNumericField(String name) {
+    NumericField getNumericField(String name, NumericField.DataType type) {
       if (!reuseFields) {
-        return new NumericField(name);
+        return new NumericField(name, type);
       }
 
       NumericField f = numericFields.get(name);
       if (f == null) {
-        f = new NumericField(name);
+        f = new NumericField(name, type);
         numericFields.put(name, f);
       }
       return f;
@@ -249,14 +249,14 @@ public class DocMaker implements Closeable {
       date = new Date();
     }
 
-    NumericField dateField = ds.getNumericField(DATE_MSEC_FIELD);
+    NumericField dateField = ds.getNumericField(DATE_MSEC_FIELD, NumericField.DataType.LONG);
     dateField.setLongValue(date.getTime());
     doc.add(dateField);
 
     util.cal.setTime(date);
     final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
 
-    NumericField timeSecField = ds.getNumericField(TIME_SEC_FIELD);
+    NumericField timeSecField = ds.getNumericField(TIME_SEC_FIELD, NumericField.DataType.INT);
     timeSecField.setIntValue(sec);
     doc.add(timeSecField);
     

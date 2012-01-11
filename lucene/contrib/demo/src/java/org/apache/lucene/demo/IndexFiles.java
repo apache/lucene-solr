@@ -184,9 +184,7 @@ public class IndexFiles {
           // year/month/day/hour/minutes/seconds, down the resolution you require.
           // For example the long value 2011021714 would mean
           // February 17, 2011, 2-3 PM.
-          NumericField modifiedField = new NumericField("modified");
-          modifiedField.setLongValue(file.lastModified());
-          doc.add(modifiedField);
+          doc.add(new NumericField("modified", file.lastModified()));
 
           // Add the contents of the file to a field named "contents".  Specify a Reader,
           // so that the text of the file is tokenized and indexed, but not stored.

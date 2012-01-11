@@ -89,6 +89,11 @@ public class TestIndexableField extends LuceneTestCase {
       public DocValues.Type docValueType() {
         return null;
       }
+
+      @Override
+      public NumericField.DataType numericType() {
+        return counter%10 == 9 ? DataType.INT : null;
+      }
     };
 
     public MyField(int counter) {
@@ -137,12 +142,6 @@ public class TestIndexableField extends LuceneTestCase {
       }
     }
 
-    // Numeric field:
-    @Override
-    public DataType numericDataType() {
-      return counter%10 == 9 ? DataType.INT : null;
-    }
-
     @Override
     public Number numericValue() {
       return counter;
@@ -155,8 +154,8 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-      if (numericDataType() != null) {
-        return new NumericField(name()).setIntValue(counter).tokenStream(analyzer);
+      if (fieldType().numericType() != null) {
+        return new NumericField(name(), counter).tokenStream(analyzer);
       } else {
         return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
           analyzer.tokenStream(name(), new StringReader(stringValue()));
@@ -266,7 +265,7 @@ public class TestIndexableField extends LuceneTestCase {
           } else if (numeric) {
             assertTrue(f instanceof NumericField);
             final NumericField nf = (NumericField) f;
-            assertEquals(NumericField.DataType.INT, nf.numericDataType());
+            assertEquals(NumericField.DataType.INT, nf.fieldType().numericType());
             assertEquals(counter, nf.numericValue().intValue());
           } else {
             assert stringValue != null;
