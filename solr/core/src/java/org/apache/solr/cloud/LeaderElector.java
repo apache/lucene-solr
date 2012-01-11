@@ -59,7 +59,7 @@ public  class LeaderElector {
   private static final String ELECTION_NODE = "/election";
   
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
-  private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?)-n_\\d+");
+  private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
   
   protected SolrZkClient zkClient;
   
@@ -102,7 +102,6 @@ public  class LeaderElector {
           break;
         }
       }
-      
       try {
         zkClient.getData(holdElectionPath + "/" + seqs.get(i - 2),
             new Watcher() {
@@ -158,11 +157,11 @@ public  class LeaderElector {
     return seq;
   }
   
-  private long getSessionId(String nStringSequence) {
-    long id = 0;
+  private String getNodeId(String nStringSequence) {
+    String id;
     Matcher m = SESSION_ID.matcher(nStringSequence);
     if (m.matches()) {
-      id = Long.parseLong(m.group(1));
+      id = m.group(1);
     } else {
       throw new IllegalStateException("Could not find regex match in:"
           + nStringSequence);
@@ -201,7 +200,8 @@ public  class LeaderElector {
   public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
-    long id = zkClient.getSolrZooKeeper().getSessionId();
+    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+    String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
     boolean cont = true;
     int tries = 0;
@@ -216,8 +216,8 @@ public  class LeaderElector {
         
         boolean foundId = false;
         for (String entry : entries) {
-          long nodeId = getSessionId(entry);
-          if (id == nodeId) {
+          String nodeId = getNodeId(entry);
+          if (id.equals(nodeId)) {
             // we did create our node...
             foundId  = true;
             break;
