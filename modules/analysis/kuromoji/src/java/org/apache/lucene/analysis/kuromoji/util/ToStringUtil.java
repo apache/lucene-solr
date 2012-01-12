@@ -127,6 +127,7 @@ public class ToStringUtil {
     inflTypeTranslations.put("*", "*");
     inflTypeTranslations.put("形容詞・アウオ段", "adj-group-a-o-u");
     inflTypeTranslations.put("形容詞・イ段", "adj-group-i");
+    inflTypeTranslations.put("形容詞・イイ",  "adj-group-ii");
     inflTypeTranslations.put("不変化型", "non-inflectional");
     inflTypeTranslations.put("特殊・タ", "special-da");
     inflTypeTranslations.put("特殊・ダ", "special-ta");
@@ -158,7 +159,7 @@ public class ToStringUtil {
     inflTypeTranslations.put("サ変・−スル", "irregular-suffix-suru");
     inflTypeTranslations.put("五段・ガ行", "5-row-cons-g");
     inflTypeTranslations.put("サ変・−ズル", "irregular-suffix-zuru");
-    inflTypeTranslations.put("五段・バ行 ", "5-row-cons-b");
+    inflTypeTranslations.put("五段・バ行", "5-row-cons-b");
     inflTypeTranslations.put("五段・ワ行ウ音便", "5-row-cons-w-u-onbin");
     inflTypeTranslations.put("下二・ダ行", "2-row-lower-cons-d");
     inflTypeTranslations.put("五段・カ行促音便ユク", "5-row-cons-k-cons-onbin-yuku");
@@ -220,6 +221,7 @@ public class ToStringUtil {
     inflFormTranslations.put("体言接続特殊２", "uninflected-special-connection-2");
     inflFormTranslations.put("未然レル接続", "imperfective-reru-connection");
     inflFormTranslations.put("現代基本形", "modern-base");
+    inflFormTranslations.put("基本形-促音便", "base-onbin"); // not sure about this
   }
   
   /**

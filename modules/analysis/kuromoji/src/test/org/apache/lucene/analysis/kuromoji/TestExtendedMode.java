@@ -50,7 +50,8 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   
   /** random test ensuring we don't ever split supplementaries */
   public void testSurrogates2() throws IOException {
-    for (int i = 0; i < 10000; i++) {
+    int numIterations = atLeast(10000);
+    for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomUnicodeString(random, 100);
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);

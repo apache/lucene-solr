@@ -64,13 +64,13 @@ public class SegmenterTest extends LuceneTestCase {
   @Test
   public void testReadings() {
     List<Token> tokens = segmenter.tokenize("寿司が食べたいです。");
-    assertTrue(tokens.size() == 6);
-    assertEquals(tokens.get(0).getReading(), "スシ");
-    assertEquals(tokens.get(1).getReading(), "ガ");
-    assertEquals(tokens.get(2).getReading(), "タベ");
-    assertEquals(tokens.get(3).getReading(), "タイ");
-    assertEquals(tokens.get(4).getReading(), "デス");
-    assertEquals(tokens.get(5).getReading(), "。");
+    assertEquals(6, tokens.size());
+    assertEquals("スシ", tokens.get(0).getReading());
+    assertEquals("ガ",    tokens.get(1).getReading());
+    assertEquals("タベ", tokens.get(2).getReading());
+    assertEquals("タイ",  tokens.get(3).getReading());
+    assertEquals("デス", tokens.get(4).getReading());
+    assertEquals("。", tokens.get(5).getReading());
   }
   
   @Test
@@ -91,7 +91,7 @@ public class SegmenterTest extends LuceneTestCase {
   @Test
   public void testPronunciations() {
     List<Token> tokens = segmenter.tokenize("寿司が食べたいです。");
-    assertTrue(tokens.size() == 6);
+    assertEquals(6, tokens.size());
     assertEquals("スシ", tokens.get(0).getPronunciation());
     assertEquals("ガ",    tokens.get(1).getPronunciation());
     assertEquals("タベ", tokens.get(2).getPronunciation());
@@ -141,8 +141,8 @@ public class SegmenterTest extends LuceneTestCase {
     assertNull(tokens.get(3).getInflectionType());
     assertNull(tokens.get(4).getInflectionType());
     assertNull(tokens.get(5).getInflectionType());
-    assertEquals(tokens.get(6).getInflectionType(), "五段・ラ行");
-    assertEquals(tokens.get(7).getInflectionType(), "特殊・マス");
+    assertEquals("五段・ラ行", tokens.get(6).getInflectionType());
+    assertEquals("特殊・マス", tokens.get(7).getInflectionType());
     assertNull(tokens.get(8).getInflectionType());
   }
   
@@ -156,8 +156,8 @@ public class SegmenterTest extends LuceneTestCase {
     assertNull(tokens.get(3).getInflectionForm());
     assertNull(tokens.get(4).getInflectionForm());
     assertNull(tokens.get(5).getInflectionForm());
-    assertEquals(tokens.get(6).getInflectionForm(), "連用形");
-    assertEquals(tokens.get(7).getInflectionForm(), "基本形");
+    assertEquals("連用形", tokens.get(6).getInflectionForm());
+    assertEquals("基本形", tokens.get(7).getInflectionForm());
     assertNull(tokens.get(8).getInflectionForm());
   }
   

@@ -45,6 +45,6 @@ public class TestKuromojiBaseFormFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomStrings() throws IOException {
-    checkRandomData(random, analyzer, 10000);
+    checkRandomData(random, analyzer, atLeast(10000));
   }
 }
